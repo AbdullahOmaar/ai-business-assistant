@@ -14,7 +14,9 @@ A secure, multi-business workspace for customer and product/service records, inv
 
 ## Project documentation
 - [Product scope](docs/PRODUCT_SCOPE.md)
-- [Architecture baseline and decision checklist](docs/ARCHITECTURE_BASELINE.md)
+- [Architecture baseline](docs/ARCHITECTURE_BASELINE.md)
+- [Architecture decision proposal (ADR-0001)](docs/ARCHITECTURE_DECISION_0001.md)
+- [Phased implementation plan](docs/IMPLEMENTATION_PLAN.md)
 
 ## Status
-The repository is at the planning/foundation stage. The implementation stack and deployment target are not yet approved. See the architecture baseline before provisioning infrastructure or changing existing Firebase/Railway resources.
+The repository is at the architecture/foundation stage. The recommended stack is Angular + Spring Boot + PostgreSQL, pending review. No application code has been scaffolded and no deployment target is selected. Do not change existing Firebase/Railway resources or provision paid infrastructure without explicit approval.
