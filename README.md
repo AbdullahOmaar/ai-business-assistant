@@ -19,4 +19,4 @@ A secure, multi-business workspace for customer and product/service records, inv
 - [Phased implementation plan](docs/IMPLEMENTATION_PLAN.md)
 
 ## Status
-The repository is at the architecture/foundation stage. The recommended stack is Angular + Spring Boot + PostgreSQL, pending review. No application code has been scaffolded and no deployment target is selected. Do not change existing Firebase/Railway resources or provision paid infrastructure without explicit approval.
+The repository is at the architecture/foundation stage. The proposed stack is Angular + Python/FastAPI + PostgreSQL, pending review. No application code has been scaffolded and no deployment target is selected. Do not change existing Firebase/Railway resources or provision paid infrastructure without explicit approval.
