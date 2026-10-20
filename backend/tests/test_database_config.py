@@ -1,7 +1,14 @@
 import pytest
+from sqlalchemy import Numeric
 
 from app.database import get_database_url
-from app.models import BusinessMembership, MembershipRole, membership_role_type
+from app.models import (
+    BusinessMembership,
+    MembershipRole,
+    Product,
+    StockMovement,
+    membership_role_type,
+)
 
 
 def test_database_url_requires_explicit_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -49,3 +56,54 @@ def test_business_workspace_has_profile_and_currency_fields() -> None:
     assert columns["timezone"].nullable is False
     assert columns["is_active"].nullable is False
     assert columns["contact_email"].nullable is True
+
+
+def test_product_price_uses_exact_decimal_and_rejects_negative_values() -> None:
+    columns = Product.__table__.c
+    price_type = columns["unit_price"].type
+    assert isinstance(price_type, Numeric)
+    assert price_type.precision == 14
+    assert price_type.scale == 2
+    assert any(
+        getattr(constraint, "name", None) == "ck_products_unit_price_nonnegative"
+        for constraint in Product.__table__.constraints
+    )
+
+
+def test_product_sku_is_unique_within_a_business() -> None:
+    constraints = list(Product.__table__.constraints)
+    assert any(
+        getattr(constraint, "name", None) == "uq_products_business_sku"
+        for constraint in constraints
+    )
+
+
+def test_stock_quantity_uses_decimal_precision_and_nonzero_check() -> None:
+    columns = StockMovement.__table__.c
+    quantity_type = columns["quantity_delta"].type
+    assert isinstance(quantity_type, Numeric)
+    assert quantity_type.precision == 14
+    assert quantity_type.scale == 3
+    assert any(
+        getattr(constraint, "name", None) == "ck_stock_movements_nonzero_quantity"
+        for constraint in StockMovement.__table__.constraints
+    )
+
+
+def test_stock_movement_product_reference_is_business_scoped() -> None:
+    foreign_keys = list(StockMovement.__table__.foreign_key_constraints)
+    assert any(
+        constraint.name == "fk_stock_movements_product_business"
+        and {element.parent.name for element in constraint.elements}
+        == {"product_id", "business_id"}
+        and {element.target_fullname for element in constraint.elements}
+        == {"products.id", "products.business_id"}
+        for constraint in foreign_keys
+    )
+
+
+def test_stock_movement_types_are_limited_to_documented_values() -> None:
+    assert any(
+        getattr(constraint, "name", None) == "ck_stock_movements_type"
+        for constraint in StockMovement.__table__.constraints
+    )
