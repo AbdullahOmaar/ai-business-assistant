@@ -46,7 +46,7 @@ Migrations require PostgreSQL and refuse SQLite. GitHub Actions starts a disposa
 - Import/export job metadata.
 - Business settings.
 
-The `app/domain_rules.py` module contains pure, unit-tested calculations for invoice totals, payment allocation limits, derived stock balances, return quantities, and currency-separated report totals. The `app/services.py` module now adds transaction-scoped service functions for customer/supplier/product creation, stock movements, draft invoice creation and issue, payment recording/allocation, expense creation, and audit events. Each service checks the verified principal's active business membership, scopes database queries by business, and flushes but never commits so the API/request layer can control the transaction.
+The `app/domain_rules.py` module contains pure, unit-tested calculations for invoice totals, payment allocation limits, derived stock balances, return quantities, and currency-separated report totals. The `app/services.py` module now adds transaction-scoped service functions for customer/supplier/product creation, stock movements, draft invoice creation and issue, payment recording/allocation, expense creation, and audit events. `app/operations.py` adds purchase-order receiving, sales-return approval, deduplicated notification queuing, and currency-separated financial summaries. Service and operation unit tests use an isolated in-memory SQLite database; PostgreSQL migrations are separately exercised in CI. Each service checks the verified principal's active business membership, scopes database queries by business, and flushes but never commits so the API/request layer can control the transaction.
 
 ## Critical limits
 
