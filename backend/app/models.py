@@ -1,13 +1,14 @@
-"""Initial SQLAlchemy models for tenant isolation groundwork.
+"""Initial SQLAlchemy models for business workspaces and memberships.
 
-These models are migrated locally in the initial Alembic revision. They do not
-implement authentication or enforce request-level tenant authorization.
+The schema is groundwork only; authentication and request-level tenant
+authorization must be implemented before business-data endpoints are exposed.
 """
 from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     Enum as SqlEnum,
     ForeignKey,
@@ -36,12 +37,27 @@ membership_role_type = SqlEnum(
 
 
 class Business(Base):
+    """Business workspace and configurable profile."""
+
     __tablename__ = "businesses"
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(160), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
+    contact_email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
     memberships: Mapped[list["BusinessMembership"]] = relationship(
         back_populates="business", cascade="all, delete-orphan"
@@ -49,6 +65,8 @@ class Business(Base):
 
 
 class BusinessMembership(Base):
+    """Membership between an external identity and a business workspace."""
+
     __tablename__ = "business_memberships"
     __table_args__ = (
         UniqueConstraint("business_id", "user_subject", name="uq_business_user_subject"),
