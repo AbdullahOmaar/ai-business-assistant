@@ -159,3 +159,348 @@ class StockMovement(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+
+class Customer(Base):
+    """Customer directory record scoped to one business."""
+
+    __tablename__ = "customers"
+    __table_args__ = (
+        UniqueConstraint("id", "business_id", name="uq_customers_id_business"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class Supplier(Base):
+    """Supplier directory record scoped to one business."""
+
+    __tablename__ = "suppliers"
+    __table_args__ = (
+        UniqueConstraint("id", "business_id", name="uq_suppliers_id_business"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class Invoice(Base):
+    """Invoice header; totals are stored snapshots calculated by trusted services."""
+
+    __tablename__ = "invoices"
+    __table_args__ = (
+        UniqueConstraint("business_id", "invoice_number", name="uq_invoice_business_number"),
+        UniqueConstraint("id", "business_id", name="uq_invoices_id_business"),
+        CheckConstraint("subtotal >= 0 AND tax_total >= 0 AND discount_total >= 0 AND total >= 0",
+                        name="ck_invoice_nonnegative_totals"),
+        CheckConstraint("status IN ('draft', 'issued', 'void')", name="ck_invoice_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    invoice_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    tax_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    discount_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    lines: Mapped[list["InvoiceLine"]] = relationship(
+        back_populates="invoice", cascade="all, delete-orphan"
+    )
+
+
+class InvoiceLine(Base):
+    """Invoice line with immutable price/description snapshot fields."""
+
+    __tablename__ = "invoice_lines"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["invoice_id", "business_id"],
+            ["invoices.id", "invoices.business_id"],
+            name="fk_invoice_lines_invoice_business",
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("quantity > 0", name="ck_invoice_line_quantity_positive"),
+        CheckConstraint("unit_price >= 0 AND line_total >= 0",
+                        name="ck_invoice_line_amounts_nonnegative"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    invoice_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    product_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    description: Mapped[str] = mapped_column(String(300), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    line_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    invoice: Mapped[Invoice] = relationship(back_populates="lines")
+
+
+class Payment(Base):
+    """Recorded money received; allocations are stored separately."""
+
+    __tablename__ = "payments"
+    __table_args__ = (
+        UniqueConstraint("id", "business_id", name="uq_payments_id_business"),
+        CheckConstraint("amount > 0", name="ck_payment_amount_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    method: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+
+
+class PaymentAllocation(Base):
+    """Allocation of a payment to an invoice; business match enforced by composite FKs."""
+
+    __tablename__ = "payment_allocations"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["payment_id", "business_id"], ["payments.id", "payments.business_id"],
+            name="fk_payment_allocations_payment_business", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["invoice_id", "business_id"], ["invoices.id", "invoices.business_id"],
+            name="fk_payment_allocations_invoice_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("payment_id", "invoice_id", name="uq_payment_invoice_allocation"),
+        CheckConstraint("amount > 0", name="ck_payment_allocation_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    payment_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    invoice_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class Expense(Base):
+    """Business expense with exact money and explicit currency."""
+
+    __tablename__ = "expenses"
+    __table_args__ = (
+        CheckConstraint("amount > 0", name="ck_expense_amount_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    category: Mapped[str] = mapped_column(String(80), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    incurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    vendor_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PurchaseOrder(Base):
+    """Supplier purchase order; receiving is recorded separately as stock movements."""
+
+    __tablename__ = "purchase_orders"
+    __table_args__ = (
+        UniqueConstraint("business_id", "order_number", name="uq_purchase_order_business_number"),
+        UniqueConstraint("id", "business_id", name="uq_purchase_orders_id_business"),
+        CheckConstraint("status IN ('draft', 'approved', 'partially_received', 'received', 'cancelled')",
+                        name="ck_purchase_order_status"),
+        CheckConstraint("total >= 0", name="ck_purchase_order_total_nonnegative"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    supplier_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    order_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="draft")
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RecurringInvoiceSchedule(Base):
+    """Schedule configuration; scheduler execution is implemented separately."""
+
+    __tablename__ = "recurring_invoice_schedules"
+    __table_args__ = (
+        CheckConstraint("interval_days > 0", name="ck_recurring_interval_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    interval_days: Mapped[int] = mapped_column(nullable=False)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
+    next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PricingRule(Base):
+    """Tax/discount rule configuration; calculation and snapshotting live in services."""
+
+    __tablename__ = "pricing_rules"
+    __table_args__ = (
+        CheckConstraint("rule_type IN ('tax', 'discount')", name="ck_pricing_rule_type"),
+        CheckConstraint("rate >= 0 AND rate <= 100", name="ck_pricing_rule_rate_range"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    rule_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    rate: Mapped[Decimal] = mapped_column(Numeric(7, 4), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class Notification(Base):
+    """Queued notification metadata; delivery provider and workers are separate."""
+
+    __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint("business_id", "deduplication_key", name="uq_notification_deduplication"),
+        CheckConstraint("status IN ('pending', 'sent', 'failed', 'cancelled')",
+                        name="ck_notification_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String(40), nullable=False)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[str] = mapped_column(String(1000), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    deduplication_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AuditEvent(Base):
+    """Business activity metadata; callers must redact secrets and sensitive values."""
+
+    __tablename__ = "audit_events"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    actor_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    target_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    target_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    change_summary: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ImportJob(Base):
+    """CSV import/export job metadata; file processing is implemented separately."""
+
+    __tablename__ = "data_jobs"
+    __table_args__ = (
+        CheckConstraint("job_type IN ('import', 'export')", name="ck_data_job_type"),
+        CheckConstraint("status IN ('pending', 'processing', 'completed', 'failed')",
+                        name="ck_data_job_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    job_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    row_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    error_summary: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class BusinessSetting(Base):
+    """Typed setting key/value boundary; sensitive integration secrets do not belong here."""
+
+    __tablename__ = "business_settings"
+    __table_args__ = (
+        UniqueConstraint("business_id", "setting_key", name="uq_business_setting_key"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    setting_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    setting_value: Mapped[str] = mapped_column(String(1000), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
