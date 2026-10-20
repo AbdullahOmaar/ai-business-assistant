@@ -2,7 +2,7 @@
 
 This is a deliberately small, local-development-only FastAPI starter.
 
-## Run locally
+## Run the API locally
 
 Python 3.11+ is recommended.
 
@@ -13,15 +13,21 @@ python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/docs` for the interactive API docs and `http://127.0.0.1:8000/health` for the health endpoint.
+Open `http://127.0.0.1:8000/docs` for interactive API docs and `http://127.0.0.1:8000/health` for the health endpoint.
 
 ## Test
 
 ```bash
-python -m pytest
+python -m pytest -q
 ```
 
-## Current limits
+## Initial data model proposal
+
+`app/models.py` defines `Business` and `BusinessMembership` as an initial tenant-isolation foundation. Firebase Auth UIDs are represented as external identity subjects; no passwords are stored. Membership is unique per business and user identity, with `owner` and `staff` roles.
+
+This is only a model proposal: no database URL, connection pool, migration, login verification, authorization dependency, or business-data endpoints are wired yet. Model declarations alone do not enforce tenant isolation.
+
+## Current limits and safety
 
 - No database connection or migrations yet.
 - No authentication or tenant authorization yet.
