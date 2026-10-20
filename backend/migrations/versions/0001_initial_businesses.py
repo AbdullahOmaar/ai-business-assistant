@@ -1,4 +1,4 @@
-"""Create initial businesses and business memberships.
+"""Create initial business workspaces and memberships.
 
 Revision ID: 0001_initial_businesses
 Revises:
@@ -28,8 +28,21 @@ def upgrade() -> None:
         "businesses",
         sa.Column("id", sa.Uuid(as_uuid=True), nullable=False),
         sa.Column("name", sa.String(length=160), nullable=False),
+        sa.Column("currency_code", sa.String(length=3), nullable=False),
+        sa.Column("locale", sa.String(length=16), server_default="en", nullable=False),
+        sa.Column("timezone", sa.String(length=64), server_default="UTC", nullable=False),
+        sa.Column("contact_email", sa.String(length=254), nullable=True),
+        sa.Column("phone", sa.String(length=32), nullable=True),
+        sa.Column("address", sa.String(length=500), nullable=True),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.true(), nullable=False),
         sa.Column(
             "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
             sa.DateTime(timezone=True),
             server_default=sa.text("now()"),
             nullable=False,
