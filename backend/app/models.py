@@ -1,22 +1,38 @@
 """Initial SQLAlchemy models for tenant isolation groundwork.
 
-These models are a proposal and are not connected to a database or migrated yet.
+These models are migrated locally in the initial Alembic revision. They do not
+implement authentication or enforce request-level tenant authorization.
 """
 from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, String, UniqueConstraint, Uuid, func
+from sqlalchemy import (
+    DateTime,
+    Enum as SqlEnum,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
-    pass
+    """Base class for application database models."""
 
 
 class MembershipRole(str, Enum):
     OWNER = "owner"
     STAFF = "staff"
+
+
+membership_role_type = SqlEnum(
+    MembershipRole,
+    name="business_membership_role",
+    values_callable=lambda enum_type: [member.value for member in enum_type],
+)
 
 
 class Business(Base):
@@ -45,9 +61,7 @@ class BusinessMembership(Base):
     # Provider-neutral external identity reference; never a password.
     # The identity provider and token-verification design remain separate decisions.
     user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
-    role: Mapped[MembershipRole] = mapped_column(
-        SqlEnum(MembershipRole, name="business_membership_role"), nullable=False
-    )
+    role: Mapped[MembershipRole] = mapped_column(membership_role_type, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
