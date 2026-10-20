@@ -14,7 +14,8 @@ A secure, multi-business workspace for customer and product/service records, inv
 
 ## Project documentation
 - [Product scope](docs/PRODUCT_SCOPE.md)
-- [Architecture baseline and decision checklist](docs/ARCHITECTURE_BASELINE.md)
+- [Architecture baseline](docs/ARCHITECTURE_BASELINE.md)
+- [ADR-001: V0 application architecture](docs/adr/ADR-001-v0-architecture.md)
 
 ## Status
-The repository is at the planning/foundation stage. The implementation stack and deployment target are not yet approved. See the architecture baseline before provisioning infrastructure or changing existing Firebase/Railway resources.
+The V0 stack is accepted for implementation: **Angular + Python/FastAPI + PostgreSQL**, using SQLAlchemy/Alembic and pytest. Work remains local-first. Hosting and production deployment are undecided. Existing Firebase and Railway resources must not be changed, and no paid resources may be provisioned, without separate explicit approval. See ADR-001 for security, financial, and implementation requirements.
