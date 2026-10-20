@@ -14,6 +14,7 @@ A secure, multi-business workspace for customer and product/service records, inv
 
 ## Project documentation
 - [Product scope](docs/PRODUCT_SCOPE.md)
+- [First 10 features and acceptance criteria](docs/IMPLEMENTATION_PLAN_FIRST_10_FEATURES.md)
 - [Architecture baseline and decision checklist](docs/ARCHITECTURE_BASELINE.md)
 
 ## Status
