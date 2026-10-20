@@ -42,7 +42,8 @@ class BusinessMembership(Base):
     business_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
     )
-    # Firebase Auth UID is an external identity reference, never a password.
+    # Provider-neutral external identity reference; never a password.
+    # The identity provider and token-verification design remain separate decisions.
     user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
     role: Mapped[MembershipRole] = mapped_column(
         SqlEnum(MembershipRole, name="business_membership_role"), nullable=False
