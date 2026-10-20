@@ -37,3 +37,15 @@ def test_membership_has_business_scoped_identity_uniqueness() -> None:
         getattr(constraint, "name", None) == "uq_business_user_subject"
         for constraint in constraints
     )
+
+
+def test_business_workspace_has_profile_and_currency_fields() -> None:
+    from app.models import Business
+
+    columns = Business.__table__.c
+    assert columns["name"].nullable is False
+    assert columns["currency_code"].type.length == 3
+    assert columns["locale"].nullable is False
+    assert columns["timezone"].nullable is False
+    assert columns["is_active"].nullable is False
+    assert columns["contact_email"].nullable is True
