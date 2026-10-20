@@ -289,6 +289,7 @@ class Payment(Base):
             name="fk_payments_customer_business", ondelete="RESTRICT",
         ),
         UniqueConstraint("id", "business_id", name="uq_payments_id_business"),
+        UniqueConstraint("business_id", "idempotency_key", name="uq_payment_idempotency_key"),
         CheckConstraint("amount > 0", name="ck_payment_amount_positive"),
     )
 
@@ -524,3 +525,89 @@ class BusinessSetting(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
+
+
+
+class PurchaseOrderLine(Base):
+    """Ordered quantity and unit-cost snapshot for a supplier purchase."""
+
+    __tablename__ = "purchase_order_lines"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["purchase_order_id", "business_id"],
+            ["purchase_orders.id", "purchase_orders.business_id"],
+            name="fk_purchase_order_lines_order_business", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["product_id", "business_id"], ["products.id", "products.business_id"],
+            name="fk_purchase_order_lines_product_business", ondelete="RESTRICT",
+        ),
+        CheckConstraint("quantity > 0", name="ck_purchase_order_line_quantity_positive"),
+        CheckConstraint("unit_cost >= 0", name="ck_purchase_order_line_cost_nonnegative"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    purchase_order_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    product_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    unit_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    received_quantity: Mapped[Decimal] = mapped_column(
+        Numeric(14, 3), nullable=False, default=Decimal("0")
+    )
+
+
+class SalesReturn(Base):
+    """Return request tied to an original invoice."""
+
+    __tablename__ = "sales_returns"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["invoice_id", "business_id"], ["invoices.id", "invoices.business_id"],
+            name="fk_sales_returns_invoice_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("id", "business_id", name="uq_sales_returns_id_business"),
+        CheckConstraint("status IN ('draft', 'approved', 'rejected')", name="ck_sales_return_status"),
+        CheckConstraint("total >= 0", name="ck_sales_return_total_nonnegative"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    invoice_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class SalesReturnLine(Base):
+    """Return quantity for an original invoice line."""
+
+    __tablename__ = "sales_return_lines"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["sales_return_id", "business_id"], ["sales_returns.id", "sales_returns.business_id"],
+            name="fk_sales_return_lines_return_business", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["invoice_line_id", "business_id"], ["invoice_lines.id", "invoice_lines.business_id"],
+            name="fk_sales_return_lines_invoice_line_business", ondelete="RESTRICT",
+        ),
+        CheckConstraint("quantity > 0", name="ck_sales_return_line_quantity_positive"),
+        CheckConstraint("amount >= 0", name="ck_sales_return_line_amount_nonnegative"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    sales_return_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    invoice_line_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
