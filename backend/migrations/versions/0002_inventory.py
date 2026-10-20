@@ -6,7 +6,6 @@ Create Date: 2026-10-20
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision = "0002_inventory"
 down_revision = "0001_initial_businesses"
