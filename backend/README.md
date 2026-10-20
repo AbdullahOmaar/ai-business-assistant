@@ -26,7 +26,7 @@ python -m alembic upgrade head
 python -m alembic current
 ```
 
-The first migration creates `businesses` and `business_memberships`. The migration runner requires a PostgreSQL URL and refuses SQLite. No cloud database is configured or provisioned.
+The migrations create business workspaces/memberships, products, and stock movement records. The migration runner requires a PostgreSQL URL and refuses SQLite. No cloud database is configured or provisioned.
 
 ## Tests
 
@@ -34,19 +34,21 @@ The first migration creates `businesses` and `business_memberships`. The migrati
 python -m pytest -q
 ```
 
-The current automated tests cover the health endpoint, initial SQLAlchemy model declarations, PostgreSQL URL validation, and documented membership role values. They do not yet exercise a live PostgreSQL database. PostgreSQL-backed migration and authorization tests are required before these workflows are considered verified.
+The current automated tests cover the health endpoint, model declarations and constraints, PostgreSQL URL validation, and migration SQL generation without a database connection. They do not yet exercise a live PostgreSQL database. PostgreSQL-backed migration, inventory transaction, and authorization tests are required before these workflows are considered verified.
 
 ## Initial data model
 
 - `Business` is the tenant/workspace record.
 - `BusinessMembership` links a provider-neutral external identity reference to a business and assigns an `owner` or `staff` role.
-- A database uniqueness constraint prevents duplicate membership for the same identity in the same business.
+- `Product` is a business-scoped catalog item with exact `NUMERIC(14,2)` price storage and optional business-unique SKU.
+- `StockMovement` records signed quantity changes using `NUMERIC(14,3)`; positive quantities add stock and negative quantities remove stock. Current quantity must be derived by summing these movements, not by trusting a client-supplied balance.
+- A composite foreign key ensures a stock movement's product belongs to the same business recorded on the movement.
 
-This schema is groundwork only. It does not authenticate identities, verify tokens, or enforce request-level tenant authorization. Do not expose business-data endpoints until authentication and server-side membership checks are designed and tested.
+This schema is groundwork only. It does not authenticate identities, verify tokens, enforce request-level tenant authorization, implement stock transaction services, or make movement records immutable at the database level. Do not expose business-data endpoints until authentication and server-side membership checks are designed and tested. Stock-changing services must later enforce transaction safety and audit rules.
 
 ## Current limits and safety
 
-- No customer, product, invoice, payment, or expense endpoints yet.
+- No customer, product, inventory, invoice, payment, or expense API endpoints yet.
 - No authentication or tenant authorization yet.
 - No provider integration is selected by this starter.
 - Firebase, cloud resources, deployments, and paid services are not changed or configured by this starter.
