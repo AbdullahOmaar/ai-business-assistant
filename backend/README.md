@@ -23,7 +23,7 @@ python -m pytest -q
 
 ## Initial data model proposal
 
-`app/models.py` defines `Business` and `BusinessMembership` as an initial tenant-isolation foundation. Firebase Auth UIDs are represented as external identity subjects; no passwords are stored. Membership is unique per business and user identity, with `owner` and `staff` roles.
+`app/models.py` defines `Business` and `BusinessMembership` as an initial tenant-isolation foundation. `user_subject` is a provider-neutral external identity reference; no passwords are stored and no identity provider is selected by this starter. Membership is unique per business and user identity, with `owner` and `staff` roles.
 
 This is only a model proposal: no database URL, connection pool, migration, login verification, authorization dependency, or business-data endpoints are wired yet. Model declarations alone do not enforce tenant isolation.
 
@@ -33,4 +33,5 @@ This is only a model proposal: no database URL, connection pool, migration, logi
 - No authentication or tenant authorization yet.
 - No business or financial endpoints yet.
 - Do not use this starter with real customer or financial data.
+- No identity provider is configured or selected by this starter.
 - Firebase, cloud resources, and paid services are not changed or configured by this starter.
