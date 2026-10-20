@@ -152,6 +152,53 @@ def upgrade() -> None:
         sa.UniqueConstraint("id", "business_id", name="uq_purchase_orders_id_business"),
     )
     op.create_table(
+        "purchase_order_lines",
+        sa.Column("id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("business_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("purchase_order_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("product_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("quantity", sa.Numeric(14, 3), nullable=False),
+        sa.Column("unit_cost", sa.Numeric(14, 2), nullable=False),
+        sa.Column("received_quantity", sa.Numeric(14, 3), server_default=sa.text("0"), nullable=False),
+        sa.CheckConstraint("quantity > 0", name="ck_purchase_order_line_quantity_positive"),
+        sa.CheckConstraint("unit_cost >= 0", name="ck_purchase_order_line_cost_nonnegative"),
+        sa.ForeignKeyConstraint(["business_id"], ["businesses.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["purchase_order_id", "business_id"], ["purchase_orders.id", "purchase_orders.business_id"], name="fk_purchase_order_lines_order_business", ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["product_id", "business_id"], ["products.id", "products.business_id"], name="fk_purchase_order_lines_product_business", ondelete="RESTRICT"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "sales_returns",
+        sa.Column("id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("business_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("invoice_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("status", sa.String(16), server_default="draft", nullable=False),
+        sa.Column("reason", sa.String(500), nullable=True),
+        sa.Column("total", sa.Numeric(14, 2), server_default=sa.text("0"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.CheckConstraint("status IN ('draft', 'approved', 'rejected')", name="ck_sales_return_status"),
+        sa.CheckConstraint("total >= 0", name="ck_sales_return_total_nonnegative"),
+        sa.ForeignKeyConstraint(["business_id"], ["businesses.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["invoice_id", "business_id"], ["invoices.id", "invoices.business_id"], name="fk_sales_returns_invoice_business", ondelete="RESTRICT"),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("id", "business_id", name="uq_sales_returns_id_business"),
+    )
+    op.create_table(
+        "sales_return_lines",
+        sa.Column("id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("business_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("sales_return_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("invoice_line_id", sa.Uuid(as_uuid=True), nullable=False),
+        sa.Column("quantity", sa.Numeric(14, 3), nullable=False),
+        sa.Column("amount", sa.Numeric(14, 2), nullable=False),
+        sa.CheckConstraint("quantity > 0", name="ck_sales_return_line_quantity_positive"),
+        sa.CheckConstraint("amount >= 0", name="ck_sales_return_line_amount_nonnegative"),
+        sa.ForeignKeyConstraint(["business_id"], ["businesses.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["sales_return_id", "business_id"], ["sales_returns.id", "sales_returns.business_id"], name="fk_sales_return_lines_return_business", ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["invoice_line_id", "business_id"], ["invoice_lines.id", "invoice_lines.business_id"], name="fk_sales_return_lines_invoice_line_business", ondelete="RESTRICT"),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
         "recurring_invoice_schedules",
         sa.Column("id", sa.Uuid(as_uuid=True), nullable=False),
         sa.Column("business_id", sa.Uuid(as_uuid=True), nullable=False),
@@ -244,6 +291,9 @@ def downgrade() -> None:
     op.drop_table("audit_events")
     op.drop_table("notifications")
     op.drop_table("pricing_rules")
+    op.drop_table("sales_return_lines")
+    op.drop_table("sales_returns")
+    op.drop_table("purchase_order_lines")
     op.drop_table("recurring_invoice_schedules")
     op.drop_table("purchase_orders")
     op.drop_table("expenses")
