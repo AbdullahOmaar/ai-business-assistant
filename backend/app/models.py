@@ -1,17 +1,21 @@
-"""Initial SQLAlchemy models for business workspaces and memberships.
+"""SQLAlchemy models for business workspaces and initial business data.
 
-The schema is groundwork only; authentication and request-level tenant
+This schema is groundwork only. Authentication and request-level tenant
 authorization must be implemented before business-data endpoints are exposed.
 """
 from datetime import datetime
+from decimal import Decimal
 from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum as SqlEnum,
     ForeignKey,
+    ForeignKeyConstraint,
+    Numeric,
     String,
     UniqueConstraint,
     Uuid,
@@ -84,3 +88,74 @@ class BusinessMembership(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     business: Mapped[Business] = relationship(back_populates="memberships")
+
+
+class Product(Base):
+    """Business-scoped catalog item; stock quantity is not stored on this row."""
+
+    __tablename__ = "products"
+    __table_args__ = (
+        UniqueConstraint("business_id", "sku", name="uq_products_business_sku"),
+        # Composite target lets stock movements enforce matching business ownership.
+        UniqueConstraint("id", "business_id", name="uq_products_id_business"),
+        CheckConstraint("unit_price >= 0", name="ck_products_unit_price_nonnegative"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    sku: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    unit: Mapped[str] = mapped_column(String(32), nullable=False, default="unit")
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    is_stock_tracked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class StockMovement(Base):
+    """Append-only stock event; current stock is derived from signed quantities."""
+
+    __tablename__ = "stock_movements"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["product_id", "business_id"],
+            ["products.id", "products.business_id"],
+            name="fk_stock_movements_product_business",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "movement_type IN ('opening', 'receipt', 'sale', 'return', 'adjustment')",
+            name="ck_stock_movements_type",
+        ),
+        CheckConstraint("quantity_delta <> 0", name="ck_stock_movements_nonzero_quantity"),
+        UniqueConstraint(
+            "id", "business_id", name="uq_stock_movements_id_business"
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    movement_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    # Positive adds stock; negative removes stock. Use Decimal, never float.
+    quantity_delta: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reference_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    reference_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    created_by_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
