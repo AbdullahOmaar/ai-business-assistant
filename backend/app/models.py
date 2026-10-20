@@ -212,6 +212,10 @@ class Invoice(Base):
 
     __tablename__ = "invoices"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["customer_id", "business_id"], ["customers.id", "customers.business_id"],
+            name="fk_invoices_customer_business", ondelete="RESTRICT",
+        ),
         UniqueConstraint("business_id", "invoice_number", name="uq_invoice_business_number"),
         UniqueConstraint("id", "business_id", name="uq_invoices_id_business"),
         CheckConstraint("subtotal >= 0 AND tax_total >= 0 AND discount_total >= 0 AND total >= 0",
@@ -253,6 +257,10 @@ class InvoiceLine(Base):
             name="fk_invoice_lines_invoice_business",
             ondelete="CASCADE",
         ),
+        ForeignKeyConstraint(
+            ["product_id", "business_id"], ["products.id", "products.business_id"],
+            name="fk_invoice_lines_product_business", ondelete="RESTRICT",
+        ),
         CheckConstraint("quantity > 0", name="ck_invoice_line_quantity_positive"),
         CheckConstraint("unit_price >= 0 AND line_total >= 0",
                         name="ck_invoice_line_amounts_nonnegative"),
@@ -276,6 +284,10 @@ class Payment(Base):
 
     __tablename__ = "payments"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["customer_id", "business_id"], ["customers.id", "customers.business_id"],
+            name="fk_payments_customer_business", ondelete="RESTRICT",
+        ),
         UniqueConstraint("id", "business_id", name="uq_payments_id_business"),
         CheckConstraint("amount > 0", name="ck_payment_amount_positive"),
     )
@@ -353,6 +365,10 @@ class PurchaseOrder(Base):
 
     __tablename__ = "purchase_orders"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["supplier_id", "business_id"], ["suppliers.id", "suppliers.business_id"],
+            name="fk_purchase_orders_supplier_business", ondelete="RESTRICT",
+        ),
         UniqueConstraint("business_id", "order_number", name="uq_purchase_order_business_number"),
         UniqueConstraint("id", "business_id", name="uq_purchase_orders_id_business"),
         CheckConstraint("status IN ('draft', 'approved', 'partially_received', 'received', 'cancelled')",
@@ -379,6 +395,10 @@ class RecurringInvoiceSchedule(Base):
 
     __tablename__ = "recurring_invoice_schedules"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["customer_id", "business_id"], ["customers.id", "customers.business_id"],
+            name="fk_recurring_schedules_customer_business", ondelete="RESTRICT",
+        ),
         CheckConstraint("interval_days > 0", name="ck_recurring_interval_positive"),
     )
 
