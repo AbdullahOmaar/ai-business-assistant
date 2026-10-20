@@ -1,42 +1,48 @@
-# Architecture Baseline — Decision Pending
+# Architecture Baseline — V0 Stack Accepted
 
 ## Status
-**Not yet approved.** This document records constraints and decision criteria; it does not commit the project to a stack.
+**V0 stack accepted for implementation on 2026-10-20.** See [ADR-001: V0 Application Architecture](adr/ADR-001-v0-architecture.md) for the decision and constraints. Hosting and production deployment remain undecided.
 
-## Options to evaluate
-- **Angular + Firebase Auth + Firestore:** potentially faster for a web-first V0, but security rules, data modeling, server-side financial operations, and automated tests must be designed carefully.
-- **Angular + API backend (for example, FastAPI) + database:** clearer server-side business logic and validation, but adds deployment and operational responsibilities.
+## Selected stack
+- **Web client:** Angular.
+- **Backend:** Python + FastAPI modular monolith with a versioned REST API.
+- **Database:** PostgreSQL.
+- **Persistence/migrations:** SQLAlchemy + Alembic.
+- **API validation:** Pydantic.
+- **Tests:** pytest, API integration tests, and PostgreSQL-backed security/financial tests.
+- **Local development first:** no cloud provisioning is required for the initial implementation.
 
-Flutter/mobile can be considered later if validated demand requires it; do not let a second client delay a secure web-first foundation.
+Flutter/mobile is deferred until validated demand justifies a second client.
 
 ## Non-negotiable requirements
-- Enforce authorization and business isolation at the trusted data/API boundary.
+- Enforce authorization and business isolation at the trusted API/data boundary on every read and write.
+- Never trust a client-supplied business identifier without checking membership and permissions.
 - Keep secrets out of source control and client bundles.
-- Validate all monetary calculations and state transitions server-side or in an equivalently trusted layer.
-- Test owner/staff permissions and cross-business isolation.
-- Make invoice/payment/expense mutations auditable.
-- Use explicit business currency; do not silently aggregate multiple currencies.
-- Keep AI integrations behind a service boundary. AI may suggest or draft, but consequential changes require human confirmation.
-- Include environment setup, migrations/schema strategy where relevant, automated tests, and a clear local-development guide.
+- Use PostgreSQL NUMERIC/DECIMAL and Python Decimal for money; define rounding and currency precision.
+- Distinguish invoice value, collected payments, allocations, outstanding balances, expenses, and estimated profit.
+- Never silently aggregate currencies or overwrite issued invoices.
+- Make important invoice/payment/expense and AI-assisted changes auditable.
+- Keep AI integrations behind a service boundary; consequential changes require human confirmation.
+- Include migrations, automated tests, environment setup, and a clear local-development guide.
+- Prove tenant isolation, owner/staff permissions, allocation limits, idempotency, currency handling, and audit behavior with tests before financial features are considered ready.
 
 ## Existing infrastructure constraints
-- A Firebase project reportedly exists on the Spark plan with Firestore Standard; current rules were previously noted as denying client reads/writes. Treat this as unverified until re-inspected.
-- Do not modify Firebase configuration, Firestore rules, or any Railway project/resource without explicit user approval.
-- Do not provision paid services or incur costs without explicit approval and a cost review.
+- Do not modify the existing Firebase project, Firebase Auth settings, Firestore rules/data, or any Railway resource as part of this architecture decision.
+- Firebase Authentication integration with FastAPI requires a separate documented and tested decision covering token verification, issuer/audience, failure handling, role mapping, and business membership.
+- Do not provision paid services, incur costs, or deploy to production without explicit approval and a cost/security review.
 - Do not reuse unrelated Railway projects/resources.
 
-## Decision checklist
-Before selecting a stack, document:
-1. Target client for V0 and expected deployment.
-2. Authentication and authorization flow.
-3. Trusted location for invoice/payment/expense calculations.
-4. Business-membership and tenant-isolation model.
-5. Automated test strategy for security and financial invariants.
-6. Hosting/runtime costs and free-tier limits.
-7. Local setup complexity and maintainability.
+## Implementation sequence
+1. Review the existing local FastAPI starter.
+2. Add local PostgreSQL configuration and Alembic migrations.
+3. Design and test authentication integration before enabling protected endpoints.
+4. Enforce tenant isolation and roles server-side with negative cross-business tests.
+5. Implement core business, customer, and catalog workflows.
+6. Add financial workflows with transactions, precise money types, idempotency, and audit history.
+7. Consider AI integrations after the core workflows are tested.
 
-## Initial engineering guardrails
-- Work in small, reviewable changes.
-- Protect the default branch; use feature branches and pull requests when available.
+## Engineering guardrails
+- Work in small, reviewable changes on feature branches and pull requests.
+- Do not merge pull requests without explicit owner approval.
 - Never commit credentials, tokens, real customer data, or production secrets.
-- Do not claim production readiness until security rules, tests, deployment, and operational behavior have been verified.
+- Do not claim production readiness until security, tests, deployment, and operational behavior have been verified.
