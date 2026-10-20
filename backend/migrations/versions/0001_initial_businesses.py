@@ -22,7 +22,7 @@ membership_role = postgresql.ENUM(
 
 
 def upgrade() -> None:
-    membership_role.create(op.get_bind(), checkfirst=True)
+    membership_role.create(op.get_bind(), checkfirst=False)
 
     op.create_table(
         "businesses",
@@ -66,4 +66,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("business_memberships")
     op.drop_table("businesses")
-    membership_role.drop(op.get_bind(), checkfirst=True)
+    membership_role.drop(op.get_bind(), checkfirst=False)
