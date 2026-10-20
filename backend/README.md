@@ -27,7 +27,7 @@ python -m alembic current
 python -m pytest -q
 ```
 
-Migrations require PostgreSQL and refuse SQLite. CI currently renders migration SQL without connecting to PostgreSQL; live migration integration is still required.
+Migrations require PostgreSQL and refuse SQLite. GitHub Actions starts a disposable PostgreSQL 16 service, applies all migrations against it, checks the migration head, runs tests, and also renders the migration SQL offline. This is CI-only infrastructure; no hosted or production database is created.
 
 ## Domain groundwork now modeled
 
@@ -46,16 +46,16 @@ Migrations require PostgreSQL and refuse SQLite. CI currently renders migration 
 - Import/export job metadata.
 - Business settings.
 
-The `app/domain_rules.py` module contains pure, unit-tested calculations for invoice totals, payment allocation limits, derived stock balances, return quantities, and currency-separated report totals.
+The `app/domain_rules.py` module contains pure, unit-tested calculations for invoice totals, payment allocation limits, derived stock balances, return quantities, and currency-separated report totals. The `app/services.py` module now adds transaction-scoped service functions for customer/supplier/product creation, stock movements, draft invoice creation and issue, payment recording/allocation, expense creation, and audit events. Each service checks the verified principal's active business membership, scopes database queries by business, and flushes but never commits so the API/request layer can control the transaction.
 
 ## Critical limits
 
 These are domain foundations, **not all completed product features**:
 
-- The only API endpoint is `GET /health`. There are no CRUD, inventory, invoice, payment, customer, supplier, reporting, import/export, or AI endpoints yet.
+- The only API endpoint is `GET /health`; the workflow services are not exposed as HTTP endpoints yet. Angular UI and API request/response schemas are still outstanding.
 - There is no Angular UI yet.
 - Authentication/token verification and request-level membership/role authorization are not implemented. Do not expose business-data endpoints until a trusted identity provider decision and server-side authorization are implemented and tested.
-- Payment allocation and return rules have pure unit tests, but concurrency-safe database transactions, idempotent request handlers, and live PostgreSQL tests are not implemented.
+- Payment allocation and stock services use row locks and idempotency-key storage, but concurrency behavior needs dedicated PostgreSQL integration tests. Return-processing service, purchase receiving, recurring scheduling, and CSV processing are still outstanding.
 - Invoice issuing/audit immutability, stock movement append-only enforcement, purchase receiving, recurring scheduling, tax snapshots, notification delivery, CSV processing, and audit event recording still need application services.
 - The read-only AI assistant is not implemented and no model provider has been selected.
 - No Firebase changes, cloud resources, deployments, or paid services are included.
