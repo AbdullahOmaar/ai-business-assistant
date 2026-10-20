@@ -83,6 +83,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["invoice_id", "business_id"], ["invoices.id", "invoices.business_id"], name="fk_invoice_lines_invoice_business", ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["product_id", "business_id"], ["products.id", "products.business_id"], name="fk_invoice_lines_product_business", ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("id", "business_id", name="uq_invoice_lines_id_business"),
     )
     op.create_table(
         "payments",
