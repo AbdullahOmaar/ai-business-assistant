@@ -4,9 +4,14 @@ No engine is created at import time, so unit tests and API startup do not need
 a live PostgreSQL server unless a database operation is explicitly requested.
 """
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.engine import make_url
+
+# Load only the backend-local .env file; existing process environment wins.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 
 def get_database_url() -> str:
