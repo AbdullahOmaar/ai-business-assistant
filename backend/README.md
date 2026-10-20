@@ -2,7 +2,7 @@
 
 This is a local-development-only FastAPI starter. It is not production-ready and must not be used with real customer or financial data.
 
-## Run the API locally
+## Run locally
 
 Python 3.11+ and a local PostgreSQL installation are recommended.
 
@@ -13,42 +13,49 @@ python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/docs` for interactive API docs and `http://127.0.0.1:8000/health` for the process health endpoint. The health endpoint does not check database connectivity.
+Open `http://127.0.0.1:8000/docs` for API docs and `http://127.0.0.1:8000/health` for process health. The health endpoint does not check database connectivity.
 
-## Configure local PostgreSQL and migrations
+## Local PostgreSQL and migrations
 
-1. Create a local PostgreSQL database named `ai_business_assistant` using your local PostgreSQL tools.
-2. Copy `.env.example` to `.env` and replace the example username/password with credentials for your local database. Do not commit `.env` or real secrets.
-3. From the `backend` directory, run:
+1. Create a local PostgreSQL database named `ai_business_assistant`.
+2. Copy `.env.example` to `.env` and configure local credentials. Never commit `.env` or secrets.
+3. From this directory, run:
 
 ```bash
 python -m alembic upgrade head
 python -m alembic current
-```
-
-The migrations create business workspaces/memberships, products, and stock movement records. The migration runner requires a PostgreSQL URL and refuses SQLite. No cloud database is configured or provisioned.
-
-## Tests
-
-```bash
 python -m pytest -q
 ```
 
-The current automated tests cover the health endpoint, model declarations and constraints, PostgreSQL URL validation, and migration SQL generation without a database connection. They do not yet exercise a live PostgreSQL database. PostgreSQL-backed migration, inventory transaction, and authorization tests are required before these workflows are considered verified.
+Migrations require PostgreSQL and refuse SQLite. CI currently renders migration SQL without connecting to PostgreSQL; live migration integration is still required.
 
-## Initial data model
+## Domain groundwork now modeled
 
-- `Business` is the tenant/workspace record.
-- `BusinessMembership` links a provider-neutral external identity reference to a business and assigns an `owner` or `staff` role.
-- `Product` is a business-scoped catalog item with exact `NUMERIC(14,2)` price storage and optional business-unique SKU.
-- `StockMovement` records signed quantity changes using `NUMERIC(14,3)`; positive quantities add stock and negative quantities remove stock. Current quantity must be derived by summing these movements, not by trusting a client-supplied balance.
-- A composite foreign key ensures a stock movement's product belongs to the same business recorded on the movement.
+- Business workspaces and memberships.
+- Products and signed stock movements; stock balances should be derived from movements.
+- Customers and suppliers.
+- Invoice headers and line snapshots.
+- Payments and invoice allocations with idempotency-key storage.
+- Expenses.
+- Purchase orders and order lines, including received quantities.
+- Sales returns and return lines linked to original invoice lines.
+- Recurring invoice schedules.
+- Tax/discount pricing rules.
+- Deduplicated notification metadata.
+- Audit event metadata.
+- Import/export job metadata.
+- Business settings.
 
-This schema is groundwork only. It does not authenticate identities, verify tokens, enforce request-level tenant authorization, implement stock transaction services, or make movement records immutable at the database level. Do not expose business-data endpoints until authentication and server-side membership checks are designed and tested. Stock-changing services must later enforce transaction safety and audit rules.
+The `app/domain_rules.py` module contains pure, unit-tested calculations for invoice totals, payment allocation limits, derived stock balances, return quantities, and currency-separated report totals.
 
-## Current limits and safety
+## Critical limits
 
-- No customer, product, inventory, invoice, payment, or expense API endpoints yet.
-- No authentication or tenant authorization yet.
-- No provider integration is selected by this starter.
-- Firebase, cloud resources, deployments, and paid services are not changed or configured by this starter.
+These are domain foundations, **not all completed product features**:
+
+- The only API endpoint is `GET /health`. There are no CRUD, inventory, invoice, payment, customer, supplier, reporting, import/export, or AI endpoints yet.
+- There is no Angular UI yet.
+- Authentication/token verification and request-level membership/role authorization are not implemented. Do not expose business-data endpoints until a trusted identity provider decision and server-side authorization are implemented and tested.
+- Payment allocation and return rules have pure unit tests, but concurrency-safe database transactions, idempotent request handlers, and live PostgreSQL tests are not implemented.
+- Invoice issuing/audit immutability, stock movement append-only enforcement, purchase receiving, recurring scheduling, tax snapshots, notification delivery, CSV processing, and audit event recording still need application services.
+- The read-only AI assistant is not implemented and no model provider has been selected.
+- No Firebase changes, cloud resources, deployments, or paid services are included.
