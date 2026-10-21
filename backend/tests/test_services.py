@@ -15,6 +15,7 @@ from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import (
     WorkflowError, create_customer, create_invoice, create_product,
     issue_invoice, record_payment, record_stock_movement,
+    replace_draft_invoice, void_invoice,
 )
 
 
@@ -206,3 +207,84 @@ def test_invoice_issue_rejects_insufficient_stock(workspace):
                 invoice_id=invoice.id,
             )
         assert invoice.status == "draft"
+
+
+def test_invoice_draft_edit_and_void_restore_tracked_stock(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Coffee", unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("5.000"), reason="Opening stock",
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-LIFE-1", currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "2"}],
+        )
+        replace_draft_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id, invoice_number="INV-LIFE-EDITED",
+            currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "3"}],
+            notes="Updated before issue",
+        )
+        session.flush()
+        assert invoice.invoice_number == "INV-LIFE-EDITED"
+        assert invoice.total == Decimal("30.00")
+        line = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id
+        )).one()
+        assert line.quantity == Decimal("3.000")
+
+        issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=invoice.id
+        )
+        void_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id, reason="Customer cancelled",
+        )
+        session.flush()
+        balance = session.scalar(select(__import__("sqlalchemy").func.sum(
+            StockMovement.quantity_delta
+        )).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        ))
+        restoration = session.scalars(select(StockMovement).where(
+            StockMovement.reference_type == "invoice_void",
+            StockMovement.reference_id == invoice.id,
+            StockMovement.movement_type == "return",
+        )).all()
+        assert invoice.status == "void"
+        assert Decimal(str(balance)) == Decimal("5.000")
+        assert len(restoration) == 1
+        assert restoration[0].quantity_delta == Decimal("3.000")
+
+
+def test_invoice_void_rejects_allocated_payments(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-PAID-1", currency_code="EGP",
+            lines=[{"description": "Consulting", "quantity": "1", "unit_price": "50.00"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=invoice.id
+        )
+        record_payment(
+            session, principal=principal, business_id=business_id,
+            amount=Decimal("50.00"), currency_code="EGP", idempotency_key="paid-invoice-1",
+            allocations=[(invoice.id, Decimal("50.00"))],
+        )
+        with pytest.raises(WorkflowError, match="allocated payments"):
+            void_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id, reason="Should be rejected",
+            )
+        assert invoice.status == "issued"
