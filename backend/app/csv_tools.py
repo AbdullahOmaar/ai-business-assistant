@@ -26,8 +26,11 @@ def parse_import_csv(entity_type: str, content: str, *, max_rows: int = 5000) ->
         raise CsvValidationError("Unsupported import entity type")
     if not content or len(content.encode("utf-8")) > 2_000_000:
         raise CsvValidationError("CSV content is empty or exceeds the 2 MB limit")
+    content = content.removeprefix("\\ufeff")
+    if max_rows < 1:
+        raise CsvValidationError("max_rows must be at least 1")
     try:
-        reader = csv.DictReader(io.StringIO(content, newline=""))
+        reader = csv.DictReader(io.StringIO(content, newline=""), strict=True)
         headers = reader.fieldnames
         if not headers or any(not h or h.strip() != h for h in headers):
             raise CsvValidationError("CSV header row is missing or malformed")
@@ -44,6 +47,8 @@ def parse_import_csv(entity_type: str, content: str, *, max_rows: int = 5000) ->
         for row in reader:
             if None in row:
                 raise CsvValidationError("A row has more values than the header")
+            if any(value is None for value in row.values()):
+                raise CsvValidationError("A row has fewer values than the header")
             if not any((value or "").strip() for value in row.values()):
                 continue
             if len(rows) >= max_rows:
