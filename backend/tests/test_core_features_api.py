@@ -88,3 +88,58 @@ def test_dashboard_rejects_inverted_date_range(configured_client):
         params={"start_date": "2026-10-22", "end_date": "2026-10-01"},
     )
     assert response.status_code == 422
+
+
+def test_customer_search_update_and_soft_deactivation(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Customer Shop", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={
+        "name": "Ali Hassan", "email": "ali@example.com"
+    })
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
+    found = configured_client.get(
+        f"/api/v1/businesses/{business_id}/customers", params={"q": "Ali"}
+    )
+    assert found.status_code == 200
+    assert len(found.json()) == 1
+    updated = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/customers/{customer_id}",
+        json={"phone": "+201234567890"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["phone"] == "+201234567890"
+    removed = configured_client.delete(
+        f"/api/v1/businesses/{business_id}/customers/{customer_id}"
+    )
+    assert removed.status_code == 204
+    assert configured_client.get(
+        f"/api/v1/businesses/{business_id}/customers"
+    ).json() == []
+
+
+def test_product_update_and_soft_deactivation(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Catalog Shop", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Tea", "unit_price": "25.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+    product_id = product.json()["id"]
+    updated = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/products/{product_id}",
+        json={"unit_price": "27.50"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["unit_price"] == "27.50"
+    removed = configured_client.delete(
+        f"/api/v1/businesses/{business_id}/products/{product_id}"
+    )
+    assert removed.status_code == 204
+    assert configured_client.get(
+        f"/api/v1/businesses/{business_id}/products"
+    ).json() == []
