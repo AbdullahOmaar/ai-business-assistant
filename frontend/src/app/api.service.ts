@@ -12,6 +12,7 @@ export interface Business {
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; }
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; customer_id?: string | null; }
+export interface InvoiceLinePayload { description?: string; product_id?: string | null; quantity: string; unit_price?: string; }
 export interface InvoiceDetail extends Invoice {
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
@@ -88,7 +89,7 @@ export class ApiService {
     return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?limit=100`);
   }
   createInvoice(businessId: string, body: {
-    invoice_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; lines: InvoiceLinePayload[];
   }): Promise<Invoice> {
     return this.request<Invoice>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices`, 'POST', body);
   }
@@ -103,7 +104,7 @@ export class ApiService {
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
-    invoice_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; lines: InvoiceLinePayload[];
   }): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`, 'PATCH', body
