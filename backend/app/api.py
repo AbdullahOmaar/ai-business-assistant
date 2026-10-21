@@ -20,6 +20,8 @@ from app.services import (
     create_product,
     create_supplier,
     issue_invoice,
+    replace_draft_invoice,
+    void_invoice,
     record_payment,
     record_stock_movement,
 )
@@ -70,6 +72,15 @@ class InvoiceCreate(BaseModel):
 
 class IssueInvoiceInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class InvoiceDraftUpdate(InvoiceCreate):
+    model_config = ConfigDict(extra="forbid")
+
+
+class VoidInvoiceInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class StockMovementInput(BaseModel):
@@ -174,6 +185,28 @@ def post_issue_invoice(business_id: UUID, invoice_id: UUID,
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     result = _run(session, lambda: issue_invoice(
         session, principal=principal, business_id=business_id, invoice_id=invoice_id))
+    return _record(result)
+
+
+@router.patch("/businesses/{business_id}/invoices/{invoice_id}")
+def patch_draft_invoice(business_id: UUID, invoice_id: UUID, body: InvoiceDraftUpdate,
+                        session: Session = Depends(get_session),
+                        principal: AuthenticatedPrincipal = Depends(get_principal)):
+    payload = body.model_dump()
+    payload["lines"] = [line.model_dump(exclude_none=True) for line in body.lines]
+    result = _run(session, lambda: replace_draft_invoice(
+        session, principal=principal, business_id=business_id,
+        invoice_id=invoice_id, **payload))
+    return _record(result)
+
+
+@router.post("/businesses/{business_id}/invoices/{invoice_id}/void")
+def post_void_invoice(business_id: UUID, invoice_id: UUID, body: VoidInvoiceInput,
+                      session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    result = _run(session, lambda: void_invoice(
+        session, principal=principal, business_id=business_id,
+        invoice_id=invoice_id, reason=body.reason))
     return _record(result)
 
 
