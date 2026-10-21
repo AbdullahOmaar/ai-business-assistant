@@ -28,6 +28,7 @@ See [ADR-001 — V0 architecture](docs/adr/ADR-001-v0-architecture.md).
 - [First 10 features and acceptance criteria](docs/IMPLEMENTATION_PLAN_FIRST_10_FEATURES.md)
 - [Proposed second 10 features and acceptance criteria](docs/IMPLEMENTATION_PLAN_SECOND_10_FEATURES.md)
 - [Architecture baseline](docs/ARCHITECTURE_BASELINE.md)
+- [Feature implementation status — all 20 features](docs/FEATURE_IMPLEMENTATION_STATUS.md)
 
 ## Current status
 
