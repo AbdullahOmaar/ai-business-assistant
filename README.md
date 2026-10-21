@@ -26,6 +26,7 @@ See [ADR-001 — V0 architecture](docs/adr/ADR-001-v0-architecture.md).
 
 - [Product scope](docs/PRODUCT_SCOPE.md)
 - [First 10 features and acceptance criteria](docs/IMPLEMENTATION_PLAN_FIRST_10_FEATURES.md)
+- [First 10 features implementation audit](docs/FIRST_10_FEATURES_AUDIT.md)
 - [Proposed second 10 features and acceptance criteria](docs/IMPLEMENTATION_PLAN_SECOND_10_FEATURES.md)
 - [Architecture baseline](docs/ARCHITECTURE_BASELINE.md)
 
@@ -38,6 +39,6 @@ The implementation branch now includes:
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
 - GitHub Actions that run backend tests, apply migrations to a disposable PostgreSQL service, and build the Angular frontend.
 
-**Not production-ready yet:** no trusted token verifier is configured; the deployed Angular shell is not connected to a live API/database; the frontend is still a non-interactive progress/dashboard shell; full customer/product update/deactivation flows, invoice detail/edit/void lifecycle, richer payment history, and true generative-AI chat are incomplete. Recurring invoice scheduling and notification delivery are represented by data/workflow endpoints but do not run background workers. Review the open, stacked PRs in dependency order before merging or using real business data.
+**Not production-ready yet:** no trusted token verifier is configured; the deployed Angular shell is not connected to a live API/database; the frontend is still a non-interactive progress/dashboard shell; invoice draft editing/void lifecycle and true generative-AI chat are incomplete. Recurring invoice scheduling and notification delivery are represented by data/workflow endpoints but do not run background workers. Review the open, stacked PRs in dependency order before merging or using real business data.
 
 No Firebase changes or production database access were made.
