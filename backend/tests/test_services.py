@@ -80,6 +80,7 @@ def test_invoice_uses_catalog_price_and_issue_requires_draft(workspace):
             InvoiceLine.invoice_id == invoice.id,
         ))
         assert line.unit_price == Decimal("10.00")
+        assert line.line_total == Decimal("20.00")
         assert invoice.total == Decimal("20.52")
         issued = issue_invoice(
             session, principal=principal, business_id=business_id,
@@ -139,3 +140,38 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
         assert replay.id == payment.id
         assert len(session.scalars(select(Payment)).all()) == 1
         assert len(session.scalars(select(PaymentAllocation)).all()) == 1
+
+
+def test_invoice_line_rounding_uses_explicit_half_up_policy(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-ROUND", currency_code="EGP",
+            lines=[{"description": "Rounding", "quantity": "1", "unit_price": "0.005"}],
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        assert invoice.subtotal == Decimal("0.01")
+        assert line.line_total == Decimal("0.01")
+
+
+def test_idempotency_key_rejects_changed_allocation_payload(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-IDEM", currency_code="EGP",
+            lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
+        )
+        issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
+        record_payment(
+            session, principal=principal, business_id=business_id,
+            amount=Decimal("40"), currency_code="EGP", idempotency_key="same-key",
+            allocations=[(invoice.id, Decimal("40"))],
+        )
+        with pytest.raises(WorkflowError, match="different payment request"):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                amount=Decimal("40"), currency_code="EGP", idempotency_key="same-key",
+                allocations=[(invoice.id, Decimal("30"))],
+            )
