@@ -555,3 +555,106 @@ def import_csv(business_id: UUID, entity_type: str,
         return job
     job = _commit(session, op)
     return _dict(job, ("id", "job_type", "entity_type", "status", "row_count", "created_at"))
+
+
+
+@router.get("/customers")
+def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+                   offset: int = Query(default=0, ge=0),
+                   session: Session = Depends(get_session),
+                   principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Customer).where(
+            Customer.business_id == business_id, Customer.is_active.is_(True)
+        ).order_by(Customer.name).offset(offset).limit(limit)).all()
+        return [_dict(x, ("id", "name", "email", "phone", "address", "notes", "created_at")) for x in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/products")
+def list_products(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+                  offset: int = Query(default=0, ge=0),
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Product).where(
+            Product.business_id == business_id, Product.is_active.is_(True)
+        ).order_by(Product.name).offset(offset).limit(limit)).all()
+        result = []
+        for item in items:
+            stock = session.scalar(select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
+                StockMovement.business_id == business_id, StockMovement.product_id == item.id))
+            row = _dict(item, ("id", "name", "sku", "description", "unit", "unit_price",
+                               "is_stock_tracked", "created_at"))
+            row["stock_quantity"] = str(stock or ZERO) if item.is_stock_tracked else None
+            result.append(row)
+        return result
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/invoices")
+def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+                  offset: int = Query(default=0, ge=0),
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Invoice).where(
+            Invoice.business_id == business_id
+        ).order_by(Invoice.created_at.desc()).offset(offset).limit(limit)).all()
+        return [_dict(x, ("id", "invoice_number", "customer_id", "status", "currency_code",
+                          "subtotal", "discount_total", "tax_total", "total", "issue_date", "created_at"))
+                for x in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/assistant/insights")
+def assistant_insights(business_id: UUID,
+                       session: Session = Depends(get_session),
+                       principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Deterministic, read-only insights grounded in stored data; no external AI call."""
+    try:
+        _authorized(session, principal, business_id)
+        invoice_rows = session.execute(select(
+            Invoice.currency_code, func.count(Invoice.id), func.coalesce(func.sum(Invoice.total), 0)
+        ).where(Invoice.business_id == business_id, Invoice.status == "issued")
+         .group_by(Invoice.currency_code)).all()
+        expense_rows = session.execute(select(
+            Expense.currency_code, func.count(Expense.id), func.coalesce(func.sum(Expense.amount), 0)
+        ).where(Expense.business_id == business_id).group_by(Expense.currency_code)).all()
+        low_stock = []
+        tracked = session.scalars(select(Product).where(
+            Product.business_id == business_id, Product.is_active.is_(True),
+            Product.is_stock_tracked.is_(True),
+        )).all()
+        for product in tracked:
+            quantity = Decimal(str(session.scalar(select(func.coalesce(
+                func.sum(StockMovement.quantity_delta), 0
+            )).where(StockMovement.business_id == business_id,
+                     StockMovement.product_id == product.id)) or 0))
+            if quantity <= ZERO:
+                low_stock.append({"product_id": str(product.id), "name": product.name,
+                                  "stock_quantity": str(quantity)})
+        insights = []
+        if not invoice_rows:
+            insights.append({"type": "info", "message": "No issued invoices are recorded yet."})
+        if low_stock:
+            insights.append({"type": "attention", "message": f"{len(low_stock)} tracked products have zero or negative calculated stock; review stock movements."})
+        if not expense_rows:
+            insights.append({"type": "info", "message": "No expenses are recorded yet."})
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "source": "database-derived deterministic rules",
+            "issued_sales_by_currency": [{"currency_code": c, "count": n, "total": str(total)} for c,n,total in invoice_rows],
+            "expenses_by_currency": [{"currency_code": c, "count": n, "total": str(total)} for c,n,total in expense_rows],
+            "stock_attention": low_stock,
+            "insights": insights,
+            "limitations": ["This is not an external generative AI response.", "Sales and expenses are not netted into profit.", "Currencies are never combined."]
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
