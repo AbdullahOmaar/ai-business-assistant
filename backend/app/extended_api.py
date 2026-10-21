@@ -729,6 +729,8 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
             if movement_count:
                 raise WorkflowError("Stock tracking cannot be disabled after stock movements exist")
         for key, value in changes.items():
+            if value is None and key in {"name", "unit", "unit_price", "is_stock_tracked"}:
+                raise WorkflowError(f"{key} cannot be null")
             if isinstance(value, str):
                 value = value.strip() or None
             if key == "name" and not value:
