@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 
 from app.api import router as business_router
+from app.core_features_api import router as core_features_router
 from app.extended_api import router as extended_business_router
 
 app = FastAPI(
@@ -13,6 +14,7 @@ app = FastAPI(
     ),
 )
 app.include_router(business_router)
+app.include_router(core_features_router)
 app.include_router(extended_business_router)
 
 
