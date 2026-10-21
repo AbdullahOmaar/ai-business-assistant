@@ -105,7 +105,11 @@ def approve_sales_return(
     if not return_lines:
         raise WorkflowError("A return must contain at least one line")
     total = ZERO
+    seen_invoice_line_ids: set[UUID] = set()
     for return_line in return_lines:
+        if return_line.invoice_line_id in seen_invoice_line_ids:
+            raise WorkflowError("A return can contain only one line per original invoice line")
+        seen_invoice_line_ids.add(return_line.invoice_line_id)
         original_line = session.scalars(select(InvoiceLine).where(
             InvoiceLine.id == return_line.invoice_line_id,
             InvoiceLine.business_id == business_id,
