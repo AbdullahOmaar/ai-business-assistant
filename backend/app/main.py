@@ -1,6 +1,5 @@
 """FastAPI application entry point and production runtime configuration."""
 import os
-from contextlib import suppress
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
