@@ -1,0 +1,9 @@
+{
+  "apiBaseUrl": "",
+  "firebase": {
+    "apiKey": "",
+    "authDomain": "",
+    "projectId": "",
+    "appId": ""
+  }
+}
