@@ -1,9 +1,11 @@
-# Architecture Baseline — Decision Pending
+# Architecture Baseline — Accepted V0
 
 ## Status
-**Not yet approved.** This document records constraints and decision criteria; it does not commit the project to a stack.
+**Accepted.** ADR-001 is the authoritative decision: Angular + Python/FastAPI + PostgreSQL, with SQLAlchemy/Alembic and pytest. This document preserves the constraints and historical decision criteria; it does not override the ADR.
 
-## Options to evaluate
+See [ADR-001 — V0 architecture](adr/ADR-001-v0-architecture.md).
+
+## Alternatives considered
 - **Angular + Firebase Auth + Firestore:** potentially faster for a web-first V0, but security rules, data modeling, server-side financial operations, and automated tests must be designed carefully.
 - **Angular + API backend (for example, FastAPI) + database:** clearer server-side business logic and validation, but adds deployment and operational responsibilities.
 
@@ -26,7 +28,7 @@ Flutter/mobile can be considered later if validated demand requires it; do not l
 - Do not reuse unrelated Railway projects/resources.
 
 ## Decision checklist
-Before selecting a stack, document:
+The following criteria informed the accepted decision and remain useful for later changes. Before changing the stack or selecting an identity provider, document:
 1. Target client for V0 and expected deployment.
 2. Authentication and authorization flow.
 3. Trusted location for invoice/payment/expense calculations.
