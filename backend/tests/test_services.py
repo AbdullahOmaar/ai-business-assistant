@@ -139,6 +139,12 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
         assert replay.id == payment.id
         assert len(session.scalars(select(Payment)).all()) == 1
         assert len(session.scalars(select(PaymentAllocation)).all()) == 1
+        with pytest.raises(WorkflowError, match="different payment details"):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
+                allocations=[],
+            )
 
 
 def test_issuing_invoice_deducts_stock_through_auditable_movement(workspace):
