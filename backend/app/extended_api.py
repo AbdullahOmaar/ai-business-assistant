@@ -257,6 +257,11 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
         )).one_or_none()
         if invoice is None:
             raise WorkflowError("Issued invoice not found in this business")
+        # Avoid duplicate line IDs in a single request; they obscure the return
+        # quantity and can bypass per-line remaining-quantity checks.
+        line_ids = [item.invoice_line_id for item in body.lines]
+        if len(set(line_ids)) != len(line_ids):
+            raise WorkflowError("Each invoice line may appear only once in a return")
         ret = SalesReturn(business_id=business_id, invoice_id=invoice.id,
                           status="draft", reason=body.reason, total=ZERO)
         session.add(ret)
@@ -301,27 +306,67 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         ).with_for_update()).one_or_none()
         if ret is None or ret.status != "draft":
             raise WorkflowError("Only draft returns can be approved")
+        # Serialize all approvals/voids for this invoice on the invoice row.
+        # A return drafted earlier must be revalidated against the current invoice
+        # lifecycle and all other approved returns at approval time.
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
-        )).one_or_none()
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Sales returns can only be approved for an issued invoice")
         lines = session.scalars(select(SalesReturnLine).where(
             SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
         )).all()
+        if not lines:
+            raise WorkflowError("A return needs at least one line before approval")
+
+        quantities_by_line: dict[UUID, Decimal] = {}
+        invoice_lines = {}
         for returned in lines:
             invoice_line = session.scalars(select(InvoiceLine).where(
                 InvoiceLine.id == returned.invoice_line_id,
+                InvoiceLine.invoice_id == invoice.id,
                 InvoiceLine.business_id == business_id,
             )).one_or_none()
-            if invoice_line and invoice_line.product_id:
-                product = session.scalars(select(Product).where(
-                    Product.id == invoice_line.product_id, Product.business_id == business_id,
-                    Product.is_stock_tracked.is_(True),
-                ).with_for_update()).one_or_none()
-                if product:
-                    session.add(StockMovement(business_id=business_id, product_id=product.id,
-                        movement_type="return", quantity_delta=returned.quantity,
-                        reason=f"Approved sales return {ret.id}", reference_type="sales_return",
-                        reference_id=ret.id, created_by_subject=principal.subject))
+            if invoice_line is None:
+                raise WorkflowError("Return line no longer belongs to the source invoice")
+            invoice_lines[invoice_line.id] = invoice_line
+            quantities_by_line[invoice_line.id] = (
+                quantities_by_line.get(invoice_line.id, ZERO) + returned.quantity
+            )
+
+        for invoice_line_id, requested_quantity in quantities_by_line.items():
+            invoice_line = invoice_lines[invoice_line_id]
+            previously_returned = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.quantity), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line_id,
+                SalesReturn.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            if Decimal(str(previously_returned or 0)) + requested_quantity > invoice_line.quantity:
+                raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
+
+        # Lock product rows in a stable order before appending stock movements.
+        product_ids = sorted({
+            line.product_id for line in invoice_lines.values() if line.product_id
+        }, key=str)
+        products = {}
+        for product_id in product_ids:
+            product = session.scalars(select(Product).where(
+                Product.id == product_id, Product.business_id == business_id,
+                Product.is_stock_tracked.is_(True),
+            ).with_for_update()).one_or_none()
+            if product:
+                products[product_id] = product
+        for returned in lines:
+            invoice_line = invoice_lines[returned.invoice_line_id]
+            product = products.get(invoice_line.product_id)
+            if product:
+                session.add(StockMovement(business_id=business_id, product_id=product.id,
+                    movement_type="return", quantity_delta=returned.quantity,
+                    reason=f"Approved sales return {ret.id}", reference_type="sales_return",
+                    reference_id=ret.id, created_by_subject=principal.subject))
         ret.status = "approved"
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="sales_return.approved", target_type="sales_return", target_id=str(ret.id)))
