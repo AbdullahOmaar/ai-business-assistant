@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.models import (
     AuditEvent, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
-    PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
+    Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
@@ -86,6 +86,23 @@ class PricingRuleInput(BaseModel):
 
 class SettingInput(BaseModel):
     setting_value: str = Field(max_length=1000)
+
+
+class CustomerPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    email: str | None = Field(default=None, max_length=254)
+    phone: str | None = Field(default=None, max_length=32)
+    address: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class ProductPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    unit_price: Decimal | None = Field(default=None, ge=0, max_digits=14, decimal_places=2)
+    sku: str | None = Field(default=None, max_length=80)
+    description: str | None = Field(default=None, max_length=1000)
+    unit: str | None = Field(default=None, min_length=1, max_length=32)
+    is_stock_tracked: bool | None = None
 
 
 class NotificationInput(BaseModel):
@@ -560,17 +577,88 @@ def import_csv(business_id: UUID, entity_type: str,
 
 @router.get("/customers")
 def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
-                   offset: int = Query(default=0, ge=0),
+                   offset: int = Query(default=0, ge=0), q: str = Query(default="", max_length=120),
                    session: Session = Depends(get_session),
                    principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
         _authorized(session, principal, business_id)
-        items = session.scalars(select(Customer).where(
+        statement = select(Customer).where(
             Customer.business_id == business_id, Customer.is_active.is_(True)
-        ).order_by(Customer.name).offset(offset).limit(limit)).all()
+        )
+        if q.strip():
+            statement = statement.where(Customer.name.ilike(f"%{q.strip()}%"))
+        items = session.scalars(statement.order_by(Customer.name).offset(offset).limit(limit)).all()
         return [_dict(x, ("id", "name", "email", "phone", "address", "notes", "created_at")) for x in items]
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/customers/{customer_id}")
+def get_customer(business_id: UUID, customer_id: UUID,
+                 session: Session = Depends(get_session),
+                 principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Customer).where(
+            Customer.id == customer_id, Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        )).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        return _dict(item, ("id", "name", "email", "phone", "address", "notes", "created_at"))
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.patch("/customers/{customer_id}")
+def patch_customer(business_id: UUID, customer_id: UUID, body: CustomerPatch,
+                   session: Session = Depends(get_session),
+                   principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Customer).where(
+            Customer.id == customer_id, Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        changes = body.model_dump(exclude_unset=True)
+        if not changes:
+            raise WorkflowError("At least one customer field must be provided")
+        for key, value in changes.items():
+            if key == "name":
+                value = value.strip() if value else ""
+                if not value:
+                    raise WorkflowError("Customer name is required")
+            elif isinstance(value, str):
+                value = value.strip() or None
+            setattr(item, key, value)
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="customer.updated", target_type="customer", target_id=str(item.id)))
+        session.flush()
+        return item
+    item = _commit(session, op)
+    return _dict(item, ("id", "name", "email", "phone", "address", "notes", "created_at"))
+
+
+@router.delete("/customers/{customer_id}", status_code=204)
+def deactivate_customer(business_id: UUID, customer_id: UUID,
+                        session: Session = Depends(get_session),
+                        principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Customer).where(
+            Customer.id == customer_id, Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+        item.is_active = False
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="customer.deactivated", target_type="customer", target_id=str(item.id)))
+        session.flush()
+    _commit(session, op)
+    return Response(status_code=204)
 
 
 @router.get("/products")
@@ -592,6 +680,154 @@ def list_products(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
             row["stock_quantity"] = str(stock or ZERO) if item.is_stock_tracked else None
             result.append(row)
         return result
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/products/{product_id}")
+def get_product(business_id: UUID, product_id: UUID,
+                session: Session = Depends(get_session),
+                principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Product).where(
+            Product.id == product_id, Product.business_id == business_id,
+            Product.is_active.is_(True),
+        )).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+        stock = session.scalar(select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
+            StockMovement.business_id == business_id, StockMovement.product_id == item.id
+        ))
+        row = _dict(item, ("id", "name", "sku", "description", "unit", "unit_price",
+                           "is_stock_tracked", "created_at"))
+        row["stock_quantity"] = str(stock or ZERO) if item.is_stock_tracked else None
+        return row
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.patch("/products/{product_id}")
+def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Product).where(
+            Product.id == product_id, Product.business_id == business_id,
+            Product.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+        changes = body.model_dump(exclude_unset=True)
+        if not changes:
+            raise WorkflowError("At least one product field must be provided")
+        if changes.get("is_stock_tracked") is False and item.is_stock_tracked:
+            movement_count = session.scalar(select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id, StockMovement.product_id == item.id
+            ))
+            if movement_count:
+                raise WorkflowError("Stock tracking cannot be disabled after stock movements exist")
+        for key, value in changes.items():
+            if isinstance(value, str):
+                value = value.strip() or None
+            if key == "name" and not value:
+                raise WorkflowError("Product name is required")
+            if key == "unit" and not value:
+                raise WorkflowError("Product unit is required")
+            setattr(item, key, value)
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="product.updated", target_type="product", target_id=str(item.id)))
+        session.flush()
+        return item
+    item = _commit(session, op)
+    return _dict(item, ("id", "name", "sku", "description", "unit", "unit_price",
+                        "is_stock_tracked", "is_active", "created_at"))
+
+
+@router.delete("/products/{product_id}", status_code=204)
+def deactivate_product(business_id: UUID, product_id: UUID,
+                       session: Session = Depends(get_session),
+                       principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Product).where(
+            Product.id == product_id, Product.business_id == business_id,
+            Product.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Product not found")
+        item.is_active = False
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="product.deactivated", target_type="product", target_id=str(item.id)))
+        session.flush()
+    _commit(session, op)
+    return Response(status_code=204)
+
+
+@router.get("/payments")
+def list_payments(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+                  offset: int = Query(default=0, ge=0),
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Payment).where(
+            Payment.business_id == business_id
+        ).order_by(Payment.received_at.desc()).offset(offset).limit(limit)).all()
+        result = []
+        for item in items:
+            allocations = session.scalars(select(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.payment_id == item.id,
+            )).all()
+            result.append({
+                **_dict(item, ("id", "customer_id", "amount", "currency_code", "received_at",
+                               "method", "reference", "idempotency_key")),
+                "allocations": [_dict(x, ("invoice_id", "amount")) for x in allocations],
+            })
+        return result
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/expenses")
+def list_expenses(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+                  offset: int = Query(default=0, ge=0),
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Expense).where(
+            Expense.business_id == business_id
+        ).order_by(Expense.incurred_at.desc()).offset(offset).limit(limit)).all()
+        return [_dict(x, ("id", "category", "description", "amount", "currency_code",
+                          "incurred_at", "vendor_name", "reference", "created_at")) for x in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/invoices/{invoice_id}")
+def get_invoice(business_id: UUID, invoice_id: UUID,
+                session: Session = Depends(get_session),
+                principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == invoice_id, Invoice.business_id == business_id,
+        )).one_or_none()
+        if invoice is None:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        lines = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id, InvoiceLine.business_id == business_id
+        )).all()
+        return {
+            **_dict(invoice, ("id", "invoice_number", "customer_id", "status", "currency_code",
+                              "subtotal", "discount_total", "tax_total", "total", "issue_date",
+                              "due_date", "notes", "created_at")),
+            "lines": [_dict(line, ("id", "product_id", "description", "quantity",
+                                   "unit_price", "line_total")) for line in lines],
+        }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
