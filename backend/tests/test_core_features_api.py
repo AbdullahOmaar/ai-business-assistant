@@ -180,3 +180,53 @@ def test_assistant_fails_closed_without_provider_key(configured_client, monkeypa
     )
     assert response.status_code == 503
     assert "OPENAI_API_KEY" in response.json()["detail"]
+
+
+def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Invoice Lifecycle", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+    product_id = product.json()["id"]
+
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-API-LIFE", "currency_code": "EGP",
+        "lines": [{"product_id": product_id, "quantity": "1"}]
+    })
+    assert draft.status_code == 201
+    invoice_id = draft.json()["id"]
+    edited = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}",
+        json={
+            "invoice_number": "INV-API-LIFE-EDITED", "currency_code": "EGP",
+            "lines": [{"product_id": product_id, "quantity": "2"}],
+        },
+    )
+    assert edited.status_code == 200
+    assert edited.json()["invoice_number"] == "INV-API-LIFE-EDITED"
+    assert edited.json()["total"] == "200.00"
+
+    issued = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={}
+    )
+    assert issued.status_code == 200
+    assert issued.json()["status"] == "issued"
+    voided = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/void",
+        json={"reason": "API lifecycle test"},
+    )
+    assert voided.status_code == 200
+    assert voided.json()["status"] == "void"
+
+    immutable = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}",
+        json={
+            "invoice_number": "INV-TOO-LATE", "currency_code": "EGP",
+            "lines": [{"product_id": product_id, "quantity": "1"}],
+        },
+    )
+    assert immutable.status_code == 422
