@@ -48,14 +48,14 @@ Migrations require PostgreSQL and refuse SQLite. GitHub Actions starts a disposa
 
 The `app/domain_rules.py` module contains pure, unit-tested calculations for invoice totals, payment allocation limits, derived stock balances, return quantities, and currency-separated report totals. The `app/services.py` module now adds transaction-scoped service functions for customer/supplier/product creation, stock movements, draft invoice creation and issue, payment recording/allocation, expense creation, and audit events. `app/operations.py` adds purchase-order receiving, sales-return approval, deduplicated notification queuing, and currency-separated financial summaries. Service and operation unit tests use an isolated in-memory SQLite database; PostgreSQL migrations are separately exercised in CI. Each service checks the verified principal's active business membership, scopes database queries by business, and flushes but never commits so the API/request layer can control the transaction.
 
-## Critical limits
+## Critical limits and implementation status
 
-These are domain foundations, **not all completed product features**:
+These are domain foundations, **not a completed product**:
 
-- The only API endpoint is `GET /health`; the workflow services are not exposed as HTTP endpoints yet. Angular UI and API request/response schemas are still outstanding.
-- There is no Angular UI yet.
-- Authentication/token verification and request-level membership/role authorization are not implemented. Do not expose business-data endpoints until a trusted identity provider decision and server-side authorization are implemented and tested.
-- Payment allocation and stock services use row locks and idempotency-key storage, but concurrency behavior needs dedicated PostgreSQL integration tests. Return-processing service, purchase receiving, recurring scheduling, and CSV processing are still outstanding.
-- Invoice issuing/audit immutability, stock movement append-only enforcement, purchase receiving, recurring scheduling, tax snapshots, notification delivery, CSV processing, and audit event recording still need application services.
-- The read-only AI assistant is not implemented and no model provider has been selected.
+- The only HTTP endpoint is `GET /health`. Service functions are not exposed as business API endpoints yet; request/response schemas and an Angular UI are outstanding.
+- Authentication token verification is not implemented, and the identity provider remains undecided. The `AuthenticatedPrincipal` type is only a boundary for a future trusted verifier; never construct it from request data. Do not expose business-data endpoints until trusted authentication and request-level authorization are implemented and tested.
+- Transaction-scoped services currently cover customer/supplier/product creation, stock movements, invoice drafts and issue, payment recording/allocation, expenses, and audit events. Additional operations cover purchase receiving, return approval, notification queueing, and currency-separated summaries. CSV parsing/serialization helpers now exist, but there is no authenticated import/export endpoint or import-job processor.
+- Payment retries now compare the stored payment request and allocations for an idempotency key. Invoice line rounding uses the explicit half-up money policy. Dedicated PostgreSQL concurrency/integration tests are still needed; in-memory SQLite tests do not prove row-lock behavior.
+- Recurring invoice schedule execution, customer-facing reports, notification delivery, import/export job execution, and full tax/discount snapshots are not complete. Audit records are written by the service workflows but immutability/retention controls are not enforced yet.
+- The read-only AI assistant and Angular screens are not implemented; no model provider has been selected.
 - No Firebase changes, cloud resources, deployments, or paid services are included.
