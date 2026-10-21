@@ -26,7 +26,7 @@ def parse_import_csv(entity_type: str, content: str, *, max_rows: int = 5000) ->
         raise CsvValidationError("Unsupported import entity type")
     if not content or len(content.encode("utf-8")) > 2_000_000:
         raise CsvValidationError("CSV content is empty or exceeds the 2 MB limit")
-    content = content.removeprefix("\\ufeff")
+    content = content.removeprefix("\ufeff")
     if max_rows < 1:
         raise CsvValidationError("max_rows must be at least 1")
     try:
