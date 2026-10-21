@@ -9,15 +9,15 @@ Last reviewed: 2026-10-21. This is an evidence-based status snapshot, not a clai
 | 1 | Business workspace and profile | Foundation | `Business`, `BusinessMembership` models and migration; settings fields | Authenticated setup/profile APIs, validation, UI, integration tests |
 | 2 | Secure membership and roles | Partial | Provider-neutral principal and membership authorization helper; cross-business unit test | Select identity provider, verify tokens at request boundary, enforce role policy, negative API tests |
 | 3 | Dashboard overview | Partial | Angular overview shell and sample metrics | Replace sample values with authorized, date-filtered API aggregates and useful empty states |
-| 4 | Customer management | Partial | Transaction-scoped customer creation and audit event | Authenticated list/view/search/update/deactivate endpoints, schemas, UI, tests |
-| 5 | Products and services | Partial | Product creation, exact-decimal fields, stock-tracked flag | Catalog CRUD/search/category behavior, API and UI |
+| 4 | Customer management | Partial | Customer create/list/search/deactivate service functions and audit events | Authenticated API, view/update workflows, schemas, UI, tests |
+| 5 | Products and services | Partial | Product create/list/search/deactivate service functions and exact-decimal fields | Authenticated API, edit/category behavior, UI |
 | 6 | Sales and invoices | Partial | Draft invoice creation, server totals, issue transition, audit events | API contracts, lifecycle/correction policy, immutable issued snapshots, UI and tests |
 | 7 | Payments and allocations | Partial | Payment and allocation service, idempotency-key replay validation | API, payment history/outstanding balances, PostgreSQL concurrency tests |
 | 8 | Expense management | Partial | Expense creation service and currency validation | Authenticated CRUD/list/date filters, UI and API tests |
 | 9 | Reports and operational alerts | Partial | Currency-separated summary operation; illustrative dashboard alerts | Date filters, reliable outstanding/collection calculations, low-stock/due rules, missing-cost disclosures |
 | 10 | Read-only AI business assistant | Not started | Product boundary documented only | Trusted data retrieval, provider decision, citations/periods, insufficient-data handling, no write actions |
 | 11 | Inventory and auditable stock movements | Partial | Signed movement service, derived balance checks, receiving/return stock entries | Append-only enforcement, sale/adjustment flows, PostgreSQL concurrency and API tests |
-| 12 | Supplier directory | Partial | Supplier creation service and model | List/search/update/deactivate endpoints, validation, UI |
+| 12 | Supplier directory | Partial | Supplier create/list/search/deactivate service functions | Authenticated API, edit workflows, validation, UI |
 | 13 | Purchase orders and receiving | Partial | Receiving supports partial receipts and stock movements | Create/edit/approve/cancel order workflows, duplicate request semantics, API/UI |
 | 14 | Sales returns and credit notes | Partial | Return approval, original-line/quantity checks, stock return movements | Return creation, credit-note/accounting effect, robust duplicate/concurrency tests, UI |
 | 15 | Recurring invoices | Foundation | Schedule schema with timezone, interval and next-run fields | Template/snapshot model, idempotent scheduler, generated draft invoices, retry tests |
