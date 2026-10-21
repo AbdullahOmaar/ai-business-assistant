@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
-import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
 import {
-  Auth, User, createUserWithEmailAndPassword, getAuth, onAuthStateChanged,
+  createUserWithEmailAndPassword, getAuth, onAuthStateChanged,
   signInWithEmailAndPassword, signOut
 } from 'firebase/auth';
+import type { Auth, User } from 'firebase/auth';
 
 export interface RuntimeConfig {
   apiBaseUrl: string;
@@ -59,7 +61,7 @@ export class AuthService {
         : initializeApp(config.firebase, appName);
       this.auth = getAuth(app);
       this.authReady = new Promise<void>((resolve, reject) => {
-        let unsubscribe = () => undefined;
+        let unsubscribe: () => void = () => {};
         unsubscribe = onAuthStateChanged(
           this.auth!,
           user => {
