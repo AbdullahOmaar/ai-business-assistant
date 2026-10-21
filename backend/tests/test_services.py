@@ -139,3 +139,65 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
         assert replay.id == payment.id
         assert len(session.scalars(select(Payment)).all()) == 1
         assert len(session.scalars(select(PaymentAllocation)).all()) == 1
+
+
+def test_issuing_invoice_deducts_stock_through_auditable_movement(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Rice", unit_price=Decimal("20.00"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("5.000"), reason="Opening count",
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-STOCK-001", currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "2"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        session.commit()
+        balance = session.scalar(select(__import__("sqlalchemy").func.sum(
+            StockMovement.quantity_delta
+        )).where(StockMovement.business_id == business_id,
+                 StockMovement.product_id == product.id))
+        sale = session.scalar(select(StockMovement).where(
+            StockMovement.reference_type == "invoice",
+            StockMovement.reference_id == invoice.id,
+            StockMovement.movement_type == "sale",
+        ))
+        assert Decimal(str(balance)) == Decimal("3.000")
+        assert sale is not None
+        assert sale.quantity_delta == Decimal("-2.000")
+
+
+def test_invoice_issue_rejects_insufficient_stock(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Milk", unit_price=Decimal("15.00"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("1.000"),
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-STOCK-002", currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "2"}],
+        )
+        with pytest.raises(WorkflowError, match="Insufficient stock"):
+            issue_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id,
+            )
+        session.rollback()
+        assert session.get(Invoice, invoice.id).status == "draft"
