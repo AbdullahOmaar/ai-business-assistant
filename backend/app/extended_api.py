@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import (
-    AuditEvent, BusinessSetting, Expense, Invoice, InvoiceLine, Notification,
+    AuditEvent, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
@@ -487,3 +487,71 @@ def export_csv(business_id: UUID, entity_type: str,
                         headers={"Content-Disposition": f'attachment; filename="{entity_type}.csv"'})
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+
+@router.post("/imports/{entity_type}.csv", status_code=202)
+def import_csv(business_id: UUID, entity_type: str,
+               csv_text: str = Body(media_type="text/csv", max_length=2_000_000),
+               session: Session = Depends(get_session),
+               principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Atomically import a small CSV batch. Large files belong in a background job."""
+    def op():
+        _authorized(session, principal, business_id)
+        schemas = {
+            "customers": {"name", "email", "phone", "address", "notes"},
+            "products": {"name", "sku", "description", "unit", "unit_price", "is_stock_tracked"},
+        }
+        if entity_type not in schemas:
+            raise WorkflowError("CSV import supports customers and products only")
+        reader = csv.DictReader(io.StringIO(csv_text))
+        if not reader.fieldnames:
+            raise WorkflowError("CSV header row is required")
+        allowed = schemas[entity_type]
+        fields = {field.strip() for field in reader.fieldnames if field}
+        if not fields or not fields.issubset(allowed) or "name" not in fields:
+            raise WorkflowError("CSV contains unsupported columns or is missing the required name column")
+        rows = list(reader)
+        if len(rows) > 2000:
+            raise WorkflowError("A single import is limited to 2000 rows")
+        job = ImportJob(business_id=business_id, job_type="import",
+                        entity_type=entity_type, status="processing", row_count=0)
+        session.add(job)
+        session.flush()
+        for index, row in enumerate(rows, start=2):
+            clean = {str(k).strip(): (v.strip() if v is not None else "") for k, v in row.items() if k}
+            if set(clean) - allowed:
+                raise WorkflowError(f"Unsupported column at CSV row {index}")
+            if not clean.get("name"):
+                raise WorkflowError(f"Name is required at CSV row {index}")
+            if entity_type == "customers":
+                session.add(Customer(
+                    business_id=business_id, name=clean["name"],
+                    email=clean.get("email") or None, phone=clean.get("phone") or None,
+                    address=clean.get("address") or None, notes=clean.get("notes") or None,
+                ))
+            else:
+                try:
+                    price = Decimal(clean.get("unit_price", "0") or "0")
+                except Exception as exc:
+                    raise WorkflowError(f"Invalid unit_price at CSV row {index}") from exc
+                if price < ZERO:
+                    raise WorkflowError(f"Negative unit_price at CSV row {index}")
+                tracked_text = clean.get("is_stock_tracked", "false").lower()
+                if tracked_text not in {"true", "false", "1", "0", "yes", "no", ""}:
+                    raise WorkflowError(f"Invalid is_stock_tracked at CSV row {index}")
+                session.add(Product(
+                    business_id=business_id, name=clean["name"], unit_price=price,
+                    sku=clean.get("sku") or None, description=clean.get("description") or None,
+                    unit=clean.get("unit") or "unit",
+                    is_stock_tracked=tracked_text in {"true", "1", "yes"},
+                ))
+        job.status = "completed"
+        job.row_count = len(rows)
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="data_import.completed", target_type="import_job", target_id=str(job.id),
+            change_summary=f"{entity_type}: {len(rows)} rows"))
+        session.flush()
+        return job
+    job = _commit(session, op)
+    return _dict(job, ("id", "job_type", "entity_type", "status", "row_count", "created_at"))
