@@ -90,6 +90,25 @@ def _date_filter(column, start, end):
     return clauses
 
 
+@router.get("/businesses")
+def list_businesses(session: Session = Depends(get_session),
+                    principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """List only active workspaces where the verified user has membership."""
+    rows = session.execute(
+        select(Business, BusinessMembership.role)
+        .join(BusinessMembership, BusinessMembership.business_id == Business.id)
+        .where(
+            BusinessMembership.user_subject == principal.subject,
+            Business.is_active.is_(True),
+        )
+        .order_by(Business.name)
+    ).all()
+    return [
+        {**_serialize_business(business), "role": role.value}
+        for business, role in rows
+    ]
+
+
 @router.post("/businesses", status_code=201)
 def create_business(body: BusinessCreate,
                     session: Session = Depends(get_session),
