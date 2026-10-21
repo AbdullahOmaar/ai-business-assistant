@@ -53,4 +53,8 @@ jobs:
         with:
           node-version: "22"
       - run: npm install
+      - name: Report npm audit findings before release
+        run: |
+          npm audit --json > /tmp/npm-audit.json || true
+          node -e 'const a=require("/tmp/npm-audit.json"); console.log("npm audit summary:", JSON.stringify(a.metadata?.vulnerabilities || {})); for (const [name, item] of Object.entries(a.vulnerabilities || {})) if (item.severity === "high" || item.severity === "critical") console.log(JSON.stringify({name, severity:item.severity, range:item.range, fixAvailable:item.fixAvailable, via:item.via.map(v=>typeof v === "string" ? v : v.title)}));'
       - run: npm run build
