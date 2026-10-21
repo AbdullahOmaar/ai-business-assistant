@@ -4,7 +4,7 @@ from app.models import Base, Business, BusinessMembership, MembershipRole
 
 
 def test_initial_tenant_tables_are_declared() -> None:
-    assert set(Base.metadata.tables) == {"businesses", "business_memberships"}
+    assert set(Base.metadata.tables) == {"businesses", "business_memberships", "products", "stock_movements"}
 
 
 def test_membership_is_unique_per_business_and_identity() -> None:
