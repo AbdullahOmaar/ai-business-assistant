@@ -32,6 +32,6 @@ See [ADR-001 — V0 architecture](docs/adr/ADR-001-v0-architecture.md).
 
 ## Current status
 
-The repository is in the implementation/foundation stage. It contains PostgreSQL/Alembic groundwork, business-scoped domain models and workflow service functions, pure business rules, and CSV parsing/serialization helpers under review. The only HTTP endpoint is still `GET /health`; authentication token verification, request-level authorization, customer/invoice/payment endpoints, recurring schedule execution, Angular UI, and the read-only AI assistant are not complete. Some unit tests use in-memory SQLite, which does not prove PostgreSQL row-lock behavior. Do not use this starter with real customer or financial data.
+The repository is in the implementation/foundation stage. It contains PostgreSQL/Alembic groundwork, business-scoped domain models and workflow service functions, pure business rules, CSV parsing/serialization helpers, and an Angular dashboard shell with clearly labeled sample data. The only HTTP endpoint is still `GET /health`; authentication token verification, request-level authorization, customer/invoice/payment endpoints, recurring schedule execution, live frontend/API integration, and the read-only AI assistant are not complete. Some unit tests use in-memory SQLite, which does not prove PostgreSQL row-lock behavior. Do not use this starter with real customer or financial data.
 
 No deployment, Firebase changes, cloud resources, or paid services are included in this work.
