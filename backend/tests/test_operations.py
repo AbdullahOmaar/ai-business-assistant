@@ -12,7 +12,7 @@ from app.models import (
     StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal
-from app.services import create_invoice, create_product, issue_invoice
+from app.services import create_invoice, create_product, issue_invoice, record_stock_movement
 from app.operations import (
     WorkflowError, approve_sales_return, financial_summary, queue_notification,
     receive_purchase_order,
@@ -87,6 +87,11 @@ def test_sales_return_approval_rejects_quantity_over_original_sale(operation_wor
         product = create_product(
             session, principal=principal, business_id=business_id,
             name="Tea", unit_price=Decimal("8"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("2.000"), reason="Opening count",
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
