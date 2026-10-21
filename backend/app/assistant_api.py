@@ -19,7 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
-from app.models import Customer, Expense, Invoice, Product, Supplier
+from app.models import Business, Customer, Expense, Invoice, Product, Supplier
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}/assistant", tags=["AI assistant"])
@@ -55,8 +55,8 @@ async def chat(
     if not api_key:
         raise HTTPException(status_code=503, detail="AI chat is not configured. Set OPENAI_API_KEY on the backend.")
 
-    business_name = session.scalar(select(__import__("app.models", fromlist=["Business"]).Business.name).where(
-        __import__("app.models", fromlist=["Business"]).Business.id == business_id
+    business_name = session.scalar(select(Business.name).where(
+        Business.id == business_id
     )) or "this business"
 
     invoices = session.scalars(
