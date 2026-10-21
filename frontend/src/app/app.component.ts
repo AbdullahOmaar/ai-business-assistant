@@ -207,7 +207,11 @@ export class AppComponent implements OnInit {
 
   constructor(private readonly auth: AuthService, private readonly api: ApiService) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    void this.initializeApp();
+  }
+
+  private async initializeApp(): Promise<void> {
     try {
       const config = await this.auth.getRuntimeConfig();
       this.setupNeeded = !config.apiBaseUrl?.trim() ||
@@ -381,7 +385,7 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       await this.api.createInvoice(this.business.id, {
-        invoice_number: 'INV-' + new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14),
+        invoice_number: 'INV-' + Date.now(),
         currency_code: this.business.currency_code,
         lines: [{ product_id: this.invoiceProductId, quantity: String(this.invoiceQuantity) }]
       });
