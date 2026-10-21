@@ -141,3 +141,43 @@ def test_notification_deduplication_and_currency_separated_summary(operation_wor
             "allocated_payments": {},
             "expenses": {},
         }
+
+
+def test_sales_return_rejects_duplicate_original_invoice_lines(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Milk", unit_price=Decimal("8"), is_stock_tracked=True,
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-DUP-RETURN", currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "2"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        sales_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add_all([
+            SalesReturnLine(
+                business_id=business_id, sales_return_id=sales_return.id,
+                invoice_line_id=line.id, quantity=Decimal("2"), amount=Decimal("16"),
+            ),
+            SalesReturnLine(
+                business_id=business_id, sales_return_id=sales_return.id,
+                invoice_line_id=line.id, quantity=Decimal("2"), amount=Decimal("16"),
+            ),
+        ])
+        session.flush()
+        with pytest.raises(WorkflowError, match="only one line per original"):
+            approve_sales_return(
+                session, principal=principal, business_id=business_id,
+                sales_return_id=sales_return.id,
+            )
