@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 import pytest
 
@@ -10,7 +11,7 @@ from app.security import AuthenticatedPrincipal
 
 @pytest.fixture()
 def configured_client():
-    engine = create_engine("sqlite+pysqlite://")
+    engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     previous_factory = getattr(app.state, "session_factory", None)
     previous_resolver = getattr(app.state, "principal_resolver", None)
