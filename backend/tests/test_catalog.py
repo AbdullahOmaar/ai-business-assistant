@@ -42,7 +42,8 @@ def test_catalog_lists_search_with_business_scope_and_bounded_pagination(catalog
     with Session(engine) as session:
         create_customer(session, principal=principal, business_id=business_id, name="Ali Hassan", email="ali@example.com")
         create_customer(session, principal=principal, business_id=business_id, name="Mona Saleh")
-        create_customer(session, principal=principal, business_id=other_business_id, name="Ali Other")
+        session.add(Customer(business_id=other_business_id, name="Ali Other"))
+        session.flush()
         create_product(session, principal=principal, business_id=business_id, name="Arabica", unit_price=Decimal("120"), sku="COF-1")
         session.add(Supplier(business_id=business_id, name="Local Beans", email="sales@beans.example"))
         session.flush()
