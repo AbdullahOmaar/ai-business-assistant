@@ -325,15 +325,31 @@ def record_payment(
     currency = currency_code.strip().upper()
     if len(currency) != 3 or not currency.isalpha():
         raise WorkflowError("Currency must be a three-letter code")
+    requested = [(UUID(str(invoice_id)), Decimal(str(allocation_amount)))
+                 for invoice_id, allocation_amount in allocations]
+    requested_map = {invoice_id: allocation_amount for invoice_id, allocation_amount in requested}
+    if len(requested_map) != len(requested):
+        raise WorkflowError("Each invoice may appear only once in a payment allocation list")
     existing = session.scalars(select(Payment).where(
         Payment.business_id == business_id,
         Payment.idempotency_key == idempotency_key.strip(),
-    )).one_or_none()
+    ).with_for_update()).one_or_none()
     if existing is not None:
-        if existing.amount != amount or existing.currency_code != currency:
-            raise WorkflowError("Idempotency key was already used for a different payment")
+        prior_allocations = session.scalars(select(PaymentAllocation).where(
+            PaymentAllocation.business_id == business_id,
+            PaymentAllocation.payment_id == existing.id,
+        )).all()
+        prior_map = {item.invoice_id: item.amount for item in prior_allocations}
+        if (
+            existing.amount != amount
+            or existing.currency_code != currency
+            or existing.customer_id != customer_id
+            or existing.method != method
+            or existing.reference != reference
+            or prior_map != requested_map
+        ):
+            raise WorkflowError("Idempotency key was already used for different payment details")
         return existing
-    requested = list(allocations)
     if customer_id is not None and session.scalars(select(Customer).where(
         Customer.id == customer_id, Customer.business_id == business_id,
     )).one_or_none() is None:
