@@ -56,14 +56,14 @@ def test_import_rejects_unsupported_entity_and_empty_file():
 
 
 def test_import_accepts_utf8_bom_and_rejects_short_rows():
-    rows = parse_import_csv("customers", "\\ufeffname,email\\nAli,ali@example.com\\n")
+    rows = parse_import_csv("customers", "\ufeffname,email\nAli,ali@example.com\n")
     assert rows == [{"name": "Ali", "email": "ali@example.com"}]
     with pytest.raises(CsvValidationError, match="fewer values"):
-        parse_import_csv("customers", "name,email\\nAli\\n")
+        parse_import_csv("customers", "name,email\nAli\n")
 
 
 def test_import_rejects_unterminated_quoted_fields_and_invalid_row_limit():
     with pytest.raises(CsvValidationError, match="Malformed"):
-        parse_import_csv("customers", 'name,email\\n"Ali,ali@example.com\\n')
+        parse_import_csv("customers", 'name,email\n"Ali,ali@example.com\n')
     with pytest.raises(CsvValidationError, match="at least 1"):
-        parse_import_csv("customers", "name\\nAli\\n", max_rows=0)
+        parse_import_csv("customers", "name\nAli\n", max_rows=0)
