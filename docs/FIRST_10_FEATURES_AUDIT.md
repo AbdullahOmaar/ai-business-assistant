@@ -22,11 +22,11 @@
 
 ## Verification evidence
 
-- Earlier CI run on the previous commit passed backend tests, PostgreSQL migrations, and Angular build: [workflow run #13](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39625644932).
-- After the latest review changes, new CI runs were started; their results must be checked before calling the latest commit verified:
-  - [Backend tests run #61](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39627000531) — passed after fixing SQLite test sharing and the stock-aware invoice fixture.
-  - [Backend + frontend run #32](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39627000508) — passed backend, PostgreSQL migrations, and Angular build on that run's commit. Customer/product lifecycle endpoints and payment replay checks were added afterward; verify CI on the newest PR head before calling it green.
-- PostgreSQL migration CI validates schema application, but the service workflow's unit tests do not replace real-world auth-provider and end-to-end browser tests.
+- Latest reviewed code commit `3672522d8dcec25c2a2b90054f65d6862f40a3dc` passed:
+  - [Backend tests run #65](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39627417524) — pytest, PostgreSQL migration upgrade/head validation, and offline migration SQL rendering passed.
+  - [Backend + frontend run #43](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39627419718) — backend tests, PostgreSQL migration validation, and Angular production build passed.
+- These checks validate the exact code commit above. Any later code changes must be checked again.
+- CI's unit tests and disposable PostgreSQL migration run do not replace real identity-provider integration, multi-tenant adversarial testing, or end-to-end browser tests.
 - The Angular production build previously reported four high-severity npm audit findings. Review/remediate these before production release.
 
 ## Important correctness and security findings
