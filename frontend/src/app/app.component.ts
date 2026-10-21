@@ -72,11 +72,11 @@ type Activity = {
         </header>
 
         <div class="content">
-          <div class="preview-banner"><span class="banner-icon">i</span><span><strong>Preview workspace</strong> — these are sample figures, not connected to a database.</span><button type="button" (click)="dismissBanner()" aria-label="Dismiss preview notice">×</button></div>
+          <div class="preview-banner" *ngIf="bannerVisible"><span class="banner-icon">i</span><span><strong>Preview workspace</strong> — these are sample figures, not connected to a database.</span><button type="button" (click)="dismissBanner()" aria-label="Dismiss preview notice">×</button></div>
 
           <section *ngIf="activeSection === 'Overview'; else placeholderSection">
             <div class="page-heading">
-              <div><div class="eyebrow">TUESDAY, OCTOBER 21</div><h1>Good afternoon.</h1><p>Here’s what’s happening with your business today.</p></div>
+              <div><div class="eyebrow">WEDNESDAY, OCTOBER 21</div><h1>Good afternoon.</h1><p>Here’s what’s happening with your business today.</p></div>
               <div class="heading-actions"><button class="button-secondary" type="button" (click)="exportPreview()">↓ <span>Export report</span></button><button class="button-primary" type="button" (click)="setSection('Invoices')"><span>＋</span> New invoice</button></div>
             </div>
 
