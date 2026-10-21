@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Iterable
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.domain_rules import (
@@ -235,6 +235,149 @@ def create_invoice(
     _audit(session, business_id=business_id, principal=principal,
            action="invoice.created", target_type="invoice", target_id=invoice.id,
            summary=f"Draft {invoice.invoice_number}")
+    return invoice
+
+
+def replace_draft_invoice(
+    session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
+    invoice_id: UUID, invoice_number: str, currency_code: str,
+    lines: Iterable[dict], customer_id: UUID | None = None,
+    discount_rate: Decimal = ZERO, tax_rate: Decimal = ZERO,
+    notes: str | None = None,
+) -> Invoice:
+    """Replace all lines/totals on a draft invoice in the caller's transaction."""
+    _membership(session, principal, business_id)
+    invoice = session.scalars(select(Invoice).where(
+        Invoice.id == invoice_id, Invoice.business_id == business_id,
+    ).with_for_update()).one_or_none()
+    if invoice is None:
+        raise WorkflowError("Invoice not found in this business")
+    if invoice.status != "draft":
+        raise WorkflowError("Only draft invoices can be edited")
+    clean_number = invoice_number.strip()
+    if not clean_number:
+        raise WorkflowError("Invoice number is required")
+    currency = currency_code.strip().upper()
+    if len(currency) != 3 or not currency.isalpha():
+        raise WorkflowError("Currency must be a three-letter code")
+    if customer_id is not None:
+        customer = session.scalars(select(Customer).where(
+            Customer.id == customer_id, Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        )).one_or_none()
+        if customer is None:
+            raise WorkflowError("Active customer not found in this business")
+
+    prepared: list[tuple[Decimal, Decimal, str, UUID | None]] = []
+    requested_lines = list(lines)
+    if not requested_lines:
+        raise WorkflowError("At least one invoice line is required")
+    for item in requested_lines:
+        quantity = Decimal(str(item["quantity"]))
+        product_id = UUID(str(item["product_id"])) if item.get("product_id") else None
+        if product_id:
+            product = session.scalars(select(Product).where(
+                Product.id == product_id, Product.business_id == business_id,
+                Product.is_active.is_(True),
+            )).one_or_none()
+            if product is None:
+                raise WorkflowError("Invoice product not found in this business")
+            unit_price = product.unit_price
+            description = str(item.get("description") or product.name).strip()
+        else:
+            if "unit_price" not in item:
+                raise WorkflowError("Manual invoice lines require a unit price")
+            unit_price = Decimal(str(item["unit_price"]))
+            description = str(item.get("description") or "").strip()
+        if not description:
+            raise WorkflowError("Invoice line description is required")
+        prepared.append((quantity, unit_price, description, product_id))
+
+    totals = calculate_invoice_totals(
+        [(quantity, price) for quantity, price, _, _ in prepared],
+        discount_rate=discount_rate, tax_rate=tax_rate,
+    )
+    invoice.invoice_number = clean_number
+    invoice.currency_code = currency
+    invoice.customer_id = customer_id
+    invoice.subtotal = totals.subtotal
+    invoice.discount_total = totals.discount_total
+    invoice.tax_total = totals.tax_total
+    invoice.total = totals.total
+    invoice.notes = notes
+    session.execute(delete(InvoiceLine).where(
+        InvoiceLine.invoice_id == invoice.id,
+        InvoiceLine.business_id == business_id,
+    ))
+    session.flush()
+    for quantity, price, description, product_id in prepared:
+        session.add(InvoiceLine(
+            business_id=business_id, invoice_id=invoice.id, product_id=product_id,
+            description=description, quantity=quantity, unit_price=price,
+            line_total=(quantity * price).quantize(Decimal("0.01")),
+        ))
+    session.flush()
+    _audit(session, business_id=business_id, principal=principal,
+           action="invoice.draft_updated", target_type="invoice", target_id=invoice.id,
+           summary=f"Draft {invoice.invoice_number} updated")
+    return invoice
+
+
+def void_invoice(
+    session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
+    invoice_id: UUID, reason: str | None = None,
+) -> Invoice:
+    """Void a draft or unpaid issued invoice; restore tracked stock atomically."""
+    _membership(session, principal, business_id)
+    invoice = session.scalars(select(Invoice).where(
+        Invoice.id == invoice_id, Invoice.business_id == business_id,
+    ).with_for_update()).one_or_none()
+    if invoice is None:
+        raise WorkflowError("Invoice not found in this business")
+    if invoice.status not in {"draft", "issued"}:
+        raise WorkflowError("Only draft or issued invoices can be voided")
+    if invoice.status == "issued":
+        allocated = session.scalar(select(func.coalesce(
+            func.sum(PaymentAllocation.amount), 0
+        )).where(
+            PaymentAllocation.business_id == business_id,
+            PaymentAllocation.invoice_id == invoice.id,
+        ))
+        if Decimal(str(allocated or 0)) > ZERO:
+            raise WorkflowError(
+                "This invoice has allocated payments; record a refund or credit note before correction"
+            )
+        lines = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.business_id == business_id,
+        )).all()
+        product_ids = sorted({line.product_id for line in lines if line.product_id}, key=str)
+        products = {}
+        for product_id in product_ids:
+            product = session.scalars(select(Product).where(
+                Product.id == product_id,
+                Product.business_id == business_id,
+            ).with_for_update()).one_or_none()
+            if product is not None:
+                products[product_id] = product
+        for line in lines:
+            product = products.get(line.product_id)
+            if product is not None and product.is_stock_tracked:
+                session.add(StockMovement(
+                    business_id=business_id,
+                    product_id=product.id,
+                    movement_type="return",
+                    quantity_delta=line.quantity,
+                    reason=f"Void invoice {invoice.invoice_number}",
+                    reference_type="invoice_void",
+                    reference_id=invoice.id,
+                    created_by_subject=principal.subject,
+                ))
+    invoice.status = "void"
+    session.flush()
+    _audit(session, business_id=business_id, principal=principal,
+           action="invoice.voided", target_type="invoice", target_id=invoice.id,
+           summary=(reason.strip()[:500] if reason and reason.strip() else None))
     return invoice
 
 
