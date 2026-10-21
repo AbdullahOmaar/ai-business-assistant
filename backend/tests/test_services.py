@@ -199,5 +199,4 @@ def test_invoice_issue_rejects_insufficient_stock(workspace):
                 session, principal=principal, business_id=business_id,
                 invoice_id=invoice.id,
             )
-        session.rollback()
-        assert session.get(Invoice, invoice.id).status == "draft"
+        assert invoice.status == "draft"
