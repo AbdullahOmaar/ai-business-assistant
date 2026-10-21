@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import type { FirebaseApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from '@firebase/app';
+import type { FirebaseApp } from '@firebase/app';
 import {
   createUserWithEmailAndPassword, getAuth, onAuthStateChanged,
   signInWithEmailAndPassword, signOut
-} from 'firebase/auth';
-import type { Auth, User } from 'firebase/auth';
+} from '@firebase/auth';
+import type { Auth, User } from '@firebase/auth';
 
 export interface RuntimeConfig {
   apiBaseUrl: string;
