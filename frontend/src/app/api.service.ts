@@ -12,6 +12,9 @@ export interface Business {
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; }
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; customer_id?: string | null; }
+export interface InvoiceDetail extends Invoice {
+  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
+}
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
@@ -92,6 +95,24 @@ export class ApiService {
   issueInvoice(businessId: string, invoiceId: string): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}/issue`, 'POST', {}
+    );
+  }
+  invoiceDetail(businessId: string, invoiceId: string): Promise<InvoiceDetail> {
+    return this.request<InvoiceDetail>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`
+    );
+  }
+  updateDraftInvoice(businessId: string, invoiceId: string, body: {
+    invoice_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string }>;
+  }): Promise<Invoice> {
+    return this.request<Invoice>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`, 'PATCH', body
+    );
+  }
+  voidInvoice(businessId: string, invoiceId: string, reason: string): Promise<Invoice> {
+    return this.request<Invoice>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}/void`,
+      'POST', { reason }
     );
   }
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
