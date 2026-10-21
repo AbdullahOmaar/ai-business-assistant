@@ -143,3 +143,40 @@ def test_product_update_and_soft_deactivation(configured_client):
     assert configured_client.get(
         f"/api/v1/businesses/{business_id}/products"
     ).json() == []
+
+
+def test_business_list_is_scoped_to_verified_membership(configured_client):
+    from app import main as main_module
+
+    created_owner = configured_client.post("/api/v1/businesses", json={
+        "name": "Owner Workspace", "currency_code": "EGP"
+    })
+    assert created_owner.status_code == 201
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
+    created_other = configured_client.post("/api/v1/businesses", json={
+        "name": "Other Workspace", "currency_code": "USD"
+    })
+    assert created_other.status_code == 201
+    other_id = created_other.json()["id"]
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    response = configured_client.get("/api/v1/businesses")
+    assert response.status_code == 200
+    ids = {item["id"] for item in response.json()}
+    assert created_owner.json()["id"] in ids
+    assert other_id not in ids
+
+
+def test_assistant_fails_closed_without_provider_key(configured_client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "AI Test Workspace", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    response = configured_client.post(
+        f"/api/v1/businesses/{business_id}/assistant/chat",
+        json={"message": "Summarize my recent sales"},
+    )
+    assert response.status_code == 503
+    assert "OPENAI_API_KEY" in response.json()["detail"]
