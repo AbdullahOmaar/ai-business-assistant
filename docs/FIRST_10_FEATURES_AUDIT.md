@@ -12,11 +12,11 @@
 | 1 | Business workspace and profile | PostgreSQL business/membership schema; create workspace assigns verified creator as owner; profile GET/PATCH | **Partial** — trusted identity adapter and onboarding UI are not configured |
 | 2 | Secure membership and roles | Server-side membership checks; owner-only profile updates; cross-business negative service test; endpoints fail closed without trusted resolver | **Partial / release blocker** — no real token verifier is selected or configured; role policy needs review across all write endpoints |
 | 3 | Dashboard overview | Date-filtered API separates issued sales, recorded payments, expenses, and outstanding balances by currency; empty-state and invalid-date tests | **API foundation** — Angular page is not connected to this endpoint; no live metrics in deployed shell |
-| 4 | Customer management | Create/list endpoints and business-scoped records | **Partial** — customer detail/update/deactivation/search and API-level authorization tests remain |
-| 5 | Products and services | Create/list endpoints; exact decimal price; stock is derived from movement ledger | **Partial** — catalog update/archive and full product CRUD remain |
-| 6 | Sales and invoices | Draft creation, server-calculated totals, issue endpoint, invoice list; tracked stock is deducted as an auditable movement on issue | **Partial** — invoice detail, safe draft editing, void/correction workflow, and complete API tests remain |
-| 7 | Payments and allocations | Idempotent payment recording; allocation/currency/outstanding constraints; dashboard derives outstanding balances | **Partial** — payment history endpoint and broader PostgreSQL concurrency tests remain |
-| 8 | Expense management | Validated create workflow and explicit currency/date; expense totals in dashboard and reports | **Partial** — list/detail/update/archive UX and additional API tests remain |
+| 4 | Customer management | Create, search, list, detail, update, soft-deactivate; business scope and audit events | **Core API covered** — broaden cross-business and invalid-input tests; connect UI |
+| 5 | Products and services | Create/list/detail/update/soft-deactivate; exact decimal price; stock derived from movement ledger | **Core API covered** — broaden catalog validation and cross-business tests; connect UI |
+| 6 | Sales and invoices | Draft creation, server-calculated totals, issue/list/detail; tracked stock deducted as auditable movement on issue | **Partial** — safe draft editing, void/correction workflow, and broader API tests remain |
+| 7 | Payments and allocations | Idempotent payment recording, replay payload validation, payment history/allocations, currency and outstanding constraints | **Partial** — broader PostgreSQL concurrency tests and payment UI remain |
+| 8 | Expense management | Validated create/list workflows and explicit currency/date; expense totals in dashboard and reports | **Partial** — update/archive UX and additional API tests remain |
 | 9 | Reports and operational alerts | Currency-separated summary, date-filtered dashboard, low/zero-stock deterministic alert, CSV tools | **Partial** — richer period comparisons and operational alert delivery remain |
 | 10 | Read-only AI business assistant | Deterministic database-derived insights; no invented profit calculation; currencies separated; explicit limitations | **Foundation only** — no actual generative AI/chat provider, record-level citations, or connected frontend chat |
 
@@ -24,8 +24,8 @@
 
 - Earlier CI run on the previous commit passed backend tests, PostgreSQL migrations, and Angular build: [workflow run #13](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39625644932).
 - After the latest review changes, new CI runs were started; their results must be checked before calling the latest commit verified:
-  - [Backend tests run #58](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39626805299)
-  - [Backend + frontend run #26](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39626805778)
+  - [Backend tests run #61](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39627000531) — passed after fixing SQLite test sharing and the stock-aware invoice fixture.
+  - [Backend + frontend run #32](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39627000508) — passed backend, PostgreSQL migrations, and Angular build on that run's commit. Customer/product lifecycle endpoints and payment replay checks were added afterward; verify CI on the newest PR head before calling it green.
 - PostgreSQL migration CI validates schema application, but the service workflow's unit tests do not replace real-world auth-provider and end-to-end browser tests.
 - The Angular production build previously reported four high-severity npm audit findings. Review/remediate these before production release.
 
