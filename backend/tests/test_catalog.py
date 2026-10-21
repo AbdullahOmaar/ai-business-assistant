@@ -1,6 +1,4 @@
 from decimal import Decimal
-from uuid import uuid4
-
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
@@ -11,7 +9,7 @@ from app.catalog import (
     list_customers, list_products, list_suppliers,
 )
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, Customer, MembershipRole, Product, Supplier,
+    AuditEvent, Base, Business, BusinessMembership, Customer, MembershipRole, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import WorkflowError, create_customer, create_product
