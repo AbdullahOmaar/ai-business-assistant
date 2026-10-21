@@ -1,3 +1,5 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -19,7 +21,8 @@ def test_business_endpoints_fail_closed_without_database_or_identity():
 
 
 def test_business_endpoints_fail_closed_without_trusted_identity():
-    app.state.session_factory = lambda: None
+    engine = create_engine("sqlite+pysqlite://")
+    app.state.session_factory = sessionmaker(bind=engine)
     try:
         response = TestClient(app).post(
             "/api/v1/businesses/00000000-0000-0000-0000-000000000001/customers",
@@ -29,3 +32,4 @@ def test_business_endpoints_fail_closed_without_trusted_identity():
         assert "Authentication is not configured" in response.json()["detail"]
     finally:
         del app.state.session_factory
+        engine.dispose()
