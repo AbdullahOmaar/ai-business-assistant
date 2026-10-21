@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.domain_rules import (
     calculate_invoice_totals,
+    money,
     validate_payment_allocation,
 )
 from app.models import (
@@ -229,7 +230,7 @@ def create_invoice(
         session.add(InvoiceLine(
             business_id=business_id, invoice_id=invoice.id, product_id=product_id,
             description=description, quantity=quantity, unit_price=price,
-            line_total=(quantity * price).quantize(Decimal("0.01")),
+            line_total=money(quantity * price),
         ))
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
@@ -275,22 +276,45 @@ def record_payment(
     currency = currency_code.strip().upper()
     if len(currency) != 3 or not currency.isalpha():
         raise WorkflowError("Currency must be a three-letter code")
+    requested = list(allocations)
+    normalized_key = idempotency_key.strip()
     existing = session.scalars(select(Payment).where(
         Payment.business_id == business_id,
-        Payment.idempotency_key == idempotency_key.strip(),
+        Payment.idempotency_key == normalized_key,
     )).one_or_none()
     if existing is not None:
-        if existing.amount != amount or existing.currency_code != currency:
-            raise WorkflowError("Idempotency key was already used for a different payment")
+        existing_allocations = session.execute(select(
+            PaymentAllocation.invoice_id, PaymentAllocation.amount,
+        ).where(
+            PaymentAllocation.business_id == business_id,
+            PaymentAllocation.payment_id == existing.id,
+        )).all()
+        expected_allocations = sorted(
+            ((str(invoice_id), allocation_amount) for invoice_id, allocation_amount in requested),
+            key=lambda item: (item[0], item[1]),
+        )
+        stored_allocations = sorted(
+            ((str(invoice_id), Decimal(str(allocation_amount))) for invoice_id, allocation_amount in existing_allocations),
+            key=lambda item: (item[0], item[1]),
+        )
+        same_request = (
+            existing.amount == amount
+            and existing.currency_code == currency
+            and existing.customer_id == customer_id
+            and existing.method == method
+            and existing.reference == reference
+            and stored_allocations == expected_allocations
+        )
+        if not same_request:
+            raise WorkflowError("Idempotency key was already used for a different payment request")
         return existing
-    requested = list(allocations)
     if customer_id is not None and session.scalars(select(Customer).where(
         Customer.id == customer_id, Customer.business_id == business_id,
     )).one_or_none() is None:
         raise WorkflowError("Customer not found in this business")
     payment = Payment(
         business_id=business_id, customer_id=customer_id, amount=amount,
-        currency_code=currency, idempotency_key=idempotency_key.strip(),
+        currency_code=currency, idempotency_key=normalized_key,
         method=method, reference=reference,
     )
     session.add(payment)
