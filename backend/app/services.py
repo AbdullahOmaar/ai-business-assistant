@@ -242,6 +242,12 @@ def issue_invoice(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
     invoice_id: UUID,
 ) -> Invoice:
+    """Issue a draft invoice and atomically deduct stock-tracked items.
+
+    Stock is represented only by append-only movements. If any tracked item
+    lacks stock, the workflow raises before the caller commits, so the whole
+    request transaction can be rolled back without a partial invoice issue.
+    """
     _membership(session, principal, business_id)
     invoice = session.scalars(select(Invoice).where(
         Invoice.id == invoice_id, Invoice.business_id == business_id,
@@ -250,10 +256,54 @@ def issue_invoice(
         raise WorkflowError("Invoice not found in this business")
     if invoice.status != "draft":
         raise WorkflowError("Only draft invoices can be issued")
-    if not session.scalar(select(func.count()).select_from(InvoiceLine).where(
-        InvoiceLine.invoice_id == invoice.id, InvoiceLine.business_id == business_id,
-    )):
+
+    lines = session.scalars(select(InvoiceLine).where(
+        InvoiceLine.invoice_id == invoice.id,
+        InvoiceLine.business_id == business_id,
+    )).all()
+    if not lines:
         raise WorkflowError("An invoice needs at least one line before issue")
+
+    # Lock tracked products in a stable order to reduce deadlock risk when
+    # invoices contain multiple products.
+    product_ids = sorted({line.product_id for line in lines if line.product_id}, key=str)
+    products = {}
+    for product_id in product_ids:
+        product = session.scalars(select(Product).where(
+            Product.id == product_id,
+            Product.business_id == business_id,
+            Product.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if product is None:
+            raise WorkflowError("Invoice product not found in this business")
+        products[product_id] = product
+
+    for line in lines:
+        product = products.get(line.product_id)
+        if product is None or not product.is_stock_tracked:
+            continue
+        current = session.scalar(select(func.coalesce(
+            func.sum(StockMovement.quantity_delta), 0
+        )).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        ))
+        available = Decimal(str(current or 0))
+        if available < line.quantity:
+            raise WorkflowError(
+                f"Insufficient stock for {product.name}: available {available}, required {line.quantity}"
+            )
+        session.add(StockMovement(
+            business_id=business_id,
+            product_id=product.id,
+            movement_type="sale",
+            quantity_delta=-line.quantity,
+            reason=f"Invoice {invoice.invoice_number}",
+            reference_type="invoice",
+            reference_id=invoice.id,
+            created_by_subject=principal.subject,
+        ))
+
     invoice.status = "issued"
     invoice.issue_date = datetime.now(timezone.utc)
     session.flush()
