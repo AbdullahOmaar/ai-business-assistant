@@ -95,15 +95,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               }
               <section class="notice"><strong>سلامة البيانات</strong><span>الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.</span></section>
               <section class="quick-grid">
-                <button class="quick-card" (click)="setTab('customers')"><strong>العملاء</strong><span>{{ عميل.length }} سجلات نشطة · عرض القائمة ←</span></button>
-                <button class="quick-card" (click)="setTab('products')"><strong>المنتجات</strong><span>{{ منتج.length }} سجلات نشطة · عرض الكتالوج ←</span></button>
-                <button class="quick-card" (click)="setTab('invoices')"><strong>Invoices</strong><span>{{ فاتورة.length }} سجل · إدارة المبيعات ←</span></button>
+                <button class="quick-card" (click)="setTab('customers')"><strong>العملاء</strong><span>{{ customers.length }} سجلات نشطة · عرض القائمة ←</span></button>
+                <button class="quick-card" (click)="setTab('products')"><strong>المنتجات</strong><span>{{ products.length }} سجلات نشطة · عرض الكتالوج ←</span></button>
+                <button class="quick-card" (click)="setTab('invoices')"><strong>الفواتير</strong><span>{{ invoices.length }} سجل · إدارة المبيعات ←</span></button>
               </section>
             }
 
             @if (tab === 'customers') {
               <section class="panel">
-                <div class="section-head"><div><h2>قائمة العملاء</h2><p>تقتصر السجلات على مساحة العمل المحددة.</p></div><span class="count">{{ عميل.length }} عميل</span></div>
+                <div class="section-head"><div><h2>قائمة العملاء</h2><p>تقتصر السجلات على مساحة العمل المحددة.</p></div><span class="count">{{ customers.length }} عميل</span></div>
                 <form class="inline-form" (ngSubmit)="createCustomer()">
                   <input aria-label="اسم العميل" name="customerName" placeholder="اسم العميل" required [(ngModel)]="customerName">
                   <input aria-label="بريد العميل الإلكتروني" name="customerEmail" type="email" placeholder="البريد الإلكتروني (اختياري)" [(ngModel)]="customerEmail">
@@ -119,7 +119,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'products') {
               <section class="panel">
-                <div class="section-head"><div><h2>المنتجات & services</h2><p>يتم حفظ الأسعار بدقة عشرية.</p></div><span class="count">{{ منتج.length }} منتج</span></div>
+                <div class="section-head"><div><h2>المنتجات والخدمات</h2><p>يتم حفظ الأسعار بدقة عشرية.</p></div><span class="count">{{ products.length }} منتج</span></div>
                 <form class="inline-form" (ngSubmit)="createProduct()">
                   <input aria-label="اسم المنتج" name="productName" placeholder="اسم المنتج" required [(ngModel)]="productName">
                   <input aria-label="سعر الوحدة" name="productPrice" type="number" min="0" step="0.01" placeholder="سعر الوحدة" required [(ngModel)]="productPrice">
@@ -135,7 +135,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'invoices') {
               <section class="panel">
-                <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.</p></div><span class="count">{{ فاتورة.length }} فاتورة</span></div>
+                <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.</p></div><span class="count">{{ invoices.length }} فاتورة</span></div>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (تلقائي إذا تُرك فارغًا)" maxlength="80" [(ngModel)]="invoiceNumber">
                   <select name="invoiceProduct" aria-label="Product" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
@@ -401,8 +401,8 @@ export class AppComponent implements OnInit {
       this.products = منتج;
       this.invoices = فاتورة;
       this.payments = دفعة;
-      if (!this.invoiceProductId && منتج.length) this.invoiceProductId = منتج[0].id;
-      if (!this.paymentInvoiceId) this.paymentInvoiceId = فاتورة.find(item => item.status === 'issued')?.id || '';
+      if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
+      if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
       this.error = this.message(error);
     }
