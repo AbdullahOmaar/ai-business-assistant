@@ -20,10 +20,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <h1>اربط مساحة عملك الآمنة</h1>
           <p>الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط API قبل تسجيل الدخول.</p>
           <div class="setup-steps">
-            <p><strong>1.</strong> Open <code>frontend/public/runtime-config.json</code> in the repository.</p>
-            <p><strong>2.</strong> Set <code>apiBaseUrl</code> to the deployed FastAPI origin.</p>
-            <p><strong>3.</strong> Fill the public Firebase web-app values: <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, and <code>appId</code>.</p>
-            <p><strong>4.</strong> Configure the matching Firebase project ID and service-account credentials as backend secrets. Never put those secrets in this file.</p>
+            <p><strong>1.</strong> افتح الملف <code>frontend/public/runtime-config.json</code> داخل المستودع.</p>
+            <p><strong>2.</strong> اضبط <code>apiBaseUrl</code> على عنوان واجهة API المنشورة.</p>
+            <p><strong>3.</strong> أدخل إعدادات تطبيق Firebase العامة: <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, and <code>appId</code>.</p>
+            <p><strong>4.</strong> اضبط معرّف مشروع Firebase المطابق وبيانات حساب الخدمة كأسرار في الخادم. لا تضع الأسرار داخل هذا الملف.</p>
           </div>
           <p class="footnote">No fake data is shown. The app will stay closed until these settings are present.</p>
         </main>
@@ -38,7 +38,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
             <label>كلمة المرور<input name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password"></label>
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? 'جارٍ التنفيذ…' : (signingUp ? 'إنشاء الحساب' : 'تسجيل الدخول') }}</button>
           </form>
-          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? 'Already registered? تسجيل الدخول' : 'مستخدم جديد؟ أنشئ حسابًا' }}</button>
+          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? 'لديك حساب بالفعل؟ سجّل الدخول' : 'مستخدم جديد؟ أنشئ حسابًا' }}</button>
           @if (error) { <p class="error" role="alert">{{ error }}</p> }
         </main>
       } @else {
@@ -46,16 +46,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>Business<span class="light">Pilot</span></span></a>
           <p class="nav-label">مساحة العمل</p>
           <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>نظرة عامة</span></button>
-          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>المبيعات والفواتير</span></button>
-          <button class="nav-item" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>المنتجات والمخزون</span></button>
-          <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>العملاء</span></button>
-          <button class="nav-item" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>المدفوعات</span></button>
+          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" (click)="setTab('invoices')"><span class="nav-icon فاتورة-icon" aria-hidden="true">▤</span><span>المبيعات والفواتير</span></button>
+          <button class="nav-item" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon منتج-icon" aria-hidden="true">◇</span><span>المنتجات والمخزون</span></button>
+          <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" (click)="setTab('customers')"><span class="nav-icon عميل-icon" aria-hidden="true">♧</span><span>العملاء</span></button>
+          <button class="nav-item" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon دفعة-icon" aria-hidden="true">↗</span><span>المدفوعات</span></button>
           <button class="nav-item" aria-label="المساعد الذكي" title="المساعد الذكي" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>المساعد الذكي</span></button>
           <div class="sidebar-bottom"><span class="status-dot"></span> جلسة موثّقة<small>يتحقق الخادم من صلاحيات مساحة العمل</small></div>
         </aside>
         <main class="main">
           <header class="topbar">
-            <div><p class="eyebrow">YOUR مساحة العمل</p><h1>{{ pageTitle }}</h1></div>
+            <div><p class="eyebrow">مساحة العمل</p><h1>{{ pageTitle }}</h1></div>
             <div class="user-area"><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">تسجيل الخروج</button></div>
           </header>
 
@@ -64,117 +64,117 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
           @if (!business) {
             <section class="panel narrow">
-              <p class="eyebrow">GET STARTED</p><h2>Create your first workspace</h2>
-              <p class="muted">Your workspace is linked to your verified account. Other users cannot access it without membership.</p>
+              <p class="eyebrow">ابدأ هنا</p><h2>أنشئ مساحة عملك الأولى</h2>
+              <p class="muted">مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.</p>
               <form class="stack" (ngSubmit)="createWorkspace()">
                 <label>اسم النشاط التجاري<input name="businessName" required maxlength="160" [(ngModel)]="businessName"></label>
-                <label>Default currency<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">EGP · Egyptian pound</option><option value="USD">USD · US dollar</option><option value="EUR">EUR · Euro</option><option value="GBP">GBP · British pound</option><option value="SAR">SAR · Saudi riyal</option><option value="AED">AED · UAE dirham</option></select></label>
+                <label>العملة الافتراضية<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
                 <button class="primary" type="submit" [disabled]="loading">إنشاء مساحة عمل</button>
               </form>
             </section>
           } @else {
             <section class="workspace-bar">
-              <div><span class="eyebrow">ACTIVE BUSINESS</span><strong>{{ business.name }}</strong></div>
-              <select aria-label="Select workspace" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
+              <div><span class="eyebrow">النشاط الحالي</span><strong>{{ business.name }}</strong></div>
+              <select aria-label="اختيار النشاط" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
             </section>
 
             @if (tab === 'overview') {
               <section class="hero">
-                <div><p class="eyebrow light">BUSINESS OVERVIEW</p><h2>Good decisions start with<br>reliable numbers.</h2><p>Showing recorded activity for the last 30 days. العملة totals are kept separate.</p></div>
+                <div><p class="eyebrow light">ملخص النشاط</p><h2>القرارات الأفضل تبدأ<br>بأرقام موثوقة.</h2><p>يعرض النشاط المسجّل خلال آخر 30 يومًا. يتم فصل الإجماليات حسب العملة.</p></div>
                 <div class="hero-mark" aria-hidden="true">AI</div>
               </section>
               @if (dashboard) {
                 <section class="metric-grid">
-                  <article class="metric"><span>Invoiced sales</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} issued invoices</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>No issued sales in this period</small> }</article>
-                  <article class="metric"><span>Collected payments</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} payments recorded</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>No recorded payments in this period</small> }</article>
-                  <article class="metric"><span>Expenses</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} expenses recorded</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>No recorded expenses in this period</small> }</article>
-                  <article class="metric"><span>Outstanding balances</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>Issued invoices less allocations</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>No outstanding invoices in this period</small> }</article>
+                  <article class="metric"><span>المبيعات بالفواتير</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} فاتورة صادرة</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>لا توجد مبيعات بفواتير صادرة خلال الفترة</small> }</article>
+                  <article class="metric"><span>المدفوعات المحصّلة</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} دفعة مسجلة</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>لا توجد مدفوعات مسجلة خلال الفترة</small> }</article>
+                  <article class="metric"><span>المصروفات</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} مصروف مسجل</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>لا توجد مصروفات مسجلة خلال الفترة</small> }</article>
+                  <article class="metric"><span>الأرصدة المستحقة</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>الفواتير الصادرة بعد خصم المبالغ المخصصة</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>لا توجد فواتير مستحقة خلال الفترة</small> }</article>
                 </section>
               }
-              <section class="notice"><strong>Data integrity</strong><span>These totals come from saved business records. They are not a profit calculation and currencies are never combined.</span></section>
+              <section class="notice"><strong>سلامة البيانات</strong><span>الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.</span></section>
               <section class="quick-grid">
-                <button class="quick-card" (click)="setTab('customers')"><strong>العملاء</strong><span>{{ customers.length }} active records · View directory →</span></button>
-                <button class="quick-card" (click)="setTab('products')"><strong>Products</strong><span>{{ products.length }} active records · View catalog →</span></button>
-                <button class="quick-card" (click)="setTab('invoices')"><strong>Invoices</strong><span>{{ invoices.length }} records · Manage sales →</span></button>
+                <button class="quick-card" (click)="setTab('customers')"><strong>العملاء</strong><span>{{ عميل.length }} سجلات نشطة · عرض القائمة ←</span></button>
+                <button class="quick-card" (click)="setTab('products')"><strong>المنتجات</strong><span>{{ منتج.length }} سجلات نشطة · عرض الكتالوج ←</span></button>
+                <button class="quick-card" (click)="setTab('invoices')"><strong>Invoices</strong><span>{{ فاتورة.length }} سجل · إدارة المبيعات ←</span></button>
               </section>
             }
 
             @if (tab === 'customers') {
               <section class="panel">
-                <div class="section-head"><div><h2>Customer directory</h2><p>Records are scoped to the selected workspace.</p></div><span class="count">{{ customers.length }} customers</span></div>
+                <div class="section-head"><div><h2>قائمة العملاء</h2><p>تقتصر السجلات على مساحة العمل المحددة.</p></div><span class="count">{{ عميل.length }} عميل</span></div>
                 <form class="inline-form" (ngSubmit)="createCustomer()">
                   <input aria-label="اسم العميل" name="customerName" placeholder="اسم العميل" required [(ngModel)]="customerName">
-                  <input aria-label="Customer email" name="customerEmail" type="email" placeholder="Email (optional)" [(ngModel)]="customerEmail">
-                  <input aria-label="Customer phone" name="customerPhone" placeholder="الهاتف (optional)" [(ngModel)]="customerPhone">
+                  <input aria-label="بريد العميل الإلكتروني" name="customerEmail" type="email" placeholder="البريد الإلكتروني (اختياري)" [(ngModel)]="customerEmail">
+                  <input aria-label="Customer phone" name="customerPhone" placeholder="الهاتف (اختياري)" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">إضافة عميل</button>
                 </form>
                 <div class="list">
-                  @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || 'No email' }} · {{ customer.phone || 'No phone' }}</small></div></article> }
-                  @if (!customers.length) { <p class="empty">لا يوجد عملاء بعد. Add your first customer above.</p> }
+                  @for (customer of عميل; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || 'لا يوجد بريد إلكتروني' }} · {{ customer.phone || 'لا يوجد هاتف' }}</small></div></article> }
+                  @if (!customers.length) { <p class="empty">لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.</p> }
                 </div>
               </section>
             }
 
             @if (tab === 'products') {
               <section class="panel">
-                <div class="section-head"><div><h2>Products & services</h2><p>Prices are stored with exact decimal precision.</p></div><span class="count">{{ products.length }} products</span></div>
+                <div class="section-head"><div><h2>المنتجات & services</h2><p>يتم حفظ الأسعار بدقة عشرية.</p></div><span class="count">{{ منتج.length }} منتج</span></div>
                 <form class="inline-form" (ngSubmit)="createProduct()">
                   <input aria-label="اسم المنتج" name="productName" placeholder="اسم المنتج" required [(ngModel)]="productName">
-                  <input aria-label="Unit price" name="productPrice" type="number" min="0" step="0.01" placeholder="Unit price" required [(ngModel)]="productPrice">
-                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> Track stock</label>
+                  <input aria-label="سعر الوحدة" name="productPrice" type="number" min="0" step="0.01" placeholder="سعر الوحدة" required [(ngModel)]="productPrice">
+                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> متابعة المخزون</label>
                   <button class="primary" type="submit" [disabled]="loading">إضافة منتج</button>
                 </form>
                 <div class="list">
-                  @for (product of products; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? 'Stock tracked' : 'Service / stock not tracked' }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
-                  @if (!products.length) { <p class="empty">لا توجد منتجات بعد. Add a product or service above.</p> }
+                  @for (product of منتج; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? 'تتم متابعة المخزون' : 'خدمة / لا تتم متابعة المخزون' }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
+                  @if (!products.length) { <p class="empty">لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.</p> }
                 </div>
               </section>
             }
 
             @if (tab === 'invoices') {
               <section class="panel">
-                <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>Create a draft and issue it when the details are correct.</p></div><span class="count">{{ invoices.length }} invoices</span></div>
+                <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.</p></div><span class="count">{{ فاتورة.length }} فاتورة</span></div>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
-                  <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (auto if blank)" maxlength="80" [(ngModel)]="invoiceNumber">
-                  <select name="invoiceProduct" aria-label="Product" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
+                  <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (تلقائي إذا تُرك فارغًا)" maxlength="80" [(ngModel)]="invoiceNumber">
+                  <select name="invoiceProduct" aria-label="Product" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of منتج; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
                   <input name="invoiceQuantity" aria-label="الكمية" type="number" min="0.001" step="0.001" required [(ngModel)]="invoiceQuantity">
                   <button class="primary" type="submit" [disabled]="loading || !products.length">{{ editingInvoiceId ? 'حفظ كمسودة' : 'إنشاء مسودة' }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">إلغاء</button> }
                 </form>
                 <div class="list">
-                  @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.status }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
+                  @for (invoice of فاتورة; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.status }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
                   @if (!invoices.length) { <p class="empty">لا توجد فواتير بعد. Add a product first, then create a draft.</p> }
                 </div>
-                <p class="footnote">Issuing an invoice deducts tracked stock atomically and fails if stock is insufficient.</p>
+                <p class="footnote">إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.</p>
               </section>
             }
 
             @if (tab === 'payments') {
               <section class="panel">
-                <div class="section-head"><div><h2>Record a payment</h2><p>Record money received and optionally allocate it to an issued invoice.</p></div><span class="count">{{ payments.length }} payments</span></div>
+                <div class="section-head"><div><h2>تسجيل دفعة</h2><p>سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.</p></div><span class="count">{{ دفعة.length }} دفعة</span></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
-                  <input aria-label="مبلغ الدفعة" name="paymentAmount" type="number" min="0.01" step="0.01" placeholder="Amount received" required [(ngModel)]="paymentAmount">
-                  <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">نقدًا</option><option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option><option value="wallet">Mobile wallet</option><option value="other">Other</option></select>
-                  <select aria-label="Invoice to allocate" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId"><option value="">Do not allocate yet</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input aria-label="Amount to allocate" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" placeholder="Amount allocated" [(ngModel)]="paymentAllocationAmount"> }
-                  <input aria-label="Payment reference" name="paymentReference" maxlength="128" placeholder="المرجع (optional)" [(ngModel)]="paymentReference">
+                  <input aria-label="مبلغ الدفعة" name="paymentAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المستلم" required [(ngModel)]="paymentAmount">
+                  <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">نقدًا</option><option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option><option value="wallet">محفظة إلكترونية</option><option value="other">أخرى</option></select>
+                  <select aria-label="الفاتورة المراد تخصيص الدفعة لها" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId"><option value="">عدم تخصيص الدفعة الآن</option>@for (invoice of فاتورة; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (paymentInvoiceId) { <input aria-label="Amount to allocate" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المخصص للفاتورة" [(ngModel)]="paymentAllocationAmount"> }
+                  <input aria-label="مرجع الدفعة" name="paymentReference" maxlength="128" placeholder="المرجع (اختياري)" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">تسجيل دفعة</button>
                 </form>
-                <p class="footnote">العملة is fixed to {{ business.currency_code }} for this workspace. Allocations are validated against the invoice balance by the API; unallocated money remains recorded as received.</p>
+                <p class="footnote">العملة المحددة هي {{ business.currency_code }} لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.</p>
                 <div class="list">
-                  @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ payment.received_at | date:'medium' }} · {{ payment.method || 'Method not specified' }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' invoice allocation(s)' : 'Unallocated payment' }}</small></div></article> }
-                  @if (!payments.length) { <p class="empty">No payments recorded yet.</p> }
+                  @for (payment of دفعة; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ payment.received_at | date:'medium' }} · {{ payment.method || 'طريقة الدفع غير محددة' }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' تخصيص للفاتورة' : 'دفعة غير مخصصة' }}</small></div></article> }
+                  @if (!payments.length) { <p class="empty">No دفعة مسجلة yet.</p> }
                 </div>
               </section>
             }
 
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
-                <div class="section-head"><div><h2>AI Business Assistant</h2><p>Answers grounded in recent records from this workspace only.</p></div><span class="count">Read-only</span></div>
+                <div class="section-head"><div><h2>AI Business Assistant</h2><p>الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.</p></div><span class="count">Read-only</span></div>
                 <div class="chat-log" aria-live="polite">
-                  @if (!chatMessages.length) { <p class="empty">Ask about recent issued invoices, recorded expenses, or your customer and product counts.</p> }
+                  @if (!chatMessages.length) { <p class="empty">Ask about recent فاتورة صادرة, recorded expenses, or your customer and product counts.</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'You' : 'Assistant' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">Sources: @for (source of message.sources; track source.id) { <span>{{ source.type }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
                 <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="Ask a question about your business…" required [(ngModel)]="chatDraft"></textarea><button class="primary" type="submit" [disabled]="loading || !chatDraft.trim()">إرسال</button></form>
@@ -235,10 +235,10 @@ export class AppComponent implements OnInit {
   business: Business | null = null;
   selectedBusinessId = '';
   dashboard: Dashboard | null = null;
-  customers: Customer[] = [];
-  products: Product[] = [];
-  invoices: Invoice[] = [];
-  payments: Payment[] = [];
+  عميل: Customer[] = [];
+  منتج: Product[] = [];
+  فاتورة: Invoice[] = [];
+  دفعة: Payment[] = [];
   businessName = '';
   currencyCode = 'EGP';
   customerName = '';
@@ -290,9 +290,9 @@ export class AppComponent implements OnInit {
 
   get pageTitle(): string {
     const titles: Record<Tab, string> = {
-      overview: 'نظرة عامة على النشاط', customers: 'العملاء',
-      products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي'
+      overview: 'نظرة عامة على النشاط', عميل: 'العملاء',
+      منتج: 'المنتجات والمخزون', فاتورة: 'المبيعات والفواتير',
+      دفعة: 'المدفوعات', assistant: 'مساعد الأعمال الذكي'
     };
     return titles[this.tab];
   }
@@ -384,17 +384,17 @@ export class AppComponent implements OnInit {
     if (!this.business) return;
     const id = this.business.id;
     try {
-      const [dashboard, customers, products, invoices, payments] = await Promise.all([
+      const [dashboard, عميل, منتج, فاتورة, دفعة] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
       ]);
       if (this.business?.id !== id) return;
       this.dashboard = dashboard;
-      this.customers = customers;
-      this.products = products;
-      this.invoices = invoices;
-      this.payments = payments;
-      if (!this.invoiceProductId && products.length) this.invoiceProductId = products[0].id;
-      if (!this.paymentInvoiceId) this.paymentInvoiceId = invoices.find(item => item.status === 'issued')?.id || '';
+      this.customers = عميل;
+      this.products = منتج;
+      this.invoices = فاتورة;
+      this.payments = دفعة;
+      if (!this.invoiceProductId && منتج.length) this.invoiceProductId = منتج[0].id;
+      if (!this.paymentInvoiceId) this.paymentInvoiceId = فاتورة.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
       this.error = this.message(error);
     }
@@ -475,7 +475,7 @@ export class AppComponent implements OnInit {
     try {
       const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
       if (detail.lines.length !== 1 || !detail.lines[0].product_id) {
-        throw new Error('The quick editor supports one product line. This invoice was left unchanged.');
+        throw new Error('يدعم المحرر السريع بند منتج واحد فقط. لم يتم تغيير الفاتورة.');
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
@@ -512,12 +512,12 @@ export class AppComponent implements OnInit {
 
   async voidInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || !window.confirm(
-      `إلغاء invoice ${invoice.invoice_number}? Issued invoices with allocated payments cannot be voided; use a refund/credit-note workflow.`
+      `إلغاء الفاتورة ${invoice.invoice_number}? Issued فاتورة with allocated دفعة cannot be voided; use a refund/credit-note workflow.`
     )) return;
     this.loading = true;
     this.error = '';
     try {
-      await this.api.voidInvoice(this.business.id, invoice.id, 'Cancelled by an authorized workspace user');
+      await this.api.voidInvoice(this.business.id, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
@@ -534,7 +534,7 @@ export class AppComponent implements OnInit {
     const amount = this.paymentAmount.trim();
     const allocation = this.paymentAllocationAmount.trim();
     if (this.paymentInvoiceId && !allocation) {
-      this.error = 'Enter the amount to allocate to the selected invoice.';
+      this.error = 'أدخل المبلغ المراد تخصيصه للفاتورة المحددة.';
       return;
     }
     this.loading = true;
@@ -592,17 +592,17 @@ export class AppComponent implements OnInit {
     const code = typeof value?.code === 'string' ? value.code : '';
     const message = typeof value?.message === 'string' ? value.message : '';
     const authMessages: Record<string, string> = {
-      'auth/email-already-in-use': 'This email already has an account. تسجيل الدخول instead, or use a different email.',
+      'auth/email-already-in-use': 'هذا البريد لديه حساب بالفعل. سجّل الدخول أو استخدم بريدًا آخر.',
       'auth/invalid-email': 'أدخل بريدًا إلكترونيًا صحيحًا.',
       'auth/weak-password': 'اختر كلمة مرور أقوى من 6 أحرف على الأقل.',
-      'auth/operation-not-allowed': 'Email/password sign-up is disabled in Firebase Authentication. Enable the Email/كلمة المرور provider in Firebase Console.',
-      'auth/unauthorized-domain': 'This website domain is not authorized in Firebase Authentication. Add ai-business-assistant-web.vercel.app to Authorized domains.',
-      'auth/network-request-failed': 'Could not reach Firebase Authentication. Check the internet connection and Firebase API key restrictions, then try again.',
+      'auth/operation-not-allowed': 'التسجيل بالبريد الإلكتروني وكلمة المرور غير مفعّل في Firebase Authentication. فعّل مزوّد البريد الإلكتروني وكلمة المرور من وحدة تحكم Firebase.',
+      'auth/unauthorized-domain': 'نطاق الموقع غير مصرح به في Firebase Authentication. أضف ai-business-assistant-web.vercel.app إلى النطاقات المصرح بها.',
+      'auth/network-request-failed': 'تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وقيود مفتاح Firebase ثم حاول مجددًا.',
       'auth/too-many-requests': 'حظر Firebase المحاولات المتكررة مؤقتًا. انتظر قليلًا ثم حاول مجددًا.'
     };
     if (code && authMessages[code]) return authMessages[code];
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
-      return 'The request could not reach a service. Check your connection. If account creation succeeded, switch to تسجيل الدخول before trying again; otherwise verify Firebase Authentication and API/CORS settings.';
+      return 'تعذر الوصول إلى الخدمة. تحقق من اتصال الإنترنت. إذا نجح إنشاء الحساب، انتقل إلى تسجيل الدخول قبل إعادة المحاولة؛ وإلا فتحقق من إعدادات Firebase Authentication وAPI وCORS.';
     }
     if (message) return message;
     return 'حدث خطأ غير متوقع. حاول مجددًا.';
