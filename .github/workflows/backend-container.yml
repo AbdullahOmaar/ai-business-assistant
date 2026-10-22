@@ -1,0 +1,26 @@
+name: Verify backend container
+
+on:
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-container.yml"
+  push:
+    branches: ["main", "feat/**", "chore/**"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-container.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build --pull -t ai-business-assistant-backend:ci ./backend
+      - name: Verify image contains the FastAPI application
+        run: docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
