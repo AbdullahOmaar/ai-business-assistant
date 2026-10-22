@@ -59,9 +59,20 @@ def firebase_principal_resolver(request: Request) -> AuthenticatedPrincipal:
 
     from firebase_admin import auth
     from firebase_admin.exceptions import FirebaseError
+    from google.auth.exceptions import DefaultCredentialsError, GoogleAuthError
 
     try:
         claims = auth.verify_id_token(token.strip(), app=app, check_revoked=True)
+    except (DefaultCredentialsError, GoogleAuthError) as exc:
+        # Do not turn missing server credentials into an opaque 500. This is a
+        # deployment configuration fault, not a bad user token.
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Firebase Admin credentials are missing or invalid. Configure "
+                "FIREBASE_SERVICE_ACCOUNT_JSON in the backend production environment."
+            ),
+        ) from exc
     except (ValueError, FirebaseError) as exc:
         raise HTTPException(status_code=401, detail="Firebase ID token is invalid or expired.") from exc
 
