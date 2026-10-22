@@ -49,7 +49,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         </main>
       } @else {
         <aside class="sidebar">
-          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>Business<span class="light">Pilot</span></span></a>
+          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">مساحة العمل</p>
           <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>نظرة عامة</span></button>
           <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>المبيعات والفواتير</span></button>
@@ -144,13 +144,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.</p></div><span class="count">{{ invoices.length }} فاتورة</span></div>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (تلقائي إذا تُرك فارغًا)" maxlength="80" [(ngModel)]="invoiceNumber">
-                  <select name="invoiceProduct" aria-label="Product" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
+                  <select name="invoiceProduct" aria-label="المنتج" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
                   <input name="invoiceQuantity" aria-label="الكمية" type="number" min="0.001" step="0.001" required [(ngModel)]="invoiceQuantity">
                   <button class="primary" type="submit" [disabled]="loading || !products.length">{{ editingInvoiceId ? 'حفظ كمسودة' : 'إنشاء مسودة' }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">إلغاء</button> }
                 </form>
                 <div class="list">
-                  @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.status }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
+                  @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
                   @if (!invoices.length) { <p class="empty">لا توجد فواتير بعد. أضف منتجًا أولًا ثم أنشئ مسودة فاتورة.</p> }
                 </div>
                 <p class="footnote">إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.</p>
@@ -190,7 +190,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
           }
-          <footer>AI Business Assistant <span>Firebase ID token · Tenant-scoped API · PostgreSQL records</span></footer>
+          <footer>مساعد الأعمال الذكي <span>جلسة Firebase موثّقة · واجهة API معزولة حسب النشاط · قاعدة بيانات PostgreSQL</span></footer>
         </main>
       }
     </div>
@@ -299,6 +299,11 @@ export class AppComponent implements OnInit {
       this.loading = false;
       this.initialized = true;
     }
+  }
+
+  invoiceStatusLabel(status: string): string {
+    const labels: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
+    return labels[status] || 'غير محددة';
   }
 
   get pageTitle(): string {
