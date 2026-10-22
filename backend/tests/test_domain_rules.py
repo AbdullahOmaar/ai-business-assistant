@@ -76,6 +76,10 @@ def test_stock_balance_is_derived_from_signed_movements() -> None:
     assert derive_stock_balance([D("10.000"), D("-2.500"), D("1.250")]) == D("8.750")
 
 
+def test_empty_stock_movements_produce_zero_balance() -> None:
+    assert derive_stock_balance([]) == D("0.000")
+
+
 def test_return_quantity_cannot_exceed_original_sale() -> None:
     with pytest.raises(ValueError, match="exceeds remaining"):
         validate_return_quantity(
