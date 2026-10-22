@@ -145,7 +145,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 </form>
                 <div class="list">
                   @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.status }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
-                  @if (!invoices.length) { <p class="empty">لا توجد فواتير بعد. Add a product first, then create a draft.</p> }
+                  @if (!invoices.length) { <p class="empty">لا توجد فواتير بعد. أضف منتجًا أولًا ثم أنشئ مسودة فاتورة.</p> }
                 </div>
                 <p class="footnote">إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.</p>
               </section>
@@ -153,12 +153,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'payments') {
               <section class="panel">
-                <div class="section-head"><div><h2>تسجيل دفعة</h2><p>سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.</p></div><span class="count">{{ دفعة.length }} دفعة</span></div>
+                <div class="section-head"><div><h2>تسجيل دفعة</h2><p>سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.</p></div><span class="count">{{ payments.length }} دفعة</span></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
                   <input aria-label="مبلغ الدفعة" name="paymentAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المستلم" required [(ngModel)]="paymentAmount">
                   <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">نقدًا</option><option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option><option value="wallet">محفظة إلكترونية</option><option value="other">أخرى</option></select>
                   <select aria-label="الفاتورة المراد تخصيص الدفعة لها" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId"><option value="">عدم تخصيص الدفعة الآن</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input aria-label="Amount to allocate" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المخصص للفاتورة" [(ngModel)]="paymentAllocationAmount"> }
+                  @if (paymentInvoiceId) { <input aria-label="المبلغ المراد تخصيصه" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المخصص للفاتورة" [(ngModel)]="paymentAllocationAmount"> }
                   <input aria-label="مرجع الدفعة" name="paymentReference" maxlength="128" placeholder="المرجع (اختياري)" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">تسجيل دفعة</button>
                 </form>
@@ -172,7 +172,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
-                <div class="section-head"><div><h2>AI Business Assistant</h2><p>الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.</p></div><span class="count">Read-only</span></div>
+                <div class="section-head"><div><h2>مساعد الأعمال الذكي</h2><p>الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.</p></div><span class="count">قراءة فقط</span></div>
                 <div class="chat-log" aria-live="polite">
                   @if (!chatMessages.length) { <p class="empty">Ask about recent فاتورة صادرة, recorded expenses, or your customer and product counts.</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'You' : 'Assistant' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">Sources: @for (source of message.sources; track source.id) { <span>{{ source.type }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
