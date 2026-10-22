@@ -15,6 +15,8 @@ export interface Invoice { id: string; invoice_number: string; status: string; c
 export interface InvoiceDetail extends Invoice {
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
+export interface PaymentAllocation { invoice_id: string; amount: string; }
+export interface Payment { id: string; amount: string; currency_code: string; received_at: string; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
@@ -83,6 +85,16 @@ export class ApiService {
   }
   createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
+  }
+  payments(businessId: string): Promise<Payment[]> {
+    return this.request<Payment[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments?limit=100`);
+  }
+  createPayment(businessId: string, body: {
+    amount: string; currency_code: string; idempotency_key: string;
+    allocations?: Array<{ invoice_id: string; amount: string }>;
+    method?: string; reference?: string;
+  }): Promise<Payment> {
+    return this.request<Payment>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments`, 'POST', body);
   }
   invoices(businessId: string): Promise<Invoice[]> {
     return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?limit=100`);
