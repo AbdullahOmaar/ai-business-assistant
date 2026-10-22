@@ -6,6 +6,11 @@ import { AuthService } from './auth.service';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'assistant';
 
+function localDateTimeValue(date: Date = new Date()): string {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
 @Component({
   selector: 'aba-root',
   standalone: true,
@@ -240,7 +245,7 @@ export class AppComponent implements OnInit {
   expenseCategory = 'General';
   expenseDescription = '';
   expenseAmount = '';
-  expenseDate = new Date().toISOString().slice(0, 16);
+  expenseDate = localDateTimeValue();
   expenseVendor = '';
   expenseReference = '';
   businessName = '';
@@ -532,14 +537,14 @@ export class AppComponent implements OnInit {
   }
 
   async createExpense(): Promise<void> {
-    if (!this.business || !this.expenseCategory.trim() || !this.expenseDescription.trim() || !this.expenseAmount.trim()) return;
+    if (!this.business || !this.expenseCategory.trim() || !this.expenseDescription.trim() || !String(this.expenseAmount).trim()) return;
     this.loading = true;
     this.error = '';
     try {
       await this.api.createExpense(this.business.id, {
         category: this.expenseCategory.trim(),
         description: this.expenseDescription.trim(),
-        amount: this.expenseAmount.trim(),
+        amount: String(this.expenseAmount).trim(),
         currency_code: this.business.currency_code,
         incurred_at: new Date(this.expenseDate).toISOString(),
         vendor_name: this.expenseVendor.trim() || undefined,
@@ -548,7 +553,7 @@ export class AppComponent implements OnInit {
       this.expenseCategory = 'General';
       this.expenseDescription = '';
       this.expenseAmount = '';
-      this.expenseDate = new Date().toISOString().slice(0, 16);
+      this.expenseDate = localDateTimeValue();
       this.expenseVendor = '';
       this.expenseReference = '';
       this.expenses = await this.api.expenses(this.business.id);
