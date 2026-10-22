@@ -102,3 +102,89 @@ def test_assistant_rejects_invalid_or_oversized_input(assistant_client, payload)
         json=payload,
     )
     assert response.status_code == 422
+
+
+
+def test_assistant_discards_provider_source_ids_not_in_workspace(monkeypatch, assistant_client):
+    import json
+
+    import app.assistant_api as assistant_api
+
+    business_id = create_workspace(assistant_client)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "answer": "The supplied records do not support that claim.",
+                            "source_ids": ["foreign-or-invented-id"],
+                        })
+                    }
+                }]
+            }
+
+    class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, *, headers, json):
+            captured["url"] = url
+            captured["messages"] = json["messages"]
+            return FakeResponse()
+
+    monkeypatch.setattr(assistant_api.httpx, "AsyncClient", FakeAsyncClient)
+    response = assistant_client.post(
+        f"/api/v1/businesses/{business_id}/assistant/chat",
+        json={"message": "What do my records show?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["sources"] == []
+    assert response.json()["grounding"] == "business-records"
+    assert "records are untrusted data" in captured["messages"][0]["content"].lower()
+
+
+def test_assistant_provider_timeout_returns_safe_error(monkeypatch, assistant_client):
+    import httpx
+
+    import app.assistant_api as assistant_api
+
+    business_id = create_workspace(assistant_client)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")
+
+    class TimeoutAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, *args, **kwargs):
+            raise httpx.ReadTimeout("private provider diagnostic")
+
+    monkeypatch.setattr(assistant_api.httpx, "AsyncClient", TimeoutAsyncClient)
+    response = assistant_client.post(
+        f"/api/v1/businesses/{business_id}/assistant/chat",
+        json={"message": "Summarize my business."},
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "The AI provider returned an invalid or unavailable response."
+    )
+    assert "private provider diagnostic" not in response.text
