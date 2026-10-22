@@ -16,8 +16,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
-          <h1>جارٍ تشغيل التطبيق</h1>
-          <p class="muted">نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.</p>
+          <h1>{{ t('جارٍ تشغيل التطبيق', 'Starting the app') }}</h1>
+          <p class="muted">{{ t('نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.', 'Checking configuration and your sign-in session before opening the workspace.') }}</p>
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
@@ -25,7 +25,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <div class="brand-mark">A</div>
           <p class="eyebrow">{{ t('مساعد الأعمال الذكي · يلزم الإعداد', 'AI BUSINESS ASSISTANT · SETUP REQUIRED') }}</p>
           <h1>{{ t('اربط مساحة عملك الآمنة', 'Connect your secure workspace') }}</h1>
-          <p>الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط واجهة API قبل تسجيل الدخول.</p>
+          <p>{{ t('الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط واجهة API قبل تسجيل الدخول.', 'The UI is ready, but public Firebase web-app settings and the API URL must be configured before sign-in.') }}</p>
           <div class="setup-steps">
             <p><strong>1.</strong> افتح الملف <code>frontend/public/runtime-config.json</code> داخل المستودع.</p>
             <p><strong>2.</strong> اضبط <code>apiBaseUrl</code> على عنوان واجهة API المنشورة.</p>
@@ -73,11 +73,11 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           @if (!business) {
             <section class="panel narrow">
               <p class="eyebrow">ابدأ هنا</p><h2>أنشئ مساحة عملك الأولى</h2>
-              <p class="muted">مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.</p>
+              <p class="muted">{{ t('مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.', 'This workspace belongs to your verified account. Other users cannot access it without membership.') }}</p>
               <form class="stack" (ngSubmit)="createWorkspace()">
-                <label>اسم النشاط التجاري<input name="businessName" required maxlength="160" [(ngModel)]="businessName"></label>
-                <label>العملة الافتراضية<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
-                <button class="primary" type="submit" [disabled]="loading">إنشاء مساحة عمل</button>
+                <label>{{ t('اسم النشاط التجاري', 'Business name') }}<input name="businessName" required maxlength="160" [(ngModel)]="businessName"></label>
+                <label>{{ t('العملة الافتراضية', 'Default currency') }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
+                <button class="primary" type="submit" [disabled]="loading">{{ t('إنشاء مساحة عمل', 'Create workspace') }}</button>
               </form>
             </section>
           } @else {
@@ -111,7 +111,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'customers') {
               <section class="panel">
-                <div class="section-head"><div><h2>قائمة العملاء</h2><p>تقتصر السجلات على مساحة العمل المحددة.</p></div><span class="count">{{ customers.length }} عميل</span></div>
+                <div class="section-head"><div><h2>{{ t('قائمة العملاء', 'Customer list') }}</h2><p>{{ t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') }}</p></div><span class="count">{{ customers.length }} عميل</span></div>
                 <form class="inline-form" (ngSubmit)="createCustomer()">
                   <input aria-label="اسم العميل" name="customerName" placeholder="اسم العميل" required [(ngModel)]="customerName">
                   <input aria-label="بريد العميل الإلكتروني" name="customerEmail" type="email" placeholder="البريد الإلكتروني (اختياري)" [(ngModel)]="customerEmail">
@@ -127,7 +127,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'products') {
               <section class="panel">
-                <div class="section-head"><div><h2>المنتجات والخدمات</h2><p>يتم حفظ الأسعار بدقة عشرية.</p></div><span class="count">{{ products.length }} منتج</span></div>
+                <div class="section-head"><div><h2>{{ t('المنتجات والخدمات', 'Products & services') }}</h2><p>{{ t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') }}</p></div><span class="count">{{ products.length }} منتج</span></div>
                 <form class="inline-form" (ngSubmit)="createProduct()">
                   <input aria-label="اسم المنتج" name="productName" placeholder="اسم المنتج" required [(ngModel)]="productName">
                   <input aria-label="سعر الوحدة" name="productPrice" type="number" min="0" step="0.01" placeholder="سعر الوحدة" required [(ngModel)]="productPrice">
@@ -143,7 +143,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'invoices') {
               <section class="panel">
-                <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.</p></div><span class="count">{{ invoices.length }} فاتورة</span></div>
+                <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>{{ t('أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.', 'Create an invoice draft and issue it after checking the details.') }}</p></div><span class="count">{{ invoices.length }} فاتورة</span></div>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (تلقائي إذا تُرك فارغًا)" maxlength="80" [(ngModel)]="invoiceNumber">
                   <select name="invoiceProduct" aria-label="المنتج" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
@@ -161,7 +161,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'payments') {
               <section class="panel">
-                <div class="section-head"><div><h2>تسجيل دفعة</h2><p>سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.</p></div><span class="count">{{ payments.length }} دفعة</span></div>
+                <div class="section-head"><div><h2>تسجيل دفعة</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><span class="count">{{ payments.length }} دفعة</span></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
                   <input aria-label="مبلغ الدفعة" name="paymentAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المستلم" required [(ngModel)]="paymentAmount">
                   <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">نقدًا</option><option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option><option value="wallet">محفظة إلكترونية</option><option value="other">أخرى</option></select>
@@ -180,7 +180,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
-                <div class="section-head"><div><h2>مساعد الأعمال الذكي</h2><p>الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.</p></div><span class="count">قراءة فقط</span></div>
+                <div class="section-head"><div><h2>مساعد الأعمال الذكي</h2><p>{{ t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') }}</p></div><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></div>
                 <div class="chat-log" aria-live="polite">
                   @if (!chatMessages.length) { <p class="empty">{{ t('اسأل عن الفواتير الصادرة أو المصروفات المسجلة أو أعداد العملاء والمنتجات.', 'Ask about issued invoices, recorded expenses, or customer and product counts.') }}</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'أنت' : 'المساعد الذكي' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
@@ -188,7 +188,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span><button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">إعادة المحاولة</button></div> }
                 @if (chatSending) { <p class="muted" role="status" aria-live="polite">المساعد الذكي يجهّز الإجابة…</p> }
                 <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
-                <p class="footnote">المساعد يقدّم إجابات استشارية فقط ولا ينشئ سجلات النشاط أو يعدّلها أو يحذفها. يجب إعداد مزوّد الذكاء الاصطناعي على الخادم.</p>
+                <p class="footnote">{{ t('المساعد يقدّم إجابات استشارية فقط ولا ينشئ سجلات النشاط أو يعدّلها أو يحذفها. يجب إعداد مزوّد الذكاء الاصطناعي على الخادم.', 'The assistant provides advice only and cannot create, edit, or delete business records. The AI provider must be configured on the server.') }}</p>
               </section>
             }
           }
@@ -274,10 +274,16 @@ export class AppComponent implements OnInit {
   chatSending = false;
   chatError = '';
 
-  constructor(private readonly auth: AuthService, private readonly api: ApiService) {}
+  constructor(private readonly auth: AuthService, private readonly api: ApiService) {
+    try {
+      const savedLanguage = localStorage.getItem('aba-language');
+      if (savedLanguage === 'ar' || savedLanguage === 'en') this.language = savedLanguage;
+    } catch { /* language preference is optional */ }
+  }
 
   toggleLanguage(): void {
     this.language = this.language === 'ar' ? 'en' : 'ar';
+    try { localStorage.setItem('aba-language', this.language); } catch { /* private browsing may block storage */ }
     document.documentElement.lang = this.language;
     document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
   }
