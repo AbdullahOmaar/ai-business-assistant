@@ -13,7 +13,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   template: `
     <div class="shell" lang="ar" dir="rtl">
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">جارٍ التحميل…</span></div> }
-      @if (setupNeeded) {
+      @if (!initialized) {
+        <main class="auth-card" role="status" aria-live="polite">
+          <div class="brand-mark">A</div>
+          <h1>جارٍ تشغيل التطبيق</h1>
+          <p class="muted">نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.</p>
+        </main>
+      } @else if (setupNeeded) {
         <main class="setup-card">
           <div class="brand-mark">A</div>
           <p class="eyebrow">مساعد الأعمال الذكي · يلزم الإعداد</p>
@@ -46,10 +52,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>Business<span class="light">Pilot</span></span></a>
           <p class="nav-label">مساحة العمل</p>
           <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>نظرة عامة</span></button>
-          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" (click)="setTab('invoices')"><span class="nav-icon فاتورة-icon" aria-hidden="true">▤</span><span>المبيعات والفواتير</span></button>
-          <button class="nav-item" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon منتج-icon" aria-hidden="true">◇</span><span>المنتجات والمخزون</span></button>
-          <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" (click)="setTab('customers')"><span class="nav-icon عميل-icon" aria-hidden="true">♧</span><span>العملاء</span></button>
-          <button class="nav-item" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon دفعة-icon" aria-hidden="true">↗</span><span>المدفوعات</span></button>
+          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>المبيعات والفواتير</span></button>
+          <button class="nav-item" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>المنتجات والمخزون</span></button>
+          <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>العملاء</span></button>
+          <button class="nav-item" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>المدفوعات</span></button>
           <button class="nav-item" aria-label="المساعد الذكي" title="المساعد الذكي" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>المساعد الذكي</span></button>
           <div class="sidebar-bottom"><span class="status-dot"></span> جلسة موثّقة<small>يتحقق الخادم من صلاحيات مساحة العمل</small></div>
         </aside>
@@ -222,6 +228,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   `]
 })
 export class AppComponent implements OnInit {
+  initialized = false;
   setupNeeded = false;
   signedIn = false;
   signingUp = false;
@@ -267,6 +274,7 @@ export class AppComponent implements OnInit {
   }
 
   private async initializeApp(): Promise<void> {
+    this.initialized = false;
     this.loading = true;
     this.error = '';
     try {
@@ -285,6 +293,7 @@ export class AppComponent implements OnInit {
       this.error = this.message(error);
     } finally {
       this.loading = false;
+      this.initialized = true;
     }
   }
 
