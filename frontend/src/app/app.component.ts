@@ -339,9 +339,9 @@ export class AppComponent implements OnInit {
     try {
       await this.installPrompt.prompt();
       const choice = await this.installPrompt.userChoice;
-      if (choice.outcome === 'accepted') { this.isInstalled = true; this.canInstall = false; }
+      if (choice.outcome === 'accepted') { this.isInstalled = true; }
     } catch { this.installHelp = true; }
-    finally { this.installPrompt = null; this.canInstall = false; }
+    finally { this.installPrompt = null; }
   }
 
   private async initializeApp(): Promise<void> {
