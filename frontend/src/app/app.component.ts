@@ -59,7 +59,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
             <div class="user-area"><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">تسجيل الخروج</button></div>
           </header>
 
-          @if (error) { <div class="error-banner" role="alert">{{ error }}</div> }
+          @if (error) { <div class="error-banner" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retry()">إعادة المحاولة</button></div> }
           @if (loading) { <p class="muted">جارٍ تحميل بيانات مساحة العمل…</p> }
 
           @if (!business) {
@@ -333,6 +333,14 @@ export class AppComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  retry(): void {
+    if (this.signedIn) {
+      void this.loadBusinesses();
+      return;
+    }
+    void this.initializeApp();
   }
 
   async loadBusinesses(): Promise<void> {
