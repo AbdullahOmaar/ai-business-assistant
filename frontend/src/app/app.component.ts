@@ -90,7 +90,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <article class="metric"><span>Invoiced sales</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} issued invoices</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>No issued sales in this period</small> }</article>
                   <article class="metric"><span>Collected payments</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} payments recorded</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>No recorded payments in this period</small> }</article>
                   <article class="metric"><span>Expenses</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} expenses recorded</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>No recorded expenses in this period</small> }</article>
-                  <article class="metric"><span>Outstanding balances</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>إصدارd invoices less allocations</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>No outstanding invoices in this period</small> }</article>
+                  <article class="metric"><span>Outstanding balances</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>Issued invoices less allocations</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>No outstanding invoices in this period</small> }</article>
                 </section>
               }
               <section class="notice"><strong>Data integrity</strong><span>These totals come from saved business records. They are not a profit calculation and currencies are never combined.</span></section>
@@ -107,7 +107,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <form class="inline-form" (ngSubmit)="createCustomer()">
                   <input aria-label="اسم العميل" name="customerName" placeholder="اسم العميل" required [(ngModel)]="customerName">
                   <input aria-label="Customer email" name="customerEmail" type="email" placeholder="Email (optional)" [(ngModel)]="customerEmail">
-                  <input aria-label="Customer phone" name="customerالهاتف" placeholder="الهاتف (optional)" [(ngModel)]="customerالهاتف">
+                  <input aria-label="Customer phone" name="customerPhone" placeholder="الهاتف (optional)" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">إضافة عميل</button>
                 </form>
                 <div class="list">
@@ -119,10 +119,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'products') {
               <section class="panel">
-                <div class="section-head"><div><h2>Products & services</h2><p>السعرs are stored with exact decimal precision.</p></div><span class="count">{{ products.length }} products</span></div>
+                <div class="section-head"><div><h2>Products & services</h2><p>Prices are stored with exact decimal precision.</p></div><span class="count">{{ products.length }} products</span></div>
                 <form class="inline-form" (ngSubmit)="createProduct()">
                   <input aria-label="اسم المنتج" name="productName" placeholder="اسم المنتج" required [(ngModel)]="productName">
-                  <input aria-label="Unit price" name="productالسعر" type="number" min="0" step="0.01" placeholder="Unit price" required [(ngModel)]="productالسعر">
+                  <input aria-label="Unit price" name="productPrice" type="number" min="0" step="0.01" placeholder="Unit price" required [(ngModel)]="productPrice">
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> Track stock</label>
                   <button class="primary" type="submit" [disabled]="loading">إضافة منتج</button>
                 </form>
@@ -139,9 +139,9 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (auto if blank)" maxlength="80" [(ngModel)]="invoiceNumber">
                   <select name="invoiceProduct" aria-label="Product" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
-                  <input name="invoiceالكمية" aria-label="الكمية" type="number" min="0.001" step="0.001" required [(ngModel)]="invoiceالكمية">
+                  <input name="invoiceQuantity" aria-label="الكمية" type="number" min="0.001" step="0.001" required [(ngModel)]="invoiceQuantity">
                   <button class="primary" type="submit" [disabled]="loading || !products.length">{{ editingInvoiceId ? 'حفظ كمسودة' : 'إنشاء مسودة' }}</button>
-                  @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceتعديل()">إلغاء</button> }
+                  @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">إلغاء</button> }
                 </form>
                 <div class="list">
                   @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.status }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
@@ -159,7 +159,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">نقدًا</option><option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option><option value="wallet">Mobile wallet</option><option value="other">Other</option></select>
                   <select aria-label="Invoice to allocate" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId"><option value="">Do not allocate yet</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
                   @if (paymentInvoiceId) { <input aria-label="Amount to allocate" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" placeholder="Amount allocated" [(ngModel)]="paymentAllocationAmount"> }
-                  <input aria-label="Payment reference" name="paymentالمرجع" maxlength="128" placeholder="المرجع (optional)" [(ngModel)]="paymentالمرجع">
+                  <input aria-label="Payment reference" name="paymentReference" maxlength="128" placeholder="المرجع (optional)" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">تسجيل دفعة</button>
                 </form>
                 <p class="footnote">العملة is fixed to {{ business.currency_code }} for this workspace. Allocations are validated against the invoice balance by the API; unallocated money remains recorded as received.</p>
@@ -177,7 +177,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @if (!chatMessages.length) { <p class="empty">Ask about recent issued invoices, recorded expenses, or your customer and product counts.</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'You' : 'Assistant' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">Sources: @for (source of message.sources; track source.id) { <span>{{ source.type }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
-                <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="Ask a question about your business…" required [(ngModel)]="chatمسودة"></textarea><button class="primary" type="submit" [disabled]="loading || !chatمسودة.trim()">إرسال</button></form>
+                <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="Ask a question about your business…" required [(ngModel)]="chatDraft"></textarea><button class="primary" type="submit" [disabled]="loading || !chatDraft.trim()">إرسال</button></form>
                 <p class="footnote">The assistant does not create, update, or delete business records. AI provider configuration is required on the backend.</p>
               </section>
             }
@@ -243,21 +243,21 @@ export class AppComponent implements OnInit {
   currencyCode = 'EGP';
   customerName = '';
   customerEmail = '';
-  customerالهاتف = '';
+  customerPhone = '';
   productName = '';
-  productالسعر = '';
+  productPrice = '';
   stockTracked = false;
   invoiceProductId = '';
-  invoiceالكمية = '1';
+  invoiceQuantity = '1';
   invoiceNumber = '';
   editingInvoiceId: string | null = null;
   paymentAmount = '';
   paymentAllocationAmount = '';
   paymentInvoiceId = '';
   paymentMethod = 'cash';
-  paymentالمرجع = '';
+  paymentReference = '';
   paymentIdempotencyKey = '';
-  chatمسودة = '';
+  chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources'] }> = [];
 
   constructor(private readonly auth: AuthService, private readonly api: ApiService) {}
@@ -412,9 +412,9 @@ export class AppComponent implements OnInit {
     try {
       await this.api.createCustomer(this.business.id, {
         name: this.customerName, email: this.customerEmail || undefined,
-        phone: this.customerالهاتف || undefined
+        phone: this.customerPhone || undefined
       });
-      this.customerName = ''; this.customerEmail = ''; this.customerالهاتف = '';
+      this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
       this.customers = await this.api.customers(this.business.id);
     } catch (error) {
       this.error = this.message(error);
@@ -429,9 +429,9 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       await this.api.createProduct(this.business.id, {
-        name: this.productName, unit_price: this.productالسعر, is_stock_tracked: this.stockTracked
+        name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked
       });
-      this.productName = ''; this.productالسعر = ''; this.stockTracked = false;
+      this.productName = ''; this.productPrice = ''; this.stockTracked = false;
       this.products = await this.api.products(this.business.id);
       if (this.products.length) this.invoiceProductId = this.products[0].id;
     } catch (error) {
@@ -450,14 +450,14 @@ export class AppComponent implements OnInit {
       const payload = {
         invoice_number: invoiceNumber,
         currency_code: this.business.currency_code,
-        lines: [{ product_id: this.invoiceProductId, quantity: String(this.invoiceالكمية) }]
+        lines: [{ product_id: this.invoiceProductId, quantity: String(this.invoiceQuantity) }]
       };
       if (this.editingInvoiceId) {
-        await this.api.updateمسودةInvoice(this.business.id, this.editingInvoiceId, payload);
+        await this.api.updateDraftInvoice(this.business.id, this.editingInvoiceId, payload);
       } else {
         await this.api.createInvoice(this.business.id, payload);
       }
-      this.cancelInvoiceتعديل();
+      this.cancelInvoiceEdit();
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.tab = 'invoices';
@@ -480,7 +480,7 @@ export class AppComponent implements OnInit {
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
       this.invoiceProductId = detail.lines[0].product_id;
-      this.invoiceالكمية = detail.lines[0].quantity;
+      this.invoiceQuantity = detail.lines[0].quantity;
     } catch (error) {
       this.error = this.message(error);
     } finally {
@@ -488,10 +488,10 @@ export class AppComponent implements OnInit {
     }
   }
 
-  cancelInvoiceتعديل(): void {
+  cancelInvoiceEdit(): void {
     this.editingInvoiceId = null;
     this.invoiceNumber = '';
-    this.invoiceالكمية = '1';
+    this.invoiceQuantity = '1';
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
@@ -512,16 +512,16 @@ export class AppComponent implements OnInit {
 
   async voidInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || !window.confirm(
-      `إلغاء invoice ${invoice.invoice_number}? إصدارd invoices with allocated payments cannot be voided; use a refund/credit-note workflow.`
+      `إلغاء invoice ${invoice.invoice_number}? Issued invoices with allocated payments cannot be voided; use a refund/credit-note workflow.`
     )) return;
     this.loading = true;
     this.error = '';
     try {
-      await this.api.voidInvoice(this.business.id, invoice.id, 'إلغاءed by an authorized workspace user');
+      await this.api.voidInvoice(this.business.id, invoice.id, 'Cancelled by an authorized workspace user');
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
-      if (this.editingInvoiceId === invoice.id) this.cancelInvoiceتعديل();
+      if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
     } catch (error) {
       this.error = this.message(error);
     } finally {
@@ -548,7 +548,7 @@ export class AppComponent implements OnInit {
         currency_code: this.business.currency_code,
         idempotency_key: this.paymentIdempotencyKey,
         method: this.paymentMethod,
-        reference: this.paymentالمرجع.trim() || undefined,
+        reference: this.paymentReference.trim() || undefined,
         allocations: this.paymentInvoiceId ? [{
           invoice_id: this.paymentInvoiceId,
           amount: allocation
@@ -556,7 +556,7 @@ export class AppComponent implements OnInit {
       });
       this.paymentAmount = '';
       this.paymentAllocationAmount = '';
-      this.paymentالمرجع = '';
+      this.paymentReference = '';
       this.paymentIdempotencyKey = '';
       this.payments = await this.api.payments(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
@@ -569,11 +569,11 @@ export class AppComponent implements OnInit {
   }
 
   async sendChat(): Promise<void> {
-    if (!this.business || !this.chatمسودة.trim()) return;
-    const question = this.chatمسودة.trim();
+    if (!this.business || !this.chatDraft.trim()) return;
+    const question = this.chatDraft.trim();
     const history = this.chatMessages.slice(-8);
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
-    this.chatمسودة = '';
+    this.chatDraft = '';
     this.loading = true;
     this.error = '';
     try {
