@@ -230,3 +230,69 @@ def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
         },
     )
     assert immutable.status_code == 422
+
+
+def test_payment_recording_is_idempotent_and_allocates_to_issued_invoice(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Payment Workflow", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Service", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-PAYMENT-1", "currency_code": "EGP",
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    assert draft.status_code == 201
+    invoice_id = draft.json()["id"]
+    issued = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={}
+    )
+    assert issued.status_code == 200
+
+    payload = {
+        "amount": "60.00",
+        "currency_code": "EGP",
+        "idempotency_key": "payment-test-once",
+        "method": "cash",
+        "allocations": [{"invoice_id": invoice_id, "amount": "60.00"}],
+    }
+    first = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json=payload)
+    assert first.status_code == 201
+    assert first.json()["amount"] == "60.00"
+    assert first.json()["allocations"] == [{"invoice_id": invoice_id, "amount": "60.00"}]
+
+    replay = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json=payload)
+    assert replay.status_code == 201
+    assert replay.json()["id"] == first.json()["id"]
+    assert len(configured_client.get(f"/api/v1/businesses/{business_id}/payments").json()) == 1
+
+    dashboard = configured_client.get(f"/api/v1/businesses/{business_id}/dashboard")
+    assert dashboard.status_code == 200
+    assert dashboard.json()["collected_payments"][0]["total"] == "60.00"
+    assert dashboard.json()["outstanding_balances"][0]["total"] == "40.00"
+
+
+def test_payment_recording_rejects_allocation_above_invoice_balance(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Payment Validation", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Service", "unit_price": "25.00", "is_stock_tracked": False
+    })
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-PAYMENT-OVER", "currency_code": "EGP",
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    invoice_id = draft.json()["id"]
+    configured_client.post(f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={})
+    response = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json={
+        "amount": "30.00",
+        "currency_code": "EGP",
+        "idempotency_key": "payment-too-large",
+        "allocations": [{"invoice_id": invoice_id, "amount": "30.00"}],
+    })
+    assert response.status_code == 422
