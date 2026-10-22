@@ -171,7 +171,7 @@ async def chat(
 
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(35.0, connect=10.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(18.0, connect=5.0, read=15.0, write=10.0, pool=5.0)) as client:
             response = await client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
