@@ -317,7 +317,7 @@ def test_payment_rejects_allocation_above_invoice_outstanding(workspace):
             lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
         )
         issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
-        with pytest.raises(WorkflowError):
+        with pytest.raises(ValueError, match="allocation exceeds invoice outstanding balance"):
             record_payment(
                 session, principal=principal, business_id=business_id,
                 amount=Decimal("120"), currency_code="EGP", idempotency_key="overpay",
