@@ -180,11 +180,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <section class="panel chat-panel">
                 <div class="section-head"><div><h2>مساعد الأعمال الذكي</h2><p>الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.</p></div><span class="count">قراءة فقط</span></div>
                 <div class="chat-log" aria-live="polite">
-                  @if (!chatMessages.length) { <p class="empty">Ask about recent فاتورة صادرة, recorded expenses, or your customer and product counts.</p> }
-                  @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'You' : 'Assistant' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">Sources: @for (source of message.sources; track source.id) { <span>{{ source.type }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
+                  @if (!chatMessages.length) { <p class="empty">اسأل عن الفواتير الصادرة أو المصروفات المسجلة أو أعداد العملاء والمنتجات.</p> }
+                  @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'أنت' : 'المساعد الذكي' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
-                <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="Ask a question about your business…" required [(ngModel)]="chatDraft"></textarea><button class="primary" type="submit" [disabled]="loading || !chatDraft.trim()">إرسال</button></form>
-                <p class="footnote">The assistant does not create, update, or delete business records. AI provider configuration is required on the backend.</p>
+                @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span><button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">إعادة المحاولة</button></div> }
+                @if (chatSending) { <p class="muted" role="status" aria-live="polite">المساعد الذكي يجهّز الإجابة…</p> }
+                <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? 'جارٍ الإرسال…' : 'إرسال' }}</button></form>
+                <p class="footnote">المساعد يقدّم إجابات استشارية فقط ولا ينشئ سجلات النشاط أو يعدّلها أو يحذفها. يجب إعداد مزوّد الذكاء الاصطناعي على الخادم.</p>
               </section>
             }
           }
@@ -266,6 +268,8 @@ export class AppComponent implements OnInit {
   paymentIdempotencyKey = '';
   chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources'] }> = [];
+  chatSending = false;
+  chatError = '';
 
   constructor(private readonly auth: AuthService, private readonly api: ApiService) {}
 
@@ -586,21 +590,23 @@ export class AppComponent implements OnInit {
   }
 
   async sendChat(): Promise<void> {
-    if (!this.business || !this.chatDraft.trim()) return;
+    if (!this.business || !this.chatDraft.trim() || this.chatSending) return;
     const question = this.chatDraft.trim();
     const history = this.chatMessages.slice(-8);
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
     this.chatDraft = '';
-    this.loading = true;
+    this.chatSending = true;
+    this.chatError = '';
     this.error = '';
     try {
       const reply: ChatReply = await this.api.chat(this.business.id, question, history);
       this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources }];
     } catch (error) {
-      this.error = this.message(error);
-      this.chatMessages = [...this.chatMessages, { role: 'assistant', content: this.message(error) }];
+      this.chatMessages = this.chatMessages.slice(0, -1);
+      this.chatDraft = question;
+      this.chatError = this.message(error);
     } finally {
-      this.loading = false;
+      this.chatSending = false;
     }
   }
 
