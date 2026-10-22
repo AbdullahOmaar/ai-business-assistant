@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "مساعد الأعمال الذكي",
+  "short_name": "مساعد الأعمال",
+  "description": "إدارة العملاء والمنتجات والفواتير والمدفوعات في مساحة عمل واحدة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f8fb",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
