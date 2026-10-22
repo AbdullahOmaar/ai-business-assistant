@@ -17,6 +17,7 @@ AI-powered business assistant for retail shops and service providers.
 - **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
 
 > **Deployment status:** The frontend and backend URLs above are the configured production aliases, but this does not mean the latest branch changes are deployed. The last verified production frontend deployment points to an older commit. The latest preview deployment attempt was blocked by Vercel's daily deployment API limit. Do not treat the current production build as containing PR #47 until a successful deployment is confirmed. Check /readyz, Firebase web-app configuration and authorized domains, backend CORS, and the frontend runtime config before relying on sign-in or AI features. Never put service-account credentials or API secrets in runtime-config.json or this README.
+
 ## Accepted V0 architecture
 
 - Frontend: Angular.
