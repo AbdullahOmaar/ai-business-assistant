@@ -491,7 +491,23 @@ export class AppComponent implements OnInit {
   }
 
   private message(error: unknown): string {
-    if (error instanceof Error) return error.message;
+    const value = error as { code?: string; message?: string };
+    const code = typeof value?.code === 'string' ? value.code : '';
+    const message = typeof value?.message === 'string' ? value.message : '';
+    const authMessages: Record<string, string> = {
+      'auth/email-already-in-use': 'This email already has an account. Sign in instead, or use a different email.',
+      'auth/invalid-email': 'Enter a valid email address.',
+      'auth/weak-password': 'Choose a stronger password with at least 6 characters.',
+      'auth/operation-not-allowed': 'Email/password sign-up is disabled in Firebase Authentication. Enable the Email/Password provider in Firebase Console.',
+      'auth/unauthorized-domain': 'This website domain is not authorized in Firebase Authentication. Add ai-business-assistant-web.vercel.app to Authorized domains.',
+      'auth/network-request-failed': 'Could not reach Firebase Authentication. Check the internet connection and Firebase API key restrictions, then try again.',
+      'auth/too-many-requests': 'Firebase temporarily blocked repeated attempts. Wait a little and try again.'
+    };
+    if (code && authMessages[code]) return authMessages[code];
+    if (/failed to fetch|networkerror|load failed/i.test(message)) {
+      return 'The request could not reach a service. Check your connection. If account creation succeeded, switch to Sign in before trying again; otherwise verify Firebase Authentication and API/CORS settings.';
+    }
+    if (message) return message;
     return 'An unexpected error occurred. Please try again.';
   }
 }
