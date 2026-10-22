@@ -22,10 +22,24 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
-from app.services import WorkflowError, create_expense
+from app.services import WorkflowError, create_expense, record_payment
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
 ZERO = Decimal("0")
+
+
+class PaymentAllocationInput(BaseModel):
+    invoice_id: UUID
+    amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+
+
+class PaymentInput(BaseModel):
+    amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    currency_code: str = Field(min_length=3, max_length=3)
+    idempotency_key: str = Field(min_length=1, max_length=128)
+    allocations: list[PaymentAllocationInput] = Field(default_factory=list, max_length=100)
+    method: str | None = Field(default=None, max_length=32)
+    reference: str | None = Field(default=None, max_length=128)
 
 
 class ExpenseInput(BaseModel):
@@ -765,6 +779,33 @@ def deactivate_product(business_id: UUID, product_id: UUID,
         session.flush()
     _commit(session, op)
     return Response(status_code=204)
+
+
+@router.post("/payments", status_code=201)
+def post_payment(business_id: UUID, body: PaymentInput,
+                 session: Session = Depends(get_session),
+                 principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Record received money and optional invoice allocations atomically."""
+    item = _commit(session, lambda: record_payment(
+        session,
+        principal=principal,
+        business_id=business_id,
+        amount=body.amount,
+        currency_code=body.currency_code,
+        idempotency_key=body.idempotency_key,
+        allocations=[(allocation.invoice_id, allocation.amount) for allocation in body.allocations],
+        method=body.method,
+        reference=body.reference,
+    ))
+    allocations = session.scalars(select(PaymentAllocation).where(
+        PaymentAllocation.business_id == business_id,
+        PaymentAllocation.payment_id == item.id,
+    )).all()
+    return {
+        **_dict(item, ("id", "customer_id", "amount", "currency_code", "received_at",
+                       "method", "reference", "idempotency_key")),
+        "allocations": [_dict(allocation, ("invoice_id", "amount")) for allocation in allocations],
+    }
 
 
 @router.get("/payments")
