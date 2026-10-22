@@ -12,7 +12,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   imports: [CommonModule, FormsModule],
   template: `
     <div class="shell" [class.english]="language === 'en'" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
-      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">جارٍ التحميل…</span></div> }
+      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
@@ -113,10 +113,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('قائمة العملاء', 'Customer list') }}</h2><p>{{ t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') }}</p></div><span class="count">{{ customers.length }} عميل</span></div>
                 <form class="inline-form" (ngSubmit)="createCustomer()">
-                  <input aria-label="اسم العميل" name="customerName" placeholder="اسم العميل" required [(ngModel)]="customerName">
-                  <input aria-label="بريد العميل الإلكتروني" name="customerEmail" type="email" placeholder="البريد الإلكتروني (اختياري)" [(ngModel)]="customerEmail">
-                  <input aria-label="Customer phone" name="customerPhone" placeholder="الهاتف (اختياري)" [(ngModel)]="customerPhone">
-                  <button class="primary" type="submit" [disabled]="loading">إضافة عميل</button>
+                  <input [attr.aria-label]="t('اسم العميل', 'Customer name')" name="customerName" [placeholder]="t('اسم العميل', 'Customer name')" required [(ngModel)]="customerName">
+                  <input [attr.aria-label]="t('بريد العميل الإلكتروني', 'Customer email')" name="customerEmail" type="email" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="customerEmail">
+                  <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
+                  <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
                 <div class="list">
                   @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || 'لا يوجد بريد إلكتروني' }} · {{ customer.phone || 'لا يوجد هاتف' }}</small></div></article> }
@@ -129,10 +129,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('المنتجات والخدمات', 'Products & services') }}</h2><p>{{ t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') }}</p></div><span class="count">{{ products.length }} منتج</span></div>
                 <form class="inline-form" (ngSubmit)="createProduct()">
-                  <input aria-label="اسم المنتج" name="productName" placeholder="اسم المنتج" required [(ngModel)]="productName">
-                  <input aria-label="سعر الوحدة" name="productPrice" type="number" min="0" step="0.01" placeholder="سعر الوحدة" required [(ngModel)]="productPrice">
-                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> متابعة المخزون</label>
-                  <button class="primary" type="submit" [disabled]="loading">إضافة منتج</button>
+                  <input [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName">
+                  <input [attr.aria-label]="t('سعر الوحدة', 'Unit price')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('سعر الوحدة', 'Unit price')" required [(ngModel)]="productPrice">
+                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
+                  <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 <div class="list">
                   @for (product of products; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? 'تتم متابعة المخزون' : 'خدمة / لا تتم متابعة المخزون' }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
@@ -145,14 +145,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <section class="panel">
                 <div class="section-head"><div><h2>المبيعات والفواتير</h2><p>{{ t('أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.', 'Create an invoice draft and issue it after checking the details.') }}</p></div><span class="count">{{ invoices.length }} فاتورة</span></div>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
-                  <input name="invoiceNumber" aria-label="رقم الفاتورة" placeholder="رقم الفاتورة (تلقائي إذا تُرك فارغًا)" maxlength="80" [(ngModel)]="invoiceNumber">
-                  <select name="invoiceProduct" aria-label="المنتج" required [(ngModel)]="invoiceProductId"><option value="" disabled>اختر منتجًا</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
+                  <input name="invoiceNumber" aria-label="رقم الفاتورة" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
+                  <select name="invoiceProduct" aria-label="المنتج" required [(ngModel)]="invoiceProductId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
                   <input name="invoiceQuantity" aria-label="الكمية" type="number" min="0.001" step="0.001" required [(ngModel)]="invoiceQuantity">
-                  <button class="primary" type="submit" [disabled]="loading || !products.length">{{ editingInvoiceId ? 'حفظ كمسودة' : 'إنشاء مسودة' }}</button>
-                  @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">إلغاء</button> }
+                  <button class="primary" type="submit" [disabled]="loading || !products.length">{{ editingInvoiceId ? t('حفظ كمسودة', 'Save draft') : t('إنشاء مسودة', 'Create draft') }}</button>
+                  @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
                 <div class="list">
-                  @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
+                  @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
                   @if (!invoices.length) { <p class="empty">{{ t('لا توجد فواتير بعد. أضف منتجًا أولًا ثم أنشئ مسودة فاتورة.', 'No invoices yet. Add a product first, then create an invoice draft.') }}</p> }
                 </div>
                 <p class="footnote">إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.</p>
@@ -163,12 +163,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <section class="panel">
                 <div class="section-head"><div><h2>تسجيل دفعة</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><span class="count">{{ payments.length }} دفعة</span></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
-                  <input aria-label="مبلغ الدفعة" name="paymentAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المستلم" required [(ngModel)]="paymentAmount">
-                  <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">نقدًا</option><option value="bank_transfer">تحويل بنكي</option><option value="card">بطاقة</option><option value="wallet">محفظة إلكترونية</option><option value="other">أخرى</option></select>
-                  <select aria-label="الفاتورة المراد تخصيص الدفعة لها" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId"><option value="">عدم تخصيص الدفعة الآن</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input aria-label="المبلغ المراد تخصيصه" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" placeholder="المبلغ المخصص للفاتورة" [(ngModel)]="paymentAllocationAmount"> }
-                  <input aria-label="مرجع الدفعة" name="paymentReference" maxlength="128" placeholder="المرجع (اختياري)" [(ngModel)]="paymentReference">
-                  <button class="primary" type="submit" [disabled]="loading || !paymentAmount">تسجيل دفعة</button>
+                  <input aria-label="مبلغ الدفعة" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount">
+                  <select aria-label="طريقة الدفع" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
+                  <select aria-label="الفاتورة المراد تخصيص الدفعة لها" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (paymentInvoiceId) { <input aria-label="المبلغ المراد تخصيصه" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount"> }
+                  <input aria-label="مرجع الدفعة" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
+                  <button class="primary" type="submit" [disabled]="loading || !paymentAmount">{{ t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
                 <p class="footnote">العملة المحددة هي {{ business.currency_code }} لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.</p>
                 <div class="list">
@@ -192,7 +192,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
           }
-          <footer>مساعد الأعمال الذكي <span>جلسة Firebase موثّقة · واجهة API معزولة حسب النشاط · قاعدة بيانات PostgreSQL</span></footer>
+          <footer>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }} <span>{{ t('جلسة Firebase موثّقة · واجهة API معزولة حسب النشاط · قاعدة بيانات PostgreSQL', 'Verified Firebase session · business-scoped API · PostgreSQL database') }}</span></footer>
         </main>
       }
     </div>
@@ -321,8 +321,9 @@ export class AppComponent implements OnInit {
   }
 
   invoiceStatusLabel(status: string): string {
-    const labels: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
-    return labels[status] || 'غير محددة';
+    const labelsAr: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
+    const labelsEn: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided', paid: 'Paid', overdue: 'Overdue' };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('غير محددة', 'Unknown');
   }
 
   get pageTitle(): string {
