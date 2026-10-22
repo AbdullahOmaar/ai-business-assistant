@@ -262,12 +262,14 @@ def test_payment_recording_is_idempotent_and_allocates_to_issued_invoice(configu
     first = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json=payload)
     assert first.status_code == 201
     assert first.json()["amount"] == "60.00"
-    assert first.json()["allocations"] == [{"invoice_id": invoice_id, "amount": "60.00"}]
 
     replay = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json=payload)
     assert replay.status_code == 201
     assert replay.json()["id"] == first.json()["id"]
-    assert len(configured_client.get(f"/api/v1/businesses/{business_id}/payments").json()) == 1
+    listed = configured_client.get(f"/api/v1/businesses/{business_id}/payments")
+    assert listed.status_code == 200
+    assert len(listed.json()) == 1
+    assert listed.json()[0]["allocations"] == [{"invoice_id": invoice_id, "amount": "60.00"}]
 
     dashboard = configured_client.get(f"/api/v1/businesses/{business_id}/dashboard")
     assert dashboard.status_code == 200
