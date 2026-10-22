@@ -2,6 +2,21 @@
 
 AI-powered business assistant for retail shops and service providers.
 
+## Live links and deployment
+
+- **Live frontend:** https://ai-business-assistant-web.vercel.app
+- **Backend API base URL:** https://ai-business-assistant-api.vercel.app
+- **Backend readiness check:** https://ai-business-assistant-api.vercel.app/readyz
+- **Frontend Vercel project and deployments:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-web
+- **Backend Vercel project and deployments:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
+- **Backend environment variables:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
+- **Firebase Authentication settings:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
+- **GitHub repository:** https://github.com/AbdullahOmaar/ai-business-assistant
+- **GitHub Actions / CI:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
+- **Current auth + language fix PR:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/47
+- **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
+
+> **Deployment status:** The frontend and backend URLs above are the configured production aliases, but this does not mean the latest branch changes are deployed. The last verified production frontend deployment points to an older commit. The latest preview deployment attempt was blocked by Vercel's daily deployment API limit. Do not treat the current production build as containing PR #47 until a successful deployment is confirmed. Check /readyz, Firebase web-app configuration and authorized domains, backend CORS, and the frontend runtime config before relying on sign-in or AI features. Never put service-account credentials or API secrets in runtime-config.json or this README.
 ## Accepted V0 architecture
 
 - Frontend: Angular.
