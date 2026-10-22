@@ -171,20 +171,15 @@ async def chat(
 
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
     try:
+        provider_payload = {
+            "model": model,
+            "messages": messages,
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+            "max_tokens": 900,
+        }
         async with httpx.AsyncClient(timeout=httpx.Timeout(18.0, connect=5.0, read=15.0, write=10.0, pool=5.0)) as client:
-            response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0.2,
-                    "max_tokens": 900,
-                },
-            )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=502, detail="The AI provider could not complete this request.")
+            response = await _provider_post(client, headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, payload=provider_payload)
         payload = response.json()
         raw = payload["choices"][0]["message"]["content"]
         parsed = json.loads(raw)
