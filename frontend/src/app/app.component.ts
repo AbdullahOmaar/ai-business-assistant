@@ -11,7 +11,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="shell" lang="ar" dir="rtl">
+    <div class="shell" [class.english]="language === 'en'" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">جارٍ التحميل…</span></div> }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
@@ -35,34 +35,35 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         </main>
       } @else if (!signedIn) {
         <main class="auth-card">
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
           <div class="brand-mark">A</div>
-          <p class="eyebrow">كل أعمالك في مكان واحد</p>
-          <h1>{{ signingUp ? 'إنشاء حسابك' : 'مرحبًا بعودتك' }}</h1>
-          <p class="muted">سجّل الدخول بأمان للوصول إلى مساحات العمل المصرح لك بها فقط.</p>
+          <p class="eyebrow">{{ t('كل أعمالك في مكان واحد', 'YOUR BUSINESS, IN ONE PLACE') }}</p>
+          <h1>{{ signingUp ? t('إنشاء حسابك', 'Create your account') : t('مرحبًا بعودتك', 'Welcome back') }}</h1>
+          <p class="muted">{{ t('سجّل الدخول بأمان للوصول إلى مساحات العمل المصرح لك بها فقط.', 'Sign in securely to access only the workspaces you belong to.') }}</p>
           <form (ngSubmit)="submitAuth()" class="stack">
-            <label>البريد الإلكتروني<input name="email" type="email" autocomplete="email" required [(ngModel)]="email"></label>
-            <label>كلمة المرور<input name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password"></label>
-            <button class="primary" type="submit" [disabled]="loading">{{ loading ? 'جارٍ التنفيذ…' : (signingUp ? 'إنشاء الحساب' : 'تسجيل الدخول') }}</button>
+            <label>{{ t('البريد الإلكتروني', 'Email address') }}<input name="email" type="email" autocomplete="email" required [(ngModel)]="email"></label>
+            <label>{{ t('كلمة المرور', 'Password') }}<input name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password"></label>
+            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
           </form>
-          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? 'لديك حساب بالفعل؟ سجّل الدخول' : 'مستخدم جديد؟ أنشئ حسابًا' }}</button>
+          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
           @if (error) { <p class="error" role="alert">{{ error }}</p> }
         </main>
       } @else {
         <aside class="sidebar">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
-          <p class="nav-label">مساحة العمل</p>
-          <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>نظرة عامة</span></button>
-          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>المبيعات والفواتير</span></button>
-          <button class="nav-item" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>المنتجات والمخزون</span></button>
-          <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>العملاء</span></button>
-          <button class="nav-item" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>المدفوعات</span></button>
-          <button class="nav-item" aria-label="المساعد الذكي" title="المساعد الذكي" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>المساعد الذكي</span></button>
+          <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
+          <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('نظرة عامة', 'Overview') }}</span></button>
+          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</span></button>
+          <button class="nav-item" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+          <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
+          <button class="nav-item" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
+          <button class="nav-item" aria-label="المساعد الذكي" title="المساعد الذكي" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
           <div class="sidebar-bottom"><span class="status-dot"></span> جلسة موثّقة<small>يتحقق الخادم من صلاحيات مساحة العمل</small></div>
         </aside>
         <main class="main">
           <header class="topbar">
-            <div><p class="eyebrow">مساحة العمل</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area"><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">تسجيل الخروج</button></div>
+            <div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
+            <div class="user-area"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
 
           @if (error) { <div class="error-banner" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retry()">إعادة المحاولة</button></div> }
@@ -198,7 +199,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   styles: [`
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
-    .shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
+    .shell{min-height:100vh}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:right}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
     .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}.quick-card{text-align:left;padding:18px}.quick-card strong,.quick-card span{display:block}.quick-card strong{font-size:13px;margin-bottom:8px}.quick-card span{font-size:11px;color:#6b7280}
@@ -211,7 +212,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       .nav-item>span:not(.nav-icon){display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
       .nav-item .nav-icon{display:grid;flex:0 0 27px;width:27px;height:27px;font-size:17px;border-radius:9px}
       .nav-item.active{background:#1e293b;box-shadow:inset 0 -2px #5eead4;color:#fff}
-      .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}
+      .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}.shell.english .sidebar{inset:auto 0 0}.shell.english .nav-item{text-align:center}
       .topbar{align-items:flex-start;margin-bottom:18px;gap:10px}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
       .user-area{gap:6px}.user-area>span{display:none}.user-area .secondary{padding:9px 10px;min-height:40px}
@@ -230,6 +231,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   `]
 })
 export class AppComponent implements OnInit {
+  language: 'ar' | 'en' = 'ar';
   initialized = false;
   setupNeeded = false;
   signedIn = false;
@@ -273,6 +275,16 @@ export class AppComponent implements OnInit {
 
   constructor(private readonly auth: AuthService, private readonly api: ApiService) {}
 
+  toggleLanguage(): void {
+    this.language = this.language === 'ar' ? 'en' : 'ar';
+    document.documentElement.lang = this.language;
+    document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
+  }
+
+  t(arabic: string, english: string): string {
+    return this.language === 'ar' ? arabic : english;
+  }
+
   ngOnInit(): void {
     void this.initializeApp();
   }
@@ -312,7 +324,7 @@ export class AppComponent implements OnInit {
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
       payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي'
     };
-    return titles[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant' } as Record<Tab, string>)[this.tab];
   }
 
   async submitAuth(): Promise<void> {
@@ -615,7 +627,7 @@ export class AppComponent implements OnInit {
     }
   }
 
-  private message(error: unknown): string {
+  private message(error: unknown, context: 'auth' | 'api' = 'api'): string {
     const value = error as { code?: string; message?: string };
     const code = typeof value?.code === 'string' ? value.code : '';
     const message = typeof value?.message === 'string' ? value.message : '';
@@ -629,8 +641,10 @@ export class AppComponent implements OnInit {
       'auth/too-many-requests': 'حظر Firebase المحاولات المتكررة مؤقتًا. انتظر قليلًا ثم حاول مجددًا.'
     };
     if (code && authMessages[code]) return authMessages[code];
+    if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
-      return 'تعذر الوصول إلى الخدمة. تحقق من اتصال الإنترنت. إذا نجح إنشاء الحساب، انتقل إلى تسجيل الدخول قبل إعادة المحاولة؛ وإلا فتحقق من إعدادات Firebase Authentication وAPI وCORS.';
+      if (context === 'auth') return this.t('تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وتفعيل تسجيل الدخول بالبريد وكلمة المرور وإضافة نطاق الموقع إلى النطاقات المصرح بها في Firebase.', 'Could not reach Firebase Authentication. Check your internet, enable Email/Password sign-in, and authorize this site domain in Firebase.');
+      return this.t('تعذر الوصول إلى الخدمة. تحقق من اتصال الإنترنت وإعدادات API وCORS ثم حاول مجددًا.', 'The service could not be reached. Check your internet connection, API availability, and CORS settings, then retry.');
     }
     if (message) return message;
     return 'حدث خطأ غير متوقع. حاول مجددًا.';
