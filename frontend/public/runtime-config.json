@@ -1,7 +1,7 @@
 {
   "apiBaseUrl": "https://ai-business-assistant-api.vercel.app",
   "firebase": {
-    "apiKey": "",
+    "apiKey": "AIzaSyBIa1UwKLtwzamVYa47IQEkroVbv3Efkj8",
     "authDomain": "ai-business-assistant-97f37.firebaseapp.com",
     "projectId": "ai-business-assistant-97f37",
     "appId": "1:803541434464:web:57242ff4d0ae409047c305"
