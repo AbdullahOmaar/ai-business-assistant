@@ -24,9 +24,9 @@ def test_non_member_cannot_read_dashboard_or_mutate_workspace():
     try:
         client = TestClient(app)
         created = client.post(
-                "/api/v1/businesses",
-                json={"name": "Private Workspace", "currency_code": "EGP"},
-            )
+            "/api/v1/businesses",
+            json={"name": "Private Workspace", "currency_code": "EGP"},
+        )
         assert created.status_code == 201
         business_id = created.json()["id"]
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
