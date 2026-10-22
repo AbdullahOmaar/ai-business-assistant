@@ -24,14 +24,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <div class="brand-mark">A</div>
           <p class="eyebrow">مساعد الأعمال الذكي · يلزم الإعداد</p>
           <h1>اربط مساحة عملك الآمنة</h1>
-          <p>الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط API قبل تسجيل الدخول.</p>
+          <p>الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط واجهة API قبل تسجيل الدخول.</p>
           <div class="setup-steps">
             <p><strong>1.</strong> افتح الملف <code>frontend/public/runtime-config.json</code> داخل المستودع.</p>
             <p><strong>2.</strong> اضبط <code>apiBaseUrl</code> على عنوان واجهة API المنشورة.</p>
-            <p><strong>3.</strong> أدخل إعدادات تطبيق Firebase العامة: <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, and <code>appId</code>.</p>
+            <p><strong>3.</strong> أدخل إعدادات تطبيق Firebase العامة: <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, و<code>appId</code>.</p>
             <p><strong>4.</strong> اضبط معرّف مشروع Firebase المطابق وبيانات حساب الخدمة كأسرار في الخادم. لا تضع الأسرار داخل هذا الملف.</p>
           </div>
-          <p class="footnote">No fake data is shown. The app will stay closed until these settings are present.</p>
+          <p class="footnote">لن نعرض بيانات تجريبية. سيظل التطبيق مغلقًا حتى اكتمال هذه الإعدادات.</p>
         </main>
       } @else if (!signedIn) {
         <main class="auth-card">
