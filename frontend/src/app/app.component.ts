@@ -235,10 +235,10 @@ export class AppComponent implements OnInit {
   business: Business | null = null;
   selectedBusinessId = '';
   dashboard: Dashboard | null = null;
-  عميل: Customer[] = [];
-  منتج: Product[] = [];
-  فاتورة: Invoice[] = [];
-  دفعة: Payment[] = [];
+  customers: Customer[] = [];
+  products: Product[] = [];
+  invoices: Invoice[] = [];
+  payments: Payment[] = [];
   businessName = '';
   currencyCode = 'EGP';
   customerName = '';
