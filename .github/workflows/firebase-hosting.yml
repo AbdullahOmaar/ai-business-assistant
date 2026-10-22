@@ -27,12 +27,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm install
+
+      - name: Configure public Firebase web app settings
+        env:
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: |
+          node -e 'const fs=require("fs"); const p="frontend/public/runtime-config.json"; const c=JSON.parse(fs.readFileSync(p,"utf8")); c.firebase={...c.firebase,apiKey:process.env.FIREBASE_WEB_API_KEY || "",authDomain:"ai-business-assistant-97f37.firebaseapp.com",projectId:"ai-business-assistant-97f37",appId:"1:803541434464:web:57242ff4d0ae409047c305"}; fs.writeFileSync(p,JSON.stringify(c,null,2)+"\n");'
+          if [ -z "$FIREBASE_WEB_API_KEY" ]; then echo "Missing FIREBASE_WEB_API_KEY secret"; exit 1; fi
 
       - name: Build Angular production bundle
         working-directory: frontend
@@ -43,5 +48,5 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          projectId: ai-business-assistant-97f37
           channelId: live
