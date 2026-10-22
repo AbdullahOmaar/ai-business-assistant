@@ -338,7 +338,7 @@ export class AppComponent implements OnInit {
       this.userEmail = user.email || 'مستخدم مسجّل الدخول';
       await this.loadBusinesses();
     } catch (error) {
-      this.error = this.message(error);
+      this.error = this.message(error, 'auth');
     } finally {
       this.loading = false;
     }
