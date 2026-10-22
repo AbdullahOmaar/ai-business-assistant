@@ -21,9 +21,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
           <div class="brand-mark">A</div>
-          <p class="eyebrow">مساعد الأعمال الذكي · يلزم الإعداد</p>
-          <h1>اربط مساحة عملك الآمنة</h1>
+          <p class="eyebrow">{{ t('مساعد الأعمال الذكي · يلزم الإعداد', 'AI BUSINESS ASSISTANT · SETUP REQUIRED') }}</p>
+          <h1>{{ t('اربط مساحة عملك الآمنة', 'Connect your secure workspace') }}</h1>
           <p>الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط واجهة API قبل تسجيل الدخول.</p>
           <div class="setup-steps">
             <p><strong>1.</strong> افتح الملف <code>frontend/public/runtime-config.json</code> داخل المستودع.</p>
@@ -81,7 +82,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
             </section>
           } @else {
             <section class="workspace-bar">
-              <div><span class="eyebrow">النشاط الحالي</span><strong>{{ business.name }}</strong></div>
+              <div><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
               <select aria-label="اختيار النشاط" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
@@ -89,18 +90,18 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'overview') {
               <section class="hero">
-                <div><p class="eyebrow light">ملخص النشاط</p><h2>القرارات الأفضل تبدأ<br>بأرقام موثوقة.</h2><p>يعرض النشاط المسجّل خلال آخر 30 يومًا. يتم فصل الإجماليات حسب العملة.</p></div>
+                <div><p class="eyebrow light">{{ t('ملخص النشاط', 'BUSINESS SUMMARY') }}</p><h2>{{ t('القرارات الأفضل تبدأ', 'Better decisions start') }}<br>{{ t('بأرقام موثوقة.', 'with reliable numbers.') }}</h2><p>يعرض النشاط المسجّل خلال آخر 30 يومًا. يتم فصل الإجماليات حسب العملة.</p></div>
                 <div class="hero-mark" aria-hidden="true">AI</div>
               </section>
               @if (dashboard) {
                 <section class="metric-grid">
-                  <article class="metric"><span>المبيعات بالفواتير</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} فاتورة صادرة</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>لا توجد مبيعات بفواتير صادرة خلال الفترة</small> }</article>
-                  <article class="metric"><span>المدفوعات المحصّلة</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} دفعة مسجلة</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>لا توجد مدفوعات مسجلة خلال الفترة</small> }</article>
-                  <article class="metric"><span>المصروفات</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} مصروف مسجل</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>لا توجد مصروفات مسجلة خلال الفترة</small> }</article>
-                  <article class="metric"><span>الأرصدة المستحقة</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>الفواتير الصادرة بعد خصم المبالغ المخصصة</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>لا توجد فواتير مستحقة خلال الفترة</small> }</article>
+                  <article class="metric"><span>{{ t('المبيعات بالفواتير', 'Invoiced sales') }}</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} فاتورة صادرة</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>لا توجد مبيعات بفواتير صادرة خلال الفترة</small> }</article>
+                  <article class="metric"><span>{{ t('المدفوعات المحصّلة', 'Payments collected') }}</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} دفعة مسجلة</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>لا توجد مدفوعات مسجلة خلال الفترة</small> }</article>
+                  <article class="metric"><span>{{ t('المصروفات', 'Expenses') }}</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} مصروف مسجل</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>لا توجد مصروفات مسجلة خلال الفترة</small> }</article>
+                  <article class="metric"><span>{{ t('الأرصدة المستحقة', 'Outstanding balances') }}</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>الفواتير الصادرة بعد خصم المبالغ المخصصة</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>لا توجد فواتير مستحقة خلال الفترة</small> }</article>
                 </section>
               }
-              <section class="notice"><strong>سلامة البيانات</strong><span>الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.</span></section>
+              <section class="notice"><strong>{{ t('سلامة البيانات', 'Data integrity') }}</strong><span>الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.</span></section>
               <section class="quick-grid">
                 <button class="quick-card" (click)="setTab('customers')"><strong>العملاء</strong><span>{{ customers.length }} سجلات نشطة · عرض القائمة ←</span></button>
                 <button class="quick-card" (click)="setTab('products')"><strong>المنتجات</strong><span>{{ products.length }} سجلات نشطة · عرض الكتالوج ←</span></button>
@@ -119,7 +120,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 </form>
                 <div class="list">
                   @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || 'لا يوجد بريد إلكتروني' }} · {{ customer.phone || 'لا يوجد هاتف' }}</small></div></article> }
-                  @if (!customers.length) { <p class="empty">لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.</p> }
+                  @if (!customers.length) { <p class="empty">{{ t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.') }}</p> }
                 </div>
               </section>
             }
@@ -135,7 +136,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 </form>
                 <div class="list">
                   @for (product of products; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? 'تتم متابعة المخزون' : 'خدمة / لا تتم متابعة المخزون' }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
-                  @if (!products.length) { <p class="empty">لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.</p> }
+                  @if (!products.length) { <p class="empty">{{ t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.') }}</p> }
                 </div>
               </section>
             }
@@ -152,7 +153,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 </form>
                 <div class="list">
                   @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">تعديل</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">إصدار</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">إلغاء</button> }</article> }
-                  @if (!invoices.length) { <p class="empty">لا توجد فواتير بعد. أضف منتجًا أولًا ثم أنشئ مسودة فاتورة.</p> }
+                  @if (!invoices.length) { <p class="empty">{{ t('لا توجد فواتير بعد. أضف منتجًا أولًا ثم أنشئ مسودة فاتورة.', 'No invoices yet. Add a product first, then create an invoice draft.') }}</p> }
                 </div>
                 <p class="footnote">إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.</p>
               </section>
@@ -172,7 +173,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <p class="footnote">العملة المحددة هي {{ business.currency_code }} لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.</p>
                 <div class="list">
                   @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ payment.received_at | date:'medium' }} · {{ payment.method || 'طريقة الدفع غير محددة' }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' تخصيص للفاتورة' : 'دفعة غير مخصصة' }}</small></div></article> }
-                  @if (!payments.length) { <p class="empty">لا توجد دفعات مسجلة حتى الآن.</p> }
+                  @if (!payments.length) { <p class="empty">{{ t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.') }}</p> }
                 </div>
               </section>
             }
@@ -181,12 +182,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <section class="panel chat-panel">
                 <div class="section-head"><div><h2>مساعد الأعمال الذكي</h2><p>الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.</p></div><span class="count">قراءة فقط</span></div>
                 <div class="chat-log" aria-live="polite">
-                  @if (!chatMessages.length) { <p class="empty">اسأل عن الفواتير الصادرة أو المصروفات المسجلة أو أعداد العملاء والمنتجات.</p> }
+                  @if (!chatMessages.length) { <p class="empty">{{ t('اسأل عن الفواتير الصادرة أو المصروفات المسجلة أو أعداد العملاء والمنتجات.', 'Ask about issued invoices, recorded expenses, or customer and product counts.') }}</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? 'أنت' : 'المساعد الذكي' }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
                 @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span><button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">إعادة المحاولة</button></div> }
                 @if (chatSending) { <p class="muted" role="status" aria-live="polite">المساعد الذكي يجهّز الإجابة…</p> }
-                <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? 'جارٍ الإرسال…' : 'إرسال' }}</button></form>
+                <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
                 <p class="footnote">المساعد يقدّم إجابات استشارية فقط ولا ينشئ سجلات النشاط أو يعدّلها أو يحذفها. يجب إعداد مزوّد الذكاء الاصطناعي على الخادم.</p>
               </section>
             }
@@ -640,13 +641,25 @@ export class AppComponent implements OnInit {
       'auth/network-request-failed': 'تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وقيود مفتاح Firebase ثم حاول مجددًا.',
       'auth/too-many-requests': 'حظر Firebase المحاولات المتكررة مؤقتًا. انتظر قليلًا ثم حاول مجددًا.'
     };
-    if (code && authMessages[code]) return authMessages[code];
+    if (code && authMessages[code]) {
+      if (this.language === 'ar') return authMessages[code];
+      const englishAuthMessages: Record<string, string> = {
+        'auth/email-already-in-use': 'This email already has an account. Sign in or use another email.',
+        'auth/invalid-email': 'Enter a valid email address.',
+        'auth/weak-password': 'Choose a stronger password with at least 6 characters.',
+        'auth/operation-not-allowed': 'Email/Password sign-in is disabled. Enable it in Firebase Authentication.',
+        'auth/unauthorized-domain': 'This site domain is not authorized. Add the current domain to Firebase Authentication authorized domains.',
+        'auth/network-request-failed': 'Could not reach Firebase Authentication. Check your connection and Firebase settings.',
+        'auth/too-many-requests': 'Firebase temporarily blocked repeated attempts. Wait a little and try again.'
+      };
+      return englishAuthMessages[code] || authMessages[code];
+    }
     if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
       if (context === 'auth') return this.t('تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وتفعيل تسجيل الدخول بالبريد وكلمة المرور وإضافة نطاق الموقع إلى النطاقات المصرح بها في Firebase.', 'Could not reach Firebase Authentication. Check your internet, enable Email/Password sign-in, and authorize this site domain in Firebase.');
       return this.t('تعذر الوصول إلى الخدمة. تحقق من اتصال الإنترنت وإعدادات API وCORS ثم حاول مجددًا.', 'The service could not be reached. Check your internet connection, API availability, and CORS settings, then retry.');
     }
     if (message) return message;
-    return 'حدث خطأ غير متوقع. حاول مجددًا.';
+    return this.t('حدث خطأ غير متوقع. حاول مجددًا.', 'An unexpected error occurred. Please try again.');
   }
 }
