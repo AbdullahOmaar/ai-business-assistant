@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product } from './api.service';
+import { ApiService, Business, ChatReply, Customer, Dashboard, Expense, Invoice, Payment, Product } from './api.service';
 import { AuthService } from './auth.service';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'assistant';
 
 @Component({
   selector: 'aba-root',
@@ -49,6 +49,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <button class="nav-item" aria-label="Products and stock" title="Products & stock" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>Products & stock</span></button>
           <button class="nav-item" aria-label="Customers" title="Customers" [class.active]="tab === 'customers'" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>Customers</span></button>
           <button class="nav-item" aria-label="Payments" title="Payments" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>Payments</span></button>
+          <button class="nav-item" aria-label="Expenses" title="Expenses" [class.active]="tab === 'expenses'" (click)="setTab('expenses')"><span class="nav-icon expenses-icon" aria-hidden="true">−</span><span>Expenses</span></button>
           <button class="nav-item" aria-label="AI assistant" title="AI assistant" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>AI assistant</span></button>
           <div class="sidebar-bottom"><span class="status-dot"></span> Authenticated session<small>Workspace access is checked by the API</small></div>
         </aside>
@@ -169,6 +170,26 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
+            @if (tab === 'expenses') {
+              <section class="panel">
+                <div class="section-head"><div><h2>Record an expense</h2><p>Track business spending with a clear category, date and currency.</p></div><span class="count">{{ expenses.length }} expenses</span></div>
+                <form class="inline-form expense-form" (ngSubmit)="createExpense()">
+                  <input aria-label="Expense category" name="expenseCategory" maxlength="80" placeholder="Category" required [(ngModel)]="expenseCategory">
+                  <input aria-label="Expense description" name="expenseDescription" maxlength="500" placeholder="Description" required [(ngModel)]="expenseDescription">
+                  <input aria-label="Expense amount" name="expenseAmount" type="number" min="0.01" step="0.01" placeholder="Amount" required [(ngModel)]="expenseAmount">
+                  <input aria-label="Expense date and time" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
+                  <input aria-label="Vendor" name="expenseVendor" maxlength="160" placeholder="Vendor (optional)" [(ngModel)]="expenseVendor">
+                  <input aria-label="Expense reference" name="expenseReference" maxlength="128" placeholder="Reference (optional)" [(ngModel)]="expenseReference">
+                  <button class="primary" type="submit" [disabled]="loading || !expenseCategory.trim() || !expenseDescription.trim() || !expenseAmount">Save expense</button>
+                </form>
+                <p class="footnote">Currency is fixed to {{ business.currency_code }}. Expense totals are included in the dashboard and reports, but are not automatically treated as profit calculations.</p>
+                <div class="list">
+                  @for (expense of expenses; track expense.id) { <article class="list-row"><div class="expense-mark">−</div><div class="grow"><strong>{{ expense.category }} · {{ expense.amount }} {{ expense.currency_code }}</strong><small>{{ expense.description }} · {{ expense.incurred_at | date:'medium' }}</small><small>{{ expense.vendor_name || 'No vendor' }}{{ expense.reference ? ' · ' + expense.reference : '' }}</small></div></article> }
+                  @if (!expenses.length) { <p class="empty">No expenses recorded yet.</p> }
+                </div>
+              </section>
+            }
+
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
                 <div class="section-head"><div><h2>AI Business Assistant</h2><p>Answers grounded in recent records from this workspace only.</p></div><span class="count">Read-only</span></div>
@@ -190,10 +211,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}
     .shell{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
-    .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
+    .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expenses-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}.quick-card{text-align:left;padding:18px}.quick-card strong,.quick-card span{display:block}.quick-card strong{font-size:13px;margin-bottom:8px}.quick-card span{font-size:11px;color:#6b7280}
-    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0}.chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
+    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0}.chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
     @media(max-width:1050px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form .primary{grid-column:1/-1}}@media(max-width:760px){.sidebar{position:static;width:auto;min-height:auto;padding:13px 15px;display:flex;flex-direction:row;align-items:center;gap:6px;overflow-x:auto}.brand{padding:0 10px 0 0;flex-shrink:0}.brand>span:last-child,.nav-label,.sidebar-bottom{display:none}.nav-item{padding:6px;font-size:0;white-space:nowrap;min-width:42px;min-height:42px;justify-content:center}.nav-item>span:not(.nav-icon){display:none}.nav-item .nav-icon{display:grid;flex-basis:30px;width:30px;height:30px;font-size:18px}.nav-item.active{box-shadow:inset 0 -3px #5eead4}.main{margin:0;padding:20px 14px}.topbar h1{font-size:21px}.user-area>span{display:none}.hero{padding:24px}.hero-mark{display:none}.quick-grid{grid-template-columns:1fr}.workspace-bar{align-items:flex-start;flex-direction:column}.workspace-bar select{max-width:none;width:100%}.section-head{align-items:flex-start}.list-row{flex-wrap:wrap}.metric-grid{gap:8px}.metric{padding:13px}.metric strong{font-size:16px}.inline-form,.invoice-form{grid-template-columns:1fr}.inline-form .primary{grid-column:auto}.panel{padding:15px}.notice{flex-direction:column}.notice strong{white-space:normal}footer{flex-direction:column}}
   `]
 })
@@ -215,6 +236,13 @@ export class AppComponent implements OnInit {
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
+  expenses: Expense[] = [];
+  expenseCategory = 'General';
+  expenseDescription = '';
+  expenseAmount = '';
+  expenseDate = new Date().toISOString().slice(0, 16);
+  expenseVendor = '';
+  expenseReference = '';
   businessName = '';
   currencyCode = 'EGP';
   customerName = '';
@@ -264,7 +292,7 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'Business overview', customers: 'Customers',
       products: 'Products & stock', invoices: 'Sales & invoices',
-      payments: 'Payments', assistant: 'AI Business Assistant'
+      payments: 'Payments', expenses: 'Expenses', assistant: 'AI Business Assistant'
     };
     return titles[this.tab];
   }
@@ -298,6 +326,7 @@ export class AppComponent implements OnInit {
       this.products = [];
       this.invoices = [];
       this.payments = [];
+      this.expenses = [];
       this.chatMessages = [];
       this.error = '';
     } catch (error) {
@@ -356,8 +385,8 @@ export class AppComponent implements OnInit {
     if (!this.business) return;
     const id = this.business.id;
     try {
-      const [dashboard, customers, products, invoices, payments] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
+      const [dashboard, customers, products, invoices, payments, expenses] = await Promise.all([
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id), this.api.expenses(id)
       ]);
       if (this.business?.id !== id) return;
       this.dashboard = dashboard;
@@ -365,6 +394,7 @@ export class AppComponent implements OnInit {
       this.products = products;
       this.invoices = invoices;
       this.payments = payments;
+      this.expenses = expenses;
       if (!this.invoiceProductId && products.length) this.invoiceProductId = products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
@@ -494,6 +524,35 @@ export class AppComponent implements OnInit {
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async createExpense(): Promise<void> {
+    if (!this.business || !this.expenseCategory.trim() || !this.expenseDescription.trim() || !this.expenseAmount.trim()) return;
+    this.loading = true;
+    this.error = '';
+    try {
+      await this.api.createExpense(this.business.id, {
+        category: this.expenseCategory.trim(),
+        description: this.expenseDescription.trim(),
+        amount: this.expenseAmount.trim(),
+        currency_code: this.business.currency_code,
+        incurred_at: new Date(this.expenseDate).toISOString(),
+        vendor_name: this.expenseVendor.trim() || undefined,
+        reference: this.expenseReference.trim() || undefined
+      });
+      this.expenseCategory = 'General';
+      this.expenseDescription = '';
+      this.expenseAmount = '';
+      this.expenseDate = new Date().toISOString().slice(0, 16);
+      this.expenseVendor = '';
+      this.expenseReference = '';
+      this.expenses = await this.api.expenses(this.business.id);
+      this.dashboard = await this.api.dashboard(this.business.id);
     } catch (error) {
       this.error = this.message(error);
     } finally {
