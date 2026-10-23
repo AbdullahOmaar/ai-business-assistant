@@ -75,7 +75,8 @@ Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production
 
 ## Mobile experience and installation
 
-- On phones, primary navigation uses four fixed bottom destinations: overview, sales/invoices, customers, and **More**. Products, payments, AI assistant, language switching, and sign-out are grouped in More to avoid cramped navigation.
-- The **Install app / تثبيت التطبيق** action remains available on mobile until the app is running standalone. Chromium browsers use the native install prompt when available; otherwise the UI explains the browser-menu path. On iOS, use Safari Share → Add to Home Screen.
-- PWA metadata lives in `frontend/public/manifest.webmanifest`, the scalable icon in `frontend/public/icons/icon.svg`, and the minimal service worker in `frontend/public/sw.js`. The worker must not cache API responses or business data.
+- On phones, primary navigation uses four fixed bottom destinations: الرئيسية، الفواتير، العملاء، and المزيد. Products, payments, AI assistant, language switching, and sign-out are grouped in More to avoid cramped navigation.
+- The **تثبيت التطبيق / Install app** action remains available on mobile until the app is running standalone. Chromium browsers use the native install prompt when available; otherwise the UI explains the browser-menu path. On iOS, use Safari Share → Add to Home Screen.
+- PWA metadata lives in `frontend/public/manifest.webmanifest`, with SVG icons declared at 192×192 and 512×512, and a minimal service worker in `frontend/public/sw.js`. The worker must not cache API responses or business data.
+- Mobile CSS reserves space for the floating install control and its help panel so neither covers the workspace selector. The bottom dock accounts for safe-area insets and reduced-motion preferences.
 - Confirm actual Android Chrome navigation, install flow, keyboard/viewport behavior, and production deployment before calling mobile release fully verified.
