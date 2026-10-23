@@ -15,6 +15,14 @@ This checklist is the release gate for the Angular PWA on Android phones. A succ
 - [x] Version the service-worker shell cache and precache the install icons.
 - [x] Do not cache API responses or business data in the service worker.
 
+## Automated release checks (verified for the merged mobile change)
+
+- [x] GitHub Actions workflow `Verify backend and frontend` completed successfully for the merged mobile change.
+- [x] Vercel reported successful production deployment checks for both frontend and backend on the merge commit.
+- [x] Inline review findings for the install-control spacing and manifest icon entries were resolved in the mobile branch.
+
+These automated checks do not replace the physical-device and authenticated workflow checks below.
+
 ## Required manual checks before release
 
 - [ ] On Android Chrome, confirm the top app bar is absent and the bottom navigation remains visible while scrolling.
