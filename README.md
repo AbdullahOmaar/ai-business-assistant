@@ -72,3 +72,7 @@ The repository includes:
 - Do not consider a release complete until CI is green for the release commit, production deployment is confirmed, and authenticated smoke tests are completed safely.
 
 Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production use.
+
+## Mobile release verification
+
+Before declaring the mobile release complete, follow the [Android mobile release checklist](docs/MOBILE_RELEASE_CHECKLIST.md). A successful deployment response alone does not verify sign-in, navigation, or install behavior on a physical device.

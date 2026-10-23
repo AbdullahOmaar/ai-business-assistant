@@ -38,15 +38,21 @@ export class ApiService {
       throw new Error('The backend URL is not configured in runtime-config.json.');
     }
     const token = await this.auth.idToken();
-    const response = await fetch(base + path, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
+    let response: Response;
+    try {
+      response = await fetch(base + path, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
+    }
     if (!response.ok) {
       let message = `Request failed (${response.status}).`;
       try {
