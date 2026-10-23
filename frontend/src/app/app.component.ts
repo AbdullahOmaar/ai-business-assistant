@@ -173,7 +173,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'payments') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><span class="count">{{ payments.length }} دفعة</span></div>
+                <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
                   <input [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount">
                   <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
@@ -699,6 +699,29 @@ export class AppComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  exportPaymentsCsv(): void {
+    if (!this.payments.length) return;
+    const headers = ['received_at', 'amount', 'currency_code', 'method', 'reference', 'allocation_count'];
+    const rows = this.payments.map(payment => [
+      payment.received_at, payment.amount, payment.currency_code,
+      payment.method || '', payment.reference || '', payment.allocations.length
+    ]);
+    const escape = (value: unknown): string => {
+      let text = String(value ?? '');
+      // Prevent spreadsheet formula execution for user-controlled values.
+      if (/^[=+@-]/.test(text)) text = "'" + text;
+      return /[",\\n\\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+    };
+    const csv = '\\uFEFF' + [headers, ...rows].map(row => row.map(escape).join(',')).join('\\r\\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'payments-' + new Date().toISOString().slice(0, 10) + '.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   async createPayment(): Promise<void> {
