@@ -12,7 +12,7 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
 - **GitHub Actions / CI:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
-- **Mobile navigation PR:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/49
+- **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
 - **Tenant, invoice, and AI regression tests:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/51
 - **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
 
