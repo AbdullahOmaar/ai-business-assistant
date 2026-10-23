@@ -449,7 +449,8 @@ export class AppComponent implements OnInit {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       this.searchOpen = true;
-      (document.getElementById('mobile-global-search') || document.getElementById('global-search'))?.focus();
+      const searchId = window.matchMedia('(max-width: 760px)').matches ? 'mobile-global-search' : 'global-search';
+      document.getElementById(searchId)?.focus();
     }
   }
 
