@@ -2,6 +2,24 @@
 
 AI-powered business assistant for retail shops and service providers.
 
+## Live links and deployment
+
+- **Live frontend:** https://ai-business-assistant-web.vercel.app
+- **Backend API base URL:** https://ai-business-assistant-api.vercel.app
+- **Backend readiness check:** https://ai-business-assistant-api.vercel.app/readyz
+- **Frontend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-web
+- **Backend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
+- **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
+- **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
+- **GitHub Actions / CI:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
+- **Mobile navigation PR:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/49
+- **Tenant, invoice, and AI regression tests:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/51
+- **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
+
+**Deployment caveat:** These are configured production aliases, not proof that every recent source change is deployed or that the full sign-in flow works. On 23 October 2026, the frontend alias and backend `/readyz` endpoint responded with HTTP 200; the frontend HTML still contains a startup fallback until Angular initializes, so browser-level validation remains necessary. Vercel has previously rejected deployment attempts due to the free daily deployment limit. Confirm the latest production deployment commit in Vercel before release.
+
+Never place Firebase service-account credentials, database passwords, or API secrets in this README, frontend runtime configuration, or source control. Configure secrets only in the appropriate backend environment settings.
+
 ## Accepted V0 architecture
 
 - Frontend: Angular.
@@ -31,17 +49,26 @@ See [ADR-001 — V0 architecture](docs/adr/ADR-001-v0-architecture.md).
 - [Architecture baseline](docs/ARCHITECTURE_BASELINE.md)
 - [Production deployment runbook](docs/PRODUCTION_DEPLOYMENT.md)
 
-## Current status (implementation branch)
+## Current implementation status
 
-The implementation branch now includes:
+The repository includes:
 - PostgreSQL-backed business/workspace schema and migrations, membership authorization primitives, and a fail-closed trusted identity resolver boundary.
 - Workspace creation/profile and membership-scoped workspace listing; customer/product/invoice APIs; expenses, purchasing/returns, CSV import/export, currency-separated reports, and deterministic insights.
 - Firebase Admin ID-token verification adapter, fail-closed startup behavior, PostgreSQL session configuration, exact-origin CORS, and `/readyz` readiness checks (runtime credentials still required).
 - Angular email/password sign-in, authenticated API client, live dashboard/customer/product/invoice views, invoice draft editing/issuing/voiding, and a record-grounded AI chat UI.
-- Invoice issuance now records stock deductions as auditable stock movements for tracked products and rejects insufficient stock.
+- Invoice issuance stock deductions as auditable stock movements for tracked products and insufficient-stock validation.
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
-- GitHub Actions that run backend tests, apply migrations to a disposable PostgreSQL service, and build the Angular frontend.
+- GitHub Actions for backend tests, PostgreSQL migration validation, and Angular production builds.
+- Regression tests for cross-business authorization boundaries, invoice state transitions, and AI input/provider safety.
 
-**Not production-ready yet:** the Firebase project/service-account configuration, production PostgreSQL URL, frontend runtime config, and backend host are not configured; therefore the frontend remains in setup mode and `/readyz` is not ready. AI chat requires a backend-only `OPENAI_API_KEY`. Issued invoices with allocated payments cannot be voided directly; use a refund/credit-note workflow. The quick editor in the UI supports a single product line per draft, while the API supports multiple lines. Recurring invoice schedules and notification records still need background execution/delivery workers. Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production use.
+## Release blockers and known limitations
 
-The Firebase verifier and client SDK are implemented in code only. No Firebase project settings or production database were changed, and no production backend was deployed.
+- Confirm production Firebase web-app configuration, backend service-account credentials, production PostgreSQL connectivity, CORS, and frontend runtime configuration using the deployment runbook.
+- AI chat requires a backend-only `OPENAI_API_KEY`; do not expose it to the browser.
+- Real Android Chrome checks for mobile navigation, install flow, keyboard/viewport behavior, and the latest deployed commit remain outstanding.
+- Issued invoices with allocated payments must not be voided directly; refunds/credit notes need a separate workflow.
+- The quick editor supports a single product line per draft even though the API supports multiple lines.
+- Recurring invoice schedules and notification records still need background execution/delivery workers.
+- Do not consider a release complete until CI is green for the release commit, production deployment is confirmed, and authenticated smoke tests are completed safely.
+
+Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production use.
