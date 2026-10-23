@@ -204,6 +204,21 @@ def test_invoice_rejects_customer_and_product_ids_from_another_business():
         )
         assert customer_b.status_code == 201
         assert product_b.status_code == 201
+        invoice_b = client.post(
+            f"/api/v1/businesses/{business_b_id}/invoices",
+            json={
+                "invoice_number": "INV-TENANT-B-1",
+                "currency_code": "EGP",
+                "customer_id": customer_b.json()["id"],
+                "lines": [{"description": "Tenant B service", "quantity": "1", "unit_price": "10.00"}],
+            },
+        )
+        assert invoice_b.status_code == 201
+        issued_b = client.post(
+            f"/api/v1/businesses/{business_b_id}/invoices/{invoice_b.json()['id']}/issue",
+            json={},
+        )
+        assert issued_b.status_code == 200
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
         foreign_customer_invoice = client.post(
@@ -223,9 +238,20 @@ def test_invoice_rejects_customer_and_product_ids_from_another_business():
                 "lines": [{"product_id": product_b.json()["id"], "quantity": "1"}],
             },
         )
+        foreign_payment_allocation = client.post(
+            f"/api/v1/businesses/{business_a_id}/payments",
+            json={
+                "amount": "1.00",
+                "currency_code": "EGP",
+                "idempotency_key": "foreign-invoice-allocation",
+                "allocations": [{"invoice_id": invoice_b.json()["id"], "amount": "1.00"}],
+            },
+        )
         assert foreign_customer_invoice.status_code == 422
         assert foreign_product_invoice.status_code == 422
+        assert foreign_payment_allocation.status_code == 422
         assert client.get(f"/api/v1/businesses/{business_a_id}/invoices").json() == []
+        assert client.get(f"/api/v1/businesses/{business_a_id}/payments").json() == []
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
