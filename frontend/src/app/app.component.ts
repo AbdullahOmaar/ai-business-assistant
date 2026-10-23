@@ -55,8 +55,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         <aside class="sidebar">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
-          <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('نظرة عامة', 'Overview') }}</span></button>
-          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</span></button>
+          <button class="nav-item" aria-label="نظرة عامة" title="نظرة عامة" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
+          <button class="nav-item" aria-label="المبيعات والفواتير" title="المبيعات والفواتير" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" aria-label="المنتجات والمخزون" title="المنتجات والمخزون" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
           <button class="nav-item" aria-label="العملاء" title="العملاء" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
           <button class="nav-item mobile-extra" aria-label="المدفوعات" title="المدفوعات" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
@@ -241,6 +241,67 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       button,.secondary,.primary{min-height:42px}
     }
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
+    /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
+    @media(max-width:760px){
+      .sidebar{
+        inset:auto 10px calc(8px + env(safe-area-inset-bottom)) 10px;
+        width:auto;
+        padding:7px;
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:5px;
+        border:1px solid #334155;
+        border-radius:22px;
+        background:rgba(15,23,42,.96);
+        box-shadow:0 12px 38px #02061745,0 1px 0 #ffffff0a inset;
+        overflow:visible;
+      }
+      .nav-item{
+        min-height:61px;
+        padding:6px 3px;
+        gap:4px;
+        border-radius:15px;
+        font-size:10px;
+        font-weight:700;
+        letter-spacing:0;
+        color:#cbd5e1;
+        transition:background .18s ease,transform .18s ease,color .18s ease;
+      }
+      .nav-item .nav-icon{
+        width:29px;height:29px;flex-basis:29px;
+        border-radius:11px;
+        background:#273449;
+        color:#cbd5e1;
+        font-size:18px;
+      }
+      .nav-item.active{
+        color:#fff;
+        background:linear-gradient(145deg,#134e4a,#115e59);
+        box-shadow:0 4px 14px #0f766e30,inset 0 0 0 1px #5eead455;
+      }
+      .nav-item.active .nav-icon{background:#5eead926;color:#99f6e4}
+      .nav-item:active{transform:scale(.97)}
+      .mobile-more-menu{
+        right:12px;
+        bottom:calc(88px + env(safe-area-inset-bottom));
+        width:min(280px,calc(100vw - 24px));
+        padding:9px;
+        border-radius:18px;
+        background:#111827;
+        box-shadow:0 20px 55px #02061766;
+      }
+      .shell[dir="rtl"] .mobile-more-menu{right:12px;left:auto}
+      .shell[dir="ltr"] .mobile-more-menu{left:12px;right:auto}
+      .mobile-more-menu .nav-item{min-height:48px;border-radius:12px}
+      .main,.shell.english .main{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+      .install-floating{top:10px;right:10px;border-radius:999px;padding:9px 12px}
+      .shell[dir="ltr"] .install-floating{right:10px;left:auto}
+      .shell[dir="rtl"] .install-floating{right:10px;left:auto}
+    }
+    @media(max-width:380px){
+      .sidebar{inset-inline:7px;padding:5px;gap:3px;border-radius:19px}
+      .nav-item{min-height:56px;font-size:9px}
+      .nav-item .nav-icon{width:26px;height:26px;flex-basis:26px;font-size:16px}
+    }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
   `]
 })
@@ -350,6 +411,8 @@ export class AppComponent implements OnInit {
     this.initialized = false;
     this.loading = true;
     this.error = '';
+    document.documentElement.lang = this.language;
+    document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
     try {
       const config = await this.auth.getRuntimeConfig();
       this.setupNeeded = !config.apiBaseUrl?.trim() ||
@@ -609,7 +672,7 @@ export class AppComponent implements OnInit {
 
   async voidInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || !window.confirm(
-      `إلغاء الفاتورة ${invoice.invoice_number}? Issued فاتورة with allocated دفعة cannot be voided; use a refund/credit-note workflow.`
+      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت الفاتورة عليها دفعات مخصصة، يجب استخدام إجراء ردّ المبلغ أو الإشعار الدائن بدلًا من الإلغاء المباشر.`
     )) return;
     this.loading = true;
     this.error = '';
