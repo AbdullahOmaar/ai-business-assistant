@@ -13,6 +13,7 @@ AI-powered business assistant for retail shops and service providers.
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
 - **GitHub Actions / CI:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
 - **Mobile navigation PR:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/49
+- **Mobile release checklist:** [docs/MOBILE_RELEASE_CHECKLIST.md](docs/MOBILE_RELEASE_CHECKLIST.md)
 - **Tenant, invoice, and AI regression tests:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/51
 - **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
 
