@@ -164,3 +164,77 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_invoice_rejects_customer_and_product_ids_from_another_business():
+    """Foreign resource IDs must not be usable to construct a tenant's invoice."""
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    try:
+        client = TestClient(app)
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
+        business_a = client.post(
+            "/api/v1/businesses",
+            json={"name": "Tenant A", "currency_code": "EGP"},
+        )
+        assert business_a.status_code == 201
+        business_a_id = business_a.json()["id"]
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-b-owner")
+        business_b = client.post(
+            "/api/v1/businesses",
+            json={"name": "Tenant B", "currency_code": "EGP"},
+        )
+        assert business_b.status_code == 201
+        business_b_id = business_b.json()["id"]
+        customer_b = client.post(
+            f"/api/v1/businesses/{business_b_id}/customers",
+            json={"name": "Tenant B Customer"},
+        )
+        product_b = client.post(
+            f"/api/v1/businesses/{business_b_id}/products",
+            json={"name": "Tenant B Product", "unit_price": "15.00"},
+        )
+        assert customer_b.status_code == 201
+        assert product_b.status_code == 201
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
+        foreign_customer_invoice = client.post(
+            f"/api/v1/businesses/{business_a_id}/invoices",
+            json={
+                "invoice_number": "INV-FOREIGN-CUSTOMER",
+                "currency_code": "EGP",
+                "customer_id": customer_b.json()["id"],
+                "lines": [{"description": "Manual service", "quantity": "1", "unit_price": "10.00"}],
+            },
+        )
+        foreign_product_invoice = client.post(
+            f"/api/v1/businesses/{business_a_id}/invoices",
+            json={
+                "invoice_number": "INV-FOREIGN-PRODUCT",
+                "currency_code": "EGP",
+                "lines": [{"product_id": product_b.json()["id"], "quantity": "1"}],
+            },
+        )
+        assert foreign_customer_invoice.status_code == 422
+        assert foreign_product_invoice.status_code == 422
+        assert client.get(f"/api/v1/businesses/{business_a_id}/invoices").json() == []
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
