@@ -696,7 +696,9 @@ export class AppComponent implements OnInit {
     const headers = ['invoice_number', 'status', 'currency_code', 'total', 'customer_id'];
     const rows = this.invoices.map(invoice => [invoice.invoice_number, invoice.status, invoice.currency_code, invoice.total, invoice.customer_id || '']);
     const csv = [headers, ...rows].map(row => row.map(value => {
-      const text = String(value ?? '');
+      let text = String(value ?? '');
+      // Prevent spreadsheet formula execution for user-controlled exported values.
+      if (/^[=+@-]/.test(text)) text = "'" + text;
       return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
     }).join(',')).join('\r\n');
     const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
