@@ -13,10 +13,11 @@ AI-powered business assistant for retail shops and service providers.
 - **Firebase Authentication settings:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
 - **GitHub repository:** https://github.com/AbdullahOmaar/ai-business-assistant
 - **GitHub Actions / CI:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
-- **Current auth + language fix PR:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/47
+- **Mobile navigation and PWA fix PR:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/49
+- **Tenant, invoice, and AI security regression tests:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/51
 - **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
 
-> **Deployment status:** The frontend and backend URLs above are the configured production aliases, but this does not mean the latest branch changes are deployed. The last verified production frontend deployment points to an older commit. The latest preview deployment attempt was blocked by Vercel's daily deployment API limit. Do not treat the current production build as containing PR #47 until a successful deployment is confirmed. Check /readyz, Firebase web-app configuration and authorized domains, backend CORS, and the frontend runtime config before relying on sign-in or AI features. Never put service-account credentials or API secrets in runtime-config.json or this README.
+> **Deployment status (checked 2026-10-23):** These are the configured production aliases, but they do not prove the latest branch changes are deployed. The backend `/readyz` endpoint returned HTTP 200 with `{"status":"ready"}` at the time of checking; this alone does not verify sign-in, frontend/API integration, or AI-provider availability. The latest Vercel deployment attempts were blocked by the daily deployment API limit. Do not assume the mobile/PWA changes in PR #49 are live until a new successful deployment is confirmed. Verify Firebase authorized domains, backend CORS, frontend runtime config, and AI provider configuration before relying on those features. Never put service-account credentials or API secrets in `runtime-config.json` or this README.
 
 ## Accepted V0 architecture
 
@@ -58,9 +59,9 @@ The implementation branch now includes:
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
 - GitHub Actions that run backend tests, apply migrations to a disposable PostgreSQL service, and build the Angular frontend.
 
-**Not production-ready yet:** the Firebase project/service-account configuration, production PostgreSQL URL, frontend runtime config, and backend host are not configured; therefore the frontend remains in setup mode and `/readyz` is not ready. AI chat requires a backend-only `OPENAI_API_KEY`. Issued invoices with allocated payments cannot be voided directly; use a refund/credit-note workflow. The quick editor in the UI supports a single product line per draft, while the API supports multiple lines. Recurring invoice schedules and notification records still need background execution/delivery workers. Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production use.
+**Release checks still required:** verify Firebase project/service-account settings, production PostgreSQL configuration, frontend runtime config, and backend CORS against the runbook. The backend readiness endpoint returned ready on 2026-10-23, but full authenticated production smoke tests have not been confirmed. AI chat requires a backend-only `OPENAI_API_KEY`; its production availability is not confirmed. Issued invoices with allocated payments cannot be voided directly; use a refund/credit-note workflow. The quick editor in the UI supports a single product line per draft, while the API supports multiple lines. Recurring invoice schedules and notification records still need background execution/delivery workers. Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production use.
 
-The Firebase verifier and client SDK are implemented in code only. No Firebase project settings or production database were changed, and no production backend was deployed.
+The Firebase verifier and client SDK are implemented in code. A production backend alias exists, but the latest code changes are not confirmed deployed. No Firebase project settings or production database were changed as part of the mobile/security-test work.
 
 
 ## Mobile experience and installation
