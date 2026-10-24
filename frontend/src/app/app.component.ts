@@ -537,26 +537,41 @@ export class AppComponent implements OnInit {
     }
   }
 
+  private clearWorkspaceData(): void {
+    this.dashboard = null;
+    this.customers = [];
+    this.products = [];
+    this.invoices = [];
+    this.payments = [];
+    this.chatMessages = [];
+    this.invoiceProductId = '';
+    this.paymentInvoiceId = '';
+  }
+
   async switchBusiness(id: string): Promise<void> {
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
-    this.chatMessages = [];
+    this.clearWorkspaceData();
+    this.error = '';
     await this.loadWorkspaceData();
   }
 
   private workspaceLoadVersion = 0;
 
   async loadWorkspaceData(): Promise<void> {
-    if (!this.business) return;
-    const id = this.business.id;
     const loadVersion = ++this.workspaceLoadVersion;
+    if (!this.business) {
+      this.loading = false;
+      return;
+    }
+    const id = this.business.id;
     this.loading = true;
     this.error = '';
     try {
       const [dashboard, عميل, منتج, فاتورة, دفعة] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
       ]);
-      if (this.business?.id !== id) return;
+      if (loadVersion !== this.workspaceLoadVersion || this.business?.id !== id) return;
       this.dashboard = dashboard;
       this.customers = عميل;
       this.products = منتج;
@@ -565,7 +580,10 @@ export class AppComponent implements OnInit {
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
-      this.error = this.message(error);
+      if (loadVersion === this.workspaceLoadVersion && this.business?.id === id) {
+        this.clearWorkspaceData();
+        this.error = this.message(error);
+      }
     } finally {
       if (loadVersion === this.workspaceLoadVersion) this.loading = false;
     }
