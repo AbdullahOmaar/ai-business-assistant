@@ -507,13 +507,19 @@ export class AppComponent implements OnInit {
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
+        this.clearWorkspaceData();
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
+      const workspaceChanged = this.business?.id !== chosen.id;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
+      if (workspaceChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
+      this.business = null;
+      this.selectedBusinessId = '';
+      this.clearWorkspaceData();
       this.error = this.message(error);
     } finally {
       this.loading = false;
