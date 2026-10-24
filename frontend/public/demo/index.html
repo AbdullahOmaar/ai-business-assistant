@@ -29,6 +29,19 @@
 <article class="card"><h2>9. إجابة المساعد ومصادرها</h2><p><strong>س:</strong> هل المنتجات التجريبية تكفي لإثبات مبيعات حقيقية؟</p><p><strong>ج:</strong> لا. هذه البيانات للتوضيح فقط ولا تثبت أي مبيعات فعلية.</p><div class="result">المصدر: بيانات ثابتة داخل demo/index.html · الثقة: غير صالحة لاتخاذ قرار مالي · لا توجد استعلامات حقيقية.</div><p class="muted">هذه ليست واجهة AI متصلة بالنموذج.</p></article>
 <article class="card"><h2>10. حالة الاتصال وتحديث PWA</h2><div class="row"><span class="pill" id="networkState">حالة الاتصال: متصل بالصفحة</span><button class="secondary" id="updateDemo">محاكاة توفر تحديث</button></div><div class="result" id="updateStatus" role="status">لا يوجد تحديث محاكى.</div><p class="muted">هذه المحاكاة لا تفحص Service Worker أو حالة الشبكة الحقيقية.</p></article>
 </section>
+<h2 style="margin:24px 0 12px">معاينة 10 ميزات إضافية مقترحة</h2>
+<section class="grid" aria-label="Additional feature prototypes">
+<article class="card"><h2>11. سجل التدقيق</h2><ul class="list"><li>09:10 — إنشاء فاتورة تجريبية</li><li>09:14 — تغيير حد المخزون</li></ul><p class="muted">سجل توضيحي، وليس سجلًا غير قابل للتعديل.</p></article>
+<article class="card"><h2>12. أدوار أعضاء الفريق</h2><label class="field">الدور التجريبي<select id="roleDemo"><option>عضو</option><option>مدير</option><option>مالك</option></select></label><div class="result" id="roleResult">صلاحيات العرض فقط؛ لا تُطبّق على أي API.</div></article>
+<article class="card"><h2>13. كشف حساب العميل</h2><table><thead><tr><th>الحركة</th><th>القيمة</th></tr></thead><tbody><tr><td>فاتورة تجريبية</td><td>500 ج.م</td></tr><tr><td>دفعة تجريبية</td><td>-200 ج.م</td></tr></tbody></table><div class="stat">المتبقي: 300 ج.م</div></article>
+<article class="card"><h2>14. معاينة وطباعة الفاتورة</h2><p>فاتورة DEMO-001 · الإجمالي 300 ج.م</p><button id="printDemo">فتح نافذة الطباعة</button><p class="muted">المحتوى توضيحي ولا ينشئ مستندًا ضريبيًا.</p></article>
+<article class="card"><h2>15. الفواتير المتكررة</h2><label><input id="recurring" type="checkbox"> تفعيل جدول شهري تجريبي</label><div class="result" id="recurringResult">لا توجد جدولة مفعلة.</div></article>
+<article class="card"><h2>16. أوامر شراء الموردين</h2><label class="field">اسم المورد<input id="supplier" value="مورد تجريبي"></label><button id="purchaseDemo">معاينة استلام</button><div class="result" id="purchaseResult">لم يتم تسجيل استلام.</div></article>
+<article class="card"><h2>17. حساب الضريبة</h2><div class="row"><label>المبلغ<input id="taxBase" type="number" value="100" min="0" style="width:90px"></label><label>الضريبة %<input id="taxRate" type="number" value="14" min="0" max="100" style="width:90px"></label><button id="taxCalc">احسب</button></div><div class="result" id="taxResult">الإجمالي مع الضريبة: 114</div><p class="muted">النسبة توضيحية وليست توصية ضريبية.</p></article>
+<article class="card"><h2>18. نسخة تصدير احتياطية</h2><button id="backupDemo">تنزيل ملف بيانات تجريبية</button><div class="result" id="backupResult">لا توجد نسخة احتياطية؛ لا تتضمن بيانات حقيقية.</div></article>
+<article class="card"><h2>19. تفضيلات الإشعارات</h2><label><input type="checkbox" checked> تنبيهات المخزون</label><br><label><input type="checkbox" checked> تذكير الفواتير</label><br><label><input type="checkbox"> ملخص أسبوعي</label><p class="muted">التفضيلات لا تُحفظ بعد تحديث الصفحة.</p></article>
+<article class="card"><h2>20. حالة تشغيل النظام</h2><ul class="list"><li>واجهة العرض: تعمل</li><li>API: غير متصلة بهذا الديمو</li><li>قاعدة البيانات: لم تُفحص</li><li>الأسرار: لا تُعرض</li></ul><p class="muted">تشخيص محلي فقط؛ ليس مراقبة إنتاج.</p></article>
+</section>
 <div class="footer">معرض تجريبي مستقل للميزات. اختبارات الإنتاج، الصلاحيات، Firebase، قاعدة البيانات، وAndroid Chrome يجب التحقق منها بشكل منفصل.</div>
 </main>
 <script>
@@ -45,6 +58,12 @@ $('previewCsv').onclick=()=>{const rows=$('csv').value.split(/\r?\n/).filter(x=>
 $('exportCsv').onclick=()=>{const csv='workspace,metric,value\nDemo Bakery,products,3\nDemo Bakery,invoices,2\n';const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='ai-business-assistant-demo-report.csv';a.click();URL.revokeObjectURL(url);$('exportStatus').textContent='تم إنشاء ملف تقرير تجريبي محلي.'};
 $('updateDemo').onclick=()=>{$('updateStatus').textContent='تمت محاكاة وجود تحديث. في التطبيق الحقيقي يجب التحقق من Service Worker قبل إعادة التحميل.'};
 window.addEventListener('online',()=>{$('networkState').textContent='حالة الشبكة: online'});window.addEventListener('offline',()=>{$('networkState').textContent='حالة الشبكة: offline'});
+$('roleDemo').onchange=()=>{$('roleResult').textContent='الدور المختار: '+$('roleDemo').value+' — عرض توضيحي فقط، لا توجد صلاحيات فعلية.'};
+$('printDemo').onclick=()=>{const w=window.open('','_blank','noopener');if(!w){$('purchaseResult').textContent='المتصفح منع النافذة المنبثقة؛ اسمح بها للمعاينة.';return}w.document.write('<title>DEMO-001</title><h1>فاتورة تجريبية</h1><p>ليست فاتورة ضريبية — الإجمالي 300 ج.م</p>');w.document.close();w.focus();w.print()};
+$('recurring').onchange=()=>{$('recurringResult').textContent=$('recurring').checked?'تمت معاينة جدول شهري؛ لا يوجد تنفيذ تلقائي.':'تم إيقاف المعاينة.'};
+$('purchaseDemo').onclick=()=>{$('purchaseResult').textContent='معاينة استلام من '+$('supplier').value+'؛ لم يتم تعديل المخزون الحقيقي.'};
+$('taxCalc').onclick=()=>{const base=Number($('taxBase').value),rate=Number($('taxRate').value);$('taxResult').textContent=base>=0&&rate>=0&&rate<=100?'ضريبة توضيحية: '+(base*rate/100).toFixed(2)+' · الإجمالي: '+(base*(1+rate/100)).toFixed(2):'تحقق من إدخال مبلغ ونسبة بين 0 و100.'};
+$('backupDemo').onclick=()=>{const data=JSON.stringify({demo:true,workspace:$('workspaceName').textContent,warning:'Fictional demo data only'},null,2);const u=URL.createObjectURL(new Blob([data],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='demo-backup.json';a.click();URL.revokeObjectURL(u);$('backupResult').textContent='تم تنزيل ملف JSON تجريبي محلي؛ لا يحتوي على بيانات حساب.'};
 renderWorkspace();renderLines();
 })();
 </script>
