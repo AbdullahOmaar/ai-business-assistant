@@ -44,7 +44,7 @@ export class ApiService {
 
   async releaseInfo(): Promise<ReleaseInfo> {
     const config = await this.auth.getRuntimeConfig();
-    const base = (config.apiBaseUrl || '').trim().replace(/\\/$/, '');
+    const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
     if (!base || base.includes('YOUR-BACKEND')) throw new Error('The backend URL is not configured.');
     const response = await fetch(base + '/version', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
     if (!response.ok) throw new Error(`Backend version endpoint returned ${response.status}.`);
