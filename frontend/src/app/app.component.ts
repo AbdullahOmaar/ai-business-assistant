@@ -979,7 +979,7 @@ export class AppComponent implements OnInit {
     const value = Number(amount || 0);
     const denominator = Number(base || 0);
     if (!Number.isFinite(value) || !Number.isFinite(denominator) || denominator <= 0 || value <= 0) return '0';
-    return Math.min(100, Math.max(0, value / denominator * 100)).toFixed(6);
+    return Math.min(100, Math.max(0, value / denominator * 100)).toFixed(10);
   }
 
   addInvoiceLine(): void {
