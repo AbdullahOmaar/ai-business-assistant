@@ -15,6 +15,20 @@ def D(value: str) -> Decimal:
     return Decimal(value)
 
 
+def test_invoice_lines_round_half_up_before_subtotal_discount_and_tax() -> None:
+    # Each 1.500 × 0.01 line is 0.015 and must round HALF_UP to 0.02.
+    totals = calculate_invoice_totals(
+        [(D("1.500"), D("0.01")), (D("1.500"), D("0.01"))],
+        discount_rate=D("25"),
+        tax_rate=D("50"),
+    )
+
+    assert totals.subtotal == D("0.04")
+    assert totals.discount_total == D("0.01")
+    assert totals.tax_total == D("0.02")
+    assert totals.total == D("0.05")
+
+
 def test_invoice_totals_use_discount_before_tax_and_decimal_rounding() -> None:
     totals = calculate_invoice_totals(
         [(D("2"), D("10.00")), (D("1"), D("5.00"))],
