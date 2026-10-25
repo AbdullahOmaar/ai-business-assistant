@@ -614,6 +614,7 @@ def test_staff_is_denied_sensitive_business_routes():
             assert product.unit_price == Decimal("4.00")
             assert product.is_stock_tracked is False
             assert session.scalar(select(func.count()).select_from(SalesReturn)) == 0
+            assert session.scalar(select(func.count()).select_from(StockMovement)) == 0
             assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 0
             assert session.scalar(select(func.count()).select_from(Notification)) == 0
     finally:
