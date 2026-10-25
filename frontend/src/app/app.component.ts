@@ -153,7 +153,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @for (summary of agingReport.by_currency; track summary.currency_code) {
                     <article class="metric"><span>{{ t('إجمالي المستحق', 'Total outstanding') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
                   }
-                  @if (agingReport.data_quality_warnings.length) { <div class="notice warning-notice"><strong>{{ t('تحذيرات محاسبية تحتاج مراجعة', 'Accounting warnings need review') }}</strong>@for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) { <p>{{ warning.invoice_number }} — {{ agingWarningLabel(warning.type) }}@if (warning.excess_allocated) { · {{ t('الزيادة', 'Excess') }}: {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> } @else if (warning.mismatched_allocations_amount) { · {{ t('تخصيصات بعملة مختلفة', 'Mismatched-currency allocations') }}: {{ warning.mismatched_allocations_amount }}</p> } @else { </p> } }</div> }
+                  @if (agingReport.data_quality_warnings.length) {
+                    <div class="notice warning-notice"><strong>{{ t('تحذيرات محاسبية تحتاج مراجعة', 'Accounting warnings need review') }}</strong>
+                      @for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) {
+                        <p><strong>{{ warning.invoice_number }}</strong> — {{ agingWarningLabel(warning.type) }}</p>
+                        @if (warning.excess_allocated) { <p>{{ t('قيمة التخصيص الزائد:', 'Excess allocation:') }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
+                        @if (warning.mismatched_allocations_amount) { <p>{{ t('تخصيصات بعملة مختلفة:', 'Mismatched-currency allocations:') }} {{ warning.mismatched_allocations_amount }}</p> }
+                      }
+                    </div>
+                  }
                   @if (agingReport.invoices.length) { <div class="list">@for (invoice of agingReport.invoices; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</strong><small>{{ agingBucketLabel(invoice.aging_bucket) }} · {{ invoice.due_date || t('بدون تاريخ استحقاق', 'No due date') }}@if (invoice.customer_link_missing) { · {{ t('عميل غير مرتبط — يلزم تدقيق يدوي', 'Missing customer link — manual review required') }} }</small></div></article> }</div> }
                   @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ limitation }}</p> }</div> }
                 }
