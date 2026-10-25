@@ -306,7 +306,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}.shell.english .sidebar{inset:auto 0 0}.shell.english .nav-item{text-align:center}
       .topbar{display:none!important}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
-      .user-area{gap:6px}.user-area>span{display:none}.user-area .secondary{padding:9px 10px;min-height:40px}
+      .user-area{gap:6px}.user-area>span:not(.version-pill){display:none}.user-area .version-pill{display:inline-flex;flex-shrink:0;padding:5px 7px;font-size:10px}.user-area .secondary{padding:9px 10px;min-height:40px}
       .hero{padding:22px 20px;border-radius:16px}.hero h2{font-size:27px}.hero-mark{display:none}
       .quick-grid{grid-template-columns:1fr}.workspace-bar{align-items:stretch;flex-direction:column}.workspace-bar select{max-width:none;width:100%}
       .section-head{align-items:flex-start;gap:10px}.list-row{flex-wrap:wrap}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
