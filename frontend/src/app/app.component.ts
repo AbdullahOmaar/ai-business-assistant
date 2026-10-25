@@ -78,7 +78,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         <main class="main">
           <header class="topbar">
             <div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions')">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
+            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
 
           @if (error) { <div class="error-banner" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retry()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
@@ -388,6 +388,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 export class AppComponent implements OnInit {
   readonly appVersion = '0.2.0';
   apiVersionLabel = 'غير متاح';
+  apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
   setupNeeded = false;
@@ -526,10 +527,11 @@ export class AppComponent implements OnInit {
   private async loadApiVersion(): Promise<void> {
     try {
       const release = await this.api.releaseInfo();
-      const commit = release.commit && release.commit !== 'unknown' ? release.commit.slice(0, 7) : this.t('غير معروف', 'unknown');
-      this.apiVersionLabel = `${release.version} · ${commit}`;
+      this.apiVersionLabel = release.version;
+      this.apiCommitLabel = release.commit || 'unknown';
     } catch {
       this.apiVersionLabel = this.t('غير متاح', 'unavailable');
+      this.apiCommitLabel = 'unknown';
     }
   }
 
