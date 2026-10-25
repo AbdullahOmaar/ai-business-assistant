@@ -84,7 +84,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <button class="nav-item" role="menuitem" [class.active]="tab === 'recurring'" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الفواتير الدورية', 'Recurring invoices') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-<button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
+@if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
                             <button class="nav-item" role="menuitem" [class.active]="tab === 'taxes'" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('التقارير الضريبية', 'Tax summary') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'health'" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة التشغيلية', 'Operational health') }}</span></button> }
@@ -427,7 +427,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
-@if (tab === 'audit') {
+@if (tab === 'audit' && business?.role === 'owner') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('سجل العمليات', 'Activity log') }}</h2><p>{{ t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.') }}</p></div><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></div>
                 <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
@@ -990,6 +990,42 @@ export class AppComponent implements OnInit {
     this.profitLossPeriod = '30d';
     this.profitLossStart = '';
     this.profitLossEnd = '';
+    this.statementRequestVersion++;
+    this.customerStatement = null;
+    this.statementVisible = false;
+    this.statementCustomerId = '';
+    this.statementCustomerName = '';
+    this.statementOffset = 0;
+    this.statementLoading = false;
+    this.statementError = '';
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+    this.auditAction = '';
+    this.auditTargetType = '';
+    this.dataIntegrityReport = null;
+    this.integrityLoading = false;
+    this.integrityError = '';
+    this.integrityOffset = 0;
+    this.suppliers = [];
+    this.purchaseOrders = [];
+    this.recurringSchedules = [];
+    this.expenses = [];
+    this.notifications = [];
+    this.operationsError = '';
+    this.suppliersLoading = false;
+    this.purchasesLoading = false;
+    this.recurringLoading = false;
+    this.expensesLoading = false;
+    this.notificationsLoading = false;
+    this.operationalHealth = null;
+    this.healthLoading = false;
+    this.healthError = '';
+    this.taxSummaryReport = null;
+    this.taxLoading = false;
+    this.taxError = '';
     this.tab = 'overview';
   }
 
@@ -1262,7 +1298,14 @@ export class AppComponent implements OnInit {
   }
 
   async loadAuditEvents(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner') {
+      this.auditEvents = [];
+      this.auditTotal = 0;
+      this.auditOffset = 0;
+      this.auditLoading = false;
+      this.auditError = '';
+      return;
+    }
     this.auditLoading = true;
     this.auditError = '';
     try {
@@ -1284,6 +1327,16 @@ export class AppComponent implements OnInit {
   }
 
   setTab(tab: Tab): void {
+    if ((tab === 'audit' || tab === 'integrity' || tab === 'health') && this.business?.role !== 'owner') {
+      this.auditEvents = [];
+      this.auditTotal = 0;
+      this.auditOffset = 0;
+      this.dataIntegrityReport = null;
+      this.operationalHealth = null;
+      this.tab = 'overview';
+      this.mobileMoreOpen = false;
+      return;
+    }
     this.tab = tab;
     this.error = '';
     this.mobileMoreOpen = false;
@@ -1471,19 +1524,16 @@ export class AppComponent implements OnInit {
     if (discountRate === null || taxRate === null ||
         discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
 
-    // Match the backend's Decimal behavior: sum exact quantity × unit-price products,
-    // then round the subtotal once to cents using ROUND_HALF_UP.
-    let subtotalMilliCents = 0n;
+    // Match calculate_invoice_totals(): round each line to cents first, then sum the line totals.
+    let subtotalCents = 0n;
     for (const line of this.invoiceLines) {
       const product = this.products.find(item => item.id === line.productId);
       const quantityMilli = parseScaled(line.quantity, 3);
       const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
       if (!product || quantityMilli === null || quantityMilli <= 0n ||
           unitPriceCents === null) return null;
-      subtotalMilliCents += quantityMilli * unitPriceCents;
+      subtotalCents += roundHalfUp(quantityMilli * unitPriceCents, 1000n);
     }
-
-    const subtotalCents = roundHalfUp(subtotalMilliCents, 1000n);
     if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
     const rateDenominator = 100n * 1_000_000_000_000n;
     const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
