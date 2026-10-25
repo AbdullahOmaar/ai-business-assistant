@@ -27,7 +27,7 @@ export interface Dashboard {
   expenses: MoneyTotal[];
   outstanding_balances: MoneyTotal[];
 }
-export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; }
+export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
