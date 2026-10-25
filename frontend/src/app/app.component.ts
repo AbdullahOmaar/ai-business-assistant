@@ -934,7 +934,7 @@ export class AppComponent implements OnInit {
   get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
     if (!this.business || !this.invoiceLines.length) return null;
     const parseScaled = (value: string | number, scale: number): bigint | null => {
-      const match = /^(\\d+)(?:\\.(\\d+))?$/.exec(String(value).trim());
+      const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
       if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
       const fraction = (match[2] || '').padEnd(scale, '0');
       return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
