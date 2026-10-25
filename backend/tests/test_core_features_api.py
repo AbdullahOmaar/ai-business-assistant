@@ -1,11 +1,13 @@
 from sqlalchemy import create_engine
+from decimal import Decimal
+from uuid import UUID
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 import pytest
 
 from app.main import app
-from app.models import Base
+from app.models import Base, Customer, Invoice, Payment
 from app.security import AuthenticatedPrincipal
 
 
@@ -298,3 +300,79 @@ def test_payment_recording_rejects_allocation_above_invoice_balance(configured_c
         "allocations": [{"invoice_id": invoice_id, "amount": "30.00"}],
     })
     assert response.status_code == 422
+
+
+
+def test_customer_statement_is_workspace_scoped_and_keeps_currencies_separate(configured_client):
+    from app.main import app as main_app
+
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Customer Statement Shop", "currency_code": "EGP"
+    })
+    business_id = UUID(created.json()["id"])
+    factory = main_app.state.session_factory
+
+    with factory() as session:
+        customer = Customer(business_id=business_id, name="Statement Customer")
+        session.add(customer)
+        session.flush()
+        customer_id = customer.id
+        session.add_all([
+            Invoice(
+                business_id=business_id, customer_id=customer_id,
+                invoice_number="STAT-EGP-001", status="issued", currency_code="EGP",
+                subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"), total=Decimal("100.00"),
+            ),
+            Invoice(
+                business_id=business_id, customer_id=customer_id,
+                invoice_number="STAT-USD-001", status="issued", currency_code="USD",
+                subtotal=Decimal("20.00"), tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"), total=Decimal("20.00"),
+            ),
+            Payment(
+                business_id=business_id, customer_id=customer_id,
+                amount=Decimal("25.00"), currency_code="EGP",
+                idempotency_key="statement-payment-001",
+            ),
+        ])
+        session.commit()
+
+    response = configured_client.get(
+        f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement"
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["customer"]["name"] == "Statement Customer"
+    assert payload["pagination"]["total"] == 3
+    totals = {item["currency_code"]: item for item in payload["summary"]}
+    assert totals["EGP"] == {
+        "currency_code": "EGP", "invoiced": "100.00", "received": "25.00", "balance": "75.00"
+    }
+    assert totals["USD"] == {
+        "currency_code": "USD", "invoiced": "20.00", "received": "0", "balance": "20.00"
+    }
+
+
+def test_customer_statement_does_not_expose_customer_from_another_workspace(configured_client):
+    from app.main import app as main_app
+
+    first = configured_client.post("/api/v1/businesses", json={
+        "name": "First Statement Shop", "currency_code": "EGP"
+    })
+    first_id = UUID(first.json()["id"])
+    second = configured_client.post("/api/v1/businesses", json={
+        "name": "Second Statement Shop", "currency_code": "EGP"
+    })
+    second_id = UUID(second.json()["id"])
+    with main_app.state.session_factory() as session:
+        customer = Customer(business_id=second_id, name="Private Customer")
+        session.add(customer)
+        session.commit()
+        session.refresh(customer)
+        customer_id = customer.id
+
+    response = configured_client.get(
+        f"/api/v1/businesses/{first_id}/customers/{customer_id}/statement"
+    )
+    assert response.status_code == 404
