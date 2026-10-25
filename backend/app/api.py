@@ -99,6 +99,7 @@ class PaymentCreate(BaseModel):
     amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
     currency_code: str = Field(min_length=3, max_length=3)
     idempotency_key: str = Field(min_length=1, max_length=128)
+    customer_id: UUID
     allocations: list[PaymentAllocationInput] = Field(default_factory=list, max_length=500)
     method: str | None = Field(default=None, max_length=32)
     reference: str | None = Field(default=None, max_length=128)
@@ -252,6 +253,7 @@ def post_payment(business_id: UUID, body: PaymentCreate,
         session, principal=principal, business_id=business_id,
         amount=body.amount, currency_code=body.currency_code,
         idempotency_key=body.idempotency_key,
+        customer_id=body.customer_id,
         allocations=[(item.invoice_id, item.amount) for item in body.allocations],
         method=body.method, reference=body.reference))
     return _record(result)

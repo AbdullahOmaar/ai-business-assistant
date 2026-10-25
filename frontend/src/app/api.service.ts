@@ -16,7 +16,7 @@ export interface InvoiceDetail extends Invoice {
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
 export interface PaymentAllocation { invoice_id: string; amount: string; }
-export interface Payment { id: string; amount: string; currency_code: string; received_at: string; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
+export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
 export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
 export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; currencies: ProfitLossRow[]; limitations: string[]; }
@@ -105,7 +105,7 @@ export class ApiService {
     return this.request<Payment[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments?limit=100`);
   }
   createPayment(businessId: string, body: {
-    amount: string; currency_code: string; idempotency_key: string;
+    amount: string; currency_code: string; idempotency_key: string; customer_id: string;
     allocations?: Array<{ invoice_id: string; amount: string }>;
     method?: string; reference?: string;
   }): Promise<Payment> {

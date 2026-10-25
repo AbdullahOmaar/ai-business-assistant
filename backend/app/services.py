@@ -399,6 +399,13 @@ def issue_invoice(
         raise WorkflowError("Invoice not found in this business")
     if invoice.status != "draft":
         raise WorkflowError("Only draft invoices can be issued")
+    if invoice.customer_id is None:
+        raise WorkflowError("Select a customer before issuing an invoice")
+    customer = session.scalars(select(Customer).where(
+        Customer.id == invoice.customer_id, Customer.business_id == business_id,
+    )).one_or_none()
+    if customer is None:
+        raise WorkflowError("Invoice customer not found in this business")
 
     lines = session.scalars(select(InvoiceLine).where(
         InvoiceLine.invoice_id == invoice.id,
@@ -468,6 +475,12 @@ def record_payment(
     currency = currency_code.strip().upper()
     if len(currency) != 3 or not currency.isalpha():
         raise WorkflowError("Currency must be a three-letter code")
+    if customer_id is None:
+        raise WorkflowError("Select a customer for every recorded payment")
+    if session.scalars(select(Customer).where(
+        Customer.id == customer_id, Customer.business_id == business_id,
+    )).one_or_none() is None:
+        raise WorkflowError("Customer not found in this business")
     requested = [(UUID(str(invoice_id)), Decimal(str(allocation_amount)))
                  for invoice_id, allocation_amount in allocations]
     requested_map = {invoice_id: allocation_amount for invoice_id, allocation_amount in requested}
@@ -493,10 +506,6 @@ def record_payment(
         ):
             raise WorkflowError("Idempotency key was already used for different payment details")
         return existing
-    if customer_id is not None and session.scalars(select(Customer).where(
-        Customer.id == customer_id, Customer.business_id == business_id,
-    )).one_or_none() is None:
-        raise WorkflowError("Customer not found in this business")
     payment = Payment(
         business_id=business_id, customer_id=customer_id, amount=amount,
         currency_code=currency, idempotency_key=idempotency_key.strip(),
@@ -513,6 +522,8 @@ def record_payment(
             raise WorkflowError("Payment can only be allocated to an issued invoice in this business")
         if invoice.currency_code != currency:
             raise WorkflowError("Payment and invoice currencies must match")
+        if invoice.customer_id != customer_id:
+            raise WorkflowError("Payment customer must match the allocated invoice customer")
         already_allocated = session.scalar(select(func.coalesce(
             func.sum(PaymentAllocation.amount), 0
         )).where(PaymentAllocation.invoice_id == invoice.id,

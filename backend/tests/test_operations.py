@@ -12,7 +12,7 @@ from app.models import (
     StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal
-from app.services import create_invoice, create_product, issue_invoice, record_stock_movement
+from app.services import create_customer, create_invoice, create_product, issue_invoice, record_stock_movement
 from app.operations import (
     WorkflowError, approve_sales_return, financial_summary, queue_notification,
     receive_purchase_order,
@@ -84,6 +84,9 @@ def test_purchase_receiving_records_stock_and_completes_order(operation_workspac
 def test_sales_return_approval_rejects_quantity_over_original_sale(operation_workspace):
     engine, business_id, principal = operation_workspace
     with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Tea Customer",
+        )
         product = create_product(
             session, principal=principal, business_id=business_id,
             name="Tea", unit_price=Decimal("8"), is_stock_tracked=True,
@@ -96,6 +99,7 @@ def test_sales_return_approval_rejects_quantity_over_original_sale(operation_wor
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
             invoice_number="INV-R", currency_code="EGP",
+            customer_id=customer.id,
             lines=[{"product_id": str(product.id), "quantity": "2"}],
         )
         issue_invoice(
