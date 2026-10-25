@@ -5,7 +5,7 @@ unless the host has configured a trusted principal resolver and database session
 """
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -27,6 +27,27 @@ from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
 ZERO = Decimal("0")
+
+
+def _receivable_aging_bucket(due_date: date | None, as_of: date) -> tuple[str, int | None]:
+    """Return an aging bucket without silently treating missing due dates as current."""
+    if due_date is None:
+        return "no_due_date", None
+    days_overdue = (as_of - due_date).days
+    if days_overdue <= 0:
+        return "not_due", days_overdue
+    if days_overdue <= 30:
+        return "1_30_days", days_overdue
+    if days_overdue <= 60:
+        return "31_60_days", days_overdue
+    if days_overdue <= 90:
+        return "61_90_days", days_overdue
+    return "over_90_days", days_overdue
+
+def _receivable_outstanding(total: Decimal, allocated: Decimal) -> tuple[Decimal, bool]:
+    """Return the balance and flag allocations that exceed an invoice total."""
+    outstanding = total - allocated
+    return outstanding, outstanding < ZERO
 
 
 class ExpenseInput(BaseModel):
@@ -508,6 +529,74 @@ def export_csv(business_id: UUID, entity_type: str,
 
 
 
+@router.post("/imports/{entity_type}.csv", status_code=202)
+def import_csv(business_id: UUID, entity_type: str,
+               csv_text: str = Body(media_type="text/csv", max_length=2_000_000),
+               session: Session = Depends(get_session),
+               principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Atomically import a small CSV batch. Large files belong in a background job."""
+    def op():
+        _authorized(session, principal, business_id)
+        schemas = {
+            "customers": {"name", "email", "phone", "address", "notes"},
+            "products": {"name", "sku", "description", "unit", "unit_price", "is_stock_tracked"},
+        }
+        if entity_type not in schemas:
+            raise WorkflowError("CSV import supports customers and products only")
+        reader = csv.DictReader(io.StringIO(csv_text))
+        if not reader.fieldnames:
+            raise WorkflowError("CSV header row is required")
+        allowed = schemas[entity_type]
+        fields = {field.strip() for field in reader.fieldnames if field}
+        if not fields or not fields.issubset(allowed) or "name" not in fields:
+            raise WorkflowError("CSV contains unsupported columns or is missing the required name column")
+        rows = list(reader)
+        if len(rows) > 2000:
+            raise WorkflowError("A single import is limited to 2000 rows")
+        job = ImportJob(business_id=business_id, job_type="import",
+                        entity_type=entity_type, status="processing", row_count=0)
+        session.add(job)
+        session.flush()
+        for index, row in enumerate(rows, start=2):
+            clean = {str(k).strip(): (v.strip() if v is not None else "") for k, v in row.items() if k}
+            if set(clean) - allowed:
+                raise WorkflowError(f"Unsupported column at CSV row {index}")
+            if not clean.get("name"):
+                raise WorkflowError(f"Name is required at CSV row {index}")
+            if entity_type == "customers":
+                session.add(Customer(
+                    business_id=business_id, name=clean["name"],
+                    email=clean.get("email") or None, phone=clean.get("phone") or None,
+                    address=clean.get("address") or None, notes=clean.get("notes") or None,
+                ))
+            else:
+                try:
+                    price = Decimal(clean.get("unit_price", "0") or "0")
+                except Exception as exc:
+                    raise WorkflowError(f"Invalid unit_price at CSV row {index}") from exc
+                if price < ZERO:
+                    raise WorkflowError(f"Negative unit_price at CSV row {index}")
+                tracked_text = clean.get("is_stock_tracked", "false").lower()
+                if tracked_text not in {"true", "false", "1", "0", "yes", "no", ""}:
+                    raise WorkflowError(f"Invalid is_stock_tracked at CSV row {index}")
+                session.add(Product(
+                    business_id=business_id, name=clean["name"], unit_price=price,
+                    sku=clean.get("sku") or None, description=clean.get("description") or None,
+                    unit=clean.get("unit") or "unit",
+                    is_stock_tracked=tracked_text in {"true", "1", "yes"},
+                ))
+        job.status = "completed"
+        job.row_count = len(rows)
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="data_import.completed", target_type="import_job", target_id=str(job.id),
+            change_summary=f"{entity_type}: {len(rows)} rows"))
+        session.flush()
+        return job
+    job = _commit(session, op)
+    return _dict(job, ("id", "job_type", "entity_type", "status", "row_count", "created_at"))
+
+
+
 def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                           rows: list[dict[str, str]]) -> list[dict]:
     errors: list[dict] = []
@@ -944,6 +1033,131 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
+
+
+@router.get("/reports/receivables-aging")
+def receivables_aging(
+    business_id: UUID,
+    as_of: date | None = Query(default=None),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Return open issued-invoice balances grouped by currency and overdue age."""
+    try:
+        _authorized(session, principal, business_id)
+        report_date = as_of or datetime.now(timezone.utc).date()
+        allocated_amount = (
+            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
+            .join(Payment, Payment.id == PaymentAllocation.payment_id)
+            .where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.invoice_id == Invoice.id,
+                Payment.currency_code == Invoice.currency_code,
+            )
+            .scalar_subquery()
+        )
+        mismatched_allocated_amount = (
+            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
+            .join(Payment, Payment.id == PaymentAllocation.payment_id)
+            .where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.invoice_id == Invoice.id,
+                Payment.currency_code != Invoice.currency_code,
+            )
+            .scalar_subquery()
+        )
+        rows = session.execute(
+            select(
+                Invoice,
+                allocated_amount.label("allocated_amount"),
+                mismatched_allocated_amount.label("mismatched_allocated_amount"),
+            )
+            .where(
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+            )
+            .order_by(Invoice.currency_code, Invoice.due_date, Invoice.invoice_number)
+        ).all()
+
+        bucket_totals: dict[str, dict[str, Decimal]] = {}
+        invoice_rows = []
+        data_quality_warnings = []
+        for invoice, allocated, mismatched_allocated in rows:
+            total = Decimal(str(invoice.total or ZERO))
+            paid = Decimal(str(allocated or ZERO))
+            mismatched_paid = Decimal(str(mismatched_allocated or ZERO))
+            outstanding, overallocated = _receivable_outstanding(total, paid)
+            if mismatched_paid > ZERO:
+                data_quality_warnings.append({
+                    "invoice_id": str(invoice.id),
+                    "invoice_number": invoice.invoice_number,
+                    "type": "payment_currency_mismatch",
+                    "invoice_currency": invoice.currency_code,
+                    "mismatched_allocations_amount": str(mismatched_paid),
+                })
+            if overallocated:
+                data_quality_warnings.append({
+                    "invoice_id": str(invoice.id),
+                    "invoice_number": invoice.invoice_number,
+                    "type": "allocations_exceed_invoice_total",
+                    "invoice_total": str(total),
+                    "allocated_payments": str(paid),
+                    "excess_allocated": str(abs(outstanding)),
+                })
+                continue
+            if outstanding == ZERO:
+                continue
+
+            due_day = invoice.due_date.date() if invoice.due_date is not None else None
+            bucket, days_overdue = _receivable_aging_bucket(due_day, report_date)
+            currency = invoice.currency_code
+            bucket_totals.setdefault(currency, {})
+            bucket_totals[currency][bucket] = (
+                bucket_totals[currency].get(bucket, ZERO) + outstanding
+            )
+            invoice_rows.append({
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "customer_id": str(invoice.customer_id) if invoice.customer_id else None,
+                "currency_code": currency,
+                "due_date": due_day.isoformat() if due_day else None,
+                "invoice_total": str(total),
+                "allocated_payments": str(paid),
+                "outstanding_amount": str(outstanding),
+                "aging_bucket": bucket,
+                "days_overdue": days_overdue,
+                "customer_link_missing": invoice.customer_id is None,
+            })
+
+        summaries = []
+        for currency, buckets in sorted(bucket_totals.items()):
+            summaries.append({
+                "currency_code": currency,
+                "buckets": [
+                    {"bucket": name, "outstanding_amount": str(buckets[name])}
+                    for name in ("not_due", "1_30_days", "31_60_days", "61_90_days",
+                                 "over_90_days", "no_due_date")
+                    if buckets.get(name, ZERO) > ZERO
+                ],
+                "total_outstanding": str(sum(buckets.values(), ZERO)),
+            })
+        return {
+            "as_of_date": report_date.isoformat(),
+            "source": "issued invoices minus recorded payment allocations",
+            "currency_policy": "Balances are grouped by currency and never combined.",
+            "invoice_count": len(invoice_rows),
+            "by_currency": summaries,
+            "invoices": invoice_rows,
+            "data_quality_warnings": data_quality_warnings,
+            "limitations": [
+                "Only issued invoices are included; drafts and void invoices are excluded.",
+                "Invoices without due dates are reported separately and are not assumed current.",
+                "Legacy invoices without customer links are flagged for review, not auto-corrected.",
+                "This is an accounts-receivable aging report, not net profit or a full general ledger.",
+            ],
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 @router.get("/assistant/insights")
 def assistant_insights(business_id: UUID,
