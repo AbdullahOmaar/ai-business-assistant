@@ -13,7 +13,8 @@ import pytest
 from app.main import app
 from app.models import (
     Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
-    Product, RecurringInvoiceSchedule, MembershipRole, SalesReturn, SalesReturnLine,
+    Product, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
+    MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -577,6 +578,10 @@ def test_staff_is_denied_sensitive_business_routes():
                       "body": "Staff should not schedule notifications",
                       "deduplication_key": "staff-notification-test"},
             ),
+            "receive purchase order": client.post(
+                f"{base}/purchase-orders/{unknown_id}/receive",
+                json={"lines": [{"line_id": unknown_id, "quantity": "1.000"}]},
+            ),
             "change settings": client.put(
                 f"{base}/settings/locale", json={"setting_value": "ar"}
             ),
@@ -647,6 +652,57 @@ def test_owner_can_change_product_price_and_create_schedules_and_notifications()
             assert session.get(Product, product_id).unit_price == Decimal("8.50")
             assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 1
             assert session.scalar(select(func.count()).select_from(Notification)) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+def test_owner_can_receive_purchase_order_and_records_stock_movement():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Test supplier")
+        product = Product(
+            business_id=business_id, name="Receiving test product",
+            unit_price=Decimal("6.00"), is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        created = client.post(
+            f"{base}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id), "order_number": "PO-ROLE-OWNER-1",
+                "currency_code": "EGP",
+                "lines": [{"product_id": str(product_id), "quantity": "2.000", "unit_cost": "3.00"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["status"] == "approved"
+        order_id = UUID(created.json()["id"])
+        with Session(engine) as session:
+            line = session.scalar(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.purchase_order_id == order_id
+            ))
+            assert line is not None
+            line_id = line.id
+
+        received = client.post(
+            f"{base}/purchase-orders/{order_id}/receive",
+            json={"lines": [{"line_id": str(line_id), "quantity": "1.000"}]},
+        )
+        assert received.status_code == 200, received.text
+        assert received.json()["status"] == "partially_received"
+        with Session(engine) as session:
+            line = session.get(PurchaseOrderLine, line_id)
+            assert line.received_quantity == Decimal("1.000")
+            assert session.scalar(select(func.count()).select_from(StockMovement).where(
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.reference_id == order_id,
+                StockMovement.movement_type == "receipt",
+            )) == 1
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
