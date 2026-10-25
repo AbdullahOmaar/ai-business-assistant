@@ -80,3 +80,10 @@ A successful migration test against a disposable PostgreSQL database is not evid
 - The actual backup/restore drill must be proven with a confirmed zero-cost path.
 - The owner must explicitly approve the final merge and production deployment.
 - After deployment, verify `/health`, `/readyz`, `/version`, Firebase login, workspace isolation, invoice creation/issue, payment, returns, and installed-PWA update on a mobile device.
+
+## Release trigger — v0.2.0
+
+- Release source commit: `0754a5c2887726f7c6b03f3fdba83f6b104e6272`.
+- Backend tests, backend container verification, backend/frontend verification, and Python/JavaScript dependency audits passed on the release candidate.
+- The initial Vercel production hooks were intentionally skipped because the squash commit did not contain the projects' required `[release-web]` / `[release-api]` build markers. A follow-up release-marker commit is used to trigger those configured deployments; this documentation update does not change application behavior.
+- No production schema migration or production data rewrite is included in this release.
