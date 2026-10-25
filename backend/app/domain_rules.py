@@ -86,6 +86,15 @@ def validate_return_quantity(*, sold_quantity: Decimal, previously_returned: Dec
         raise ValueError("return quantity exceeds remaining sold quantity")
 
 
+def validate_return_amount(*, invoiced_amount: Decimal, previously_returned_amount: Decimal,
+                           requested_return_amount: Decimal) -> None:
+    """Prevent cumulative rounded refunds from exceeding the source invoice line."""
+    if invoiced_amount < ZERO or previously_returned_amount < ZERO or requested_return_amount < ZERO:
+        raise ValueError("return amounts must be non-negative")
+    if money(previously_returned_amount + requested_return_amount) > money(invoiced_amount):
+        raise ValueError("return amount exceeds invoiced line amount remaining")
+
+
 def summarize_money_by_currency(
     amounts: Iterable[tuple[str, Decimal]],
 ) -> dict[str, Decimal]:
