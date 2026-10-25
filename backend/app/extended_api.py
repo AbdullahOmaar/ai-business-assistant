@@ -610,6 +610,90 @@ def get_customer(business_id: UUID, customer_id: UUID,
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
+@router.get("/customers/{customer_id}/statement")
+def customer_statement(
+    business_id: UUID,
+    customer_id: UUID,
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Return a workspace-scoped customer ledger with currency-separated totals."""
+    try:
+        _authorized(session, principal, business_id)
+        customer = session.scalars(select(Customer).where(
+            Customer.id == customer_id,
+            Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        )).one_or_none()
+        if customer is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        invoices = session.scalars(select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+        )).all()
+        payments = session.scalars(select(Payment).where(
+            Payment.business_id == business_id,
+            Payment.customer_id == customer_id,
+        )).all()
+
+        invoiced_totals: dict[str, Decimal] = {}
+        received_totals: dict[str, Decimal] = {}
+        entries = []
+        for invoice in invoices:
+            amount = Decimal(str(invoice.total))
+            if invoice.status == "issued":
+                invoiced_totals[invoice.currency_code] = (
+                    invoiced_totals.get(invoice.currency_code, ZERO) + amount
+                )
+            event_date = invoice.issue_date or invoice.created_at
+            entries.append({
+                "type": "invoice",
+                "id": str(invoice.id),
+                "date": event_date.isoformat() if event_date else None,
+                "invoice_number": invoice.invoice_number,
+                "status": invoice.status,
+                "amount": str(amount),
+                "currency_code": invoice.currency_code,
+                "due_date": invoice.due_date.isoformat() if invoice.due_date else None,
+            })
+        for payment in payments:
+            amount = Decimal(str(payment.amount))
+            received_totals[payment.currency_code] = (
+                received_totals.get(payment.currency_code, ZERO) + amount
+            )
+            entries.append({
+                "type": "payment",
+                "id": str(payment.id),
+                "date": payment.received_at.isoformat() if payment.received_at else None,
+                "amount": str(amount),
+                "currency_code": payment.currency_code,
+                "method": payment.method,
+                "reference": payment.reference,
+            })
+
+        entries.sort(key=lambda entry: (entry["date"] or "", entry["id"]), reverse=True)
+        currencies = sorted(set(invoiced_totals) | set(received_totals))
+        summary = [{
+            "currency_code": currency,
+            "invoiced": str(invoiced_totals.get(currency, ZERO)),
+            "received": str(received_totals.get(currency, ZERO)),
+            "balance": str(
+                invoiced_totals.get(currency, ZERO) - received_totals.get(currency, ZERO)
+            ),
+        } for currency in currencies]
+        return {
+            "customer": _dict(customer, ("id", "name", "email", "phone")),
+            "entries": entries[offset:offset + limit],
+            "pagination": {"limit": limit, "offset": offset, "total": len(entries)},
+            "summary": summary,
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.patch("/customers/{customer_id}")
 def patch_customer(business_id: UUID, customer_id: UUID, body: CustomerPatch,
                    session: Session = Depends(get_session),
