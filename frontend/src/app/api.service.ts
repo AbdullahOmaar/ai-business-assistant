@@ -37,6 +37,8 @@ export interface CustomerStatementEvent { occurred_at: string; event_type: strin
 export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
 export interface DataIntegrityInvoice { invoice_id: string; invoice_number: string; status: string; total: string; currency_code: string; created_at: string | null; }
 export interface DataIntegrityAllocation { allocation_id: string; payment_id: string; payment_reference: string | null; payment_customer_id: string | null; payment_currency: string; invoice_id: string; invoice_number: string; invoice_customer_id: string | null; invoice_currency: string; allocated_amount: string; }
+export interface ExpenseRecord { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name: string | null; reference: string | null; created_at: string | null; }
+export interface NotificationRecord { id: string; kind: string; title: string; body: string; status: string; deduplication_key: string; scheduled_at: string | null; created_at: string | null; }
 export interface Supplier { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; is_active: boolean; }
 export interface PurchaseOrderLine { id: string; product_id: string; quantity: string; unit_cost: string; received_quantity: string; remaining_quantity: string; }
 export interface PurchaseOrder { id: string; supplier_id: string; order_number: string; status: string; currency_code: string; total: string; created_at: string | null; lines: PurchaseOrderLine[]; }
@@ -255,6 +257,19 @@ export class ApiService {
   customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
     const params = new URLSearchParams({ limit: '50', offset: String(offset) });
     return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
+  }
+
+  expenses(businessId: string): Promise<ExpenseRecord[]> {
+    return this.request<ExpenseRecord[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/expenses?limit=100');
+  }
+  createExpense(businessId: string, body: { category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string; reference?: string }): Promise<ExpenseRecord> {
+    return this.request<ExpenseRecord>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/expenses', 'POST', body);
+  }
+  notifications(businessId: string): Promise<NotificationRecord[]> {
+    return this.request<NotificationRecord[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/notifications?limit=100');
+  }
+  createNotification(businessId: string, body: { kind: string; title: string; body: string; deduplication_key: string; scheduled_at?: string }): Promise<NotificationRecord> {
+    return this.request<NotificationRecord>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/notifications', 'POST', body);
   }
 
   suppliers(businessId: string): Promise<Supplier[]> {
