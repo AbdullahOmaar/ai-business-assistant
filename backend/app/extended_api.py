@@ -22,7 +22,7 @@ from app.models import (
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
 from app.domain_rules import money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
@@ -136,8 +136,14 @@ class NotificationInput(BaseModel):
     scheduled_at: datetime | None = None
 
 
-def _authorized(session: Session, principal: AuthenticatedPrincipal, business_id: UUID) -> None:
-    authorize_membership(session, principal=principal, business_id=business_id)
+def _authorized(
+    session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
+    *, owner_only: bool = False,
+) -> None:
+    authorize_membership(
+        session, principal=principal, business_id=business_id,
+        allowed_roles={MembershipRole.OWNER} if owner_only else None,
+    )
 
 
 def _commit(session: Session, action):
@@ -228,7 +234,7 @@ def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurch
                            session: Session = Depends(get_session),
                            principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id, PurchaseOrder.business_id == business_id,
         ).with_for_update()).one_or_none()
@@ -318,7 +324,7 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                          session: Session = Depends(get_session),
                          principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         ret = session.scalars(select(SalesReturn).where(
             SalesReturn.id == return_id, SalesReturn.business_id == business_id,
         ).with_for_update()).one_or_none()
@@ -438,7 +444,7 @@ def post_pricing_rule(business_id: UUID, body: PricingRuleInput,
                       session: Session = Depends(get_session),
                       principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         rule = PricingRule(business_id=business_id, name=body.name.strip(),
                            rule_type=body.rule_type, rate=body.rate, is_active=True)
         session.add(rule)
@@ -486,7 +492,7 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
                 session: Session = Depends(get_session),
                 principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         if setting_key.lower() in {"password", "secret", "api_key", "token", "private_key"}:
             raise WorkflowError("Secret values must be stored in a dedicated secret manager")
         item = session.scalars(select(BusinessSetting).where(
@@ -540,7 +546,7 @@ def export_csv(business_id: UUID, entity_type: str,
                session: Session = Depends(get_session),
                principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         supported = {
             "customers": ("customers", ("id", "name", "email", "phone", "address", "created_at")),
             "products": ("products", ("id", "sku", "name", "unit", "unit_price", "is_stock_tracked", "created_at")),
@@ -673,7 +679,7 @@ def import_csv(business_id: UUID, entity_type: str,
                principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Atomically import a small CSV batch. Large files belong in a background job."""
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         schemas = {
             "customers": {"name", "email", "phone", "address", "notes"},
             "products": {"name", "sku", "description", "unit", "unit_price", "is_stock_tracked"},
@@ -811,7 +817,7 @@ def deactivate_customer(business_id: UUID, customer_id: UUID,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         item = session.scalars(select(Customer).where(
             Customer.id == customer_id, Customer.business_id == business_id,
             Customer.is_active.is_(True),
@@ -917,7 +923,7 @@ def deactivate_product(business_id: UUID, product_id: UUID,
                        session: Session = Depends(get_session),
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         item = session.scalars(select(Product).where(
             Product.id == product_id, Product.business_id == business_id,
             Product.is_active.is_(True),
