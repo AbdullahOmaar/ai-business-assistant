@@ -657,7 +657,7 @@ def preview_import_csv(business_id: UUID, entity_type: str,
                        session: Session = Depends(get_session),
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         if entity_type not in {"customers", "products"}:
             raise WorkflowError("CSV import supports customers and products only")
         try:
