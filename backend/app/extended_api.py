@@ -136,6 +136,18 @@ class NotificationInput(BaseModel):
     scheduled_at: datetime | None = None
 
 
+def _discounted_return_line_total(invoice: Invoice, line: InvoiceLine) -> Decimal:
+    """Returnable line value after proportionally allocating the invoice discount."""
+    gross = money(Decimal(str(line.line_total)))
+    subtotal = Decimal(str(invoice.subtotal or ZERO))
+    discount = Decimal(str(invoice.discount_total or ZERO))
+    if subtotal <= ZERO or discount <= ZERO:
+        return gross
+    if discount >= subtotal:
+        return ZERO
+    return max(ZERO, money(gross - money(discount * gross / subtotal)))
+
+
 def _authorized(
     session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
     *, owner_only: bool = False,
@@ -306,7 +318,8 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            amount = money(line.unit_price * item.quantity)
+            discounted_line_total = _discounted_return_line_total(invoice, line)
+            amount = money(discounted_line_total * item.quantity / line.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
                 invoice_line_id=line.id, quantity=item.quantity, amount=amount))
@@ -378,18 +391,10 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             try:
                 validate_return_amount(
-                    invoiced_amount=money(
-                        Decimal(str(invoice_line.line_total))
-                        - (money(
-                            Decimal(str(invoice.discount_total or 0))
-                            * Decimal(str(invoice_line.line_total))
-                            / Decimal(str(invoice.subtotal))
-                        ) if Decimal(str(invoice.subtotal or 0)) > ZERO else ZERO)
-                    ),
+                    invoiced_amount=_discounted_return_line_total(invoice, invoice_line),
                     previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
                     requested_return_amount=requested["amount"],
-                )
-            except ValueError as exc:
+                )            except ValueError as exc:
                 raise WorkflowError(str(exc)) from exc
             invoice_lines[invoice_line_id] = invoice_line
 
