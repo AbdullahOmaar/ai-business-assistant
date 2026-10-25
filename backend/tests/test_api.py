@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 import os
 from threading import Barrier
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
@@ -400,7 +400,7 @@ def test_staff_can_create_but_cannot_approve_sales_return():
         )
         assert approved.status_code == 403
         with Session(engine) as session:
-            item = session.get(SalesReturn, created.json()["id"])
+            item = session.get(SalesReturn, UUID(created.json()["id"]))
             assert item.status == "draft"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
