@@ -3,6 +3,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
 import { AuthService } from './auth.service';
+import { APP_BUILD_INFO } from './build-info';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports';
 
@@ -78,7 +79,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         <main class="main">
           <header class="topbar">
             <div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة', 'UI version')">v{{ appVersion }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
+            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
 
           @if (error) { <div class="error-banner" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retry()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
@@ -386,7 +387,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   `]
 })
 export class AppComponent implements OnInit {
-  readonly appVersion = '0.1.0';
+  readonly appVersion = APP_BUILD_INFO.version;
+  readonly uiCommitLabel = APP_BUILD_INFO.commit;
+  apiVersionLabel = 'غير متاح';
+  apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
   setupNeeded = false;
@@ -511,6 +515,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       const registerWorker = () => navigator.serviceWorker.register('/sw.js').catch(() => {
@@ -518,6 +523,17 @@ export class AppComponent implements OnInit {
       });
       if (document.readyState === 'complete') void registerWorker();
       else window.addEventListener('load', () => { void registerWorker(); }, { once: true });
+    }
+  }
+
+  private async loadApiVersion(): Promise<void> {
+    try {
+      const release = await this.api.releaseInfo();
+      this.apiVersionLabel = release.version;
+      this.apiCommitLabel = release.commit || 'unknown';
+    } catch {
+      this.apiVersionLabel = this.t('غير متاح', 'unavailable');
+      this.apiCommitLabel = 'unknown';
     }
   }
 
