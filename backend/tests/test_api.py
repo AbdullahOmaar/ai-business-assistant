@@ -208,11 +208,11 @@ def test_sales_return_discount_allocation_reconciles_multiline_rounding():
         ) for index in range(3)]
         session.add_all(lines)
         session.add(BusinessMembership(
-            business_id=business.id, user_subject="rounding-owner", role=MembershipRole.OWNER,
+            business_id=business.id, user_subject="test-subject", role=MembershipRole.OWNER,
         ))
         session.commit()
         business_id, invoice_id, line_ids = business.id, invoice.id, [line.id for line in lines]
-    previous_factory, previous_resolver = _configure_test_identity(engine, subject="rounding-owner")
+    previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     try:
         created = client.post(
