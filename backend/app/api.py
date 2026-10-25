@@ -181,6 +181,29 @@ def post_invoice(business_id: UUID, body: InvoiceCreate,
     return _record(result)
 
 
+@router.post("/businesses/{business_id}/invoices/issue", status_code=201)
+def post_create_and_issue_invoice(
+    business_id: UUID,
+    body: InvoiceCreate,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Create and issue an invoice in one transaction, linking an optional customer."""
+    payload = body.model_dump()
+    payload["lines"] = [line.model_dump(exclude_none=True) for line in body.lines]
+
+    def create_and_issue():
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id, **payload
+        )
+        return issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=invoice.id
+        )
+
+    result = _run(session, create_and_issue)
+    return _record(result)
+
+
 @router.post("/businesses/{business_id}/invoices/{invoice_id}/issue")
 def post_issue_invoice(business_id: UUID, invoice_id: UUID,
                        session: Session = Depends(get_session),
