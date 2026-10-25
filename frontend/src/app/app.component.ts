@@ -191,6 +191,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                       <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
                         @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ event.event_type }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
                       </tbody></table></div>
+                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
                     }
                   </section>
@@ -432,6 +433,8 @@ export class AppComponent implements OnInit {
   statementError = '';
   statementVisible = false;
   statementCustomerName = '';
+  statementCustomerId = '';
+  statementOffset = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
@@ -816,14 +819,20 @@ export class AppComponent implements OnInit {
   }
 
   async loadCustomerStatement(customer: Customer): Promise<void> {
-    if (!this.business) return;
-    this.customerStatement = null;
+    this.statementCustomerId = customer.id;
     this.statementCustomerName = customer.name;
     this.statementVisible = true;
+    await this.loadCustomerStatementPage(0);
+  }
+
+  async loadCustomerStatementPage(offset: number): Promise<void> {
+    if (!this.business || !this.statementCustomerId) return;
+    this.customerStatement = null;
+    this.statementOffset = offset;
     this.statementLoading = true;
     this.statementError = '';
     try {
-      this.customerStatement = await this.api.customerStatement(this.business.id, customer.id);
+      this.customerStatement = await this.api.customerStatement(this.business.id, this.statementCustomerId, offset);
     } catch (error) {
       this.statementError = this.message(error);
     } finally {
