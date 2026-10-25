@@ -183,6 +183,60 @@ def test_fully_discounted_invoice_cannot_be_refunded_at_gross_line_value():
         engine.dispose()
 
 
+def test_sales_return_discount_allocation_reconciles_multiline_rounding():
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        business = Business(name="Rounding return shop", currency_code="EGP")
+        session.add(business)
+        session.flush()
+        invoice = Invoice(
+            business_id=business.id, customer_id=None, invoice_number="RET-ROUND-1",
+            status="issued", currency_code="EGP", subtotal=Decimal("0.02"),
+            tax_total=Decimal("0.00"), discount_total=Decimal("0.01"), total=Decimal("0.01"),
+        )
+        session.add(invoice)
+        session.flush()
+        lines = [InvoiceLine(
+            business_id=business.id, invoice_id=invoice.id, product_id=None,
+            description=f"Rounding line {index}", quantity=Decimal("0.500"),
+            unit_price=Decimal("0.01"), line_total=Decimal("0.01"),
+        ) for index in range(3)]
+        session.add_all(lines)
+        session.add(BusinessMembership(
+            business_id=business.id, user_subject="rounding-owner", role=MembershipRole.OWNER,
+        ))
+        session.commit()
+        business_id, invoice_id, line_ids = business.id, invoice.id, [line.id for line in lines]
+    previous_factory, previous_resolver = _configure_test_identity(engine, subject="rounding-owner")
+    client = TestClient(app)
+    try:
+        created = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns",
+            json={"invoice_id": str(invoice_id), "lines": [
+                {"invoice_line_id": str(line_id), "quantity": "0.500"} for line_id in line_ids
+            ]},
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["total"] == "0.01"
+        approved = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns/{created.json()['id']}/approve"
+        )
+        assert approved.status_code == 200, approved.text
+        with Session(engine) as session:
+            returned_total = session.scalar(select(func.coalesce(func.sum(SalesReturnLine.amount), 0)).where(
+                SalesReturnLine.sales_return_id == UUID(created.json()["id"])
+            ))
+            assert Decimal(str(returned_total)) == Decimal("0.01")
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_duplicate_lines_in_one_return_cannot_exceed_invoiced_quantity():
     engine, business_id, invoice_id, line_id = _sales_return_fixture()
     previous_factory, previous_resolver = _configure_test_identity(engine)
