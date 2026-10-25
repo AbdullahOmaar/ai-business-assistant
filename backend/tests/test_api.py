@@ -177,6 +177,7 @@ def test_concurrent_postgres_return_approvals_cannot_overreturn():
 
     engine = create_engine(database_url, pool_size=5, max_overflow=0)
     previous_factory = previous_resolver = None
+    identity_configured = False
     try:
         suffix = uuid4().hex[:12]
         with Session(engine) as session:
@@ -218,6 +219,7 @@ def test_concurrent_postgres_return_approvals_cannot_overreturn():
             business_id, invoice_id, line_id = business.id, invoice.id, line.id
 
         previous_factory, previous_resolver = _configure_test_identity(engine)
+        identity_configured = True
         client = TestClient(app)
         payload = {
             "invoice_id": str(invoice_id),
@@ -258,6 +260,6 @@ def test_concurrent_postgres_return_approvals_cannot_overreturn():
             )
             assert Decimal(str(approved_quantity or 0)) <= Decimal("1.000")
     finally:
-        if previous_factory is not None or previous_resolver is not None:
+        if identity_configured:
             _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
