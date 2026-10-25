@@ -64,6 +64,17 @@ def close_runtime() -> None:
             del app.state.session_factory
 
 
+@app.get("/version", tags=["health"])
+def version_info() -> dict[str, str]:
+    """Expose non-sensitive release metadata so the UI can detect stale API deployments."""
+    commit = os.getenv("VERCEL_GIT_COMMIT_SHA", "").strip() or os.getenv("GITHUB_SHA", "").strip() or "unknown"
+    return {
+        "version": app.version,
+        "commit": commit[:12],
+        "environment": os.getenv("VERCEL_ENV", "unknown"),
+    }
+
+
 @app.get("/health", tags=["health"])
 def health_check() -> dict[str, str]:
     """Report process liveness only; does not imply database readiness."""
