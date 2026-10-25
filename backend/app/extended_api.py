@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
+from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
     AuditEvent, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
@@ -507,6 +508,93 @@ def export_csv(business_id: UUID, entity_type: str,
 
 
 
+def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
+                          rows: list[dict[str, str]]) -> list[dict]:
+    errors: list[dict] = []
+    first_sku_row: dict[str, int] = {}
+    existing_skus: set[str] = set()
+    if entity_type == "products":
+        skus = [row.get("sku", "").strip().casefold() for row in rows if row.get("sku", "").strip()]
+        if skus:
+            existing_skus = {value.casefold() for value in session.scalars(select(Product.sku).where(
+                Product.business_id == business_id, Product.sku.is_not(None),
+                func.lower(Product.sku).in_(skus),
+            )).all() if value}
+    for index, row in enumerate(rows, start=2):
+        if entity_type == "customers":
+            limits = {"name": 160, "email": 254, "phone": 32, "address": 500, "notes": 1000}
+            for field, limit in limits.items():
+                if len(row.get(field, "")) > limit:
+                    errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
+            if not row.get("name", "").strip():
+                errors.append({"row": index, "field": "name", "code": "required"})
+        elif entity_type == "products":
+            limits = {"sku": 80, "name": 160, "description": 1000, "unit": 32}
+            for field, limit in limits.items():
+                if len(row.get(field, "")) > limit:
+                    errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
+            if not row.get("name", "").strip():
+                errors.append({"row": index, "field": "name", "code": "required"})
+            try:
+                price = Decimal(row.get("unit_price", ""))
+                if not price.is_finite() or price < ZERO or price.as_tuple().exponent < -2 or len(price.as_tuple().digits) > 14:
+                    raise ValueError()
+            except Exception:
+                errors.append({"row": index, "field": "unit_price", "code": "invalid_decimal"})
+            tracked = row.get("is_stock_tracked", "").lower()
+            if tracked not in {"true", "false", "1", "0", "yes", "no", ""}:
+                errors.append({"row": index, "field": "is_stock_tracked", "code": "invalid_boolean"})
+            sku = row.get("sku", "").strip()
+            key = sku.casefold()
+            if key:
+                if key in first_sku_row:
+                    errors.append({"row": index, "field": "sku", "code": "duplicate_in_file",
+                                   "first_row": first_sku_row[key]})
+                else:
+                    first_sku_row[key] = index
+                if key in existing_skus:
+                    errors.append({"row": index, "field": "sku", "code": "already_exists"})
+        elif entity_type == "expenses":
+            limits = {"category": 80, "description": 500, "currency_code": 3,
+                      "vendor_name": 160, "reference": 128}
+            for field, limit in limits.items():
+                if len(row.get(field, "")) > limit:
+                    errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
+            try:
+                amount = Decimal(row.get("amount", ""))
+                if not amount.is_finite() or amount <= ZERO or amount.as_tuple().exponent < -2 or len(amount.as_tuple().digits) > 14:
+                    raise ValueError()
+            except Exception:
+                errors.append({"row": index, "field": "amount", "code": "invalid_decimal"})
+            currency = row.get("currency_code", "").upper()
+            if len(currency) != 3 or not currency.isalpha():
+                errors.append({"row": index, "field": "currency_code", "code": "invalid_currency"})
+            try:
+                datetime.fromisoformat(row.get("incurred_at", "").replace("Z", "+00:00"))
+            except ValueError:
+                errors.append({"row": index, "field": "incurred_at", "code": "invalid_datetime"})
+    return errors
+
+
+@router.post("/imports/{entity_type}.csv/preview")
+def preview_import_csv(business_id: UUID, entity_type: str,
+                       csv_text: str = Body(media_type="text/csv", max_length=5 * 1024 * 1024),
+                       session: Session = Depends(get_session),
+                       principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        try:
+            rows = parse_import_csv(csv_text, entity_type=entity_type)
+        except CsvValidationError as exc:
+            raise WorkflowError(str(exc)) from exc
+        if not rows:
+            raise WorkflowError("CSV must contain at least one data row")
+        errors = _validate_import_rows(session, business_id, entity_type, rows)
+        return {"entity_type": entity_type, "row_count": len(rows), "valid": not errors,
+                "errors": errors, "write_performed": False}
+    return _commit(session, op)
+
+
 @router.post("/imports/{entity_type}.csv", status_code=202)
 def import_csv(business_id: UUID, entity_type: str,
                csv_text: str = Body(media_type="text/csv", max_length=2_000_000),
@@ -521,14 +609,17 @@ def import_csv(business_id: UUID, entity_type: str,
         }
         if entity_type not in schemas:
             raise WorkflowError("CSV import supports customers and products only")
-        reader = csv.DictReader(io.StringIO(csv_text))
-        if not reader.fieldnames:
-            raise WorkflowError("CSV header row is required")
-        allowed = schemas[entity_type]
-        fields = {field.strip() for field in reader.fieldnames if field}
-        if not fields or not fields.issubset(allowed) or "name" not in fields:
-            raise WorkflowError("CSV contains unsupported columns or is missing the required name column")
-        rows = list(reader)
+        try:
+            rows = parse_import_csv(csv_text, entity_type=entity_type)
+        except CsvValidationError as exc:
+            raise WorkflowError(str(exc)) from exc
+        if not rows:
+            raise WorkflowError("CSV must contain at least one data row")
+        errors = _validate_import_rows(session, business_id, entity_type, rows)
+        if errors:
+            raise WorkflowError("CSV validation failed: " + "; ".join(
+                f"row {item['row']} {item['field']} {item['code']}" for item in errors
+            ))
         if len(rows) > 2000:
             raise WorkflowError("A single import is limited to 2000 rows")
         job = ImportJob(business_id=business_id, job_type="import",
@@ -536,7 +627,7 @@ def import_csv(business_id: UUID, entity_type: str,
         session.add(job)
         session.flush()
         for index, row in enumerate(rows, start=2):
-            clean = {str(k).strip(): (v.strip() if v is not None else "") for k, v in row.items() if k}
+            clean = row
             if set(clean) - allowed:
                 raise WorkflowError(f"Unsupported column at CSV row {index}")
             if not clean.get("name"):
