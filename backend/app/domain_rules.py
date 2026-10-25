@@ -39,7 +39,8 @@ def calculate_invoice_totals(
             raise ValueError("quantity must be greater than zero")
         if unit_price < ZERO:
             raise ValueError("unit_price cannot be negative")
-        subtotal_raw += quantity * unit_price
+        # Round each line with HALF_UP first so stored line totals reconcile to subtotal.
+        subtotal_raw += money(quantity * unit_price)
     if not found_line:
         raise ValueError("at least one invoice line is required")
 
