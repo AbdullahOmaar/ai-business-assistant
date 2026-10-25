@@ -296,10 +296,10 @@ def profit_loss(
         func.coalesce(func.sum(Expense.amount), 0),
     ).where(Expense.business_id == business_id)
     if start is not None:
-        invoice_query = invoice_query.where(Invoice.issue_date >= start)
+        invoice_query = invoice_query.where(Invoice.issue_date >= datetime.combine(start, time.min, tzinfo=timezone.utc))
         expense_query = expense_query.where(Expense.incurred_at >= datetime.combine(start, time.min, tzinfo=timezone.utc))
     if end is not None:
-        invoice_query = invoice_query.where(Invoice.issue_date <= end)
+        invoice_query = invoice_query.where(Invoice.issue_date < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc))
         expense_query = expense_query.where(Expense.incurred_at < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc))
 
     revenue_rows = session.execute(invoice_query.group_by(Invoice.currency_code)).all()
