@@ -438,3 +438,55 @@ def test_payment_allocation_rejects_different_customer(configured_client):
     })
     assert response.status_code == 422
     assert "customer" in response.json()["detail"].lower()
+
+
+
+def test_product_csv_preview_is_read_only_and_reports_duplicate_skus(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "CSV Preview Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    endpoint = f"/api/v1/businesses/{business_id}/imports/products.csv/preview"
+    valid_csv = "sku,name,unit_price\nSKU-1,Arabic coffee,45.50\nSKU-2,Tea,30.00\n"
+
+    preview = configured_client.post(
+        endpoint, content=valid_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert preview.status_code == 200
+    assert preview.json()["valid"] is True
+    assert preview.json()["write_performed"] is False
+    assert preview.json()["row_count"] == 2
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
+
+    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nsku-1,Second,2.00\n"
+    duplicate = configured_client.post(
+        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["valid"] is False
+    assert any(error["code"] == "duplicate_in_file" for error in duplicate.json()["errors"])
+
+
+def test_product_csv_import_rejects_duplicate_sku_batch_before_writing(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "CSV Import Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    endpoint = f"/api/v1/businesses/{business_id}/imports/products.csv"
+    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nSKU-1,Second,2.00\n"
+
+    response = configured_client.post(
+        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert response.status_code == 422
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
