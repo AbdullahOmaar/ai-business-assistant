@@ -37,6 +37,7 @@ export interface CustomerStatementEvent { occurred_at: string; event_type: strin
 export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
 export interface DataIntegrityInvoice { invoice_id: string; invoice_number: string; status: string; total: string; currency_code: string; created_at: string | null; }
 export interface DataIntegrityAllocation { allocation_id: string; payment_id: string; payment_reference: string | null; payment_customer_id: string | null; payment_currency: string; invoice_id: string; invoice_number: string; invoice_customer_id: string | null; invoice_currency: string; allocated_amount: string; }
+export interface TaxSummaryReport { period: { start_date: string | null; end_date: string | null }; source: string; currencies: Array<{ currency_code: string; tax_total: string; invoice_count: number }>; limitations: string[]; }
 export interface OperationalHealth { status: string; checked_at: string; database_connected: boolean; migration_table_available: boolean; migration_revision: string | null; ai_configured: boolean; notification_delivery_configured: boolean; recurring_invoice_worker_configured: boolean; }
 export interface ExpenseRecord { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name: string | null; reference: string | null; created_at: string | null; }
 export interface NotificationRecord { id: string; kind: string; title: string; body: string; status: string; deduplication_key: string; scheduled_at: string | null; created_at: string | null; }
@@ -258,6 +259,14 @@ export class ApiService {
   customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
     const params = new URLSearchParams({ limit: '50', offset: String(offset) });
     return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
+  }
+
+  taxSummary(businessId: string, startDate?: string, endDate?: string): Promise<TaxSummaryReport> {
+    const params = new URLSearchParams();
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    const query = params.toString();
+    return this.request<TaxSummaryReport>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/tax-summary' + (query ? '?' + query : ''));
   }
 
   operationsHealth(businessId: string): Promise<OperationalHealth> {
