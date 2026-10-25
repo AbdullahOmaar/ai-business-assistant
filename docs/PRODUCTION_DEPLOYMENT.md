@@ -87,3 +87,9 @@ A successful migration test against a disposable PostgreSQL database is not evid
 - Backend tests, backend container verification, backend/frontend verification, and Python/JavaScript dependency audits passed on the release candidate.
 - The initial Vercel production hooks were intentionally skipped because the squash commit did not contain the projects' required `[release-web]` / `[release-api]` build markers. A follow-up release-marker commit is used to trigger those configured deployments; this documentation update does not change application behavior.
 - No production schema migration or production data rewrite is included in this release.
+
+## Mobile version visibility follow-up
+
+- Follow-up commit: `7a62565fecc1d46781a8ec50c24da0c807cc79c7`.
+- The compact mobile version row is rendered inside the visible main content because the full top bar is hidden at narrow widths.
+- Frontend CI and dependency audit passed before merge. Verify the deployed UI and installed-PWA cache after the release-marker deployment completes.
