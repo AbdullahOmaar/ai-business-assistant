@@ -1,37 +1,36 @@
-import { describe, expect, it } from 'vitest';
-import { WorkspaceLoadGuard } from './workspace-load-guard';
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { WorkspaceLoadGuard } from './workspace-load-guard.ts';
 
-describe('WorkspaceLoadGuard', () => {
-  it('accepts only the newest request generation', () => {
-    const guard = new WorkspaceLoadGuard();
-    const older = guard.begin();
-    const newer = guard.begin();
+test('accepts only the newest request generation', () => {
+  const guard = new WorkspaceLoadGuard();
+  const older = guard.begin();
+  const newer = guard.begin();
 
-    expect(guard.isLatest(older)).toBe(false);
-    expect(guard.isLatest(newer)).toBe(true);
-  });
+  assert.equal(guard.isLatest(older), false);
+  assert.equal(guard.isLatest(newer), true);
+});
 
-  it('rejects a response when the selected workspace changed', () => {
-    const guard = new WorkspaceLoadGuard();
-    const request = guard.begin();
+test('rejects a response when the selected workspace changed', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
 
-    expect(guard.isCurrent(request, 'workspace-b', 'workspace-a')).toBe(false);
-    expect(guard.isCurrent(request, 'workspace-a', 'workspace-a')).toBe(true);
-  });
+  assert.equal(guard.isCurrent(request, 'workspace-b', 'workspace-a'), false);
+  assert.equal(guard.isCurrent(request, 'workspace-a', 'workspace-a'), true);
+});
 
-  it('rejects the previous response after a newer request starts for the same workspace', () => {
-    const guard = new WorkspaceLoadGuard();
-    const first = guard.begin();
-    const second = guard.begin();
+test('rejects the previous response after a newer request starts for the same workspace', () => {
+  const guard = new WorkspaceLoadGuard();
+  const first = guard.begin();
+  const second = guard.begin();
 
-    expect(guard.isCurrent(first, 'workspace-a', 'workspace-a')).toBe(false);
-    expect(guard.isCurrent(second, 'workspace-a', 'workspace-a')).toBe(true);
-  });
+  assert.equal(guard.isCurrent(first, 'workspace-a', 'workspace-a'), false);
+  assert.equal(guard.isCurrent(second, 'workspace-a', 'workspace-a'), true);
+});
 
-  it('rejects responses when no workspace is selected', () => {
-    const guard = new WorkspaceLoadGuard();
-    const request = guard.begin();
+test('rejects responses when no workspace is selected', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
 
-    expect(guard.isCurrent(request, null, 'workspace-a')).toBe(false);
-  });
+  assert.equal(guard.isCurrent(request, null, 'workspace-a'), false);
 });
