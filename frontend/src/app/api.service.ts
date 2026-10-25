@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
 
+export interface ReleaseInfo { version: string; commit: string; environment: string; }
+
 export interface Business {
   id: string;
   name: string;
@@ -39,6 +41,15 @@ export interface ChatReply { answer: string; sources: Array<{ type: string; id: 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private readonly auth: AuthService) {}
+
+  async releaseInfo(): Promise<ReleaseInfo> {
+    const config = await this.auth.getRuntimeConfig();
+    const base = (config.apiBaseUrl || '').trim().replace(/\\/$/, '');
+    if (!base || base.includes('YOUR-BACKEND')) throw new Error('The backend URL is not configured.');
+    const response = await fetch(base + '/version', { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+    if (!response.ok) throw new Error(`Backend version endpoint returned ${response.status}.`);
+    return await response.json() as ReleaseInfo;
+  }
 
   private async request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
     const config = await this.auth.getRuntimeConfig();
