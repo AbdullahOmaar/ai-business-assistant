@@ -1191,20 +1191,19 @@ export class AppComponent implements OnInit {
     if (discountRate === null || taxRate === null ||
         discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
 
-    // Match the backend's Decimal behavior: sum exact quantity × unit-price products,
-    // then round the subtotal once to cents using ROUND_HALF_UP.
-    let subtotalMilliCents = 0n;
+    // Match the backend's per-line money() policy: round each quantity × price
+    // to cents with ROUND_HALF_UP, then sum the rounded line totals.
+    let subtotalCents = 0n;
     for (const line of this.invoiceLines) {
       const product = this.products.find(item => item.id === line.productId);
       const quantityMilli = parseScaled(line.quantity, 3);
       const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
       if (!product || quantityMilli === null || quantityMilli <= 0n ||
           unitPriceCents === null) return null;
-      subtotalMilliCents += quantityMilli * unitPriceCents;
+      const lineMilliCents = quantityMilli * unitPriceCents;
+      subtotalCents += roundHalfUp(lineMilliCents, 1000n);
+      if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
     }
-
-    const subtotalCents = roundHalfUp(subtotalMilliCents, 1000n);
-    if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
     const rateDenominator = 100n * 1_000_000_000_000n;
     const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
     const taxableCents = subtotalCents - discountCents;
