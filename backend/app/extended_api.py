@@ -23,7 +23,7 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
-from app.domain_rules import money
+from app.domain_rules import money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -375,10 +375,14 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             # The cumulative approved refund must not exceed the source line's rounded
             # amount, even when several fractional-quantity returns each round upward.
-            if money(Decimal(str(previously_returned_amount or 0)) + requested["amount"]) > money(
-                Decimal(str(invoice_line.line_total))
-            ):
-                raise WorkflowError("Return amount exceeds the invoiced line amount remaining")
+            try:
+                validate_return_amount(
+                    invoiced_amount=Decimal(str(invoice_line.line_total)),
+                    previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
+                    requested_return_amount=requested["amount"],
+                )
+            except ValueError as exc:
+                raise WorkflowError(str(exc)) from exc
             invoice_lines[invoice_line_id] = invoice_line
 
         for returned in lines:
