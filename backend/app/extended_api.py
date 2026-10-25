@@ -43,6 +43,11 @@ def _receivable_aging_bucket(due_date: date | None, as_of: date) -> tuple[str, i
         return "61_90_days", days_overdue
     return "over_90_days", days_overdue
 
+def _receivable_outstanding(total: Decimal, allocated: Decimal) -> tuple[Decimal, bool]:
+    """Return the balance and flag allocations that exceed an invoice total."""
+    outstanding = total - allocated
+    return outstanding, outstanding < ZERO
+
 
 class ExpenseInput(BaseModel):
     category: str = Field(min_length=1, max_length=80)
@@ -881,14 +886,30 @@ def receivables_aging(
         report_date = as_of or datetime.now(timezone.utc).date()
         allocated_amount = (
             select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
+            .join(Payment, Payment.id == PaymentAllocation.payment_id)
             .where(
                 PaymentAllocation.business_id == business_id,
                 PaymentAllocation.invoice_id == Invoice.id,
+                Payment.currency_code == Invoice.currency_code,
+            )
+            .scalar_subquery()
+        )
+        mismatched_allocated_amount = (
+            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
+            .join(Payment, Payment.id == PaymentAllocation.payment_id)
+            .where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.invoice_id == Invoice.id,
+                Payment.currency_code != Invoice.currency_code,
             )
             .scalar_subquery()
         )
         rows = session.execute(
-            select(Invoice, allocated_amount.label("allocated_amount"))
+            select(
+                Invoice,
+                allocated_amount.label("allocated_amount"),
+                mismatched_allocated_amount.label("mismatched_allocated_amount"),
+            )
             .where(
                 Invoice.business_id == business_id,
                 Invoice.status == "issued",
@@ -898,11 +919,31 @@ def receivables_aging(
 
         bucket_totals: dict[str, dict[str, Decimal]] = {}
         invoice_rows = []
-        for invoice, allocated in rows:
+        data_quality_warnings = []
+        for invoice, allocated, mismatched_allocated in rows:
             total = Decimal(str(invoice.total or ZERO))
             paid = Decimal(str(allocated or ZERO))
-            outstanding = total - paid
-            if outstanding <= ZERO:
+            mismatched_paid = Decimal(str(mismatched_allocated or ZERO))
+            outstanding, overallocated = _receivable_outstanding(total, paid)
+            if mismatched_paid > ZERO:
+                data_quality_warnings.append({
+                    "invoice_id": str(invoice.id),
+                    "invoice_number": invoice.invoice_number,
+                    "type": "payment_currency_mismatch",
+                    "invoice_currency": invoice.currency_code,
+                    "mismatched_allocations_amount": str(mismatched_paid),
+                })
+            if overallocated:
+                data_quality_warnings.append({
+                    "invoice_id": str(invoice.id),
+                    "invoice_number": invoice.invoice_number,
+                    "type": "allocations_exceed_invoice_total",
+                    "invoice_total": str(total),
+                    "allocated_payments": str(paid),
+                    "excess_allocated": str(abs(outstanding)),
+                })
+                continue
+            if outstanding == ZERO:
                 continue
 
             due_day = invoice.due_date.date() if invoice.due_date is not None else None
@@ -945,6 +986,7 @@ def receivables_aging(
             "invoice_count": len(invoice_rows),
             "by_currency": summaries,
             "invoices": invoice_rows,
+            "data_quality_warnings": data_quality_warnings,
             "limitations": [
                 "Only issued invoices are included; drafts and void invoices are excluded.",
                 "Invoices without due dates are reported separately and are not assumed current.",
