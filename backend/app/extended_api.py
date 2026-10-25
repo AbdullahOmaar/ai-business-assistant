@@ -23,6 +23,7 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.domain_rules import money
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -206,7 +207,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
             )).one_or_none()
             if product is None:
                 raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
-            total += (line.quantity * line.unit_cost).quantize(Decimal("0.01"))
+            total += money(line.quantity * line.unit_cost)
             session.add(PurchaseOrderLine(
                 business_id=business_id, purchase_order_id=po.id, product_id=product.id,
                 quantity=line.quantity, unit_cost=line.unit_cost, received_quantity=ZERO,
@@ -299,7 +300,7 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            amount = (line.unit_price * item.quantity).quantize(Decimal("0.01"))
+            amount = money(line.unit_price * item.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
                 invoice_line_id=line.id, quantity=item.quantity, amount=amount))
