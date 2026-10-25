@@ -20,7 +20,7 @@ from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
     AuditEvent, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
-    SalesReturn, SalesReturnLine, StockMovement, Supplier,
+    SalesReturn, SalesReturnLine, StockMovement, Supplier, MembershipRole,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
 from app.services import WorkflowError, create_expense
