@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Invoice, Payment, Product, ProfitLossReport, PurchaseOrder, RecurringInvoiceSchedule, ReceivablesAgingReport, Supplier } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, ExpenseRecord, Invoice, NotificationRecord, Payment, Product, ProfitLossReport, PurchaseOrder, RecurringInvoiceSchedule, ReceivablesAgingReport, Supplier } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'suppliers' | 'purchases' | 'recurring';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'suppliers' | 'purchases' | 'recurring' | 'expenses' | 'notifications';
 
 @Component({
   selector: 'aba-root',
@@ -62,6 +62,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('المصروفات', 'Expenses')" [attr.title]="t('المصروفات', 'Expenses')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('الإشعارات', 'Notifications')" [attr.title]="t('الإشعارات', 'Notifications')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الموردون', 'Suppliers')" [attr.title]="t('الموردون', 'Suppliers')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المشتريات', 'Purchasing')" [attr.title]="t('المشتريات', 'Purchasing')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الفواتير الدورية', 'Recurring invoices')" [attr.title]="t('الفواتير الدورية', 'Recurring invoices')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الدورية', 'Recurring') }}</span></button>
@@ -73,6 +75,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'expenses'" (click)="setTab('expenses')"><span class="nav-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'notifications'" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'suppliers'" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'purchases'" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'recurring'" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الفواتير الدورية', 'Recurring invoices') }}</span></button>
@@ -304,7 +308,40 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
-            @if (tab === 'suppliers') {
+            @if (tab === 'expenses') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('سجل المصروفات', 'Expense register') }}</h2><p>{{ t('سجّل المصروفات بعملة واضحة؛ المرفقات والتسوية البنكية تحتاج استكمالًا منفصلًا.', 'Record expenses with an explicit currency; attachments and bank reconciliation remain separate follow-ups.') }}</p></div><span class="count">{{ expenses.length }}</span></div>
+                <form class="stack" (ngSubmit)="createExpense()">
+                  <label>{{ t('الفئة', 'Category') }}<input name="expenseCategory" required maxlength="80" [(ngModel)]="expenseCategory"></label>
+                  <label>{{ t('الوصف', 'Description') }}<input name="expenseDescription" required maxlength="500" [(ngModel)]="expenseDescription"></label>
+                  <div class="inline-form"><label>{{ t('المبلغ', 'Amount') }}<input name="expenseAmount" type="number" min="0.01" step="0.01" required [(ngModel)]="expenseAmount"></label><label>{{ t('تاريخ المصروف', 'Incurred at') }}<input name="expenseIncurredAt" type="datetime-local" required [(ngModel)]="expenseIncurredAt"></label></div>
+                  <label>{{ t('المورد/الجهة (اختياري)', 'Vendor (optional)') }}<input name="expenseVendor" maxlength="160" [(ngModel)]="expenseVendor"></label>
+                  <label>{{ t('المرجع (اختياري)', 'Reference (optional)') }}<input name="expenseReference" maxlength="128" [(ngModel)]="expenseReference"></label>
+                  <button class="primary" type="submit" [disabled]="expensesLoading">{{ t('تسجيل المصروف', 'Record expense') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (expensesLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل المصروفات…', 'Loading expenses…') }}</p> }
+                <div class="list">@for (expense of expenses; track expense.id) { <article class="list-row"><div class="invoice-mark">−</div><div class="grow"><strong>{{ expense.description }}</strong><small>{{ expense.category }} · {{ expense.incurred_at | date:'medium' }}</small><small>{{ expense.vendor_name || t('بدون جهة', 'No vendor') }} · {{ expense.reference || expense.id.slice(0,8) }}</small></div><strong>{{ expense.amount }} {{ expense.currency_code }}</strong></article> } @if (!expenses.length && !expensesLoading) { <p class="empty">{{ t('لا توجد مصروفات بعد.', 'No expenses yet.') }}</p> }</div>
+              </section>
+            }
+
+            @if (tab === 'notifications') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('قائمة الإشعارات', 'Notification queue') }}</h2><p>{{ t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') }}</p></div><span class="count">{{ notifications.length }}</span></div>
+                <form class="stack" (ngSubmit)="createNotification()">
+                  <label>{{ t('النوع', 'Kind') }}<input name="notificationKind" required maxlength="40" [(ngModel)]="notificationKind"></label>
+                  <label>{{ t('العنوان', 'Title') }}<input name="notificationTitle" required maxlength="160" [(ngModel)]="notificationTitle"></label>
+                  <label>{{ t('المحتوى', 'Message') }}<textarea name="notificationBody" required maxlength="1000" rows="3" [(ngModel)]="notificationBody"></textarea></label>
+                  <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
+                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('إضافة إلى قائمة الانتظار', 'Queue notification') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (notificationsLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الإشعارات…', 'Loading notifications…') }}</p> }
+                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ item.kind }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
+              </section>
+            }
+
+@if (tab === 'suppliers') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span></div>
                 <form class="inline-form" (ngSubmit)="createSupplier()">
@@ -564,6 +601,21 @@ export class AppComponent implements OnInit {
   suppliers: Supplier[] = [];
   purchaseOrders: PurchaseOrder[] = [];
   recurringSchedules: RecurringInvoiceSchedule[] = [];
+  expenses: ExpenseRecord[] = [];
+  notifications: NotificationRecord[] = [];
+  expensesLoading = false;
+  notificationsLoading = false;
+  expenseCategory = '';
+  expenseDescription = '';
+  expenseAmount = '';
+  expenseIncurredAt = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  expenseVendor = '';
+  expenseReference = '';
+  notificationKind = 'business';
+  notificationTitle = '';
+  notificationBody = '';
+  notificationDeduplicationKey = 'manual-' + Date.now();
+  notificationScheduledAt = '';
   suppliersLoading = false;
   purchasesLoading = false;
   recurringLoading = false;
@@ -579,7 +631,7 @@ export class AppComponent implements OnInit {
   purchaseUnitCost = '0';
   recurringCustomerId = '';
   recurringIntervalDays = '30';
-  recurringNextRunAt = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+  recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   recurringTimezone = 'UTC';
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
@@ -769,9 +821,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', expenses: 'المصروفات', notifications: 'الإشعارات'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', expenses: 'Expenses', notifications: 'Notifications' } as Record<Tab, string>)[this.tab];
   }
 
   async submitAuth(): Promise<void> {
@@ -1037,6 +1089,30 @@ export class AppComponent implements OnInit {
     }
   }
 
+  private async loadExpenses(): Promise<void> {
+    if (!this.business) return; const businessId=this.business.id;this.expensesLoading=true;this.operationsError='';
+    try { const items=await this.api.expenses(businessId);if(this.business?.id===businessId)this.expenses=items; }
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.expensesLoading=false}
+  }
+  async createExpense(): Promise<void> {
+    if(!this.business)return;const amount=Number(this.expenseAmount);if(!Number.isFinite(amount)||amount<=0){this.operationsError=this.t('أدخل مبلغًا أكبر من صفر.','Enter an amount greater than zero.');return;}
+    const businessId=this.business.id;this.expensesLoading=true;this.operationsError='';
+    try { await this.api.createExpense(businessId,{category:this.expenseCategory.trim(),description:this.expenseDescription.trim(),amount:this.expenseAmount,currency_code:this.business.currency_code,incurred_at:new Date(this.expenseIncurredAt).toISOString(),vendor_name:this.expenseVendor.trim()||undefined,reference:this.expenseReference.trim()||undefined});
+      this.expenseCategory='';this.expenseDescription='';this.expenseAmount='';this.expenseVendor='';this.expenseReference='';const items=await this.api.expenses(businessId);if(this.business?.id===businessId)this.expenses=items;
+    }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.expensesLoading=false}
+  }
+  private async loadNotifications(): Promise<void> {
+    if(!this.business)return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
+    try {const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;}
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+  }
+  async createNotification(): Promise<void> {
+    if(!this.business||!this.notificationTitle.trim()||!this.notificationBody.trim())return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
+    try {await this.api.createNotification(businessId,{kind:this.notificationKind.trim()||'business',title:this.notificationTitle.trim(),body:this.notificationBody.trim(),deduplication_key:this.notificationDeduplicationKey,scheduled_at:this.notificationScheduledAt?new Date(this.notificationScheduledAt).toISOString():undefined});
+      this.notificationTitle='';this.notificationBody='';this.notificationScheduledAt='';this.notificationDeduplicationKey='manual-'+Date.now();const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;
+    }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+  }
+
   private async loadSuppliers(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
@@ -1154,6 +1230,8 @@ export class AppComponent implements OnInit {
     if (tab === 'suppliers') void this.loadSuppliers();
     if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
     if (tab === 'recurring') void this.loadRecurringSchedules();
+    if (tab === 'expenses') void this.loadExpenses();
+    if (tab === 'notifications') void this.loadNotifications();
   }
 
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
