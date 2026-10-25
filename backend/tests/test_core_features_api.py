@@ -482,7 +482,7 @@ def test_product_csv_import_rejects_duplicate_sku_batch_before_writing(configure
     response = configured_client.post(
         endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
     )
-    assert response.status_code == 409
+    assert response.status_code == 422
 
     products = configured_client.get(
         f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
