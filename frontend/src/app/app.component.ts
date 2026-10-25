@@ -944,8 +944,9 @@ export class AppComponent implements OnInit {
     const formatCents = (cents: bigint): string =>
       `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
 
-    const discountRate = parseScaled(this.invoiceDiscountRate, 6);
-    const taxRate = parseScaled(this.invoiceTaxRate, 6);
+    // Preserve precision when rates are reconstructed from saved totals.
+    const discountRate = parseScaled(this.invoiceDiscountRate, 12);
+    const taxRate = parseScaled(this.invoiceTaxRate, 12);
     if (discountRate === null || taxRate === null ||
         discountRate > 100n * 1_000_000n || taxRate > 100n * 1_000_000n) return null;
 
@@ -963,7 +964,7 @@ export class AppComponent implements OnInit {
 
     const subtotalCents = roundHalfUp(subtotalMilliCents, 1000n);
     if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    const rateDenominator = 100n * 1_000_000n;
+    const rateDenominator = 100n * 1_000_000_000_000n;
     const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
     const taxableCents = subtotalCents - discountCents;
     const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
@@ -976,10 +977,18 @@ export class AppComponent implements OnInit {
   }
 
   private deriveRate(amount: string | undefined, base: string | undefined): string {
-    const value = Number(amount || 0);
-    const denominator = Number(base || 0);
-    if (!Number.isFinite(value) || !Number.isFinite(denominator) || denominator <= 0 || value <= 0) return '0';
-    return Math.min(100, Math.max(0, value / denominator * 100)).toFixed(10);
+    const cents = (raw: string | undefined): bigint | null => {
+      const match = /^(\\d+)(?:\\.(\\d{1,2}))?$/.exec(String(raw || '0').trim());
+      if (!match || match[1].length > 12) return null;
+      return BigInt(match[1]) * 100n + BigInt((match[2] || '').padEnd(2, '0') || '0');
+    };
+    const value = cents(amount);
+    const denominator = cents(base);
+    if (value === null || denominator === null || denominator <= 0n || value <= 0n) return '0';
+    const scale = 1_000_000_000_000n;
+    const scaledRate = (value * 100n * scale + denominator / 2n) / denominator;
+    const cappedRate = scaledRate > 100n * scale ? 100n * scale : scaledRate;
+    return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
   }
 
   addInvoiceLine(): void {
