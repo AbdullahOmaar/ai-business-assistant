@@ -149,7 +149,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <form class="inline-form" (ngSubmit)="loadReceivablesAging()"><label>{{ t('التقرير حتى تاريخ', 'Report as of') }}<input type="date" name="agingAsOf" required [(ngModel)]="agingAsOf"></label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('جارٍ التحميل…', 'Loading…') : t('عرض المديونيات', 'Load receivables') }}</button></form>
                 @if (agingError) { <div class="error-banner" role="alert">{{ agingError }}</div> }
                 @if (agingReport) {
-                  <p class="muted">{{ t('تاريخ التقرير:', 'As of:') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('فاتورة', 'invoices') }}</p>
+                  <div class="section-head"><p class="muted">{{ t('تاريخ التقرير:', 'As of:') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('فاتورة', 'invoices') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                   @for (summary of agingReport.by_currency; track summary.currency_code) {
                     <article class="metric"><span>{{ t('إجمالي المستحق', 'Total outstanding') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
                   }
@@ -677,6 +677,35 @@ export class AppComponent implements OnInit {
     } finally {
       if (loadVersion === this.workspaceLoadVersion) this.loading = false;
     }
+  }
+
+  exportReceivablesAgingCsv(): void {
+    if (!this.agingReport || !this.agingReport.invoices.length) return;
+    const warnings = new Map<string, string[]>();
+    for (const warning of this.agingReport.data_quality_warnings) {
+      const current = warnings.get(warning.invoice_id) || [];
+      current.push(this.agingWarningLabel(warning.type));
+      warnings.set(warning.invoice_id, current);
+    }
+    const rows: string[][] = [[
+      'as_of_date', 'invoice_number', 'customer_id', 'currency_code', 'due_date', 'aging_bucket',
+      'invoice_total', 'allocated_payments', 'outstanding_amount', 'customer_link_missing', 'accounting_warnings'
+    ]];
+    for (const invoice of this.agingReport.invoices) {
+      rows.push([
+        this.agingReport.as_of_date, invoice.invoice_number, invoice.customer_id || '', invoice.currency_code,
+        invoice.due_date || '', invoice.aging_bucket, invoice.invoice_total, invoice.allocated_payments,
+        invoice.outstanding_amount, invoice.customer_link_missing ? 'true' : 'false',
+        (warnings.get(invoice.invoice_id) || []).join('; ')
+      ]);
+    }
+    const csv = '\\uFEFF' + rows.map(row => row.map(value => '"' + String(value).replace(/"/g, '""') + '"').join(',')).join('\\r\\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'receivables-aging-' + this.agingReport.as_of_date + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   agingBucketLabel(bucket: string): string {
