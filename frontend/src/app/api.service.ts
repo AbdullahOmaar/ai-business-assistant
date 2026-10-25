@@ -27,6 +27,7 @@ export interface Dashboard {
   expenses: MoneyTotal[];
   outstanding_balances: MoneyTotal[];
 }
+// `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
 export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
 
 @Injectable({ providedIn: 'root' })
