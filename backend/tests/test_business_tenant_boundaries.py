@@ -4,9 +4,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from uuid import UUID
 
 from app.main import app
-from app.models import Base
+from app.models import AuditEvent, Base
 from app.security import AuthenticatedPrincipal
 
 
@@ -269,3 +270,394 @@ def test_invoice_rejects_customer_and_product_ids_from_another_business():
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_audit_events_are_owner_only_paginated_and_workspace_scoped():
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("audit-owner")
+    try:
+        client = TestClient(app)
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Audit Workspace", "currency_code": "EGP"},
+        )
+        assert created.status_code == 201
+        business_id = UUID(created.json()["id"])
+        with app.state.session_factory() as session:
+            session.add_all([
+                AuditEvent(
+                    business_id=business_id, actor_subject="audit-owner",
+                    action="invoice.issued", target_type="invoice", target_id="inv-1",
+                    change_summary="Invoice issued",
+                ),
+                AuditEvent(
+                    business_id=business_id, actor_subject="audit-owner",
+                    action="product.updated", target_type="product", target_id="prod-1",
+                    change_summary="Product updated",
+                ),
+            ])
+            session.commit()
+
+        response = client.get(f"/api/v1/businesses/{business_id}/audit-events?limit=1&offset=0")
+        assert response.status_code == 200
+        assert response.json()["total"] == 2
+        assert len(response.json()["items"]) == 1
+        assert response.json()["items"][0]["business_id"] == str(business_id)
+
+        filtered = client.get(
+            f"/api/v1/businesses/{business_id}/audit-events?action=invoice.issued"
+        )
+        assert filtered.status_code == 200
+        assert filtered.json()["total"] == 1
+        assert filtered.json()["items"][0]["target_id"] == "inv-1"
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/audit-events")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_customer_statement_is_scoped_currency_safe_and_paginated():
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, Customer, Invoice, Payment, PaymentAllocation, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("statement-owner")
+    try:
+        business_id, customer_id = uuid4(), uuid4()
+        invoice_id, payment_id, allocation_id = uuid4(), uuid4(), uuid4()
+        occurred = datetime(2026, 10, 1, tzinfo=timezone.utc)
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Statement workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(
+                business_id=business_id, user_subject="statement-owner", role=MembershipRole.OWNER
+            ))
+            session.add(Customer(id=customer_id, business_id=business_id, name="Statement customer"))
+            session.add(Invoice(
+                id=invoice_id, business_id=business_id, customer_id=customer_id,
+                invoice_number="INV-ST-1", status="issued", currency_code="EGP",
+                issue_date=occurred, subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"), total=Decimal("100.00"),
+            ))
+            session.add(Payment(
+                id=payment_id, business_id=business_id, customer_id=customer_id,
+                amount=Decimal("30.00"), currency_code="EGP", received_at=occurred,
+                idempotency_key="statement-payment-1",
+            ))
+            session.flush()
+            session.add(PaymentAllocation(
+                id=allocation_id, business_id=business_id, payment_id=payment_id,
+                invoice_id=invoice_id, amount=Decimal("30.00"),
+            ))
+            session.commit()
+
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["total"] == 2
+        assert payload["balances_by_currency"]["EGP"] == "70.00"
+        assert payload["items"][-1]["balance"] == "70.00"
+        assert payload["limitations"]
+        page = client.get(
+            f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement?limit=1&offset=1"
+        )
+        assert page.status_code == 200
+        assert len(page.json()["items"]) == 1
+        assert page.json()["total"] == 2
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_data_integrity_report_is_owner_only_read_only_and_detects_legacy_links():
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, Invoice, Payment, PaymentAllocation, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("integrity-owner")
+    try:
+        business_id, invoice_id, payment_id, allocation_id = (uuid4() for _ in range(4))
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Integrity workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(
+                business_id=business_id, user_subject="integrity-owner", role=MembershipRole.OWNER
+            ))
+            session.add(Invoice(
+                id=invoice_id, business_id=business_id, customer_id=None,
+                invoice_number="LEGACY-1", status="issued", currency_code="EGP",
+                subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"), total=Decimal("100.00"),
+            ))
+            session.add(Payment(
+                id=payment_id, business_id=business_id, customer_id=None,
+                amount=Decimal("25.00"), currency_code="USD",
+                idempotency_key="integrity-payment-1",
+            ))
+            session.flush()
+            session.add(PaymentAllocation(
+                id=allocation_id, business_id=business_id, payment_id=payment_id,
+                invoice_id=invoice_id, amount=Decimal("25.00"),
+            ))
+            session.commit()
+
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/reports/data-integrity")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["read_only"] is True
+        assert payload["unlinked_issued_invoices"]["total"] == 1
+        assert payload["unlinked_issued_invoices"]["items"][0]["invoice_number"] == "LEGACY-1"
+        assert payload["currency_mismatched_allocations"]["total"] == 1
+        assert payload["currency_mismatched_allocations"]["items"][0]["payment_currency"] == "USD"
+        assert payload["currency_mismatched_allocations"]["items"][0]["invoice_currency"] == "EGP"
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/reports/data-integrity")
+        assert denied.status_code == 403
+        with app.state.session_factory() as session:
+            unchanged = session.get(Invoice, invoice_id)
+            assert unchanged is not None and unchanged.customer_id is None
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scoped():
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, MembershipRole, Product
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("operations-owner")
+    try:
+        business_id, product_id = uuid4(), uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Operations workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="operations-owner", role=MembershipRole.OWNER))
+            session.add(Product(id=product_id, business_id=business_id, name="Stock item", unit_price=Decimal("10.00"), is_stock_tracked=True))
+            session.commit()
+        client = TestClient(app)
+        supplier_response = client.post(f"/api/v1/businesses/{business_id}/suppliers", json={"name": "  Supplier One  ", "email": "supplier@example.com"})
+        assert supplier_response.status_code == 201, supplier_response.text
+        supplier = supplier_response.json()
+        assert supplier["name"] == "Supplier One"
+        listed_suppliers = client.get(f"/api/v1/businesses/{business_id}/suppliers")
+        assert listed_suppliers.status_code == 200
+        assert [item["id"] for item in listed_suppliers.json()] == [supplier["id"]]
+
+        order_response = client.post(f"/api/v1/businesses/{business_id}/purchase-orders", json={
+            "supplier_id": supplier["id"], "order_number": "PO-OPS-1", "currency_code": "EGP",
+            "lines": [{"product_id": str(product_id), "quantity": "2.000", "unit_cost": "5.00"}],
+        })
+        assert order_response.status_code == 201, order_response.text
+        order_id = order_response.json()["id"]
+        listed_orders = client.get(f"/api/v1/businesses/{business_id}/purchase-orders")
+        assert listed_orders.status_code == 200
+        order = listed_orders.json()[0]
+        assert order["id"] == order_id
+        assert order["lines"][0]["remaining_quantity"] == "2.000"
+        received = client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive", json={
+            "lines": [{"line_id": order["lines"][0]["id"], "quantity": "1.000"}],
+        })
+        assert received.status_code == 200, received.text
+        after_receive = client.get(f"/api/v1/businesses/{business_id}/purchase-orders").json()[0]
+        assert after_receive["lines"][0]["remaining_quantity"] == "1.000"
+
+        schedule = client.post(f"/api/v1/businesses/{business_id}/recurring-invoices", json={
+            "customer_id": None, "interval_days": 30, "timezone": "UTC",
+            "next_run_at": datetime(2026, 10, 26, tzinfo=timezone.utc).isoformat(),
+        })
+        assert schedule.status_code == 201, schedule.text
+        listed_schedules = client.get(f"/api/v1/businesses/{business_id}/recurring-invoices")
+        assert listed_schedules.status_code == 200
+        assert listed_schedules.json()[0]["id"] == schedule.json()["id"]
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_operational_health_is_owner_only_read_only_and_reports_missing_workers():
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("health-owner")
+    try:
+        business_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Health workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="health-owner", role=MembershipRole.OWNER))
+            session.commit()
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/operations/health")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["database_connected"] is True
+        assert payload["status"] == "degraded"
+        assert payload["migration_table_available"] is False
+        assert payload["notification_delivery_configured"] is False
+        assert payload["recurring_invoice_worker_configured"] is False
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/operations/health")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, Invoice, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tax-owner")
+    try:
+        business_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Tax workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="tax-owner", role=MembershipRole.OWNER))
+            session.add_all([
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-1", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 5, tzinfo=timezone.utc), subtotal=Decimal("100.00"), tax_total=Decimal("14.00"), discount_total=Decimal("0.00"), total=Decimal("114.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-2", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 15, tzinfo=timezone.utc), subtotal=Decimal("50.00"), tax_total=Decimal("7.00"), discount_total=Decimal("0.00"), total=Decimal("57.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-USD-1", status="issued", currency_code="USD", issue_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("20.00"), tax_total=Decimal("3.00"), discount_total=Decimal("0.00"), total=Decimal("23.00")),
+            ])
+            session.commit()
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/reports/tax-summary?start_date=2026-10-01&end_date=2026-10-31")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        totals = {row["currency_code"]: row for row in payload["currencies"]}
+        assert totals["EGP"]["tax_total"] == "21.00"
+        assert totals["EGP"]["invoice_count"] == 2
+        assert totals["USD"]["tax_total"] == "3.00"
+        assert totals["USD"]["invoice_count"] == 1
+        assert payload["limitations"]
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/reports/tax-summary")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
