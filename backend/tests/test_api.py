@@ -349,3 +349,59 @@ def test_partial_returns_cannot_refund_more_than_rounded_invoice_line():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def _set_test_membership_role(engine, role):
+    with Session(engine) as session:
+        membership = session.scalar(
+            select(BusinessMembership).where(
+                BusinessMembership.user_subject == "test-subject"
+            )
+        )
+        assert membership is not None
+        membership.role = role
+        session.commit()
+
+
+def test_staff_cannot_void_invoice():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    _set_test_membership_role(engine, MembershipRole.STAFF)
+    try:
+        response = TestClient(app).post(
+            f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/void",
+            json={"reason": "staff must not void posted invoices"},
+        )
+        assert response.status_code == 403
+        with Session(engine) as session:
+            invoice = session.get(Invoice, invoice_id)
+            assert invoice.status == "issued"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_staff_can_create_but_cannot_approve_sales_return():
+    engine, business_id, invoice_id, line_id = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    _set_test_membership_role(engine, MembershipRole.STAFF)
+    client = TestClient(app)
+    try:
+        created = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns",
+            json={
+                "invoice_id": str(invoice_id),
+                "lines": [{"invoice_line_id": str(line_id), "quantity": "0.250"}],
+            },
+        )
+        assert created.status_code == 201
+        approved = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns/{created.json()['id']}/approve"
+        )
+        assert approved.status_code == 403
+        with Session(engine) as session:
+            item = session.get(SalesReturn, created.json()["id"])
+            assert item.status == "draft"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
