@@ -138,6 +138,17 @@ export class ApiService {
     );
   }
 
+  auditEvents(businessId: string, filters: { limit?: number; offset?: number; action?: string; target_type?: string; start_at?: string; end_at?: string } = {}): Promise<AuditEventsPage> {
+    const params = new URLSearchParams();
+    params.set('limit', String(filters.limit ?? 50));
+    params.set('offset', String(filters.offset ?? 0));
+    if (filters.action) params.set('action', filters.action);
+    if (filters.target_type) params.set('target_type', filters.target_type);
+    if (filters.start_at) params.set('start_at', filters.start_at);
+    if (filters.end_at) params.set('end_at', filters.end_at);
+    return this.request<AuditEventsPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/audit-events?${params.toString()}`);
+  }
+
   receivablesAging(businessId: string, asOfDate?: string): Promise<ReceivablesAgingReport> {
     const params = new URLSearchParams();
     if (asOfDate) params.set('as_of', asOfDate);
