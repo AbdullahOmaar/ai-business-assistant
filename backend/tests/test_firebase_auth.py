@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from starlette.requests import Request
 
 from app import firebase_auth
+from app.main import version_info
 
 
 def _request(headers=()):
@@ -71,3 +72,16 @@ def test_firebase_resolver_rejects_invalid_or_revoked_tokens(monkeypatch, failur
 
     assert error.value.status_code == 401
     assert error.value.detail == "Firebase ID token is invalid or expired."
+
+
+
+def test_version_info_reports_deployment_commit(monkeypatch):
+    monkeypatch.setenv("VERCEL_GIT_COMMIT_SHA", "1234567890abcdef")
+    monkeypatch.setenv("GITHUB_SHA", "fallback-sha")
+    monkeypatch.setenv("VERCEL_ENV", "production")
+
+    info = version_info()
+
+    assert info["version"] == "0.4.0"
+    assert info["commit"] == "1234567890ab"
+    assert info["environment"] == "production"
