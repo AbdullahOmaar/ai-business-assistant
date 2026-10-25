@@ -699,7 +699,12 @@ export class AppComponent implements OnInit {
         (warnings.get(invoice.invoice_id) || []).join('; ')
       ]);
     }
-    const csv = '\uFEFF' + rows.map(row => row.map(value => '"' + String(value).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    const csv = '\uFEFF' + rows.map(row => row.map(value => {
+      const raw = String(value);
+      // Prevent spreadsheet formula execution for user-controlled cells such as invoice numbers.
+      const safe = /^[\u0000-\u0020]*[=+\-@]/.test(raw) ? "'" + raw : raw;
+      return '"' + safe.replace(/"/g, '""') + '"';
+    }).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const link = document.createElement('a');
     link.href = url;
