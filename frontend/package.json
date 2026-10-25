@@ -5,7 +5,7 @@
   "scripts": {
     "start": "ng serve",
     "build": "ng build",
-    "test": "ng test --watch=false"
+    "test": "node --test src/app/workspace-load-guard.spec.ts"
   },
   "dependencies": {
     "@angular/common": "^20.0.0",
@@ -23,9 +23,7 @@
     "@angular/build": "^20.0.0",
     "@angular/cli": "^20.0.0",
     "@angular/compiler-cli": "^20.0.0",
-    "typescript": "~5.8.0",
-    "vitest": "^5.0.5",
-    "jsdom": "^26.1.0"
+    "typescript": "~5.8.0"
   },
   "overrides": {
     "@modelcontextprotocol/sdk": "^1.32.0",
