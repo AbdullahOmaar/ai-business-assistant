@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, ExpenseRecord, Invoice, NotificationRecord, OperationalHealth, Payment, Product, ProfitLossReport, PurchaseOrder, RecurringInvoiceSchedule, ReceivablesAgingReport, Supplier } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, ExpenseRecord, Invoice, NotificationRecord, OperationalHealth, Payment, Product, ProfitLossReport, PurchaseOrder, RecurringInvoiceSchedule, ReceivablesAgingReport, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
