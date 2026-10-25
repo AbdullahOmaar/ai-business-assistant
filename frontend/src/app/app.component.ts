@@ -143,7 +143,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   }
                   @if (!auditLoading && !auditEvents.length && !auditError) { <p class="empty">{{ t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.') }}</p> }
                 </div>
-                <div class="section-head"><small>{{ auditTotal ? auditOffset + 1 : 0 }}–{{ Math.min(auditOffset + auditEvents.length, auditTotal) }} / {{ auditTotal }}</small><div class="csv-import-actions"><button class="secondary" type="button" (click)="loadAuditEvents(Math.max(0, auditOffset - auditLimit))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + auditLimit)" [disabled]="auditLoading || auditOffset + auditLimit >= auditTotal">{{ t('التالي', 'Next') }}</button></div></div>
+                <div class="section-head"><small>{{ auditTotal ? auditOffset + 1 : 0 }}–{{ auditRangeEnd }} / {{ auditTotal }}</small><div class="csv-import-actions"><button class="secondary" type="button" (click)="loadAuditEvents(previousAuditOffset)" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + auditLimit)" [disabled]="auditLoading || auditOffset + auditLimit >= auditTotal">{{ t('التالي', 'Next') }}</button></div></div>
                 <p class="footnote">{{ t('تظهر البيانات الوصفية المحفوظة فقط. لا يتضمن هذا الإصدار ربط معرّف الطلب بكل حدث.', 'Only stored event metadata is shown. Request-ID correlation is not available in this version.') }}</p>
               </section>
             }
@@ -829,6 +829,9 @@ export class AppComponent implements OnInit {
     if (tab === 'audit') void this.loadAuditEvents(0);
   }
 
+  get auditRangeEnd(): number { return Math.min(this.auditOffset + this.auditEvents.length, this.auditTotal); }
+  get previousAuditOffset(): number { return Math.max(0, this.auditOffset - this.auditLimit); }
+
   clearAuditFilters(): void {
     this.auditActionFilter = '';
     this.auditTargetFilter = '';
@@ -844,10 +847,11 @@ export class AppComponent implements OnInit {
       this.auditError = this.t('سجل العمليات متاح لمالك مساحة العمل فقط.', 'The audit log is available to workspace owners only.');
       return;
     }
+    const requestedBusinessId = this.business.id;
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(requestedBusinessId, {
         limit: this.auditLimit,
         offset,
         action: this.auditActionFilter.trim() || undefined,
@@ -855,10 +859,7 @@ export class AppComponent implements OnInit {
         start_at: this.auditStartAt ? new Date(this.auditStartAt + 'T00:00:00').toISOString() : undefined,
         end_at: this.auditEndAt ? new Date(this.auditEndAt + 'T23:59:59.999').toISOString() : undefined
       });
-      if (this.business?.id !== result.items[0]?.business_id && result.items.length) {
-        // The server scopes every event to the requested workspace; never cache a response after a workspace switch.
-        return;
-      }
+      if (this.business?.id !== requestedBusinessId) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
