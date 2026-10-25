@@ -103,6 +103,32 @@ def test_invoice_uses_catalog_price_and_issue_requires_draft(workspace):
             )
 
 
+def test_invoice_persisted_lines_reconcile_half_cent_rounding(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-HALF-CENT", currency_code="EGP",
+            lines=[
+                {"description": "Half-cent A", "quantity": "1.500", "unit_price": "0.01"},
+                {"description": "Half-cent B", "quantity": "1.500", "unit_price": "0.01"},
+            ],
+            discount_rate=Decimal("25"), tax_rate=Decimal("50"),
+        )
+        lines = session.scalars(
+            select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id)
+            .order_by(InvoiceLine.id)
+        ).all()
+        stored_line_total = sum((line.line_total for line in lines), Decimal("0.00"))
+
+        assert [line.line_total for line in lines] == [Decimal("0.02"), Decimal("0.02")]
+        assert invoice.subtotal == stored_line_total == Decimal("0.04")
+        assert invoice.discount_total == Decimal("0.01")
+        assert invoice.tax_total == Decimal("0.02")
+        assert invoice.total == stored_line_total - invoice.discount_total + invoice.tax_total
+        assert invoice.total == Decimal("0.05")
+
+
 def test_stock_movements_prevent_negative_inventory(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
