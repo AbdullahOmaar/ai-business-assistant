@@ -172,6 +172,27 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
+                <section class="csv-import-panel" aria-label="CSV product import">
+                  <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
+                  <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
+                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
+                  @if (importFileName) { <small>{{ importFileName }}</small> }
+                  <div class="csv-import-actions">
+                    <button class="secondary" type="button" (click)="previewProductImport()" [disabled]="importLoading || !importCsvText">{{ importLoading ? t('جارٍ المعالجة…', 'Working…') : t('معاينة الملف', 'Preview file') }}</button>
+                    @if (importPreview?.valid) { <button class="primary" type="button" (click)="confirmProductImport()" [disabled]="importLoading">{{ t('استيراد', 'Import') }} {{ importPreview?.row_count }} {{ t('صف', 'rows') }}</button> }
+                  </div>
+                  @if (importPreview) {
+                    <p role="status">{{ importPreview.valid ? t('الملف صالح. لم يتم حفظ بيانات بعد.', 'File is valid. No data has been saved yet.') : t('الملف يحتوي على أخطاء؛ أصلحها ثم أعد المعاينة.', 'The file has errors. Fix them and preview again.') }} · {{ importPreview.row_count }} {{ t('صف', 'rows') }}</p>
+                    @if (importPreview.errors.length) {
+                      <ul class="csv-import-errors">
+                        @for (item of importPreview.errors; track $index) {
+                          <li>{{ t('صف', 'Row') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.first_row) { ({{ t('أول ظهور في الصف', 'first seen on row') }} {{ item.first_row }}) }@if (item.max_length) { ({{ t('الحد الأقصى', 'max') }} {{ item.max_length }}) }</li>
+                        }
+                      </ul>
+                    }
+                  }
+                  @if (importMessage) { <p role="status">{{ importMessage }}</p> }
+                </section>
                 <div class="list">
                   @for (product of products; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('تتم متابعة المخزون', 'Stock tracked') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
                   @if (!products.length) { <p class="empty">{{ t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.') }}</p> }
@@ -240,7 +261,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   `,
   styles: [`
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    *{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
+    *{box-sizing:border-box}button,input,select,textarea{font:inherit}
+    .csv-import-panel{display:grid;gap:10px;margin:18px 0;padding:14px;border:1px solid #d1d5db;border-radius:12px;background:#f8fafc}.csv-import-panel h3,.csv-import-panel p{margin:0}.csv-import-panel h3{font-size:15px}.csv-import-panel p,.csv-import-panel small{font-size:12px;line-height:1.5;color:#4b5563}.csv-import-actions{display:flex;flex-wrap:wrap;gap:8px}.csv-import-errors{margin:0;padding-inline-start:22px;font-size:12px;color:#991b1b;display:grid;gap:5px;overflow-wrap:anywhere}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:left}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
     .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
@@ -375,6 +397,11 @@ export class AppComponent implements OnInit {
   productName = '';
   productPrice = '';
   stockTracked = false;
+  importCsvText = '';
+  importFileName = '';
+  importLoading = false;
+  importPreview: Awaited<ReturnType<ApiService['previewProductCsv']>> | null = null;
+  importMessage = '';
   invoiceCustomerId = '';
   invoiceProductId = '';
   invoiceQuantity = '1';
@@ -699,6 +726,90 @@ export class AppComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  async onImportFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.importPreview = null;
+    this.importMessage = '';
+    this.importCsvText = '';
+    this.importFileName = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
+      this.error = this.t('اختَر ملف CSV فقط.', 'Choose a CSV file only.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.error = this.t('حجم الملف يتجاوز 5 ميجابايت.', 'The file exceeds 5 MiB.');
+      input.value = '';
+      return;
+    }
+    try {
+      this.importCsvText = await file.text();
+      this.importFileName = file.name;
+      this.error = '';
+    } catch {
+      this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
+      input.value = '';
+    }
+  }
+
+  async previewProductImport(): Promise<void> {
+    if (!this.business || !this.importCsvText || this.importLoading) return;
+    this.importLoading = true;
+    this.importPreview = null;
+    this.importMessage = '';
+    this.error = '';
+    try {
+      this.importPreview = await this.api.previewProductCsv(this.business.id, this.importCsvText);
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.importLoading = false;
+    }
+  }
+
+  async confirmProductImport(): Promise<void> {
+    if (!this.business || !this.importCsvText || !this.importPreview?.valid || this.importLoading) return;
+    this.importLoading = true;
+    this.importMessage = '';
+    this.error = '';
+    try {
+      const result = await this.api.importProductCsv(this.business.id, this.importCsvText);
+      this.products = await this.api.products(this.business.id);
+      if (this.products.length) this.invoiceProductId = this.products[0].id;
+      this.importMessage = this.t(
+        `تم استيراد ${result.row_count} صف بنجاح.`,
+        `Successfully imported ${result.row_count} rows.`
+      );
+      this.importPreview = null;
+      this.importCsvText = '';
+      this.importFileName = '';
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.importLoading = false;
+    }
+  }
+
+  importErrorLabel(code: string): string {
+    const ar: Record<string, string> = {
+      required: 'حقل مطلوب', too_long: 'النص أطول من المسموح',
+      invalid_decimal: 'سعر غير صالح (حتى منزلتين عشريتين)',
+      invalid_boolean: 'قيمة متابعة المخزون غير صحيحة',
+      duplicate_in_file: 'كود منتج مكرر داخل الملف',
+      already_exists: 'كود المنتج موجود بالفعل'
+    };
+    const en: Record<string, string> = {
+      required: 'Required field', too_long: 'Text exceeds the allowed length',
+      invalid_decimal: 'Invalid price (up to 2 decimal places)',
+      invalid_boolean: 'Invalid stock tracking value',
+      duplicate_in_file: 'Duplicate SKU in this file',
+      already_exists: 'SKU already exists'
+    };
+    return (this.language === 'ar' ? ar : en)[code] || code;
   }
 
   async createProduct(): Promise<void> {
