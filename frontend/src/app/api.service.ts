@@ -33,6 +33,8 @@ export interface AuditEvent {
 }
 export interface AuditEventPage { items: AuditEvent[]; total: number; limit: number; offset: number; }
 export interface ReceivablesAgingReport { as_of_date: string; source: string; currency_policy: string; invoice_count: number; by_currency: ReceivablesAgingCurrencySummary[]; invoices: ReceivablesAgingInvoice[]; data_quality_warnings: ReceivablesAgingWarning[]; limitations: string[]; }
+export interface CustomerStatementEvent { occurred_at: string; event_type: string; source_id: string; reference: string | null; invoice_id?: string; currency_code: string; debit: string; credit: string; affects_balance: boolean; balance: string; }
+export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -233,6 +235,11 @@ export class ApiService {
       if (value !== undefined && value !== '') params.set(key, String(value));
     }
     return this.request<AuditEventPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/audit-events?${params.toString()}`);
+  }
+
+  customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
+    const params = new URLSearchParams({ limit: '50', offset: String(offset) });
+    return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
   }
 
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
