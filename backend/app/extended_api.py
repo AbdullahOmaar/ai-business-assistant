@@ -1234,7 +1234,6 @@ def customer_statement(
         )).all()
         invoice_ids = [item.id for item in invoices]
         events: list[dict] = []
-        invoice_currency_by_id = {item.id: item.currency_code for item in invoices}
         for item in invoices:
             occurred_at = item.issue_date or item.created_at
             if occurred_at is None:
