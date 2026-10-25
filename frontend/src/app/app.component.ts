@@ -319,7 +319,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'integrity' && business?.role === 'owner') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('مراجعة سلامة البيانات', 'Data integrity review') }}</h2><p>{{ t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') }}</p></div><span class="count">{{ dataIntegrityReport?.generated_at ? (dataIntegrityReport.generated_at | date:'short') : t('لم يتم التحديث', 'Not refreshed') }}</span></div>
+                <div class="section-head"><div><h2>{{ t('مراجعة سلامة البيانات', 'Data integrity review') }}</h2><p>{{ t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') }}</p></div><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></div>
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
                 @if (integrityError) { <p class="error" role="alert">{{ integrityError }}</p> }
                 @if (dataIntegrityReport) {
