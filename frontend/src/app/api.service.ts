@@ -26,6 +26,8 @@ export interface ReceivablesAgingCurrencySummary { currency_code: string; bucket
 export interface ReceivablesAgingInvoice { invoice_id: string; invoice_number: string; customer_id: string | null; currency_code: string; due_date: string | null; invoice_total: string; allocated_payments: string; outstanding_amount: string; aging_bucket: ReceivablesAgingBucket['bucket']; days_overdue: number | null; customer_link_missing: boolean; }
 export interface ReceivablesAgingWarning { invoice_id: string; invoice_number: string; type: 'payment_currency_mismatch' | 'allocations_exceed_invoice_total'; invoice_currency?: string; mismatched_allocations_amount?: string; invoice_total?: string; allocated_payments?: string; excess_allocated?: string; }
 export interface ReceivablesAgingReport { as_of_date: string; source: string; currency_policy: string; invoice_count: number; by_currency: ReceivablesAgingCurrencySummary[]; invoices: ReceivablesAgingInvoice[]; data_quality_warnings: ReceivablesAgingWarning[]; limitations: string[]; }
+export interface CustomerStatementEvent { occurred_at: string; event_type: string; source_id: string; reference: string | null; invoice_id?: string; currency_code: string; debit: string; credit: string; affects_balance: boolean; balance: string; }
+export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -211,6 +213,10 @@ export class ApiService {
       'POST', { reason }
     );
   }
+  customerStatement(businessId: string, customerId: string): Promise<CustomerStatement> {
+    return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?limit=50&offset=0`);
+  }
+
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
     return this.request<ChatReply>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/chat`, 'POST', { message, history }
