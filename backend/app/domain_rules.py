@@ -31,7 +31,7 @@ def calculate_invoice_totals(
     if not ZERO <= tax_rate <= Decimal("100"):
         raise ValueError("tax_rate must be between 0 and 100")
 
-    subtotal_raw = ZERO
+    subtotal = ZERO
     found_line = False
     for quantity, unit_price in lines:
         found_line = True
@@ -39,11 +39,11 @@ def calculate_invoice_totals(
             raise ValueError("quantity must be greater than zero")
         if unit_price < ZERO:
             raise ValueError("unit_price cannot be negative")
-        subtotal_raw += quantity * unit_price
+        # Match the persisted invoice-line policy: round each line to cents
+        # using half-up before aggregating the invoice subtotal.
+        subtotal += money(quantity * unit_price)
     if not found_line:
         raise ValueError("at least one invoice line is required")
-
-    subtotal = money(subtotal_raw)
     discount = money(subtotal * discount_rate / Decimal("100"))
     taxable = subtotal - discount
     tax = money(taxable * tax_rate / Decimal("100"))
