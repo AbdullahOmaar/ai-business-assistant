@@ -5,14 +5,15 @@ unless the host has configured a trusted principal resolver and database session
 """
 import csv
 import io
-from datetime import date, datetime, timezone
+import os
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
@@ -65,6 +66,13 @@ class PurchaseLineInput(BaseModel):
     product_id: UUID
     quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
     unit_cost: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
+
+
+class SupplierInput(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    email: str | None = Field(default=None, max_length=254)
+    phone: str | None = Field(default=None, max_length=32)
+    address: str | None = Field(default=None, max_length=500)
 
 
 class PurchaseOrderInput(BaseModel):
@@ -1231,3 +1239,458 @@ def assistant_insights(business_id: UUID,
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/audit-events")
+def list_audit_events(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    action: str | None = Query(default=None, min_length=1, max_length=80),
+    target_type: str | None = Query(default=None, min_length=1, max_length=80),
+    start_at: datetime | None = None,
+    end_at: datetime | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read a paginated business audit trail; only workspace owners may view it."""
+    try:
+        authorize_membership(
+            session,
+            principal=principal,
+            business_id=business_id,
+            allowed_roles={MembershipRole.OWNER},
+        )
+        if start_at is not None and end_at is not None and start_at > end_at:
+            raise HTTPException(status_code=422, detail="start_at must be earlier than or equal to end_at")
+        statement = select(AuditEvent).where(AuditEvent.business_id == business_id)
+        if action is not None:
+            statement = statement.where(AuditEvent.action == action)
+        if target_type is not None:
+            statement = statement.where(AuditEvent.target_type == target_type)
+        if start_at is not None:
+            statement = statement.where(AuditEvent.created_at >= start_at)
+        if end_at is not None:
+            statement = statement.where(AuditEvent.created_at <= end_at)
+        total = session.scalar(select(func.count()).select_from(statement.subquery())) or 0
+        items = session.scalars(
+            statement.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+        return {
+            "items": [
+                {
+                    "id": str(item.id),
+                    "business_id": str(item.business_id),
+                    "actor_subject": item.actor_subject,
+                    "action": item.action,
+                    "target_type": item.target_type,
+                    "target_id": item.target_id,
+                    "change_summary": item.change_summary,
+                    "created_at": item.created_at.isoformat() if item.created_at else None,
+                }
+                for item in items
+            ],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/customers/{customer_id}/statement")
+def customer_statement(
+    business_id: UUID,
+    customer_id: UUID,
+    from_date: date | None = Query(default=None),
+    to_date: date | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Return a currency-separated customer statement from issued invoices and payment allocations.
+
+    Credit notes are not represented by a dedicated ledger model yet, so this endpoint
+    explicitly reports that limitation rather than treating sales returns as cash credits.
+    """
+    try:
+        _authorized(session, principal, business_id)
+        if from_date is not None and to_date is not None and from_date > to_date:
+            raise HTTPException(status_code=422, detail="from_date must be on or before to_date")
+        customer = session.scalars(select(Customer).where(
+            Customer.id == customer_id,
+            Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        )).one_or_none()
+        if customer is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        invoices = session.scalars(select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+            Invoice.status == "issued",
+        )).all()
+        invoice_ids = [item.id for item in invoices]
+        events: list[dict] = []
+        for item in invoices:
+            occurred_at = item.issue_date or item.created_at
+            if occurred_at is None:
+                continue
+            occurred_date = occurred_at.date()
+            if from_date is not None and occurred_date < from_date:
+                continue
+            if to_date is not None and occurred_date > to_date:
+                continue
+            events.append({
+                "occurred_at": occurred_at,
+                "event_type": "invoice_issued",
+                "source_id": str(item.id),
+                "reference": item.invoice_number,
+                "currency_code": item.currency_code,
+                "debit": item.total,
+                "credit": ZERO,
+                "affects_balance": True,
+            })
+
+        if invoice_ids:
+            allocations = session.execute(
+                select(PaymentAllocation, Payment, Invoice)
+                .join(Payment, Payment.id == PaymentAllocation.payment_id)
+                .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
+                .where(
+                    PaymentAllocation.business_id == business_id,
+                    Payment.business_id == business_id,
+                    Invoice.business_id == business_id,
+                    Invoice.customer_id == customer_id,
+                    PaymentAllocation.invoice_id.in_(invoice_ids),
+                )
+            ).all()
+            for allocation, payment, invoice in allocations:
+                occurred_at = payment.received_at or allocation.created_at
+                if occurred_at is None:
+                    continue
+                occurred_date = occurred_at.date()
+                if from_date is not None and occurred_date < from_date:
+                    continue
+                if to_date is not None and occurred_date > to_date:
+                    continue
+                same_currency = payment.currency_code == invoice.currency_code
+                events.append({
+                    "occurred_at": occurred_at,
+                    "event_type": "payment_allocation" if same_currency else "currency_mismatch_allocation",
+                    "source_id": str(allocation.id),
+                    "reference": payment.reference,
+                    "invoice_id": str(invoice.id),
+                    "currency_code": invoice.currency_code if same_currency else payment.currency_code,
+                    "debit": ZERO,
+                    "credit": allocation.amount,
+                    "affects_balance": same_currency,
+                })
+
+        events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
+        running: dict[str, Decimal] = {}
+        for event in events:
+            currency = event["currency_code"]
+            running.setdefault(currency, ZERO)
+            if event["affects_balance"]:
+                running[currency] += event["debit"] - event["credit"]
+            event["balance"] = running[currency]
+            event["occurred_at"] = event["occurred_at"].isoformat()
+            for key in ("debit", "credit", "balance"):
+                event[key] = str(event[key])
+
+        total = len(events)
+        return {
+            "customer": {"id": str(customer.id), "name": customer.name},
+            "items": events[offset:offset + limit],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "balances_by_currency": {currency: str(balance) for currency, balance in running.items()},
+            "limitations": [
+                "Credit notes are not implemented in the current data model and are excluded.",
+                "Approved sales returns are not treated as receivable credits until a credit-note ledger exists.",
+                "Allocations with a currency mismatch are shown but do not change the running balance.",
+                "Balances represent issued invoices less matching-currency allocations, not a double-entry general ledger.",
+            ],
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/reports/data-integrity")
+def report_data_integrity(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read-only owner report for legacy invoice links and payment allocation mismatches."""
+    try:
+        authorize_membership(
+            session,
+            principal=principal,
+            business_id=business_id,
+            allowed_roles={MembershipRole.OWNER},
+        )
+        unlinked = select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.status == "issued",
+            Invoice.customer_id.is_(None),
+        )
+        unlinked_total = session.scalar(
+            select(func.count()).select_from(unlinked.subquery())
+        ) or 0
+        unlinked_items = session.scalars(
+            unlinked.order_by(Invoice.created_at.desc(), Invoice.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        allocation_mismatch = (
+            select(PaymentAllocation, Payment, Invoice)
+            .join(Payment, Payment.id == PaymentAllocation.payment_id)
+            .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
+                Payment.currency_code != Invoice.currency_code,
+            )
+        )
+        mismatch_total = session.scalar(
+            select(func.count()).select_from(allocation_mismatch.subquery())
+        ) or 0
+        mismatch_rows = session.execute(
+            allocation_mismatch.order_by(Payment.received_at.desc(), PaymentAllocation.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        customer_mismatch = (
+            select(PaymentAllocation, Payment, Invoice)
+            .join(Payment, Payment.id == PaymentAllocation.payment_id)
+            .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
+                Payment.customer_id.is_not(None),
+                Invoice.customer_id.is_not(None),
+                Payment.customer_id != Invoice.customer_id,
+            )
+        )
+        customer_mismatch_total = session.scalar(
+            select(func.count()).select_from(customer_mismatch.subquery())
+        ) or 0
+        customer_mismatch_rows = session.execute(
+            customer_mismatch.order_by(Payment.received_at.desc(), PaymentAllocation.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        def allocation_item(allocation, payment, invoice):
+            return {
+                "allocation_id": str(allocation.id),
+                "payment_id": str(payment.id),
+                "payment_reference": payment.reference,
+                "payment_customer_id": str(payment.customer_id) if payment.customer_id else None,
+                "payment_currency": payment.currency_code,
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "invoice_customer_id": str(invoice.customer_id) if invoice.customer_id else None,
+                "invoice_currency": invoice.currency_code,
+                "allocated_amount": str(allocation.amount),
+            }
+
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "read_only": True,
+            "unlinked_issued_invoices": {
+                "total": unlinked_total,
+                "items": [
+                    {
+                        "invoice_id": str(item.id),
+                        "invoice_number": item.invoice_number,
+                        "status": item.status,
+                        "total": str(item.total),
+                        "currency_code": item.currency_code,
+                        "created_at": item.created_at.isoformat() if item.created_at else None,
+                    }
+                    for item in unlinked_items
+                ],
+            },
+            "currency_mismatched_allocations": {
+                "total": mismatch_total,
+                "items": [allocation_item(*row) for row in mismatch_rows],
+            },
+            "customer_mismatched_allocations": {
+                "total": customer_mismatch_total,
+                "items": [allocation_item(*row) for row in customer_mismatch_rows],
+            },
+            "limit": limit,
+            "offset": offset,
+            "warning": "This report identifies records for manual review only. It never guesses customer links or modifies accounting data.",
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/suppliers")
+def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
+                  offset: int = Query(default=0, ge=0),
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Supplier).where(
+            Supplier.business_id == business_id, Supplier.is_active.is_(True),
+        ).order_by(Supplier.name, Supplier.id).offset(offset).limit(limit)).all()
+        return [_dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at")) for item in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.post("/suppliers", status_code=201)
+def post_supplier(business_id: UUID, body: SupplierInput,
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        name = body.name.strip()
+        if not name:
+            raise WorkflowError("Supplier name is required")
+        item = Supplier(business_id=business_id, name=name,
+                        email=body.email.strip() if body.email else None,
+                        phone=body.phone.strip() if body.phone else None,
+                        address=body.address.strip() if body.address else None,
+                        is_active=True)
+        session.add(item)
+        session.flush()
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="supplier.created", target_type="supplier", target_id=str(item.id)))
+        return item
+    item = _commit(session, op)
+    return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
+
+
+@router.get("/purchase-orders")
+def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
+                         offset: int = Query(default=0, ge=0),
+                         session: Session = Depends(get_session),
+                         principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        orders = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.business_id == business_id,
+        ).order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc()).offset(offset).limit(limit)).all()
+        result = []
+        for order in orders:
+            lines = session.scalars(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.business_id == business_id,
+                PurchaseOrderLine.purchase_order_id == order.id,
+            ).order_by(PurchaseOrderLine.id)).all()
+            item = _dict(order, ("id", "business_id", "supplier_id", "order_number", "status", "currency_code", "total", "created_at"))
+            item["lines"] = [
+                {**_dict(line, ("id", "product_id", "quantity", "unit_cost", "received_quantity")),
+                 "remaining_quantity": str(max(ZERO, line.quantity - line.received_quantity))}
+                for line in lines
+            ]
+            result.append(item)
+        return result
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/recurring-invoices")
+def list_recurring_schedules(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
+                             offset: int = Query(default=0, ge=0),
+                             session: Session = Depends(get_session),
+                             principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(RecurringInvoiceSchedule).where(
+            RecurringInvoiceSchedule.business_id == business_id,
+        ).order_by(RecurringInvoiceSchedule.next_run_at, RecurringInvoiceSchedule.id).offset(offset).limit(limit)).all()
+        return [_dict(item, ("id", "business_id", "customer_id", "interval_days", "timezone", "next_run_at", "is_active", "created_at")) for item in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/operations/health")
+def operations_health(business_id: UUID, session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Owner-only, read-only operational readiness snapshot with no secret values."""
+    try:
+        _authorized(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    database_connected = False
+    migration_table_available = False
+    migration_revision = None
+    try:
+        session.execute(text("SELECT 1"))
+        database_connected = True
+        try:
+            migration_revision = session.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).scalar_one_or_none()
+            migration_table_available = migration_revision is not None
+        except SQLAlchemyError:
+            session.rollback()
+            migration_table_available = False
+            migration_revision = None
+    except SQLAlchemyError:
+        session.rollback()
+    notification_delivery_configured = False
+    recurring_invoice_worker_configured = False
+    healthy = database_connected and migration_table_available
+    return {
+        "status": "ok" if healthy else "degraded",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "database_connected": database_connected,
+        "migration_table_available": migration_table_available,
+        "migration_revision": migration_revision,
+        "ai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "notification_delivery_configured": notification_delivery_configured,
+        "recurring_invoice_worker_configured": recurring_invoice_worker_configured,
+    }
+
+
+@router.get("/reports/tax-summary")
+def report_tax_summary(
+    business_id: UUID,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Summarize saved tax totals from issued invoices, separated by currency."""
+    try:
+        _authorized(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(status_code=422, detail="start_date must not be after end_date")
+    statement = select(
+        Invoice.currency_code,
+        func.coalesce(func.sum(Invoice.tax_total), 0),
+        func.count(Invoice.id),
+    ).where(Invoice.business_id == business_id, Invoice.status == "issued")
+    if start_date:
+        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
+    if end_date:
+        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
+    rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
+    return {
+        "period": {"start_date": start_date.isoformat() if start_date else None,
+                   "end_date": end_date.isoformat() if end_date else None},
+        "source": "issued_invoice_tax_snapshots",
+        "currencies": [
+            {"currency_code": currency, "tax_total": str(money(Decimal(str(total)))), "invoice_count": count}
+            for currency, total, count in rows
+        ],
+        "limitations": [
+            "Uses saved tax totals on issued invoices; it does not recalculate historical taxes.",
+            "Currency totals are kept separate and are not converted.",
+            "This is an operational summary, not a jurisdiction-specific tax filing.",
+        ],
+    }
