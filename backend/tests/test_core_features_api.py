@@ -440,7 +440,6 @@ def test_payment_allocation_rejects_different_customer(configured_client):
     assert "customer" in response.json()["detail"].lower()
 
 
-
 def test_product_csv_preview_is_read_only_and_reports_duplicate_skus(configured_client):
     business = configured_client.post("/api/v1/businesses", json={
         "name": "CSV Preview Shop", "currency_code": "EGP"
