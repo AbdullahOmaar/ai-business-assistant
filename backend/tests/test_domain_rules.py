@@ -110,7 +110,7 @@ def test_partial_returns_cannot_exceed_rounded_invoice_line_amount() -> None:
     with pytest.raises(ValueError, match="return amount exceeds"):
         validate_return_amount(
             invoiced_amount=invoiced_line_total,
-            previously_returned_amount=approved_return_amount,
+            previously_returned_amount=D("0.02"),
             requested_return_amount=D("0.01"),
         )
 
