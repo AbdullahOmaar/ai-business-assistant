@@ -1345,7 +1345,7 @@ export class AppComponent implements OnInit {
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
-      if (this.business?.id !== businessId || this.business.role !== 'owner' || requestVersion !== this.auditRequestVersion) return;
+      if (this.business?.id !== businessId || this.business?.role !== 'owner' || requestVersion !== this.auditRequestVersion) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
