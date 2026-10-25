@@ -537,7 +537,7 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                 errors.append({"row": index, "field": "name", "code": "required"})
             try:
                 price = Decimal(row.get("unit_price", ""))
-                if not price.is_finite() or price < ZERO or price.as_tuple().exponent < -2 or len(price.as_tuple().digits) > 14:
+                if not price.is_finite() or price < ZERO or price.as_tuple().exponent < -2 or price.adjusted() > 11 or len(price.as_tuple().digits) > 14:
                     raise ValueError()
             except Exception:
                 errors.append({"row": index, "field": "unit_price", "code": "invalid_decimal"})
@@ -562,7 +562,7 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                     errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
             try:
                 amount = Decimal(row.get("amount", ""))
-                if not amount.is_finite() or amount <= ZERO or amount.as_tuple().exponent < -2 or len(amount.as_tuple().digits) > 14:
+                if not amount.is_finite() or amount <= ZERO or amount.as_tuple().exponent < -2 or amount.adjusted() > 11 or len(amount.as_tuple().digits) > 14:
                     raise ValueError()
             except Exception:
                 errors.append({"row": index, "field": "amount", "code": "invalid_decimal"})
@@ -611,6 +611,7 @@ def import_csv(business_id: UUID, entity_type: str,
         }
         if entity_type not in schemas:
             raise WorkflowError("CSV import supports customers and products only")
+        allowed = schemas[entity_type]
         try:
             rows = parse_import_csv(csv_text, entity_type=entity_type)
         except CsvValidationError as exc:
