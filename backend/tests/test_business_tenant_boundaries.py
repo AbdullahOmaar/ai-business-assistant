@@ -4,9 +4,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from uuid import UUID
 
 from app.main import app
-from app.models import Base
+from app.models import AuditEvent, Base
 from app.security import AuthenticatedPrincipal
 
 
