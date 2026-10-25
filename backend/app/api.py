@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
-from app.security import AuthenticatedPrincipal, AuthorizationError
+from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
 from app.services import (
     WorkflowError,
     create_customer,
@@ -105,6 +105,13 @@ class PaymentCreate(BaseModel):
     reference: str | None = Field(default=None, max_length=128)
 
 
+def _require_owner(session: Session, principal: AuthenticatedPrincipal, business_id: UUID) -> None:
+    authorize_membership(
+        session, principal=principal, business_id=business_id,
+        allowed_roles={MembershipRole.OWNER},
+    )
+
+
 def _run(session: Session, operation):
     try:
         result = operation()
@@ -194,6 +201,7 @@ def post_create_and_issue_invoice(
     payload["lines"] = [line.model_dump(exclude_none=True) for line in body.lines]
 
     def create_and_issue():
+        _require_owner(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id, **payload
         )
@@ -209,8 +217,12 @@ def post_create_and_issue_invoice(
 def post_issue_invoice(business_id: UUID, invoice_id: UUID,
                        session: Session = Depends(get_session),
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
-    result = _run(session, lambda: issue_invoice(
-        session, principal=principal, business_id=business_id, invoice_id=invoice_id))
+    def op():
+        _require_owner(session, principal, business_id)
+        return issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=invoice_id
+        )
+    result = _run(session, op)
     return _record(result)
 
 
@@ -230,9 +242,13 @@ def patch_draft_invoice(business_id: UUID, invoice_id: UUID, body: InvoiceDraftU
 def post_void_invoice(business_id: UUID, invoice_id: UUID, body: VoidInvoiceInput,
                       session: Session = Depends(get_session),
                       principal: AuthenticatedPrincipal = Depends(get_principal)):
-    result = _run(session, lambda: void_invoice(
-        session, principal=principal, business_id=business_id,
-        invoice_id=invoice_id, reason=body.reason))
+    def op():
+        _require_owner(session, principal, business_id)
+        return void_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice_id, reason=body.reason
+        )
+    result = _run(session, op)
     return _record(result)
 
 
@@ -240,8 +256,12 @@ def post_void_invoice(business_id: UUID, invoice_id: UUID, body: VoidInvoiceInpu
 def post_stock_movement(business_id: UUID, body: StockMovementInput,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
-    result = _run(session, lambda: record_stock_movement(
-        session, principal=principal, business_id=business_id, **body.model_dump()))
+    def op():
+        _require_owner(session, principal, business_id)
+        return record_stock_movement(
+            session, principal=principal, business_id=business_id, **body.model_dump()
+        )
+    result = _run(session, op)
     return _record(result)
 
 
@@ -249,11 +269,15 @@ def post_stock_movement(business_id: UUID, body: StockMovementInput,
 def post_payment(business_id: UUID, body: PaymentCreate,
                  session: Session = Depends(get_session),
                  principal: AuthenticatedPrincipal = Depends(get_principal)):
-    result = _run(session, lambda: record_payment(
-        session, principal=principal, business_id=business_id,
-        amount=body.amount, currency_code=body.currency_code,
-        idempotency_key=body.idempotency_key,
-        customer_id=body.customer_id,
-        allocations=[(item.invoice_id, item.amount) for item in body.allocations],
-        method=body.method, reference=body.reference))
+    def op():
+        _require_owner(session, principal, business_id)
+        return record_payment(
+            session, principal=principal, business_id=business_id,
+            amount=body.amount, currency_code=body.currency_code,
+            idempotency_key=body.idempotency_key,
+            customer_id=body.customer_id,
+            allocations=[(item.invoice_id, item.amount) for item in body.allocations],
+            method=body.method, reference=body.reference
+        )
+    result = _run(session, op)
     return _record(result)
