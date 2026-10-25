@@ -409,3 +409,32 @@ def test_invoice_issue_rejects_missing_customer(configured_client):
     )
     assert response.status_code == 422
     assert "customer" in response.json()["detail"].lower()
+
+
+def test_payment_allocation_rejects_different_customer(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Payment Customer Integrity", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    first = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Invoice Customer"})
+    second = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Other Customer"})
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-CUSTOMER-MATCH", "currency_code": "EGP",
+        "customer_id": first.json()["id"],
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    issued = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{draft.json()['id']}/issue", json={}
+    )
+    assert issued.status_code == 200
+    response = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json={
+        "amount": "100.00", "currency_code": "EGP",
+        "idempotency_key": "wrong-customer-payment",
+        "customer_id": second.json()["id"],
+        "allocations": [{"invoice_id": draft.json()["id"], "amount": "100.00"}]
+    })
+    assert response.status_code == 422
+    assert "customer" in response.json()["detail"].lower()
