@@ -580,6 +580,8 @@ export class AppComponent implements OnInit {
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
     this.chatMessages = [];
+    this.invoiceCustomerId = '';
+    this.profitLoss = null;
     await this.loadWorkspaceData();
   }
 
@@ -652,6 +654,7 @@ export class AppComponent implements OnInit {
       });
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
       this.customers = await this.api.customers(this.business.id);
+      if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
     } catch (error) {
       this.error = this.message(error);
     } finally {
