@@ -558,3 +558,50 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
         engine.dispose()
 
 
+def test_operational_health_is_owner_only_read_only_and_reports_missing_workers():
+    from uuid import uuid4
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("health-owner")
+    try:
+        business_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Health workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="health-owner", role=MembershipRole.OWNER))
+            session.commit()
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/operations/health")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["database_connected"] is True
+        assert payload["status"] == "degraded"
+        assert payload["migration_table_available"] is False
+        assert payload["notification_delivery_configured"] is False
+        assert payload["recurring_invoice_worker_configured"] is False
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/operations/health")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
