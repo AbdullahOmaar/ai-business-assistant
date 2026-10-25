@@ -48,6 +48,8 @@ jobs:
         run: python -m alembic upgrade head
       - name: Verify migration head
         run: python -m alembic current
+      - name: Check ORM metadata has no ungenerated migration drift
+        run: python -m alembic check
       - name: Run tests
         run: python -m pytest -q
       - name: Render migration SQL offline as a second check
