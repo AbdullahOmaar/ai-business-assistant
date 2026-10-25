@@ -438,3 +438,84 @@ def test_payment_allocation_rejects_different_customer(configured_client):
     })
     assert response.status_code == 422
     assert "customer" in response.json()["detail"].lower()
+
+
+
+def test_product_import_preview_is_read_only_and_detects_duplicate_skus(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Import Preview Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    rows = [
+        {"sku": "P-001", "name": "قهوة", "unit_price": "45.50"},
+        {"sku": "P-002", "name": "شاي", "unit_price": "30.00"},
+    ]
+
+    preview = configured_client.post(
+        f"/api/v1/businesses/{business_id}/products/import/preview", json={"rows": rows}
+    )
+    assert preview.status_code == 200
+    assert preview.json()["valid"] is True
+    assert preview.json()["write_performed"] is False
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
+
+    duplicate = configured_client.post(
+        f"/api/v1/businesses/{business_id}/products/import/preview",
+        json={"rows": [rows[0], {**rows[0], "name": "Duplicate"}]},
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["valid"] is False
+    assert any(error["code"] == "duplicate_in_file" for error in duplicate.json()["errors"])
+
+
+def test_product_import_is_atomic_and_sku_retry_cannot_duplicate_products(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Atomic Import Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    rows = [
+        {"sku": "SKU-100", "name": "Item One", "unit_price": "10.00"},
+        {"sku": "SKU-200", "name": "Item Two", "unit_price": "20.00"},
+    ]
+    endpoint = f"/api/v1/businesses/{business_id}/products/import"
+
+    imported = configured_client.post(endpoint, json={"rows": rows})
+    assert imported.status_code == 201
+    assert imported.json()["created_count"] == 2
+    assert imported.json()["atomic"] is True
+
+    retried = configured_client.post(endpoint, json={"rows": rows})
+    assert retried.status_code == 422
+    assert "no rows were imported" in retried.json()["detail"]["message"]
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert len(products.json()) == 2
+
+
+def test_product_import_rejects_duplicate_batch_without_partial_writes(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Duplicate Import Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    response = configured_client.post(
+        f"/api/v1/businesses/{business_id}/products/import",
+        json={"rows": [
+            {"sku": "DUP-1", "name": "First", "unit_price": "1.00"},
+            {"sku": "DUP-1", "name": "Second", "unit_price": "2.00"},
+        ]},
+    )
+    assert response.status_code == 422
+    assert "no rows were imported" in response.json()["detail"]["message"]
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
