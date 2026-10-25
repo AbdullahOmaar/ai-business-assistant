@@ -583,6 +583,8 @@ def preview_import_csv(business_id: UUID, entity_type: str,
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
         _authorized(session, principal, business_id)
+        if entity_type not in {"customers", "products"}:
+            raise WorkflowError("CSV import supports customers and products only")
         try:
             rows = parse_import_csv(csv_text, entity_type=entity_type)
         except CsvValidationError as exc:
