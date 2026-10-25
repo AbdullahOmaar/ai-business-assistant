@@ -33,10 +33,41 @@ def test_firebase_resolver_uses_verified_project_qualified_uid(monkeypatch):
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
     monkeypatch.setattr(firebase_auth, "_firebase_app", lambda: object())
-    monkeypatch.setattr(
-        firebase_admin.auth, "verify_id_token",
-        lambda token, app, check_revoked: {"uid": "user-123", "aud": "test-project"},
-    )
+    calls = {}
+
+    def verify(token, *, app, check_revoked):
+        calls.update(token=token, app=app, check_revoked=check_revoked)
+        return {"uid": "user-123", "aud": "test-project"}
+
+    monkeypatch.setattr(firebase_admin.auth, "verify_id_token", verify)
     request = _request([(b"authorization", b"Bearer valid-token")])
     principal = firebase_auth.firebase_principal_resolver(request)
+
     assert principal.subject == "firebase:test-project:user-123"
+    assert calls["token"] == "valid-token"
+    assert calls["check_revoked"] is True
+
+
+@pytest.mark.parametrize("failure_kind", ["invalid", "revoked"])
+def test_firebase_resolver_rejects_invalid_or_revoked_tokens(monkeypatch, failure_kind):
+    import firebase_admin.auth
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(firebase_auth, "_firebase_app", lambda: object())
+    if failure_kind == "revoked":
+        token_error = firebase_admin.auth.RevokedIdTokenError("revoked token")
+    else:
+        token_error = firebase_admin.auth.InvalidIdTokenError("invalid token")
+
+    def reject(token, *, app, check_revoked):
+        assert check_revoked is True
+        raise token_error
+
+    monkeypatch.setattr(firebase_admin.auth, "verify_id_token", reject)
+    request = _request([(b"authorization", b"Bearer untrusted-token")])
+
+    with pytest.raises(HTTPException) as error:
+        firebase_auth.firebase_principal_resolver(request)
+
+    assert error.value.status_code == 401
+    assert error.value.detail == "Firebase ID token is invalid or expired."
