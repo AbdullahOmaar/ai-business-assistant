@@ -49,7 +49,7 @@ def test_firebase_resolver_uses_verified_project_qualified_uid(monkeypatch):
     assert calls["check_revoked"] is True
 
 
-@pytest.mark.parametrize("failure_kind", ["invalid", "revoked"])
+@pytest.mark.parametrize("failure_kind", ["invalid", "expired", "revoked"])
 def test_firebase_resolver_rejects_invalid_or_revoked_tokens(monkeypatch, failure_kind):
     import firebase_admin.auth
 
@@ -57,6 +57,8 @@ def test_firebase_resolver_rejects_invalid_or_revoked_tokens(monkeypatch, failur
     monkeypatch.setattr(firebase_auth, "_firebase_app", lambda: object())
     if failure_kind == "revoked":
         token_error = firebase_admin.auth.RevokedIdTokenError("revoked token")
+    elif failure_kind == "expired":
+        token_error = firebase_admin.auth.ExpiredIdTokenError("expired token")
     else:
         token_error = firebase_admin.auth.InvalidIdTokenError("invalid token")
 
