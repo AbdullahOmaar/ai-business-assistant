@@ -394,7 +394,8 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                     invoiced_amount=_discounted_return_line_total(invoice, invoice_line),
                     previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
                     requested_return_amount=requested["amount"],
-                )            except ValueError as exc:
+                )
+            except ValueError as exc:
                 raise WorkflowError(str(exc)) from exc
             invoice_lines[invoice_line_id] = invoice_line
 
