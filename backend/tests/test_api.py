@@ -5,13 +5,16 @@ from threading import Barrier
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 import pytest
 
 from app.main import app
-from app.models import Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, MembershipRole
+from app.models import (
+    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine,
+    MembershipRole, SalesReturn, SalesReturnLine,
+)
 from app.security import AuthenticatedPrincipal
 
 
