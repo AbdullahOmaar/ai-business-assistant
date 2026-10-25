@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport } from './api.service';
+import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
 import { AuthService } from './auth.service';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports';
@@ -144,6 +144,27 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @if (!profitLoss.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة أو مصروفات مسجلة في هذه الفترة.', 'No issued invoices or recorded expenses in this period.') }}</p> }
                   <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
                 }
+                <div class="divider"></div>
+                <div class="section-head"><div><h3>{{ t('أعمار المديونيات', 'Receivables aging') }}</h3><p>{{ t('الأرصدة المتبقية حسب تاريخ الاستحقاق، مع فصل كل عملة.', 'Outstanding balances by due date, with currencies kept separate.') }}</p></div></div>
+                <form class="inline-form" (ngSubmit)="loadReceivablesAging()"><label>{{ t('التقرير حتى تاريخ', 'Report as of') }}<input type="date" name="agingAsOf" required [(ngModel)]="agingAsOf"></label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('جارٍ التحميل…', 'Loading…') : t('عرض المديونيات', 'Load receivables') }}</button></form>
+                @if (agingError) { <div class="error-banner" role="alert">{{ agingError }}</div> }
+                @if (agingReport) {
+                  <div class="section-head"><p class="muted">{{ t('تاريخ التقرير:', 'As of:') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('فاتورة', 'invoices') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
+                  @for (summary of agingReport.by_currency; track summary.currency_code) {
+                    <article class="metric"><span>{{ t('إجمالي المستحق', 'Total outstanding') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
+                  }
+                  @if (agingReport.data_quality_warnings.length) {
+                    <div class="notice warning-notice"><strong>{{ t('تحذيرات محاسبية تحتاج مراجعة', 'Accounting warnings need review') }}</strong>
+                      @for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) {
+                        <p><strong>{{ warning.invoice_number }}</strong> — {{ agingWarningLabel(warning.type) }}</p>
+                        @if (warning.excess_allocated) { <p>{{ t('قيمة التخصيص الزائد:', 'Excess allocation:') }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
+                        @if (warning.mismatched_allocations_amount) { <p>{{ t('تخصيصات بعملة مختلفة:', 'Mismatched-currency allocations:') }} {{ warning.mismatched_allocations_amount }}</p> }
+                      }
+                    </div>
+                  }
+                  @if (agingReport.invoices.length) { <div class="list">@for (invoice of agingReport.invoices; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</strong><small>{{ agingBucketLabel(invoice.aging_bucket) }} · {{ invoice.due_date || t('بدون تاريخ استحقاق', 'No due date') }}@if (invoice.customer_link_missing) { · {{ t('عميل غير مرتبط — يلزم تدقيق يدوي', 'Missing customer link — manual review required') }} }</small></div></article> }</div> }
+                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ limitation }}</p> }</div> }
+                }
               </section>
             }
 
@@ -241,6 +262,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   styles: [`
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
+    .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:#f8fafc}.warning-notice{border-color:#f59e0b;background:#fffbeb}.divider{height:1px;background:#e5e7eb;margin:22px 0}
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:left}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
     .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
@@ -363,6 +385,10 @@ export class AppComponent implements OnInit {
   profitLossEnd = '';
   reportLoading = false;
   reportError = '';
+  agingReport: ReceivablesAgingReport | null = null;
+  agingLoading = false;
+  agingError = '';
+  agingAsOf = new Date().toISOString().slice(0, 10);
   customers: Customer[] = [];
   products: Product[] = [];
   invoices: Invoice[] = [];
@@ -651,6 +677,61 @@ export class AppComponent implements OnInit {
     } finally {
       if (loadVersion === this.workspaceLoadVersion) this.loading = false;
     }
+  }
+
+  exportReceivablesAgingCsv(): void {
+    if (!this.agingReport || !this.agingReport.invoices.length) return;
+    const warnings = new Map<string, string[]>();
+    for (const warning of this.agingReport.data_quality_warnings) {
+      const current = warnings.get(warning.invoice_id) || [];
+      current.push(this.agingWarningLabel(warning.type));
+      warnings.set(warning.invoice_id, current);
+    }
+    const rows: string[][] = [[
+      'as_of_date', 'invoice_number', 'customer_id', 'currency_code', 'due_date', 'aging_bucket',
+      'invoice_total', 'allocated_payments', 'outstanding_amount', 'customer_link_missing', 'accounting_warnings'
+    ]];
+    for (const invoice of this.agingReport.invoices) {
+      rows.push([
+        this.agingReport.as_of_date, invoice.invoice_number, invoice.customer_id || '', invoice.currency_code,
+        invoice.due_date || '', invoice.aging_bucket, invoice.invoice_total, invoice.allocated_payments,
+        invoice.outstanding_amount, invoice.customer_link_missing ? 'true' : 'false',
+        (warnings.get(invoice.invoice_id) || []).join('; ')
+      ]);
+    }
+    const csv = '\uFEFF' + rows.map(row => row.map(value => {
+      const raw = String(value);
+      // Prevent spreadsheet formula execution for user-controlled cells such as invoice numbers.
+      const safe = /^[\u0000-\u0020]*[=+\-@]/.test(raw) ? "'" + raw : raw;
+      return '"' + safe.replace(/"/g, '""') + '"';
+    }).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'receivables-aging-' + this.agingReport.as_of_date + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  agingBucketLabel(bucket: string): string {
+    const ar: Record<string, string> = { not_due: 'غير مستحقة بعد', '1_30_days': '1–30 يومًا', '31_60_days': '31–60 يومًا', '61_90_days': '61–90 يومًا', over_90_days: 'أكثر من 90 يومًا', no_due_date: 'بدون تاريخ استحقاق' };
+    const en: Record<string, string> = { not_due: 'Not yet due', '1_30_days': '1–30 days', '31_60_days': '31–60 days', '61_90_days': '61–90 days', over_90_days: 'Over 90 days', no_due_date: 'No due date' };
+    return (this.language === 'ar' ? ar : en)[bucket] || bucket;
+  }
+
+  agingWarningLabel(type: string): string {
+    const ar: Record<string, string> = { payment_currency_mismatch: 'تخصيص دفعة بعملة مختلفة', allocations_exceed_invoice_total: 'إجمالي تخصيصات الدفعات يتجاوز قيمة الفاتورة' };
+    const en: Record<string, string> = { payment_currency_mismatch: 'Payment allocation uses a different currency', allocations_exceed_invoice_total: 'Payment allocations exceed invoice total' };
+    return (this.language === 'ar' ? ar : en)[type] || type;
+  }
+
+  async loadReceivablesAging(): Promise<void> {
+    if (!this.business) return;
+    this.agingLoading = true;
+    this.agingError = '';
+    try { this.agingReport = await this.api.receivablesAging(this.business.id, this.agingAsOf); }
+    catch (error) { this.agingError = this.message(error); }
+    finally { this.agingLoading = false; }
   }
 
   async loadProfitLoss(): Promise<void> {
