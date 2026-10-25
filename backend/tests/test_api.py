@@ -405,3 +405,74 @@ def test_staff_can_create_but_cannot_approve_sales_return():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_staff_is_denied_sensitive_business_routes():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    _set_test_membership_role(engine, MembershipRole.STAFF)
+    client = TestClient(app)
+    unknown_id = str(uuid4())
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        responses = {
+            "issue existing invoice": client.post(
+                f"{base}/invoices/{invoice_id}/issue"
+            ),
+            "create and issue invoice": client.post(
+                f"{base}/invoices/issue",
+                json={
+                    "invoice_number": "STAFF-ISSUE-1",
+                    "currency_code": "EGP",
+                    "lines": [{"quantity": "1.000", "unit_price": "10.00"}],
+                },
+            ),
+            "record payment": client.post(
+                f"{base}/payments",
+                json={
+                    "amount": "10.00",
+                    "currency_code": "EGP",
+                    "idempotency_key": "staff-payment-test",
+                    "customer_id": unknown_id,
+                    "allocations": [],
+                },
+            ),
+            "change stock": client.post(
+                f"{base}/stock-movements",
+                json={
+                    "product_id": unknown_id,
+                    "movement_type": "adjustment",
+                    "quantity_delta": "1.000",
+                },
+            ),
+            "change pricing": client.post(
+                f"{base}/pricing-rules",
+                json={"name": "Staff rule", "rule_type": "discount", "rate": "5"},
+            ),
+            "change settings": client.put(
+                f"{base}/settings/locale", json={"setting_value": "ar"}
+            ),
+            "export customers": client.get(f"{base}/exports/customers.csv"),
+            "preview CSV import": client.post(
+                f"{base}/imports/customers.csv/preview",
+                content="name\\nAlice\\n",
+                headers={"Content-Type": "text/csv"},
+            ),
+            "execute CSV import": client.post(
+                f"{base}/imports/customers.csv",
+                content="name\\nAlice\\n",
+                headers={"Content-Type": "text/csv"},
+            ),
+            "delete customer": client.delete(f"{base}/customers/{unknown_id}"),
+            "delete product": client.delete(f"{base}/products/{unknown_id}"),
+        }
+        assert {name: response.status_code for name, response in responses.items()} == {
+            name: 403 for name in responses
+        }
+        with Session(engine) as session:
+            invoice = session.get(Invoice, invoice_id)
+            assert invoice.status == "issued"
+            assert session.scalar(select(func.count()).select_from(SalesReturn)) == 0
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
