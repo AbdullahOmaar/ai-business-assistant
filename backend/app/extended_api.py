@@ -326,16 +326,64 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             raise WorkflowError("Only draft returns can be approved")
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
-        )).one_or_none()
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Sales return must reference an issued invoice")
         lines = session.scalars(select(SalesReturnLine).where(
             SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
         )).all()
+
+        # Aggregate duplicate entries first, then lock invoice lines in stable order.
+        # Locking the invoice header serializes approvals for the same invoice in PostgreSQL.
+        requested_by_line: dict[UUID, dict[str, Decimal]] = {}
         for returned in lines:
+            requested = requested_by_line.setdefault(
+                returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
+            )
+            requested["quantity"] += returned.quantity
+            requested["amount"] += returned.amount
+
+        invoice_lines: dict[UUID, InvoiceLine] = {}
+        for invoice_line_id, requested in sorted(
+            requested_by_line.items(), key=lambda item: str(item[0])
+        ):
             invoice_line = session.scalars(select(InvoiceLine).where(
-                InvoiceLine.id == returned.invoice_line_id,
+                InvoiceLine.id == invoice_line_id,
+                InvoiceLine.invoice_id == invoice.id,
                 InvoiceLine.business_id == business_id,
-            )).one_or_none()
-            if invoice_line and invoice_line.product_id:
+            ).with_for_update()).one_or_none()
+            if invoice_line is None:
+                raise WorkflowError("Return line must reference a line on the original invoice")
+
+            previously_returned_quantity = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.quantity), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line.id,
+                SalesReturn.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            requested_quantity = requested["quantity"]
+            if Decimal(str(previously_returned_quantity or 0)) + requested_quantity > invoice_line.quantity:
+                raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
+
+            previously_returned_amount = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.amount), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line.id,
+                SalesReturn.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            # The cumulative approved refund must not exceed the source line's rounded
+            # amount, even when several fractional-quantity returns each round upward.
+            if money(Decimal(str(previously_returned_amount or 0)) + requested["amount"]) > money(
+                Decimal(str(invoice_line.line_total))
+            ):
+                raise WorkflowError("Return amount exceeds the invoiced line amount remaining")
+            invoice_lines[invoice_line_id] = invoice_line
+
+        for returned in lines:
+            invoice_line = invoice_lines[returned.invoice_line_id]
+            if invoice_line.product_id:
                 product = session.scalars(select(Product).where(
                     Product.id == invoice_line.product_id, Product.business_id == business_id,
                     Product.is_stock_tracked.is_(True),
