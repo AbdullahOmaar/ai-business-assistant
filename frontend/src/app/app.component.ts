@@ -627,6 +627,7 @@ export class AppComponent implements OnInit {
     this.loading = true;
     try {
       await this.auth.signOut();
+      this.clearCustomerStatement();
       this.signedIn = false;
       this.businesses = [];
       this.business = null;
@@ -653,6 +654,7 @@ export class AppComponent implements OnInit {
   }
 
   async loadBusinesses(): Promise<void> {
+    this.clearCustomerStatement();
     this.loading = true;
     this.error = '';
     try {
@@ -690,6 +692,17 @@ export class AppComponent implements OnInit {
     }
   }
 
+  private clearCustomerStatement(): void {
+    this.statementRequestVersion++;
+    this.customerStatement = null;
+    this.statementVisible = false;
+    this.statementCustomerId = '';
+    this.statementCustomerName = '';
+    this.statementOffset = 0;
+    this.statementError = '';
+    this.statementLoading = false;
+  }
+
   async switchBusiness(id: string): Promise<void> {
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
@@ -699,14 +712,7 @@ export class AppComponent implements OnInit {
     this.paymentCustomerId = '';
     this.paymentInvoiceId = '';
     this.profitLoss = null;
-    this.statementRequestVersion++;
-    this.customerStatement = null;
-    this.statementVisible = false;
-    this.statementCustomerId = '';
-    this.statementCustomerName = '';
-    this.statementOffset = 0;
-    this.statementError = '';
-    this.statementLoading = false;
+    this.clearCustomerStatement();
     await this.loadWorkspaceData();
   }
 
