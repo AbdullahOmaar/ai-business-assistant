@@ -149,7 +149,7 @@ def _discounted_return_line_total(
                    for item in invoice_lines}
     gross_total_cents = sum(gross_cents.values())
     subtotal_cents = max(0, int(money(Decimal(str(invoice.subtotal or ZERO))) * 100))
-    discount_cents = max(0, int(money(Decimal(str(invoice.discount_total or ZERO)) * 100))
+    discount_cents = max(0, int(money(Decimal(str(invoice.discount_total or ZERO))) * 100))
     net_cents = min(gross_total_cents, max(0, subtotal_cents - min(discount_cents, subtotal_cents)))
     if gross_total_cents <= 0 or net_cents <= 0:
         return ZERO
