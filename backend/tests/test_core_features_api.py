@@ -220,6 +220,9 @@ def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
         "name": "Invoice Lifecycle", "currency_code": "EGP"
     })
     business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Customer test_invoice_api_supports_draft_edit_issue_and_void"})
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
     product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
         "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
     })
@@ -228,6 +231,7 @@ def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
 
     draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
         "invoice_number": "INV-API-LIFE", "currency_code": "EGP",
+        "customer_id": customer_id,
         "lines": [{"product_id": product_id, "quantity": "1"}]
     })
     assert draft.status_code == 201
@@ -236,6 +240,7 @@ def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
         f"/api/v1/businesses/{business_id}/invoices/{invoice_id}",
         json={
             "invoice_number": "INV-API-LIFE-EDITED", "currency_code": "EGP",
+        "customer_id": customer_id,
             "lines": [{"product_id": product_id, "quantity": "2"}],
         },
     )
@@ -259,6 +264,7 @@ def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
         f"/api/v1/businesses/{business_id}/invoices/{invoice_id}",
         json={
             "invoice_number": "INV-TOO-LATE", "currency_code": "EGP",
+        "customer_id": customer_id,
             "lines": [{"product_id": product_id, "quantity": "1"}],
         },
     )
@@ -270,12 +276,16 @@ def test_payment_recording_is_idempotent_and_allocates_to_issued_invoice(configu
         "name": "Payment Workflow", "currency_code": "EGP"
     })
     business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Customer test_payment_recording_is_idempotent_and_allocates_to_issued_invoice"})
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
     product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
         "name": "Service", "unit_price": "100.00", "is_stock_tracked": False
     })
     assert product.status_code == 201
     draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
         "invoice_number": "INV-PAYMENT-1", "currency_code": "EGP",
+        "customer_id": customer_id,
         "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
     })
     assert draft.status_code == 201
@@ -289,6 +299,7 @@ def test_payment_recording_is_idempotent_and_allocates_to_issued_invoice(configu
         "amount": "60.00",
         "currency_code": "EGP",
         "idempotency_key": "payment-test-once",
+        "customer_id": customer_id,
         "method": "cash",
         "allocations": [{"invoice_id": invoice_id, "amount": "60.00"}],
     }
@@ -315,11 +326,15 @@ def test_payment_recording_rejects_allocation_above_invoice_balance(configured_c
         "name": "Payment Validation", "currency_code": "EGP"
     })
     business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Customer test_payment_recording_rejects_allocation_above_invoice_balance"})
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
     product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
         "name": "Service", "unit_price": "25.00", "is_stock_tracked": False
     })
     draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
         "invoice_number": "INV-PAYMENT-OVER", "currency_code": "EGP",
+        "customer_id": customer_id,
         "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
     })
     invoice_id = draft.json()["id"]
@@ -328,6 +343,7 @@ def test_payment_recording_rejects_allocation_above_invoice_balance(configured_c
         "amount": "30.00",
         "currency_code": "EGP",
         "idempotency_key": "payment-too-large",
+        "customer_id": customer_id,
         "allocations": [{"invoice_id": invoice_id, "amount": "30.00"}],
     })
     assert response.status_code == 422
@@ -373,3 +389,23 @@ def test_profit_loss_supports_all_time_and_requires_custom_dates(configured_clie
         f"/api/v1/businesses/{business_id}/profit-loss", params={"period": "custom"}
     )
     assert missing_dates.status_code == 422
+
+
+def test_invoice_issue_rejects_missing_customer(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Missing Customer Invoice", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-NO-CUSTOMER", "currency_code": "EGP",
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    response = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{draft.json()['id']}/issue",
+        json={}
+    )
+    assert response.status_code == 422
+    assert "customer" in response.json()["detail"].lower()
