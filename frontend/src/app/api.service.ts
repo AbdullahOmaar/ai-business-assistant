@@ -35,6 +35,15 @@ export interface AuditEventPage { items: AuditEvent[]; total: number; limit: num
 export interface ReceivablesAgingReport { as_of_date: string; source: string; currency_policy: string; invoice_count: number; by_currency: ReceivablesAgingCurrencySummary[]; invoices: ReceivablesAgingInvoice[]; data_quality_warnings: ReceivablesAgingWarning[]; limitations: string[]; }
 export interface CustomerStatementEvent { occurred_at: string; event_type: string; source_id: string; reference: string | null; invoice_id?: string; currency_code: string; debit: string; credit: string; affects_balance: boolean; balance: string; }
 export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
+export interface DataIntegrityInvoice { invoice_id: string; invoice_number: string; status: string; total: string; currency_code: string; created_at: string | null; }
+export interface DataIntegrityAllocation { allocation_id: string; payment_id: string; payment_reference: string | null; payment_customer_id: string | null; payment_currency: string; invoice_id: string; invoice_number: string; invoice_customer_id: string | null; invoice_currency: string; allocated_amount: string; }
+export interface DataIntegrityReport {
+  generated_at: string; read_only: boolean;
+  unlinked_issued_invoices: { total: number; items: DataIntegrityInvoice[] };
+  currency_mismatched_allocations: { total: number; items: DataIntegrityAllocation[] };
+  customer_mismatched_allocations: { total: number; items: DataIntegrityAllocation[] };
+  limit: number; offset: number; warning: string;
+}
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -240,6 +249,13 @@ export class ApiService {
   customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
     const params = new URLSearchParams({ limit: '50', offset: String(offset) });
     return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
+  }
+
+  dataIntegrity(businessId: string, offset = 0): Promise<DataIntegrityReport> {
+    const params = new URLSearchParams({ limit: '50', offset: String(offset) });
+    return this.request<DataIntegrityReport>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/data-integrity?' + params.toString()
+    );
   }
 
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
