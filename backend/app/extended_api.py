@@ -5,14 +5,15 @@ unless the host has configured a trusted principal resolver and database session
 """
 import csv
 import io
+import os
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
@@ -611,6 +612,44 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
         return item
     item = _commit(session, op)
     return _dict(item, ("id", "setting_key", "setting_value", "updated_at"))
+
+
+@router.get("/operations/health")
+def operations_health(business_id: UUID, session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Owner-only, read-only operational readiness snapshot with no secret values."""
+    try:
+        _authorized(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    database_connected = False
+    migration_table_available = False
+    migration_revision = None
+    try:
+        session.execute(text("SELECT 1"))
+        database_connected = True
+        try:
+            migration_revision = session.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).scalar_one_or_none()
+            migration_table_available = migration_revision is not None
+        except SQLAlchemyError:
+            session.rollback()
+            migration_table_available = False
+            migration_revision = None
+    except SQLAlchemyError:
+        session.rollback()
+    notification_delivery_configured = False
+    recurring_invoice_worker_configured = False
+    healthy = database_connected and migration_table_available
+    return {
+        "status": "ok" if healthy else "degraded",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "database_connected": database_connected,
+        "migration_table_available": migration_table_available,
+        "migration_revision": migration_revision,
+        "ai_configured": bool(os.getenv("OPENAI_API_KEY")),
+        "notification_delivery_configured": notification_delivery_configured,
+        "recurring_invoice_worker_configured": recurring_invoice_worker_configured,
+    }
 
 
 @router.get("/reports/summary")
