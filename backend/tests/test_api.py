@@ -263,3 +263,89 @@ def test_concurrent_postgres_return_approvals_cannot_overreturn():
         if identity_configured:
             _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def _half_cent_sales_return_fixture():
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        business = Business(name="Half-cent return shop", currency_code="EGP")
+        session.add(business)
+        session.flush()
+        customer = Customer(business_id=business.id, name="Half-cent return customer")
+        session.add(customer)
+        session.flush()
+        invoice = Invoice(
+            business_id=business.id,
+            customer_id=customer.id,
+            invoice_number="RET-HALF-CENT-1",
+            status="issued",
+            currency_code="EGP",
+            subtotal=Decimal("0.02"),
+            tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"),
+            total=Decimal("0.02"),
+        )
+        session.add(invoice)
+        session.flush()
+        line = InvoiceLine(
+            business_id=business.id,
+            invoice_id=invoice.id,
+            product_id=None,
+            description="Half-cent test item",
+            quantity=Decimal("1.500"),
+            unit_price=Decimal("0.01"),
+            line_total=Decimal("0.02"),
+        )
+        session.add(line)
+        session.add(BusinessMembership(
+            business_id=business.id,
+            user_subject="test-subject",
+            role=MembershipRole.OWNER,
+        ))
+        session.commit()
+        return engine, business.id, invoice.id, line.id
+
+
+def test_partial_returns_cannot_refund_more_than_rounded_invoice_line():
+    engine, business_id, invoice_id, line_id = _half_cent_sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    payload = {
+        "invoice_id": str(invoice_id),
+        "lines": [{"invoice_line_id": str(line_id), "quantity": "0.500"}],
+    }
+    try:
+        created = [
+            client.post(f"/api/v1/businesses/{business_id}/sales-returns", json=payload)
+            for _ in range(3)
+        ]
+        assert [response.status_code for response in created] == [201, 201, 201]
+
+        approvals = [
+            client.post(
+                f"/api/v1/businesses/{business_id}/sales-returns/{response.json()['id']}/approve"
+            )
+            for response in created
+        ]
+        assert [response.status_code for response in approvals] == [200, 200, 422]
+        assert "return amount exceeds" in approvals[2].json()["detail"]
+
+        with Session(engine) as session:
+            total_approved = session.scalar(
+                select(func.coalesce(func.sum(SalesReturnLine.amount), 0))
+                .join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id)
+                .where(
+                    SalesReturn.business_id == business_id,
+                    SalesReturn.invoice_id == invoice_id,
+                    SalesReturn.status == "approved",
+                )
+            )
+        assert Decimal(str(total_approved or 0)) == Decimal("0.02")
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
