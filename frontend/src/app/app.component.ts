@@ -438,6 +438,7 @@ export class AppComponent implements OnInit {
   auditError = '';
   auditAction = '';
   auditTargetType = '';
+  private auditRequestVersion = 0;
   businesses: Business[] = [];
   business: Business | null = null;
   selectedBusinessId = '';
@@ -682,6 +683,7 @@ export class AppComponent implements OnInit {
   }
 
   async loadBusinesses(): Promise<void> {
+    this.clearAuditEvents();
     this.loading = true;
     this.error = '';
     try {
@@ -709,6 +711,7 @@ export class AppComponent implements OnInit {
   }
 
   private clearWorkspaceData(): void {
+    this.clearAuditEvents();
     this.dashboard = null;
     this.profitLoss = null;
     this.agingReport = null;
@@ -893,25 +896,41 @@ export class AppComponent implements OnInit {
     }
   }
 
+  private clearAuditEvents(): void {
+    this.auditRequestVersion++;
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+  }
+
   async loadAuditEvents(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner') {
+      this.clearAuditEvents();
+      return;
+    }
+    const requestVersion = ++this.auditRequestVersion;
+    const businessId = this.business.id;
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(businessId, {
         limit: 50, offset,
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
+      if (requestVersion !== this.auditRequestVersion || businessId !== this.business?.id) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
     } catch (error) {
+      if (requestVersion !== this.auditRequestVersion || businessId !== this.business?.id) return;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditError = this.message(error);
     } finally {
-      this.auditLoading = false;
+      if (requestVersion === this.auditRequestVersion) this.auditLoading = false;
     }
   }
 
