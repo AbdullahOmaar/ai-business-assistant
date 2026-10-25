@@ -1,6 +1,8 @@
 from datetime import date
 
-from app.extended_api import _receivable_aging_bucket
+from decimal import Decimal
+
+from app.extended_api import _receivable_aging_bucket, _receivable_outstanding
 
 
 def test_receivables_aging_bucket_boundaries():
@@ -15,3 +17,15 @@ def test_receivables_aging_bucket_boundaries():
 
 def test_receivables_aging_keeps_missing_due_date_explicit():
     assert _receivable_aging_bucket(None, date(2026, 10, 25)) == ("no_due_date", None)
+
+
+def test_receivable_outstanding_flags_overallocation_without_hiding_the_difference():
+    assert _receivable_outstanding(Decimal("100.00"), Decimal("75.00")) == (
+        Decimal("25.00"), False
+    )
+    assert _receivable_outstanding(Decimal("100.00"), Decimal("100.00")) == (
+        Decimal("0.00"), False
+    )
+    assert _receivable_outstanding(Decimal("100.00"), Decimal("110.00")) == (
+        Decimal("-10.00"), True
+    )
