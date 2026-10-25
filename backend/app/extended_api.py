@@ -985,6 +985,8 @@ def receivables_aging(
             .join(Payment, Payment.id == PaymentAllocation.payment_id)
             .where(
                 PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
                 PaymentAllocation.invoice_id == Invoice.id,
                 Payment.currency_code == Invoice.currency_code,
             )
@@ -995,6 +997,8 @@ def receivables_aging(
             .join(Payment, Payment.id == PaymentAllocation.payment_id)
             .where(
                 PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
                 PaymentAllocation.invoice_id == Invoice.id,
                 Payment.currency_code != Invoice.currency_code,
             )
