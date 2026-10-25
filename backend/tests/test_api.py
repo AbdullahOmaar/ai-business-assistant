@@ -48,7 +48,7 @@ def test_business_endpoints_fail_closed_without_trusted_identity():
         engine.dispose()
 
 
-def _sales_return_fixture():
+def _sales_return_fixture(discount=Decimal("0.00")):
     engine = create_engine(
         "sqlite+pysqlite://",
         connect_args={"check_same_thread": False},
@@ -70,8 +70,8 @@ def _sales_return_fixture():
             currency_code="EGP",
             subtotal=Decimal("10.00"),
             tax_total=Decimal("0.00"),
-            discount_total=Decimal("0.00"),
-            total=Decimal("10.00"),
+            discount_total=discount,
+            total=Decimal("10.00") - discount,
         )
         session.add(invoice)
         session.flush()
@@ -138,6 +138,46 @@ def test_two_draft_returns_cannot_overreturn_when_approved_sequentially():
         assert approved_first.status_code == 200
         assert approved_second.status_code == 422
         assert "exceeds the invoiced quantity" in approved_second.json()["detail"]
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_sales_return_amount_respects_invoice_level_discount():
+    engine, business_id, invoice_id, line_id = _sales_return_fixture(Decimal("5.00"))
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        created = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns",
+            json={"invoice_id": str(invoice_id), "lines": [{"invoice_line_id": str(line_id), "quantity": "1.000"}]},
+        )
+        assert created.status_code == 201
+        assert created.json()["total"] == "5.00"
+        approved = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns/{created.json()['id']}/approve"
+        )
+        assert approved.status_code == 200
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_fully_discounted_invoice_cannot_be_refunded_at_gross_line_value():
+    engine, business_id, invoice_id, line_id = _sales_return_fixture(Decimal("10.00"))
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        created = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns",
+            json={"invoice_id": str(invoice_id), "lines": [{"invoice_line_id": str(line_id), "quantity": "1.000"}]},
+        )
+        assert created.status_code == 201
+        assert created.json()["total"] == "0.00"
+        approved = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns/{created.json()['id']}/approve"
+        )
+        assert approved.status_code == 200
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
