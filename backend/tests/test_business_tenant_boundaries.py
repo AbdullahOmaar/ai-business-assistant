@@ -136,7 +136,12 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
             (
                 "post",
                 f"/api/v1/businesses/{business_id}/payments",
-                {"amount": "1.00", "currency_code": "EGP", "idempotency_key": "unauthorized-payment"},
+                {
+                    "amount": "1.00",
+                    "currency_code": "EGP",
+                    "idempotency_key": "unauthorized-payment",
+                    "customer_id": customer_id,
+                },
             ),
             ("patch", f"/api/v1/businesses/{business_id}/customers/{customer_id}", {"name": "Changed by outsider"}),
             ("patch", f"/api/v1/businesses/{business_id}/products/{product_id}", {"name": "Changed by outsider"}),
