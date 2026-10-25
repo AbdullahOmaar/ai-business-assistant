@@ -3,6 +3,8 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
 import { AuthService } from './auth.service';
+import { WorkspaceLoadGuard } from './workspace-load-guard';
+import { APP_BUILD_INFO } from './build-info';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports';
 
@@ -18,6 +20,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
+          <span class="version-pill splash-version" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
           <h1>{{ t('جارٍ تشغيل التطبيق', 'Starting the app') }}</h1>
           <p class="muted">{{ t('نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.', 'Checking configuration and your sign-in session before opening the workspace.') }}</p>
         </main>
@@ -78,7 +81,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         <main class="main">
           <header class="topbar">
             <div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة', 'UI version')">v{{ appVersion }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
+            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
 
           @if (error) { <div class="error-banner" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retry()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
@@ -303,7 +306,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}.shell.english .sidebar{inset:auto 0 0}.shell.english .nav-item{text-align:center}
       .topbar{display:none!important}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
-      .user-area{gap:6px}.user-area>span{display:none}.user-area .secondary{padding:9px 10px;min-height:40px}
+      .user-area{gap:6px}.user-area>span:not(.version-pill){display:none}.user-area .version-pill{display:inline-flex;flex-shrink:0;padding:5px 7px;font-size:10px}.user-area .secondary{padding:9px 10px;min-height:40px}
       .hero{padding:22px 20px;border-radius:16px}.hero h2{font-size:27px}.hero-mark{display:none}
       .quick-grid{grid-template-columns:1fr}.workspace-bar{align-items:stretch;flex-direction:column}.workspace-bar select{max-width:none;width:100%}
       .section-head{align-items:flex-start;gap:10px}.list-row{flex-wrap:wrap}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -386,7 +389,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   `]
 })
 export class AppComponent implements OnInit {
-  readonly appVersion = '0.1.0';
+  readonly appVersion = APP_BUILD_INFO.version;
+  readonly uiCommitLabel = APP_BUILD_INFO.commit;
+  apiVersionLabel = 'غير متاح';
+  apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
   setupNeeded = false;
@@ -511,6 +517,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       const registerWorker = () => navigator.serviceWorker.register('/sw.js').catch(() => {
@@ -518,6 +525,17 @@ export class AppComponent implements OnInit {
       });
       if (document.readyState === 'complete') void registerWorker();
       else window.addEventListener('load', () => { void registerWorker(); }, { once: true });
+    }
+  }
+
+  private async loadApiVersion(): Promise<void> {
+    try {
+      const release = await this.api.releaseInfo();
+      this.apiVersionLabel = release.version;
+      this.apiCommitLabel = release.commit || 'unknown';
+    } catch {
+      this.apiVersionLabel = this.t('غير متاح', 'unavailable');
+      this.apiCommitLabel = 'unknown';
     }
   }
 
@@ -637,17 +655,70 @@ export class AppComponent implements OnInit {
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
+        this.clearWorkspaceData();
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
+      const workspaceChanged = this.business?.id !== chosen.id;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
+      if (workspaceChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
+      this.business = null;
+      this.selectedBusinessId = '';
+      this.clearWorkspaceData();
       this.error = this.message(error);
     } finally {
       this.loading = false;
     }
+  }
+
+  private clearWorkspaceData(): void {
+    this.dashboard = null;
+    this.profitLoss = null;
+    this.agingReport = null;
+    this.customers = [];
+    this.products = [];
+    this.invoices = [];
+    this.payments = [];
+    this.chatMessages = [];
+    this.chatDraft = '';
+    this.chatError = '';
+    this.chatConfigurationMissing = false;
+    this.reportError = '';
+    this.agingError = '';
+    this.reportLoading = false;
+    this.agingLoading = false;
+    this.invoiceCustomerId = '';
+    this.invoiceProductId = '';
+    this.invoiceQuantity = '1';
+    this.invoiceLines = [{ productId: '', quantity: '1' }];
+    this.invoiceNumber = '';
+    this.invoiceFilterCustomerId = '';
+    this.editingInvoiceId = null;
+    this.paymentCustomerId = '';
+    this.paymentAmount = '';
+    this.paymentAllocationAmount = '';
+    this.paymentInvoiceId = '';
+    this.paymentMethod = 'cash';
+    this.paymentReference = '';
+    this.paymentIdempotencyKey = '';
+    this.importCsvText = '';
+    this.importFileName = '';
+    this.importPreview = null;
+    this.importMessage = '';
+    this.importLoading = false;
+    this.customerName = '';
+    this.customerEmail = '';
+    this.customerPhone = '';
+    this.productName = '';
+    this.productPrice = '';
+    this.stockTracked = false;
+    this.profitLossPeriod = '30d';
+    this.profitLossStart = '';
+    this.profitLossEnd = '';
+    this.tab = 'overview';
   }
 
   async createWorkspace(): Promise<void> {
@@ -658,6 +729,7 @@ export class AppComponent implements OnInit {
       this.businesses = [created];
       this.business = created;
       this.selectedBusinessId = created.id;
+      this.clearWorkspaceData();
       this.businessName = '';
       await this.loadWorkspaceData();
     } catch (error) {
@@ -670,28 +742,27 @@ export class AppComponent implements OnInit {
   async switchBusiness(id: string): Promise<void> {
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
-    this.chatMessages = [];
-    this.invoiceCustomerId = '';
-    this.invoiceFilterCustomerId = '';
-    this.paymentCustomerId = '';
-    this.paymentInvoiceId = '';
-    this.profitLoss = null;
+    this.clearWorkspaceData();
+    this.error = '';
     await this.loadWorkspaceData();
   }
 
-  private workspaceLoadVersion = 0;
+  private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
-    if (!this.business) return;
+    const loadVersion = this.workspaceLoadGuard.begin();
+    if (!this.business) {
+      this.loading = false;
+      return;
+    }
     const id = this.business.id;
-    const loadVersion = ++this.workspaceLoadVersion;
     this.loading = true;
     this.error = '';
     try {
       const [dashboard, عميل, منتج, فاتورة, دفعة] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
       ]);
-      if (this.business?.id !== id) return;
+      if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.profitLoss = null;
       this.customers = عميل;
@@ -702,9 +773,12 @@ export class AppComponent implements OnInit {
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
-      this.error = this.message(error);
+      if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
+        this.clearWorkspaceData();
+        this.error = this.message(error);
+      }
     } finally {
-      if (loadVersion === this.workspaceLoadVersion) this.loading = false;
+      if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
     }
   }
 

@@ -76,6 +76,13 @@ def firebase_principal_resolver(request: Request) -> AuthenticatedPrincipal:
     except (ValueError, FirebaseError) as exc:
         raise HTTPException(status_code=401, detail="Firebase ID token is invalid or expired.") from exc
 
+    # The Admin SDK verifies signatures and token validity; explicitly bind the
+    # accepted claims to the configured Firebase project as a defense-in-depth
+    # check so a token from another project can never become a local principal.
+    expected_issuer = f"https://securetoken.google.com/{project_id}"
+    if claims.get("aud") != project_id or claims.get("iss") != expected_issuer:
+        raise HTTPException(status_code=401, detail="Firebase ID token belongs to another project.")
+
     uid = claims.get("uid")
     if not isinstance(uid, str) or not uid.strip():
         raise HTTPException(status_code=401, detail="Firebase ID token has no valid user subject.")

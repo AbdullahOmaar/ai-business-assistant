@@ -1,7 +1,7 @@
-"""Provider-neutral authorization primitives.
+"""Authorization primitives for identities verified by a trusted authentication adapter.
 
-A Principal may only be constructed by a future, trusted token-verification
-adapter. Never construct it from user-supplied headers, query params, or JSON.
+Only the configured Firebase token verifier should construct authenticated principals.
+Never construct a principal from user-supplied headers, query parameters, or JSON.
 """
 from dataclasses import dataclass
 from uuid import UUID
@@ -32,9 +32,9 @@ def authorize_membership(
 ) -> BusinessMembership:
     """Load and enforce active business membership on the server.
 
-    This function assumes principal.subject was verified upstream. Token
-    verification is intentionally not implemented until the identity provider
-    is selected. Callers should translate AuthorizationError to HTTP 403/404.
+    This function assumes principal.subject was verified upstream by the configured
+    Firebase ID-token resolver. Callers should translate AuthorizationError to
+    HTTP 403/404.
     """
     if not principal.subject.strip():
         raise AuthorizationError("Authenticated subject is missing")

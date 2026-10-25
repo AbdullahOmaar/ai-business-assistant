@@ -22,7 +22,8 @@ from app.models import (
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
+from app.domain_rules import money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -135,8 +136,26 @@ class NotificationInput(BaseModel):
     scheduled_at: datetime | None = None
 
 
-def _authorized(session: Session, principal: AuthenticatedPrincipal, business_id: UUID) -> None:
-    authorize_membership(session, principal=principal, business_id=business_id)
+def _discounted_return_line_total(invoice: Invoice, line: InvoiceLine) -> Decimal:
+    """Returnable line value after proportionally allocating the invoice discount."""
+    gross = money(Decimal(str(line.line_total)))
+    subtotal = Decimal(str(invoice.subtotal or ZERO))
+    discount = Decimal(str(invoice.discount_total or ZERO))
+    if subtotal <= ZERO or discount <= ZERO:
+        return gross
+    if discount >= subtotal:
+        return ZERO
+    return max(ZERO, money(gross - money(discount * gross / subtotal)))
+
+
+def _authorized(
+    session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
+    *, owner_only: bool = False,
+) -> None:
+    authorize_membership(
+        session, principal=principal, business_id=business_id,
+        allowed_roles={MembershipRole.OWNER} if owner_only else None,
+    )
 
 
 def _commit(session: Session, action):
@@ -206,7 +225,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
             )).one_or_none()
             if product is None:
                 raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
-            total += (line.quantity * line.unit_cost).quantize(Decimal("0.01"))
+            total += money(line.quantity * line.unit_cost)
             session.add(PurchaseOrderLine(
                 business_id=business_id, purchase_order_id=po.id, product_id=product.id,
                 quantity=line.quantity, unit_cost=line.unit_cost, received_quantity=ZERO,
@@ -227,7 +246,7 @@ def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurch
                            session: Session = Depends(get_session),
                            principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id, PurchaseOrder.business_id == business_id,
         ).with_for_update()).one_or_none()
@@ -299,7 +318,8 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            amount = (line.unit_price * item.quantity).quantize(Decimal("0.01"))
+            discounted_line_total = _discounted_return_line_total(invoice, line)
+            amount = money(discounted_line_total * item.quantity / line.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
                 invoice_line_id=line.id, quantity=item.quantity, amount=amount))
@@ -317,7 +337,7 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                          session: Session = Depends(get_session),
                          principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         ret = session.scalars(select(SalesReturn).where(
             SalesReturn.id == return_id, SalesReturn.business_id == business_id,
         ).with_for_update()).one_or_none()
@@ -325,16 +345,63 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             raise WorkflowError("Only draft returns can be approved")
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
-        )).one_or_none()
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Sales return must reference an issued invoice")
         lines = session.scalars(select(SalesReturnLine).where(
             SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
         )).all()
+
+        # Group duplicate line entries and lock the invoice header first. Concurrent
+        # approvals for the same invoice then serialize before checking approved returns.
+        requested_by_line: dict[UUID, dict[str, Decimal]] = {}
         for returned in lines:
+            requested = requested_by_line.setdefault(
+                returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
+            )
+            requested["quantity"] += returned.quantity
+            requested["amount"] += returned.amount
+
+        invoice_lines = {}
+        for invoice_line_id, requested in sorted(
+            requested_by_line.items(), key=lambda item: str(item[0])
+        ):
             invoice_line = session.scalars(select(InvoiceLine).where(
-                InvoiceLine.id == returned.invoice_line_id,
+                InvoiceLine.id == invoice_line_id,
+                InvoiceLine.invoice_id == invoice.id,
                 InvoiceLine.business_id == business_id,
-            )).one_or_none()
-            if invoice_line and invoice_line.product_id:
+            ).with_for_update()).one_or_none()
+            if invoice_line is None:
+                raise WorkflowError("Return line must reference a line on the original invoice")
+            previously_returned_quantity = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.quantity), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line.id,
+                SalesReturnLine.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            if Decimal(str(previously_returned_quantity or 0)) + requested["quantity"] > invoice_line.quantity:
+                raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
+            previously_returned_amount = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.amount), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line.id,
+                SalesReturnLine.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            try:
+                validate_return_amount(
+                    invoiced_amount=_discounted_return_line_total(invoice, invoice_line),
+                    previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
+                    requested_return_amount=requested["amount"],
+                )
+            except ValueError as exc:
+                raise WorkflowError(str(exc)) from exc
+            invoice_lines[invoice_line_id] = invoice_line
+
+        for returned in lines:
+            invoice_line = invoice_lines[returned.invoice_line_id]
+            if invoice_line.product_id:
                 product = session.scalars(select(Product).where(
                     Product.id == invoice_line.product_id, Product.business_id == business_id,
                     Product.is_stock_tracked.is_(True),
@@ -390,7 +457,7 @@ def post_pricing_rule(business_id: UUID, body: PricingRuleInput,
                       session: Session = Depends(get_session),
                       principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         rule = PricingRule(business_id=business_id, name=body.name.strip(),
                            rule_type=body.rule_type, rate=body.rate, is_active=True)
         session.add(rule)
@@ -438,7 +505,7 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
                 session: Session = Depends(get_session),
                 principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         if setting_key.lower() in {"password", "secret", "api_key", "token", "private_key"}:
             raise WorkflowError("Secret values must be stored in a dedicated secret manager")
         item = session.scalars(select(BusinessSetting).where(
@@ -492,7 +559,7 @@ def export_csv(business_id: UUID, entity_type: str,
                session: Session = Depends(get_session),
                principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         supported = {
             "customers": ("customers", ("id", "name", "email", "phone", "address", "created_at")),
             "products": ("products", ("id", "sku", "name", "unit", "unit_price", "is_stock_tracked", "created_at")),
@@ -603,7 +670,7 @@ def preview_import_csv(business_id: UUID, entity_type: str,
                        session: Session = Depends(get_session),
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         if entity_type not in {"customers", "products"}:
             raise WorkflowError("CSV import supports customers and products only")
         try:
@@ -625,7 +692,7 @@ def import_csv(business_id: UUID, entity_type: str,
                principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Atomically import a small CSV batch. Large files belong in a background job."""
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         schemas = {
             "customers": {"name", "email", "phone", "address", "notes"},
             "products": {"name", "sku", "description", "unit", "unit_price", "is_stock_tracked"},
@@ -763,7 +830,7 @@ def deactivate_customer(business_id: UUID, customer_id: UUID,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         item = session.scalars(select(Customer).where(
             Customer.id == customer_id, Customer.business_id == business_id,
             Customer.is_active.is_(True),
@@ -869,7 +936,7 @@ def deactivate_product(business_id: UUID, product_id: UUID,
                        session: Session = Depends(get_session),
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         item = session.scalars(select(Product).where(
             Product.id == product_id, Product.business_id == business_id,
             Product.is_active.is_(True),

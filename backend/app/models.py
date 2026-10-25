@@ -146,7 +146,7 @@ class StockMovement(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     business_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="RESTRICT"), nullable=False
     )
     product_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     movement_type: Mapped[str] = mapped_column(String(16), nullable=False)

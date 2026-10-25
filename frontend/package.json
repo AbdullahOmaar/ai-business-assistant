@@ -1,11 +1,12 @@
 {
   "name": "ai-business-assistant-frontend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "start": "ng serve",
+    "prebuild": "node scripts/write-build-info.mjs",
     "build": "ng build",
-    "test": "ng test --watch=false"
+    "test": "node --test src/app/workspace-load-guard.spec.ts"
   },
   "dependencies": {
     "@angular/common": "^20.0.0",
