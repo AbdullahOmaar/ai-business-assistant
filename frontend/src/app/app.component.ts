@@ -3,6 +3,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
 import { AuthService } from './auth.service';
+import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports';
@@ -654,17 +655,70 @@ export class AppComponent implements OnInit {
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
+        this.clearWorkspaceData();
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
+      const workspaceChanged = this.business?.id !== chosen.id;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
+      if (workspaceChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
+      this.business = null;
+      this.selectedBusinessId = '';
+      this.clearWorkspaceData();
       this.error = this.message(error);
     } finally {
       this.loading = false;
     }
+  }
+
+  private clearWorkspaceData(): void {
+    this.dashboard = null;
+    this.profitLoss = null;
+    this.agingReport = null;
+    this.customers = [];
+    this.products = [];
+    this.invoices = [];
+    this.payments = [];
+    this.chatMessages = [];
+    this.chatDraft = '';
+    this.chatError = '';
+    this.chatConfigurationMissing = false;
+    this.reportError = '';
+    this.agingError = '';
+    this.reportLoading = false;
+    this.agingLoading = false;
+    this.invoiceCustomerId = '';
+    this.invoiceProductId = '';
+    this.invoiceQuantity = '1';
+    this.invoiceLines = [{ productId: '', quantity: '1' }];
+    this.invoiceNumber = '';
+    this.invoiceFilterCustomerId = '';
+    this.editingInvoiceId = null;
+    this.paymentCustomerId = '';
+    this.paymentAmount = '';
+    this.paymentAllocationAmount = '';
+    this.paymentInvoiceId = '';
+    this.paymentMethod = 'cash';
+    this.paymentReference = '';
+    this.paymentIdempotencyKey = '';
+    this.importCsvText = '';
+    this.importFileName = '';
+    this.importPreview = null;
+    this.importMessage = '';
+    this.importLoading = false;
+    this.customerName = '';
+    this.customerEmail = '';
+    this.customerPhone = '';
+    this.productName = '';
+    this.productPrice = '';
+    this.stockTracked = false;
+    this.profitLossPeriod = '30d';
+    this.profitLossStart = '';
+    this.profitLossEnd = '';
+    this.tab = 'overview';
   }
 
   async createWorkspace(): Promise<void> {
@@ -675,6 +729,7 @@ export class AppComponent implements OnInit {
       this.businesses = [created];
       this.business = created;
       this.selectedBusinessId = created.id;
+      this.clearWorkspaceData();
       this.businessName = '';
       await this.loadWorkspaceData();
     } catch (error) {
@@ -687,28 +742,27 @@ export class AppComponent implements OnInit {
   async switchBusiness(id: string): Promise<void> {
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
-    this.chatMessages = [];
-    this.invoiceCustomerId = '';
-    this.invoiceFilterCustomerId = '';
-    this.paymentCustomerId = '';
-    this.paymentInvoiceId = '';
-    this.profitLoss = null;
+    this.clearWorkspaceData();
+    this.error = '';
     await this.loadWorkspaceData();
   }
 
-  private workspaceLoadVersion = 0;
+  private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
-    if (!this.business) return;
+    const loadVersion = this.workspaceLoadGuard.begin();
+    if (!this.business) {
+      this.loading = false;
+      return;
+    }
     const id = this.business.id;
-    const loadVersion = ++this.workspaceLoadVersion;
     this.loading = true;
     this.error = '';
     try {
       const [dashboard, عميل, منتج, فاتورة, دفعة] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
       ]);
-      if (this.business?.id !== id) return;
+      if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.profitLoss = null;
       this.customers = عميل;
@@ -719,9 +773,12 @@ export class AppComponent implements OnInit {
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
-      this.error = this.message(error);
+      if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
+        this.clearWorkspaceData();
+        this.error = this.message(error);
+      }
     } finally {
-      if (loadVersion === this.workspaceLoadVersion) this.loading = false;
+      if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
     }
   }
 
