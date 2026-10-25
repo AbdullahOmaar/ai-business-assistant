@@ -168,7 +168,7 @@ def test_business_list_is_scoped_to_verified_membership(configured_client):
     assert other_id not in ids
 
 
-def test_assistant_fails_closed_without_provider_key(configured_client, monkeypatch):
+def test_assistant_uses_free_local_fallback_without_provider_key(configured_client, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     created = configured_client.post("/api/v1/businesses", json={
         "name": "AI Test Workspace", "currency_code": "EGP"
@@ -178,8 +178,41 @@ def test_assistant_fails_closed_without_provider_key(configured_client, monkeypa
         f"/api/v1/businesses/{business_id}/assistant/chat",
         json={"message": "Summarize my recent sales"},
     )
-    assert response.status_code == 503
-    assert "OPENAI_API_KEY" in response.json()["detail"]
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["model"] == "local-fallback"
+    assert payload["mode"] == "local-fallback"
+    assert payload["grounding"] == "business-records"
+    assert "أحدث الفواتير الصادرة" in payload["answer"]
+    assert "لا توجد سجلات" in payload["answer"]
+    assert isinstance(payload["sources"], list)
+
+
+def test_assistant_local_fallback_only_reads_authorized_workspace(configured_client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    first = configured_client.post("/api/v1/businesses", json={
+        "name": "First Workspace", "currency_code": "EGP"
+    }).json()
+
+    from app import main as main_module
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
+    second = configured_client.post("/api/v1/businesses", json={
+        "name": "Second Workspace", "currency_code": "USD"
+    }).json()
+
+    denied = configured_client.post(
+        f"/api/v1/businesses/{first['id']}/assistant/chat",
+        json={"message": "Summarize my recent sales"},
+    )
+    assert denied.status_code == 403
+
+    allowed = configured_client.post(
+        f"/api/v1/businesses/{second['id']}/assistant/chat",
+        json={"message": "How many customers and products?"},
+    )
+    assert allowed.status_code == 200
+    assert "Second Workspace" in allowed.json()["answer"]
+    assert "First Workspace" not in allowed.json()["answer"]
 
 
 def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):

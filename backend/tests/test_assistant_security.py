@@ -49,16 +49,18 @@ def create_workspace(client: TestClient) -> str:
     return response.json()["id"]
 
 
-def test_assistant_missing_provider_key_fails_safely_for_member(assistant_client):
+def test_assistant_missing_provider_key_uses_labeled_local_fallback(assistant_client):
     business_id = create_workspace(assistant_client)
     response = assistant_client.post(
         f"/api/v1/businesses/{business_id}/assistant/chat",
         json={"message": "Summarize my business."},
     )
-    assert response.status_code == 503
-    assert response.json()["detail"] == (
-        "AI chat is not configured. Set OPENAI_API_KEY on the backend."
-    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "local-fallback"
+    assert payload["model"] == "local-fallback"
+    assert payload["grounding"] == "business-records"
+    assert "OPENAI_API_KEY" in payload["answer"]
     assert "Bearer" not in response.text
 
 
