@@ -39,7 +39,8 @@ def calculate_invoice_totals(
             raise ValueError("quantity must be greater than zero")
         if unit_price < ZERO:
             raise ValueError("unit_price cannot be negative")
-        subtotal_raw += quantity * unit_price
+        # Round each line with HALF_UP first so stored line totals reconcile to subtotal.
+        subtotal_raw += money(quantity * unit_price)
     if not found_line:
         raise ValueError("at least one invoice line is required")
 
@@ -83,6 +84,15 @@ def validate_return_quantity(*, sold_quantity: Decimal, previously_returned: Dec
         raise ValueError("sold and requested quantities must be positive")
     if previously_returned + requested_quantity > sold_quantity:
         raise ValueError("return quantity exceeds remaining sold quantity")
+
+
+def validate_return_amount(*, invoiced_amount: Decimal, previously_returned_amount: Decimal,
+                           requested_return_amount: Decimal) -> None:
+    """Prevent cumulative rounded refunds from exceeding the source invoice line."""
+    if invoiced_amount < ZERO or previously_returned_amount < ZERO or requested_return_amount < ZERO:
+        raise ValueError("return amounts must be non-negative")
+    if money(previously_returned_amount + requested_return_amount) > money(invoiced_amount):
+        raise ValueError("return amount exceeds invoiced line amount remaining")
 
 
 def summarize_money_by_currency(
