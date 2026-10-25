@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.domain_rules import (
     calculate_invoice_totals,
+    money,
     validate_payment_allocation,
 )
 from app.models import (
@@ -229,7 +230,7 @@ def create_invoice(
         session.add(InvoiceLine(
             business_id=business_id, invoice_id=invoice.id, product_id=product_id,
             description=description, quantity=quantity, unit_price=price,
-            line_total=(quantity * price).quantize(Decimal("0.01")),
+            line_total=money(quantity * price),
         ))
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
@@ -314,7 +315,7 @@ def replace_draft_invoice(
         session.add(InvoiceLine(
             business_id=business_id, invoice_id=invoice.id, product_id=product_id,
             description=description, quantity=quantity, unit_price=price,
-            line_total=(quantity * price).quantize(Decimal("0.01")),
+            line_total=money(quantity * price),
         ))
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
