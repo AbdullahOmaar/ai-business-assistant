@@ -93,3 +93,12 @@ A successful migration test against a disposable PostgreSQL database is not evid
 - Follow-up commit: `7a62565fecc1d46781a8ec50c24da0c807cc79c7`.
 - The compact mobile version row is rendered inside the visible main content because the full top bar is hidden at narrow widths.
 - Frontend CI and dependency audit passed before merge. Verify the deployed UI and installed-PWA cache after the release-marker deployment completes.
+
+
+## Post-release accounting hotfix — 2026-10-25
+
+- PR #124 fixes invoice-discount cent allocation for sales returns using deterministic largest-remainder allocation across all invoice lines. Both draft return creation and approval use the same allocation.
+- Regression coverage includes 500 one-dollar lines with a $2.45 discount; total returnable value must reconcile to $497.55.
+- Required CI passed before merge: backend tests, backend container verification, backend/frontend verification, and Python/JavaScript dependency audits.
+- No production schema migration or historical data rewrite is required for this code fix.
+- After deployment, verify `/health` and `/readyz` return 200, `/version` reports the deployed commit, and run the approved sales-return smoke test against a disposable/non-production invoice before using discounted returns operationally.
