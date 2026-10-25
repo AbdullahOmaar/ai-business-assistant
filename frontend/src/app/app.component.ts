@@ -944,10 +944,10 @@ export class AppComponent implements OnInit {
     const formatCents = (cents: bigint): string =>
       `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
 
-    const discountRate = parseScaled(this.invoiceDiscountRate, 4);
-    const taxRate = parseScaled(this.invoiceTaxRate, 4);
+    const discountRate = parseScaled(this.invoiceDiscountRate, 6);
+    const taxRate = parseScaled(this.invoiceTaxRate, 6);
     if (discountRate === null || taxRate === null ||
-        discountRate > 100n * 10_000n || taxRate > 100n * 10_000n) return null;
+        discountRate > 100n * 1_000_000n || taxRate > 100n * 1_000_000n) return null;
 
     // Match the backend's Decimal behavior: sum exact quantity × unit-price products,
     // then round the subtotal once to cents using ROUND_HALF_UP.
@@ -963,7 +963,7 @@ export class AppComponent implements OnInit {
 
     const subtotalCents = roundHalfUp(subtotalMilliCents, 1000n);
     if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    const rateDenominator = 100n * 10_000n;
+    const rateDenominator = 100n * 1_000_000n;
     const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
     const taxableCents = subtotalCents - discountCents;
     const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
