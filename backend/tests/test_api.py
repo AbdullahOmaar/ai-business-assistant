@@ -12,8 +12,8 @@ import pytest
 
 from app.main import app
 from app.models import (
-    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Product,
-    MembershipRole, SalesReturn, SalesReturnLine,
+    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
+    Product, RecurringInvoiceSchedule, MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -514,6 +514,12 @@ def test_staff_can_create_but_cannot_approve_sales_return():
 
 def test_staff_is_denied_sensitive_business_routes():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        product = Product(business_id=business_id, name="Role guard test product",
+                          unit_price=Decimal("4.00"))
+        session.add(product)
+        session.commit()
+        product_id = product.id
     previous_factory, previous_resolver = _configure_test_identity(engine)
     _set_test_membership_role(engine, MembershipRole.STAFF)
     client = TestClient(app)
@@ -554,6 +560,23 @@ def test_staff_is_denied_sensitive_business_routes():
                 f"{base}/pricing-rules",
                 json={"name": "Staff rule", "rule_type": "discount", "rate": "5"},
             ),
+            "change product price": client.patch(
+                f"{base}/products/{product_id}", json={"unit_price": "99.99"}
+            ),
+            "change stock tracking": client.patch(
+                f"{base}/products/{product_id}", json={"is_stock_tracked": True}
+            ),
+            "create recurring invoice schedule": client.post(
+                f"{base}/recurring-invoices",
+                json={"interval_days": 30, "timezone": "UTC",
+                      "next_run_at": "2027-01-01T00:00:00Z"},
+            ),
+            "create notification": client.post(
+                f"{base}/notifications",
+                json={"kind": "test", "title": "Sensitive action",
+                      "body": "Staff should not schedule notifications",
+                      "deduplication_key": "staff-notification-test"},
+            ),
             "change settings": client.put(
                 f"{base}/settings/locale", json={"setting_value": "ar"}
             ),
@@ -577,7 +600,54 @@ def test_staff_is_denied_sensitive_business_routes():
         with Session(engine) as session:
             invoice = session.get(Invoice, invoice_id)
             assert invoice.status == "issued"
+            product = session.get(Product, product_id)
+            assert product.unit_price == Decimal("4.00")
+            assert product.is_stock_tracked is False
             assert session.scalar(select(func.count()).select_from(SalesReturn)) == 0
+            assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 0
+            assert session.scalar(select(func.count()).select_from(Notification)) == 0
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_owner_can_change_product_price_and_create_schedules_and_notifications():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        product = Product(business_id=business_id, name="Owner guard test product",
+                          unit_price=Decimal("4.00"))
+        session.add(product)
+        session.commit()
+        product_id = product.id
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        price = client.patch(
+            f"{base}/products/{product_id}", json={"unit_price": "8.50"}
+        )
+        assert price.status_code == 200, price.text
+        assert price.json()["unit_price"] == "8.50"
+
+        schedule = client.post(
+            f"{base}/recurring-invoices",
+            json={"interval_days": 30, "timezone": "UTC",
+                  "next_run_at": "2027-01-01T00:00:00Z"},
+        )
+        assert schedule.status_code == 201, schedule.text
+
+        notification = client.post(
+            f"{base}/notifications",
+            json={"kind": "test", "title": "Owner approved",
+                  "body": "Owner can create a scheduled notification",
+                  "deduplication_key": "owner-notification-test"},
+        )
+        assert notification.status_code == 201, notification.text
+
+        with Session(engine) as session:
+            assert session.get(Product, product_id).unit_price == Decimal("8.50")
+            assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 1
+            assert session.scalar(select(func.count()).select_from(Notification)) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
