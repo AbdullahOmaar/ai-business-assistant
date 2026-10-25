@@ -948,7 +948,7 @@ export class AppComponent implements OnInit {
     const discountRate = parseScaled(this.invoiceDiscountRate, 12);
     const taxRate = parseScaled(this.invoiceTaxRate, 12);
     if (discountRate === null || taxRate === null ||
-        discountRate > 100n * 1_000_000n || taxRate > 100n * 1_000_000n) return null;
+        discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
 
     // Match the backend's Decimal behavior: sum exact quantity × unit-price products,
     // then round the subtotal once to cents using ROUND_HALF_UP.
@@ -978,7 +978,7 @@ export class AppComponent implements OnInit {
 
   private deriveRate(amount: string | undefined, base: string | undefined): string {
     const cents = (raw: string | undefined): bigint | null => {
-      const match = /^(\\d+)(?:\\.(\\d{1,2}))?$/.exec(String(raw || '0').trim());
+      const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(raw || '0').trim());
       if (!match || match[1].length > 12) return null;
       return BigInt(match[1]) * 100n + BigInt((match[2] || '').padEnd(2, '0') || '0');
     };
