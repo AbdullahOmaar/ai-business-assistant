@@ -67,6 +67,13 @@ class PurchaseLineInput(BaseModel):
     unit_cost: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
 
 
+class SupplierInput(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    email: str | None = Field(default=None, max_length=254)
+    phone: str | None = Field(default=None, max_length=32)
+    address: str | None = Field(default=None, max_length=500)
+
+
 class PurchaseOrderInput(BaseModel):
     supplier_id: UUID
     order_number: str = Field(min_length=1, max_length=64)
@@ -195,6 +202,72 @@ def post_expense(business_id: UUID, body: ExpenseInput,
         session, principal=principal, business_id=business_id, **body.model_dump()))
     return _dict(item, ("id", "business_id", "category", "description", "amount",
                         "currency_code", "incurred_at", "vendor_name", "reference", "created_at"))
+
+
+@router.get("/suppliers")
+def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
+                  offset: int = Query(default=0, ge=0),
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(Supplier).where(
+            Supplier.business_id == business_id, Supplier.is_active.is_(True),
+        ).order_by(Supplier.name, Supplier.id).offset(offset).limit(limit)).all()
+        return [_dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at")) for item in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.post("/suppliers", status_code=201)
+def post_supplier(business_id: UUID, body: SupplierInput,
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        name = body.name.strip()
+        if not name:
+            raise WorkflowError("Supplier name is required")
+        item = Supplier(business_id=business_id, name=name,
+                        email=body.email.strip() if body.email else None,
+                        phone=body.phone.strip() if body.phone else None,
+                        address=body.address.strip() if body.address else None,
+                        is_active=True)
+        session.add(item)
+        session.flush()
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="supplier.created", target_type="supplier", target_id=str(item.id)))
+        return item
+    item = _commit(session, op)
+    return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
+
+
+@router.get("/purchase-orders")
+def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
+                         offset: int = Query(default=0, ge=0),
+                         session: Session = Depends(get_session),
+                         principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        orders = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.business_id == business_id,
+        ).order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc()).offset(offset).limit(limit)).all()
+        result = []
+        for order in orders:
+            lines = session.scalars(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.business_id == business_id,
+                PurchaseOrderLine.purchase_order_id == order.id,
+            ).order_by(PurchaseOrderLine.id)).all()
+            item = _dict(order, ("id", "business_id", "supplier_id", "order_number", "status", "currency_code", "total", "created_at"))
+            item["lines"] = [
+                {**_dict(line, ("id", "product_id", "quantity", "unit_cost", "received_quantity")),
+                 "remaining_quantity": str(max(ZERO, line.quantity - line.received_quantity))}
+                for line in lines
+            ]
+            result.append(item)
+        return result
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @router.post("/purchase-orders", status_code=201)
@@ -418,6 +491,21 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         return ret
     ret = _commit(session, op)
     return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
+
+
+@router.get("/recurring-invoices")
+def list_recurring_schedules(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
+                             offset: int = Query(default=0, ge=0),
+                             session: Session = Depends(get_session),
+                             principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(RecurringInvoiceSchedule).where(
+            RecurringInvoiceSchedule.business_id == business_id,
+        ).order_by(RecurringInvoiceSchedule.next_run_at, RecurringInvoiceSchedule.id).offset(offset).limit(limit)).all()
+        return [_dict(item, ("id", "business_id", "customer_id", "interval_days", "timezone", "next_run_at", "is_active", "created_at")) for item in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @router.post("/recurring-invoices", status_code=201)
