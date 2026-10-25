@@ -489,7 +489,7 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
     from datetime import datetime, timezone
     from decimal import Decimal
     from uuid import uuid4
-    from app.models import Product, Supplier
+    from app.models import Business, BusinessMembership, MembershipRole, Product
 
     engine = create_engine(
         "sqlite+pysqlite://",
@@ -560,6 +560,7 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
 
 def test_operational_health_is_owner_only_read_only_and_reports_missing_workers():
     from uuid import uuid4
+    from app.models import Business, BusinessMembership, MembershipRole
 
     engine = create_engine(
         "sqlite+pysqlite://",
