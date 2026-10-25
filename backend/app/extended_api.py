@@ -1230,3 +1230,61 @@ def assistant_insights(business_id: UUID,
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/audit-events")
+def list_audit_events(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    action: str | None = Query(default=None, min_length=1, max_length=80),
+    target_type: str | None = Query(default=None, min_length=1, max_length=80),
+    start_at: datetime | None = None,
+    end_at: datetime | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read a paginated business audit trail; only workspace owners may view it."""
+    try:
+        authorize_membership(
+            session,
+            principal=principal,
+            business_id=business_id,
+            allowed_roles={MembershipRole.OWNER},
+        )
+        if start_at is not None and end_at is not None and start_at > end_at:
+            raise HTTPException(status_code=422, detail="start_at must be earlier than or equal to end_at")
+        statement = select(AuditEvent).where(AuditEvent.business_id == business_id)
+        if action is not None:
+            statement = statement.where(AuditEvent.action == action)
+        if target_type is not None:
+            statement = statement.where(AuditEvent.target_type == target_type)
+        if start_at is not None:
+            statement = statement.where(AuditEvent.created_at >= start_at)
+        if end_at is not None:
+            statement = statement.where(AuditEvent.created_at <= end_at)
+        total = session.scalar(select(func.count()).select_from(statement.subquery())) or 0
+        items = session.scalars(
+            statement.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+        return {
+            "items": [
+                {
+                    "id": str(item.id),
+                    "business_id": str(item.business_id),
+                    "actor_subject": item.actor_subject,
+                    "action": item.action,
+                    "target_type": item.target_type,
+                    "target_id": item.target_id,
+                    "change_summary": item.change_summary,
+                    "created_at": item.created_at.isoformat() if item.created_at else None,
+                }
+                for item in items
+            ],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
