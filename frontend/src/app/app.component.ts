@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'suppliers' | 'purchases' | 'recurring' | 'expenses' | 'notifications' | 'health';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'suppliers' | 'purchases' | 'recurring' | 'expenses' | 'notifications' | 'health' | 'taxes';
 
 @Component({
   selector: 'aba-root',
@@ -59,6 +59,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('التقارير الضريبية', 'Tax summary')" [attr.title]="t('التقارير الضريبية', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
@@ -84,7 +85,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
 <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
-                            <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
+                            <button class="nav-item" role="menuitem" [class.active]="tab === 'taxes'" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('التقارير الضريبية', 'Tax summary') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'health'" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة التشغيلية', 'Operational health') }}</span></button> }
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'integrity'" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('سلامة البيانات', 'Data integrity') }}</span></button> }
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
@@ -310,7 +312,24 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
-            @if (tab === 'health' && business?.role === 'owner') {
+            @if (tab === 'taxes') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('ملخص الضرائب', 'Tax summary') }}</h2><p>{{ t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.') }}</p></div></div>
+                <form class="inline-form" (ngSubmit)="loadTaxSummary()">
+                  <label>{{ t('من تاريخ', 'Start date') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
+                  <label>{{ t('إلى تاريخ', 'End date') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
+                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
+                </form>
+                @if (taxError) { <p class="error" role="alert">{{ taxError }}</p> }
+                @if (taxSummaryReport) {
+                  <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
+                  @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.') }}</p> }
+                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                }
+              </section>
+            }
+
+@if (tab === 'health' && business?.role === 'owner') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('الحالة التشغيلية', 'Operational health') }}</h2><p>{{ t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') }}</p></div><span class="count">{{ operationalHealth?.status || t('غير مفحوص', 'Not checked') }}</span></div>
                 <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('جارٍ الفحص…', 'Checking…') : t('تحديث الفحص', 'Refresh check') }}</button>
@@ -626,6 +645,11 @@ export class AppComponent implements OnInit {
   operationalHealth: OperationalHealth | null = null;
   healthLoading = false;
   healthError = '';
+  taxSummaryReport: TaxSummaryReport | null = null;
+  taxLoading = false;
+  taxError = '';
+  taxStartDate = '';
+  taxEndDate = '';
   expensesLoading = false;
   notificationsLoading = false;
   expenseCategory = '';
@@ -844,9 +868,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', expenses: 'المصروفات', notifications: 'الإشعارات', health: 'الحالة التشغيلية'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', expenses: 'المصروفات', notifications: 'الإشعارات', health: 'الحالة التشغيلية', taxes: 'التقارير الضريبية'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', expenses: 'Expenses', notifications: 'Notifications', health: 'Operational health' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', expenses: 'Expenses', notifications: 'Notifications', health: 'Operational health', taxes: 'Tax summary' } as Record<Tab, string>)[this.tab];
   }
 
   async submitAuth(): Promise<void> {
@@ -1112,6 +1136,14 @@ export class AppComponent implements OnInit {
     }
   }
 
+  async loadTaxSummary(): Promise<void> {
+    if (!this.business) return;
+    if (this.taxStartDate && this.taxEndDate && this.taxStartDate > this.taxEndDate) { this.taxError=this.t('تاريخ البداية يجب ألا يتجاوز تاريخ النهاية.','Start date must not be after end date.'); return; }
+    const businessId=this.business.id;this.taxLoading=true;this.taxError='';
+    try { const result=await this.api.taxSummary(businessId,this.taxStartDate||undefined,this.taxEndDate||undefined);if(this.business?.id===businessId)this.taxSummaryReport=result; }
+    catch(error){if(this.business?.id===businessId){this.taxSummaryReport=null;this.taxError=this.message(error)}}finally{if(this.business?.id===businessId)this.taxLoading=false}
+  }
+
   async loadOperationalHealth(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
     const businessId=this.business.id;this.healthLoading=true;this.healthError='';
@@ -1264,6 +1296,7 @@ export class AppComponent implements OnInit {
     if (tab === 'expenses') void this.loadExpenses();
     if (tab === 'notifications') void this.loadNotifications();
     if (tab === 'health') void this.loadOperationalHealth();
+    if (tab === 'taxes') void this.loadTaxSummary();
   }
 
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
