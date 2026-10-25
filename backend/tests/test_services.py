@@ -40,6 +40,13 @@ def workspace():
     engine.dispose()
 
 
+def _make_customer(session, principal, business_id):
+    return create_customer(
+        session, principal=principal, business_id=business_id,
+        name=f"Customer-{uuid4()}",
+    )
+
+
 def test_customer_creation_requires_membership_and_writes_audit(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
@@ -66,12 +73,14 @@ def test_cross_business_access_is_denied(workspace):
 def test_invoice_uses_catalog_price_and_issue_requires_draft(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         product = create_product(
             session, principal=principal, business_id=business_id,
             name="Coffee", unit_price=Decimal("10.00"),
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-001", currency_code="egp",
             lines=[{"product_id": str(product.id), "quantity": "2"}],
             tax_rate=Decimal("14"), discount_rate=Decimal("10"),
@@ -117,8 +126,10 @@ def test_stock_movements_prevent_negative_inventory(workspace):
 def test_payment_allocation_is_transactional_and_idempotent(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-002", currency_code="EGP",
             lines=[{"description": "Consulting", "quantity": "1", "unit_price": "100"}],
         )
@@ -128,11 +139,13 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
         )
         payment = record_payment(
             session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
             amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
             allocations=[(invoice.id, Decimal("40"))],
         )
         replay = record_payment(
             session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
             amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
             allocations=[(invoice.id, Decimal("40"))],
         )
@@ -143,6 +156,7 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
         with pytest.raises(WorkflowError, match="different payment details"):
             record_payment(
                 session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
                 amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
                 allocations=[],
             )
@@ -151,6 +165,7 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
 def test_issuing_invoice_deducts_stock_through_auditable_movement(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         product = create_product(
             session, principal=principal, business_id=business_id,
             name="Rice", unit_price=Decimal("20.00"), is_stock_tracked=True,
@@ -162,6 +177,7 @@ def test_issuing_invoice_deducts_stock_through_auditable_movement(workspace):
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-STOCK-001", currency_code="EGP",
             lines=[{"product_id": str(product.id), "quantity": "2"}],
         )
@@ -187,6 +203,7 @@ def test_issuing_invoice_deducts_stock_through_auditable_movement(workspace):
 def test_invoice_issue_rejects_insufficient_stock(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         product = create_product(
             session, principal=principal, business_id=business_id,
             name="Milk", unit_price=Decimal("15.00"), is_stock_tracked=True,
@@ -198,6 +215,7 @@ def test_invoice_issue_rejects_insufficient_stock(workspace):
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-STOCK-002", currency_code="EGP",
             lines=[{"product_id": str(product.id), "quantity": "2"}],
         )
@@ -212,6 +230,7 @@ def test_invoice_issue_rejects_insufficient_stock(workspace):
 def test_invoice_draft_edit_and_void_restore_tracked_stock(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         product = create_product(
             session, principal=principal, business_id=business_id,
             name="Coffee", unit_price=Decimal("10.00"), is_stock_tracked=True,
@@ -223,11 +242,13 @@ def test_invoice_draft_edit_and_void_restore_tracked_stock(workspace):
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-LIFE-1", currency_code="EGP",
             lines=[{"product_id": str(product.id), "quantity": "2"}],
         )
         replace_draft_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_id=invoice.id, invoice_number="INV-LIFE-EDITED",
             currency_code="EGP",
             lines=[{"product_id": str(product.id), "quantity": "3"}],
@@ -269,8 +290,10 @@ def test_invoice_draft_edit_and_void_restore_tracked_stock(workspace):
 def test_invoice_void_rejects_allocated_payments(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-PAID-1", currency_code="EGP",
             lines=[{"description": "Consulting", "quantity": "1", "unit_price": "50.00"}],
         )
@@ -279,6 +302,7 @@ def test_invoice_void_rejects_allocated_payments(workspace):
         )
         record_payment(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             amount=Decimal("50.00"), currency_code="EGP", idempotency_key="paid-invoice-1",
             allocations=[(invoice.id, Decimal("50.00"))],
         )
