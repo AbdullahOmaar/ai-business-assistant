@@ -136,16 +136,33 @@ class NotificationInput(BaseModel):
     scheduled_at: datetime | None = None
 
 
-def _discounted_return_line_total(invoice: Invoice, line: InvoiceLine) -> Decimal:
-    """Returnable line value after proportionally allocating the invoice discount."""
-    gross = money(Decimal(str(line.line_total)))
-    subtotal = Decimal(str(invoice.subtotal or ZERO))
-    discount = Decimal(str(invoice.discount_total or ZERO))
-    if subtotal <= ZERO or discount <= ZERO:
-        return gross
-    if discount >= subtotal:
-        return ZERO
-    return max(ZERO, money(gross - money(discount * gross / subtotal)))
+def _discounted_return_line_total(
+    invoice: Invoice, line: InvoiceLine, invoice_lines: list[InvoiceLine]
+) -> Decimal:
+    """Allocate invoice discount cents across lines using largest remainder.
+
+    The allocation is deterministic and reconciles exactly to the invoice-level
+    discount, preventing per-line rounding from exceeding the invoiced total.
+    """
+    gross_cents = {str(item.id): int(money(Decimal(str(item.line_total))) * 100)
+                   for item in invoice_lines}
+    subtotal_cents = sum(gross_cents.values())
+    discount_cents = int(money(Decimal(str(invoice.discount_total or ZERO))) * 100)
+    if subtotal_cents <= 0 or discount_cents <= 0:
+        return Decimal(gross_cents.get(str(line.id), 0)) / 100
+    discount_cents = min(discount_cents, subtotal_cents)
+    shares: dict[str, int] = {}
+    remainders: list[tuple[int, str]] = []
+    for item in invoice_lines:
+        key = str(item.id)
+        numerator = discount_cents * gross_cents[key]
+        shares[key] = numerator // subtotal_cents
+        remainders.append((numerator % subtotal_cents, key))
+    cents_left = discount_cents - sum(shares.values())
+    for _, key in sorted(remainders, key=lambda pair: (-pair[0], pair[1]))[:cents_left]:
+        shares[key] += 1
+    key = str(line.id)
+    return Decimal(max(0, gross_cents.get(key, 0) - shares.get(key, 0))) / 100
 
 
 def _authorized(
@@ -302,6 +319,10 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
                           status="draft", reason=body.reason, total=ZERO)
         session.add(ret)
         session.flush()
+        discount_allocation_lines = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.business_id == business_id,
+        ).order_by(InvoiceLine.id)).all()
         total = ZERO
         for item in body.lines:
             line = session.scalars(select(InvoiceLine).where(
@@ -318,7 +339,7 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            discounted_line_total = _discounted_return_line_total(invoice, line)
+            discounted_line_total = _discounted_return_line_total(invoice, line, discount_allocation_lines)
             amount = money(discounted_line_total * item.quantity / line.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
@@ -362,6 +383,10 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             requested["quantity"] += returned.quantity
             requested["amount"] += returned.amount
 
+        discount_allocation_lines = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.business_id == business_id,
+        ).order_by(InvoiceLine.id)).all()
         invoice_lines = {}
         for invoice_line_id, requested in sorted(
             requested_by_line.items(), key=lambda item: str(item[0])
@@ -391,7 +416,7 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             try:
                 validate_return_amount(
-                    invoiced_amount=_discounted_return_line_total(invoice, invoice_line),
+                    invoiced_amount=_discounted_return_line_total(invoice, invoice_line, discount_allocation_lines),
                     previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
                     requested_return_amount=requested["amount"],
                 )

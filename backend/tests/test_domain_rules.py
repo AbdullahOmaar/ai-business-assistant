@@ -127,3 +127,23 @@ def test_report_totals_keep_currencies_separate() -> None:
     assert summarize_money_by_currency(
         [("EGP", D("10.25")), ("USD", D("2.00")), ("EGP", D("1.75"))]
     ) == {"EGP": D("12.00"), "USD": D("2.00")}
+
+
+def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
+    from types import SimpleNamespace
+    from app.domain_rules import money
+    from app.extended_api import _discounted_return_line_total
+
+    lines = [
+        SimpleNamespace(id=f"line-{index:04d}", line_total=Decimal("1.00"))
+        for index in range(500)
+    ]
+    invoice = SimpleNamespace(subtotal=Decimal("500.00"), discount_total=Decimal("2.45"))
+    returnable = [
+        _discounted_return_line_total(invoice, line, lines)
+        for line in lines
+    ]
+
+    assert sum(returnable, Decimal("0")) == Decimal("497.55")
+    assert sum(1 for amount in returnable if amount == Decimal("0.99")) == 245
+    assert all(money(amount) == amount for amount in returnable)
