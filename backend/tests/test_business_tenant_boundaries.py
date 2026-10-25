@@ -610,6 +610,7 @@ def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
     from datetime import datetime, timezone
     from decimal import Decimal
     from uuid import uuid4
+    from app.models import Business, BusinessMembership, Invoice, MembershipRole
 
     engine = create_engine(
         "sqlite+pysqlite://",
