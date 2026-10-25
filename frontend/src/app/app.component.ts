@@ -181,9 +181,9 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
                   @if (!customers.length) { <p class="empty">{{ t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.') }}</p> }
                 </div>
-                @if (customerStatement) {
+                @if (statementVisible) {
                   <section class="panel statement-panel">
-                    <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement.customer.name }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null">{{ t('إغلاق', 'Close') }}</button></div>
+                    <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement?.customer?.name || statementCustomerName }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></div>
                     @if (statementLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل كشف الحساب…', 'Loading statement…') }}</p> }
                     @if (statementError) { <p class="error" role="alert">{{ statementError }}</p> }
                     @if (customerStatement) {
@@ -430,6 +430,8 @@ export class AppComponent implements OnInit {
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
   statementError = '';
+  statementVisible = false;
+  statementCustomerName = '';
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
@@ -816,6 +818,8 @@ export class AppComponent implements OnInit {
   async loadCustomerStatement(customer: Customer): Promise<void> {
     if (!this.business) return;
     this.customerStatement = null;
+    this.statementCustomerName = customer.name;
+    this.statementVisible = true;
     this.statementLoading = true;
     this.statementError = '';
     try {
