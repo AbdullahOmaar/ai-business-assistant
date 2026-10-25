@@ -561,6 +561,9 @@ def test_staff_is_denied_sensitive_business_routes():
                 f"{base}/pricing-rules",
                 json={"name": "Staff rule", "rule_type": "discount", "rate": "5"},
             ),
+            "edit ordinary product details": client.patch(
+                f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
+            ),
             "change product price": client.patch(
                 f"{base}/products/{product_id}", json={"unit_price": "99.99"}
             ),
@@ -606,6 +609,7 @@ def test_staff_is_denied_sensitive_business_routes():
             invoice = session.get(Invoice, invoice_id)
             assert invoice.status == "issued"
             product = session.get(Product, product_id)
+            assert product.name == "Staff updated product name"
             assert product.unit_price == Decimal("4.00")
             assert product.is_stock_tracked is False
             assert session.scalar(select(func.count()).select_from(SalesReturn)) == 0
