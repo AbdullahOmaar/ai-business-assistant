@@ -213,8 +213,9 @@ export class ApiService {
       'POST', { reason }
     );
   }
-  customerStatement(businessId: string, customerId: string): Promise<CustomerStatement> {
-    return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?limit=50&offset=0`);
+  customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
+    const params = new URLSearchParams({ limit: '50', offset: String(offset) });
+    return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
   }
 
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
