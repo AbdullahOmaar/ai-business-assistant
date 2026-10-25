@@ -139,30 +139,31 @@ class NotificationInput(BaseModel):
 def _discounted_return_line_total(
     invoice: Invoice, line: InvoiceLine, invoice_lines: list[InvoiceLine]
 ) -> Decimal:
-    """Allocate invoice discount cents across lines using largest remainder.
+    """Allocate the invoice's net subtotal across lines in cents using largest remainder.
 
-    The allocation is deterministic and reconciles exactly to the invoice-level
-    discount, preventing per-line rounding from exceeding the invoiced total.
+    The allocation reconciles exactly to the lesser of the stored invoice net subtotal
+    and the sum of rounded line totals, preventing multi-line rounding from authorizing
+    a return larger than the customer was invoiced for.
     """
-    gross_cents = {str(item.id): int(money(Decimal(str(item.line_total))) * 100)
+    gross_cents = {str(item.id): max(0, int(money(Decimal(str(item.line_total))) * 100))
                    for item in invoice_lines}
-    subtotal_cents = sum(gross_cents.values())
-    discount_cents = int(money(Decimal(str(invoice.discount_total or ZERO))) * 100)
-    if subtotal_cents <= 0 or discount_cents <= 0:
-        return Decimal(gross_cents.get(str(line.id), 0)) / 100
-    discount_cents = min(discount_cents, subtotal_cents)
+    gross_total_cents = sum(gross_cents.values())
+    subtotal_cents = max(0, int(money(Decimal(str(invoice.subtotal or ZERO))) * 100))
+    discount_cents = max(0, int(money(Decimal(str(invoice.discount_total or ZERO)) * 100))
+    net_cents = min(gross_total_cents, max(0, subtotal_cents - min(discount_cents, subtotal_cents)))
+    if gross_total_cents <= 0 or net_cents <= 0:
+        return ZERO
     shares: dict[str, int] = {}
     remainders: list[tuple[int, str]] = []
     for item in invoice_lines:
         key = str(item.id)
-        numerator = discount_cents * gross_cents[key]
-        shares[key] = numerator // subtotal_cents
-        remainders.append((numerator % subtotal_cents, key))
-    cents_left = discount_cents - sum(shares.values())
+        numerator = net_cents * gross_cents[key]
+        shares[key] = numerator // gross_total_cents
+        remainders.append((numerator % gross_total_cents, key))
+    cents_left = net_cents - sum(shares.values())
     for _, key in sorted(remainders, key=lambda pair: (-pair[0], pair[1]))[:cents_left]:
         shares[key] += 1
-    key = str(line.id)
-    return Decimal(max(0, gross_cents.get(key, 0) - shares.get(key, 0))) / 100
+    return Decimal(shares.get(str(line.id), 0)) / 100
 
 
 def _authorized(
