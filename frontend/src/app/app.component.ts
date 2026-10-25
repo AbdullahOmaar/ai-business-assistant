@@ -986,6 +986,7 @@ export class AppComponent implements OnInit {
       const labels = this.language === 'ar'
         ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.' }
         : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', total: 'Total due', note: 'Generated from saved business records.' };
+      printWindow.onload = () => printWindow.print();
       printWindow.document.open();
       printWindow.document.write(
         '<!doctype html><html lang="' + this.language + '" dir="' + direction + '"><head><meta charset="utf-8">' +
@@ -1007,7 +1008,6 @@ export class AppComponent implements OnInit {
       );
       printWindow.document.close();
       printWindow.focus();
-      printWindow.onload = () => printWindow.print();
     } catch (error) {
       printWindow.close();
       this.error = this.message(error);
