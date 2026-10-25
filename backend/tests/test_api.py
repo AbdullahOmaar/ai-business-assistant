@@ -12,7 +12,7 @@ import pytest
 
 from app.main import app
 from app.models import (
-    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine,
+    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Product,
     MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -178,6 +178,71 @@ def test_fully_discounted_invoice_cannot_be_refunded_at_gross_line_value():
             f"/api/v1/businesses/{business_id}/sales-returns/{created.json()['id']}/approve"
         )
         assert approved.status_code == 200
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_sales_return_discount_allocation_reconciles_real_invoice_total():
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        business = Business(name="Rounding return shop", currency_code="EGP")
+        session.add(business)
+        session.flush()
+        customer = Customer(business_id=business.id, name="Rounding customer")
+        product = Product(
+            business_id=business.id, name="Half-cent item", unit_price=Decimal("0.01"),
+            is_stock_tracked=False,
+        )
+        session.add_all([customer, product])
+        session.add(BusinessMembership(
+            business_id=business.id, user_subject="test-subject", role=MembershipRole.OWNER,
+        ))
+        session.commit()
+        business_id, customer_id, product_id = business.id, customer.id, product.id
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        created = client.post(
+            f"/api/v1/businesses/{business_id}/invoices",
+            json={
+                "invoice_number": "RET-ROUND-REAL-1", "currency_code": "EGP",
+                "customer_id": str(customer_id), "discount_rate": "33.3333", "tax_rate": "0",
+                "lines": [{"product_id": str(product_id), "quantity": "0.500"} for _ in range(3)],
+            },
+        )
+        assert created.status_code == 201, created.text
+        invoice_id = created.json()["id"]
+        issued = client.post(f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={})
+        assert issued.status_code == 200, issued.text
+        detail = client.get(f"/api/v1/businesses/{business_id}/invoices/{invoice_id}")
+        assert detail.status_code == 200, detail.text
+        invoice = detail.json()
+        assert invoice["subtotal"] == "0.03"
+        assert invoice["discount_total"] == "0.01"
+        assert invoice["total"] == "0.02"
+        created_return = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns",
+            json={"invoice_id": str(invoice_id), "lines": [
+                {"invoice_line_id": line["id"], "quantity": "0.500"} for line in invoice["lines"]
+            ]},
+        )
+        assert created_return.status_code == 201, created_return.text
+        assert created_return.json()["total"] == invoice["total"]
+        approved = client.post(
+            f"/api/v1/businesses/{business_id}/sales-returns/{created_return.json()['id']}/approve"
+        )
+        assert approved.status_code == 200, approved.text
+        with Session(engine) as session:
+            returned_total = session.scalar(select(func.coalesce(func.sum(SalesReturnLine.amount), 0)).where(
+                SalesReturnLine.sales_return_id == UUID(created_return.json()["id"])
+            ))
+            assert Decimal(str(returned_total)) == Decimal("0.02")
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
