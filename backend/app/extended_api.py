@@ -6,7 +6,7 @@ unless the host has configured a trusted principal resolver and database session
 import csv
 import io
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -1161,6 +1161,47 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
+
+
+@router.get("/reports/tax-summary")
+def report_tax_summary(
+    business_id: UUID,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Summarize saved tax totals from issued invoices, separated by currency."""
+    try:
+        _authorized(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(status_code=422, detail="start_date must not be after end_date")
+    statement = select(
+        Invoice.currency_code,
+        func.coalesce(func.sum(Invoice.tax_total), 0),
+        func.count(Invoice.id),
+    ).where(Invoice.business_id == business_id, Invoice.status == "issued")
+    if start_date:
+        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
+    if end_date:
+        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
+    rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
+    return {
+        "period": {"start_date": start_date.isoformat() if start_date else None,
+                   "end_date": end_date.isoformat() if end_date else None},
+        "source": "issued_invoice_tax_snapshots",
+        "currencies": [
+            {"currency_code": currency, "tax_total": str(money(Decimal(str(total)))), "invoice_count": count}
+            for currency, total, count in rows
+        ],
+        "limitations": [
+            "Uses saved tax totals on issued invoices; it does not recalculate historical taxes.",
+            "Currency totals are kept separate and are not converted.",
+            "This is an operational summary, not a jurisdiction-specific tax filing.",
+        ],
+    }
 
 
 @router.get("/reports/receivables-aging")
