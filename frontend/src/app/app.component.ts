@@ -618,6 +618,7 @@ export class AppComponent implements OnInit {
   auditError = '';
   auditAction = '';
   auditTargetType = '';
+  private auditRequestVersion = 0;
   dataIntegrityReport: DataIntegrityReport | null = null;
   integrityLoading = false;
   integrityError = '';
@@ -967,6 +968,9 @@ export class AppComponent implements OnInit {
     this.invoiceQuantity = '1';
     this.invoiceLines = [{ productId: '', quantity: '1' }];
     this.invoiceNumber = '';
+    this.invoiceDiscountRate = '0';
+    this.invoiceTaxRate = '0';
+    this.invoiceMessage = '';
     this.invoiceFilterCustomerId = '';
     this.editingInvoiceId = null;
     this.paymentCustomerId = '';
@@ -998,6 +1002,7 @@ export class AppComponent implements OnInit {
     this.statementOffset = 0;
     this.statementLoading = false;
     this.statementError = '';
+    this.auditRequestVersion++;
     this.auditEvents = [];
     this.auditTotal = 0;
     this.auditOffset = 0;
@@ -1015,6 +1020,29 @@ export class AppComponent implements OnInit {
     this.expenses = [];
     this.notifications = [];
     this.operationsError = '';
+    this.supplierName = '';
+    this.supplierEmail = '';
+    this.supplierPhone = '';
+    this.supplierAddress = '';
+    this.purchaseOrderNumber = '';
+    this.purchaseSupplierId = '';
+    this.purchaseProductId = '';
+    this.purchaseQuantity = '1';
+    this.purchaseUnitCost = '0';
+    this.recurringCustomerId = '';
+    this.recurringIntervalDays = '30';
+    this.recurringTimezone = 'UTC';
+    this.expenseCategory = '';
+    this.expenseDescription = '';
+    this.expenseAmount = '';
+    this.expenseVendor = '';
+    this.expenseReference = '';
+    this.notificationTitle = '';
+    this.notificationBody = '';
+    this.notificationScheduledAt = '';
+    this.notificationDeduplicationKey = 'manual-' + Date.now();
+    this.taxStartDate = '';
+    this.taxEndDate = '';
     this.suppliersLoading = false;
     this.purchasesLoading = false;
     this.recurringLoading = false;
@@ -1299,6 +1327,7 @@ export class AppComponent implements OnInit {
 
   async loadAuditEvents(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner') {
+      this.auditRequestVersion++;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditOffset = 0;
@@ -1306,23 +1335,27 @@ export class AppComponent implements OnInit {
       this.auditError = '';
       return;
     }
+    const businessId = this.business.id;
+    const requestVersion = ++this.auditRequestVersion;
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(businessId, {
         limit: 50, offset,
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
+      if (this.business?.id !== businessId || this.business.role !== 'owner' || requestVersion !== this.auditRequestVersion) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
     } catch (error) {
+      if (this.business?.id !== businessId || requestVersion !== this.auditRequestVersion) return;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditError = this.message(error);
     } finally {
-      this.auditLoading = false;
+      if (requestVersion === this.auditRequestVersion) this.auditLoading = false;
     }
   }
 
