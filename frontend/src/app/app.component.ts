@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
@@ -184,9 +184,24 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
                 <div class="list">
-                  @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button></article> }
+                  @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
                   @if (!customers.length) { <p class="empty">{{ t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.') }}</p> }
                 </div>
+                @if (statementVisible) {
+                  <section class="panel statement-panel">
+                    <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement?.customer?.name || statementCustomerName }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></div>
+                    @if (statementLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل كشف الحساب…', 'Loading statement…') }}</p> }
+                    @if (statementError) { <p class="error" role="alert">{{ statementError }}</p> }
+                    @if (customerStatement) {
+                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
+                      <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
+                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ event.event_type }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
+                      </tbody></table></div>
+                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
+                      @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                    }
+                  </section>
+                }
               </section>
             }
 
@@ -452,6 +467,14 @@ export class AppComponent implements OnInit {
   agingError = '';
   agingAsOf = new Date().toISOString().slice(0, 10);
   customers: Customer[] = [];
+  customerStatement: CustomerStatement | null = null;
+  statementLoading = false;
+  statementError = '';
+  statementVisible = false;
+  statementCustomerName = '';
+  statementCustomerId = '';
+  statementOffset = 0;
+  private statementRequestVersion = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
@@ -773,6 +796,11 @@ export class AppComponent implements OnInit {
   }
 
   async switchBusiness(id: string): Promise<void> {
+    this.statementRequestVersion++;
+    this.statementVisible = false;
+    this.customerStatement = null;
+    this.statementCustomerId = '';
+    this.statementError = '';
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
     this.clearWorkspaceData();
@@ -920,6 +948,38 @@ export class AppComponent implements OnInit {
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();
     if (tab === 'audit') void this.loadAuditEvents(0);
+  }
+
+  get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
+    return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
+  }
+
+  async loadCustomerStatement(customer: Customer): Promise<void> {
+    this.statementCustomerId = customer.id;
+    this.statementCustomerName = customer.name;
+    this.statementVisible = true;
+    await this.loadCustomerStatementPage(0);
+  }
+
+  async loadCustomerStatementPage(offset: number): Promise<void> {
+    if (!this.business || !this.statementCustomerId) return;
+    const requestVersion = ++this.statementRequestVersion;
+    const requestedCustomerId = this.statementCustomerId;
+    const businessId = this.business.id;
+    this.customerStatement = null;
+    this.statementOffset = offset;
+    this.statementLoading = true;
+    this.statementError = '';
+    try {
+      const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
+      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      this.customerStatement = result;
+    } catch (error) {
+      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      this.statementError = this.message(error);
+    } finally {
+      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
+    }
   }
 
   async createCustomer(): Promise<void> {
