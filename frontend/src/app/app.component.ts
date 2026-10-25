@@ -699,6 +699,14 @@ export class AppComponent implements OnInit {
     this.paymentCustomerId = '';
     this.paymentInvoiceId = '';
     this.profitLoss = null;
+    this.statementRequestVersion++;
+    this.customerStatement = null;
+    this.statementVisible = false;
+    this.statementCustomerId = '';
+    this.statementCustomerName = '';
+    this.statementOffset = 0;
+    this.statementError = '';
+    this.statementLoading = false;
     await this.loadWorkspaceData();
   }
 
