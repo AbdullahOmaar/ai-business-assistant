@@ -193,12 +193,13 @@ def test_assistant_local_fallback_only_reads_authorized_workspace(configured_cli
     first = configured_client.post("/api/v1/businesses", json={
         "name": "First Workspace", "currency_code": "EGP"
     }).json()
+
+    from app import main as main_module
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
     second = configured_client.post("/api/v1/businesses", json={
         "name": "Second Workspace", "currency_code": "USD"
     }).json()
 
-    from app import main as main_module
-    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
     denied = configured_client.post(
         f"/api/v1/businesses/{first['id']}/assistant/chat",
         json={"message": "Summarize my recent sales"},
