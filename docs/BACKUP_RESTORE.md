@@ -37,7 +37,7 @@ Do not mark backup/restore as production-ready until an authorized operator has:
 2. Confirm that the source snapshot or history window covers the intended recovery point before starting.
 3. Restore into a **new branch**. Do not target the production branch, finalize a branch restore, or swap branch names for a drill.
 4. Keep the restored connection string in the approved secret manager or CI secret store. Never paste it into an issue, commit it, or print it in logs.
-5. Run the application's Alembic status check against the restored branch (for example, `alembic current`) and compare it with the expected migration head.
+5. From the repository's `backend` directory, explicitly point Alembic at the restored branch URL supplied by the approved secret manager. For example, after setting `RESTORED_DATABASE_URL` in the current shell without printing it: `cd backend && DATABASE_URL="$RESTORED_DATABASE_URL" python -m alembic current`. Verify the output against the expected migration head. Never reuse a production `DATABASE_URL` by accident, and never echo the connection string.
 6. Run read-only integrity checks against the restored copy: key table counts, foreign-key/invariant checks, and representative business/invoice/payment/return records. Do not mutate financial rows as part of the drill.
 7. Run application health/readiness checks against a non-production configuration pointing only to the restored branch.
 8. Record whether the target RPO was met and the elapsed time against the RTO. Note failures and corrective actions.
