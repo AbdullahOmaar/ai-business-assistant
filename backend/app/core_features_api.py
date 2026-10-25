@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -251,5 +251,85 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
             "Currency totals are kept separate and are never converted.",
             "Outstanding balances are derived from issued invoices less recorded allocations.",
             "This dashboard does not claim net profit; product cost and other cost data may be incomplete.",
+        ],
+    }
+
+
+@router.get("/businesses/{business_id}/profit-loss")
+def profit_loss(
+    business_id: UUID,
+    period: str = Query(default="30d", pattern="^(30d|month|all|custom)$"),
+    start_date: date | None = None,
+    end_date: date | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Summarize invoiced revenue and recorded expenses without overstating net profit."""
+    try:
+        _authorize(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+    today = datetime.now(timezone.utc).date()
+    if period == "custom":
+        if start_date is None or end_date is None:
+            raise HTTPException(status_code=422, detail="Custom period requires start_date and end_date.")
+        start, end = start_date, end_date
+    elif period == "month":
+        start, end = today.replace(day=1), today
+    elif period == "30d":
+        start, end = today - timedelta(days=29), today
+    else:
+        start, end = None, None
+
+    if start and end and start > end:
+        raise HTTPException(status_code=422, detail="start_date must be on or before end_date.")
+
+    invoice_query = select(
+        Invoice.currency_code,
+        func.count(Invoice.id),
+        func.coalesce(func.sum(Invoice.total), 0),
+    ).where(Invoice.business_id == business_id, Invoice.status == "issued")
+    expense_query = select(
+        Expense.currency_code,
+        func.count(Expense.id),
+        func.coalesce(func.sum(Expense.amount), 0),
+    ).where(Expense.business_id == business_id)
+    if start is not None:
+        invoice_query = invoice_query.where(Invoice.issue_date >= datetime.combine(start, time.min, tzinfo=timezone.utc))
+        expense_query = expense_query.where(Expense.incurred_at >= datetime.combine(start, time.min, tzinfo=timezone.utc))
+    if end is not None:
+        invoice_query = invoice_query.where(Invoice.issue_date < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc))
+        expense_query = expense_query.where(Expense.incurred_at < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc))
+
+    revenue_rows = session.execute(invoice_query.group_by(Invoice.currency_code)).all()
+    expense_rows = session.execute(expense_query.group_by(Expense.currency_code)).all()
+    revenue = {currency: (int(count), Decimal(str(total))) for currency, count, total in revenue_rows}
+    expenses = {currency: (int(count), Decimal(str(total))) for currency, count, total in expense_rows}
+    currencies = sorted(set(revenue) | set(expenses))
+    rows = []
+    for currency in currencies:
+        revenue_count, revenue_total = revenue.get(currency, (0, Decimal("0")))
+        expense_count, expense_total = expenses.get(currency, (0, Decimal("0")))
+        rows.append({
+            "currency_code": currency,
+            "revenue": str(revenue_total),
+            "revenue_invoice_count": revenue_count,
+            "expenses": str(expense_total),
+            "expense_count": expense_count,
+            "operating_result_before_cost_of_goods": str(revenue_total - expense_total),
+        })
+    return {
+        "period": {
+            "type": period,
+            "start_date": start.isoformat() if start else None,
+            "end_date": end.isoformat() if end else None,
+            "timezone": "UTC",
+        },
+        "currencies": rows,
+        "limitations": [
+            "Revenue is based on issued invoices, not cash collected.",
+            "This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.",
+            "Currencies are kept separate and never converted or combined.",
         ],
     }

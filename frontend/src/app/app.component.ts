@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product } from './api.service';
+import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport } from './api.service';
 import { AuthService } from './auth.service';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports';
 
 @Component({
   selector: 'aba-root',
@@ -56,17 +56,19 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
+          <button class="nav-item" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('العملاء', 'Customers')" [attr.title]="t('العملاء', 'Customers')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('تسجيل الخروج', 'Sign out') }}</span></button>
             </div>
@@ -76,7 +78,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         <main class="main">
           <header class="topbar">
             <div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
+            <div class="user-area"><span class="version-pill" [attr.title]="t('إصدار الواجهة', 'UI version')">v{{ appVersion }}</span>@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
 
           @if (error) { <div class="error-banner" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retry()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
@@ -121,6 +123,30 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
+            @if (tab === 'reports') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('الأرباح والخسائر', 'Profit & loss') }}</h2><p>{{ t('تابع الإيرادات والمصروفات حسب الفترة، مع إبقاء كل عملة منفصلة.', 'Review revenue and expenses by period, keeping each currency separate.') }}</p></div><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></div>
+                <form class="inline-form" (ngSubmit)="loadProfitLoss()">
+                  <select name="profitLossPeriod" [attr.aria-label]="t('الفترة المالية', 'Reporting period')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('آخر 30 يومًا', 'Last 30 days') }}</option><option value="month">{{ t('الشهر الحالي', 'Current month') }}</option><option value="all">{{ t('كل الوقت', 'All time') }}</option><option value="custom">{{ t('فترة مخصصة', 'Custom period') }}</option></select>
+                  @if (profitLossPeriod === 'custom') { <label>{{ t('من', 'From') }}<input type="date" name="profitLossStart" required [(ngModel)]="profitLossStart"></label><label>{{ t('إلى', 'To') }}<input type="date" name="profitLossEnd" required [(ngModel)]="profitLossEnd"></label> }
+                  <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
+                </form>
+                @if (reportError) { <div class="error-banner" role="alert">{{ reportError }}</div> }
+                @if (profitLoss) {
+                  <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · UTC</p>
+                  <div class="metric-grid">
+                    @for (row of profitLoss.currencies; track row.currency_code) {
+                      <article class="metric"><span>{{ t('الإيرادات (فواتير صادرة)', 'Revenue (issued invoices)') }}</span><strong>{{ row.revenue }} {{ row.currency_code }}</strong><small>{{ row.revenue_invoice_count }} {{ t('فاتورة', 'invoices') }}</small></article>
+                      <article class="metric"><span>{{ t('المصروفات المسجلة', 'Recorded expenses') }}</span><strong>{{ row.expenses }} {{ row.currency_code }}</strong><small>{{ row.expense_count }} {{ t('مصروف', 'expenses') }}</small></article>
+                      <article class="metric"><span>{{ t('النتيجة قبل تكلفة البضاعة', 'Result before cost of goods') }}</span><strong>{{ row.operating_result_before_cost_of_goods }} {{ row.currency_code }}</strong><small>{{ t('إيرادات الفواتير − المصروفات المسجلة', 'Invoice revenue − recorded expenses') }}</small></article>
+                    }
+                  </div>
+                  @if (!profitLoss.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة أو مصروفات مسجلة في هذه الفترة.', 'No issued invoices or recorded expenses in this period.') }}</p> }
+                  <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
+                }
+              </section>
+            }
+
             @if (tab === 'customers') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('قائمة العملاء', 'Customer list') }}</h2><p>{{ t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') }}</p></div><span class="count">{{ customers.length }} {{ t('عميل', 'customers') }}</span></div>
@@ -155,17 +181,18 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 
             @if (tab === 'invoices') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</h2><p>{{ t('أنشئ فاتورة مسودة ثم أصدرها بعد التأكد من صحة التفاصيل.', 'Create an invoice draft and issue it after checking the details.') }}</p></div><span class="count">{{ invoices.length }} فاتورة</span></div>
+                <div class="section-head"><div><h2>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</h2><p>{{ t('اختر العميل والمنتج؛ الفاتورة الجديدة ستُصدر وتحفظ فورًا.', 'Choose a customer and product; new invoices are issued and saved immediately.') }}</p></div><span class="count">{{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></div>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
+                  <select name="invoiceCustomer" [attr.aria-label]="t('العميل', 'Customer')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر العميل', 'Choose a customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select>
                   <select name="invoiceProduct" [attr.aria-label]="t('المنتج', 'Product')" required [(ngModel)]="invoiceProductId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>
                   <input name="invoiceQuantity" [attr.aria-label]="t('الكمية', 'Quantity')" type="number" min="0.001" step="0.001" required [(ngModel)]="invoiceQuantity">
-                  <button class="primary" type="submit" [disabled]="loading || !products.length">{{ editingInvoiceId ? t('حفظ كمسودة', 'Save draft') : t('إنشاء مسودة', 'Create draft') }}</button>
+                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ editingInvoiceId ? t('حفظ كمسودة', 'Save draft') : t('إصدار الفاتورة الآن', 'Issue invoice now') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
                 <div class="list">
                   @for (invoice of invoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
-                  @if (!invoices.length) { <p class="empty">{{ t('لا توجد فواتير بعد. أضف منتجًا أولًا ثم أنشئ مسودة فاتورة.', 'No invoices yet. Add a product first, then create an invoice draft.') }}</p> }
+                  @if (!invoices.length) { <p class="empty">{{ t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.') }}</p> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
@@ -197,7 +224,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @if (!chatMessages.length) { <p class="empty">{{ t('اسأل عن الفواتير الصادرة أو المصروفات المسجلة أو أعداد العملاء والمنتجات.', 'Ask about issued invoices, recorded expenses, or customer and product counts.') }}</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span><p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
-                @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span><button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">إعادة المحاولة</button></div> }
+                @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span>@if (!chatConfigurationMissing) { <button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">{{ t('إعادة المحاولة', 'Retry') }}</button> }</div> }
                 @if (chatSending) { <p class="muted" role="status" aria-live="polite">{{ t('المساعد الذكي يجهّز الإجابة…', 'The AI assistant is preparing an answer…') }}</p> }
                 <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
                 <p class="footnote">{{ t('المساعد يقدّم إجابات استشارية فقط ولا ينشئ سجلات النشاط أو يعدّلها أو يحذفها. يجب إعداد مزوّد الذكاء الاصطناعي على الخادم.', 'The assistant provides advice only and cannot create, edit, or delete business records. The AI provider must be configured on the server.') }}</p>
@@ -240,6 +267,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       input,select,textarea{font-size:16px!important;min-height:44px}
       button,.secondary,.primary{min-height:42px}
     }
+    .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
     @media(max-width:760px){
@@ -306,6 +334,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   `]
 })
 export class AppComponent implements OnInit {
+  readonly appVersion = '0.1.0';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
   setupNeeded = false;
@@ -321,6 +350,12 @@ export class AppComponent implements OnInit {
   business: Business | null = null;
   selectedBusinessId = '';
   dashboard: Dashboard | null = null;
+  profitLoss: ProfitLossReport | null = null;
+  profitLossPeriod: '30d' | 'month' | 'all' | 'custom' = '30d';
+  profitLossStart = '';
+  profitLossEnd = '';
+  reportLoading = false;
+  reportError = '';
   customers: Customer[] = [];
   products: Product[] = [];
   invoices: Invoice[] = [];
@@ -333,6 +368,7 @@ export class AppComponent implements OnInit {
   productName = '';
   productPrice = '';
   stockTracked = false;
+  invoiceCustomerId = '';
   invoiceProductId = '';
   invoiceQuantity = '1';
   invoiceNumber = '';
@@ -347,13 +383,16 @@ export class AppComponent implements OnInit {
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources'] }> = [];
   chatSending = false;
   chatError = '';
+  chatConfigurationMissing = false;
   mobileMoreOpen = false;
   isInstalled = false;
   installHelp = false;
   private installPrompt: (Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null = null;
 
   constructor(private readonly auth: AuthService, private readonly api: ApiService) {
-    this.isInstalled = window.matchMedia('(display-mode: standalone)').matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    const standalone = window.matchMedia('(display-mode: standalone)');
+    this.isInstalled = standalone.matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    standalone.addEventListener?.('change', event => { this.isInstalled = event.matches; });
     window.addEventListener('beforeinstallprompt', (event: Event) => {
       event.preventDefault();
       this.installPrompt = event as Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -448,9 +487,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss' } as Record<Tab, string>)[this.tab];
   }
 
   async submitAuth(): Promise<void> {
@@ -541,6 +580,8 @@ export class AppComponent implements OnInit {
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
     this.chatMessages = [];
+    this.invoiceCustomerId = '';
+    this.profitLoss = null;
     await this.loadWorkspaceData();
   }
 
@@ -558,7 +599,9 @@ export class AppComponent implements OnInit {
       ]);
       if (this.business?.id !== id) return;
       this.dashboard = dashboard;
+      this.profitLoss = null;
       this.customers = عميل;
+      if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
       this.products = منتج;
       this.invoices = فاتورة;
       this.payments = دفعة;
@@ -571,10 +614,33 @@ export class AppComponent implements OnInit {
     }
   }
 
+  async loadProfitLoss(): Promise<void> {
+    if (!this.business) return;
+    if (this.profitLossPeriod === 'custom' && (!this.profitLossStart || !this.profitLossEnd)) {
+      this.reportError = this.t('حدد تاريخ البداية والنهاية.', 'Choose both a start and end date.');
+      return;
+    }
+    this.reportLoading = true;
+    this.reportError = '';
+    try {
+      this.profitLoss = await this.api.profitLoss(
+        this.business.id,
+        this.profitLossPeriod,
+        this.profitLossPeriod === 'custom' ? this.profitLossStart : undefined,
+        this.profitLossPeriod === 'custom' ? this.profitLossEnd : undefined
+      );
+    } catch (error) {
+      this.reportError = this.message(error);
+    } finally {
+      this.reportLoading = false;
+    }
+  }
+
   setTab(tab: Tab): void {
     this.tab = tab;
     this.error = '';
     this.mobileMoreOpen = false;
+    if (tab === 'reports') void this.loadProfitLoss();
   }
 
   async createCustomer(): Promise<void> {
@@ -588,6 +654,7 @@ export class AppComponent implements OnInit {
       });
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
       this.customers = await this.api.customers(this.business.id);
+      if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
     } catch (error) {
       this.error = this.message(error);
     } finally {
@@ -614,7 +681,10 @@ export class AppComponent implements OnInit {
   }
 
   async createInvoice(): Promise<void> {
-    if (!this.business || !this.invoiceProductId) return;
+    if (!this.business || !this.invoiceProductId || !this.invoiceCustomerId) {
+      this.error = this.t('اختَر العميل والمنتج قبل حفظ الفاتورة.', 'Choose a customer and product before saving the invoice.');
+      return;
+    }
     this.loading = true;
     this.error = '';
     try {
@@ -622,12 +692,13 @@ export class AppComponent implements OnInit {
       const payload = {
         invoice_number: invoiceNumber,
         currency_code: this.business.currency_code,
+        customer_id: this.invoiceCustomerId,
         lines: [{ product_id: this.invoiceProductId, quantity: String(this.invoiceQuantity) }]
       };
       if (this.editingInvoiceId) {
         await this.api.updateDraftInvoice(this.business.id, this.editingInvoiceId, payload);
       } else {
-        await this.api.createInvoice(this.business.id, payload);
+        await this.api.createAndIssueInvoice(this.business.id, payload);
       }
       this.cancelInvoiceEdit();
       this.invoices = await this.api.invoices(this.business.id);
@@ -651,6 +722,7 @@ export class AppComponent implements OnInit {
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
+      this.invoiceCustomerId = detail.customer_id || '';
       this.invoiceProductId = detail.lines[0].product_id;
       this.invoiceQuantity = detail.lines[0].quantity;
     } catch (error) {
@@ -663,6 +735,7 @@ export class AppComponent implements OnInit {
   cancelInvoiceEdit(): void {
     this.editingInvoiceId = null;
     this.invoiceNumber = '';
+    this.invoiceCustomerId = '';
     this.invoiceQuantity = '1';
   }
 
@@ -755,6 +828,8 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.chatMessages = this.chatMessages.slice(0, -1);
       this.chatDraft = question;
+      const rawMessage = error instanceof Error ? error.message : '';
+      this.chatConfigurationMissing = /AI chat is not configured/i.test(rawMessage);
       this.chatError = this.message(error);
     } finally {
       this.chatSending = false;
@@ -787,6 +862,7 @@ export class AppComponent implements OnInit {
       };
       return englishAuthMessages[code] || authMessages[code];
     }
+    if (/AI chat is not configured/i.test(message)) return this.t('المساعد الذكي غير مفعّل على الخادم بعد. يلزم ضبط OPENAI_API_KEY في إعدادات Environment Variables لمشروع ai-business-assistant-api على Vercel ثم إعادة النشر. لم أضف مفتاحًا أو خدمة مدفوعة من دون موافقتك.', 'The AI assistant is not enabled on the backend yet. Set OPENAI_API_KEY in the ai-business-assistant-api Vercel project environment variables, then redeploy. No key or paid service was added without your approval.');
     if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
       if (context === 'auth') return this.t('تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وتفعيل تسجيل الدخول بالبريد وكلمة المرور وإضافة نطاق الموقع إلى النطاقات المصرح بها في Firebase.', 'Could not reach Firebase Authentication. Check your internet, enable Email/Password sign-in, and authorize this site domain in Firebase.');

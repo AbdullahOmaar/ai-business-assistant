@@ -298,3 +298,45 @@ def test_payment_recording_rejects_allocation_above_invoice_balance(configured_c
         "allocations": [{"invoice_id": invoice_id, "amount": "30.00"}],
     })
     assert response.status_code == 422
+
+
+def test_invoice_can_be_created_issued_and_linked_to_customer(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Invoice Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={
+        "name": "Invoice Customer", "email": "customer@example.test"
+    })
+    assert customer.status_code == 201
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Service", "unit_price": "120.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+
+    response = configured_client.post(f"/api/v1/businesses/{business_id}/invoices/issue", json={
+        "invoice_number": "INV-IMMEDIATE-001",
+        "currency_code": "EGP",
+        "customer_id": customer.json()["id"],
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}],
+    })
+    assert response.status_code == 201, response.text
+    assert response.json()["status"] == "issued"
+    assert response.json()["customer_id"] == customer.json()["id"]
+
+
+def test_profit_loss_supports_all_time_and_requires_custom_dates(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Report Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    all_time = configured_client.get(
+        f"/api/v1/businesses/{business_id}/profit-loss", params={"period": "all"}
+    )
+    assert all_time.status_code == 200
+    assert all_time.json()["period"]["type"] == "all"
+    assert all_time.json()["currencies"] == []
+    missing_dates = configured_client.get(
+        f"/api/v1/businesses/{business_id}/profit-loss", params={"period": "custom"}
+    )
+    assert missing_dates.status_code == 422
