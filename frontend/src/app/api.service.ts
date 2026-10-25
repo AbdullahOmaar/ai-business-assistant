@@ -20,6 +20,12 @@ export interface Payment { id: string; amount: string; currency_code: string; re
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
 export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
 export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; currencies: ProfitLossRow[]; limitations: string[]; }
+
+export interface ReceivablesAgingBucket { bucket: 'not_due' | '1_30_days' | '31_60_days' | '61_90_days' | 'over_90_days' | 'no_due_date'; outstanding_amount: string; }
+export interface ReceivablesAgingCurrencySummary { currency_code: string; buckets: ReceivablesAgingBucket[]; total_outstanding: string; }
+export interface ReceivablesAgingInvoice { invoice_id: string; invoice_number: string; customer_id: string | null; currency_code: string; due_date: string | null; invoice_total: string; allocated_payments: string; outstanding_amount: string; aging_bucket: ReceivablesAgingBucket['bucket']; days_overdue: number | null; customer_link_missing: boolean; }
+export interface ReceivablesAgingWarning { invoice_id: string; invoice_number: string; type: 'payment_currency_mismatch' | 'allocations_exceed_invoice_total'; invoice_currency?: string; mismatched_allocations_amount?: string; invoice_total?: string; allocated_payments?: string; excess_allocated?: string; }
+export interface ReceivablesAgingReport { as_of_date: string; source: string; currency_policy: string; invoice_count: number; by_currency: ReceivablesAgingCurrencySummary[]; invoices: ReceivablesAgingInvoice[]; data_quality_warnings: ReceivablesAgingWarning[]; limitations: string[]; }
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -81,6 +87,15 @@ export class ApiService {
     const date = (value: Date) => value.toISOString().slice(0, 10);
     return this.request<Dashboard>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/dashboard?start_date=${date(start)}&end_date=${date(end)}`
+    );
+  }
+
+  receivablesAging(businessId: string, asOfDate?: string): Promise<ReceivablesAgingReport> {
+    const params = new URLSearchParams();
+    if (asOfDate) params.set('as_of', asOfDate);
+    const query = params.toString();
+    return this.request<ReceivablesAgingReport>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/reports/receivables-aging${query ? `?${query}` : ''}`
     );
   }
   profitLoss(businessId: string, period: '30d' | 'month' | 'all' | 'custom', startDate?: string, endDate?: string): Promise<ProfitLossReport> {
