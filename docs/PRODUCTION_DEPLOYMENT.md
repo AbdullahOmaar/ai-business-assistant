@@ -102,3 +102,10 @@ A successful migration test against a disposable PostgreSQL database is not evid
 - Required CI passed before merge: backend tests, backend container verification, backend/frontend verification, and Python/JavaScript dependency audits.
 - No production schema migration or historical data rewrite is required for this code fix.
 - After deployment, verify `/health` and `/readyz` return 200, `/version` reports the deployed commit, and run the approved sales-return smoke test against a disposable/non-production invoice before using discounted returns operationally.
+
+## Return rounding hardening
+
+- Merged fix commit: `1210641021493e3669865ae945acb8c2f4ff967d`.
+- Sales-return line amounts are allocated from the stored invoice net subtotal in integer cents with deterministic largest-remainder allocation.
+- Regression coverage creates and issues a real discounted invoice through the API, then creates and approves a full return and verifies the return total equals the invoice total.
+- Backend, container, frontend/backend verification, and dependency audit passed before merge; independent review found no major issues.
