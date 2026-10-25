@@ -18,6 +18,8 @@ export interface InvoiceDetail extends Invoice {
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
+export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
+export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; currencies: ProfitLossRow[]; limitations: string[]; }
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -80,6 +82,12 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/dashboard?start_date=${date(start)}&end_date=${date(end)}`
     );
   }
+  profitLoss(businessId: string, period: '30d' | 'month' | 'all' | 'custom', startDate?: string, endDate?: string): Promise<ProfitLossReport> {
+    const params = new URLSearchParams({ period });
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    return this.request<ProfitLossReport>(`/api/v1/businesses/${encodeURIComponent(businessId)}/profit-loss?${params.toString()}`);
+  }
   customers(businessId: string): Promise<Customer[]> {
     return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers?limit=100`);
   }
@@ -106,9 +114,17 @@ export class ApiService {
     return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?limit=100`);
   }
   createInvoice(businessId: string, body: {
-    invoice_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
   }): Promise<Invoice> {
     return this.request<Invoice>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices`, 'POST', body);
+  }
+  createAndIssueInvoice(businessId: string, body: {
+    invoice_number: string; currency_code: string; customer_id: string;
+    lines: Array<{ product_id: string; quantity: string }>;
+  }): Promise<Invoice> {
+    return this.request<Invoice>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/issue`, 'POST', body
+    );
   }
   issueInvoice(businessId: string, invoiceId: string): Promise<Invoice> {
     return this.request<Invoice>(
@@ -121,7 +137,7 @@ export class ApiService {
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
-    invoice_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
   }): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`, 'PATCH', body
