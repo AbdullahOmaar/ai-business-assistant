@@ -378,7 +378,14 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             try:
                 validate_return_amount(
-                    invoiced_amount=Decimal(str(invoice_line.line_total)),
+                    invoiced_amount=money(
+                        Decimal(str(invoice_line.line_total))
+                        - (money(
+                            Decimal(str(invoice.discount_total or 0))
+                            * Decimal(str(invoice_line.line_total))
+                            / Decimal(str(invoice.subtotal))
+                        ) if Decimal(str(invoice.subtotal or 0)) > ZERO else ZERO)
+                    ),
                     previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
                     requested_return_amount=requested["amount"],
                 )
