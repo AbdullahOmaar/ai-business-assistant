@@ -3,6 +3,7 @@ import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product } from './api.service';
 import { AuthService } from './auth.service';
+import { WorkspaceLoadGuard } from './workspace-load-guard';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant';
 
@@ -562,10 +563,10 @@ export class AppComponent implements OnInit {
     await this.loadWorkspaceData();
   }
 
-  private workspaceLoadVersion = 0;
+  private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
-    const loadVersion = ++this.workspaceLoadVersion;
+    const loadVersion = this.workspaceLoadGuard.begin();
     if (!this.business) {
       this.loading = false;
       return;
@@ -577,7 +578,7 @@ export class AppComponent implements OnInit {
       const [dashboard, عميل, منتج, فاتورة, دفعة] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
       ]);
-      if (loadVersion !== this.workspaceLoadVersion || this.business?.id !== id) return;
+      if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.customers = عميل;
       this.products = منتج;
@@ -586,12 +587,12 @@ export class AppComponent implements OnInit {
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
-      if (loadVersion === this.workspaceLoadVersion && this.business?.id === id) {
+      if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
         this.clearWorkspaceData();
         this.error = this.message(error);
       }
     } finally {
-      if (loadVersion === this.workspaceLoadVersion) this.loading = false;
+      if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
     }
   }
 
