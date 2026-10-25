@@ -104,6 +104,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
             </section>
+            <div class="mobile-version-strip"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span></div>
 
             @if (tab === 'overview') {
               <section class="hero">
@@ -303,6 +304,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       .nav-item>span:not(.nav-icon){display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
       .nav-item .nav-icon{display:grid;flex:0 0 27px;width:27px;height:27px;font-size:17px;border-radius:9px}
       .nav-item.active{background:#1e293b;box-shadow:inset 0 -2px #5eead4;color:#fff}
+      .mobile-version-strip{display:flex;justify-content:flex-end;margin:0 2px 10px}.mobile-version-strip .version-pill{font-size:10px;padding:5px 7px}
       .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}.shell.english .sidebar{inset:auto 0 0}.shell.english .nav-item{text-align:center}
       .topbar{display:none!important}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
@@ -317,6 +319,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       input,select,textarea{font-size:16px!important;min-height:44px}
       button,.secondary,.primary{min-height:42px}
     }
+    .mobile-version-strip{display:none}
     .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
