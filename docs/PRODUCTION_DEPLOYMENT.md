@@ -13,7 +13,7 @@ Set these as platform secrets/configuration (never commit real values):
 - `OPENAI_API_KEY`: optional. AI chat returns 503 until configured; keep this key backend-only.
 - `OPENAI_MODEL`: optional; defaults to `gpt-4.1-mini`.
 
-Run database migrations as a pre-deploy/release step with the same `DATABASE_URL`:
+Run database migrations only as an explicitly approved release step after validating the target database and migration plan. Never point this command at production merely to test it. Before an existing production database is migrated, take a backup and verify that it can be restored to an isolated database; review the migration SQL and confirm the current production revision/schema. Test the upgrade against a disposable PostgreSQL database or restored non-production clone first. Do not migrate an existing production database from scratch or assume it is empty.
 
 ```bash
 cd backend
@@ -40,12 +40,15 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 ## Release gates
 
-1. Verify CI passes on the exact candidate commit.
-2. Apply migrations to a new/empty production database and verify `/readyz`.
-3. Confirm Firebase token verification rejects missing, expired, revoked, and wrong-project tokens.
-4. Test that a user cannot list, read, or mutate another workspace by changing `business_id`.
-5. Configure exact CORS origins and confirm the frontend can sign in and make authenticated API calls.
-6. Verify AI answers only cite source IDs returned by the current workspace; do not enable AI without a backend-only provider key.
-7. Review `npm audit` and resolve high-severity findings before declaring production-ready.
+1. Verify CI passes on the exact release candidate SHA, including backend tests, frontend build/audit, and backend container verification.
+2. Confirm the production database's current Alembic revision and schema without modifying data.
+3. Take a production backup and prove it can be restored into an isolated non-production database; record recovery evidence.
+4. Review migration SQL and run the migration against a disposable PostgreSQL database or restored non-production clone. Only run production migrations after explicit owner approval and the approved backup/rollback plan.
+5. Confirm Firebase token verification rejects missing, expired, revoked, and wrong-project tokens in a controlled staging environment.
+6. Test that a user cannot list, read, or mutate another workspace by changing `business_id`, resource IDs, or allocation references.
+7. Configure exact CORS origins and confirm the frontend can sign in and make authenticated API calls.
+8. Verify AI answers only cite source IDs returned by the current workspace; keep provider keys backend-only and test the no-key fallback.
+9. Review Python and npm dependency audits and resolve release-blocking high-severity findings.
+10. After an approved deployment, verify the deployed frontend/API SHAs, `/readyz`, sign-in, invoice/payment/return flows, and rollback procedure.
 
 Do not reuse the existing inactive Supabase project named for n8n without explicit confirmation that it belongs to this app. Do not store production credentials in GitHub files.
