@@ -68,6 +68,52 @@ export class ApiService {
     return await response.json() as T;
   }
 
+  private async requestCsv<T>(path: string, csvText: string): Promise<T> {
+    const config = await this.auth.getRuntimeConfig();
+    const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
+    if (!base || base.includes('YOUR-BACKEND')) throw new Error('The backend URL is not configured in runtime-config.json.');
+    const token = await this.auth.idToken();
+    let response: Response;
+    try {
+      response = await fetch(base + path, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'text/csv', 'Accept': 'application/json' },
+        body: csvText
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
+    }
+    if (!response.ok) {
+      let message = `Request failed (${response.status}).`;
+      try {
+        const payload = await response.json();
+        if (typeof payload.detail === 'string') message = payload.detail;
+        else if (payload.detail?.message) message = payload.detail.message;
+      } catch { /* response body may be empty */ }
+      throw new Error(message);
+    }
+    return await response.json() as T;
+  }
+
+  previewProductCsv(businessId: string, csvText: string): Promise<{
+    entity_type: string; row_count: number; valid: boolean;
+    errors: Array<{ row: number; field: string; code: string; max_length?: number; first_row?: number }>;
+    write_performed: boolean;
+  }> {
+    return this.requestCsv(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/imports/products.csv/preview`, csvText
+    );
+  }
+
+  importProductCsv(businessId: string, csvText: string): Promise<{
+    id: string; entity_type: string; status: string; row_count: number; created_at: string;
+  }> {
+    return this.requestCsv(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/imports/products.csv`, csvText
+    );
+  }
+
   listBusinesses(): Promise<Business[]> {
     return this.request<Business[]>('/api/v1/businesses');
   }
