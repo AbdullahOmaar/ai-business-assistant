@@ -933,33 +933,45 @@ export class AppComponent implements OnInit {
 
   get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
     if (!this.business || !this.invoiceLines.length) return null;
-    const discountRate = Number(this.invoiceDiscountRate);
-    const taxRate = Number(this.invoiceTaxRate);
-    if (!Number.isFinite(discountRate) || !Number.isFinite(taxRate) ||
-        discountRate < 0 || discountRate > 100 || taxRate < 0 || taxRate > 100) return null;
+    const parseScaled = (value: string | number, scale: number): bigint | null => {
+      const match = /^(\\d+)(?:\\.(\\d+))?$/.exec(String(value).trim());
+      if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
+      const fraction = (match[2] || '').padEnd(scale, '0');
+      return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
+    };
+    const roundHalfUp = (numerator: bigint, denominator: bigint): bigint =>
+      (numerator + denominator / 2n) / denominator;
+    const formatCents = (cents: bigint): string =>
+      `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
 
-    let subtotalRaw = 0;
+    const discountRate = parseScaled(this.invoiceDiscountRate, 4);
+    const taxRate = parseScaled(this.invoiceTaxRate, 4);
+    if (discountRate === null || taxRate === null ||
+        discountRate > 100n * 10_000n || taxRate > 100n * 10_000n) return null;
+
+    // Match the backend's Decimal behavior: sum exact quantity × unit-price products,
+    // then round the subtotal once to cents using ROUND_HALF_UP.
+    let subtotalMilliCents = 0n;
     for (const line of this.invoiceLines) {
       const product = this.products.find(item => item.id === line.productId);
-      const quantity = Number(line.quantity);
-      const unitPrice = Number(product?.unit_price);
-      if (!product || !Number.isFinite(quantity) || quantity <= 0 ||
-          !Number.isFinite(unitPrice) || unitPrice < 0) return null;
-      subtotalRaw += quantity * unitPrice;
-      // The preview is informational only; refuse values that exceed safe JS cent precision.
-      if (!Number.isFinite(subtotalRaw) || subtotalRaw * 100 > Number.MAX_SAFE_INTEGER) return null;
+      const quantityMilli = parseScaled(line.quantity, 3);
+      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
+      if (!product || quantityMilli === null || quantityMilli <= 0n ||
+          unitPriceCents === null) return null;
+      subtotalMilliCents += quantityMilli * unitPriceCents;
     }
 
-    const subtotalCents = Math.round(subtotalRaw * 100);
-    const discountCents = Math.round(subtotalCents * discountRate / 100);
+    const subtotalCents = roundHalfUp(subtotalMilliCents, 1000n);
+    if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+    const rateDenominator = 100n * 10_000n;
+    const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
     const taxableCents = subtotalCents - discountCents;
-    const taxCents = Math.round(taxableCents * taxRate / 100);
-    const format = (cents: number) => (cents / 100).toFixed(2);
+    const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
     return {
-      subtotal: format(subtotalCents),
-      discount: format(discountCents),
-      tax: format(taxCents),
-      total: format(taxableCents + taxCents),
+      subtotal: formatCents(subtotalCents),
+      discount: formatCents(discountCents),
+      tax: formatCents(taxCents),
+      total: formatCents(taxableCents + taxCents),
     };
   }
 
@@ -1060,6 +1072,7 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       await this.api.issueInvoice(this.business.id, invoice.id);
+      this.invoiceMessage = '';
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
