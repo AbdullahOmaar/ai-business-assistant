@@ -527,6 +527,10 @@ def test_staff_is_denied_sensitive_business_routes():
     unknown_id = str(uuid4())
     base = f"/api/v1/businesses/{business_id}"
     try:
+        ordinary_edit = client.patch(
+            f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
+        )
+        assert ordinary_edit.status_code == 200, ordinary_edit.text
         responses = {
             "issue existing invoice": client.post(
                 f"{base}/invoices/{invoice_id}/issue"
@@ -560,9 +564,6 @@ def test_staff_is_denied_sensitive_business_routes():
             "change pricing": client.post(
                 f"{base}/pricing-rules",
                 json={"name": "Staff rule", "rule_type": "discount", "rate": "5"},
-            ),
-            "edit ordinary product details": client.patch(
-                f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
             ),
             "change product price": client.patch(
                 f"{base}/products/{product_id}", json={"unit_price": "99.99"}
