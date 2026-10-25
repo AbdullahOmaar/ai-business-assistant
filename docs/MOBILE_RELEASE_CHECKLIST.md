@@ -36,6 +36,23 @@ These automated checks do not replace the physical-device and authenticated work
 - [ ] Run the latest GitHub Actions checks and verify the production deployment commit in Vercel.
 - [ ] Complete an authenticated smoke test for login, workspace isolation, invoices, payments, and assistant error handling.
 
+## Additional checks for receivables aging and multi-line invoice changes
+
+These checks are required for the current feature branches; they are not marked complete by CI alone.
+
+- [ ] Verify receivables report loads for the selected business and selected as-of date.
+- [ ] Verify EGP and any other currencies are displayed in separate summaries and never summed together.
+- [ ] Verify each aging bucket and invoices with no due date are labeled clearly in Arabic and English.
+- [ ] Verify mismatched-currency allocations and over-allocation warnings are visible and linked to the affected invoice.
+- [ ] Export the report to CSV and verify UTF-8 Arabic text, quoted commas/quotes, date, currency, outstanding amount, missing-customer flag, and warning details.
+- [ ] On a 320px-wide screen, add/remove invoice draft lines, change quantities, and verify keyboard focus and labels remain usable.
+- [ ] Verify the server remains authoritative for prices and totals; reject invalid quantities and inactive/invalid products.
+- [ ] Verify an issued invoice cannot be edited through the draft editor.
+- [ ] Verify no data or API responses are persisted in the service-worker cache.
+- [ ] Verify the deployed frontend and backend SHA match the reviewed release commit and complete an authenticated smoke test.
+
+Current release note: Vercel deployment checks have recently been blocked by the free build-rate limit. Keep production release status as **not verified** until a new deployment succeeds and its actual commit SHA and smoke checks are confirmed.
+
 ## Safety
 
 Do not mark this release complete solely because the Vercel preview is READY. Do not enable paid resources or change production secrets as part of these checks.
