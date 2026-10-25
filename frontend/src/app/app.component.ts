@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Invoice, Payment, Product, ProfitLossReport, PurchaseOrder, RecurringInvoiceSchedule, ReceivablesAgingReport, Supplier } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'suppliers' | 'purchases' | 'recurring';
 
 @Component({
   selector: 'aba-root',
@@ -62,14 +62,20 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('الموردون', 'Suppliers')" [attr.title]="t('الموردون', 'Suppliers')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('المشتريات', 'Purchasing')" [attr.title]="t('المشتريات', 'Purchasing')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('الفواتير الدورية', 'Recurring invoices')" [attr.title]="t('الفواتير الدورية', 'Recurring invoices')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الدورية', 'Recurring') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('العملاء', 'Customers')" [attr.title]="t('العملاء', 'Customers')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
 @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('سجل العمليات', 'Activity log')" [attr.title]="t('سجل العمليات', 'Activity log')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
                     <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports','audit','integrity'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'suppliers'" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'purchases'" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'recurring'" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الفواتير الدورية', 'Recurring invoices') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
 <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
@@ -298,7 +304,54 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
-            @if (tab === 'audit') {
+            @if (tab === 'suppliers') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span></div>
+                <form class="inline-form" (ngSubmit)="createSupplier()">
+                  <input name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
+                  <input name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
+                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t('الهاتف', 'Phone')" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="supplierPhone">
+                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('العنوان', 'Address')" [placeholder]="t('العنوان (اختياري)', 'Address (optional)')" [(ngModel)]="supplierAddress">
+                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('إضافة مورد', 'Add supplier') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (suppliersLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الموردين…', 'Loading suppliers…') }}</p> }
+                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <p class="empty">{{ t('لا يوجد موردون بعد.', 'No suppliers yet.') }}</p> }</div>
+              </section>
+            }
+
+            @if (tab === 'purchases') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('أوامر الشراء', 'Purchase orders') }}</h2><p>{{ t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') }}</p></div><span class="count">{{ purchaseOrders.length }}</span></div>
+                <form class="stack" (ngSubmit)="createPurchaseOrder()">
+                  <label>{{ t('رقم أمر الشراء', 'Order number') }}<input name="purchaseOrderNumber" required maxlength="64" [(ngModel)]="purchaseOrderNumber"></label>
+                  <label>{{ t('المورد', 'Supplier') }}<select name="purchaseSupplierId" required [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
+                  <label>{{ t('المنتج', 'Product') }}<select name="purchaseProductId" required [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('اختر المنتج', 'Choose product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('الكمية', 'Quantity') }}<input name="purchaseQuantity" type="number" min="0.001" step="0.001" required [(ngModel)]="purchaseQuantity"></label><label>{{ t('تكلفة الوحدة', 'Unit cost') }}<input name="purchaseUnitCost" type="number" min="0" step="0.01" required [(ngModel)]="purchaseUnitCost"></label></div>
+                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('إنشاء أمر شراء', 'Create purchase order') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (purchasesLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل المشتريات…', 'Loading purchasing…') }}</p> }
+                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <p class="empty">{{ t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.') }}</p> }</div>
+              </section>
+            }
+
+            @if (tab === 'recurring') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('جدولة الفواتير الدورية', 'Recurring invoice schedules') }}</h2><p>{{ t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') }}</p></div><span class="count">{{ recurringSchedules.length }}</span></div>
+                <form class="stack" (ngSubmit)="createRecurringSchedule()">
+                  <label>{{ t('العميل (اختياري)', 'Customer (optional)') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('بدون عميل محدد', 'No specific customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('الفاصل بالأيام', 'Interval in days') }}<input name="recurringIntervalDays" type="number" min="1" max="3650" required [(ngModel)]="recurringIntervalDays"></label><label>{{ t('التشغيل التالي', 'Next run') }}<input name="recurringNextRunAt" type="datetime-local" required [(ngModel)]="recurringNextRunAt"></label></div>
+                  <label>{{ t('المنطقة الزمنية', 'Timezone') }}<input name="recurringTimezone" required maxlength="64" [(ngModel)]="recurringTimezone"></label>
+                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('حفظ الجدولة', 'Save schedule') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (recurringLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الجداول…', 'Loading schedules…') }}</p> }
+                <div class="list">@for (schedule of recurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!recurringSchedules.length && !recurringLoading) { <p class="empty">{{ t('لا توجد جداول بعد.', 'No schedules yet.') }}</p> }</div>
+              </section>
+            }
+
+@if (tab === 'audit') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('سجل العمليات', 'Activity log') }}</h2><p>{{ t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.') }}</p></div><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></div>
                 <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
@@ -508,6 +561,26 @@ export class AppComponent implements OnInit {
   agingError = '';
   agingAsOf = new Date().toISOString().slice(0, 10);
   customers: Customer[] = [];
+  suppliers: Supplier[] = [];
+  purchaseOrders: PurchaseOrder[] = [];
+  recurringSchedules: RecurringInvoiceSchedule[] = [];
+  suppliersLoading = false;
+  purchasesLoading = false;
+  recurringLoading = false;
+  operationsError = '';
+  supplierName = '';
+  supplierEmail = '';
+  supplierPhone = '';
+  supplierAddress = '';
+  purchaseOrderNumber = '';
+  purchaseSupplierId = '';
+  purchaseProductId = '';
+  purchaseQuantity = '1';
+  purchaseUnitCost = '0';
+  recurringCustomerId = '';
+  recurringIntervalDays = '30';
+  recurringNextRunAt = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+  recurringTimezone = 'UTC';
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
   statementError = '';
@@ -696,9 +769,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices' } as Record<Tab, string>)[this.tab];
   }
 
   async submitAuth(): Promise<void> {
@@ -964,6 +1037,67 @@ export class AppComponent implements OnInit {
     }
   }
 
+  private async loadSuppliers(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.suppliersLoading = true; this.operationsError = '';
+    try { const items = await this.api.suppliers(businessId); if (this.business?.id === businessId) this.suppliers = items; }
+    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
+  }
+  private async loadPurchaseOrders(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.purchasesLoading = true; this.operationsError = '';
+    try { const items = await this.api.purchaseOrders(businessId); if (this.business?.id === businessId) this.purchaseOrders = items; }
+    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    finally { if (this.business?.id === businessId) this.purchasesLoading = false; }
+  }
+  private async loadRecurringSchedules(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.recurringLoading = true; this.operationsError = '';
+    try { const items = await this.api.recurringSchedules(businessId); if (this.business?.id === businessId) this.recurringSchedules = items; }
+    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    finally { if (this.business?.id === businessId) this.recurringLoading = false; }
+  }
+  async createSupplier(): Promise<void> {
+    if (!this.business || !this.supplierName.trim()) return;
+    const businessId = this.business.id; this.suppliersLoading = true; this.operationsError = '';
+    try { await this.api.createSupplier(businessId,{name:this.supplierName.trim(),email:this.supplierEmail.trim()||undefined,phone:this.supplierPhone.trim()||undefined,address:this.supplierAddress.trim()||undefined});
+      this.supplierName='';this.supplierEmail='';this.supplierPhone='';this.supplierAddress='';
+      const items=await this.api.suppliers(businessId); if(this.business?.id===businessId)this.suppliers=items;
+    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.suppliersLoading=false}
+  }
+  async createPurchaseOrder(): Promise<void> {
+    if (!this.business || !this.purchaseSupplierId || !this.purchaseProductId) return;
+    const quantity = Number(this.purchaseQuantity), unitCost = Number(this.purchaseUnitCost);
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) { this.operationsError=this.t('تحقق من الكمية والتكلفة.','Check the quantity and unit cost.'); return; }
+    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
+    try { await this.api.createPurchaseOrder(businessId,{supplier_id:this.purchaseSupplierId,order_number:this.purchaseOrderNumber.trim(),currency_code:this.business.currency_code,lines:[{product_id:this.purchaseProductId,quantity:this.purchaseQuantity,unit_cost:this.purchaseUnitCost}]});
+      this.purchaseOrderNumber='';this.purchaseQuantity='1';this.purchaseUnitCost='0';
+      const items=await this.api.purchaseOrders(businessId);if(this.business?.id===businessId)this.purchaseOrders=items;
+    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+  }
+  hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
+  supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
+  productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
+  async receivePurchaseOrder(order: PurchaseOrder): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const lines=order.lines.filter(line=>this.hasRemainingQuantity(line)).map(line=>({line_id:line.id,quantity:line.remaining_quantity}));
+    if(!lines.length)return;
+    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
+    try { await this.api.receivePurchaseOrder(businessId,order.id,lines); const [orders,products,dashboard]=await Promise.all([this.api.purchaseOrders(businessId),this.api.products(businessId),this.api.dashboard(businessId)]);if(this.business?.id===businessId){this.purchaseOrders=orders;this.products=products;this.dashboard=dashboard;} }
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+  }
+  async createRecurringSchedule(): Promise<void> {
+    if (!this.business) return;
+    const interval=Number(this.recurringIntervalDays);if(!Number.isInteger(interval)||interval<1||interval>3650){this.operationsError=this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.','Interval must be between 1 and 3650 days.');return;}
+    const businessId=this.business.id;this.recurringLoading=true;this.operationsError='';
+    try { await this.api.createRecurringSchedule(businessId,{customer_id:this.recurringCustomerId||null,interval_days:interval,timezone:this.recurringTimezone.trim()||'UTC',next_run_at:new Date(this.recurringNextRunAt).toISOString()});const items=await this.api.recurringSchedules(businessId);if(this.business?.id===businessId)this.recurringSchedules=items; }
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.recurringLoading=false}
+  }
+
   get maxIntegrityTotal(): number {
     const report = this.dataIntegrityReport;
     return report ? Math.max(report.unlinked_issued_invoices.total, report.currency_mismatched_allocations.total, report.customer_mismatched_allocations.total) : 0;
@@ -1017,6 +1151,9 @@ export class AppComponent implements OnInit {
     if (tab === 'reports') void this.loadProfitLoss();
     if (tab === 'audit') void this.loadAuditEvents(0);
     if (tab === 'integrity') void this.loadDataIntegrity(0);
+    if (tab === 'suppliers') void this.loadSuppliers();
+    if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
+    if (tab === 'recurring') void this.loadRecurringSchedules();
   }
 
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
