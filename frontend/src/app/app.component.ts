@@ -435,6 +435,7 @@ export class AppComponent implements OnInit {
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;
+  private statementRequestVersion = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
@@ -827,16 +828,22 @@ export class AppComponent implements OnInit {
 
   async loadCustomerStatementPage(offset: number): Promise<void> {
     if (!this.business || !this.statementCustomerId) return;
+    const requestVersion = ++this.statementRequestVersion;
+    const requestedCustomerId = this.statementCustomerId;
+    const businessId = this.business.id;
     this.customerStatement = null;
     this.statementOffset = offset;
     this.statementLoading = true;
     this.statementError = '';
     try {
-      this.customerStatement = await this.api.customerStatement(this.business.id, this.statementCustomerId, offset);
+      const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
+      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      this.customerStatement = result;
     } catch (error) {
+      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
       this.statementError = this.message(error);
     } finally {
-      this.statementLoading = false;
+      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
     }
   }
 
