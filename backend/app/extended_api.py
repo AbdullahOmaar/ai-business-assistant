@@ -23,6 +23,7 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.domain_rules import money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -206,7 +207,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
             )).one_or_none()
             if product is None:
                 raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
-            total += (line.quantity * line.unit_cost).quantize(Decimal("0.01"))
+            total += money(line.quantity * line.unit_cost)
             session.add(PurchaseOrderLine(
                 business_id=business_id, purchase_order_id=po.id, product_id=product.id,
                 quantity=line.quantity, unit_cost=line.unit_cost, received_quantity=ZERO,
@@ -299,7 +300,7 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            amount = (line.unit_price * item.quantity).quantize(Decimal("0.01"))
+            amount = money(line.unit_price * item.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
                 invoice_line_id=line.id, quantity=item.quantity, amount=amount))
@@ -334,14 +335,16 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
 
         # Group duplicate line entries and lock the invoice header first. Concurrent
         # approvals for the same invoice then serialize before checking approved returns.
-        requested_by_line: dict[UUID, Decimal] = {}
+        requested_by_line: dict[UUID, dict[str, Decimal]] = {}
         for returned in lines:
-            requested_by_line[returned.invoice_line_id] = (
-                requested_by_line.get(returned.invoice_line_id, ZERO) + returned.quantity
+            requested = requested_by_line.setdefault(
+                returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
             )
+            requested["quantity"] += returned.quantity
+            requested["amount"] += returned.amount
 
         invoice_lines = {}
-        for invoice_line_id, requested_quantity in sorted(
+        for invoice_line_id, requested in sorted(
             requested_by_line.items(), key=lambda item: str(item[0])
         ):
             invoice_line = session.scalars(select(InvoiceLine).where(
@@ -351,15 +354,30 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ).with_for_update()).one_or_none()
             if invoice_line is None:
                 raise WorkflowError("Return line must reference a line on the original invoice")
-            previously_returned = session.scalar(select(func.coalesce(
+            previously_returned_quantity = session.scalar(select(func.coalesce(
                 func.sum(SalesReturnLine.quantity), 0
             )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
                 SalesReturnLine.invoice_line_id == invoice_line.id,
                 SalesReturnLine.business_id == business_id,
                 SalesReturn.status == "approved",
             ))
-            if Decimal(str(previously_returned or 0)) + requested_quantity > invoice_line.quantity:
+            if Decimal(str(previously_returned_quantity or 0)) + requested["quantity"] > invoice_line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
+            previously_returned_amount = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.amount), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line.id,
+                SalesReturnLine.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            try:
+                validate_return_amount(
+                    invoiced_amount=Decimal(str(invoice_line.line_total)),
+                    previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
+                    requested_return_amount=requested["amount"],
+                )
+            except ValueError as exc:
+                raise WorkflowError(str(exc)) from exc
             invoice_lines[invoice_line_id] = invoice_line
 
         for returned in lines:
