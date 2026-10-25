@@ -896,3 +896,46 @@ def assistant_insights(business_id: UUID,
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/audit-events")
+def list_audit_events(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    action: str | None = Query(default=None, min_length=1, max_length=80),
+    target_type: str | None = Query(default=None, min_length=1, max_length=80),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List safe audit metadata for members of the requested workspace.
+
+    This endpoint intentionally omits change_summary and request payloads to
+    reduce accidental exposure of customer data or sensitive user-entered text.
+    It returns only events belonging to the authorized workspace.
+    """
+    try:
+        _authorized(session, principal, business_id)
+        statement = select(AuditEvent).where(AuditEvent.business_id == business_id)
+        if action:
+            statement = statement.where(AuditEvent.action == action)
+        if target_type:
+            statement = statement.where(AuditEvent.target_type == target_type)
+        events = session.scalars(
+            statement.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+            .offset(offset)
+            .limit(limit)
+        ).all()
+        return [
+            {
+                "id": str(event.id),
+                "action": event.action,
+                "target_type": event.target_type,
+                "target_id": event.target_id,
+                "actor_subject": event.actor_subject,
+                "created_at": event.created_at.isoformat() if event.created_at else None,
+            }
+            for event in events
+        ]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
