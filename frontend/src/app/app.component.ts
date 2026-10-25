@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Business, ChatReply, Customer, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, ExpenseRecord, Invoice, NotificationRecord, OperationalHealth, Payment, Product, ProfitLossReport, PurchaseOrder, RecurringInvoiceSchedule, ReceivablesAgingReport, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'suppliers' | 'purchases' | 'recurring' | 'expenses' | 'notifications' | 'health' | 'taxes';
 
 @Component({
   selector: 'aba-root',
@@ -59,19 +59,36 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('التقارير الضريبية', 'Tax summary')" [attr.title]="t('التقارير الضريبية', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('المصروفات', 'Expenses')" [attr.title]="t('المصروفات', 'Expenses')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('الإشعارات', 'Notifications')" [attr.title]="t('الإشعارات', 'Notifications')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('الموردون', 'Suppliers')" [attr.title]="t('الموردون', 'Suppliers')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('المشتريات', 'Purchasing')" [attr.title]="t('المشتريات', 'Purchasing')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('الفواتير الدورية', 'Recurring invoices')" [attr.title]="t('الفواتير الدورية', 'Recurring invoices')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الدورية', 'Recurring') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('العملاء', 'Customers')" [attr.title]="t('العملاء', 'Customers')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
+@if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('الحالة التشغيلية', 'Operational health')" [attr.title]="t('الحالة التشغيلية', 'Operational health')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة', 'Health') }}</span></button> }
+                    @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('سجل العمليات', 'Activity log')" [attr.title]="t('سجل العمليات', 'Activity log')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
+                    <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports','audit','integrity'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'expenses'" (click)="setTab('expenses')"><span class="nav-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'notifications'" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'suppliers'" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'purchases'" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'recurring'" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الفواتير الدورية', 'Recurring invoices') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
+<button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
+                            <button class="nav-item" role="menuitem" [class.active]="tab === 'taxes'" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('التقارير الضريبية', 'Tax summary') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
+              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'health'" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة التشغيلية', 'Operational health') }}</span></button> }
+              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'integrity'" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('سلامة البيانات', 'Data integrity') }}</span></button> }
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('تسجيل الخروج', 'Sign out') }}</span></button>
             </div>
@@ -105,7 +122,6 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
             </section>
-            <div class="mobile-version-strip"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span></div>
 
             @if (tab === 'overview') {
               <section class="hero">
@@ -183,9 +199,24 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
                 <div class="list">
-                  @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button></article> }
+                  @for (customer of customers; track customer.id) { <article class="list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
                   @if (!customers.length) { <p class="empty">{{ t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.') }}</p> }
                 </div>
+                @if (statementVisible) {
+                  <section class="panel statement-panel">
+                    <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement?.customer?.name || statementCustomerName }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></div>
+                    @if (statementLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل كشف الحساب…', 'Loading statement…') }}</p> }
+                    @if (statementError) { <p class="error" role="alert">{{ statementError }}</p> }
+                    @if (customerStatement) {
+                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
+                      <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
+                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ event.event_type }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
+                      </tbody></table></div>
+                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
+                      @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                    }
+                  </section>
+                }
               </section>
             }
 
@@ -233,12 +264,26 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
                   <select name="invoiceCustomer" [attr.aria-label]="t('العميل', 'Customer')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر العميل', 'Choose a customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select>
+                  <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="0.01" required [(ngModel)]="invoiceDiscountRate"></label>
+                  <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="0.01" required [(ngModel)]="invoiceTaxRate"></label>
                   <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة بند', 'Add line') }} +</button></div>
                     @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select></label><label>{{ t('الكمية', 'Quantity') }}<input [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity"></label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
                   </div>
-                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ editingInvoiceId ? t('حفظ كمسودة', 'Save draft') : t('إصدار الفاتورة الآن', 'Issue invoice now') }}</button>
+                  @if (invoicePreview; as preview) {
+                    <div class="invoice-preview" aria-label="Invoice totals preview" aria-live="polite">
+                      <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ preview.subtotal }} {{ business.currency_code }}</strong></div>
+                      <div><span>{{ t('الخصم', 'Discount') }}</span><strong>−{{ preview.discount }} {{ business.currency_code }}</strong></div>
+                      <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ preview.tax }} {{ business.currency_code }}</strong></div>
+                      <div class="total"><span>{{ t('الإجمالي التقديري', 'Estimated total') }}</span><strong>{{ preview.total }} {{ business.currency_code }}</strong></div>
+                    </div>
+                  } @else {
+                    <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
+                  }
+                  <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
+                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
+                @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list">
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
                   @if (!filteredInvoices.length) { <p class="empty">{{ invoices.length ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.') }}</p> }
@@ -264,6 +309,161 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
                   @if (!payments.length) { <p class="empty">{{ t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.') }}</p> }
                 </div>
+              </section>
+            }
+
+            @if (tab === 'taxes') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('ملخص الضرائب', 'Tax summary') }}</h2><p>{{ t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.') }}</p></div></div>
+                <form class="inline-form" (ngSubmit)="loadTaxSummary()">
+                  <label>{{ t('من تاريخ', 'Start date') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
+                  <label>{{ t('إلى تاريخ', 'End date') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
+                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
+                </form>
+                @if (taxError) { <p class="error" role="alert">{{ taxError }}</p> }
+                @if (taxSummaryReport) {
+                  <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
+                  @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.') }}</p> }
+                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                }
+              </section>
+            }
+
+@if (tab === 'health' && business?.role === 'owner') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('الحالة التشغيلية', 'Operational health') }}</h2><p>{{ t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') }}</p></div><span class="count">{{ operationalHealth?.status || t('غير مفحوص', 'Not checked') }}</span></div>
+                <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('جارٍ الفحص…', 'Checking…') : t('تحديث الفحص', 'Refresh check') }}</button>
+                @if (healthError) { <p class="error" role="alert">{{ healthError }}</p> }
+                @if (operationalHealth) {
+                  <div class="metric-grid">
+                    <article class="metric"><span>{{ t('اتصال قاعدة البيانات', 'Database connection') }}</span><strong>{{ operationalHealth.database_connected ? t('متصل', 'Connected') : t('غير متصل', 'Unavailable') }}</strong></article>
+                    <article class="metric"><span>{{ t('جدول ترحيلات قاعدة البيانات', 'Migration metadata') }}</span><strong>{{ operationalHealth.migration_table_available ? t('متاح', 'Available') : t('غير متاح', 'Missing') }}</strong><small>{{ operationalHealth.migration_revision || t('لا توجد مراجعة مؤكدة', 'No confirmed revision') }}</small></article>
+                    <article class="metric"><span>{{ t('إعداد الذكاء الاصطناعي', 'AI configuration') }}</span><strong>{{ operationalHealth.ai_configured ? t('مهيأ', 'Configured') : t('غير مهيأ', 'Not configured') }}</strong></article>
+                    <article class="metric"><span>{{ t('عامل إرسال الإشعارات', 'Notification delivery worker') }}</span><strong>{{ operationalHealth.notification_delivery_configured ? t('مهيأ', 'Configured') : t('غير مهيأ', 'Not configured') }}</strong></article>
+                    <article class="metric"><span>{{ t('عامل الفواتير الدورية', 'Recurring invoice worker') }}</span><strong>{{ operationalHealth.recurring_invoice_worker_configured ? t('مهيأ', 'Configured') : t('غير مهيأ', 'Not configured') }}</strong></article>
+                  </div>
+                  <p class="muted">{{ t('آخر فحص:', 'Last checked:') }} {{ operationalHealth.checked_at | date:'medium' }}. {{ t('الفحص لا يكشف الأسرار ولا يغيّر البيانات.', 'The check reveals no secrets and does not change data.') }}</p>
+                }
+              </section>
+            }
+
+@if (tab === 'expenses') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('سجل المصروفات', 'Expense register') }}</h2><p>{{ t('سجّل المصروفات بعملة واضحة؛ المرفقات والتسوية البنكية تحتاج استكمالًا منفصلًا.', 'Record expenses with an explicit currency; attachments and bank reconciliation remain separate follow-ups.') }}</p></div><span class="count">{{ expenses.length }}</span></div>
+                <form class="stack" (ngSubmit)="createExpense()">
+                  <label>{{ t('الفئة', 'Category') }}<input name="expenseCategory" required maxlength="80" [(ngModel)]="expenseCategory"></label>
+                  <label>{{ t('الوصف', 'Description') }}<input name="expenseDescription" required maxlength="500" [(ngModel)]="expenseDescription"></label>
+                  <div class="inline-form"><label>{{ t('المبلغ', 'Amount') }}<input name="expenseAmount" type="number" min="0.01" step="0.01" required [(ngModel)]="expenseAmount"></label><label>{{ t('تاريخ المصروف', 'Incurred at') }}<input name="expenseIncurredAt" type="datetime-local" required [(ngModel)]="expenseIncurredAt"></label></div>
+                  <label>{{ t('المورد/الجهة (اختياري)', 'Vendor (optional)') }}<input name="expenseVendor" maxlength="160" [(ngModel)]="expenseVendor"></label>
+                  <label>{{ t('المرجع (اختياري)', 'Reference (optional)') }}<input name="expenseReference" maxlength="128" [(ngModel)]="expenseReference"></label>
+                  <button class="primary" type="submit" [disabled]="expensesLoading">{{ t('تسجيل المصروف', 'Record expense') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (expensesLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل المصروفات…', 'Loading expenses…') }}</p> }
+                <div class="list">@for (expense of expenses; track expense.id) { <article class="list-row"><div class="invoice-mark">−</div><div class="grow"><strong>{{ expense.description }}</strong><small>{{ expense.category }} · {{ expense.incurred_at | date:'medium' }}</small><small>{{ expense.vendor_name || t('بدون جهة', 'No vendor') }} · {{ expense.reference || expense.id.slice(0,8) }}</small></div><strong>{{ expense.amount }} {{ expense.currency_code }}</strong></article> } @if (!expenses.length && !expensesLoading) { <p class="empty">{{ t('لا توجد مصروفات بعد.', 'No expenses yet.') }}</p> }</div>
+              </section>
+            }
+
+            @if (tab === 'notifications') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('قائمة الإشعارات', 'Notification queue') }}</h2><p>{{ t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') }}</p></div><span class="count">{{ notifications.length }}</span></div>
+                <form class="stack" (ngSubmit)="createNotification()">
+                  <label>{{ t('النوع', 'Kind') }}<input name="notificationKind" required maxlength="40" [(ngModel)]="notificationKind"></label>
+                  <label>{{ t('العنوان', 'Title') }}<input name="notificationTitle" required maxlength="160" [(ngModel)]="notificationTitle"></label>
+                  <label>{{ t('المحتوى', 'Message') }}<textarea name="notificationBody" required maxlength="1000" rows="3" [(ngModel)]="notificationBody"></textarea></label>
+                  <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
+                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('إضافة إلى قائمة الانتظار', 'Queue notification') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (notificationsLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الإشعارات…', 'Loading notifications…') }}</p> }
+                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ item.kind }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
+              </section>
+            }
+
+@if (tab === 'suppliers') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span></div>
+                <form class="inline-form" (ngSubmit)="createSupplier()">
+                  <input name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
+                  <input name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
+                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t('الهاتف', 'Phone')" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="supplierPhone">
+                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('العنوان', 'Address')" [placeholder]="t('العنوان (اختياري)', 'Address (optional)')" [(ngModel)]="supplierAddress">
+                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('إضافة مورد', 'Add supplier') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (suppliersLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الموردين…', 'Loading suppliers…') }}</p> }
+                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <p class="empty">{{ t('لا يوجد موردون بعد.', 'No suppliers yet.') }}</p> }</div>
+              </section>
+            }
+
+            @if (tab === 'purchases') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('أوامر الشراء', 'Purchase orders') }}</h2><p>{{ t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') }}</p></div><span class="count">{{ purchaseOrders.length }}</span></div>
+                <form class="stack" (ngSubmit)="createPurchaseOrder()">
+                  <label>{{ t('رقم أمر الشراء', 'Order number') }}<input name="purchaseOrderNumber" required maxlength="64" [(ngModel)]="purchaseOrderNumber"></label>
+                  <label>{{ t('المورد', 'Supplier') }}<select name="purchaseSupplierId" required [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
+                  <label>{{ t('المنتج', 'Product') }}<select name="purchaseProductId" required [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('اختر المنتج', 'Choose product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('الكمية', 'Quantity') }}<input name="purchaseQuantity" type="number" min="0.001" step="0.001" required [(ngModel)]="purchaseQuantity"></label><label>{{ t('تكلفة الوحدة', 'Unit cost') }}<input name="purchaseUnitCost" type="number" min="0" step="0.01" required [(ngModel)]="purchaseUnitCost"></label></div>
+                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('إنشاء أمر شراء', 'Create purchase order') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (purchasesLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل المشتريات…', 'Loading purchasing…') }}</p> }
+                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <p class="empty">{{ t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.') }}</p> }</div>
+              </section>
+            }
+
+            @if (tab === 'recurring') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('جدولة الفواتير الدورية', 'Recurring invoice schedules') }}</h2><p>{{ t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') }}</p></div><span class="count">{{ recurringSchedules.length }}</span></div>
+                <form class="stack" (ngSubmit)="createRecurringSchedule()">
+                  <label>{{ t('العميل (اختياري)', 'Customer (optional)') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('بدون عميل محدد', 'No specific customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('الفاصل بالأيام', 'Interval in days') }}<input name="recurringIntervalDays" type="number" min="1" max="3650" required [(ngModel)]="recurringIntervalDays"></label><label>{{ t('التشغيل التالي', 'Next run') }}<input name="recurringNextRunAt" type="datetime-local" required [(ngModel)]="recurringNextRunAt"></label></div>
+                  <label>{{ t('المنطقة الزمنية', 'Timezone') }}<input name="recurringTimezone" required maxlength="64" [(ngModel)]="recurringTimezone"></label>
+                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('حفظ الجدولة', 'Save schedule') }}</button>
+                </form>
+                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
+                @if (recurringLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الجداول…', 'Loading schedules…') }}</p> }
+                <div class="list">@for (schedule of recurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!recurringSchedules.length && !recurringLoading) { <p class="empty">{{ t('لا توجد جداول بعد.', 'No schedules yet.') }}</p> }</div>
+              </section>
+            }
+
+@if (tab === 'audit') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('سجل العمليات', 'Activity log') }}</h2><p>{{ t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.') }}</p></div><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></div>
+                <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
+                  <label>{{ t('نوع العملية', 'Action') }}<input name="auditAction" maxlength="80" [(ngModel)]="auditAction" placeholder="invoice.issued"></label>
+                  <label>{{ t('نوع السجل', 'Target type') }}<input name="auditTarget" maxlength="80" [(ngModel)]="auditTargetType" placeholder="invoice"></label>
+                  <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
+                  <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
+                </form>
+                @if (auditError) { <p class="error" role="alert">{{ auditError }}</p> }
+                @if (auditLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل السجل…', 'Loading activity…') }}</p> }
+                @if (!auditLoading && !auditEvents.length && !auditError) { <p class="empty">{{ t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.') }}</p> }
+                <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
+                  @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ event.action }}</td><td>{{ event.target_type }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
+                </tbody></table></div>
+                <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
+              </section>
+            }
+
+            @if (tab === 'integrity' && business?.role === 'owner') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('مراجعة سلامة البيانات', 'Data integrity review') }}</h2><p>{{ t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') }}</p></div><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></div>
+                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
+                @if (integrityError) { <p class="error" role="alert">{{ integrityError }}</p> }
+                @if (dataIntegrityReport) {
+                  <div class="notice warning-notice"><strong>{{ t('مراجعة يدوية فقط', 'Manual review only') }}</strong><span>{{ dataIntegrityReport.warning }}</span></div>
+                  <div class="metric-grid">
+                    <article class="metric"><span>{{ t('فواتير صادرة بلا عميل', 'Issued invoices without a customer') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
+                    <article class="metric"><span>{{ t('تخصيصات بعملات مختلفة', 'Currency-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
+                    <article class="metric"><span>{{ t('تخصيصات بعملاء مختلفين', 'Customer-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
+                  </div>
+                  <h3>{{ t('الفواتير غير المرتبطة', 'Unlinked issued invoices') }}</h3>
+                  <div class="list">@for (invoice of dataIntegrityReport.unlinked_issued_invoices.items; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</strong><small>{{ invoice.created_at ? (invoice.created_at | date:'short') : '—' }} · {{ invoice.invoice_id }}</small></div></article> }</div>
+                  <h3>{{ t('تخصيصات المدفوعات التي تحتاج مراجعة', 'Payment allocations needing review') }}</h3>
+                  <div class="list">@for (item of dataIntegrityReport.currency_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.payment_currency }}</strong><small>{{ t('عملة الفاتورة:', 'Invoice currency:') }} {{ item.invoice_currency }} · {{ t('مرجع الدفعة:', 'Payment reference:') }} {{ item.payment_reference || item.payment_id }}</small></div></article> } @for (item of dataIntegrityReport.customer_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.invoice_currency }}</strong><small>{{ t('عميل الدفعة:', 'Payment customer:') }} {{ item.payment_customer_id || '—' }} · {{ t('عميل الفاتورة:', 'Invoice customer:') }} {{ item.invoice_customer_id || '—' }}</small></div></article> }</div>
+                  <div class="inline-form"><span class="muted">{{ t('الصفحة', 'Offset') }} {{ dataIntegrityReport.offset }} · {{ t('حد الصفحة', 'Page size') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('التالي', 'Next') }}</button></div>
+                }
               </section>
             }
 
@@ -296,7 +496,6 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}.quick-card{text-align:left;padding:18px}.quick-card strong,.quick-card span{display:block}.quick-card strong{font-size:13px;margin-bottom:8px}.quick-card span{font-size:11px;color:#6b7280}
     .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0}.chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
-    .mobile-version-strip{display:none}
     @media(max-width:1050px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form .primary{grid-column:1/-1}}@media(max-width:760px){
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
       .mobile-version-row .version-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:5px 8px}
@@ -309,7 +508,6 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       .nav-item>span:not(.nav-icon){display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
       .nav-item .nav-icon{display:grid;flex:0 0 27px;width:27px;height:27px;font-size:17px;border-radius:9px}
       .nav-item.active{background:#1e293b;box-shadow:inset 0 -2px #5eead4;color:#fff}
-      .mobile-version-strip{display:flex;justify-content:flex-end;margin:0 2px 10px}.mobile-version-strip .version-pill{font-size:10px;padding:5px 7px}
       .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}.shell.english .sidebar{inset:auto 0 0}.shell.english .nav-item{text-align:center}
       .topbar{display:none!important}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
@@ -325,6 +523,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       button,.secondary,.primary{min-height:42px}
     }
     .mobile-version-row{display:none}
+    .invoice-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.invoice-preview>div{display:flex;flex-direction:column;gap:4px;min-width:0}.invoice-preview span{font-size:12px;color:#64748b}.invoice-preview strong{font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.invoice-preview .total{grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:10px}
     .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
@@ -412,6 +611,17 @@ export class AppComponent implements OnInit {
   password = '';
   userEmail = '';
   tab: Tab = 'overview';
+  auditEvents: AuditEvent[] = [];
+  auditTotal = 0;
+  auditOffset = 0;
+  auditLoading = false;
+  auditError = '';
+  auditAction = '';
+  auditTargetType = '';
+  dataIntegrityReport: DataIntegrityReport | null = null;
+  integrityLoading = false;
+  integrityError = '';
+  integrityOffset = 0;
   businesses: Business[] = [];
   business: Business | null = null;
   selectedBusinessId = '';
@@ -427,6 +637,57 @@ export class AppComponent implements OnInit {
   agingError = '';
   agingAsOf = new Date().toISOString().slice(0, 10);
   customers: Customer[] = [];
+  suppliers: Supplier[] = [];
+  purchaseOrders: PurchaseOrder[] = [];
+  recurringSchedules: RecurringInvoiceSchedule[] = [];
+  expenses: ExpenseRecord[] = [];
+  notifications: NotificationRecord[] = [];
+  operationalHealth: OperationalHealth | null = null;
+  healthLoading = false;
+  healthError = '';
+  taxSummaryReport: TaxSummaryReport | null = null;
+  taxLoading = false;
+  taxError = '';
+  taxStartDate = '';
+  taxEndDate = '';
+  expensesLoading = false;
+  notificationsLoading = false;
+  expenseCategory = '';
+  expenseDescription = '';
+  expenseAmount = '';
+  expenseIncurredAt = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  expenseVendor = '';
+  expenseReference = '';
+  notificationKind = 'business';
+  notificationTitle = '';
+  notificationBody = '';
+  notificationDeduplicationKey = 'manual-' + Date.now();
+  notificationScheduledAt = '';
+  suppliersLoading = false;
+  purchasesLoading = false;
+  recurringLoading = false;
+  operationsError = '';
+  supplierName = '';
+  supplierEmail = '';
+  supplierPhone = '';
+  supplierAddress = '';
+  purchaseOrderNumber = '';
+  purchaseSupplierId = '';
+  purchaseProductId = '';
+  purchaseQuantity = '1';
+  purchaseUnitCost = '0';
+  recurringCustomerId = '';
+  recurringIntervalDays = '30';
+  recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  recurringTimezone = 'UTC';
+  customerStatement: CustomerStatement | null = null;
+  statementLoading = false;
+  statementError = '';
+  statementVisible = false;
+  statementCustomerName = '';
+  statementCustomerId = '';
+  statementOffset = 0;
+  private statementRequestVersion = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
@@ -447,6 +708,9 @@ export class AppComponent implements OnInit {
   invoiceProductId = '';
   invoiceQuantity = '1';
   invoiceLines: Array<{ productId: string; quantity: string }> = [{ productId: '', quantity: '1' }];
+  invoiceDiscountRate = '0';
+  invoiceTaxRate = '0';
+  invoiceMessage = '';
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
@@ -604,9 +868,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', expenses: 'المصروفات', notifications: 'الإشعارات', health: 'الحالة التشغيلية', taxes: 'التقارير الضريبية'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', expenses: 'Expenses', notifications: 'Notifications', health: 'Operational health', taxes: 'Tax summary' } as Record<Tab, string>)[this.tab];
   }
 
   async submitAuth(): Promise<void> {
@@ -748,6 +1012,11 @@ export class AppComponent implements OnInit {
   }
 
   async switchBusiness(id: string): Promise<void> {
+    this.statementRequestVersion++;
+    this.statementVisible = false;
+    this.customerStatement = null;
+    this.statementCustomerId = '';
+    this.statementError = '';
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
     this.clearWorkspaceData();
@@ -867,11 +1136,199 @@ export class AppComponent implements OnInit {
     }
   }
 
+  async loadTaxSummary(): Promise<void> {
+    if (!this.business) return;
+    if (this.taxStartDate && this.taxEndDate && this.taxStartDate > this.taxEndDate) { this.taxError=this.t('تاريخ البداية يجب ألا يتجاوز تاريخ النهاية.','Start date must not be after end date.'); return; }
+    const businessId=this.business.id;this.taxLoading=true;this.taxError='';
+    try { const result=await this.api.taxSummary(businessId,this.taxStartDate||undefined,this.taxEndDate||undefined);if(this.business?.id===businessId)this.taxSummaryReport=result; }
+    catch(error){if(this.business?.id===businessId){this.taxSummaryReport=null;this.taxError=this.message(error)}}finally{if(this.business?.id===businessId)this.taxLoading=false}
+  }
+
+  async loadOperationalHealth(): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const businessId=this.business.id;this.healthLoading=true;this.healthError='';
+    try { const result=await this.api.operationsHealth(businessId);if(this.business?.id===businessId)this.operationalHealth=result; }
+    catch(error){if(this.business?.id===businessId){this.operationalHealth=null;this.healthError=this.message(error)}}
+    finally{if(this.business?.id===businessId)this.healthLoading=false}
+  }
+
+  private async loadExpenses(): Promise<void> {
+    if (!this.business) return; const businessId=this.business.id;this.expensesLoading=true;this.operationsError='';
+    try { const items=await this.api.expenses(businessId);if(this.business?.id===businessId)this.expenses=items; }
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.expensesLoading=false}
+  }
+  async createExpense(): Promise<void> {
+    if(!this.business)return;const amount=Number(this.expenseAmount);if(!Number.isFinite(amount)||amount<=0){this.operationsError=this.t('أدخل مبلغًا أكبر من صفر.','Enter an amount greater than zero.');return;}
+    const businessId=this.business.id;this.expensesLoading=true;this.operationsError='';
+    try { await this.api.createExpense(businessId,{category:this.expenseCategory.trim(),description:this.expenseDescription.trim(),amount:this.expenseAmount,currency_code:this.business.currency_code,incurred_at:new Date(this.expenseIncurredAt).toISOString(),vendor_name:this.expenseVendor.trim()||undefined,reference:this.expenseReference.trim()||undefined});
+      this.expenseCategory='';this.expenseDescription='';this.expenseAmount='';this.expenseVendor='';this.expenseReference='';const items=await this.api.expenses(businessId);if(this.business?.id===businessId)this.expenses=items;
+    }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.expensesLoading=false}
+  }
+  private async loadNotifications(): Promise<void> {
+    if(!this.business)return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
+    try {const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;}
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+  }
+  async createNotification(): Promise<void> {
+    if(!this.business||!this.notificationTitle.trim()||!this.notificationBody.trim())return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
+    try {await this.api.createNotification(businessId,{kind:this.notificationKind.trim()||'business',title:this.notificationTitle.trim(),body:this.notificationBody.trim(),deduplication_key:this.notificationDeduplicationKey,scheduled_at:this.notificationScheduledAt?new Date(this.notificationScheduledAt).toISOString():undefined});
+      this.notificationTitle='';this.notificationBody='';this.notificationScheduledAt='';this.notificationDeduplicationKey='manual-'+Date.now();const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;
+    }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+  }
+
+  private async loadSuppliers(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.suppliersLoading = true; this.operationsError = '';
+    try { const items = await this.api.suppliers(businessId); if (this.business?.id === businessId) this.suppliers = items; }
+    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
+  }
+  private async loadPurchaseOrders(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.purchasesLoading = true; this.operationsError = '';
+    try { const items = await this.api.purchaseOrders(businessId); if (this.business?.id === businessId) this.purchaseOrders = items; }
+    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    finally { if (this.business?.id === businessId) this.purchasesLoading = false; }
+  }
+  private async loadRecurringSchedules(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.recurringLoading = true; this.operationsError = '';
+    try { const items = await this.api.recurringSchedules(businessId); if (this.business?.id === businessId) this.recurringSchedules = items; }
+    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    finally { if (this.business?.id === businessId) this.recurringLoading = false; }
+  }
+  async createSupplier(): Promise<void> {
+    if (!this.business || !this.supplierName.trim()) return;
+    const businessId = this.business.id; this.suppliersLoading = true; this.operationsError = '';
+    try { await this.api.createSupplier(businessId,{name:this.supplierName.trim(),email:this.supplierEmail.trim()||undefined,phone:this.supplierPhone.trim()||undefined,address:this.supplierAddress.trim()||undefined});
+      this.supplierName='';this.supplierEmail='';this.supplierPhone='';this.supplierAddress='';
+      const items=await this.api.suppliers(businessId); if(this.business?.id===businessId)this.suppliers=items;
+    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.suppliersLoading=false}
+  }
+  async createPurchaseOrder(): Promise<void> {
+    if (!this.business || !this.purchaseSupplierId || !this.purchaseProductId) return;
+    const quantity = Number(this.purchaseQuantity), unitCost = Number(this.purchaseUnitCost);
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) { this.operationsError=this.t('تحقق من الكمية والتكلفة.','Check the quantity and unit cost.'); return; }
+    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
+    try { await this.api.createPurchaseOrder(businessId,{supplier_id:this.purchaseSupplierId,order_number:this.purchaseOrderNumber.trim(),currency_code:this.business.currency_code,lines:[{product_id:this.purchaseProductId,quantity:this.purchaseQuantity,unit_cost:this.purchaseUnitCost}]});
+      this.purchaseOrderNumber='';this.purchaseQuantity='1';this.purchaseUnitCost='0';
+      const items=await this.api.purchaseOrders(businessId);if(this.business?.id===businessId)this.purchaseOrders=items;
+    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+  }
+  hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
+  supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
+  productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
+  async receivePurchaseOrder(order: PurchaseOrder): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const lines=order.lines.filter(line=>this.hasRemainingQuantity(line)).map(line=>({line_id:line.id,quantity:line.remaining_quantity}));
+    if(!lines.length)return;
+    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
+    try { await this.api.receivePurchaseOrder(businessId,order.id,lines); const [orders,products,dashboard]=await Promise.all([this.api.purchaseOrders(businessId),this.api.products(businessId),this.api.dashboard(businessId)]);if(this.business?.id===businessId){this.purchaseOrders=orders;this.products=products;this.dashboard=dashboard;} }
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+  }
+  async createRecurringSchedule(): Promise<void> {
+    if (!this.business) return;
+    const interval=Number(this.recurringIntervalDays);if(!Number.isInteger(interval)||interval<1||interval>3650){this.operationsError=this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.','Interval must be between 1 and 3650 days.');return;}
+    const businessId=this.business.id;this.recurringLoading=true;this.operationsError='';
+    try { await this.api.createRecurringSchedule(businessId,{customer_id:this.recurringCustomerId||null,interval_days:interval,timezone:this.recurringTimezone.trim()||'UTC',next_run_at:new Date(this.recurringNextRunAt).toISOString()});const items=await this.api.recurringSchedules(businessId);if(this.business?.id===businessId)this.recurringSchedules=items; }
+    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.recurringLoading=false}
+  }
+
+  get maxIntegrityTotal(): number {
+    const report = this.dataIntegrityReport;
+    return report ? Math.max(report.unlinked_issued_invoices.total, report.currency_mismatched_allocations.total, report.customer_mismatched_allocations.total) : 0;
+  }
+
+  async loadDataIntegrity(offset = 0): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const businessId = this.business.id;
+    this.integrityLoading = true;
+    this.integrityError = '';
+    this.integrityOffset = offset;
+    try {
+      const result = await this.api.dataIntegrity(businessId, offset);
+      if (this.business?.id !== businessId) return;
+      this.dataIntegrityReport = result;
+    } catch (error) {
+      if (this.business?.id !== businessId) return;
+      this.dataIntegrityReport = null;
+      this.integrityError = this.message(error);
+    } finally {
+      if (this.business?.id === businessId) this.integrityLoading = false;
+    }
+  }
+
+  async loadAuditEvents(offset = 0): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    this.auditLoading = true;
+    this.auditError = '';
+    try {
+      const result = await this.api.auditEvents(this.business.id, {
+        limit: 50, offset,
+        action: this.auditAction.trim() || undefined,
+        target_type: this.auditTargetType.trim() || undefined
+      });
+      this.auditEvents = result.items;
+      this.auditTotal = result.total;
+      this.auditOffset = result.offset;
+    } catch (error) {
+      this.auditEvents = [];
+      this.auditTotal = 0;
+      this.auditError = this.message(error);
+    } finally {
+      this.auditLoading = false;
+    }
+  }
+
   setTab(tab: Tab): void {
     this.tab = tab;
     this.error = '';
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();
+    if (tab === 'audit') void this.loadAuditEvents(0);
+    if (tab === 'integrity') void this.loadDataIntegrity(0);
+    if (tab === 'suppliers') void this.loadSuppliers();
+    if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
+    if (tab === 'recurring') void this.loadRecurringSchedules();
+    if (tab === 'expenses') void this.loadExpenses();
+    if (tab === 'notifications') void this.loadNotifications();
+    if (tab === 'health') void this.loadOperationalHealth();
+    if (tab === 'taxes') void this.loadTaxSummary();
+  }
+
+  get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
+    return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
+  }
+
+  async loadCustomerStatement(customer: Customer): Promise<void> {
+    this.statementCustomerId = customer.id;
+    this.statementCustomerName = customer.name;
+    this.statementVisible = true;
+    await this.loadCustomerStatementPage(0);
+  }
+
+  async loadCustomerStatementPage(offset: number): Promise<void> {
+    if (!this.business || !this.statementCustomerId) return;
+    const requestVersion = ++this.statementRequestVersion;
+    const requestedCustomerId = this.statementCustomerId;
+    const businessId = this.business.id;
+    this.customerStatement = null;
+    this.statementOffset = offset;
+    this.statementLoading = true;
+    this.statementError = '';
+    try {
+      const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
+      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      this.customerStatement = result;
+    } catch (error) {
+      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      this.statementError = this.message(error);
+    } finally {
+      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
+    }
   }
 
   async createCustomer(): Promise<void> {
@@ -995,6 +1452,66 @@ export class AppComponent implements OnInit {
     }
   }
 
+  get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
+    if (!this.business || !this.invoiceLines.length) return null;
+    const parseScaled = (value: string | number, scale: number): bigint | null => {
+      const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
+      if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
+      const fraction = (match[2] || '').padEnd(scale, '0');
+      return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
+    };
+    const roundHalfUp = (numerator: bigint, denominator: bigint): bigint =>
+      (numerator + denominator / 2n) / denominator;
+    const formatCents = (cents: bigint): string =>
+      `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
+
+    // Preserve precision when rates are reconstructed from saved totals.
+    const discountRate = parseScaled(this.invoiceDiscountRate, 12);
+    const taxRate = parseScaled(this.invoiceTaxRate, 12);
+    if (discountRate === null || taxRate === null ||
+        discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
+
+    // Match the backend's Decimal behavior: sum exact quantity × unit-price products,
+    // then round the subtotal once to cents using ROUND_HALF_UP.
+    let subtotalMilliCents = 0n;
+    for (const line of this.invoiceLines) {
+      const product = this.products.find(item => item.id === line.productId);
+      const quantityMilli = parseScaled(line.quantity, 3);
+      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
+      if (!product || quantityMilli === null || quantityMilli <= 0n ||
+          unitPriceCents === null) return null;
+      subtotalMilliCents += quantityMilli * unitPriceCents;
+    }
+
+    const subtotalCents = roundHalfUp(subtotalMilliCents, 1000n);
+    if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+    const rateDenominator = 100n * 1_000_000_000_000n;
+    const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
+    const taxableCents = subtotalCents - discountCents;
+    const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
+    return {
+      subtotal: formatCents(subtotalCents),
+      discount: formatCents(discountCents),
+      tax: formatCents(taxCents),
+      total: formatCents(taxableCents + taxCents),
+    };
+  }
+
+  private deriveRate(amount: string | undefined, base: string | undefined): string {
+    const cents = (raw: string | undefined): bigint | null => {
+      const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(raw || '0').trim());
+      if (!match || match[1].length > 12) return null;
+      return BigInt(match[1]) * 100n + BigInt((match[2] || '').padEnd(2, '0') || '0');
+    };
+    const value = cents(amount);
+    const denominator = cents(base);
+    if (value === null || denominator === null || denominator <= 0n || value <= 0n) return '0';
+    const scale = 1_000_000_000_000n;
+    const scaledRate = (value * 100n * scale + denominator / 2n) / denominator;
+    const cappedRate = scaledRate > 100n * scale ? 100n * scale : scaledRate;
+    return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
+  }
+
   addInvoiceLine(): void {
     if (this.loading || !this.products.length) return;
     this.invoiceLines = [...this.invoiceLines, { productId: '', quantity: '1' }];
@@ -1006,8 +1523,13 @@ export class AppComponent implements OnInit {
   }
 
   async createInvoice(): Promise<void> {
-    if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length || this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0)) {
-      this.error = this.t('اختَر العميل وأدخل منتجًا وكمية صحيحة لكل بند.', 'Choose a customer and a valid product and quantity for every line.');
+    const discountRate = Number(this.invoiceDiscountRate);
+    const taxRate = Number(this.invoiceTaxRate);
+    if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length ||
+        this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) ||
+        !Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
+        !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
+      this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
       return;
     }
     this.loading = true;
@@ -1018,14 +1540,17 @@ export class AppComponent implements OnInit {
         invoice_number: invoiceNumber,
         currency_code: this.business.currency_code,
         customer_id: this.invoiceCustomerId,
-        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) }))
+        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
+        discount_rate: String(discountRate),
+        tax_rate: String(taxRate),
       };
       if (this.editingInvoiceId) {
         await this.api.updateDraftInvoice(this.business.id, this.editingInvoiceId, payload);
       } else {
-        await this.api.createAndIssueInvoice(this.business.id, payload);
+        await this.api.createInvoice(this.business.id, payload);
       }
       this.cancelInvoiceEdit();
+      this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.tab = 'invoices';
@@ -1048,6 +1573,10 @@ export class AppComponent implements OnInit {
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
       this.invoiceCustomerId = detail.customer_id || '';
+      this.invoiceDiscountRate = this.deriveRate(detail.discount_total, detail.subtotal);
+      const taxableBase = Number(detail.subtotal || 0) - Number(detail.discount_total || 0);
+      this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
+      this.invoiceMessage = '';
       this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
     } catch (error) {
       this.error = this.message(error);
@@ -1058,8 +1587,11 @@ export class AppComponent implements OnInit {
 
   cancelInvoiceEdit(): void {
     this.editingInvoiceId = null;
+    this.invoiceMessage = '';
     this.invoiceNumber = '';
     this.invoiceCustomerId = '';
+    this.invoiceDiscountRate = '0';
+    this.invoiceTaxRate = '0';
     this.invoiceQuantity = '1';
     this.invoiceLines = [{ productId: '', quantity: '1' }];
   }
@@ -1070,6 +1602,7 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       await this.api.issueInvoice(this.business.id, invoice.id);
+      this.invoiceMessage = '';
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
