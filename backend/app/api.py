@@ -13,8 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
-from app.models import Product
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import (
     WorkflowError,
     create_customer,
@@ -53,57 +52,6 @@ class ProductCreate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     unit: str = Field(default="unit", min_length=1, max_length=32)
     is_stock_tracked: bool = False
-
-
-class ProductImportRow(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    sku: str = Field(min_length=1, max_length=80)
-    name: str = Field(min_length=1, max_length=160)
-    unit_price: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
-    description: str | None = Field(default=None, max_length=1000)
-    unit: str = Field(default="unit", min_length=1, max_length=32)
-    is_stock_tracked: bool = False
-
-
-class ProductImportRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    rows: list[ProductImportRow] = Field(min_length=1, max_length=500)
-
-
-def _product_import_errors(session: Session, business_id: UUID,
-                           rows: list[ProductImportRow]) -> list[dict]:
-    """Validate all product rows before any write; SKU is the retry-safe natural key."""
-    errors: list[dict] = []
-    first_row_by_sku: dict[str, int] = {}
-    normalized_skus: list[str] = []
-    for index, row in enumerate(rows):
-        row_number = index + 2  # CSV header is row 1.
-        sku = row.sku.strip()
-        name = row.name.strip()
-        normalized_skus.append(sku.casefold())
-        if not sku:
-            errors.append({"row": row_number, "field": "sku", "code": "required"})
-        if not name:
-            errors.append({"row": row_number, "field": "name", "code": "required"})
-        key = sku.casefold()
-        if key in first_row_by_sku:
-            errors.append({"row": row_number, "field": "sku", "code": "duplicate_in_file",
-                           "first_row": first_row_by_sku[key]})
-        else:
-            first_row_by_sku[key] = row_number
-
-    if normalized_skus:
-        existing = set(session.scalars(
-            select(func.lower(Product.sku)).where(
-                Product.business_id == business_id,
-                Product.sku.is_not(None),
-                func.lower(Product.sku).in_(normalized_skus),
-            )
-        ).all())
-        for index, sku in enumerate(normalized_skus):
-            if sku and sku in existing:
-                errors.append({"row": index + 2, "field": "sku", "code": "already_exists"})
-    return errors
 
 
 class InvoiceLineInput(BaseModel):
@@ -222,46 +170,6 @@ def post_product(business_id: UUID, body: ProductCreate,
     result = _run(session, lambda: create_product(
         session, principal=principal, business_id=business_id, **body.model_dump()))
     return _record(result)
-
-
-@router.post("/businesses/{business_id}/products/import/preview")
-def preview_products_import(business_id: UUID, body: ProductImportRequest,
-                            session: Session = Depends(get_session),
-                            principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Validate a bounded product batch without writing any business data."""
-    def preview():
-        authorize_membership(session, principal=principal, business_id=business_id)
-        errors = _product_import_errors(session, business_id, body.rows)
-        return {"valid": not errors, "row_count": len(body.rows), "errors": errors,
-                "write_performed": False}
-    return _run(session, preview)
-
-
-@router.post("/businesses/{business_id}/products/import", status_code=201)
-def import_products(business_id: UUID, body: ProductImportRequest,
-                    session: Session = Depends(get_session),
-                    principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Create an all-or-nothing product batch; business-scoped unique SKUs block duplicate retries."""
-    def create_batch():
-        authorize_membership(session, principal=principal, business_id=business_id)
-        errors = _product_import_errors(session, business_id, body.rows)
-        if errors:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail={"message": "Product import validation failed; no rows were imported.",
-                        "errors": errors},
-            )
-        products = []
-        for row in body.rows:
-            products.append(create_product(
-                session, principal=principal, business_id=business_id,
-                sku=row.sku.strip(), name=row.name.strip(), unit_price=row.unit_price,
-                description=row.description, unit=row.unit.strip(),
-                is_stock_tracked=row.is_stock_tracked,
-            ))
-        return {"created_count": len(products), "products": [_record(item) for item in products],
-                "atomic": True}
-    return _run(session, create_batch)
 
 
 @router.post("/businesses/{business_id}/invoices", status_code=201)
