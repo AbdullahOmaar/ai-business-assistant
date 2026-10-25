@@ -267,6 +267,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       input,select,textarea{font-size:16px!important;min-height:44px}
       button,.secondary,.primary{min-height:42px}
     }
+    .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
     @media(max-width:760px){
@@ -608,6 +609,28 @@ export class AppComponent implements OnInit {
       this.error = this.message(error);
     } finally {
       if (loadVersion === this.workspaceLoadVersion) this.loading = false;
+    }
+  }
+
+  async loadProfitLoss(): Promise<void> {
+    if (!this.business) return;
+    if (this.profitLossPeriod === 'custom' && (!this.profitLossStart || !this.profitLossEnd)) {
+      this.reportError = this.t('حدد تاريخ البداية والنهاية.', 'Choose both a start and end date.');
+      return;
+    }
+    this.reportLoading = true;
+    this.reportError = '';
+    try {
+      this.profitLoss = await this.api.profitLoss(
+        this.business.id,
+        this.profitLossPeriod,
+        this.profitLossPeriod === 'custom' ? this.profitLossStart : undefined,
+        this.profitLossPeriod === 'custom' ? this.profitLossEnd : undefined
+      );
+    } catch (error) {
+      this.reportError = this.message(error);
+    } finally {
+      this.reportLoading = false;
     }
   }
 
