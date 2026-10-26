@@ -23,6 +23,9 @@
 - Environment blocker: local `git ls-remote` cannot resolve github.com, preventing checkout and local test execution. Treat as infrastructure limitation, not proof of a code defect or passing tests.
 - Merge/deploy gate: keep all related PRs Draft and unmerged until a runner executes backend/PostgreSQL, frontend/build, and security checks successfully on the exact heads. After reconciliation, verify latest main SHA and production build/version before release.
 
+- Review finding (2026-10-26): corrected `test_sales_return_approval_rejects_cumulative_amount_above_original_line` in commit `0331184cd039973ba6f10fb4c4d77c0b536335b0`. A 16.00 gross invoice discounted by 25% has a 12.00 net ceiling; returning half the quantity is capped at 6.00, so the original fixture amount 10.00 would be rejected before testing the intended cumulative-return case. This was a source-level arithmetic review, not a test execution result.
+- Corrected-head validation: after the fixture correction, the commit-status and PR-triggered workflow query returned no status checks/workflow runs. The latest observable failures above are from the prior head; do not infer the corrected head passed.
+
 ## Other release checks
 ### Production configuration and authenticated smoke tests
 - Status: `TODO`.
