@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import Base, Business, Expense, Invoice
+from app.models import Base, Business, Expense, Invoice, InvoiceLine, SalesReturn, SalesReturnLine
 from app.security import AuthenticatedPrincipal
 
 
@@ -131,6 +131,80 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
         assert result["period"]["timezone"] == "America/New_York"
         assert Decimal(result["currencies"][0]["revenue"]) == Decimal("20.00")
         assert Decimal(result["currencies"][0]["expenses"]) == Decimal("5.00")
+    finally:
+        _restore_app(engine, previous_factory, previous_resolver)
+
+
+def test_profit_loss_explicitly_reports_gross_revenue_when_approved_return_exists():
+    engine, client, previous_factory, previous_resolver = _configured_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Gross Revenue Return Shop",
+                "currency_code": "EGP",
+                "timezone": "UTC",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+
+        with Session(engine) as session:
+            invoice = Invoice(
+                business_id=business_id,
+                invoice_number="RET-GROSS-001",
+                status="issued",
+                currency_code="EGP",
+                issue_date=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                subtotal=Decimal("20.00"),
+                discount_total=Decimal("0.00"),
+                tax_total=Decimal("0.00"),
+                total=Decimal("20.00"),
+            )
+            session.add(invoice)
+            session.flush()
+            line = InvoiceLine(
+                business_id=business_id,
+                invoice_id=invoice.id,
+                description="Test item",
+                quantity=Decimal("1.000"),
+                unit_price=Decimal("20.00"),
+                line_total=Decimal("20.00"),
+            )
+            session.add(line)
+            session.flush()
+            sales_return = SalesReturn(
+                business_id=business_id,
+                invoice_id=invoice.id,
+                status="approved",
+                total=Decimal("5.00"),
+            )
+            session.add(sales_return)
+            session.flush()
+            session.add(SalesReturnLine(
+                business_id=business_id,
+                sales_return_id=sales_return.id,
+                invoice_line_id=line.id,
+                quantity=Decimal("0.250"),
+                amount=Decimal("5.00"),
+            ))
+            session.commit()
+
+        report = client.get(
+            f"/api/v1/businesses/{business_id}/profit-loss",
+            params={
+                "period": "custom",
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-31",
+            },
+        )
+        assert report.status_code == 200, report.text
+        payload = report.json()
+        assert payload["revenue_basis"] == (
+            "gross issued invoice totals before sales returns; stored invoice tax is included"
+        )
+        assert Decimal(payload["currencies"][0]["revenue"]) == Decimal("20.00")
+        assert any("approved sales returns are not netted" in item for item in payload["limitations"])
     finally:
         _restore_app(engine, previous_factory, previous_resolver)
 
