@@ -117,9 +117,23 @@ def approve_sales_return(
     discount_allocation_values = [
         (str(row.id), row.line_total) for row in invoice_lines_for_allocation
     ]
-    for return_line in return_lines:
+
+    # Validate aggregate quantity and amount per source line, including duplicate
+    # rows within this draft return, before recording any stock movements.
+    requested_by_line: dict[UUID, dict[str, Decimal]] = {}
+    for returned in return_lines:
+        requested = requested_by_line.setdefault(
+            returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
+        )
+        requested["quantity"] += returned.quantity
+        requested["amount"] += returned.amount
+
+    invoice_lines: dict[UUID, InvoiceLine] = {}
+    for invoice_line_id, requested in sorted(
+        requested_by_line.items(), key=lambda item: str(item[0])
+    ):
         original_line = session.scalars(select(InvoiceLine).where(
-            InvoiceLine.id == return_line.invoice_line_id,
+            InvoiceLine.id == invoice_line_id,
             InvoiceLine.business_id == business_id,
             InvoiceLine.invoice_id == invoice.id,
         ).with_for_update()).one_or_none()
@@ -142,7 +156,7 @@ def approve_sales_return(
         validate_return_quantity(
             sold_quantity=original_line.quantity,
             previously_returned=Decimal(str(previously_returned or 0)),
-            requested_quantity=return_line.quantity,
+            requested_quantity=requested["quantity"],
         )
         validate_return_amount(
             invoiced_amount=discounted_return_line_total(
@@ -152,9 +166,13 @@ def approve_sales_return(
                 target_line_id=str(original_line.id),
             ),
             previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
-            requested_return_amount=return_line.amount,
+            requested_return_amount=requested["amount"],
         )
-        total += return_line.amount
+        invoice_lines[invoice_line_id] = original_line
+        total += requested["amount"]
+
+    for returned in return_lines:
+        original_line = invoice_lines[returned.invoice_line_id]
         if original_line.product_id is not None:
             product = session.scalars(select(Product).where(
                 Product.id == original_line.product_id,
@@ -164,7 +182,7 @@ def approve_sales_return(
                 record_stock_movement(
                     session, principal=principal, business_id=business_id,
                     product_id=product.id, movement_type="return",
-                    quantity_delta=return_line.quantity,
+                    quantity_delta=returned.quantity,
                     reason=f"Approved sales return {sales_return.id}",
                     reference_type="sales_return", reference_id=sales_return.id,
                 )
