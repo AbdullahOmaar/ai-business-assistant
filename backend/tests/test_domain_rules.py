@@ -131,16 +131,21 @@ def test_report_totals_keep_currencies_separate() -> None:
 
 def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
     from types import SimpleNamespace
-    from app.domain_rules import money
-    from app.extended_api import _discounted_return_line_total
+    from app.domain_rules import discounted_return_line_total, money
 
     lines = [
         SimpleNamespace(id=f"line-{index:04d}", line_total=Decimal("1.00"))
         for index in range(500)
     ]
     invoice = SimpleNamespace(subtotal=Decimal("500.00"), discount_total=Decimal("2.45"))
+    line_totals = [(line.id, line.line_total) for line in lines]
     returnable = [
-        _discounted_return_line_total(invoice, line, lines)
+        discounted_return_line_total(
+            invoice_subtotal=invoice.subtotal,
+            invoice_discount_total=invoice.discount_total,
+            invoice_lines=line_totals,
+            target_line_id=line.id,
+        )
         for line in lines
     ]
 
