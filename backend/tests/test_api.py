@@ -796,7 +796,11 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
             business_id=business.id, customer_id=customer.id, amount=Decimal("25.00"),
             currency_code="EGP", idempotency_key="aging-overallocated-payment",
         )
-        session.add_all([settled_payment, over_payment])
+        mismatch_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("5.00"),
+            currency_code="USD", idempotency_key="aging-currency-mismatch-payment",
+        )
+        session.add_all([settled_payment, over_payment, mismatch_payment])
         session.flush()
         session.add_all([
             PaymentAllocation(
@@ -808,6 +812,11 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
                 business_id=business.id, payment_id=over_payment.id,
                 invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-OVER"),
                 amount=Decimal("25.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=mismatch_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
+                amount=Decimal("5.00"),
             ),
         ])
         session.commit()
@@ -822,6 +831,7 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         assert response.status_code == 200
         payload = response.json()
         assert payload["as_of"] == "2026-10-26"
+        assert "Currency-mismatched allocations are listed separately" in payload["note"]
         invoices_by_number = {row["invoice_number"]: row for row in payload["invoices"]}
         assert set(invoices_by_number) == {
             "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOTDUE",
@@ -829,7 +839,14 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         }
         assert "FOREIGN" not in invoices_by_number
         assert invoices_by_number["AGE-30"]["bucket"] == "31_60_days"
+        # A USD allocation must not reduce an EGP invoice's outstanding balance.
+        assert invoices_by_number["AGE-30"]["allocated_amount"] == "0.00"
         assert invoices_by_number["AGE-30"]["outstanding_amount"] == "100.00"
+        assert invoices_by_number["AGE-30"]["currency_mismatch_allocations"] == [{
+            "allocation_id": invoices_by_number["AGE-30"]["currency_mismatch_allocations"][0]["allocation_id"],
+            "payment_currency_code": "USD",
+            "amount": "5.00",
+        }]
         assert invoices_by_number["AGE-USD"]["bucket"] == "1_30_days"
         assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
         assert invoices_by_number["AGE-NODUE"]["bucket"] == "no_due_date"
