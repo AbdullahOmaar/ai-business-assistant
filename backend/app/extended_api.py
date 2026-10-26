@@ -217,7 +217,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         supplier = session.scalars(select(Supplier).where(
             Supplier.id == body.supplier_id, Supplier.business_id == business_id,
             Supplier.is_active.is_(True),
