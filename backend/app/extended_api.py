@@ -23,7 +23,7 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
-from app.domain_rules import money, validate_return_amount
+from app.domain_rules import discounted_return_line_total, money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -134,36 +134,6 @@ class NotificationInput(BaseModel):
     body: str = Field(min_length=1, max_length=1000)
     deduplication_key: str = Field(min_length=1, max_length=160)
     scheduled_at: datetime | None = None
-
-
-def _discounted_return_line_total(
-    invoice: Invoice, line: InvoiceLine, invoice_lines: list[InvoiceLine]
-) -> Decimal:
-    """Allocate the invoice's net subtotal across lines in cents using largest remainder.
-
-    The allocation reconciles exactly to the lesser of the stored invoice net subtotal
-    and the sum of rounded line totals, preventing multi-line rounding from authorizing
-    a return larger than the customer was invoiced for.
-    """
-    gross_cents = {str(item.id): max(0, int(money(Decimal(str(item.line_total))) * 100))
-                   for item in invoice_lines}
-    gross_total_cents = sum(gross_cents.values())
-    subtotal_cents = max(0, int(money(Decimal(str(invoice.subtotal or ZERO))) * 100))
-    discount_cents = max(0, int(money(Decimal(str(invoice.discount_total or ZERO))) * 100))
-    net_cents = min(gross_total_cents, max(0, subtotal_cents - min(discount_cents, subtotal_cents)))
-    if gross_total_cents <= 0 or net_cents <= 0:
-        return ZERO
-    shares: dict[str, int] = {}
-    remainders: list[tuple[int, str]] = []
-    for item in invoice_lines:
-        key = str(item.id)
-        numerator = net_cents * gross_cents[key]
-        shares[key] = numerator // gross_total_cents
-        remainders.append((numerator % gross_total_cents, key))
-    cents_left = net_cents - sum(shares.values())
-    for _, key in sorted(remainders, key=lambda pair: (-pair[0], pair[1]))[:cents_left]:
-        shares[key] += 1
-    return Decimal(shares.get(str(line.id), 0)) / 100
 
 
 def _authorized(
@@ -340,7 +310,12 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            discounted_line_total = _discounted_return_line_total(invoice, line, discount_allocation_lines)
+            discounted_line_total = discounted_return_line_total(
+                invoice_subtotal=invoice.subtotal,
+                invoice_discount_total=invoice.discount_total,
+                invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
+                target_line_id=str(line.id),
+            )
             amount = money(discounted_line_total * item.quantity / line.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
@@ -417,7 +392,12 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             try:
                 validate_return_amount(
-                    invoiced_amount=_discounted_return_line_total(invoice, invoice_line, discount_allocation_lines),
+                    invoiced_amount=discounted_return_line_total(
+                        invoice_subtotal=invoice.subtotal,
+                        invoice_discount_total=invoice.discount_total,
+                        invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
+                        target_line_id=str(invoice_line.id),
+                    ),
                     previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
                     requested_return_amount=requested["amount"],
                 )
