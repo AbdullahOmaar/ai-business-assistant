@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
+from uuid import UUID
 
 from app.main import app
 from app.models import Base, Business, Expense, Invoice
@@ -58,7 +59,7 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
         # New York's 2026-01-01 local day is [05:00 UTC Jan 1, 05:00 UTC Jan 2).
         # The first records are still on the previous local date and must be excluded.
         with Session(engine) as session:
-            business = session.get(Business, business_id)
+            business = session.get(Business, UUID(business_id))
             assert business is not None
             session.add_all([
                 Invoice(
