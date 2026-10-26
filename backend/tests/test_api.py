@@ -961,6 +961,10 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
             *invoices,
         ])
         session.flush()
+        partial_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("30.00"),
+            currency_code="EGP", idempotency_key="aging-partial-payment",
+        )
         settled_payment = Payment(
             business_id=business.id, customer_id=customer.id, amount=Decimal("40.00"),
             currency_code="EGP", idempotency_key="aging-settled-payment",
@@ -977,9 +981,14 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
             business_id=business.id, customer_id=customer.id, amount=Decimal("3.00"),
             currency_code="EUR", idempotency_key="aging-currency-mismatch-eur",
         )
-        session.add_all([settled_payment, over_payment, mismatch_usd_payment, mismatch_eur_payment])
+        session.add_all([partial_payment, settled_payment, over_payment, mismatch_usd_payment, mismatch_eur_payment])
         session.flush()
         session.add_all([
+            PaymentAllocation(
+                business_id=business.id, payment_id=partial_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
+                amount=Decimal("30.00"),
+            ),
             PaymentAllocation(
                 business_id=business.id, payment_id=settled_payment.id,
                 invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-SETTLED"),
@@ -1027,8 +1036,8 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         # Mismatched USD/EUR allocations must never reduce the EGP invoice or be added together.
         egp_invoice = invoices_by_number["AGE-30"]
         assert egp_invoice["aging_bucket"] == "31_60_days"
-        assert egp_invoice["allocated_payments"] == "0.00"
-        assert egp_invoice["outstanding_amount"] == "100.00"
+        assert egp_invoice["allocated_payments"] == "30.00"
+        assert egp_invoice["outstanding_amount"] == "70.00"
 
         warnings = {(row["invoice_number"], row["type"]): row for row in payload["data_quality_warnings"]}
         mismatch = warnings[("AGE-30", "payment_currency_mismatch")]
@@ -1050,14 +1059,14 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
 
         summaries = {row["currency_code"]: row for row in payload["by_currency"]}
         assert set(summaries) == {"EGP", "USD"}
-        assert summaries["EGP"]["total_outstanding"] == "180.00"
+        assert summaries["EGP"]["total_outstanding"] == "150.00"
         assert summaries["USD"]["total_outstanding"] == "50.00"
         egp_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["EGP"]["buckets"]}
         usd_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["USD"]["buckets"]}
         assert egp_buckets == {
             "not_due": "25.00",
             "1_30_days": "15.00",
-            "31_60_days": "100.00",
+            "31_60_days": "70.00",
             "over_90_days": "10.00",
             "no_due_date": "30.00",
         }
