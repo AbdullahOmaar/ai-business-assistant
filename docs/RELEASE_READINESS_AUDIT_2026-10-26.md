@@ -73,3 +73,10 @@ No production deployment, production migration, destructive data change, or hist
 ## Runtime observations and audit checkpoint
 - Vercel runtime-error summaries for both production API and frontend reported no runtime error clusters in the last 24 hours. This is a limited observability signal, not a functional smoke test; the Hobby runtime-log query also states that 24-hour raw logs exceed the plan's retention, so detailed historical logs are unavailable.
 - Audit report and ledger were committed on the existing draft PR #161 branch. Current observed branch head: `df6954b54f17814fe3b790b82b5dde3e5e84689c`. The documentation-only commits do not execute backend/frontend workflows under the current path filters; the application candidate still has no passing test evidence. Keep PR #161 draft/unmerged.
+
+
+## Execution follow-up — 2026-10-26 17:04 UTC
+- Current PR #161 head observed before this documentation update: `aeab21141fae781f24877e5b21b0656146195e10`; PR remains Draft and unmerged.
+- Purchasing authorization is now represented in candidate source as a two-step workflow: staff can create a draft; owner-only approval changes it to approved; owner-only receipt records stock movements. Regression tests cover staff denial and owner approval-before-receipt.
+- Retry evidence on the latest code head still shows immediate workflow failure with no exposed steps: backend/frontend run [40365000073](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40365000073), container run [40364999911](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40364999911), and dependency scan [40364999866](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40364999866). GitHub returned empty step arrays on retry. This is not a successful test result.
+- Main and production were not changed. No merge, deploy, production migration, or data mutation was performed.
