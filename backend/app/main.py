@@ -13,6 +13,8 @@ from app.extended_api import router as extended_business_router
 from app.database import create_database_engine
 from app.firebase_auth import configure_firebase_auth
 
+CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
 app = FastAPI(
     title="AI Business Assistant API",
     version="0.4.0",
@@ -32,7 +34,7 @@ if allowed_origins:
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_methods=CORS_ALLOWED_METHODS,
         allow_headers=["Authorization", "Content-Type", "Accept"],
     )
 
