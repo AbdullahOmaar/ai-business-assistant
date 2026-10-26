@@ -223,6 +223,52 @@ def test_sales_return_approval_rejects_cumulative_amount_above_original_line(ope
             )
 
 
+def test_sales_return_approval_aggregates_duplicate_lines_before_validation(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Duplicate Return Customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-RETURN-DUPLICATES", currency_code="EGP",
+            customer_id=customer.id,
+            lines=[{"product_id": str(product.id), "quantity": "1"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        sales_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add_all([
+            SalesReturnLine(
+                business_id=business_id, sales_return_id=sales_return.id,
+                invoice_line_id=line.id, quantity=Decimal("1"),
+                amount=Decimal("8.00"),
+            ),
+            SalesReturnLine(
+                business_id=business_id, sales_return_id=sales_return.id,
+                invoice_line_id=line.id, quantity=Decimal("1"),
+                amount=Decimal("8.00"),
+            ),
+        ])
+        session.flush()
+        with pytest.raises(ValueError, match="return quantity exceeds"):
+            approve_sales_return(
+                session, principal=principal, business_id=business_id,
+                sales_return_id=sales_return.id,
+            )
+
+
 def test_notification_deduplication_and_currency_separated_summary(operation_workspace):
     engine, business_id, principal = operation_workspace
     with Session(engine) as session:
