@@ -199,3 +199,10 @@
 - Source inventory confirms extended_api.py exposes GET /payments only; no payment creation/allocation or refund/credit-note route is implemented in that router. This is a confirmed completeness gap for a full invoice/payment/return lifecycle, not a claim that another module has no such route; route-wide inventory is required before implementation to avoid duplicate endpoints.
 - Current financial summary explicitly reports issued invoice totals and expenses by currency, not profit or cash balance. Receivables aging computes allocations but does not visibly net approved sales returns; because approved returns lack a verified credit-note/refund posting lifecycle, do not silently net them until accounting treatment is defined and tested.
 - Status: source review IN_PROGRESS; runtime verification BLOCKED; merge/deploy NOT AUTHORIZED until exact-head test/build/security results are available and pass. No production data was mutated.
+
+
+## Procurement workflow regression coverage — 2026-10-26
+- Added `test_owner_can_approve_draft_purchase_order`: verifies owner-created draft starts in `draft`, owner approval returns `approved`, persists the transition, and retains the expected Decimal total.
+- Test commit: `6242bcb151a5e17c7f8b99cca4efea43102420ee`. The staff workflow test also now exercises the intended lifecycle: STAFF creates a draft, STAFF approval is denied, and the order remains draft.
+- Rechecked PR #161 head: `6242bcb151a5e17c7f8b99cca4efea43102420ee`, base/main: `af4ba084cedcec7339498579ef5563ce7748bf7c`, open and Draft. No workflow runs were returned for this exact head at the time of checking; the latest runs on the preceding test commit failed without step summaries, and log download returned 404 (no logs available). Do not infer that tests ran or passed.
+- Status: code/test changes committed to candidate; validation BLOCKED; merge/deploy blocked.
