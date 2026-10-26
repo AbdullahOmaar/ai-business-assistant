@@ -181,6 +181,7 @@ def test_sales_return_approval_rejects_cumulative_amount_above_original_line(ope
             invoice_number="INV-RETURN-CUMULATIVE", currency_code="EGP",
             customer_id=customer.id,
             lines=[{"product_id": str(product.id), "quantity": "2"}],
+            discount_rate=Decimal("25"),
         )
         issue_invoice(
             session, principal=principal, business_id=business_id,
