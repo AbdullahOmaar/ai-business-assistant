@@ -249,7 +249,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         po.total = total
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="purchase_order.created", target_type="purchase_order",
-            target_id=str(po.id), change_summary=f"Draft order {po.order_number}")
+            target_id=str(po.id), change_summary=f"Draft order {po.order_number}"))
         session.flush()
         return po
     po = _commit(session, op)
