@@ -177,3 +177,19 @@ These tests were committed to branch `fix/business-timezone-reporting` (latest k
 5. Vercel project metadata was readable under the exact team ID, but no production change was made. Runtime HTTP probes through the available web fetch channel were blocked, so no live API health/version response is claimed.
 
 Release verdict remains **NOT CLEARED FOR PRODUCTION**.
+
+
+## Runtime configuration metadata review — 2026-10-26 00:52 UTC
+
+Read project environment-variable metadata with decryption disabled; no secret values were requested or recorded.
+
+- Frontend Vercel project has no project-level environment variables listed. The committed public runtime config points to `https://ai-business-assistant-api.vercel.app` and the Firebase project ID matches the backend's configured `FIREBASE_PROJECT_ID` value. The Firebase web API key is public client configuration and was not copied into this audit.
+- API production environment metadata lists `DATABASE_URL`, `FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_JSON`, and `CORS_ALLOWED_ORIGINS` with production targets. Their secret values were not inspected. The CORS origin entry matches the frontend production origin.
+- No project-level `OPENAI_API_KEY` appeared in the API environment-variable listing. The current assistant source has a deterministic, limited intent-based fallback when that key is absent; do not represent it as unrestricted model-backed chat. Confirm intended behavior against product requirements without adding paid configuration or secrets automatically.
+- These metadata checks do not establish that credentials are valid, PostgreSQL is reachable, Firebase token verification works, or CORS/authenticated requests succeed at runtime.
+
+### Latest CI status after these updates
+
+The latest runs for PR #142 commit `1ba15a37c500fc8e08c1a64c7e9ecdb587f28871` now show completed failure, with runner ID 0 and no steps in sampled jobs. The latest PR #143 run family for `d564e7ee982cc9782f6959389e18499dd8ae6c1a` also shows failed jobs with no step evidence. Relevant links: [PR #143 CI 40251116121](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116121), [backend tests 40251116118](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116118), [dependency scan 40251116114](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116114), [container check 40251116119](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116119).
+
+The CI root cause remains unresolved by the available GitHub API evidence; no workflow changes were made to mask it. Release verdict remains **NOT CLEARED FOR PRODUCTION**.
