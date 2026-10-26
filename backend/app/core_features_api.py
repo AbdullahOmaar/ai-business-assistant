@@ -236,6 +236,10 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     timezone_name = _business_timezone(session, business_id)
+    if start_date is None and end_date is None:
+        business_today = datetime.now(_timezone_zone(timezone_name)).date()
+        start_date = business_today - timedelta(days=29)
+        end_date = business_today
     start, end = _day_bounds(start_date, end_date, timezone_name)
 
     invoice_clauses = [Invoice.business_id == business_id, Invoice.status == "issued"]
