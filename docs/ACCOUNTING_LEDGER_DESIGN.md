@@ -74,12 +74,23 @@ The exact accounting basis and tax treatment require approval. The following is 
 | Source event | Candidate debit | Candidate credit | Gate |
 |---|---|---|---|
 | Invoice issued | Accounts Receivable | Sales Revenue and, when applicable, Tax Payable | Customer, currency, totals, tax policy, and invoice state validated |
-| Receipt recorded and allocated | Cash / Bank | Accounts Receivable | Receipt currency and customer match; allocation is valid and idempotent |
-| Expense recorded | Appropriate Expense or Asset | Cash / Bank or Accounts Payable | Evidence/policy and payment state known; do not infer cash payment from an expense record alone |
+| Receipt recorded (including unallocated remainder) | Cash / Bank for the full amount received | Accounts Receivable for the valid allocated portion; Unapplied Receipts / Clearing for the unallocated remainder | Receipt amount, currency, customer, and allocations validated; post the full receipt once |
+| Later allocation of previously unapplied receipt | Unapplied Receipts / Clearing | Accounts Receivable | Transfer only the newly allocated amount; validate same business, customer, and currency; idempotent by allocation event |
+| Expense incurred with explicitly confirmed unpaid status | Appropriate Expense or Asset | Accounts Payable | Only when the source explicitly establishes an unpaid obligation and the accounting basis is approved |
+| Expense paid with explicit payment evidence/event | Appropriate Expense or Asset | Cash / Bank | Only when a source payment event/evidence establishes that cash was paid |
+| Settlement of a previously recognized payable | Accounts Payable | Cash / Bank | Require a distinct, idempotent settlement event linked to the payable and payment evidence |
 | Credit note approved | Sales Returns / Credits and applicable Tax Payable adjustment | Accounts Receivable | Linked to original invoice; approved and within remaining creditable amount |
 | Invoice void | Reverse the original posted invoice entry | Reverse corresponding accounts | Only through an explicit, auditable reversal; respect period locks |
 | Inventory receipt | Inventory | Accounts Payable / clearing account | Only after costing and receiving rules are approved |
 | Cost of goods sold | Cost of Goods Sold | Inventory | Block until inventory valuation and invoice/return linkage are reliable |
+
+### Receipt allocation lifecycle
+
+For a receipt of 100 with only 60 validly allocated at receipt time, the candidate entry is Dr Cash / Bank 100, Cr Accounts Receivable 60, and Cr Unapplied Receipts / Clearing 40. When the remaining 40 is later allocated to an invoice, post a separate Dr Unapplied Receipts / Clearing 40 and Cr Accounts Receivable 40 entry. The later allocation must not debit Cash again. Both events require unique source-event/idempotency keys, same-business and same-currency validation, and customer consistency. If the operational payment record cannot establish the full receipt amount or the allocation relationship, do not post it until corrected through an audited source workflow.
+
+### Expense settlement lifecycle
+
+The current operational `Expense` model does not store paid/unpaid status or a linked payment/settlement event. Therefore **ledger posting from an Expense row alone must remain disabled**. Before enabling expense posting, extend the source workflow to identify whether the expense is an unpaid obligation or has explicit payment evidence. An unpaid incurred expense may debit Expense / Asset and credit Accounts Payable; a confirmed immediately-paid expense may debit Expense / Asset and credit Cash / Bank; a later settlement of a recognized payable must debit Accounts Payable and credit Cash / Bank through a distinct, idempotent event. Never infer cash payment or an accounts-payable balance from the current expense row alone.
 
 Unallocated receipts must remain in an appropriate unapplied-cash/clearing account rather than reducing Accounts Receivable arbitrarily. Refunds require an explicit cash/bank credit and corresponding liability/receivable/credit-note treatment based on the approved workflow.
 
