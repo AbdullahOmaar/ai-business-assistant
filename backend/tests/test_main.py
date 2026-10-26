@@ -34,3 +34,17 @@ def test_cors_method_policy_includes_settings_put_route() -> None:
     )
     assert response.status_code == 200
     assert "PUT" in response.headers["access-control-allow-methods"]
+
+
+def test_health_response_includes_server_generated_request_id() -> None:
+    from uuid import UUID
+
+    response = client.get(
+        "/health",
+        headers={"X-Request-ID": "caller-controlled-value"},
+    )
+
+    assert response.status_code == 200
+    request_id = response.headers["X-Request-ID"]
+    assert str(UUID(request_id)) == request_id
+    assert request_id != "caller-controlled-value"
