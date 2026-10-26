@@ -161,3 +161,27 @@ def test_day_bounds_respect_daylight_saving_transitions():
     # Local calendar days can be 23 or 25 hours across DST; never assume 24.
     assert (spring_end - spring_start).total_seconds() == 23 * 60 * 60
     assert (fall_end - fall_start).total_seconds() == 25 * 60 * 60
+
+
+def test_business_update_rejects_invalid_timezone_name():
+    engine, client, previous_factory, previous_resolver = _configured_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Timezone Update Shop",
+                "currency_code": "EGP",
+                "timezone": "Africa/Cairo",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = created.json()["id"]
+
+        response = client.patch(
+            f"/api/v1/businesses/{business_id}",
+            json={"timezone": "Mars/Olympus"},
+        )
+        assert response.status_code == 422
+        assert "valid IANA timezone" in response.json()["detail"]
+    finally:
+        _restore_app(engine, previous_factory, previous_resolver)
