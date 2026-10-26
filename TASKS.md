@@ -8,7 +8,7 @@
 - Commit `2b5f84b9f946b76c5373042202e19e2646ef418c`: adds negative regression tests proving STAFF cannot issue or void an invoice and that invoice state remains `draft`.
 - Evidence reviewed: `docs/PRODUCTION_DEPLOYMENT.md` specifies OWNER-only invoice issue/void; prior service code used the generic membership guard for these two entry points. Existing payment service already had OWNER-only enforcement.
 - Verification: source and test additions were re-read from the branch. No Python test run is claimed. GitHub Actions runner allocation is blocked, and the available Vercel preview only executes the frontend test suite. Do not merge until backend tests run successfully on the exact head.
-- Next: create a stacked Draft PR against `task/production-safety-consolidated` (avoid duplicating the 119-commit scope of PR #161), then run the focused service tests and full backend/PostgreSQL suite through a working authorized runner.
+- Draft stacked PR created: [#166](https://github.com/AbdullahOmaar/ai-business-assistant/pull/166), base `task/production-safety-consolidated`, head `c29baa3bca89afe9453a5aee038256a8f8b5977a`. It is open, Draft, unmerged, and currently mergeable according to GitHub metadata. It deliberately avoids duplicating PR #161's large scope. Next: run the focused service tests and full backend/PostgreSQL suite through a working authorized runner; no such runner is currently available.
 
 ---
 
