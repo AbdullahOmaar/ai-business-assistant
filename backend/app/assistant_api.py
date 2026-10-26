@@ -19,6 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
+from app.domain_rules import money
 from app.models import Business, Customer, Expense, Invoice, Product, Supplier
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
 
@@ -153,7 +154,7 @@ async def chat(
 
         def money_summary(values: dict[str, Decimal]) -> str:
             return "، ".join(
-                f"{amount.quantize(Decimal('0.01'))} {currency}"
+                f"{money(amount)} {currency}"
                 for currency, amount in sorted(values.items())
             ) or "لا توجد سجلات في آخر 20 سجلًا محمّلًا"
 
@@ -165,9 +166,9 @@ async def chat(
                     sales_total = sales_by_currency.get(currency, Decimal("0"))
                     expense_total = expenses_by_currency.get(currency, Decimal("0"))
                     details.append(
-                        f"{(sales_total - expense_total).quantize(Decimal('0.01'))} {currency} "
-                        f"(فواتير صادرة {sales_total.quantize(Decimal('0.01'))}، "
-                        f"مصروفات مسجلة {expense_total.quantize(Decimal('0.01'))})"
+                        f"{money(sales_total - expense_total)} {currency} "
+                        f"(فواتير صادرة {money(sales_total)}، "
+                        f"مصروفات مسجلة {money(expense_total)})"
                     )
                 answer = "الفرق المبدئي بين إجمالي الفواتير الصادرة والمصروفات المسجلة: " + "؛ ".join(details) + ". هذا ليس صافي ربح محاسبيًا؛ لا يشمل تكلفة البضاعة المباعة، ويعتمد على أحدث 20 فاتورة صادرة و20 مصروفًا فقط."
             else:
