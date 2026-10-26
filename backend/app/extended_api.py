@@ -5,7 +5,9 @@ unless the host has configured a trusted principal resolver and database session
 """
 import csv
 import io
+import re
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from decimal import Decimal
 from uuid import UUID
 
@@ -28,6 +30,31 @@ from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
 ZERO = Decimal("0")
+
+
+def _validated_schedule_timezone(value: str) -> str:
+    """Require an IANA timezone before persisting a recurring schedule."""
+    normalized = value.strip()
+    try:
+        ZoneInfo(normalized)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise WorkflowError("Schedule timezone must be a valid IANA timezone.") from exc
+    return normalized
+
+
+def _validated_setting_key(value: str) -> str:
+    """Restrict setting keys to safe identifiers and reject secret-like names."""
+    normalized = value.strip()
+    if len(normalized) > 100 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", normalized):
+        raise WorkflowError("Setting key must be a 1-100 character identifier.")
+    compact = re.sub(r"[^a-z0-9]", "", normalized.casefold())
+    if any(term in compact for term in (
+        "password", "passwd", "pwd", "secret", "apikey", "accesskey",
+        "clientkey", "signingkey", "encryptionkey", "token", "privatekey",
+        "credential", "authorization", "bearer",
+    )):
+        raise WorkflowError("Secret values must be stored in a dedicated secret manager.")
+    return normalized
 
 
 def _receivable_aging_bucket(due_date: date | None, as_of: date) -> tuple[str, int | None]:
@@ -433,6 +460,7 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
     def op():
         # Recurring schedules can trigger future financial documents; OWNER approval is required.
         _authorized(session, principal, business_id, owner_only=True)
+        schedule_timezone = _validated_schedule_timezone(body.timezone)
         if body.customer_id is not None and session.scalars(select(Invoice).where(
             Invoice.business_id == business_id, Invoice.customer_id == body.customer_id,
         ).limit(1)).first() is None:
@@ -446,7 +474,7 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
                 raise WorkflowError("Customer not found in this business")
         schedule = RecurringInvoiceSchedule(
             business_id=business_id, customer_id=body.customer_id,
-            interval_days=body.interval_days, timezone=body.timezone,
+            interval_days=body.interval_days, timezone=schedule_timezone,
             next_run_at=body.next_run_at, is_active=True,
         )
         session.add(schedule)
@@ -514,14 +542,13 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
                 principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
         _authorized(session, principal, business_id, owner_only=True)
-        if setting_key.lower() in {"password", "secret", "api_key", "token", "private_key"}:
-            raise WorkflowError("Secret values must be stored in a dedicated secret manager")
+        safe_key = _validated_setting_key(setting_key)
         item = session.scalars(select(BusinessSetting).where(
             BusinessSetting.business_id == business_id,
-            BusinessSetting.setting_key == setting_key,
+            BusinessSetting.setting_key == safe_key,
         ).with_for_update()).one_or_none()
         if item is None:
-            item = BusinessSetting(business_id=business_id, setting_key=setting_key,
+            item = BusinessSetting(business_id=business_id, setting_key=safe_key,
                                    setting_value=body.setting_value)
             session.add(item)
         else:
