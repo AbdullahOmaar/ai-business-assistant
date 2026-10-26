@@ -470,7 +470,7 @@ def record_payment(
     customer_id: UUID | None = None, method: str | None = None,
     reference: str | None = None,
 ) -> Payment:
-    _membership(session, principal, business_id)
+    _membership(session, principal, business_id, owner_only=True)
     if amount <= ZERO or not idempotency_key.strip():
         raise WorkflowError("Payment amount and idempotency key are required")
     currency = currency_code.strip().upper()
