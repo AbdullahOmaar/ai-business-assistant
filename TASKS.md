@@ -1,3 +1,45 @@
+# Latest execution update — 2026-10-27
+
+## TASK-01 — accounting, authorization, and tenant safety
+- Status: IN_PROGRESS; service-layer invoice authorization is tested, but the broader production release gates remain open.
+- Fixed a Python syntax error in `backend/app/extended_api.py` in the purchase-order audit event call. The fix is present in both #161 and stacked #166 branches.
+- Corrected three stale/brittle regression tests: import the canonical `discounted_return_line_total` helper from `app.domain_rules`; assert version metadata against `app.version` rather than hard-coding obsolete `0.4.0`; check `Access-Control-Expose-Headers` on an actual CORS GET response (not the preflight response).
+- PR #166 adds `owner_only=True` guards for invoice issue and void and negative STAFF-role tests asserting rejected actions leave invoices in `draft`.
+- #161 branch, before this TASKS-only commit: `b860a0d37e02361da5c474348eb22e4d4110d861`; `py_compile app/*.py` succeeded and `python3 -m pytest -q --tb=no -p no:warnings` returned **142 passed, 1 skipped in 3.65s**.
+- Stacked #166 branch, before this TASKS-only commit: `062f24937164cd165cee87c96bb872cf272cef87`; the same compile/test command returned **144 passed, 1 skipped in 3.73s**. This candidate includes the broader #161 backend/test tree plus OWNER-only invoice issue/void enforcement.
+- Both test runs were executed in an isolated, credential-free Vercel Sandbox using source files from the respective Git branches. Python runtime was 3.14.4 (project requires Python >=3.12); production database credentials were not supplied.
+- Dependency audit: `pip-audit -r backend/requirements.txt` returned `No known vulnerabilities found`, exit 0.
+- Migration validation: `DATABASE_URL=postgresql+psycopg://ci:ci@127.0.0.1:5432/ai_business_assistant python3 -m alembic upgrade head --sql` succeeded, producing 357 lines of PostgreSQL SQL across revisions 0001–0003. This is offline SQL generation only; live PostgreSQL apply, `alembic check`, and real-PostgreSQL integration are still unverified.
+- Outstanding warnings: Starlette/httpx TestClient deprecation, Pydantic `Field(ne=...)` deprecation, and FastAPI `on_event` deprecation. These were warnings, not test failures.
+
+## TASK-02 — restore CI execution
+- Status: BLOCKED for GitHub-hosted execution; an isolated alternative runner did execute the Python suite.
+- Latest GitHub Actions runs for #161: backend/frontend `40415702374`, backend tests `40415702420`, container `40415702295`, dependency security `40415702428`; latest #166 runs: container `40415720659`, backend/frontend `40415720673`, backend tests `40415720641`, dependency security `40415720691`.
+- All queried jobs report failure with `steps=null` and `logs_url=null`; this gives no evidence that any job step started. Do not interpret it as a code test failure or a passing CI result. Do not retry the identical runner failure repeatedly without a new route.
+- A local PostgreSQL install attempt in the sandbox could not reach Ubuntu package mirrors because DNS resolution fails. Keep live PostgreSQL migration/integration checks blocked until a real isolated PostgreSQL service is available.
+
+## TASK-03 — PR reconciliation
+- Status: IN_PROGRESS.
+- #161 [production safety workstream](https://github.com/AbdullahOmaar/ai-business-assistant/pull/161) and #166 [OWNER-only invoice issue/void](https://github.com/AbdullahOmaar/ai-business-assistant/pull/166) remain Draft and unmerged. #166 is stacked on #161. Do not merge either while the live PostgreSQL, container, CI, and production smoke gates remain unresolved.
+- The backend/test blobs in #161 and #166 were compared; only `backend/app/services.py` and `backend/tests/test_services.py` differ, as expected for the additional invoice authorization change and its tests.
+
+## TASK-04 — build and product verification
+- Status: IN_PROGRESS; Preview builds are verified, production HTTP smoke tests remain blocked by outbound DNS resolution.
+- Backend API Preview `dpl_HDUChKX6xpAJrseY2h3RR36ciEVS` was READY on #166 source SHA `062f24937164cd165cee87c96bb872cf272cef87`; logs show Python 3.12 selection, dependency install, bytecode compilation, build completion, and deployment completion. This is a packaging/build check, not execution of the test suite or proof of API health.
+- Frontend Preview `dpl_BTBmyrkzP9mibv9CMw9ho14aBKJV` was READY on #161 source SHA `b860a0d37e02361da5c474348eb22e4d4110d861`; Angular production build completed and the generated UI build metadata/service-worker cache includes that SHA. This Preview build did not run `npm test`.
+- Earlier independent frontend verification on SHA `1734997f4ad89f68bdf5f82134a7c8cd88cf1a6b` passed 4/4 Node tests, Angular compilation, and reported zero npm audit vulnerabilities; that evidence is not a run on the current frontend candidate.
+- `curl` probes for production `/health`, `/readyz`, and `/version` failed in this sandbox with DNS error 6; the web fetch returned cache miss. Production endpoints are UNVERIFIED, not passed or asserted to be down.
+
+## TASK-05 — release/deployment verification
+- Status: BLOCKED; do not deploy to production yet.
+- `main` is `1b58df8a6695e02b845bc84a9ee7094286f32e83`.
+- Frontend Production deployment `dpl_7yWAtXwk14D4Go3kibvfbgJWfCCH` is READY and points to that main SHA.
+- Latest recorded backend Production attempt `dpl_FzS48jeLW5Yha9zb5cB98zJEzThm` was CANCELED by the configured Ignored Build Step because the commit message lacked `[release-api]`; this is an intentional skip, not a witnessed runtime failure. The production API alias last observed was tied to older SHA `c8078c563ad9d88f04cccee740efdb1b64527df7`, so API/main version parity is not verified.
+- After this ledger update advances the branch heads, recreate API and frontend Preview builds on the new exact SHAs. Production promotion remains blocked until live PostgreSQL migration/integration, current frontend tests/build, container build, CI/dependency gates, and safe HTTP smoke tests pass. No merge, production deployment, or production data mutation occurred.
+
+
+---
+
 ## Execution checkpoint — 2026-10-26 17:15 UTC
 
 - Latest live PR #161 head observed immediately before this ledger edit: a94352d353b3b8fbf7a6092132964f3362aa1a5e; base/main recorded by GitHub: af4ba084cedcec7339498579ef5563ce7748bf7c. PR is open, Draft, and unmerged. Re-check head after this documentation commit because concurrent edits may advance it.
