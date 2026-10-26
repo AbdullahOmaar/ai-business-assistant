@@ -49,7 +49,8 @@ def _validated_setting_key(value: str) -> str:
         raise WorkflowError("Setting key must be a 1-100 character identifier.")
     compact = re.sub(r"[^a-z0-9]", "", normalized.casefold())
     if any(term in compact for term in (
-        "password", "secret", "apikey", "token", "privatekey",
+        "password", "passwd", "pwd", "secret", "apikey", "accesskey",
+        "clientkey", "signingkey", "encryptionkey", "token", "privatekey",
         "credential", "authorization", "bearer",
     )):
         raise WorkflowError("Secret values must be stored in a dedicated secret manager.")
