@@ -81,6 +81,43 @@ def test_purchase_receiving_records_stock_and_completes_order(operation_workspac
         )) is not None
 
 
+def test_purchase_receiving_requires_owner_role(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Restricted Supplier")
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Restricted Stock", unit_price=Decimal("10"), is_stock_tracked=True,
+        )
+        session.add(supplier)
+        session.flush()
+        order = PurchaseOrder(
+            business_id=business_id, supplier_id=supplier.id,
+            order_number="PO-OWNER-ONLY", status="approved", currency_code="EGP",
+            total=Decimal("10"),
+        )
+        session.add(order)
+        session.flush()
+        line = PurchaseOrderLine(
+            business_id=business_id, purchase_order_id=order.id,
+            product_id=product.id, quantity=Decimal("1"),
+            unit_cost=Decimal("10"), received_quantity=Decimal("0"),
+        )
+        session.add(line)
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+        ))
+        membership.role = MembershipRole.STAFF
+        session.flush()
+
+        with pytest.raises(AuthorizationError, match="role is not permitted"):
+            receive_purchase_order(
+                session, principal=principal, business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={line.id: Decimal("1")},
+            )
+
+
 def test_sales_return_approval_rejects_quantity_over_original_sale(operation_workspace):
     engine, business_id, principal = operation_workspace
     with Session(engine) as session:
