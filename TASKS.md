@@ -98,3 +98,9 @@
 - Existing return approval locks the sales return, source invoice, return lines and source invoice lines, scopes every lookup by business, aggregates requested quantity/amount by source invoice line, and enforces previously approved quantity/amount ceilings before stock movements. This is source-level review only; PostgreSQL concurrency behavior remains untested until CI can execute.
 - Latest code head observed: `d07aac67a4394216d0d0ad08ff8082db45b0f72c`; current PR head after the ledger-only commit is `9344f7432ddd3837a1f0e6975112938f5b51c8fd`; base `af4ba084cedcec7339498579ef5563ce7748bf7c`. GitHub reports mergeable=true and mergeable_state=clean, but the PR remains Draft. Runs `40361340865` (dependency scan), `40361341036` (container), and `40361341002` (backend tests) subsequently completed FAILURE; every job has `runner_id=0`, empty runner name, and zero steps. Combined status is empty. This proves the runner never started the workflow commands; no test result exists. The ledger-only commit does not trigger code CI, so the latest code-head runs remain the relevant evidence.
 - Task status remains IN_PROGRESS; validation and release remain BLOCKED. No merge or deployment has occurred.
+
+
+## PR deduplication outcome
+- Closed #154, #158, and #160 as superseded by #161 only after their source changes and regression tests were confirmed present in the canonical branch. All three are closed with `merged=false`; this was not a merge to main.
+- #156 and #155 were already closed as duplicates/superseded. #157 remains open/Draft because its workspace request guards and payment retry UI behavior are distinct and have not been transplanted or validated here.
+- Current open execution track is #161 plus distinct UI/payment safety #157. Release remains BLOCKED by runner allocation; no main merge or production deployment occurred.
