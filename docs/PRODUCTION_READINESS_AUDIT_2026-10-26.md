@@ -264,3 +264,22 @@ No duplicate historical PR was re-applied to main during this audit. PRs #142, #
 ### Further authorization hardening in PR #144
 
 The service-layer purchase-order receiving and sales-return approval operations now require the OWNER role, matching the existing HTTP route policy. Added a regression test that verifies a STAFF membership cannot approve a sales return through the service operation. The latest commit with this change is on PR #144; automated execution remains blocked by the runner issue.
+
+
+## Final status refresh for this execution window — 2026-10-26 01:31 UTC
+
+### Current candidate SHAs
+- `main`: `dec7f26bd2bb33a4c27af4e785abe982e8486676` (unchanged).
+- PR #142 audit/docs: `bd13852ecad9d94e6b913eca945771bb4ded4902`.
+- PR #143 timezone/report limitations: `84a693b16189c7773cf2c6f9b67266c6157302a1`.
+- PR #144 accounting/authorization: `10817921703483601ef43dacd697f42e47c13f62`.
+
+### Latest checks still did not execute
+For PR #144's latest code SHA, [backend/frontend run 40254442745](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254442745), [backend tests 40254442614](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254442614), and [dependency scan 40254442589](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254442589) all have zero steps and `runner_id=0`. The audit-doc SHA also has the same failure pattern. These runs cannot establish code quality or vulnerability status.
+
+PR #143 now also documents that its existing operating-result report includes invoice tax amounts, does not net approved returns, and excludes cost of goods sold / complete tax-ledger treatment. These limitations are made explicit in the response and covered by a regression assertion, but that test is also unexecuted.
+
+### Merge/release decision
+No PR was merged. No production deployment, database migration, or production data write was performed. The connected Desktop Commander device is offline, so no local checkout was available for an alternate local test run. No authorized alternative CI executor is exposed by the current connected tools. The exact runner/account root cause requires repository Actions settings and owner billing/quota inspection or GitHub Support; current public status shows all services operational but does not explain this repository-specific pattern.
+
+**Final verdict for this execution window: NOT CLEARED FOR PRODUCTION.** Do not promote until CI runs on the exact candidate SHAs and the required security, PostgreSQL, authorization, accounting, runtime, and PWA checks pass.
