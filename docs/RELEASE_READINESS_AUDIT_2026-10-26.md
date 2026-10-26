@@ -68,3 +68,8 @@ The current app is a business operations and management-reporting system, not a 
 7. Record exact evidence in `TASKS.md`; mark only evidenced work VERIFIED.
 
 No production deployment, production migration, destructive data change, or historical data rewrite was performed as part of this audit.
+
+
+## Runtime observations and audit checkpoint
+- Vercel runtime-error summaries for both production API and frontend reported no runtime error clusters in the last 24 hours. This is a limited observability signal, not a functional smoke test; the Hobby runtime-log query also states that 24-hour raw logs exceed the plan's retention, so detailed historical logs are unavailable.
+- Audit report and ledger were committed on the existing draft PR #161 branch. Current observed branch head: `df6954b54f17814fe3b790b82b5dde3e5e84689c`. The documentation-only commits do not execute backend/frontend workflows under the current path filters; the application candidate still has no passing test evidence. Keep PR #161 draft/unmerged.
