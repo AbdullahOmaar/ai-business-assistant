@@ -822,3 +822,47 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+
+
+
+def test_receivables_aging_keeps_missing_due_dates_separate_and_currency_scoped():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    try:
+        response = TestClient(app).get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+            params={"as_of": "2026-10-26"},
+        )
+        assert response.status_code == 200
+        report = response.json()
+        assert report["invoice_count"] == 1
+        assert report["by_currency"] == [{
+            "currency_code": "EGP",
+            "buckets": [{"bucket": "no_due_date", "outstanding_amount": "9.00"}],
+            "total_outstanding": "9.00",
+        }]
+        assert report["invoices"][0]["invoice_id"] == str(invoice_id)
+        assert report["invoices"][0]["aging_bucket"] == "no_due_date"
+        assert report["invoices"][0]["outstanding_amount"] == "9.00"
+        assert any("not net profit" in item for item in report["limitations"])
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_receivables_aging_denies_non_member_and_does_not_disclose_invoice_data():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="unauthorized-subject")
+    try:
+        response = TestClient(app).get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+            params={"as_of": "2026-10-26"},
+        )
+        assert response.status_code == 403
+        assert "invoices" not in response.json()
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
