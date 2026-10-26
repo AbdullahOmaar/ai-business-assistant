@@ -2,6 +2,12 @@ name: Agent Controller (zero budget)
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/agent-controller.yml"
+      - "scripts/agent/**"
+      - "docs/agent/**"
+      - "tests/test_agent_ledger.py"
   schedule:
     # Periodic, bounded reconciliation. This is not a 24/7 worker.
     - cron: "17 */6 * * *"
@@ -24,5 +30,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Unit-test ledger validation
+        run: python -m unittest discover -s tests -p "test_agent_ledger.py" -v
       - name: Validate zero-budget ledger and task graph
         run: python scripts/agent/validate_ledger.py
