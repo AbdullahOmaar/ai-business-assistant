@@ -283,3 +283,12 @@ PR #143 now also documents that its existing operating-result report includes in
 No PR was merged. No production deployment, database migration, or production data write was performed. The connected Desktop Commander device is offline, so no local checkout was available for an alternate local test run. No authorized alternative CI executor is exposed by the current connected tools. The exact runner/account root cause requires repository Actions settings and owner billing/quota inspection or GitHub Support; current public status shows all services operational but does not explain this repository-specific pattern.
 
 **Final verdict for this execution window: NOT CLEARED FOR PRODUCTION.** Do not promote until CI runs on the exact candidate SHAs and the required security, PostgreSQL, authorization, accounting, runtime, and PWA checks pass.
+
+
+## Frontend CI coverage gap found and addressed in PR #145
+
+Review of `frontend/package.json` and `.github/workflows/ci.yml` showed that a frontend unit-test command already existed for `workspace-load-guard.spec.ts`, but CI did not call `npm test`. Opened [PR #145](https://github.com/AbdullahOmaar/ai-business-assistant/pull/145) to add that test step before the production build. It preserves the existing npm audit and build gates and does not suppress failures.
+
+The repository currently has no `package-lock.json`; this makes dependency resolution less reproducible than a committed lockfile. A lockfile should be generated and verified by an actual npm run when an execution environment is available, rather than fabricating one from unverified metadata.
+
+PR #145 is draft and unmerged. Its new CI step has not executed because the runner-assignment issue persists.
