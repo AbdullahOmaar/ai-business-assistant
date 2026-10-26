@@ -9,7 +9,13 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.domain_rules import summarize_money_by_currency, validate_return_quantity
+from app.domain_rules import (
+    money,
+    discounted_return_line_total,
+    summarize_money_by_currency,
+    validate_return_amount,
+    validate_return_quantity,
+)
 from app.models import (
     AuditEvent, Expense, Invoice, InvoiceLine, MembershipRole, Notification,
     Payment, PaymentAllocation, Product, PurchaseOrder, PurchaseOrderLine,
@@ -21,9 +27,15 @@ from app.services import WorkflowError, _audit, record_stock_movement
 ZERO = Decimal("0")
 
 
-def _authorize(session: Session, principal: AuthenticatedPrincipal, business_id: UUID) -> None:
+def _authorize(
+    session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
+    *, owner_only: bool = False,
+) -> None:
     authorize_membership(
-        session, principal=principal, business_id=business_id,
+        session,
+        principal=principal,
+        business_id=business_id,
+        allowed_roles={MembershipRole.OWNER} if owner_only else None,
     )
 
 
@@ -32,7 +44,7 @@ def receive_purchase_order(
     purchase_order_id: UUID, received_quantities: dict[UUID, Decimal],
 ) -> PurchaseOrder:
     """Receive quantities against an approved order and record stock ledger events."""
-    _authorize(session, principal, business_id)
+    _authorize(session, principal, business_id, owner_only=True)
     order = session.scalars(select(PurchaseOrder).where(
         PurchaseOrder.id == purchase_order_id,
         PurchaseOrder.business_id == business_id,
@@ -83,7 +95,7 @@ def approve_sales_return(
     sales_return_id: UUID,
 ) -> SalesReturn:
     """Approve a draft return only if cumulative returned quantities remain valid."""
-    _authorize(session, principal, business_id)
+    _authorize(session, principal, business_id, owner_only=True)
     sales_return = session.scalars(select(SalesReturn).where(
         SalesReturn.id == sales_return_id,
         SalesReturn.business_id == business_id,
@@ -105,9 +117,30 @@ def approve_sales_return(
     if not return_lines:
         raise WorkflowError("A return must contain at least one line")
     total = ZERO
-    for return_line in return_lines:
+    invoice_lines_for_allocation = session.scalars(select(InvoiceLine).where(
+        InvoiceLine.invoice_id == invoice.id,
+        InvoiceLine.business_id == business_id,
+    ).order_by(InvoiceLine.id)).all()
+    discount_allocation_values = [
+        (str(row.id), row.line_total) for row in invoice_lines_for_allocation
+    ]
+
+    # Validate aggregate quantity and amount per source line, including duplicate
+    # rows within this draft return, before recording any stock movements.
+    requested_by_line: dict[UUID, dict[str, Decimal]] = {}
+    for returned in return_lines:
+        requested = requested_by_line.setdefault(
+            returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
+        )
+        requested["quantity"] += returned.quantity
+        requested["amount"] += returned.amount
+
+    invoice_lines: dict[UUID, InvoiceLine] = {}
+    for invoice_line_id, requested in sorted(
+        requested_by_line.items(), key=lambda item: str(item[0])
+    ):
         original_line = session.scalars(select(InvoiceLine).where(
-            InvoiceLine.id == return_line.invoice_line_id,
+            InvoiceLine.id == invoice_line_id,
             InvoiceLine.business_id == business_id,
             InvoiceLine.invoice_id == invoice.id,
         ).with_for_update()).one_or_none()
@@ -120,14 +153,33 @@ def approve_sales_return(
             SalesReturnLine.business_id == business_id,
             SalesReturn.status == "approved",
         ))
+        previously_returned_amount = session.scalar(select(func.coalesce(
+            func.sum(SalesReturnLine.amount), 0
+        )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+            SalesReturnLine.invoice_line_id == original_line.id,
+            SalesReturnLine.business_id == business_id,
+            SalesReturn.status == "approved",
+        ))
         validate_return_quantity(
             sold_quantity=original_line.quantity,
             previously_returned=Decimal(str(previously_returned or 0)),
-            requested_quantity=return_line.quantity,
+            requested_quantity=requested["quantity"],
         )
-        if return_line.amount < ZERO:
-            raise WorkflowError("Return amount cannot be negative")
-        total += return_line.amount
+        validate_return_amount(
+            invoiced_amount=discounted_return_line_total(
+                invoice_subtotal=invoice.subtotal,
+                invoice_discount_total=invoice.discount_total,
+                invoice_lines=discount_allocation_values,
+                target_line_id=str(original_line.id),
+            ),
+            previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
+            requested_return_amount=requested["amount"],
+        )
+        invoice_lines[invoice_line_id] = original_line
+        total += requested["amount"]
+
+    for returned in return_lines:
+        original_line = invoice_lines[returned.invoice_line_id]
         if original_line.product_id is not None:
             product = session.scalars(select(Product).where(
                 Product.id == original_line.product_id,
@@ -137,11 +189,11 @@ def approve_sales_return(
                 record_stock_movement(
                     session, principal=principal, business_id=business_id,
                     product_id=product.id, movement_type="return",
-                    quantity_delta=return_line.quantity,
+                    quantity_delta=returned.quantity,
                     reason=f"Approved sales return {sales_return.id}",
                     reference_type="sales_return", reference_id=sales_return.id,
                 )
-    sales_return.total = total.quantize(Decimal("0.01"))
+    sales_return.total = money(total)
     sales_return.status = "approved"
     session.flush()
     _audit(session, business_id=business_id, principal=principal,

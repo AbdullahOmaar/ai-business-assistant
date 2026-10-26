@@ -5,7 +5,9 @@ unless the host has configured a trusted principal resolver and database session
 """
 import csv
 import io
+import re
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from decimal import Decimal
 from uuid import UUID
 
@@ -23,11 +25,36 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
-from app.domain_rules import money, validate_return_amount
+from app.domain_rules import discounted_return_line_total, money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
 ZERO = Decimal("0")
+
+
+def _validated_schedule_timezone(value: str) -> str:
+    """Require an IANA timezone before persisting a recurring schedule."""
+    normalized = value.strip()
+    try:
+        ZoneInfo(normalized)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise WorkflowError("Schedule timezone must be a valid IANA timezone.") from exc
+    return normalized
+
+
+def _validated_setting_key(value: str) -> str:
+    """Restrict setting keys to safe identifiers and reject secret-like names."""
+    normalized = value.strip()
+    if len(normalized) > 100 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", normalized):
+        raise WorkflowError("Setting key must be a 1-100 character identifier.")
+    compact = re.sub(r"[^a-z0-9]", "", normalized.casefold())
+    if any(term in compact for term in (
+        "password", "passwd", "pwd", "secret", "apikey", "accesskey",
+        "clientkey", "signingkey", "encryptionkey", "token", "privatekey",
+        "credential", "authorization", "bearer",
+    )):
+        raise WorkflowError("Secret values must be stored in a dedicated secret manager.")
+    return normalized
 
 
 def _receivable_aging_bucket(due_date: date | None, as_of: date) -> tuple[str, int | None]:
@@ -136,36 +163,6 @@ class NotificationInput(BaseModel):
     scheduled_at: datetime | None = None
 
 
-def _discounted_return_line_total(
-    invoice: Invoice, line: InvoiceLine, invoice_lines: list[InvoiceLine]
-) -> Decimal:
-    """Allocate the invoice's net subtotal across lines in cents using largest remainder.
-
-    The allocation reconciles exactly to the lesser of the stored invoice net subtotal
-    and the sum of rounded line totals, preventing multi-line rounding from authorizing
-    a return larger than the customer was invoiced for.
-    """
-    gross_cents = {str(item.id): max(0, int(money(Decimal(str(item.line_total))) * 100))
-                   for item in invoice_lines}
-    gross_total_cents = sum(gross_cents.values())
-    subtotal_cents = max(0, int(money(Decimal(str(invoice.subtotal or ZERO))) * 100))
-    discount_cents = max(0, int(money(Decimal(str(invoice.discount_total or ZERO))) * 100))
-    net_cents = min(gross_total_cents, max(0, subtotal_cents - min(discount_cents, subtotal_cents)))
-    if gross_total_cents <= 0 or net_cents <= 0:
-        return ZERO
-    shares: dict[str, int] = {}
-    remainders: list[tuple[int, str]] = []
-    for item in invoice_lines:
-        key = str(item.id)
-        numerator = net_cents * gross_cents[key]
-        shares[key] = numerator // gross_total_cents
-        remainders.append((numerator % gross_total_cents, key))
-    cents_left = net_cents - sum(shares.values())
-    for _, key in sorted(remainders, key=lambda pair: (-pair[0], pair[1]))[:cents_left]:
-        shares[key] += 1
-    return Decimal(shares.get(str(line.id), 0)) / 100
-
-
 def _authorized(
     session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
     *, owner_only: bool = False,
@@ -219,6 +216,7 @@ def post_expense(business_id: UUID, body: ExpenseInput,
 def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Create a draft purchase order; owner approval is a separate privileged step."""
     def op():
         _authorized(session, principal, business_id)
         supplier = session.scalars(select(Supplier).where(
@@ -231,7 +229,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         if len(currency) != 3 or not currency.isalpha():
             raise WorkflowError("Currency must be a three-letter code")
         po = PurchaseOrder(business_id=business_id, supplier_id=supplier.id,
-                           order_number=body.order_number.strip(), status="approved",
+                           order_number=body.order_number.strip(), status="draft",
                            currency_code=currency, total=ZERO)
         total = ZERO
         session.add(po)
@@ -251,7 +249,41 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         po.total = total
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="purchase_order.created", target_type="purchase_order",
-            target_id=str(po.id), change_summary=f"Approved order {po.order_number}"))
+            target_id=str(po.id), change_summary=f"Draft order {po.order_number}")
+        session.flush()
+        return po
+    po = _commit(session, op)
+    return _dict(po, ("id", "business_id", "supplier_id", "order_number", "status",
+                      "currency_code", "total", "created_at"))
+
+
+@router.post("/purchase-orders/{order_id}/approve")
+def approve_purchase_order(business_id: UUID, order_id: UUID,
+                           session: Session = Depends(get_session),
+                           principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Approve a draft purchase order; only the business owner may authorize it."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        po = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if po is None:
+            raise WorkflowError("Purchase order not found in this business")
+        if po.status != "draft":
+            raise WorkflowError("Only draft purchase orders can be approved")
+        lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == po.id,
+            PurchaseOrderLine.business_id == business_id,
+        )).all()
+        if not lines:
+            raise WorkflowError("A purchase order must contain at least one line")
+        po.status = "approved"
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="purchase_order.approved", target_type="purchase_order",
+            target_id=str(po.id), change_summary=f"Approved order {po.order_number}",
+        ))
         session.flush()
         return po
     po = _commit(session, op)
@@ -270,7 +302,11 @@ def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurch
         ).with_for_update()).one_or_none()
         if po is None or po.status not in {"approved", "partially_received"}:
             raise WorkflowError("Purchase order is not available for receiving")
+        if not body.lines:
+            raise WorkflowError("At least one received quantity is required")
         for item in body.lines:
+            if item.quantity <= ZERO:
+                raise WorkflowError("Received quantity must be positive")
             line = session.scalars(select(PurchaseOrderLine).where(
                 PurchaseOrderLine.id == item.line_id,
                 PurchaseOrderLine.purchase_order_id == po.id,
@@ -340,7 +376,12 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
             ))
             if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            discounted_line_total = _discounted_return_line_total(invoice, line, discount_allocation_lines)
+            discounted_line_total = discounted_return_line_total(
+                invoice_subtotal=invoice.subtotal,
+                invoice_discount_total=invoice.discount_total,
+                invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
+                target_line_id=str(line.id),
+            )
             amount = money(discounted_line_total * item.quantity / line.quantity)
             total += amount
             session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
@@ -417,7 +458,12 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             try:
                 validate_return_amount(
-                    invoiced_amount=_discounted_return_line_total(invoice, invoice_line, discount_allocation_lines),
+                    invoiced_amount=discounted_return_line_total(
+                        invoice_subtotal=invoice.subtotal,
+                        invoice_discount_total=invoice.discount_total,
+                        invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
+                        target_line_id=str(invoice_line.id),
+                    ),
                     previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
                     requested_return_amount=requested["amount"],
                 )
@@ -453,6 +499,7 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
     def op():
         # Recurring schedules can trigger future financial documents; OWNER approval is required.
         _authorized(session, principal, business_id, owner_only=True)
+        schedule_timezone = _validated_schedule_timezone(body.timezone)
         if body.customer_id is not None and session.scalars(select(Invoice).where(
             Invoice.business_id == business_id, Invoice.customer_id == body.customer_id,
         ).limit(1)).first() is None:
@@ -466,7 +513,7 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
                 raise WorkflowError("Customer not found in this business")
         schedule = RecurringInvoiceSchedule(
             business_id=business_id, customer_id=body.customer_id,
-            interval_days=body.interval_days, timezone=body.timezone,
+            interval_days=body.interval_days, timezone=schedule_timezone,
             next_run_at=body.next_run_at, is_active=True,
         )
         session.add(schedule)
@@ -534,14 +581,13 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
                 principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
         _authorized(session, principal, business_id, owner_only=True)
-        if setting_key.lower() in {"password", "secret", "api_key", "token", "private_key"}:
-            raise WorkflowError("Secret values must be stored in a dedicated secret manager")
+        safe_key = _validated_setting_key(setting_key)
         item = session.scalars(select(BusinessSetting).where(
             BusinessSetting.business_id == business_id,
-            BusinessSetting.setting_key == setting_key,
+            BusinessSetting.setting_key == safe_key,
         ).with_for_update()).one_or_none()
         if item is None:
-            item = BusinessSetting(business_id=business_id, setting_key=setting_key,
+            item = BusinessSetting(business_id=business_id, setting_key=safe_key,
                                    setting_value=body.setting_value)
             session.add(item)
         else:
@@ -1074,70 +1120,93 @@ def receivables_aging(
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
-    """Return open issued-invoice balances grouped by currency and overdue age."""
+    """Return open issued-invoice balances by currency without cross-currency netting."""
     try:
         _authorized(session, principal, business_id)
         report_date = as_of or datetime.now(timezone.utc).date()
-        allocated_amount = (
-            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
-            .join(Payment, Payment.id == PaymentAllocation.payment_id)
-            .where(
-                PaymentAllocation.business_id == business_id,
-                PaymentAllocation.invoice_id == Invoice.id,
-                Payment.currency_code == Invoice.currency_code,
+        invoices = session.scalars(
+            select(Invoice).where(
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+            ).order_by(
+                Invoice.currency_code, Invoice.due_date, Invoice.invoice_number
             )
-            .scalar_subquery()
-        )
-        mismatched_allocated_amount = (
-            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
-            .join(Payment, Payment.id == PaymentAllocation.payment_id)
-            .where(
-                PaymentAllocation.business_id == business_id,
-                PaymentAllocation.invoice_id == Invoice.id,
-                Payment.currency_code != Invoice.currency_code,
+        ).all()
+
+        # Join on both record IDs and workspace IDs so corrupt cross-workspace links
+        # cannot influence this business's balances.
+        allocation_rows = session.execute(
+            select(PaymentAllocation, Payment, Invoice)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
             )
-            .scalar_subquery()
-        )
-        rows = session.execute(
-            select(
+            .join(
                 Invoice,
-                allocated_amount.label("allocated_amount"),
-                mismatched_allocated_amount.label("mismatched_allocated_amount"),
+                (Invoice.id == PaymentAllocation.invoice_id)
+                & (Invoice.business_id == PaymentAllocation.business_id),
             )
             .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
                 Invoice.business_id == business_id,
                 Invoice.status == "issued",
             )
-            .order_by(Invoice.currency_code, Invoice.due_date, Invoice.invoice_number)
         ).all()
+        allocated_by_invoice: dict[UUID, Decimal] = {}
+        mismatched_by_invoice: dict[UUID, dict[str, Decimal]] = {}
+        for allocation, payment, invoice in allocation_rows:
+            payment_currency = payment.currency_code.strip().upper()
+            invoice_currency = invoice.currency_code.strip().upper()
+            amount = Decimal(str(allocation.amount))
+            if payment_currency == invoice_currency:
+                allocated_by_invoice[invoice.id] = (
+                    allocated_by_invoice.get(invoice.id, ZERO) + amount
+                )
+            else:
+                # Never add values in different currencies into one numeric total.
+                currency_totals = mismatched_by_invoice.setdefault(invoice.id, {})
+                currency_totals[payment_currency] = currency_totals.get(
+                    payment_currency, ZERO
+                ) + amount
 
         bucket_totals: dict[str, dict[str, Decimal]] = {}
         invoice_rows = []
         data_quality_warnings = []
-        for invoice, allocated, mismatched_allocated in rows:
+        for invoice in invoices:
             total = Decimal(str(invoice.total or ZERO))
-            paid = Decimal(str(allocated or ZERO))
-            mismatched_paid = Decimal(str(mismatched_allocated or ZERO))
-            outstanding, overallocated = _receivable_outstanding(total, paid)
-            if mismatched_paid > ZERO:
+            paid = allocated_by_invoice.get(invoice.id, ZERO)
+            mismatched = mismatched_by_invoice.get(invoice.id, {})
+            if mismatched:
+                mismatch_details = "; ".join(
+                    f"{amount} {currency}"
+                    for currency, amount in sorted(mismatched.items())
+                )
                 data_quality_warnings.append({
                     "invoice_id": str(invoice.id),
                     "invoice_number": invoice.invoice_number,
                     "type": "payment_currency_mismatch",
                     "invoice_currency": invoice.currency_code,
-                    "mismatched_allocations_amount": str(mismatched_paid),
+                    "mismatched_allocations_amount": mismatch_details,
                 })
+
+            outstanding, overallocated = _receivable_outstanding(total, paid)
             if overallocated:
                 data_quality_warnings.append({
                     "invoice_id": str(invoice.id),
                     "invoice_number": invoice.invoice_number,
                     "type": "allocations_exceed_invoice_total",
+                    "invoice_currency": invoice.currency_code,
                     "invoice_total": str(total),
                     "allocated_payments": str(paid),
                     "excess_allocated": str(abs(outstanding)),
                 })
+                # A credit/excess allocation is a data-quality issue, not a negative
+                # receivable. Keep it out of all positive aging-bucket totals.
                 continue
-            if outstanding == ZERO:
+            if outstanding <= ZERO:
+                # Fully settled invoices do not contribute to open receivables aging.
                 continue
 
             due_day = invoice.due_date.date() if invoice.due_date is not None else None
@@ -1167,29 +1236,38 @@ def receivables_aging(
                 "currency_code": currency,
                 "buckets": [
                     {"bucket": name, "outstanding_amount": str(buckets[name])}
-                    for name in ("not_due", "1_30_days", "31_60_days", "61_90_days",
-                                 "over_90_days", "no_due_date")
+                    for name in (
+                        "not_due", "1_30_days", "31_60_days", "61_90_days",
+                        "over_90_days", "no_due_date",
+                    )
                     if buckets.get(name, ZERO) > ZERO
                 ],
                 "total_outstanding": str(sum(buckets.values(), ZERO)),
             })
         return {
             "as_of_date": report_date.isoformat(),
-            "source": "issued invoices minus recorded payment allocations",
-            "currency_policy": "Balances are grouped by currency and never combined.",
+            "source": "issued invoices minus matching-currency payment allocations",
+            "currency_policy": (
+                "Payment allocations reduce an invoice only when their currency matches; "
+                "different currencies are never combined."
+            ),
             "invoice_count": len(invoice_rows),
             "by_currency": summaries,
             "invoices": invoice_rows,
             "data_quality_warnings": data_quality_warnings,
             "limitations": [
-                "Only issued invoices are included; drafts and void invoices are excluded.",
+                "Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.",
+                "Fully settled invoices are excluded from open receivables aging.",
+                "Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.",
                 "Invoices without due dates are reported separately and are not assumed current.",
                 "Legacy invoices without customer links are flagged for review, not auto-corrected.",
+                "Currency-mismatched allocations are listed as warnings and never reduce receivables.",
                 "This is an accounts-receivable aging report, not net profit or a full general ledger.",
             ],
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
 
 @router.get("/assistant/insights")
 def assistant_insights(business_id: UUID,
@@ -1236,7 +1314,6 @@ def assistant_insights(business_id: UUID,
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
-
 
 @router.get("/customers/{customer_id}/statement")
 def customer_statement(
@@ -1412,6 +1489,129 @@ def list_audit_events(
             "total": total,
             "limit": limit,
             "offset": offset,
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+@router.get("/reports/data-integrity")
+def report_data_integrity(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read-only OWNER report for legacy invoice/customer and payment-allocation inconsistencies."""
+    try:
+        authorize_membership(
+            session,
+            principal=principal,
+            business_id=business_id,
+            allowed_roles={MembershipRole.OWNER},
+        )
+        unlinked = select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.status == "issued",
+            Invoice.customer_id.is_(None),
+        )
+        unlinked_total = session.scalar(
+            select(func.count()).select_from(unlinked.subquery())
+        ) or 0
+        unlinked_items = session.scalars(
+            unlinked.order_by(Invoice.created_at.desc(), Invoice.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        allocation_join = (
+            select(PaymentAllocation, Payment, Invoice)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
+            )
+            .join(
+                Invoice,
+                (Invoice.id == PaymentAllocation.invoice_id)
+                & (Invoice.business_id == PaymentAllocation.business_id),
+            )
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+            )
+        )
+        currency_mismatches = allocation_join.where(
+            Payment.currency_code != Invoice.currency_code,
+        )
+        currency_mismatch_total = session.scalar(
+            select(func.count()).select_from(currency_mismatches.subquery())
+        ) or 0
+        currency_mismatch_rows = session.execute(
+            currency_mismatches
+            .order_by(Payment.received_at.desc(), PaymentAllocation.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        customer_mismatches = allocation_join.where(
+            Payment.customer_id.is_not(None),
+            Invoice.customer_id.is_not(None),
+            Payment.customer_id != Invoice.customer_id,
+        )
+        customer_mismatch_total = session.scalar(
+            select(func.count()).select_from(customer_mismatches.subquery())
+        ) or 0
+        customer_mismatch_rows = session.execute(
+            customer_mismatches
+            .order_by(Payment.received_at.desc(), PaymentAllocation.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        def allocation_item(allocation, payment, invoice):
+            return {
+                "allocation_id": str(allocation.id),
+                "payment_id": str(payment.id),
+                "payment_reference": payment.reference,
+                "payment_customer_id": str(payment.customer_id) if payment.customer_id else None,
+                "payment_currency": payment.currency_code,
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "invoice_customer_id": str(invoice.customer_id) if invoice.customer_id else None,
+                "invoice_currency": invoice.currency_code,
+                "allocated_amount": str(allocation.amount),
+            }
+
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "read_only": True,
+            "unlinked_issued_invoices": {
+                "total": int(unlinked_total),
+                "items": [
+                    {
+                        "invoice_id": str(item.id),
+                        "invoice_number": item.invoice_number,
+                        "status": item.status,
+                        "total": str(item.total),
+                        "currency_code": item.currency_code,
+                        "created_at": item.created_at.isoformat() if item.created_at else None,
+                    }
+                    for item in unlinked_items
+                ],
+            },
+            "currency_mismatched_allocations": {
+                "total": int(currency_mismatch_total),
+                "items": [allocation_item(*row) for row in currency_mismatch_rows],
+            },
+            "customer_mismatched_allocations": {
+                "total": int(customer_mismatch_total),
+                "items": [allocation_item(*row) for row in customer_mismatch_rows],
+            },
+            "limit": limit,
+            "offset": offset,
+            "warning": (
+                "This report identifies records for manual review only. It never guesses "
+                "customer links or modifies invoices, payments, or allocations."
+            ),
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc

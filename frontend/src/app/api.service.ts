@@ -20,8 +20,8 @@ export interface InvoiceDetail extends Invoice {
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
-export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
-export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; currencies: ProfitLossRow[]; limitations: string[]; }
+export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; approved_return_total: string; approved_return_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
+export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; revenue_basis: string; currencies: ProfitLossRow[]; limitations: string[]; }
 
 export interface ReceivablesAgingBucket { bucket: 'not_due' | '1_30_days' | '31_60_days' | '61_90_days' | 'over_90_days' | 'no_due_date'; outstanding_amount: string; }
 export interface ReceivablesAgingCurrencySummary { currency_code: string; buckets: ReceivablesAgingBucket[]; total_outstanding: string; }
@@ -145,12 +145,9 @@ export class ApiService {
     return this.request<Business>('/api/v1/businesses', 'POST', body);
   }
   dashboard(businessId: string): Promise<Dashboard> {
-    const end = new Date();
-    const start = new Date(end);
-    start.setDate(end.getDate() - 30);
-    const date = (value: Date) => value.toISOString().slice(0, 10);
+    // The backend applies the default 30-day window using the business's timezone.
     return this.request<Dashboard>(
-      `/api/v1/businesses/${encodeURIComponent(businessId)}/dashboard?start_date=${date(start)}&end_date=${date(end)}`
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/dashboard`
     );
   }
 

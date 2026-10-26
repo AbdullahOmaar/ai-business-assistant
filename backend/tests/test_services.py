@@ -338,3 +338,62 @@ def test_invoice_void_rejects_allocated_payments(workspace):
                 invoice_id=invoice.id, reason="Should be rejected",
             )
         assert invoice.status == "issued"
+
+
+def test_payment_service_requires_owner_role(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+            BusinessMembership.user_subject == principal.subject,
+        ))
+        membership.role = MembershipRole.STAFF
+        session.flush()
+
+        with pytest.raises(AuthorizationError):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                customer_id=customer.id, amount=Decimal("1.00"),
+                currency_code="EGP", idempotency_key="staff-direct-payment",
+                allocations=[],
+            )
+
+
+def test_payment_cannot_allocate_invoice_from_another_business(workspace):
+    engine, business_a_id, principal_a = workspace
+    with Session(engine) as session:
+        customer_a = _make_customer(session, principal_a, business_a_id)
+
+        business_b = Business(name="Separate Tenant", currency_code="EGP")
+        session.add(business_b)
+        session.flush()
+        principal_b = AuthenticatedPrincipal(subject="tenant-b-owner")
+        session.add(BusinessMembership(
+            business_id=business_b.id,
+            user_subject=principal_b.subject,
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        customer_b = create_customer(
+            session, principal=principal_b, business_id=business_b.id,
+            name="Tenant B Customer",
+        )
+        invoice_b = create_invoice(
+            session, principal=principal_b, business_id=business_b.id,
+            customer_id=customer_b.id, invoice_number="TENANT-B-PAY-1",
+            currency_code="EGP",
+            lines=[{"description": "Tenant B service", "quantity": "1", "unit_price": "10.00"}],
+        )
+        issue_invoice(
+            session, principal=principal_b, business_id=business_b.id,
+            invoice_id=invoice_b.id,
+        )
+
+        with pytest.raises(WorkflowError, match="issued invoice in this business"):
+            record_payment(
+                session, principal=principal_a, business_id=business_a_id,
+                customer_id=customer_a.id, amount=Decimal("10.00"),
+                currency_code="EGP", idempotency_key="cross-tenant-payment",
+                allocations=[(invoice_b.id, Decimal("10.00"))],
+            )

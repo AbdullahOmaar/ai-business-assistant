@@ -140,10 +140,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 </form>
                 @if (reportError) { <div class="error-banner" role="alert">{{ reportError }}</div> }
                 @if (profitLoss) {
-                  <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · UTC</p>
+                  <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
+                  <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ profitLoss.revenue_basis }}</p>
                   <div class="metric-grid">
                     @for (row of profitLoss.currencies; track row.currency_code) {
                       <article class="metric"><span>{{ t('الإيرادات (فواتير صادرة)', 'Revenue (issued invoices)') }}</span><strong>{{ row.revenue }} {{ row.currency_code }}</strong><small>{{ row.revenue_invoice_count }} {{ t('فاتورة', 'invoices') }}</small></article>
+                      <article class="metric"><span>{{ t('المرتجعات المعتمدة (من فواتير الفترة)', 'Approved returns (period invoices)') }}</span><strong>{{ row.approved_return_total }} {{ row.currency_code }}</strong><small>{{ row.approved_return_count }} {{ t('مرتجع', 'returns') }} · {{ t('تُعرض منفصلة ولا تُخصم من الإيراد', 'shown separately; not deducted from revenue') }}</small></article>
                       <article class="metric"><span>{{ t('المصروفات المسجلة', 'Recorded expenses') }}</span><strong>{{ row.expenses }} {{ row.currency_code }}</strong><small>{{ row.expense_count }} {{ t('مصروف', 'expenses') }}</small></article>
                       <article class="metric"><span>{{ t('النتيجة قبل تكلفة البضاعة', 'Result before cost of goods') }}</span><strong>{{ row.operating_result_before_cost_of_goods }} {{ row.currency_code }}</strong><small>{{ t('إيرادات الفواتير − المصروفات المسجلة', 'Invoice revenue − recorded expenses') }}</small></article>
                     }

@@ -6,6 +6,7 @@ session. This module never trusts caller-provided identity claims.
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.models import (
     Business, BusinessMembership, Expense, Invoice, MembershipRole,
-    Payment, PaymentAllocation,
+    Payment, PaymentAllocation, SalesReturn,
 )
 from app.security import (
     AuthenticatedPrincipal, AuthorizationError, authorize_membership,
@@ -73,11 +74,42 @@ def _currency(value: str) -> str:
     return result
 
 
-def _day_bounds(start_date: date | None, end_date: date | None):
+def _timezone_zone(value: str) -> ZoneInfo:
+    """Resolve a configured IANA timezone or reject invalid business settings."""
+    try:
+        return ZoneInfo(value.strip())
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Business timezone must be a valid IANA timezone.",
+        ) from exc
+
+
+def _business_timezone(session: Session, business_id: UUID) -> str:
+    business = session.scalars(select(Business).where(
+        Business.id == business_id, Business.is_active.is_(True),
+    )).one_or_none()
+    if business is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+    _timezone_zone(business.timezone)
+    return business.timezone
+
+
+def _day_bounds(
+    start_date: date | None, end_date: date | None, timezone_name: str = "UTC",
+):
+    """Convert inclusive business-local dates to UTC half-open timestamp bounds."""
     if start_date and end_date and start_date > end_date:
         raise HTTPException(status_code=422, detail="start_date must be on or before end_date")
-    start = datetime.combine(start_date, time.min, tzinfo=timezone.utc) if start_date else None
-    end = datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=timezone.utc) if end_date else None
+    zone = _timezone_zone(timezone_name)
+    start = (
+        datetime.combine(start_date, time.min, tzinfo=zone).astimezone(timezone.utc)
+        if start_date else None
+    )
+    end = (
+        datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=zone).astimezone(timezone.utc)
+        if end_date else None
+    )
     return start, end
 
 
@@ -119,9 +151,11 @@ def create_business(body: BusinessCreate,
         raise HTTPException(status_code=422, detail="Business name is required")
     if not principal.subject.strip():
         raise HTTPException(status_code=401, detail="Authentication required")
+    timezone_name = body.timezone.strip()
+    _timezone_zone(timezone_name)
     item = Business(
         name=name, currency_code=_currency(body.currency_code),
-        locale=body.locale.strip(), timezone=body.timezone.strip(),
+        locale=body.locale.strip(), timezone=timezone_name,
         contact_email=body.contact_email, phone=body.phone, address=body.address,
     )
     try:
@@ -180,6 +214,8 @@ def patch_business(business_id: UUID, body: BusinessPatch,
             raise HTTPException(status_code=422, detail="Business name is required")
         if key == "currency_code" and value is not None:
             value = _currency(value)
+        if key == "timezone" and value is not None:
+            _timezone_zone(value)
         setattr(item, key, value)
     try:
         session.commit()
@@ -199,7 +235,12 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         _authorize(session, principal, business_id)
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
-    start, end = _day_bounds(start_date, end_date)
+    timezone_name = _business_timezone(session, business_id)
+    if start_date is None and end_date is None:
+        business_today = datetime.now(_timezone_zone(timezone_name)).date()
+        start_date = business_today - timedelta(days=29)
+        end_date = business_today
+    start, end = _day_bounds(start_date, end_date, timezone_name)
 
     invoice_clauses = [Invoice.business_id == business_id, Invoice.status == "issued"]
     invoice_clauses.extend(_date_filter(Invoice.issue_date, start, end))
@@ -239,7 +280,7 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
     return {
         "period": {"start_date": start_date.isoformat() if start_date else None,
                    "end_date": end_date.isoformat() if end_date else None,
-                   "timezone": "UTC"},
+                   "timezone": timezone_name},
         "invoiced_sales": amounts(sales),
         "collected_payments": amounts(collected),
         "expenses": amounts(expenses),
@@ -270,7 +311,9 @@ def profit_loss(
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
-    today = datetime.now(timezone.utc).date()
+    timezone_name = _business_timezone(session, business_id)
+    business_zone = _timezone_zone(timezone_name)
+    today = datetime.now(business_zone).date()
     if period == "custom":
         if start_date is None or end_date is None:
             raise HTTPException(status_code=422, detail="Custom period requires start_date and end_date.")
@@ -285,6 +328,8 @@ def profit_loss(
     if start and end and start > end:
         raise HTTPException(status_code=422, detail="start_date must be on or before end_date.")
 
+    start_ts, end_ts = _day_bounds(start, end, timezone_name)
+
     invoice_query = select(
         Invoice.currency_code,
         func.count(Invoice.id),
@@ -295,26 +340,55 @@ def profit_loss(
         func.count(Expense.id),
         func.coalesce(func.sum(Expense.amount), 0),
     ).where(Expense.business_id == business_id)
-    if start is not None:
-        invoice_query = invoice_query.where(Invoice.issue_date >= datetime.combine(start, time.min, tzinfo=timezone.utc))
-        expense_query = expense_query.where(Expense.incurred_at >= datetime.combine(start, time.min, tzinfo=timezone.utc))
-    if end is not None:
-        invoice_query = invoice_query.where(Invoice.issue_date < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc))
-        expense_query = expense_query.where(Expense.incurred_at < datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc))
+    if start_ts is not None:
+        invoice_query = invoice_query.where(Invoice.issue_date >= start_ts)
+        expense_query = expense_query.where(Expense.incurred_at >= start_ts)
+    if end_ts is not None:
+        invoice_query = invoice_query.where(Invoice.issue_date < end_ts)
+        expense_query = expense_query.where(Expense.incurred_at < end_ts)
 
     revenue_rows = session.execute(invoice_query.group_by(Invoice.currency_code)).all()
     expense_rows = session.execute(expense_query.group_by(Expense.currency_code)).all()
+
+    # Returns are shown separately and are deliberately not netted from revenue:
+    # the schema does not yet allocate tax/discounts or link credit notes/refunds.
+    # Period membership follows the original invoice issue date, not return creation
+    # time, because the model does not persist an approval timestamp.
+    return_query = select(
+        Invoice.currency_code,
+        func.count(SalesReturn.id),
+        func.coalesce(func.sum(SalesReturn.total), 0),
+    ).join(
+        Invoice,
+        (Invoice.id == SalesReturn.invoice_id) & (Invoice.business_id == SalesReturn.business_id),
+    ).where(
+        SalesReturn.business_id == business_id,
+        SalesReturn.status == "approved",
+        Invoice.status == "issued",
+    )
+    if start_ts is not None:
+        return_query = return_query.where(Invoice.issue_date >= start_ts)
+    if end_ts is not None:
+        return_query = return_query.where(Invoice.issue_date < end_ts)
+    return_rows = session.execute(return_query.group_by(Invoice.currency_code)).all()
+
     revenue = {currency: (int(count), Decimal(str(total))) for currency, count, total in revenue_rows}
     expenses = {currency: (int(count), Decimal(str(total))) for currency, count, total in expense_rows}
-    currencies = sorted(set(revenue) | set(expenses))
+    approved_returns = {
+        currency: (int(count), Decimal(str(total))) for currency, count, total in return_rows
+    }
+    currencies = sorted(set(revenue) | set(expenses) | set(approved_returns))
     rows = []
     for currency in currencies:
         revenue_count, revenue_total = revenue.get(currency, (0, Decimal("0")))
         expense_count, expense_total = expenses.get(currency, (0, Decimal("0")))
+        return_count, return_total = approved_returns.get(currency, (0, Decimal("0")))
         rows.append({
             "currency_code": currency,
             "revenue": str(revenue_total),
             "revenue_invoice_count": revenue_count,
+            "approved_return_total": str(return_total),
+            "approved_return_count": return_count,
             "expenses": str(expense_total),
             "expense_count": expense_count,
             "operating_result_before_cost_of_goods": str(revenue_total - expense_total),
@@ -324,12 +398,15 @@ def profit_loss(
             "type": period,
             "start_date": start.isoformat() if start else None,
             "end_date": end.isoformat() if end else None,
-            "timezone": "UTC",
+            "timezone": timezone_name,
         },
         "currencies": rows,
+        "revenue_basis": "gross issued invoice totals before sales returns; stored invoice tax is included",
         "limitations": [
-            "Revenue is based on issued invoices, not cash collected.",
+            "Revenue is based on issued invoice totals, not cash collected.",
+            "Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.",
             "This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.",
+            "Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.",
             "Currencies are kept separate and never converted or combined.",
         ],
     }

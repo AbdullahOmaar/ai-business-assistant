@@ -271,7 +271,6 @@ def test_invoice_rejects_customer_and_product_ids_from_another_business():
             app.state.principal_resolver = previous_resolver
         engine.dispose()
 
-
 def test_audit_events_are_owner_only_paginated_and_workspace_scoped():
     engine = create_engine(
         "sqlite+pysqlite://",
@@ -399,6 +398,129 @@ def test_customer_statement_is_scoped_currency_safe_and_paginated():
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         denied = client.get(f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement")
         assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_customer_mismatches():
+    from datetime import datetime, timezone
+    from sqlalchemy import select
+    from decimal import Decimal
+    from app.models import (
+        Business, BusinessMembership, Customer, Invoice, MembershipRole,
+        Payment, PaymentAllocation,
+    )
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("integrity-owner")
+    try:
+        with app.state.session_factory() as session:
+            business = Business(name="Integrity workspace", currency_code="EGP")
+            foreign_business = Business(name="Foreign integrity workspace", currency_code="USD")
+            session.add_all([business, foreign_business])
+            session.flush()
+            payment_customer = Customer(business_id=business.id, name="Payment customer")
+            invoice_customer = Customer(business_id=business.id, name="Invoice customer")
+            session.add_all([payment_customer, invoice_customer])
+            session.flush()
+            payment_customer_id = payment_customer.id
+            invoice_customer_id = invoice_customer.id
+            session.add_all([
+                BusinessMembership(
+                    business_id=business.id, user_subject="integrity-owner",
+                    role=MembershipRole.OWNER,
+                ),
+                Invoice(
+                    business_id=business.id, customer_id=None, invoice_number="LEGACY-1",
+                    status="issued", currency_code="EGP",
+                    issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                    due_date=None, subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
+                    discount_total=Decimal("0.00"), total=Decimal("100.00"),
+                ),
+                Invoice(
+                    business_id=business.id, customer_id=invoice_customer.id,
+                    invoice_number="INV-MISMATCH", status="issued", currency_code="EGP",
+                    issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                    due_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                    subtotal=Decimal("60.00"), tax_total=Decimal("0.00"),
+                    discount_total=Decimal("0.00"), total=Decimal("60.00"),
+                ),
+                Invoice(
+                    business_id=foreign_business.id, customer_id=None,
+                    invoice_number="FOREIGN-LEGACY", status="issued", currency_code="USD",
+                    issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                    due_date=None, subtotal=Decimal("900.00"), tax_total=Decimal("0.00"),
+                    discount_total=Decimal("0.00"), total=Decimal("900.00"),
+                ),
+            ])
+            payment = Payment(
+                business_id=business.id, customer_id=payment_customer.id,
+                amount=Decimal("25.00"), currency_code="USD",
+                idempotency_key="integrity-payment-1",
+            )
+            session.add(payment)
+            session.flush()
+            mismatch_invoice = session.scalar(select(Invoice).where(
+                Invoice.business_id == business.id,
+                Invoice.invoice_number == "INV-MISMATCH",
+            ))
+            session.add(PaymentAllocation(
+                business_id=business.id, payment_id=payment.id,
+                invoice_id=mismatch_invoice.id, amount=Decimal("25.00"),
+            ))
+            business_id = business.id
+            payment_id = payment.id
+            session.commit()
+
+        client = TestClient(app)
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/reports/data-integrity?limit=10&offset=0"
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["read_only"] is True
+        assert payload["unlinked_issued_invoices"]["total"] == 1
+        assert [row["invoice_number"] for row in payload["unlinked_issued_invoices"]["items"]] == ["LEGACY-1"]
+        assert payload["currency_mismatched_allocations"]["total"] == 1
+        currency_row = payload["currency_mismatched_allocations"]["items"][0]
+        assert currency_row["invoice_number"] == "INV-MISMATCH"
+        assert currency_row["payment_currency"] == "USD"
+        assert currency_row["invoice_currency"] == "EGP"
+        assert currency_row["allocated_amount"] == "25.00"
+        assert payload["customer_mismatched_allocations"]["total"] == 1
+        customer_row = payload["customer_mismatched_allocations"]["items"][0]
+        assert customer_row["invoice_number"] == "INV-MISMATCH"
+        assert customer_row["payment_customer_id"] == str(payment_customer_id)
+        assert customer_row["invoice_customer_id"] == str(invoice_customer_id)
+        assert customer_row["payment_customer_id"] != customer_row["invoice_customer_id"]
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/reports/data-integrity")
+        assert denied.status_code == 403
+        with app.state.session_factory() as session:
+            unlinked = session.scalar(select(Invoice).where(
+                Invoice.business_id == business_id, Invoice.invoice_number == "LEGACY-1",
+            ))
+            unchanged_payment = session.get(Payment, payment_id)
+            assert unlinked is not None and unlinked.customer_id is None
+            assert unchanged_payment is not None and unchanged_payment.amount == Decimal("25.00")
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
