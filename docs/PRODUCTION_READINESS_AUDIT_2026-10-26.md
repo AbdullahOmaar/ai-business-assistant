@@ -145,3 +145,35 @@ The Vercel team/project read succeeded when scoped to team `team_jCzLnqPABe0EM86
 ### Updated verdict
 
 **NOT CLEARED FOR PRODUCTION.** In addition to unexecuted CI and accounting/security verification, the confirmed API/frontend production SHA mismatch must be resolved through the approved deployment process after all release gates pass.
+
+
+## Further execution update — 2026-10-26 00:50 UTC
+
+### Feature inventory artifact
+
+Created `docs/FEATURE_INVENTORY_2026-10-26.md` on this audit branch. It records the seven existing frontend tabs, setup/auth/loading states, registered backend endpoint groups, data models, current test files, and confirmed limitations. It explicitly separates model/API existence from a complete user-facing workflow and marks manual/browser checks as unperformed.
+
+### Additional timezone regression coverage
+
+PR #143 now also includes assertions for New York daylight-saving transition boundaries:
+- 2026-03-08 local day is expected to span 23 hours.
+- 2026-11-01 local day is expected to span 25 hours.
+- A business timezone update to an invalid IANA name must return 422.
+
+These tests were committed to branch `fix/business-timezone-reporting` (latest known commit `d564e7ee982cc9782f6959389e18499dd8ae6c1a`). They have **not executed successfully** because the workflow jobs failed before runner assignment.
+
+### Repeated CI retry evidence
+
+- Retrying failed jobs in [run 40250433967](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250433967) was accepted, but attempt 2 also failed.
+- New runs for PR #142's updated audit commit `1ba15a37c500fc8e08c1a64c7e9ecdb587f28871` failed in the same pre-runner pattern: [CI 40251155893](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251155893), [backend tests 40251155780](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251155780), [dependency scan 40251155775](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251155775), and [container check 40251155774](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251155774).
+- For run 40251155893, the raw jobs endpoint again reported `runner_id=0`, blank `runner_name`, and `steps=[]` for both backend and frontend jobs. The issue affects independent workflow families and does not identify a source-level test failure.
+
+### Current verified release blockers
+
+1. CI has not executed the code; tests, migrations, builds and dependency scans remain unverified.
+2. Production frontend alias is on `dec7f26bd2bb33a4c27af4e785abe982e8486676`, but the API alias is on `c8078c563ad9d88f04cccee740efdb1b64527df7`; the current-SHA API deployment attempt is canceled. Do not promote or label the app release-ready.
+3. The timezone fix remains unmerged and unexecuted.
+4. PostgreSQL concurrency tests, route-by-route authorization review, real desktop/mobile UX, runtime configuration confirmation, authenticated smoke tests and physical Android PWA tests remain outstanding.
+5. Vercel project metadata was readable under the exact team ID, but no production change was made. Runtime HTTP probes through the available web fetch channel were blocked, so no live API health/version response is claimed.
+
+Release verdict remains **NOT CLEARED FOR PRODUCTION**.
