@@ -228,7 +228,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         if len(currency) != 3 or not currency.isalpha():
             raise WorkflowError("Currency must be a three-letter code")
         po = PurchaseOrder(business_id=business_id, supplier_id=supplier.id,
-                           order_number=body.order_number.strip(), status="approved",
+                           order_number=body.order_number.strip(), status="draft",
                            currency_code=currency, total=ZERO)
         total = ZERO
         session.add(po)
@@ -248,7 +248,41 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         po.total = total
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="purchase_order.created", target_type="purchase_order",
-            target_id=str(po.id), change_summary=f"Approved order {po.order_number}"))
+            target_id=str(po.id), change_summary=f"Draft order {po.order_number}")
+        session.flush()
+        return po
+    po = _commit(session, op)
+    return _dict(po, ("id", "business_id", "supplier_id", "order_number", "status",
+                      "currency_code", "total", "created_at"))
+
+
+@router.post("/purchase-orders/{order_id}/approve")
+def approve_purchase_order(business_id: UUID, order_id: UUID,
+                           session: Session = Depends(get_session),
+                           principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Approve a draft purchase order; only the business owner may authorize it."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        po = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if po is None:
+            raise WorkflowError("Purchase order not found in this business")
+        if po.status != "draft":
+            raise WorkflowError("Only draft purchase orders can be approved")
+        lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == po.id,
+            PurchaseOrderLine.business_id == business_id,
+        )).all()
+        if not lines:
+            raise WorkflowError("A purchase order must contain at least one line")
+        po.status = "approved"
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="purchase_order.approved", target_type="purchase_order",
+            target_id=str(po.id), change_summary=f"Approved order {po.order_number}",
+        ))
         session.flush()
         return po
     po = _commit(session, op)
@@ -267,7 +301,11 @@ def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurch
         ).with_for_update()).one_or_none()
         if po is None or po.status not in {"approved", "partially_received"}:
             raise WorkflowError("Purchase order is not available for receiving")
+        if not body.lines:
+            raise WorkflowError("At least one received quantity is required")
         for item in body.lines:
+            if item.quantity <= ZERO:
+                raise WorkflowError("Received quantity must be positive")
             line = session.scalars(select(PurchaseOrderLine).where(
                 PurchaseOrderLine.id == item.line_id,
                 PurchaseOrderLine.purchase_order_id == po.id,
