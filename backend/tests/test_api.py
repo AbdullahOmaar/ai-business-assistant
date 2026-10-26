@@ -856,14 +856,15 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         assert invoices_by_number["AGE-SETTLED"]["outstanding_amount"] == "0.00"
         assert invoices_by_number["AGE-OVER"]["bucket"] == "overallocated"
         assert invoices_by_number["AGE-OVER"]["overallocated"] is True
-        assert invoices_by_number["AGE-OVER"]["outstanding_amount"] == "-5.00"
+        assert invoices_by_number["AGE-OVER"]["outstanding_amount"] == "0.00"
+        assert invoices_by_number["AGE-OVER"]["overallocated_amount"] == "5.00"
         assert invoices_by_number["AGE-OVER90"]["bucket"] == "over_90_days"
         assert list(payload["by_currency"]) == ["EGP", "USD"]
         assert payload["by_currency"]["EGP"]["31_60_days_amount"] == "100.00"
         assert payload["by_currency"]["no_due_date_amount"] == "30.00"
         assert payload["by_currency"]["not_due_amount"] == "25.00"
         assert payload["by_currency"]["settled_amount"] == "0.00"
-        assert payload["by_currency"]["overallocated_amount"] == "-5.00"
+        assert payload["by_currency"]["EGP"]["overallocated_amount"] == "5.00"
         assert payload["by_currency"]["over_90_days_amount"] == "10.00"
         assert payload["by_currency"]["USD"]["1_30_days_amount"] == "50.00"
 
