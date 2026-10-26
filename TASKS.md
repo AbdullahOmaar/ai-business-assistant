@@ -303,3 +303,13 @@
 - Regression tests added to `backend/tests/test_main.py`: verify health response IDs are valid server-generated UUIDs and caller-provided `X-Request-ID` is not trusted; CORS regression asserts the correlation header is exposed. Source commits: `b75368b2bb43893b000969976af151140c85aa2d`, `2f3dd74bf78dd110049872cf3c1d06430919e261`, `c5a0a738a96cd2ee5452c2e9f86c252afc51d773`, `5dfd607565b7aaa79ab4bd91f6401d35e28cae31`.
 - Validation status: tests are authored but NOT executed locally or in CI. The latest observed workflow attempts for the preceding candidate all failed with missing step/log payloads; the exact newest candidate must still be checked. Feature status remains IN_PROGRESS, not VERIFIED. Readiness/database migration status and redacted operational error reporting remain unimplemented parts of issue #69.
 - PR #161 at the time of this checkpoint: head `5dfd607565b7aaa79ab4bd91f6401d35e28cae31`, base `af4ba084cedcec7339498579ef5563ce7748bf7c`, state `open`, draft=true, merged=false. Do not merge or deploy until required backend/PostgreSQL, frontend/build, container, and dependency checks are successful and inspectable on the exact final head. No runner was manually provisioned or required from the user; source work proceeded via GitHub repository access.
+
+
+
+## Execution checkpoint — receivables-aging regression coverage (2026-10-26)
+- Status: IN_PROGRESS; validation BLOCKED until CI provides inspectable successful runs.
+- Feature reviewed: existing `GET /api/v1/businesses/{business_id}/reports/receivables-aging` already separates balances by currency, flags mismatched-currency allocations and overallocations, and places missing due dates in a distinct bucket. Avoided duplicating this endpoint.
+- Added API regression coverage in `backend/tests/test_api.py` for (1) missing due-date balances staying in `no_due_date` and currency-specific summaries, and (2) non-member access being denied without invoice disclosure.
+- Commits: `26e767fec607bbeb8e17ac027c5b98c3a5c265ce` (initial test addition), `c8ce37a4f1f5fb23bffe719f83de3ac6d1ecde5b` (corrected expected fixture total after source review). These changes are source commits only; the tests have NOT been executed locally or successfully in CI.
+- Release gate remains BLOCKED: latest previous candidate runs had failed workflow conclusions with unavailable steps/logs. Re-query CI for the new head. Do not merge or deploy until backend tests, frontend build/tests, container build, and dependency scans pass on the exact final SHA.
+- Next accounting priorities remain credit notes/refunds (#79), inventory valuation/COGS (#84), tax reporting (#85), reconciliation (#86), and period close (#87); inspect existing branches/issues before any overlapping implementation.
