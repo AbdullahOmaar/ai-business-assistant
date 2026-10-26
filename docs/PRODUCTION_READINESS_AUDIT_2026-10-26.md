@@ -137,14 +137,14 @@ The Vercel team/project read succeeded when scoped to team `team_jCzLnqPABe0EM86
 
 - Frontend production alias `ai-business-assistant-web.vercel.app` resolves to deployment `dpl_Gep5cA11Qq3ETttRhHj4rjx2GtsV`, state READY, source `main`, commit `dec7f26bd2bb33a4c27af4e785abe982e8486676`. [Deployment details](https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-web/Gep5cA11Qq3ETttRhHj4rjx2GtsV)
 - API production alias `ai-business-assistant-api.vercel.app` resolves to deployment `dpl_3YoKDZX76b2rKG3PMijZar481XLg`, state READY, source `main`, commit `c8078c563ad9d88f04cccee740efdb1b64527df7`. [Deployment details](https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/3YoKDZX76b2rKG3PMijZar481XLg)
-- The API deployment attempt for current main commit `dec7f26bd2bb33a4c27af4e785abe982e8486676` is CANCELED (`dpl_DEAjTugY5FpuEcf15cNCbvM5Kq9Y`); it is not the API production alias target.
-- Therefore the production frontend and API are **not on the same commit SHA**. Frontend metadata is current to main, while API production is still at the older #137 commit. The current main also includes later backend-affecting commit `1210641021493e3669865ae945acb8c2f4ff967d` for return rounding, so the API deployment must not be assumed to contain that fix.
+- The API deployment attempt for current main commit `dec7f26bd2bb33a4c27af4e785abe982e8486676` is CANCELED (`dpl_DEAjTugY5FpuEcf15cNCbvM5Kq9Y`). Vercel build events show this was caused by the configured Ignored Build Step: `git log -1 --pretty=%B | grep -q '\\[release-api\\]' && exit 1 || exit 0` returned exit code 0 because the latest commit message was not tagged `[release-api]`. This is the configured deployment filter, not a build failure.
+- Comparing API production commit `c8078c563ad9d88f04cccee740efdb1b64527df7` with current `main` shows two commits ahead. Changed paths are frontend files, release notes, and `backend/tests/test_services.py`; **no backend application runtime file changed** after the API production commit. The return-rounding fix commit `1210641021493e3669865ae945acb8c2f4ff967d` is an ancestor of `c8078c5`, so the current API deployment source includes that runtime fix. The different SHAs are therefore not, by themselves, evidence that frontend and API runtime code are incompatible.
 - A direct fetch of `/version`, `/health`, and `/readyz` through the available web fetch channel was blocked (DisabledError). No runtime status code or version payload is claimed.
-- No production promotion was attempted. API/Frontend alias alignment, runtime configuration, authenticated read-only smoke tests, and the release CI gates remain blockers.
+- No production promotion was attempted. Runtime configuration validity, authenticated read-only smoke tests, and the release CI gates remain blockers.
 
 ### Updated verdict
 
-**NOT CLEARED FOR PRODUCTION.** In addition to unexecuted CI and accounting/security verification, the confirmed API/frontend production SHA mismatch must be resolved through the approved deployment process after all release gates pass.
+**NOT CLEARED FOR PRODUCTION.** In addition to unexecuted CI and accounting/security verification, production runtime/version compatibility and authenticated smoke tests remain unverified. The differing frontend/API SHAs were compared: the only intervening backend-path change is a test file, not backend runtime code; this is not by itself evidence of a runtime mismatch.
 
 
 ## Further execution update — 2026-10-26 00:50 UTC
