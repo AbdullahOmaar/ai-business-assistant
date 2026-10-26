@@ -360,6 +360,54 @@ def test_payment_service_requires_owner_role(workspace):
             )
 
 
+def test_invoice_issue_requires_owner_role(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id, invoice_number="INV-STAFF-ISSUE",
+            currency_code="EGP",
+            lines=[{"description": "Consulting", "quantity": "1", "unit_price": "10.00"}],
+        )
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+            BusinessMembership.user_subject == principal.subject,
+        ))
+        membership.role = MembershipRole.STAFF
+        session.flush()
+
+        with pytest.raises(AuthorizationError):
+            issue_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id,
+            )
+        assert invoice.status == "draft"
+
+
+def test_invoice_void_requires_owner_role(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-STAFF-VOID", currency_code="EGP",
+            lines=[{"description": "Consulting", "quantity": "1", "unit_price": "10.00"}],
+        )
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+            BusinessMembership.user_subject == principal.subject,
+        ))
+        membership.role = MembershipRole.STAFF
+        session.flush()
+
+        with pytest.raises(AuthorizationError):
+            void_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id, reason="Staff must not void invoices",
+            )
+        assert invoice.status == "draft"
+
+
 def test_payment_cannot_allocate_invoice_from_another_business(workspace):
     engine, business_a_id, principal_a = workspace
     with Session(engine) as session:
