@@ -1,3 +1,17 @@
+# Latest execution update — 2026-10-27
+
+## AUTHZ-INVOICE-001 — enforce OWNER-only invoice issue/void at service layer
+- Status: BLOCKED (implementation committed; executable tests not yet run).
+- Base workstream: Draft PR [#161](https://github.com/AbdullahOmaar/ai-business-assistant/pull/161), branch `task/production-safety-consolidated`.
+- Change branch: `fix/owner-only-invoice-issue-void-2026-10-27`.
+- Commit `8bed66e649bfce257282f07b4f05cd1b8553e8c2`: `issue_invoice` and `void_invoice` now call the service-layer membership guard with `owner_only=True`, matching the documented release policy.
+- Commit `2b5f84b9f946b76c5373042202e19e2646ef418c`: adds negative regression tests proving STAFF cannot issue or void an invoice and that invoice state remains `draft`.
+- Evidence reviewed: `docs/PRODUCTION_DEPLOYMENT.md` specifies OWNER-only invoice issue/void; prior service code used the generic membership guard for these two entry points. Existing payment service already had OWNER-only enforcement.
+- Verification: source and test additions were re-read from the branch. No Python test run is claimed. GitHub Actions runner allocation is blocked, and the available Vercel preview only executes the frontend test suite. Do not merge until backend tests run successfully on the exact head.
+- Next: create a stacked Draft PR against `task/production-safety-consolidated` (avoid duplicating the 119-commit scope of PR #161), then run the focused service tests and full backend/PostgreSQL suite through a working authorized runner.
+
+---
+
 ## Execution checkpoint — 2026-10-26 17:15 UTC
 
 - Latest live PR #161 head observed immediately before this ledger edit: a94352d353b3b8fbf7a6092132964f3362aa1a5e; base/main recorded by GitHub: af4ba084cedcec7339498579ef5563ce7748bf7c. PR is open, Draft, and unmerged. Re-check head after this documentation commit because concurrent edits may advance it.
