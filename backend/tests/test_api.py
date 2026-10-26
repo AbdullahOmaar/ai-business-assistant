@@ -796,11 +796,15 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
             business_id=business.id, customer_id=customer.id, amount=Decimal("25.00"),
             currency_code="EGP", idempotency_key="aging-overallocated-payment",
         )
-        mismatch_payment = Payment(
+        mismatch_usd_payment = Payment(
             business_id=business.id, customer_id=customer.id, amount=Decimal("5.00"),
-            currency_code="USD", idempotency_key="aging-currency-mismatch-payment",
+            currency_code="USD", idempotency_key="aging-currency-mismatch-usd",
         )
-        session.add_all([settled_payment, over_payment, mismatch_payment])
+        mismatch_eur_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("3.00"),
+            currency_code="EUR", idempotency_key="aging-currency-mismatch-eur",
+        )
+        session.add_all([settled_payment, over_payment, mismatch_usd_payment, mismatch_eur_payment])
         session.flush()
         session.add_all([
             PaymentAllocation(
@@ -814,9 +818,14 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
                 amount=Decimal("25.00"),
             ),
             PaymentAllocation(
-                business_id=business.id, payment_id=mismatch_payment.id,
+                business_id=business.id, payment_id=mismatch_usd_payment.id,
                 invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
                 amount=Decimal("5.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=mismatch_eur_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
+                amount=Decimal("3.00"),
             ),
         ])
         session.commit()
@@ -830,43 +839,53 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         )
         assert response.status_code == 200
         payload = response.json()
-        assert payload["as_of"] == "2026-10-26"
-        assert "Currency-mismatched allocations are listed separately" in payload["note"]
+        assert payload["as_of_date"] == "2026-10-26"
+        assert payload["invoice_count"] == 5
+        assert "never combined" in payload["currency_policy"]
+
         invoices_by_number = {row["invoice_number"]: row for row in payload["invoices"]}
         assert set(invoices_by_number) == {
-            "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOTDUE",
-            "AGE-SETTLED", "AGE-OVER", "AGE-OVER90",
+            "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOTDUE", "AGE-OVER90",
         }
         assert "FOREIGN" not in invoices_by_number
-        assert invoices_by_number["AGE-30"]["bucket"] == "31_60_days"
-        # A USD allocation must not reduce an EGP invoice's outstanding balance.
-        assert invoices_by_number["AGE-30"]["allocated_amount"] == "0.00"
-        assert invoices_by_number["AGE-30"]["outstanding_amount"] == "100.00"
-        mismatched_allocations = invoices_by_number["AGE-30"]["currency_mismatch_allocations"]
-        assert len(mismatched_allocations) == 1
-        assert mismatched_allocations[0]["allocation_id"]
-        assert mismatched_allocations[0]["payment_currency_code"] == "USD"
-        assert mismatched_allocations[0]["amount"] == "5.00"
-        assert invoices_by_number["AGE-USD"]["bucket"] == "1_30_days"
+        assert "AGE-SETTLED" not in invoices_by_number
+        assert "AGE-OVER" not in invoices_by_number
+
+        # Mismatched USD/EUR allocations must never reduce the EGP invoice or be added together.
+        egp_invoice = invoices_by_number["AGE-30"]
+        assert egp_invoice["aging_bucket"] == "31_60_days"
+        assert egp_invoice["allocated_payments"] == "0.00"
+        assert egp_invoice["outstanding_amount"] == "100.00"
+
+        warnings = {(row["invoice_number"], row["type"]): row for row in payload["data_quality_warnings"]}
+        mismatch = warnings[("AGE-30", "payment_currency_mismatch")]
+        assert mismatch["invoice_currency"] == "EGP"
+        assert mismatch["mismatched_allocations_amount"] == "3.00 EUR; 5.00 USD"
+        overallocated = warnings[("AGE-OVER", "allocations_exceed_invoice_total")]
+        assert overallocated["invoice_total"] == "20.00"
+        assert overallocated["allocated_payments"] == "25.00"
+        assert overallocated["excess_allocated"] == "5.00"
+
+        assert invoices_by_number["AGE-USD"]["aging_bucket"] == "1_30_days"
         assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
-        assert invoices_by_number["AGE-NODUE"]["bucket"] == "no_due_date"
+        assert invoices_by_number["AGE-NODUE"]["aging_bucket"] == "no_due_date"
         assert invoices_by_number["AGE-NODUE"]["days_overdue"] is None
-        assert invoices_by_number["AGE-NOTDUE"]["bucket"] == "not_due"
-        assert invoices_by_number["AGE-SETTLED"]["bucket"] == "settled"
-        assert invoices_by_number["AGE-SETTLED"]["outstanding_amount"] == "0.00"
-        assert invoices_by_number["AGE-OVER"]["bucket"] == "overallocated"
-        assert invoices_by_number["AGE-OVER"]["overallocated"] is True
-        assert invoices_by_number["AGE-OVER"]["outstanding_amount"] == "0.00"
-        assert invoices_by_number["AGE-OVER"]["overallocated_amount"] == "5.00"
-        assert invoices_by_number["AGE-OVER90"]["bucket"] == "over_90_days"
-        assert list(payload["by_currency"]) == ["EGP", "USD"]
-        assert payload["by_currency"]["EGP"]["31_60_days_amount"] == "100.00"
-        assert payload["by_currency"]["EGP"]["no_due_date_amount"] == "30.00"
-        assert payload["by_currency"]["EGP"]["not_due_amount"] == "25.00"
-        assert payload["by_currency"]["EGP"]["settled_amount"] == "0.00"
-        assert payload["by_currency"]["EGP"]["overallocated_amount"] == "5.00"
-        assert payload["by_currency"]["EGP"]["over_90_days_amount"] == "10.00"
-        assert payload["by_currency"]["USD"]["1_30_days_amount"] == "50.00"
+        assert invoices_by_number["AGE-NOTDUE"]["aging_bucket"] == "not_due"
+        assert invoices_by_number["AGE-OVER90"]["aging_bucket"] == "over_90_days"
+
+        summaries = {row["currency_code"]: row for row in payload["by_currency"]}
+        assert set(summaries) == {"EGP", "USD"}
+        assert summaries["EGP"]["total_outstanding"] == "165.00"
+        assert summaries["USD"]["total_outstanding"] == "50.00"
+        egp_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["EGP"]["buckets"]}
+        usd_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["USD"]["buckets"]}
+        assert egp_buckets == {
+            "not_due": "25.00",
+            "31_60_days": "100.00",
+            "over_90_days": "10.00",
+            "no_due_date": "30.00",
+        }
+        assert usd_buckets == {"1_30_days": "50.00"}
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="unauthorized-subject")
         denied = client.get(
