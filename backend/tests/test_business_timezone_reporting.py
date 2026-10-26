@@ -125,6 +125,9 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
         result = report.json()
         assert any("tax amounts" in item for item in result["limitations"])
         assert any("sales returns" in item for item in result["limitations"])
+        assert result["revenue_basis"] == (
+            "gross issued invoice totals before sales returns; stored invoice tax is included"
+        )
         assert result["period"]["timezone"] == "America/New_York"
         assert Decimal(result["currencies"][0]["revenue"]) == Decimal("20.00")
         assert Decimal(result["currencies"][0]["expenses"]) == Decimal("5.00")
