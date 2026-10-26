@@ -329,7 +329,7 @@ def void_invoice(
     invoice_id: UUID, reason: str | None = None,
 ) -> Invoice:
     """Void a draft or unpaid issued invoice; restore tracked stock atomically."""
-    _membership(session, principal, business_id)
+    _membership(session, principal, business_id, owner_only=True)
     invoice = session.scalars(select(Invoice).where(
         Invoice.id == invoice_id, Invoice.business_id == business_id,
     ).with_for_update()).one_or_none()
@@ -392,7 +392,7 @@ def issue_invoice(
     lacks stock, the workflow raises before the caller commits, so the whole
     request transaction can be rolled back without a partial invoice issue.
     """
-    _membership(session, principal, business_id)
+    _membership(session, principal, business_id, owner_only=True)
     invoice = session.scalars(select(Invoice).where(
         Invoice.id == invoice_id, Invoice.business_id == business_id,
     ).with_for_update()).one_or_none()
