@@ -193,3 +193,36 @@ Read project environment-variable metadata with decryption disabled; no secret v
 The latest runs for PR #142 commit `1ba15a37c500fc8e08c1a64c7e9ecdb587f28871` now show completed failure, with runner ID 0 and no steps in sampled jobs. The latest PR #143 run family for `d564e7ee982cc9782f6959389e18499dd8ae6c1a` also shows failed jobs with no step evidence. Relevant links: [PR #143 CI 40251116121](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116121), [backend tests 40251116118](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116118), [dependency scan 40251116114](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116114), [container check 40251116119](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40251116119).
 
 The CI root cause remains unresolved by the available GitHub API evidence; no workflow changes were made to mask it. Release verdict remains **NOT CLEARED FOR PRODUCTION**.
+
+
+## Execution continuation — 2026-10-26 01:30 UTC
+
+### Accounting code review and correction PR #144
+
+Source review found a gap in the service-layer sales-return approval operation: it checked cumulative returned quantity and non-negative amount, but did not enforce the same discounted invoice-line amount ceiling used by the HTTP API. This allowed service-level return records to exceed the original line's allocated net subtotal under inconsistent persisted/input data.
+
+- Opened [PR #144](https://github.com/AbdullahOmaar/ai-business-assistant/pull/144), draft, on branch `fix/sales-return-amount-guard-2026-10-26`.
+- Added `discounted_return_line_total` as a shared deterministic largest-remainder allocation rule, reused by both the HTTP return endpoints and service-layer operation.
+- Added regression tests for an amount exceeding the source line and cumulative approved return amounts exceeding the discounted source line.
+- No schema migration, production data change, or deployment was made.
+- Code was reviewed from GitHub source diffs. Tests have **not been executed** because Actions still fails before assigning runners.
+
+### Runner/CI diagnosis status
+
+For new PR #144 commit `72720b91a61a72776a1a3c9f54e11d2a07cd824a`, GitHub created four workflow runs and all completed as failures within seconds:
+- [Verify backend/frontend — 40254076031](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254076031)
+- [Backend tests — 40254076024](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254076024)
+- [Dependency scan — 40254076045](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254076045)
+- [Container check — 40254076020](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254076020)
+
+The sampled jobs again have `runner_id=0`, no runner name, and no steps; downloading job logs returns `BlobNotFound`, consistent with no log artifact being produced. The current public [GitHub Status](https://www.githubstatus.com/) page shows all systems operational, and no active Actions incident matching these failures was visible during this check. This does **not** prove whether the cause is account/repository Actions configuration, billing/quota, or a non-public runner service problem. The exact root cause cannot be established from the available GitHub API evidence. Do not change workflows to hide this failure; inspect repository Actions settings and owner billing/quota in GitHub UI or escalate to GitHub Support with the run IDs.
+
+### Remaining unverified work
+
+- Execute all changed backend tests, full PostgreSQL migration/integration suite, frontend production build, npm/pip dependency scans, and container build once a runner is available.
+- Finish route-by-route authorization and tenant-isolation tests, payment idempotency/concurrency verification, and report correctness review.
+- Complete real browser/mobile/PWA checks and authenticated runtime smoke tests.
+- Review and merge PRs #142, #143, and #144 only after their required checks have actually executed and passed.
+- No production deployment or promotion was attempted.
+
+Release verdict remains **NOT CLEARED FOR PRODUCTION**.
