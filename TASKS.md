@@ -321,3 +321,6 @@
 - Rationale: SalesReturn stores a total and creation timestamp but no approval timestamp, tax allocation, discount allocation, credit-note link, or refund link. Filtering by the original invoice's issue date is explicitly documented to avoid silently inventing a return recognition date.
 - Added regression assertions to the existing approved-return fixture and exposed the new fields in the frontend type and report UI with a clear non-netted label.
 - Source edits are being committed to the existing canonical #161 branch; no runner was queried per the current instruction. Tests/build/security checks have not been executed in this checkpoint. Do not merge or deploy until the required gates have inspectable successful evidence.
+
+
+- Follow-up test fixture: added draft and rejected sales returns to the approved-return reporting regression case, asserting they are excluded from the approved-return total/count. Source commit: `021dac13ffea9fde091fcef3356635835e8884a1`. This is source-level coverage only; not executed.
