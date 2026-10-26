@@ -138,12 +138,9 @@ export class ApiService {
     return this.request<Business>('/api/v1/businesses', 'POST', body);
   }
   dashboard(businessId: string): Promise<Dashboard> {
-    const end = new Date();
-    const start = new Date(end);
-    start.setDate(end.getDate() - 30);
-    const date = (value: Date) => value.toISOString().slice(0, 10);
+    // The backend applies the default 30-day window using the business's timezone.
     return this.request<Dashboard>(
-      `/api/v1/businesses/${encodeURIComponent(businessId)}/dashboard?start_date=${date(start)}&end_date=${date(end)}`
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/dashboard`
     );
   }
 
