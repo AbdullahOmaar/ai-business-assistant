@@ -226,3 +226,25 @@ The sampled jobs again have `runner_id=0`, no runner name, and no steps; downloa
 - No production deployment or promotion was attempted.
 
 Release verdict remains **NOT CLEARED FOR PRODUCTION**.
+
+
+## Latest source review — 2026-10-26 01:29 UTC
+
+### PR #144 expanded after reviewing both API and service-layer paths
+
+The API route already had a discounted net-subtotal ceiling, but the separate service operation did not. The fix now shares the same largest-remainder allocation helper across both code paths and aggregates duplicate return-line entries by original invoice line before checking quantities and amounts. Regression tests cover:
+- A return amount above the recorded source-line ceiling.
+- Cumulative approved amounts above the discounted line ceiling.
+- Duplicate rows in one draft return that collectively exceed the sold quantity.
+
+Latest PR #144 head is `d6fdc6254fb93ec15fc0e4301905970456944bf0`. These are source changes plus tests; they have not run in a real test process.
+
+### Latest CI evidence
+
+The new PR #144 backend test run [40254339648](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254339648) completed as failure in three seconds; its job had `runner_id=0`, blank runner name, and no steps. The newest workflow family on the same SHA includes [backend/frontend 40254339645](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254339645), [dependency scan 40254339686](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254339686), and [container build 40254339932](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40254339932). No code-test pass is claimed.
+
+### Route authorization source review
+
+Reviewed the route declarations in `api.py`, `core_features_api.py`, `extended_api.py`, and `assistant_api.py`. Public business workflows use trusted `get_principal` / `get_session` dependencies and the service or route-level membership guard; sensitive owner-only routes explicitly require the OWNER role. The source has no separate membership-active flag in the current model, so "inactive membership" is not a state the current schema can express. This is a code inspection, not a successful end-to-end authorization test. Cross-business and role tests remain to be run.
+
+Release verdict remains **NOT CLEARED FOR PRODUCTION**.
