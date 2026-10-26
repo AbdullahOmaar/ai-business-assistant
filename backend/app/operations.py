@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain_rules import (
+    discounted_return_line_total,
     summarize_money_by_currency,
     validate_return_amount,
     validate_return_quantity,
@@ -109,6 +110,13 @@ def approve_sales_return(
     if not return_lines:
         raise WorkflowError("A return must contain at least one line")
     total = ZERO
+    invoice_lines_for_allocation = session.scalars(select(InvoiceLine).where(
+        InvoiceLine.invoice_id == invoice.id,
+        InvoiceLine.business_id == business_id,
+    ).order_by(InvoiceLine.id)).all()
+    discount_allocation_values = [
+        (str(row.id), row.line_total) for row in invoice_lines_for_allocation
+    ]
     for return_line in return_lines:
         original_line = session.scalars(select(InvoiceLine).where(
             InvoiceLine.id == return_line.invoice_line_id,
@@ -137,7 +145,12 @@ def approve_sales_return(
             requested_quantity=return_line.quantity,
         )
         validate_return_amount(
-            invoiced_amount=original_line.line_total,
+            invoiced_amount=discounted_return_line_total(
+                invoice_subtotal=invoice.subtotal,
+                invoice_discount_total=invoice.discount_total,
+                invoice_lines=discount_allocation_values,
+                target_line_id=str(original_line.id),
+            ),
             previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
             requested_return_amount=return_line.amount,
         )
