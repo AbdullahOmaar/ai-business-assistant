@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain_rules import (
+    money,
     discounted_return_line_total,
     summarize_money_by_currency,
     validate_return_amount,
@@ -192,7 +193,7 @@ def approve_sales_return(
                     reason=f"Approved sales return {sales_return.id}",
                     reference_type="sales_return", reference_id=sales_return.id,
                 )
-    sales_return.total = total.quantize(Decimal("0.01"))
+    sales_return.total = money(total)
     sales_return.status = "approved"
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
