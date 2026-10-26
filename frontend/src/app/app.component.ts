@@ -101,7 +101,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           } @else {
             <section class="workspace-bar">
               <div><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
-              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
+              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [disabled]="loading" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
             </section>
