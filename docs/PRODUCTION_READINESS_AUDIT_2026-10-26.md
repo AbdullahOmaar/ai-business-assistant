@@ -171,7 +171,7 @@ These tests were committed to branch `fix/business-timezone-reporting` (latest k
 ### Current verified release blockers
 
 1. CI has not executed the code; tests, migrations, builds and dependency scans remain unverified.
-2. Production frontend alias is on `dec7f26bd2bb33a4c27af4e785abe982e8486676`, but the API alias is on `c8078c563ad9d88f04cccee740efdb1b64527df7`; the current-SHA API deployment attempt is canceled. Do not promote or label the app release-ready.
+2. Production frontend alias is on `dec7f26bd2bb33a4c27af4e785abe982e8486676`; API alias is on `c8078c563ad9d88f04cccee740efdb1b64527df7`. The API attempt for the frontend's current SHA was intentionally skipped by the configured `[release-api]` Ignored Build Step, and source comparison shows no backend application runtime changes between these SHAs. Still verify runtime `/version`, authenticated API behavior, and all release gates before promotion.
 3. The timezone fix remains unmerged and unexecuted.
 4. PostgreSQL concurrency tests, route-by-route authorization review, real desktop/mobile UX, runtime configuration confirmation, authenticated smoke tests and physical Android PWA tests remain outstanding.
 5. Vercel project metadata was readable under the exact team ID, but no production change was made. Runtime HTTP probes through the available web fetch channel were blocked, so no live API health/version response is claimed.
