@@ -324,3 +324,12 @@
 
 
 - Follow-up test fixture: added draft and rejected sales returns to the approved-return reporting regression case, asserting they are excluded from the approved-return total/count. Source commit: `021dac13ffea9fde091fcef3356635835e8884a1`. This is source-level coverage only; not executed.
+
+
+## Accounting priority checkpoint — credit notes/refunds (2026-10-26)
+- Credit-note/refund feature (#79): **IN_PROGRESS**. The existing sales-return workflow only records/approves returned quantities and stock movements; it does not persist a credit note, record a refund, or post a customer-ledger adjustment. Do not represent an approved goods return as cash refunded.
+- Added regression test `test_approving_sales_return_does_not_silently_rewrite_invoice_or_payment_balances` in `backend/tests/test_api.py` (commit `d344304c1cdbb3d6bd853cd2a9d997de17aef56b`). It asserts approval preserves the issued invoice snapshot, recorded payment, payment allocation, currency, and outstanding calculation until a separate audited credit-note/refund workflow exists.
+- This is source-level test coverage only; the test has **not** been executed. Re-query Actions on the exact current head. Do not mark VERIFIED from authored tests alone.
+- Remaining implementation before #79 can be VERIFIED: design a persistent credit-note record linked to invoice/customer/approved return, immutable line/tax/discount snapshots, idempotent refund records linked to actual recorded payments, per-currency caps, owner-only posting, audit events, and transactional/locked cumulative limits. Add an Alembic migration and positive/negative tests for partial credit, partial refund, duplicate idempotency key, already-refunded amount, cross-business/customer/currency mismatch, staff denial, and unchanged historical invoice/payment records.
+- Accounting policy is intentionally not guessed: the current return model has no tax allocation or credit-note recognition date and no refund ledger. Until those are specified and implemented, do not net returns into revenue/tax/COGS or claim customer balances are fully reconciled.
+- Status: code/test authoring **IN_PROGRESS**; executable verification **BLOCKED** if Actions does not expose inspectable passing steps; merge/deploy remain **BLOCKED** until the exact candidate SHA passes required checks.
