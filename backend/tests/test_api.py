@@ -646,6 +646,29 @@ def test_owner_can_change_product_price_and_create_schedules_and_notifications()
         )
         assert schedule.status_code == 201, schedule.text
 
+        invalid_schedule = client.post(
+            f"{base}/recurring-invoices",
+            json={"interval_days": 30, "timezone": "Mars/Olympus",
+                  "next_run_at": "2027-01-01T00:00:00Z"},
+        )
+        assert invalid_schedule.status_code == 422, invalid_schedule.text
+        assert "valid IANA timezone" in invalid_schedule.json()["detail"]
+
+        # Block common credential aliases after normalization, not just API-KEY.
+        for setting_key in ("API-KEY", "pwd", "passwd", "access-key", "encryption_key"):
+            invalid_setting = client.put(
+                f"{base}/settings/{setting_key}", json={"setting_value": "blocked"}
+            )
+            assert invalid_setting.status_code == 422, (
+                f"{setting_key}: {invalid_setting.status_code} {invalid_setting.text}"
+            )
+
+        safe_setting = client.put(
+            f"{base}/settings/locale", json={"setting_value": "ar"}
+        )
+        assert safe_setting.status_code == 200, safe_setting.text
+        assert safe_setting.json()["setting_key"] == "locale"
+
         notification = client.post(
             f"{base}/notifications",
             json={"kind": "test", "title": "Owner approved",
