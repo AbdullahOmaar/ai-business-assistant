@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from starlette.requests import Request
 
 from app import firebase_auth
-from app.main import version_info
+from app.main import app, version_info
 
 
 def _request(headers=()):
@@ -84,7 +84,7 @@ def test_version_info_reports_deployment_commit(monkeypatch):
 
     info = version_info()
 
-    assert info["version"] == "0.4.0"
+    assert info["version"] == app.version
     assert info["commit"] == "1234567890ab"
     assert info["environment"] == "production"
 
