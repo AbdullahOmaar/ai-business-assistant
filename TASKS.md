@@ -48,8 +48,9 @@
 
 
 ## 2026-10-26 — Receivables aging feature (branch: feat/receivables-aging-report)
-- Status: `IN_PROGRESS` (implementation committed; validation pending).
+- Status: `BLOCKED` for release verification; implementation remains unverified until checks pass.
 - Added tenant-scoped `GET /api/v1/businesses/{business_id}/reports/receivables-aging?as_of=YYYY-MM-DD`.
-- Returns issued invoice balances, aging buckets, days overdue, missing due dates, over-allocation flags, and currency-separated summaries. It does not combine currencies or mutate accounting records.
-- Added API regression test for aging boundaries, tenant isolation, and currency separation.
-- Verification: source edits were committed through GitHub Contents API. Local tests/build were not executable in this environment; require CI to validate this exact candidate SHA before merge.
+- The report returns issued-invoice balances, aging buckets, days overdue, missing due dates, settled/overallocated classifications, and currency-separated summaries. It does not combine currencies or mutate accounting records.
+- Test coverage has been strengthened on branch head `bbfd1dfd8a944d0cf81cf5ca11ddc2ec759ffb39` to include EGP and USD invoices within the same business, exclusion of another business's USD invoice, not-due / 1–30 / 31–60 / over-90 / missing-due-date / settled / overallocated buckets, amount totals, and a negative authorization test expecting HTTP 403 for a non-member.
+- Verification: source and test edits were committed through the GitHub Contents API; the tests have **not** been executed. The current runner issue is recorded in the canonical release ledger: [TASKS.md on production-safety branch](https://github.com/AbdullahOmaar/ai-business-assistant/blob/task/production-safety-consolidated/TASKS.md). The latest runner retry failed before any executable step/log became available; local execution is also unavailable because the connected development device is offline and this environment cannot resolve `github.com`.
+- Release gate: keep [PR #162](https://github.com/AbdullahOmaar/ai-business-assistant/pull/162) Draft and unmerged. Run backend/PostgreSQL tests and the relevant authorization/currency regressions on the exact final head SHA before considering it verified.
