@@ -233,12 +233,26 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
                   <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select></label>
+                  <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate"></label>
+                  <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate"></label>
                   <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة بند', 'Add line') }} +</button></div>
                     @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select></label><label>{{ t('الكمية', 'Quantity') }}<input [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity"></label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
                   </div>
-                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ editingInvoiceId ? t('حفظ كمسودة', 'Save draft') : t('إصدار الفاتورة الآن', 'Issue invoice now') }}</button>
+                  @if (invoicePreview; as preview) {
+                    <div class="invoice-preview" aria-label="Invoice totals preview" aria-live="polite">
+                      <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ preview.subtotal }} {{ business.currency_code }}</strong></div>
+                      <div><span>{{ t('الخصم', 'Discount') }}</span><strong>−{{ preview.discount }} {{ business.currency_code }}</strong></div>
+                      <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ preview.tax }} {{ business.currency_code }}</strong></div>
+                      <div class="total"><span>{{ t('الإجمالي التقديري', 'Estimated total') }}</span><strong>{{ preview.total }} {{ business.currency_code }}</strong></div>
+                    </div>
+                  } @else {
+                    <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
+                  }
+                  <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
+                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
+                @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list">
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
                   @if (!filteredInvoices.length) { <p class="empty">{{ invoices.length ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.') }}</p> }
@@ -296,8 +310,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
     .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}.quick-card{text-align:left;padding:18px}.quick-card strong,.quick-card span{display:block}.quick-card strong{font-size:13px;margin-bottom:8px}.quick-card span{font-size:11px;color:#6b7280}
-    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0}.assistant-suggestions{margin:14px 0}.assistant-suggestions>p{font-size:11px;font-weight:800;color:#64748b;margin:0 0 9px}.suggestion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.suggestion-card{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:3px;text-align:start;padding:12px;border:1px solid #dbeafe;border-radius:13px;background:linear-gradient(135deg,#fff 0%,#f0f9ff 100%);color:#1e293b;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.suggestion-card:hover{transform:translateY(-2px);border-color:#7dd3fc;box-shadow:0 8px 20px #0f172a0c}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#dbeafe;color:#1d4ed8;font-size:17px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.4}@media(max-width:480px){.suggestion-grid{grid-template-columns:1fr}.suggestion-card{padding:10px}}
-    .chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
+    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-suggestions{margin:14px 0}.assistant-suggestions>p{font-size:11px;font-weight:800;color:#64748b;margin:0 0 9px}.suggestion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.suggestion-card{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:3px;text-align:start;padding:12px;border:1px solid #dbeafe;border-radius:13px;background:linear-gradient(135deg,#fff 0%,#f0f9ff 100%);color:#1e293b;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.suggestion-card:hover{transform:translateY(-2px);border-color:#7dd3fc;box-shadow:0 8px 20px #0f172a0c}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#dbeafe;color:#1d4ed8;font-size:17px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.4}@media(max-width:480px){.suggestion-grid{grid-template-columns:1fr}.suggestion-card{padding:10px}}.chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
     .mobile-version-strip{display:none}
     @media(max-width:1050px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form .primary{grid-column:1/-1}}@media(max-width:760px){
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
@@ -327,6 +340,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       button,.secondary,.primary{min-height:42px}
     }
     .mobile-version-row{display:none}
+    .invoice-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.invoice-preview>div{display:flex;flex-direction:column;gap:4px;min-width:0}.invoice-preview span{font-size:12px;color:#64748b}.invoice-preview strong{font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.invoice-preview .total{grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:10px}
     .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
@@ -450,6 +464,9 @@ export class AppComponent implements OnInit {
   invoiceProductId = '';
   invoiceQuantity = '1';
   invoiceLines: Array<{ productId: string; quantity: string }> = [{ productId: '', quantity: '1' }];
+  invoiceDiscountRate = '0';
+  invoiceTaxRate = '0';
+  invoiceMessage = '';
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
@@ -998,6 +1015,65 @@ export class AppComponent implements OnInit {
     }
   }
 
+  get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
+    if (!this.business || !this.invoiceLines.length) return null;
+    const parseScaled = (value: string | number, scale: number): bigint | null => {
+      const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
+      if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
+      const fraction = (match[2] || '').padEnd(scale, '0');
+      return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
+    };
+    const roundHalfUp = (numerator: bigint, denominator: bigint): bigint =>
+      (numerator + denominator / 2n) / denominator;
+    const formatCents = (cents: bigint): string =>
+      `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
+
+    // Preserve precision when rates are reconstructed from saved totals.
+    const discountRate = parseScaled(this.invoiceDiscountRate, 12);
+    const taxRate = parseScaled(this.invoiceTaxRate, 12);
+    if (discountRate === null || taxRate === null ||
+        discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
+
+    // Match the backend's per-line money() policy: round each quantity × price
+    // to cents with ROUND_HALF_UP, then sum the rounded line totals.
+    let subtotalCents = 0n;
+    for (const line of this.invoiceLines) {
+      const product = this.products.find(item => item.id === line.productId);
+      const quantityMilli = parseScaled(line.quantity, 3);
+      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
+      if (!product || quantityMilli === null || quantityMilli <= 0n ||
+          unitPriceCents === null) return null;
+      const lineMilliCents = quantityMilli * unitPriceCents;
+      subtotalCents += roundHalfUp(lineMilliCents, 1000n);
+      if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+    }
+    const rateDenominator = 100n * 1_000_000_000_000n;
+    const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
+    const taxableCents = subtotalCents - discountCents;
+    const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
+    return {
+      subtotal: formatCents(subtotalCents),
+      discount: formatCents(discountCents),
+      tax: formatCents(taxCents),
+      total: formatCents(taxableCents + taxCents),
+    };
+  }
+
+  private deriveRate(amount: string | undefined, base: string | undefined): string {
+    const cents = (raw: string | undefined): bigint | null => {
+      const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(raw || '0').trim());
+      if (!match || match[1].length > 12) return null;
+      return BigInt(match[1]) * 100n + BigInt((match[2] || '').padEnd(2, '0') || '0');
+    };
+    const value = cents(amount);
+    const denominator = cents(base);
+    if (value === null || denominator === null || denominator <= 0n || value <= 0n) return '0';
+    const scale = 1_000_000_000_000n;
+    const scaledRate = (value * 100n * scale + denominator / 2n) / denominator;
+    const cappedRate = scaledRate > 100n * scale ? 100n * scale : scaledRate;
+    return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
+  }
+
   addInvoiceLine(): void {
     if (this.loading || !this.products.length) return;
     this.invoiceLines = [...this.invoiceLines, { productId: '', quantity: '1' }];
@@ -1009,8 +1085,13 @@ export class AppComponent implements OnInit {
   }
 
   async createInvoice(): Promise<void> {
-    if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length || this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0)) {
-      this.error = this.t('اختَر العميل وأدخل منتجًا وكمية صحيحة لكل بند.', 'Choose a customer and a valid product and quantity for every line.');
+    const discountRate = Number(this.invoiceDiscountRate);
+    const taxRate = Number(this.invoiceTaxRate);
+    if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length ||
+        this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) ||
+        !Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
+        !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
+      this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
       return;
     }
     this.loading = true;
@@ -1021,14 +1102,17 @@ export class AppComponent implements OnInit {
         invoice_number: invoiceNumber,
         currency_code: this.business.currency_code,
         customer_id: this.invoiceCustomerId,
-        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) }))
+        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
+        discount_rate: String(discountRate),
+        tax_rate: String(taxRate),
       };
       if (this.editingInvoiceId) {
         await this.api.updateDraftInvoice(this.business.id, this.editingInvoiceId, payload);
       } else {
-        await this.api.createAndIssueInvoice(this.business.id, payload);
+        await this.api.createInvoice(this.business.id, payload);
       }
       this.cancelInvoiceEdit();
+      this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.tab = 'invoices';
@@ -1051,6 +1135,10 @@ export class AppComponent implements OnInit {
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
       this.invoiceCustomerId = detail.customer_id || '';
+      this.invoiceDiscountRate = this.deriveRate(detail.discount_total, detail.subtotal);
+      const taxableBase = Number(detail.subtotal || 0) - Number(detail.discount_total || 0);
+      this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
+      this.invoiceMessage = '';
       this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
     } catch (error) {
       this.error = this.message(error);
@@ -1061,8 +1149,11 @@ export class AppComponent implements OnInit {
 
   cancelInvoiceEdit(): void {
     this.editingInvoiceId = null;
+    this.invoiceMessage = '';
     this.invoiceNumber = '';
     this.invoiceCustomerId = '';
+    this.invoiceDiscountRate = '0';
+    this.invoiceTaxRate = '0';
     this.invoiceQuantity = '1';
     this.invoiceLines = [{ productId: '', quantity: '1' }];
   }
@@ -1073,6 +1164,7 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       await this.api.issueInvoice(this.business.id, invoice.id);
+      this.invoiceMessage = '';
       this.invoices = await this.api.invoices(this.business.id);
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
@@ -1103,12 +1195,12 @@ export class AppComponent implements OnInit {
   }
 
   async createPayment(): Promise<void> {
-    if (!this.business || !String(this.paymentAmount ?? '').trim() || !this.paymentCustomerId) {
+    if (!this.business || !this.paymentAmount.trim() || !this.paymentCustomerId) {
       this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
       return;
     }
-    const amount = String(this.paymentAmount ?? '').trim();
-    const allocation = String(this.paymentAllocationAmount ?? '').trim();
+    const amount = this.paymentAmount.trim();
+    const allocation = this.paymentAllocationAmount.trim();
     if (this.paymentInvoiceId && !allocation) {
       this.error = 'أدخل المبلغ المراد تخصيصه للفاتورة المحددة.';
       return;
