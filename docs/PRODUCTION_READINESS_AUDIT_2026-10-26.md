@@ -305,3 +305,8 @@ Static review found that `loadWorkspaceData` used a request-generation guard, bu
 Static review found that the payment form cleared its idempotency key immediately after the create request succeeded, before refreshing payments/dashboard/invoices. If a subsequent refresh failed, the UI displayed a generic error despite the payment being saved; a retry could use a new key and create a duplicate. [PR #147](https://github.com/AbdullahOmaar/ai-business-assistant/pull/147) separates mutation success from refresh failure, preserves the key and form when the mutation outcome is uncertain, and explicitly warns not to re-record a payment if only refresh failed. Not executed.
 
 Both are existing-workflow correctness fixes; no production data or deployment was changed. Both remain draft pending executable frontend tests/build and review.
+
+
+## Additional API compatibility finding — PR #148
+
+Static review found that the backend exposes a `PUT` settings endpoint but its CORS allow-methods list did not include `PUT`. This can block browser preflight for the existing settings route even when the origin is allowed. [PR #148](https://github.com/AbdullahOmaar/ai-business-assistant/pull/148) adds `PUT` to the method policy and a CORS preflight regression test. It is draft and unexecuted pending a functioning runner.
