@@ -132,6 +132,41 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
         _restore_app(engine, previous_factory, previous_resolver)
 
 
+def test_dashboard_defaults_to_business_local_30_day_window(monkeypatch):
+    engine, client, previous_factory, previous_resolver = _configured_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Default Period Shop",
+                "currency_code": "EGP",
+                "timezone": "America/New_York",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = created.json()["id"]
+
+        import app.core_features_api as core_features_api
+        real_datetime = core_features_api.datetime
+
+        class FrozenDateTime(real_datetime):
+            @classmethod
+            def now(cls, tz=None):
+                if tz is None:
+                    return cls(2026, 1, 1, 1, 0)
+                return cls(2026, 1, 1, 1, 0, tzinfo=tz)
+
+        monkeypatch.setattr(core_features_api, "datetime", FrozenDateTime)
+        response = client.get(f"/api/v1/businesses/{business_id}/dashboard")
+        assert response.status_code == 200, response.text
+        period = response.json()["period"]
+        assert period["timezone"] == "America/New_York"
+        assert period["start_date"] == "2025-12-03"
+        assert period["end_date"] == "2026-01-01"
+    finally:
+        _restore_app(engine, previous_factory, previous_resolver)
+
+
 def test_business_creation_rejects_invalid_timezone_name():
     engine, client, previous_factory, previous_resolver = _configured_client()
     try:
