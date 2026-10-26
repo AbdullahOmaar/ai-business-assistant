@@ -369,8 +369,10 @@ def profit_loss(
         },
         "currencies": rows,
         "limitations": [
-            "Revenue is based on issued invoices, not cash collected.",
+            "Revenue is based on issued invoice totals, not cash collected.",
+            "Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.",
             "This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.",
+            "Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.",
             "Currencies are kept separate and never converted or combined.",
         ],
     }
