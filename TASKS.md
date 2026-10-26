@@ -11,10 +11,10 @@ This file is the human-readable checkpoint; `docs/agent/task-ledger.json` is the
 | ID | Status | Evidence / next action |
 |---|---|---|
 | TASK-021 Test coverage | IN_PROGRESS | Existing PRs #143–#149 add regression cases for business-timezone reporting, sales-return amount/role enforcement, stale workspace responses, payment refresh/idempotency, CORS PUT, and schedule/settings validation. Execute them when a runner is available; inspect missing edge cases. |
-| TASK-022 CI execution | BLOCKED | Actions runs have failed before runner allocation (`runner_id=0`, no steps/logs). This is an infrastructure/account-level failure, not evidence that tests passed or failed. Inspect account runner availability/limits; no paid upgrade. |
+| TASK-022 CI execution | BLOCKED | Actions runs #40266501233 (backend/frontend) and #40266501266 (dependency scans), attempt 2, failed in 2–5 seconds with `runner_id=0`, `runner_name=""`, and `steps=[]`. A manual rerun reproduced the same pre-execution failure. This is not evidence that tests passed or failed. Inspect account runner availability/limits; no paid upgrade. |
 | TASK-023 PR review | IN_PROGRESS | Review open PRs #143–#151 and dependency order. Financial/security PRs require real test results before merge. |
 | TASK-024 Merge ordering | BLOCKED | No merge until CI executes, security scan is reviewed, and dependent PRs are reconciled. Avoid stacking conflicting frontend/workflow changes. |
-| TASK-025 Dependency security | BLOCKED | Dedicated workflow has not executed because no runner was assigned. Re-run free npm/pip audits once execution is available and retain the results. |
+| TASK-025 Dependency security | BLOCKED | Dedicated workflow run #40266501266 attempt 2 again failed before runner allocation; no audit command or result exists. Re-run free npm/pip audits once execution is available and retain the results. |
 | TASK-026 Production configuration | BLOCKED | Do not expose secret values. Verify only metadata and runtime behavior; production credentials, database provider, authenticated smoke tests, and rollback access remain unverified. |
 | TASK-027 Release candidate | TODO | Create only from a tested SHA after all release gates pass. |
 | TASK-028 Release validation | TODO | Run backend tests, PostgreSQL migrations/concurrency tests, frontend tests/build, auth/tenant-isolation checks, and PWA smoke tests. |
