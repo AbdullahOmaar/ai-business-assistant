@@ -861,11 +861,11 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         assert invoices_by_number["AGE-OVER90"]["bucket"] == "over_90_days"
         assert list(payload["by_currency"]) == ["EGP", "USD"]
         assert payload["by_currency"]["EGP"]["31_60_days_amount"] == "100.00"
-        assert payload["by_currency"]["no_due_date_amount"] == "30.00"
-        assert payload["by_currency"]["not_due_amount"] == "25.00"
-        assert payload["by_currency"]["settled_amount"] == "0.00"
+        assert payload["by_currency"]["EGP"]["no_due_date_amount"] == "30.00"
+        assert payload["by_currency"]["EGP"]["not_due_amount"] == "25.00"
+        assert payload["by_currency"]["EGP"]["settled_amount"] == "0.00"
         assert payload["by_currency"]["EGP"]["overallocated_amount"] == "5.00"
-        assert payload["by_currency"]["over_90_days_amount"] == "10.00"
+        assert payload["by_currency"]["EGP"]["over_90_days_amount"] == "10.00"
         assert payload["by_currency"]["USD"]["1_30_days_amount"] == "50.00"
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="unauthorized-subject")
