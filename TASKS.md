@@ -131,3 +131,5 @@
 - No production deployment, production migration, historical-data rewrite, or live business mutation was performed during this review.
 
 - Additional confirmed security blocker from the 2026-10-26 source review: current main rejects only a small exact list of sensitive setting keys in `backend/app/extended_api.py`; normalized aliases such as `API-KEY`, `pwd`, `passwd`, `access-key`, and `encryption_key` are not comprehensively rejected, while setting responses include stored values. Keep the generic settings table free of secrets and verify the broader validation patch in #160/#161 before release.
+
+- Runtime review: Vercel error summaries for the production frontend and API reported no error clusters in the last 24 hours; raw 24-hour logs were unavailable on the Hobby retention window. This does not replace authenticated smoke tests. The audit report was committed to PR #161; current branch head before this checkpoint update was `df6954b54f17814fe3b790b82b5dde3e5e84689c`. Keep the PR draft because code tests remain unverified.
