@@ -300,6 +300,8 @@ def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_cust
             invoice_customer = Customer(business_id=business.id, name="Invoice customer")
             session.add_all([payment_customer, invoice_customer])
             session.flush()
+            payment_customer_id = payment_customer.id
+            invoice_customer_id = invoice_customer.id
             session.add_all([
                 BusinessMembership(
                     business_id=business.id, user_subject="integrity-owner",
@@ -365,9 +367,9 @@ def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_cust
         assert payload["customer_mismatched_allocations"]["total"] == 1
         customer_row = payload["customer_mismatched_allocations"]["items"][0]
         assert customer_row["invoice_number"] == "INV-MISMATCH"
+        assert customer_row["payment_customer_id"] == str(payment_customer_id)
+        assert customer_row["invoice_customer_id"] == str(invoice_customer_id)
         assert customer_row["payment_customer_id"] != customer_row["invoice_customer_id"]
-        assert customer_row["payment_customer_id"]
-        assert customer_row["invoice_customer_id"]
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         denied = client.get(f"/api/v1/businesses/{business_id}/reports/data-integrity")
