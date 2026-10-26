@@ -42,13 +42,15 @@
 - Constraint: confirm actual platform limits and costs before enabling recurring jobs; never assume a scheduler is running.
 
 ## Consolidated production-safety task (single execution track)
-- Status: `IN_PROGRESS`
+- Status: `IN_PROGRESS` (release verification: `BLOCKED`)
 - Task ID: `PROD-SAFETY-001`
 - Scope: consolidate the 30-item release checklist into one tracked task with sequential gates: (1) returns/payment/tenant authorization correctness, (2) financial reports and currency/timezone accuracy, (3) API input/rate-limit/CSV protections, (4) frontend workspace/payment/PWA regression checks, (5) CI/security/deployment verification.
 - Current implementation slice: return-approval quantity/value ceiling and OWNER authorization, including aggregation of duplicate source-line rows before validation.
 - Acceptance: regression tests pass locally or in GitHub Actions; PostgreSQL/backend and frontend checks are green where relevant; related existing PRs are reconciled rather than duplicated; production checks use non-mutating smoke tests only.
 - Merge gate: do not merge financial/security changes while required tests are unexecuted or failing. If Actions runner allocation is unavailable, record BLOCKED with run evidence and continue independent validation.
-- Next action: execute return-focused backend tests, then continue the next highest-priority confirmed defect in this same task.
+- Evidence (2026-10-26): PR #161 head `8b9c47145c9c3b846cc913da92aab139838db1de`. Backend, container, combined backend/frontend, and dependency-scan Actions runs 40314744125, 40314744141, 40314744158, and 40314744218 all failed with jobs showing zero steps; fetching step summaries also returned empty lists. Failed-job reruns were accepted by GitHub but the workflow-run query still reports those original failed conclusions; a successful rerun has not been verified.
+- Environment limitation: local `git ls-remote` failed because this execution environment cannot resolve github.com, so local checkout/test execution is unavailable here. This is infrastructure evidence, not a code-test failure.
+- Next action: regain an executable test runner or inspect a fresh retry attempt, run backend/PostgreSQL and frontend checks, then continue the next confirmed defect. Do not merge until the applicable checks pass.
 
 ## Active work checkpoint
 - Current rules change: branch `docs/autonomous-execution-rules`.
