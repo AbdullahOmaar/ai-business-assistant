@@ -273,6 +273,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">{{ t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
+                @if (paymentMessage) { <p class="footnote" role="status" aria-live="polite">{{ paymentMessage }}</p> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list">
                   @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
@@ -473,6 +474,7 @@ export class AppComponent implements OnInit {
   paymentCustomerId = '';
   paymentAmount = '';
   paymentAllocationAmount = '';
+  paymentMessage = '';
   paymentInvoiceId = '';
   paymentMethod = 'cash';
   paymentReference = '';
@@ -732,6 +734,7 @@ export class AppComponent implements OnInit {
     this.paymentMethod = 'cash';
     this.paymentReference = '';
     this.paymentIdempotencyKey = '';
+    this.paymentMessage = '';
     this.importCsvText = '';
     this.importFileName = '';
     this.importPreview = null;
@@ -1199,21 +1202,24 @@ export class AppComponent implements OnInit {
       this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
       return;
     }
+    const businessId = this.business.id;
     const amount = this.paymentAmount.trim();
     const allocation = this.paymentAllocationAmount.trim();
     if (this.paymentInvoiceId && !allocation) {
-      this.error = 'أدخل المبلغ المراد تخصيصه للفاتورة المحددة.';
+      this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
       return;
     }
+    const currencyCode = this.business.currency_code;
     this.loading = true;
     this.error = '';
+    this.paymentMessage = '';
     if (!this.paymentIdempotencyKey) {
-      this.paymentIdempotencyKey = 'payment-' + this.business.id + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     }
     try {
-      await this.api.createPayment(this.business.id, {
+      await this.api.createPayment(businessId, {
         amount,
-        currency_code: this.business.currency_code,
+        currency_code: currencyCode,
         idempotency_key: this.paymentIdempotencyKey,
         customer_id: this.paymentCustomerId,
         method: this.paymentMethod,
@@ -1223,17 +1229,38 @@ export class AppComponent implements OnInit {
           amount: allocation
         }] : []
       });
+
+      // The mutation succeeded. A refresh failure must not be presented as a failed payment.
+      if (this.business?.id !== businessId) return;
       this.paymentAmount = '';
       this.paymentCustomerId = '';
       this.paymentInvoiceId = '';
       this.paymentAllocationAmount = '';
       this.paymentReference = '';
       this.paymentIdempotencyKey = '';
-      this.payments = await this.api.payments(this.business.id);
-      this.dashboard = await this.api.dashboard(this.business.id);
-      this.invoices = await this.api.invoices(this.business.id);
+      this.paymentMessage = this.t('تم تسجيل الدفعة بنجاح.', 'Payment recorded successfully.');
+
+      try {
+        const [payments, dashboard, invoices] = await Promise.all([
+          this.api.payments(businessId),
+          this.api.dashboard(businessId),
+          this.api.invoices(businessId),
+        ]);
+        if (this.business?.id !== businessId) return;
+        this.payments = payments;
+        this.dashboard = dashboard;
+        this.invoices = invoices;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.paymentMessage = this.t(
+            'تم تسجيل الدفعة، لكن تعذر تحديث العرض. لا تعاود تسجيل الدفعة؛ حدّث البيانات أولًا.',
+            'Payment was recorded, but the view could not refresh. Do not record it again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      // Keep the entered values and idempotency key if the mutation fails or its outcome is uncertain.
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
       this.loading = false;
     }
