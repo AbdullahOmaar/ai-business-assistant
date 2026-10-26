@@ -223,3 +223,49 @@
 - Completed the cross-module route inventory after the earlier note: payment creation DOES exist in backend/app/api.py as POST /businesses/{business_id}/payments, calling services.record_payment. The earlier statement was scoped to extended_api.py only; do not interpret it as absence from the whole backend. Existing service logic enforces owner role, customer/business matching, invoice/business and currency matching, allocation ceilings, and idempotency-key detail consistency; existing tests cover idempotent replay, owner-only access, and cross-business invoice allocation.
 - A fresh direct log fetch for job 121724266053 (backend tests), 121724178985 (container), 121724160171 (frontend), and 121724208196 (JS dependency audit) again returned BlobNotFound. Job metadata still has steps=null and logs_url=null. This is a repeatable CI evidence/runner-log problem, not a passing run and not enough to diagnose code failures.
 - No safe code change was made based on an unverified accounting assumption. Next technical step is obtain an executable checkout/runner or repair the GitHub Actions logging/runner path, then run pytest, frontend tests/build, container import/build, migration drift, and dependency audits on the exact current head.
+
+
+## Financial correctness follow-up — 2026-10-26
+
+### FIN-RET-001 — Trace and specify sales-return accounting before changing formulas
+- Status: IN_PROGRESS.
+- Canonical implementation branch/PR: `task/production-safety-consolidated` / [PR #161](https://github.com/AbdullahOmaar/ai-business-assistant/pull/161).
+- Evidence from `backend/app/core_features_api.py`: profit/loss revenue currently sums issued invoice `total`; response explicitly states approved sales returns are not netted and stored tax is included. This is a confirmed reporting limitation, not permission to subtract gross return totals blindly.
+- Required source audit before implementation: inspect return/return-line schema and lifecycle, whether returned amounts represent gross/tax-inclusive or net values, discount allocation, tax rates/amounts, invoice-line references, approval timestamps/status, and any credit-note/refund records. Trace all existing customer statement, dashboard, aging, and profit/loss calculations.
+- Acceptance: document a single source-of-truth treatment for approved vs draft/rejected returns; prove currency/business scoping; reconcile invoice subtotal, discount, tax, total, return lines and refund/payment data without inventing tax allocation rules.
+- Safety: do not alter monetary formulas or tax allocation until the stored fields and intended accounting semantics are proven from code/tests.
+
+### FIN-RET-002 — Add sales-return regression fixtures and invariant tests
+- Status: TODO.
+- Add tests for draft/rejected returns excluded from posted reporting; approved returns reflected only according to the verified accounting policy; duplicate request lines aggregated safely; cumulative returned quantity/value never exceeds the source invoice line; discounted lines and decimal rounding; zero/negative/over-limit amounts; cross-business invoice/line references rejected; wrong-currency allocations rejected; unauthorized staff approval rejected.
+- Add reconciliation assertions that no amount is silently counted twice across invoice, return, credit note, and refund records. Where the current schema cannot support a safe assertion, add an explicit limitation and separate task rather than guessing.
+- Required validation: backend tests against supported PostgreSQL behavior (including concurrent duplicate/over-return attempts), plus existing SQLite unit coverage where applicable. Do not mark VERIFIED from source inspection alone.
+
+### FIN-REPORT-003 — Financial report reconciliation contract
+- Status: TODO.
+- Add fixtures covering invoice-only, partial payment, fully paid, approved return, expense, mixed currencies, business-local date boundaries, and DST transitions.
+- Assert dashboard invoiced sales, collected payments, expenses, outstanding balances, and profit/loss remain distinct measures; no currency aggregation/conversion; date filtering is business-local and half-open in UTC.
+- Report names must not imply net profit until COGS and the approved return/tax treatment are represented. Keep explicit limitations until the required ledgers exist.
+
+### FIN-COGS-004 — Inventory valuation and cost-of-goods-sold linkage
+- Status: TODO.
+- Trace purchase receipt, stock movements, product cost, invoice line, return-to-stock, and cost history. Choose valuation method only after reviewing existing schema and business rules; do not derive COGS from current purchase price when historical cost is needed.
+- Acceptance: documented valuation policy, immutable/reproducible cost basis, return reversal policy, currency and tenant isolation, and tests for stock/financial reconciliation. Keep profit/loss explicitly before COGS until then.
+
+### FIN-TAX-005 — Credit notes, tax treatment, and refunds
+- Status: TODO.
+- Reconcile existing issues/PRs before adding work. Define the relationship between sales returns, credit notes, tax reversals, and cash refunds from the actual schema and applicable product requirements. Do not infer tax rates or split gross amounts into net/tax without source data.
+- Acceptance: explicit state transitions, owner permissions, idempotent refund handling, audit trail, tenant/currency checks, and regression tests; any legally required accounting interpretation needs an owner/accountant decision before production activation.
+
+### REL-CI-006 — Inspectable CI gate recovery (no runner assumptions)
+- Status: BLOCKED.
+- Latest observed PR #161 head before this ledger update: `a7e176f745e8205167341916892421f8f3297faf`; main/base SHA: `af4ba084cedcec7339498579ef5563ce7748bf7c`.
+- Reran runs `40366521926`, `40366521727`, `40366521786`, and `40366521696`; GitHub accepted the retries, but all four returned failure. Their jobs expose `steps=null` and `logs_url=null`; this does not establish a code failure or prove runner allocation failure for those exact attempts.
+- Next actions independent of runner availability: review workflow YAML, dependency manifests, and commands; add/maintain deterministic regression tests; run any tests possible in the current environment; preserve CI gates. Once an authorized execution environment yields inspectable successful checks on the exact final SHA, re-evaluate merge readiness.
+- Do not bypass required checks, merge, deploy, or mark VERIFIED without evidence.
+
+### Release gate — merge/deployment
+- Status: BLOCKED.
+- No merge or deployment is authorized by passing evidence at this checkpoint. PR #161 remains Draft/open; #157 is a separate Draft/open UI safety change and must be reconciled independently.
+- Before merge: review return/payment/tenant authorization diffs, ensure no duplicated or conflicting UI changes, obtain passing backend/PostgreSQL tests, frontend tests/build, container build and dependency security scan on the exact candidate SHA.
+- After merge only: record merge SHA, verify `main` head and CI, then perform safe read-only production version/health checks. Never infer deployed version from the production URL alone.
