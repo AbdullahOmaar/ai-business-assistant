@@ -1103,12 +1103,12 @@ export class AppComponent implements OnInit {
   }
 
   async createPayment(): Promise<void> {
-    if (!this.business || !this.paymentAmount.trim() || !this.paymentCustomerId) {
+    if (!this.business || !String(this.paymentAmount ?? '').trim() || !this.paymentCustomerId) {
       this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
       return;
     }
-    const amount = this.paymentAmount.trim();
-    const allocation = this.paymentAllocationAmount.trim();
+    const amount = String(this.paymentAmount ?? '').trim();
+    const allocation = String(this.paymentAllocationAmount ?? '').trim();
     if (this.paymentInvoiceId && !allocation) {
       this.error = 'أدخل المبلغ المراد تخصيصه للفاتورة المحددة.';
       return;
