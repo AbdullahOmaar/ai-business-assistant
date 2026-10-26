@@ -9,11 +9,14 @@ on:
       - "docs/agent/**"
       - "tests/test_agent_ledger.py"
   schedule:
-    # Periodic, bounded reconciliation. This is not a 24/7 worker.
-    - cron: "17 */6 * * *"
+    # Bounded reconciliation every 30 minutes; separate hourly review trigger.
+    - cron: "*/30 * * * *"
+    - cron: "0 * * * *"
 
 permissions:
   contents: read
+  pull-requests: read
+  actions: read
 
 concurrency:
   group: permanent-engineering-agent-controller
@@ -22,7 +25,7 @@ concurrency:
 jobs:
   controller-sanity:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +33,43 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Unit-test ledger validation
+      - name: Unit-test existing ledger validator
         run: python -m unittest discover -s tests -p "test_agent_ledger.py" -v
-      - name: Validate zero-budget ledger and task graph
+      - name: Validate zero-budget seed ledger
         run: python scripts/agent/validate_ledger.py
+      - name: Validate task ledger and create follow-up report
+        run: python scripts/agent/monitor_task_ledger.py
+      - name: Capture live PR and recent Actions state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo
+            echo "## Live GitHub state (read-only)"
+            echo "- Captured UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo '### Open pull requests'
+            gh pr list --repo "${{ github.repository }}" --state open --limit 100 --json number,title,isDraft,headRefName,baseRefName,url
+            echo '### Recent workflow runs'
+            gh run list --repo "${{ github.repository }}" --limit 15 --json databaseId,name,status,conclusion,headBranch,headSha,url,createdAt
+          } >> task-monitor-report.md
+      - name: Hourly broader review
+        if: github.event_name == 'schedule' && github.event.schedule == '0 * * * *'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo
+            echo "## Hourly review"
+            echo "- Current main SHA: $(gh api "repos/${{ github.repository }}/git/ref/heads/main" --jq '.object.sha')"
+            echo "- Open PR metadata and latest workflow runs are included above."
+            echo "- Follow-up: inspect each open PR's checks/diff; do not merge or deploy from this monitor."
+            echo "- Retry only transient failures after confirming runner/quota conditions; never retry a financial mutation."
+          } >> task-monitor-report.md
+      - name: Upload auditable report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-monitor-report-${{ github.run_id }}
+          path: task-monitor-report.md
+          if-no-files-found: warn
+          retention-days: 14
