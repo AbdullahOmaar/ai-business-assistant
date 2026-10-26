@@ -35,7 +35,14 @@ def test_cors_method_policy_includes_settings_put_route() -> None:
     )
     assert response.status_code == 200
     assert "PUT" in response.headers["access-control-allow-methods"]
-    assert "x-request-id" in response.headers["access-control-expose-headers"].lower()
+
+    # Exposed response headers are sent with actual CORS responses, not preflight.
+    get_response = client_with_cors.get(
+        "/health",
+        headers={"Origin": "https://frontend.example"},
+    )
+    assert get_response.status_code == 200
+    assert "x-request-id" in get_response.headers["access-control-expose-headers"].lower()
 
 
 def test_health_response_includes_server_generated_request_id() -> None:
