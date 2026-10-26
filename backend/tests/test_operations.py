@@ -196,7 +196,7 @@ def test_sales_return_approval_rejects_cumulative_amount_above_original_line(ope
         session.add(SalesReturnLine(
             business_id=business_id, sales_return_id=first_return.id,
             invoice_line_id=line.id, quantity=Decimal("1"),
-            amount=Decimal("10.00"),
+            amount=Decimal("6.00"),
         ))
         session.flush()
         approve_sales_return(
