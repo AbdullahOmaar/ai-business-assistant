@@ -713,3 +713,57 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+
+
+def test_receivables_aging_is_business_scoped_and_currency_separated():
+    from datetime import datetime, timezone
+    from app.models import Customer, Invoice
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        business = Business(name="Aging shop", currency_code="EGP")
+        foreign_business = Business(name="Other aging shop", currency_code="USD")
+        session.add_all([business, foreign_business])
+        session.flush()
+        customer = Customer(business_id=business.id, name="Aging customer")
+        session.add(customer)
+        session.flush()
+        session.add_all([
+            BusinessMembership(business_id=business.id, user_subject="test-subject", role=MembershipRole.OWNER),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-30",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 26, tzinfo=timezone.utc), subtotal=Decimal("100.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("100.00"),
+            ),
+            Invoice(
+                business_id=foreign_business.id, customer_id=None, invoice_number="FOREIGN",
+                status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 26, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("900.00"),
+            ),
+        ])
+        session.commit()
+        business_id = business.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    try:
+        response = TestClient(app).get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-26"
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["as_of"] == "2026-10-26"
+        assert len(payload["invoices"]) == 1
+        assert payload["invoices"][0]["invoice_number"] == "AGE-30"
+        assert payload["invoices"][0]["bucket"] == "31_60_days"
+        assert payload["invoices"][0]["outstanding_amount"] == "100.00"
+        assert list(payload["by_currency"]) == ["EGP"]
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
