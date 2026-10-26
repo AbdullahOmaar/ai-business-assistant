@@ -129,3 +129,19 @@ The proposed change converts inclusive business-local date ranges into UTC half-
 - Retry of one failed CI run: requested; outcome not yet verified.
 - Feature-by-feature source inventory, route-by-route authorization audit, PostgreSQL concurrency tests, full frontend review, dependency findings, production deployment SHA verification, authenticated smoke tests, and installed Android Chrome PWA checks: not yet complete.
 - Release verdict remains **NOT CLEARED FOR PRODUCTION**.
+
+
+## Deployment state verified through Vercel project access — 2026-10-26 00:49 UTC
+
+The Vercel team/project read succeeded when scoped to team `team_jCzLnqPABe0EM86FWWUXrvTP`. This provides concrete deployment metadata, but not a successful runtime smoke test.
+
+- Frontend production alias `ai-business-assistant-web.vercel.app` resolves to deployment `dpl_Gep5cA11Qq3ETttRhHj4rjx2GtsV`, state READY, source `main`, commit `dec7f26bd2bb33a4c27af4e785abe982e8486676`. [Deployment details](https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-web/Gep5cA11Qq3ETttRhHj4rjx2GtsV)
+- API production alias `ai-business-assistant-api.vercel.app` resolves to deployment `dpl_3YoKDZX76b2rKG3PMijZar481XLg`, state READY, source `main`, commit `c8078c563ad9d88f04cccee740efdb1b64527df7`. [Deployment details](https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/3YoKDZX76b2rKG3PMijZar481XLg)
+- The API deployment attempt for current main commit `dec7f26bd2bb33a4c27af4e785abe982e8486676` is CANCELED (`dpl_DEAjTugY5FpuEcf15cNCbvM5Kq9Y`); it is not the API production alias target.
+- Therefore the production frontend and API are **not on the same commit SHA**. Frontend metadata is current to main, while API production is still at the older #137 commit. The current main also includes later backend-affecting commit `1210641021493e3669865ae945acb8c2f4ff967d` for return rounding, so the API deployment must not be assumed to contain that fix.
+- A direct fetch of `/version`, `/health`, and `/readyz` through the available web fetch channel was blocked (DisabledError). No runtime status code or version payload is claimed.
+- No production promotion was attempted. API/Frontend alias alignment, runtime configuration, authenticated read-only smoke tests, and the release CI gates remain blockers.
+
+### Updated verdict
+
+**NOT CLEARED FOR PRODUCTION.** In addition to unexecuted CI and accounting/security verification, the confirmed API/frontend production SHA mismatch must be resolved through the approved deployment process after all release gates pass.
