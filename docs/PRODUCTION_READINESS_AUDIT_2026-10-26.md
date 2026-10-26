@@ -292,3 +292,16 @@ Review of `frontend/package.json` and `.github/workflows/ci.yml` showed that a f
 The repository currently has no `package-lock.json`; this makes dependency resolution less reproducible than a committed lockfile. A lockfile should be generated and verified by an actual npm run when an execution environment is available, rather than fabricating one from unverified metadata.
 
 PR #145 is draft and unmerged. Its new CI step has not executed because the runner-assignment issue persists.
+
+
+## Additional frontend findings — 2026-10-26 01:33 UTC
+
+### PR #146 — stale reports across workspace switches
+
+Static review found that `loadWorkspaceData` used a request-generation guard, but `loadProfitLoss` and `loadReceivablesAging` did not. A response started for one workspace could arrive after a switch and overwrite the currently displayed report. [PR #146](https://github.com/AbdullahOmaar/ai-business-assistant/pull/146) adds independent guards for those report requests, invalidates them when workspace data is cleared, and adds a unit test for invalidation. Not executed.
+
+### PR #147 — payment refresh failure could invite duplicate retry
+
+Static review found that the payment form cleared its idempotency key immediately after the create request succeeded, before refreshing payments/dashboard/invoices. If a subsequent refresh failed, the UI displayed a generic error despite the payment being saved; a retry could use a new key and create a duplicate. [PR #147](https://github.com/AbdullahOmaar/ai-business-assistant/pull/147) separates mutation success from refresh failure, preserves the key and form when the mutation outcome is uncertain, and explicitly warns not to re-record a payment if only refresh failed. Not executed.
+
+Both are existing-workflow correctness fixes; no production data or deployment was changed. Both remain draft pending executable frontend tests/build and review.
