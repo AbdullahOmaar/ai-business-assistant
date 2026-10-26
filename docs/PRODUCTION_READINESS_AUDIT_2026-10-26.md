@@ -58,6 +58,10 @@ Pure domain rules and service tests provide useful coverage, but the backend REA
 
 At review time, many PRs remained open, including stacked accounting/operations work and overlapping audit-log changes (for example #125 and #127). Some feature branches target other feature branches rather than `main`. Do not merge the whole open-PR list or assume a PR is safe because its title sounds release-related. Compare each candidate against current `main`, identify dependencies, avoid duplicate commits, and run the full checks on one coherent release candidate.
 
+### 7. Financial reporting used UTC instead of the configured business timezone
+
+The dashboard and profit/loss endpoints converted inclusive date filters using UTC midnight and returned `timezone: UTC`, despite each workspace storing a timezone. This can place transactions near local midnight into the wrong reporting day and can make the default month/30-day period use the wrong local date. A focused fix and regression tests are under review in [PR #143](https://github.com/AbdullahOmaar/ai-business-assistant/pull/143); do not count this as resolved until its checks pass and it is merged.
+
 ## Source-backed architecture observations
 
 - Frontend: Angular 20 package declarations; build script writes build metadata before the production build.
