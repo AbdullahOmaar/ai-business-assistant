@@ -45,3 +45,19 @@
 - Current rules change: branch `docs/autonomous-execution-rules`.
 - This ledger is intentionally a verification queue, not proof that the listed work is still outstanding. Reconcile before implementation.
 - Next exact action after this documentation PR: inspect latest CI and open PRs, then work the highest-priority confirmed issue through tests and evidence.
+
+
+## CI-RUNNER-001 — diagnose GitHub Actions execution failure
+- Status: BLOCKED.
+- Evidence date: 2026-10-27; canonical safety PR: [#161](https://github.com/AbdullahOmaar/ai-business-assistant/pull/161), head `6c53f6e0c4250293fffab18a7f60250f3710dd9c`; current `main`: `1b58df8a6695e02b845bc84a9ee7094286f32e83`.
+- Latest retried workflows:
+  - Backend tests: [40403442316](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40403442316), job 121865727568.
+  - Backend/frontend: [40403442159](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40403442159), jobs 121865717671 and 121865717965.
+  - Container: [40403442226](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40403442226), job 121865707450.
+  - Dependency audits: [40403442049](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40403442049), jobs 121865736966 and 121865737229.
+- Raw GitHub job API confirms all six latest jobs had `runner_id=0`, empty `runner_name`, empty steps, and failure within approximately 3–4 seconds of job start. Attempt to download logs returned `BlobNotFound`. This is strong evidence the jobs were not assigned a runner and no test/build/audit command executed; not a code-level test failure and certainly not a pass.
+- Workflow source review: `.github/workflows/ci.yml`, `backend-tests.yml`, `backend-container.yml`, and `dependency-security.yml` preserve the required backend/PostgreSQL, frontend tests/build, container, and dependency audit gates. No evidence the existing path filters explain the runner-less jobs.
+- Three alternative CI-fix branches were inspected. They diverge from current main and should not be merged wholesale: `fix/ci-filters-reconciled-main` (ahead 2/behind 3), `fix/ci-path-filters-zero-budget` (ahead 5/behind 6), `fix/ci-run-frontend-unit-tests-2026-10-26` (ahead 2/behind 6). Their changes do not themselves establish a fix for runner allocation.
+- Actions performed this session: re-ran the failed jobs once (GitHub accepted the retries, but results remained runner-less failures); created isolated diagnostic branch `fix/ci-runner-diagnosis-2026-10-27` from `main`. No code, workflow, or production settings were changed in this branch yet.
+- Next action: repository owner/authorized admin must inspect GitHub Actions minutes/billing policy, repository/org Actions permissions, hosted runner availability/usage limits, and any repository/org policy restrictions, then restore a runner and rerun the same workflows. Do not enable paid spending or weaken required checks as a workaround.
+- Release decision: #161 remains open/Draft and unmerged; no merge, new version, production deployment, or production data mutation was made. Status remains BLOCKED until all required workflows pass on the exact final PR head.
