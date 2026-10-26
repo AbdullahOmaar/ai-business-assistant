@@ -29,8 +29,8 @@
       "status": "blocked",
       "priority": "P0",
       "depends_on": [],
-      "checkpoint": "Confirmed backend workflow expects a real PostgreSQL service and pytest; prior runs have runner_id=0 and no steps/logs. Need restore a runner or validate in an isolated alternate runtime.",
-      "attempts": 1
+      "checkpoint": "Latest runs triggered by controller commits also failed: run 40261896293 dependency security scan and run 40261896161 backend/frontend verification, jobs completed failure with no steps/logs exposed by the connector. Do not treat this as a code-test failure diagnosis or a pass; investigate GitHub Actions execution/account-level issue.",
+      "attempts": 2
     },
     {
       "id": "AGENT-003",
