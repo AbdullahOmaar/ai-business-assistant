@@ -1120,70 +1120,93 @@ def receivables_aging(
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
-    """Return open issued-invoice balances grouped by currency and overdue age."""
+    """Return open issued-invoice balances by currency without cross-currency netting."""
     try:
         _authorized(session, principal, business_id)
         report_date = as_of or datetime.now(timezone.utc).date()
-        allocated_amount = (
-            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
-            .join(Payment, Payment.id == PaymentAllocation.payment_id)
-            .where(
-                PaymentAllocation.business_id == business_id,
-                PaymentAllocation.invoice_id == Invoice.id,
-                Payment.currency_code == Invoice.currency_code,
+        invoices = session.scalars(
+            select(Invoice).where(
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+            ).order_by(
+                Invoice.currency_code, Invoice.due_date, Invoice.invoice_number
             )
-            .scalar_subquery()
-        )
-        mismatched_allocated_amount = (
-            select(func.coalesce(func.sum(PaymentAllocation.amount), ZERO))
-            .join(Payment, Payment.id == PaymentAllocation.payment_id)
-            .where(
-                PaymentAllocation.business_id == business_id,
-                PaymentAllocation.invoice_id == Invoice.id,
-                Payment.currency_code != Invoice.currency_code,
+        ).all()
+
+        # Join on both record IDs and workspace IDs so corrupt cross-workspace links
+        # cannot influence this business's balances.
+        allocation_rows = session.execute(
+            select(PaymentAllocation, Payment, Invoice)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
             )
-            .scalar_subquery()
-        )
-        rows = session.execute(
-            select(
+            .join(
                 Invoice,
-                allocated_amount.label("allocated_amount"),
-                mismatched_allocated_amount.label("mismatched_allocated_amount"),
+                (Invoice.id == PaymentAllocation.invoice_id)
+                & (Invoice.business_id == PaymentAllocation.business_id),
             )
             .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
                 Invoice.business_id == business_id,
                 Invoice.status == "issued",
             )
-            .order_by(Invoice.currency_code, Invoice.due_date, Invoice.invoice_number)
         ).all()
+        allocated_by_invoice: dict[UUID, Decimal] = {}
+        mismatched_by_invoice: dict[UUID, dict[str, Decimal]] = {}
+        for allocation, payment, invoice in allocation_rows:
+            payment_currency = payment.currency_code.strip().upper()
+            invoice_currency = invoice.currency_code.strip().upper()
+            amount = Decimal(str(allocation.amount))
+            if payment_currency == invoice_currency:
+                allocated_by_invoice[invoice.id] = (
+                    allocated_by_invoice.get(invoice.id, ZERO) + amount
+                )
+            else:
+                # Never add values in different currencies into one numeric total.
+                currency_totals = mismatched_by_invoice.setdefault(invoice.id, {})
+                currency_totals[payment_currency] = currency_totals.get(
+                    payment_currency, ZERO
+                ) + amount
 
         bucket_totals: dict[str, dict[str, Decimal]] = {}
         invoice_rows = []
         data_quality_warnings = []
-        for invoice, allocated, mismatched_allocated in rows:
+        for invoice in invoices:
             total = Decimal(str(invoice.total or ZERO))
-            paid = Decimal(str(allocated or ZERO))
-            mismatched_paid = Decimal(str(mismatched_allocated or ZERO))
-            outstanding, overallocated = _receivable_outstanding(total, paid)
-            if mismatched_paid > ZERO:
+            paid = allocated_by_invoice.get(invoice.id, ZERO)
+            mismatched = mismatched_by_invoice.get(invoice.id, {})
+            if mismatched:
+                mismatch_details = "; ".join(
+                    f"{amount} {currency}"
+                    for currency, amount in sorted(mismatched.items())
+                )
                 data_quality_warnings.append({
                     "invoice_id": str(invoice.id),
                     "invoice_number": invoice.invoice_number,
                     "type": "payment_currency_mismatch",
                     "invoice_currency": invoice.currency_code,
-                    "mismatched_allocations_amount": str(mismatched_paid),
+                    "mismatched_allocations_amount": mismatch_details,
                 })
+
+            outstanding, overallocated = _receivable_outstanding(total, paid)
             if overallocated:
                 data_quality_warnings.append({
                     "invoice_id": str(invoice.id),
                     "invoice_number": invoice.invoice_number,
                     "type": "allocations_exceed_invoice_total",
+                    "invoice_currency": invoice.currency_code,
                     "invoice_total": str(total),
                     "allocated_payments": str(paid),
                     "excess_allocated": str(abs(outstanding)),
                 })
+                # A credit/excess allocation is a data-quality issue, not a negative
+                # receivable. Keep it out of all positive aging-bucket totals.
                 continue
-            if outstanding == ZERO:
+            if outstanding <= ZERO:
+                # Fully settled invoices do not contribute to open receivables aging.
                 continue
 
             due_day = invoice.due_date.date() if invoice.due_date is not None else None
@@ -1213,29 +1236,38 @@ def receivables_aging(
                 "currency_code": currency,
                 "buckets": [
                     {"bucket": name, "outstanding_amount": str(buckets[name])}
-                    for name in ("not_due", "1_30_days", "31_60_days", "61_90_days",
-                                 "over_90_days", "no_due_date")
+                    for name in (
+                        "not_due", "1_30_days", "31_60_days", "61_90_days",
+                        "over_90_days", "no_due_date",
+                    )
                     if buckets.get(name, ZERO) > ZERO
                 ],
                 "total_outstanding": str(sum(buckets.values(), ZERO)),
             })
         return {
             "as_of_date": report_date.isoformat(),
-            "source": "issued invoices minus recorded payment allocations",
-            "currency_policy": "Balances are grouped by currency and never combined.",
+            "source": "issued invoices minus matching-currency payment allocations",
+            "currency_policy": (
+                "Payment allocations reduce an invoice only when their currency matches; "
+                "different currencies are never combined."
+            ),
             "invoice_count": len(invoice_rows),
             "by_currency": summaries,
             "invoices": invoice_rows,
             "data_quality_warnings": data_quality_warnings,
             "limitations": [
-                "Only issued invoices are included; drafts and void invoices are excluded.",
+                "Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.",
+                "Fully settled invoices are excluded from open receivables aging.",
+                "Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.",
                 "Invoices without due dates are reported separately and are not assumed current.",
                 "Legacy invoices without customer links are flagged for review, not auto-corrected.",
+                "Currency-mismatched allocations are listed as warnings and never reduce receivables.",
                 "This is an accounts-receivable aging report, not net profit or a full general ledger.",
             ],
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
 
 @router.get("/assistant/insights")
 def assistant_insights(business_id: UUID,
