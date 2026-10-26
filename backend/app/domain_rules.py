@@ -108,9 +108,13 @@ def discounted_return_line_total(
     so every entry point enforces the same ceiling without mixing currencies or
     inventing a separate discount policy for a workflow.
     """
-    gross_cents = {
-        str(line_id): max(0, int(money(Decimal(str(line_total))) * 100))
+    normalized_lines = [
+        (str(line_id), Decimal(str(line_total)))
         for line_id, line_total in invoice_lines
+    ]
+    gross_cents = {
+        line_id: max(0, int(money(line_total) * 100))
+        for line_id, line_total in normalized_lines
     }
     gross_total_cents = sum(gross_cents.values())
     subtotal_cents = max(0, int(money(Decimal(str(invoice_subtotal or ZERO))) * 100))
@@ -125,8 +129,7 @@ def discounted_return_line_total(
         return ZERO
     shares: dict[str, int] = {}
     remainders: list[tuple[int, str]] = []
-    for line_id, _ in invoice_lines:
-        key = str(line_id)
+    for key, _ in normalized_lines:
         numerator = net_cents * gross_cents[key]
         shares[key] = numerator // gross_total_cents
         remainders.append((numerator % gross_total_cents, key))
