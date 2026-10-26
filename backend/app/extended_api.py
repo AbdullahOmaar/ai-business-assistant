@@ -1415,3 +1415,78 @@ def list_audit_events(
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/reports/receivables-aging")
+def report_receivables_aging(
+    business_id: UUID,
+    as_of: date = Query(default_factory=date.today),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Return issued-invoice balances grouped by currency and aging bucket."""
+    try:
+        _authorized(session, principal, business_id)
+        invoices = session.scalars(select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.status == "issued",
+        ).order_by(Invoice.due_date.asc().nullslast(), Invoice.invoice_number.asc())).all()
+        allocated_rows = session.execute(select(
+            PaymentAllocation.invoice_id,
+            func.coalesce(func.sum(PaymentAllocation.amount), 0),
+        ).where(
+            PaymentAllocation.business_id == business_id,
+        ).group_by(PaymentAllocation.invoice_id)).all()
+        allocated_by_invoice = {
+            invoice_id: Decimal(str(amount or 0))
+            for invoice_id, amount in allocated_rows
+        }
+
+        rows = []
+        totals: dict[str, dict[str, Decimal | int]] = {}
+        for invoice in invoices:
+            allocated = allocated_by_invoice.get(invoice.id, ZERO)
+            outstanding, overallocated = _receivable_outstanding(
+                Decimal(str(invoice.total)), allocated
+            )
+            due_date = invoice.due_date.date() if invoice.due_date else None
+            if overallocated:
+                bucket = "overallocated"
+            elif outstanding == ZERO:
+                bucket = "settled"
+            else:
+                bucket, _ = _receivable_aging_bucket(due_date, as_of)
+            currency = invoice.currency_code
+            currency_totals = totals.setdefault(currency, {})
+            currency_totals[bucket] = int(currency_totals.get(bucket, 0)) + 1
+            amount_totals_key = f"{bucket}_amount"
+            currency_totals[amount_totals_key] = (
+                Decimal(str(currency_totals.get(amount_totals_key, ZERO))) + outstanding
+            )
+            rows.append({
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "customer_id": str(invoice.customer_id) if invoice.customer_id else None,
+                "currency_code": currency,
+                "invoice_total": str(invoice.total),
+                "allocated_amount": str(allocated),
+                "outstanding_amount": str(outstanding),
+                "due_date": due_date.isoformat() if due_date else None,
+                "days_overdue": (as_of - due_date).days if due_date else None,
+                "bucket": bucket,
+                "overallocated": overallocated,
+            })
+        return {
+            "as_of": as_of.isoformat(),
+            "by_currency": {
+                currency: {
+                    key: str(value) if isinstance(value, Decimal) else value
+                    for key, value in buckets.items()
+                }
+                for currency, buckets in sorted(totals.items())
+            },
+            "invoices": rows,
+            "note": "Balances are based on recorded allocations only; currencies are never combined. Missing due dates are reported separately.",
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
