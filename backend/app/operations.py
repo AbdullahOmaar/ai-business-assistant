@@ -26,9 +26,15 @@ from app.services import WorkflowError, _audit, record_stock_movement
 ZERO = Decimal("0")
 
 
-def _authorize(session: Session, principal: AuthenticatedPrincipal, business_id: UUID) -> None:
+def _authorize(
+    session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
+    *, owner_only: bool = False,
+) -> None:
     authorize_membership(
-        session, principal=principal, business_id=business_id,
+        session,
+        principal=principal,
+        business_id=business_id,
+        allowed_roles={MembershipRole.OWNER} if owner_only else None,
     )
 
 
@@ -37,7 +43,7 @@ def receive_purchase_order(
     purchase_order_id: UUID, received_quantities: dict[UUID, Decimal],
 ) -> PurchaseOrder:
     """Receive quantities against an approved order and record stock ledger events."""
-    _authorize(session, principal, business_id)
+    _authorize(session, principal, business_id, owner_only=True)
     order = session.scalars(select(PurchaseOrder).where(
         PurchaseOrder.id == purchase_order_id,
         PurchaseOrder.business_id == business_id,
@@ -88,7 +94,7 @@ def approve_sales_return(
     sales_return_id: UUID,
 ) -> SalesReturn:
     """Approve a draft return only if cumulative returned quantities remain valid."""
-    _authorize(session, principal, business_id)
+    _authorize(session, principal, business_id, owner_only=True)
     sales_return = session.scalars(select(SalesReturn).where(
         SalesReturn.id == sales_return_id,
         SalesReturn.business_id == business_id,
