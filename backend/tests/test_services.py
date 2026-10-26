@@ -338,3 +338,23 @@ def test_invoice_void_rejects_allocated_payments(workspace):
                 invoice_id=invoice.id, reason="Should be rejected",
             )
         assert invoice.status == "issued"
+
+
+def test_payment_service_requires_owner_role(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+            BusinessMembership.user_subject == principal.subject,
+        ))
+        membership.role = MembershipRole.STAFF
+        session.flush()
+
+        with pytest.raises(AuthorizationError):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                customer_id=customer.id, amount=Decimal("1.00"),
+                currency_code="EGP", idempotency_key="staff-direct-payment",
+                allocations=[],
+            )
