@@ -13,7 +13,7 @@ import pytest
 from app.main import app
 from app.models import (
     Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
-    Product, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
+    Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
     MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
