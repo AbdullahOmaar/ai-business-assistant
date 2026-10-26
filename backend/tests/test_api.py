@@ -13,8 +13,8 @@ import pytest
 from app.main import app
 from app.models import (
     Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
-    Product, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
-    MembershipRole, SalesReturn, SalesReturnLine,
+    Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
+    MembershipRole, Payment, PaymentAllocation, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -487,6 +487,141 @@ def test_staff_cannot_void_invoice():
         engine.dispose()
 
 
+def test_owner_can_approve_draft_purchase_order():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Owner approval supplier")
+        product = Product(
+            business_id=business_id, name="Owner approval product",
+            unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        created = client.post(
+            f"{base}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id), "order_number": "PO-OWNER-APPROVE",
+                "currency_code": "EGP",
+                "lines": [{"product_id": str(product_id), "quantity": "2.000", "unit_cost": "10.00"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        order_id = UUID(created.json()["id"])
+        assert created.json()["status"] == "draft"
+        approved = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["status"] == "approved"
+        assert approved.json()["total"] == "20.00"
+        with Session(engine) as session:
+            order = session.get(PurchaseOrder, order_id)
+            assert order.status == "approved"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_staff_cannot_approve_purchase_order():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Approval test supplier")
+        product = Product(
+            business_id=business_id, name="Approval test product",
+            unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        _set_test_membership_role(engine, MembershipRole.STAFF)
+        created = client.post(
+            f"{base}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id), "order_number": "PO-STAFF-APPROVE",
+                "currency_code": "EGP",
+                "lines": [{"product_id": str(product_id), "quantity": "1.000", "unit_cost": "10.00"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        order_id = UUID(created.json()["id"])
+        assert created.json()["status"] == "draft"
+        response = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert response.status_code == 403, response.text
+        with Session(engine) as session:
+            order = session.get(PurchaseOrder, order_id)
+            assert order.status == "draft"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_approving_sales_return_does_not_silently_rewrite_invoice_or_payment_balances():
+    engine, business_id, invoice_id, line_id = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        payment = Payment(
+            business_id=business_id,
+            customer_id=invoice.customer_id,
+            amount=Decimal("4.00"),
+            currency_code="EGP",
+            idempotency_key="return-does-not-refund-payment",
+        )
+        session.add(payment)
+        session.flush()
+        allocation = PaymentAllocation(
+            business_id=business_id,
+            payment_id=payment.id,
+            invoice_id=invoice_id,
+            amount=Decimal("4.00"),
+        )
+        session.add(allocation)
+        session.commit()
+        payment_id, allocation_id = payment.id, allocation.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        created = client.post(
+            f"{base}/sales-returns",
+            json={
+                "invoice_id": str(invoice_id),
+                "reason": "Returned goods; refund requires a separate audited workflow",
+                "lines": [{"invoice_line_id": str(line_id), "quantity": "0.500"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        approved = client.post(f"{base}/sales-returns/{created.json()['id']}/approve")
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["status"] == "approved"
+
+        # Until a credit-note/refund ledger exists, approving physical goods return
+        # must not pretend cash was refunded or mutate the historical issued invoice.
+        with Session(engine) as session:
+            invoice = session.get(Invoice, invoice_id)
+            payment = session.get(Payment, payment_id)
+            allocation = session.get(PaymentAllocation, allocation_id)
+            assert invoice.status == "issued"
+            assert invoice.total == Decimal("10.00")
+            assert payment.amount == Decimal("4.00")
+            assert payment.currency_code == invoice.currency_code == "EGP"
+            assert allocation.amount == Decimal("4.00")
+            assert allocation.invoice_id == invoice.id
+            assert Decimal(str(invoice.total - allocation.amount)) == Decimal("6.00")
+            approved_return = session.get(SalesReturn, UUID(created.json()["id"]))
+            assert approved_return.total == Decimal("5.00")
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_staff_can_create_but_cannot_approve_sales_return():
     engine, business_id, invoice_id, line_id = _sales_return_fixture()
     previous_factory, previous_resolver = _configure_test_identity(engine)
@@ -646,6 +781,30 @@ def test_owner_can_change_product_price_and_create_schedules_and_notifications()
         )
         assert schedule.status_code == 201, schedule.text
 
+
+
+        invalid_schedule = client.post(
+            f"{base}/recurring-invoices",
+            json={"interval_days": 30, "timezone": "Mars/Olympus",
+                  "next_run_at": "2027-01-01T00:00:00Z"},
+        )
+        assert invalid_schedule.status_code == 422, invalid_schedule.text
+        assert "valid IANA timezone" in invalid_schedule.json()["detail"]
+
+        for setting_key in ("API-KEY", "pwd", "passwd", "access-key", "encryption_key"):
+            invalid_setting = client.put(
+                f"{base}/settings/{setting_key}", json={"setting_value": "blocked"}
+            )
+            assert invalid_setting.status_code == 422, (
+                f"{setting_key}: {invalid_setting.status_code} {invalid_setting.text}"
+            )
+
+        safe_setting = client.put(
+            f"{base}/settings/locale", json={"setting_value": "ar"}
+        )
+        assert safe_setting.status_code == 200, safe_setting.text
+        assert safe_setting.json()["setting_key"] == "locale"
+
         notification = client.post(
             f"{base}/notifications",
             json={"kind": "test", "title": "Owner approved",
@@ -686,7 +845,7 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
             },
         )
         assert created.status_code == 201, created.text
-        assert created.json()["status"] == "approved"
+        assert created.json()["status"] == "draft"
         order_id = UUID(created.json()["id"])
         with Session(engine) as session:
             line = session.scalar(select(PurchaseOrderLine).where(
@@ -694,6 +853,16 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
             ))
             assert line is not None
             line_id = line.id
+
+        approved = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["status"] == "approved"
+
+        invalid_receipt = client.post(
+            f"{base}/purchase-orders/{order_id}/receive",
+            json={"lines": [{"line_id": str(line_id), "quantity": "0.000"}]},
+        )
+        assert invalid_receipt.status_code == 422, invalid_receipt.text
 
         received = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
@@ -713,3 +882,201 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized():
+    from datetime import datetime, timezone
+    from app.models import Customer, Invoice, Payment, PaymentAllocation
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        business = Business(name="Aging shop", currency_code="EGP")
+        foreign_business = Business(name="Other aging shop", currency_code="USD")
+        session.add_all([business, foreign_business])
+        session.flush()
+        customer = Customer(business_id=business.id, name="Aging customer")
+        session.add(customer)
+        session.flush()
+        invoices = [
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-30",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("100.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("100.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-USD",
+                status="issued", currency_code="USD", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("50.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("50.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-NODUE",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=None, subtotal=Decimal("30.00"), tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"), total=Decimal("30.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=None, invoice_number="AGE-NOLINK",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 10, 20, tzinfo=timezone.utc), subtotal=Decimal("15.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("15.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-NOTDUE",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 10, 31, tzinfo=timezone.utc), subtotal=Decimal("25.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("25.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-SETTLED",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 20, tzinfo=timezone.utc), subtotal=Decimal("40.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("40.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-OVER",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 20, tzinfo=timezone.utc), subtotal=Decimal("20.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("20.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-OVER90",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 5, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 6, 1, tzinfo=timezone.utc), subtotal=Decimal("10.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("10.00"),
+            ),
+            Invoice(
+                business_id=foreign_business.id, customer_id=None, invoice_number="FOREIGN",
+                status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("900.00"),
+            ),
+        ]
+        session.add_all([
+            BusinessMembership(business_id=business.id, user_subject="test-subject", role=MembershipRole.OWNER),
+            *invoices,
+        ])
+        session.flush()
+        partial_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("30.00"),
+            currency_code="EGP", idempotency_key="aging-partial-payment",
+        )
+        settled_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("40.00"),
+            currency_code="EGP", idempotency_key="aging-settled-payment",
+        )
+        over_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("25.00"),
+            currency_code="EGP", idempotency_key="aging-overallocated-payment",
+        )
+        mismatch_usd_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("5.00"),
+            currency_code="USD", idempotency_key="aging-currency-mismatch-usd",
+        )
+        mismatch_eur_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("3.00"),
+            currency_code="EUR", idempotency_key="aging-currency-mismatch-eur",
+        )
+        session.add_all([partial_payment, settled_payment, over_payment, mismatch_usd_payment, mismatch_eur_payment])
+        session.flush()
+        session.add_all([
+            PaymentAllocation(
+                business_id=business.id, payment_id=partial_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
+                amount=Decimal("30.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=settled_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-SETTLED"),
+                amount=Decimal("40.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=over_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-OVER"),
+                amount=Decimal("25.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=mismatch_usd_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
+                amount=Decimal("5.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=mismatch_eur_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-30"),
+                amount=Decimal("3.00"),
+            ),
+        ])
+        session.commit()
+        business_id = business.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    try:
+        client = TestClient(app)
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-26"
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["as_of_date"] == "2026-10-26"
+        assert payload["invoice_count"] == 6
+        assert "never combined" in payload["currency_policy"]
+
+        invoices_by_number = {row["invoice_number"]: row for row in payload["invoices"]}
+        assert set(invoices_by_number) == {
+            "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOLINK", "AGE-NOTDUE", "AGE-OVER90",
+        }
+        assert "FOREIGN" not in invoices_by_number
+        assert "AGE-SETTLED" not in invoices_by_number
+        assert "AGE-OVER" not in invoices_by_number
+
+        # Mismatched USD/EUR allocations must never reduce the EGP invoice or be added together.
+        egp_invoice = invoices_by_number["AGE-30"]
+        assert egp_invoice["aging_bucket"] == "31_60_days"
+        assert egp_invoice["allocated_payments"] == "30.00"
+        assert egp_invoice["outstanding_amount"] == "70.00"
+
+        warnings = {(row["invoice_number"], row["type"]): row for row in payload["data_quality_warnings"]}
+        mismatch = warnings[("AGE-30", "payment_currency_mismatch")]
+        assert mismatch["invoice_currency"] == "EGP"
+        assert mismatch["mismatched_allocations_amount"] == "3.00 EUR; 5.00 USD"
+        overallocated = warnings[("AGE-OVER", "allocations_exceed_invoice_total")]
+        assert overallocated["invoice_total"] == "20.00"
+        assert overallocated["allocated_payments"] == "25.00"
+        assert overallocated["excess_allocated"] == "5.00"
+
+        assert invoices_by_number["AGE-USD"]["aging_bucket"] == "1_30_days"
+        assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
+        assert invoices_by_number["AGE-NODUE"]["aging_bucket"] == "no_due_date"
+        assert invoices_by_number["AGE-NODUE"]["days_overdue"] is None
+        assert invoices_by_number["AGE-NOLINK"]["customer_link_missing"] is True
+        assert invoices_by_number["AGE-NOLINK"]["aging_bucket"] == "1_30_days"
+        assert invoices_by_number["AGE-NOTDUE"]["aging_bucket"] == "not_due"
+        assert invoices_by_number["AGE-OVER90"]["aging_bucket"] == "over_90_days"
+
+        summaries = {row["currency_code"]: row for row in payload["by_currency"]}
+        assert set(summaries) == {"EGP", "USD"}
+        assert summaries["EGP"]["total_outstanding"] == "150.00"
+        assert summaries["USD"]["total_outstanding"] == "50.00"
+        egp_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["EGP"]["buckets"]}
+        usd_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["USD"]["buckets"]}
+        assert egp_buckets == {
+            "not_due": "25.00",
+            "1_30_days": "15.00",
+            "31_60_days": "70.00",
+            "over_90_days": "10.00",
+            "no_due_date": "30.00",
+        }
+        assert usd_buckets == {"1_30_days": "50.00"}
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="unauthorized-subject")
+        denied = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-26"
+        )
+        assert denied.status_code == 403
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()

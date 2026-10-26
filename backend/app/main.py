@@ -1,5 +1,6 @@
 """FastAPI application entry point and production runtime configuration."""
 import os
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,14 +14,26 @@ from app.extended_api import router as extended_business_router
 from app.database import create_database_engine
 from app.firebase_auth import configure_firebase_auth
 
+CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
 app = FastAPI(
     title="AI Business Assistant API",
-    version="0.4.0",
+    version="1.2.0",
     description=(
         "Business workflows with PostgreSQL, Firebase ID-token verification, "
         "tenant-scoped authorization, and grounded assistant chat."
     ),
 )
+
+@app.middleware("http")
+async def attach_request_id(request, call_next):
+    """Attach a server-generated correlation ID without trusting caller input."""
+    request_id = str(uuid4())
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
 
 allowed_origins = [
     origin.strip()
@@ -32,8 +45,9 @@ if allowed_origins:
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_methods=CORS_ALLOWED_METHODS,
         allow_headers=["Authorization", "Content-Type", "Accept"],
+        expose_headers=["X-Request-ID"],
     )
 
 app.include_router(business_router)

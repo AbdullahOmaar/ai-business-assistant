@@ -1,11 +1,11 @@
 {
   "name": "ai-business-assistant-frontend",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "start": "ng serve",
     "prebuild": "node scripts/write-build-info.mjs",
-    "build": "ng build",
+    "build": "npm test && ng build",
     "test": "node --experimental-strip-types --test src/app/workspace-load-guard.spec.ts"
   },
   "dependencies": {
