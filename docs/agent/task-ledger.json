@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AbdullahOmaar/ai-business-assistant",
-  "updated_at": "2026-10-26T06:40:00+03:00",
+  "updated_at": "2026-10-26T06:00:00+03:00",
   "policy": {
     "budget_usd_monthly": 0,
     "paid_resources_allowed": false,
@@ -45,11 +45,11 @@
       "dependencies": [
         "TASK-021"
       ],
-      "last_verified_at": "2026-10-26T06:40:00+03:00",
-      "last_test_result": "unverified",
-      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
-      "next_action": "فحص إعدادات Actions والحصص والصلاحيات من واجهة GitHub؛ إعادة المحاولة المحدودة بعد تحديد السبب، أو تشغيل بديل مجاني موثق.",
-      "evidence": "GitHub Actions runs 40263119102 و40263118998 فشلت؛ jobs runner_id=0 وsteps=[]، فلا توجد اختبارات منفذة.",
+      "last_verified_at": "2026-10-26T06:00:00+03:00",
+      "last_test_result": "failed_before_execution",
+      "blocker": "Latest Actions runs 40265392678, 40265392630, and 40265392623 all show runner_id=0 and steps=[]; runner allocation failed before commands ran. Root cause in account quota/permissions/host capacity is not yet proven.",
+      "next_action": "Inspect repository Actions settings, account usage/limits, billing-free quota and permissions. Do not buy a plan. Retry only after the cause is identified or runner availability changes; then verify actual test steps and logs.",
+      "evidence": "GitHub Actions job metadata: runs 40265392678 (dependency scan), 40265392630 (agent controller), 40265392623 (backend/frontend) each completed failure with runner_id=0 and zero steps. See https://github.com/AbdullahOmaar/ai-business-assistant/actions",
       "deploy_status": "not_attempted"
     },
     {
@@ -73,7 +73,7 @@
       "last_test_result": "unverified",
       "blocker": null,
       "next_action": "مراجعة diffs والاختبارات لكل PR، وإعطاء الأولوية للمرتجعات والمدفوعات والصلاحيات؛ لا اعتماد دون تحقق.",
-      "evidence": "PRs #143–#149 تغييرات مالية وأمنية وواجهة؛ الأوصاف تقول إن الاختبارات لم تعمل.",
+      "evidence": "PRs #143–#149 تغييرات مالية وأمنية وواجهة؛ الأوصاف تقول إن الاختبارات لم تعمل. Metadata and diffs reviewed for PRs #143–#150; no merge recommended until CI execution and code-level review are complete.",
       "deploy_status": "not_attempted"
     },
     {
@@ -259,7 +259,7 @@
       "last_test_result": "unverified",
       "blocker": null,
       "next_action": "مراجعة patch وتشغيل اختبارات التكرار والتزامن والفشل الجزئي والمخزون والتدقيق.",
-      "evidence": "PR #144 يعالج سقف قيمة المرتجع وتجميع الصفوف وصلاحيات OWNER؛ الاختبارات لم تنفذ.",
+      "evidence": "PR #144 يعالج سقف قيمة المرتجع وتجميع الصفوف وصلاحيات OWNER؛ الاختبارات لم تنفذ. Current related changes remain in Draft PR #144/#147; Vercel posted Ready preview deployments, but no test execution is proven.",
       "deploy_status": "not_attempted"
     },
     {
@@ -277,7 +277,7 @@
       "last_test_result": "unverified",
       "blocker": null,
       "next_action": "اختبار idempotency والتخصيصات والتزامن وفشل refresh بعد الحفظ وعدم تكرار التسجيل.",
-      "evidence": "PR #147 يعالج retry/idempotency بالواجهة؛ CI غير منفذ.",
+      "evidence": "PR #147 يعالج retry/idempotency بالواجهة؛ CI غير منفذ. Current related changes remain in Draft PR #144/#147; Vercel posted Ready preview deployments, but no test execution is proven.",
       "deploy_status": "not_attempted"
     },
     {
@@ -302,18 +302,18 @@
       "id": "AGENT-001",
       "title": "مراقبة المهام كل 30 دقيقة ومراجعة كل ساعة",
       "priority": "high",
-      "status": "in_progress",
+      "status": "blocked",
       "branch": "feat/permanent-engineering-agent-foundation",
       "pull_request": [
         150
       ],
       "commit_sha": null,
       "dependencies": [],
-      "last_verified_at": "2026-10-26T06:40:00+03:00",
-      "last_test_result": "unverified",
-      "blocker": null,
-      "next_action": "توسيع الجدولة وتوليد تقرير/أثر قابل للتدقيق؛ تأكيد توفر runners قبل ادعاء التشغيل المستمر.",
-      "evidence": "PR #150 يضيف controller يعمل يدويًا وبجدول كل 6 ساعات؛ ليس مراقبة 30 دقيقة ولا عاملًا دائمًا.",
+      "last_verified_at": "2026-10-26T06:00:00+03:00",
+      "last_test_result": "failed_before_execution",
+      "blocker": "PR #150 remains Draft/open and its controller job failed before runner assignment. GitHub scheduled workflows run from the default branch, so the 30-minute/hourly schedule is not active until merged to main. Merge remains blocked by unverified CI gates.",
+      "next_action": "Restore free runner allocation; run controller sanity and ledger tests; review report artifact; only then consider merging PR #150. Until merged, do not claim periodic workflow is active.",
+      "evidence": "PR #150: https://github.com/AbdullahOmaar/ai-business-assistant/pull/150 ; latest controller run https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40265392630 ; comment checkpoint ID 6407786659.",
       "deploy_status": "not_attempted"
     },
     {
