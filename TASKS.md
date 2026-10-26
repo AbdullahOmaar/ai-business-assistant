@@ -50,3 +50,11 @@
 ### Recurring invoice and notification execution
 - Status: TODO.
 - Establish whether a reliable worker/scheduler exists; if absent, propose and test a zero-cost-compatible implementation and document actual platform limits. Never assume recurring jobs are running.
+
+
+## Follow-up evidence (2026-10-26)
+- Retried failed jobs for runs 40360218318 (dependency scan), 40360218597 (backend/frontend), 40360218363 (container), and 40360218216 (backend tests). GitHub accepted the reruns, but this is not a pass: subsequent job queries still show failure with `steps=null` and `logs_url=null` for dependency, frontend/backend, and container jobs; backend test job was still queued with no logs at query time.
+- Combined status queries for #161 head `23be0fb4d4312634833ba4ad08a6b0d7d9d2fa0b` and timezone UI fix commit `6592ba7f43196081f18c5b00d4dab12693e73efd` returned no status checks. No successful CI is evidenced.
+- Fixed the known timezone display defect in PR #154: `frontend/src/app/app.component.ts` now displays `profitLoss.period.timezone` with UTC fallback rather than hard-coding UTC. Commit: `6592ba7f43196081f18c5b00d4dab12693e73efd`. Source change was applied once after verifying the exact prior text; frontend build/tests were not run.
+- After that commit, PR #154 metadata reports `mergeable=false`; its base SHA also differs from #161's current main base. Treat #154 as requiring a fresh mergeability/rebase check before consolidation. No changes were copied into #161, and no PR was closed as part of this follow-up.
+- Current decision: no merge or deployment. CI remains unverified/failed at the runner/job surface, and the timezone UI patch has not been validated by a frontend build.
