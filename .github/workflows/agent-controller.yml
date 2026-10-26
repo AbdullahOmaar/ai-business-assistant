@@ -1,0 +1,28 @@
+name: Agent Controller (zero budget)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Periodic, bounded reconciliation. This is not a 24/7 worker.
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: permanent-engineering-agent-controller
+  cancel-in-progress: false
+
+jobs:
+  controller-sanity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate zero-budget ledger and task graph
+        run: python scripts/agent/validate_ledger.py
