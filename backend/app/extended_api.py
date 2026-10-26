@@ -1236,3 +1236,182 @@ def assistant_insights(business_id: UUID,
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/customers/{customer_id}/statement")
+def customer_statement(
+    business_id: UUID,
+    customer_id: UUID,
+    from_date: date | None = Query(default=None),
+    to_date: date | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Return a currency-separated customer statement from issued invoices and payment allocations.
+
+    Credit notes are not represented by a dedicated ledger model yet, so this endpoint
+    explicitly reports that limitation rather than treating sales returns as cash credits.
+    """
+    try:
+        _authorized(session, principal, business_id)
+        if from_date is not None and to_date is not None and from_date > to_date:
+            raise HTTPException(status_code=422, detail="from_date must be on or before to_date")
+        customer = session.scalars(select(Customer).where(
+            Customer.id == customer_id,
+            Customer.business_id == business_id,
+            Customer.is_active.is_(True),
+        )).one_or_none()
+        if customer is None:
+            raise HTTPException(status_code=404, detail="Customer not found")
+
+        invoices = session.scalars(select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+            Invoice.status == "issued",
+        )).all()
+        invoice_ids = [item.id for item in invoices]
+        events: list[dict] = []
+        for item in invoices:
+            occurred_at = item.issue_date or item.created_at
+            if occurred_at is None:
+                continue
+            occurred_date = occurred_at.date()
+            if from_date is not None and occurred_date < from_date:
+                continue
+            if to_date is not None and occurred_date > to_date:
+                continue
+            events.append({
+                "occurred_at": occurred_at,
+                "event_type": "invoice_issued",
+                "source_id": str(item.id),
+                "reference": item.invoice_number,
+                "currency_code": item.currency_code,
+                "debit": item.total,
+                "credit": ZERO,
+                "affects_balance": True,
+            })
+
+        if invoice_ids:
+            allocations = session.execute(
+                select(PaymentAllocation, Payment, Invoice)
+                .join(Payment, Payment.id == PaymentAllocation.payment_id)
+                .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
+                .where(
+                    PaymentAllocation.business_id == business_id,
+                    Payment.business_id == business_id,
+                    Invoice.business_id == business_id,
+                    Invoice.customer_id == customer_id,
+                    PaymentAllocation.invoice_id.in_(invoice_ids),
+                )
+            ).all()
+            for allocation, payment, invoice in allocations:
+                occurred_at = payment.received_at or allocation.created_at
+                if occurred_at is None:
+                    continue
+                occurred_date = occurred_at.date()
+                if from_date is not None and occurred_date < from_date:
+                    continue
+                if to_date is not None and occurred_date > to_date:
+                    continue
+                same_currency = payment.currency_code == invoice.currency_code
+                events.append({
+                    "occurred_at": occurred_at,
+                    "event_type": "payment_allocation" if same_currency else "currency_mismatch_allocation",
+                    "source_id": str(allocation.id),
+                    "reference": payment.reference,
+                    "invoice_id": str(invoice.id),
+                    "currency_code": invoice.currency_code if same_currency else payment.currency_code,
+                    "debit": ZERO,
+                    "credit": allocation.amount,
+                    "affects_balance": same_currency,
+                })
+
+        events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
+        running: dict[str, Decimal] = {}
+        for event in events:
+            currency = event["currency_code"]
+            running.setdefault(currency, ZERO)
+            if event["affects_balance"]:
+                running[currency] += event["debit"] - event["credit"]
+            event["balance"] = running[currency]
+            event["occurred_at"] = event["occurred_at"].isoformat()
+            for key in ("debit", "credit", "balance"):
+                event[key] = str(event[key])
+
+        total = len(events)
+        return {
+            "customer": {"id": str(customer.id), "name": customer.name},
+            "items": events[offset:offset + limit],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "balances_by_currency": {currency: str(balance) for currency, balance in running.items()},
+            "limitations": [
+                "Credit notes are not implemented in the current data model and are excluded.",
+                "Approved sales returns are not treated as receivable credits until a credit-note ledger exists.",
+                "Allocations with a currency mismatch are shown but do not change the running balance.",
+                "Balances represent issued invoices less matching-currency allocations, not a double-entry general ledger.",
+            ],
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/audit-events")
+def list_audit_events(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    action: str | None = Query(default=None, min_length=1, max_length=80),
+    target_type: str | None = Query(default=None, min_length=1, max_length=80),
+    start_at: datetime | None = None,
+    end_at: datetime | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read a paginated business audit trail; only workspace owners may view it."""
+    try:
+        authorize_membership(
+            session,
+            principal=principal,
+            business_id=business_id,
+            allowed_roles={MembershipRole.OWNER},
+        )
+        if start_at is not None and end_at is not None and start_at > end_at:
+            raise HTTPException(status_code=422, detail="start_at must be earlier than or equal to end_at")
+        statement = select(AuditEvent).where(AuditEvent.business_id == business_id)
+        if action is not None:
+            statement = statement.where(AuditEvent.action == action)
+        if target_type is not None:
+            statement = statement.where(AuditEvent.target_type == target_type)
+        if start_at is not None:
+            statement = statement.where(AuditEvent.created_at >= start_at)
+        if end_at is not None:
+            statement = statement.where(AuditEvent.created_at <= end_at)
+        total = session.scalar(select(func.count()).select_from(statement.subquery())) or 0
+        items = session.scalars(
+            statement.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+        return {
+            "items": [
+                {
+                    "id": str(item.id),
+                    "business_id": str(item.business_id),
+                    "actor_subject": item.actor_subject,
+                    "action": item.action,
+                    "target_type": item.target_type,
+                    "target_id": item.target_id,
+                    "change_summary": item.change_summary,
+                    "created_at": item.created_at.isoformat() if item.created_at else None,
+                }
+                for item in items
+            ],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
