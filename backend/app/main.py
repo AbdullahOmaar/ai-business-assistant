@@ -47,6 +47,7 @@ if allowed_origins:
         allow_credentials=True,
         allow_methods=CORS_ALLOWED_METHODS,
         allow_headers=["Authorization", "Content-Type", "Accept"],
+        expose_headers=["X-Request-ID"],
     )
 
 app.include_router(business_router)
