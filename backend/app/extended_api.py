@@ -1471,9 +1471,13 @@ def report_receivables_aging(
         totals: dict[str, dict[str, Decimal | int]] = {}
         for invoice in invoices:
             allocated = allocated_by_invoice.get(invoice.id, ZERO)
-            outstanding, overallocated = _receivable_outstanding(
+            raw_outstanding, overallocated = _receivable_outstanding(
                 Decimal(str(invoice.total)), allocated
             )
+            # An overallocated invoice is not negative receivable. Report its excess
+            # separately, while keeping outstanding balances non-negative.
+            overallocated_amount = -raw_outstanding if overallocated else ZERO
+            outstanding = ZERO if overallocated else raw_outstanding
             due_date = invoice.due_date.date() if invoice.due_date else None
             if overallocated:
                 bucket = "overallocated"
@@ -1485,8 +1489,9 @@ def report_receivables_aging(
             currency_totals = totals.setdefault(currency, {})
             currency_totals[bucket] = int(currency_totals.get(bucket, 0)) + 1
             amount_totals_key = f"{bucket}_amount"
+            amount_for_bucket = overallocated_amount if overallocated else outstanding
             currency_totals[amount_totals_key] = (
-                Decimal(str(currency_totals.get(amount_totals_key, ZERO))) + outstanding
+                Decimal(str(currency_totals.get(amount_totals_key, ZERO))) + amount_for_bucket
             )
             rows.append({
                 "invoice_id": str(invoice.id),
@@ -1496,6 +1501,7 @@ def report_receivables_aging(
                 "invoice_total": str(invoice.total),
                 "allocated_amount": str(allocated),
                 "outstanding_amount": str(outstanding),
+                "overallocated_amount": str(overallocated_amount),
                 "due_date": due_date.isoformat() if due_date else None,
                 "days_overdue": (as_of - due_date).days if due_date else None,
                 "bucket": bucket,
