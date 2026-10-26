@@ -487,3 +487,14 @@
 - User requested the demo/release version be set to 1.2.0. Candidate metadata is being aligned on the existing Draft PR branch only; this is not a production release.
 - Required checks remain BLOCKED: the current consolidated safety PR has not demonstrated successful full backend/PostgreSQL tests, frontend tests/build, container build, dependency audit, authenticated workflow checks, or installed-PWA smoke tests. Prior Actions runs failed before executable steps/logs were available.
 - Production remains unchanged until those gates pass. Verify the exact resulting branch SHA, CI status, and both deployment aliases after candidate metadata updates. Do not mark release VERIFIED based on version strings alone.
+
+
+## Merge-resolution checkpoint — 2026-10-26 21:20 UTC
+
+- Status: IN_PROGRESS; source reconciliation: complete for PR #161; executable verification: BLOCKED; main merge: BLOCKED.
+- Latest main observed: `1b58df8a6695e02b845bc84a9ee7094286f32e83`. Safety branch before reconciliation: `39f3ffba67ac80c3f92f63c99e81498605520460`. Merge-resolution commit pushed to `task/production-safety-consolidated`: `de45cfdc4f9f3d08816daf11c1676d9e760a53be` (first parent is latest main; second parent preserves the safety branch history).
+- Reconciled the four overlapping files with a three-way merge against merge-base `e1ccc669058786634bcc3eeb0ff411049d25b4c7`: `backend/app/extended_api.py`, `backend/tests/test_business_tenant_boundaries.py`, `frontend/src/app/api.service.ts`, and `frontend/src/app/app.component.ts`. Preserved current-main customer-statement/audit UI/API/tests and branch-side data-integrity, settings/schedule/timezone, receivables-aging, and report-period changes. Source assertions passed for expected endpoints, UI contracts, tests, and absence of conflict markers.
+- GitHub now reports PR #161 mergeable=true and compare `main...de45cfd` ahead 116 / behind 0. The `main` branch itself was not modified.
+- CI for exact head `de45cfdc4f9f3d08816daf11c1676d9e760a53be` failed immediately without executable step summaries: backend tests run 40403112798; backend/frontend run 40403112725; dependency scan 40403112783; container build 40403113207. Job records expose `steps=null` and `logs_url=null`; fetching job logs returned `BlobNotFound`. These runs do not provide evidence that tests/builds actually executed, nor that they passed. No repo test/build/security gate is marked VERIFIED.
+- Next action: restore inspectable CI execution (working GitHub-hosted runner or authorized free runner), run backend/PostgreSQL tests, frontend tests/build, container build, and dependency audits on the final integrated SHA; fix any reported code failures and repeat. Do not merge or deploy while these gates are unverified.
+- Production was not changed. Prior safe endpoint check still showed API version `0.4.0`; recheck version and deployment SHA after any eventual merge/release.
