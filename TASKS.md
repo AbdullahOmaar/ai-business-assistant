@@ -313,3 +313,11 @@
 - Commits: `26e767fec607bbeb8e17ac027c5b98c3a5c265ce` (initial test addition), `c8ce37a4f1f5fb23bffe719f83de3ac6d1ecde5b` (corrected expected fixture total after source review). These changes are source commits only; the tests have NOT been executed locally or successfully in CI.
 - Release gate remains BLOCKED: latest previous candidate runs had failed workflow conclusions with unavailable steps/logs. Re-query CI for the new head. Do not merge or deploy until backend tests, frontend build/tests, container build, and dependency scans pass on the exact final SHA.
 - Next accounting priorities remain credit notes/refunds (#79), inventory valuation/COGS (#84), tax reporting (#85), reconciliation (#86), and period close (#87); inspect existing branches/issues before any overlapping implementation.
+
+
+## Execution checkpoint — approved-return visibility feature (2026-10-26)
+- Status: implementation IN_PROGRESS; executable validation BLOCKED; merge/deploy BLOCKED.
+- Added a separate approved-return amount/count to the profit-and-loss report, grouped by invoice currency and limited to approved returns attached to issued invoices whose original issue date is inside the selected report period. Return totals are NOT deducted from revenue or used to infer tax/credit-note/refund treatment.
+- Rationale: SalesReturn stores a total and creation timestamp but no approval timestamp, tax allocation, discount allocation, credit-note link, or refund link. Filtering by the original invoice's issue date is explicitly documented to avoid silently inventing a return recognition date.
+- Added regression assertions to the existing approved-return fixture and exposed the new fields in the frontend type and report UI with a clear non-netted label.
+- Source edits are being committed to the existing canonical #161 branch; no runner was queried per the current instruction. Tests/build/security checks have not been executed in this checkpoint. Do not merge or deploy until the required gates have inspectable successful evidence.
