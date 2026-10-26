@@ -1,3 +1,21 @@
+# Execution checkpoint — 2026-10-27 (latest)
+
+## Five ordered release tasks
+1. **TASK-01 — Accounting, authorization, and tenant isolation:** IN_PROGRESS. Backend regression suite passed on the code tree before this checkpoint: #161 branch 142 passed / 1 skipped; stacked #166 branch 144 passed / 1 skipped. #166 enforces OWNER-only invoice issue/void with STAFF negative tests. No live PostgreSQL integration has run.
+2. **TASK-02 — Reliable CI and test gates:** BLOCKED for GitHub Actions hosted jobs; current runs fail before steps (no step/log data). Backend alternative tests and pip-audit ran in an isolated Vercel Sandbox. Frontend `frontend/package.json` now gates builds with `npm test && ng build` (commit `8ccde7cb22a2b9115f972680d9419cfe473190ef`). A Vercel build for that SHA remains in BUILDING at the last check and has emitted only the `npm install` start line; no test/build pass is claimed for that SHA. Existing earlier test-gate preview on `1734997f4ad89f68bdf5f82134a7c8cd88cf1a6b` passed 4/4 tests and Angular compilation.
+3. **TASK-03 — PR review and reconciliation:** IN_PROGRESS. #161 and #166 remain Draft/open/unmerged. #166 is stacked on #161. Do not merge until the outstanding release gates are verified.
+4. **TASK-04 — Build and product verification:** IN_PROGRESS. Backend API Preview `dpl_3k4L7ZjEoS9Y48Wh5uQ5FqLHpFm9` READY on SHA `f0692e46445ef85f5b0c19be812cbd1a71bd3f70`; frontend Preview `dpl_Dz2ux26tcbkSbvg1jDNzKzcvRK4y` READY on SHA `a480a6eaf4908dfafd821ed32b91400ba43f5e50`. New frontend gate deployment `dpl_HKv3WzCgAWXfUGuHV5TcNgUiUiQE` for SHA `8ccde7cb22a2b9115f972680d9419cfe473190ef` is still BUILDING and has not produced test/build results. Live HTTP smoke probes remain unverified due DNS/cache-access limits.
+5. **TASK-05 — Release and production verification:** BLOCKED; no production deployment or promotion was performed. Frontend production remains READY on `main` SHA `1b58df8a6695e02b845bc84a9ee7094286f32e83`. Latest API production attempt for the same SHA was CANCELED by the configured ignored-build-step rule; the API production alias last observed points to older SHA `c8078c563ad9d88f04cccee740efdb1b64527df7`. Production API/frontend runtime health and version parity are not verified. Do not release until PostgreSQL integration/migrations, current frontend gate, CI/container/security gates, and safe production smoke checks have evidence.
+
+## Latest actions and verified results
+- Updated frontend build script to run `npm test` before `ng build` so Vercel can enforce frontend tests when hosted GitHub runners are unavailable.
+- Backend compile and tests passed in an isolated Vercel Sandbox on the tested source trees; `pip-audit -r backend/requirements.txt` returned `No known vulnerabilities found`.
+- Alembic offline SQL generation succeeded for revisions 0001–0003; this does not prove migrations apply successfully to a live PostgreSQL service.
+- GitHub Actions jobs for both PRs still fail without starting steps; this is an infrastructure/runner blocker, not a test-pass result.
+- Security-sensitive work remains unmerged and unpromoted. No production database was changed.
+
+---
+
 # Latest execution update — 2026-10-27
 
 ## TASK-01 — accounting, authorization, and tenant safety
