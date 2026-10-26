@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "AbdullahOmaar/ai-business-assistant",
-  "updated_at": "2026-10-26T06:00:00+03:00",
+  "updated_at": "2026-10-26T06:55:00+03:00",
   "policy": {
     "budget_usd_monthly": 0,
     "paid_resources_allowed": false,
@@ -29,9 +29,9 @@
       "dependencies": [],
       "last_verified_at": "2026-10-26T06:40:00+03:00",
       "last_test_result": "unverified",
-      "blocker": null,
-      "next_action": "حصر وحدات API/DB/Frontend والحدود والصلاحيات وإضافة اختبارات الفجوات؛ إثبات النجاح بتشغيل فعلي.",
-      "evidence": "جرد الاختبارات الحالي موجود في PRs #143–#149؛ لا توجد نتائج تشغيل موثوقة بعد.",
+      "blocker": "Automated test execution remains blocked because Actions runs fail before runner allocation; source-reviewed tests are not executed evidence.",
+      "next_action": "Continue code review and expand focused tests; run backend, PostgreSQL concurrency/migration, frontend unit tests and production build once a runner is available.",
+      "evidence": "Reviewed PR #143–#149 diffs and test additions. No claim of test success.",
       "deploy_status": "not_attempted"
     },
     {
@@ -47,9 +47,9 @@
       ],
       "last_verified_at": "2026-10-26T06:00:00+03:00",
       "last_test_result": "failed_before_execution",
-      "blocker": "Latest Actions runs 40265392678, 40265392630, and 40265392623 all show runner_id=0 and steps=[]; runner allocation failed before commands ran. Root cause in account quota/permissions/host capacity is not yet proven.",
-      "next_action": "Inspect repository Actions settings, account usage/limits, billing-free quota and permissions. Do not buy a plan. Retry only after the cause is identified or runner availability changes; then verify actual test steps and logs.",
-      "evidence": "GitHub Actions job metadata: runs 40265392678 (dependency scan), 40265392630 (agent controller), 40265392623 (backend/frontend) each completed failure with runner_id=0 and zero steps. See https://github.com/AbdullahOmaar/ai-business-assistant/actions",
+      "blocker": "Actions runs fail before runner allocation (runner_id=0; zero steps/logs). Account-level quota/permissions/capacity root cause remains unproven; do not purchase a plan.",
+      "next_action": "Check free Actions usage and runner availability from repository/account UI; after capacity returns, rerun workflow_dispatch or push a no-op-free test commit and inspect actual job logs.",
+      "evidence": "Current workflow PR #151 narrows CI paths and runs npm test; this reduces unnecessary runs but does not itself restore runner allocation. See https://github.com/AbdullahOmaar/ai-business-assistant/actions",
       "deploy_status": "not_attempted"
     },
     {
@@ -71,9 +71,9 @@
       "dependencies": [],
       "last_verified_at": "2026-10-26T06:40:00+03:00",
       "last_test_result": "unverified",
-      "blocker": null,
-      "next_action": "مراجعة diffs والاختبارات لكل PR، وإعطاء الأولوية للمرتجعات والمدفوعات والصلاحيات؛ لا اعتماد دون تحقق.",
-      "evidence": "PRs #143–#149 تغييرات مالية وأمنية وواجهة؛ الأوصاف تقول إن الاختبارات لم تعمل. Metadata and diffs reviewed for PRs #143–#150; no merge recommended until CI execution and code-level review are complete.",
+      "blocker": "Required checks are not executing; financial and authorization changes cannot be safely approved without runtime evidence.",
+      "next_action": "Review the diffs and dependency relationships of PRs #143–#151; keep unverified financial/security PRs draft until real checks pass.",
+      "evidence": "Reviewed PR metadata/diffs for #143–#151. PR #151 contains CI path filters and frontend test step; PR #149 adds normalized secret-key validation and timezone validation.",
       "deploy_status": "not_attempted"
     },
     {
@@ -90,9 +90,9 @@
       ],
       "last_verified_at": "2026-10-26T06:40:00+03:00",
       "last_test_result": "unverified",
-      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
-      "next_action": "بناء خريطة الاعتماديات ومراجعة التعارضات؛ الدمج فقط بعد نجاح البوابات.",
-      "evidence": "main عند dec7f26bd2bb33a4c27af4e785abe982e8486676؛ PRs #143–#150 مفتوحة بحسب آخر استعلام.",
+      "blocker": "No runner-backed checks are available, and dependent PRs overlap in CI configuration.",
+      "next_action": "After CI is restored, consolidate duplicate workflow edits, update branches against main, require all checks, then merge in dependency order.",
+      "evidence": "PRs #143–#151 remain open in latest query; no merge or deployment claimed.",
       "deploy_status": "not_attempted"
     },
     {
@@ -107,10 +107,10 @@
         "TASK-022"
       ],
       "last_verified_at": "2026-10-26T06:40:00+03:00",
-      "last_test_result": "unverified",
-      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
-      "next_action": "تشغيل تدقيق التبعيات محليًا/بديل مجاني موثوق، توثيق النتائج دون عرض أسرار.",
-      "evidence": "Dependency security scan run 40263118998 فشل قبل تخصيص runner.",
+      "last_test_result": "failed_before_execution",
+      "blocker": "Dedicated dependency security workflow failed before runner allocation; no audit output exists.",
+      "next_action": "Run npm audit and pip audit in a free runner/local trusted environment when available; review findings and remediation before release.",
+      "evidence": "Dedicated workflow has not produced completed scan logs. PR #151 preserves scheduled/manual security scan triggers.",
       "deploy_status": "not_attempted"
     },
     {
