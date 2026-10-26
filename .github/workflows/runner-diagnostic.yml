@@ -1,0 +1,25 @@
+name: GitHub runner allocation diagnostic
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/runner-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runner-smoke:
+    name: Runner allocation smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm a hosted runner was allocated
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "RUNNER_ALLOCATION_OK"
+          echo "runner_name=${RUNNER_NAME}"
+          echo "runner_os=${RUNNER_OS}"
