@@ -753,6 +753,12 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
                 discount_total=Decimal("0.00"), total=Decimal("30.00"),
             ),
             Invoice(
+                business_id=business.id, customer_id=None, invoice_number="AGE-NOLINK",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 10, 20, tzinfo=timezone.utc), subtotal=Decimal("15.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("15.00"),
+            ),
+            Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-NOTDUE",
                 status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
                 due_date=datetime(2026, 10, 31, tzinfo=timezone.utc), subtotal=Decimal("25.00"),
@@ -840,12 +846,12 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         assert response.status_code == 200
         payload = response.json()
         assert payload["as_of_date"] == "2026-10-26"
-        assert payload["invoice_count"] == 5
+        assert payload["invoice_count"] == 6
         assert "never combined" in payload["currency_policy"]
 
         invoices_by_number = {row["invoice_number"]: row for row in payload["invoices"]}
         assert set(invoices_by_number) == {
-            "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOTDUE", "AGE-OVER90",
+            "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOLINK", "AGE-NOTDUE", "AGE-OVER90",
         }
         assert "FOREIGN" not in invoices_by_number
         assert "AGE-SETTLED" not in invoices_by_number
@@ -870,17 +876,20 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
         assert invoices_by_number["AGE-NODUE"]["aging_bucket"] == "no_due_date"
         assert invoices_by_number["AGE-NODUE"]["days_overdue"] is None
+        assert invoices_by_number["AGE-NOLINK"]["customer_link_missing"] is True
+        assert invoices_by_number["AGE-NOLINK"]["aging_bucket"] == "1_30_days"
         assert invoices_by_number["AGE-NOTDUE"]["aging_bucket"] == "not_due"
         assert invoices_by_number["AGE-OVER90"]["aging_bucket"] == "over_90_days"
 
         summaries = {row["currency_code"]: row for row in payload["by_currency"]}
         assert set(summaries) == {"EGP", "USD"}
-        assert summaries["EGP"]["total_outstanding"] == "165.00"
+        assert summaries["EGP"]["total_outstanding"] == "180.00"
         assert summaries["USD"]["total_outstanding"] == "50.00"
         egp_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["EGP"]["buckets"]}
         usd_buckets = {row["bucket"]: row["outstanding_amount"] for row in summaries["USD"]["buckets"]}
         assert egp_buckets == {
             "not_due": "25.00",
+            "1_30_days": "15.00",
             "31_60_days": "100.00",
             "over_90_days": "10.00",
             "no_due_date": "30.00",
