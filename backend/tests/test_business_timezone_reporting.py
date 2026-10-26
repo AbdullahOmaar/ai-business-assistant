@@ -188,6 +188,17 @@ def test_profit_loss_explicitly_reports_gross_revenue_when_approved_return_exist
                 quantity=Decimal("0.250"),
                 amount=Decimal("5.00"),
             ))
+            # Draft/rejected returns must not appear in the approved-return metric.
+            session.add_all([
+                SalesReturn(
+                    business_id=business_id, invoice_id=invoice.id,
+                    status="draft", total=Decimal("7.00"),
+                ),
+                SalesReturn(
+                    business_id=business_id, invoice_id=invoice.id,
+                    status="rejected", total=Decimal("9.00"),
+                ),
+            ])
             session.commit()
 
         report = client.get(
