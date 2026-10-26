@@ -3,8 +3,16 @@ name: Verify backend and frontend
 on:
   pull_request:
     branches: ["**"]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/ci.yml"
   push:
     branches: ["main", "feat/**"]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/ci.yml"
 
 permissions:
   contents: read
@@ -53,6 +61,8 @@ jobs:
         with:
           node-version: "22"
       - run: npm install
+      - name: Run frontend unit tests
+        run: npm test
       - name: Report npm audit findings before release
         run: |
           npm audit --json > /tmp/npm-audit.json || true
