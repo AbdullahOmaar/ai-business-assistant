@@ -502,6 +502,7 @@ def test_staff_cannot_approve_purchase_order():
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}"
     try:
+        _set_test_membership_role(engine, MembershipRole.STAFF)
         created = client.post(
             f"{base}/purchase-orders",
             json={
@@ -513,7 +514,6 @@ def test_staff_cannot_approve_purchase_order():
         assert created.status_code == 201, created.text
         order_id = UUID(created.json()["id"])
         assert created.json()["status"] == "draft"
-        _set_test_membership_role(engine, MembershipRole.STAFF)
         response = client.post(f"{base}/purchase-orders/{order_id}/approve")
         assert response.status_code == 403, response.text
         with Session(engine) as session:
