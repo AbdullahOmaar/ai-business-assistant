@@ -372,6 +372,7 @@ def profit_loss(
             "timezone": timezone_name,
         },
         "currencies": rows,
+        "revenue_basis": "gross issued invoice totals before sales returns; stored invoice tax is included",
         "limitations": [
             "Revenue is based on issued invoice totals, not cash collected.",
             "Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.",
