@@ -204,6 +204,8 @@ def test_profit_loss_explicitly_reports_gross_revenue_when_approved_return_exist
             "gross issued invoice totals before sales returns; stored invoice tax is included"
         )
         assert Decimal(payload["currencies"][0]["revenue"]) == Decimal("20.00")
+        assert Decimal(payload["currencies"][0]["approved_return_total"]) == Decimal("5.00")
+        assert payload["currencies"][0]["approved_return_count"] == 1
         assert any("approved sales returns are not netted" in item for item in payload["limitations"])
     finally:
         _restore_app(engine, previous_factory, previous_resolver)
