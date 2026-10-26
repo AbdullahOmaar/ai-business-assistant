@@ -90,3 +90,42 @@ The dashboard and profit/loss endpoints converted inclusive date filters using U
 - No production deployment or promotion until the documented release gates pass.
 - No claim of full production readiness based solely on HTTP 200 health checks, a preview build, or source inspection.
 - Keep all unresolved issues explicit; do not mark them complete without evidence.
+
+
+## Execution update — 2026-10-26 00:46 UTC
+
+### Current repository / pull-request state rechecked
+
+- `main` still points to `dec7f26bd2bb33a4c27af4e785abe982e8486676`; the supplied baseline has not advanced.
+- PR #142 remains open, draft, unmerged, and mergeable according to the PR API. It changes this audit and `backend/README.md`.
+- PR #143 remains open, draft, unmerged, and mergeable according to the PR API. Its head is `c529a7cb3d9bfa65bcf738f55e09f037515a913b`; it changes `backend/app/core_features_api.py` and adds `backend/tests/test_business_timezone_reporting.py`.
+- PRs #137, #138, #139, and #141 are merged. PR #140 is closed without merge and is explicitly superseded by #141. The latest main commit message records #141.
+- No PR has been merged as part of this audit. No production deployment or production data operation was performed.
+
+### New CI evidence
+
+Latest reviewed workflow attempts on the PR heads failed almost immediately:
+- PR #142 head `6b8718726e76393b6e00d23ff341738179dcdb23`: [CI run 40250458223](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250458223), [container run 40250458209](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250458209), [backend tests 40250458202](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250458202), [dependency scan 40250458201](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250458201).
+- PR #143 head `c529a7cb3d9bfa65bcf738f55e09f037515a913b`: [backend tests 40250433988](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250433988), [CI run 40250433967](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250433967), [dependency scan 40250433930](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250433930), [container run 40250433927](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40250433927).
+- The GitHub jobs API returned `runner_id=0`, an empty runner name, zero steps, and an empty step list for sampled jobs. The job-log download returned BlobNotFound/404 rather than application logs. This strongly indicates that the jobs failed before a runner executed the workflow; it does not prove that the code/tests pass.
+- A retry request was accepted for failed jobs in run 40250433967. Its resulting attempt must be checked separately; the accepted retry request is not a successful check.
+
+### Workflow source review
+
+The repository defines four workflows: backend/frontend verification, backend tests with PostgreSQL 16 and Alembic checks, dependency security scanning, and backend container verification. They declare read-only repository permissions and use Ubuntu hosted runners. Since all observed workflow families exhibit runner assignment failures with no steps, changing test commands or suppressing dependency findings would be unjustified until a run provides actionable evidence.
+
+### PR #143 review notes
+
+The proposed change converts inclusive business-local date ranges into UTC half-open intervals and selects the default reporting date in the configured business timezone. The regression test uses an isolated in-memory SQLite database and does not touch production data. It covers one New York local-day boundary and invalid timezone on business creation. Remaining verification gaps before merge:
+- Execute the test and full backend suite on a real runner.
+- Add/verify daylight-saving boundary assertions (23-hour spring-forward day and 25-hour fall-back day).
+- Verify timezone validation on business updates as well as creation.
+- Run the existing PostgreSQL-backed test/migration pipeline; SQLite does not establish PostgreSQL behavior.
+
+### Execution status
+
+- Repository / PR state check: complete for the API data available in this review.
+- Workflow source inspection and no-runner evidence: complete for the sampled current runs.
+- Retry of one failed CI run: requested; outcome not yet verified.
+- Feature-by-feature source inventory, route-by-route authorization audit, PostgreSQL concurrency tests, full frontend review, dependency findings, production deployment SHA verification, authenticated smoke tests, and installed Android Chrome PWA checks: not yet complete.
+- Release verdict remains **NOT CLEARED FOR PRODUCTION**.
