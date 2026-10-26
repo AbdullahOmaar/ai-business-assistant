@@ -150,3 +150,11 @@
 - Direct log fetch for backend test job 121718300526 returned BlobNotFound; step query returned an empty list. The rerun created job 121719176852 with the same failure/no-log pattern. This is repeatable missing job/log evidence, not a test pass and not sufficient to diagnose a source defect.
 - Additional source review: financial_summary and /reports/summary report issued invoice totals and allocated payments/expenses by currency, and explicitly disclaim that totals are not profit or cash balance. They currently do not net approved sales returns; profit/loss and customer-statement correctness remains a release blocker and should be addressed with explicit accounting semantics and tests before release rather than silently changing the meaning of existing summary fields.
 - No production data was mutated; no merge/deploy was performed. Status remains IN_PROGRESS for source review and BLOCKED for runtime verification. Do not merge until tests/build/security checks are inspectably passing on the exact candidate SHA.
+
+
+## Procurement authorization fix (2026-10-26)
+- Status: IN_PROGRESS; runtime verification: BLOCKED on GitHub Actions job-log visibility.
+- Source review found a concrete authorization/workflow defect in `backend/app/extended_api.py`: POST `/purchase-orders` created orders directly as `approved` for any active member, bypassing owner approval; the receipt endpoint also accepted nonpositive receipt quantities, which could create invalid/negative stock movements.
+- Implemented on this PR branch: new orders start in `draft`; added owner-only POST `/purchase-orders/{order_id}/approve` with business scoping, row lock, state validation, nonempty-line check, and audit event; receipt endpoint rejects empty receipts and nonpositive quantities.
+- Regression coverage updated in `backend/tests/test_api.py`: owner approval and receipt flow, zero-quantity receipt rejection, and STAFF denied approval while draft status remains unchanged.
+- Not yet runtime-verified: tests have not been shown to execute. Prior workflow runs on candidate head `4bd529d06a60e1692e8ec5c447c3aab9bd9e6837` all reported failure but each job had empty steps and logs download returned BlobNotFound. Recheck Actions on the new head; do not merge until backend tests, frontend checks, container build, and dependency scans have inspectable successful results.
