@@ -145,3 +145,19 @@ def test_business_creation_rejects_invalid_timezone_name():
         assert "valid IANA timezone" in response.json()["detail"]
     finally:
         _restore_app(engine, previous_factory, previous_resolver)
+
+
+def test_day_bounds_respect_daylight_saving_transitions():
+    from datetime import date
+    from app.core_features_api import _day_bounds
+
+    spring_start, spring_end = _day_bounds(
+        date(2026, 3, 8), date(2026, 3, 8), "America/New_York"
+    )
+    fall_start, fall_end = _day_bounds(
+        date(2026, 11, 1), date(2026, 11, 1), "America/New_York"
+    )
+
+    # Local calendar days can be 23 or 25 hours across DST; never assume 24.
+    assert (spring_end - spring_start).total_seconds() == 23 * 60 * 60
+    assert (fall_end - fall_start).total_seconds() == 25 * 60 * 60
