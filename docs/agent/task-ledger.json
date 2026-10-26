@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "project": "AbdullahOmaar/ai-business-assistant",
+  "updated_at": "2026-10-26T06:40:00+03:00",
+  "policy": {
+    "budget_usd_monthly": 0,
+    "paid_resources_allowed": false,
+    "production_changes_require_verified_gates": true,
+    "never_mark_complete_without_evidence": true
+  },
+  "statuses": [
+    "pending",
+    "in_progress",
+    "blocked",
+    "review",
+    "verified",
+    "merged",
+    "deployed"
+  ],
+  "tasks": [
+    {
+      "id": "TASK-021",
+      "title": "استكمال مصفوفة الاختبارات",
+      "priority": "high",
+      "status": "in_progress",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "حصر وحدات API/DB/Frontend والحدود والصلاحيات وإضافة اختبارات الفجوات؛ إثبات النجاح بتشغيل فعلي.",
+      "evidence": "جرد الاختبارات الحالي موجود في PRs #143–#149؛ لا توجد نتائج تشغيل موثوقة بعد.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-022",
+      "title": "إصلاح CI وتشغيل الاختبارات فعليًا",
+      "priority": "critical",
+      "status": "blocked",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
+      "next_action": "فحص إعدادات Actions والحصص والصلاحيات من واجهة GitHub؛ إعادة المحاولة المحدودة بعد تحديد السبب، أو تشغيل بديل مجاني موثق.",
+      "evidence": "GitHub Actions runs 40263119102 و40263118998 فشلت؛ jobs runner_id=0 وsteps=[]، فلا توجد اختبارات منفذة.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-023",
+      "title": "مراجعة تغييرات Pull Requests",
+      "priority": "critical",
+      "status": "in_progress",
+      "branch": null,
+      "pull_request": [
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149
+      ],
+      "commit_sha": null,
+      "dependencies": [],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "مراجعة diffs والاختبارات لكل PR، وإعطاء الأولوية للمرتجعات والمدفوعات والصلاحيات؛ لا اعتماد دون تحقق.",
+      "evidence": "PRs #143–#149 تغييرات مالية وأمنية وواجهة؛ الأوصاف تقول إن الاختبارات لم تعمل.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-024",
+      "title": "تنظيم الفروع وترتيب الدمج",
+      "priority": "high",
+      "status": "blocked",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-023",
+        "TASK-022"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
+      "next_action": "بناء خريطة الاعتماديات ومراجعة التعارضات؛ الدمج فقط بعد نجاح البوابات.",
+      "evidence": "main عند dec7f26bd2bb33a4c27af4e785abe982e8486676؛ PRs #143–#150 مفتوحة بحسب آخر استعلام.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-025",
+      "title": "فحص التبعيات والأمان",
+      "priority": "critical",
+      "status": "blocked",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-022"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
+      "next_action": "تشغيل تدقيق التبعيات محليًا/بديل مجاني موثوق، توثيق النتائج دون عرض أسرار.",
+      "evidence": "Dependency security scan run 40263118998 فشل قبل تخصيص runner.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-026",
+      "title": "مراجعة إعدادات الإنتاج",
+      "priority": "critical",
+      "status": "blocked",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": "GitHub Actions jobs fail before runner assignment (runner_id=0, zero steps); production credentials/config checks not yet verified.",
+      "next_action": "مراجعة الإعدادات المصرح بها دون قراءة/تسجيل قيم الأسرار؛ توثيق كل عنصر غير متاح كمانع.",
+      "evidence": "لم يثبت التحقق من أسرار Vercel/Firebase/PostgreSQL أو اختبارات دخول إنتاجية.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-027",
+      "title": "إنشاء Release Candidate",
+      "priority": "critical",
+      "status": "pending",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "إنشاء RC محدد بـ SHA فقط بعد نجاح جميع البوابات.",
+      "evidence": "لا يوجد RC مؤهل مثبت؛ main معروف عند SHA المذكور أعلاه.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-028",
+      "title": "اختبار النسخة المرشحة",
+      "priority": "critical",
+      "status": "pending",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-027"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "اختبار المسارات الأساسية و/readyz والصلاحيات وعزل المستأجرين؛ توثيق ما يتطلب جهازًا أو اعتمادًا.",
+      "evidence": "اختبارات الإنتاج والمصادقة وPostgreSQL وPWA غير مثبتة.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-029",
+      "title": "نشر الإنتاج مع إمكانية الرجوع",
+      "priority": "critical",
+      "status": "pending",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-027",
+        "TASK-028"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "تسجيل SHA المنشور وخطة rollback ثم النشر فقط بعد البوابات والموافقة.",
+      "evidence": "لم يثبت نشر جديد؛ لا تتجاوز قيود الخطة المجانية.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "TASK-030",
+      "title": "التحقق بعد النشر وتوثيق النتيجة",
+      "priority": "critical",
+      "status": "pending",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-029"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "التحقق من deployment/SHA والواجهة وAPI/readyz والمسارات الممكنة ومقارنة خط الأساس.",
+      "evidence": "لا يوجد دليل نشر جديد أو اختبارات post-deploy لهذه الدفعة.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "FEATURE-031",
+      "title": "لوحة التحكم والتقارير المالية",
+      "priority": "critical",
+      "status": "in_progress",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "اختبار الحدود الزمنية والعملات والتكلفة غير المكتملة وعدم وصف الربح كقيمة مؤكدة.",
+      "evidence": "PR #143 يعالج التوقيت المحلي ويصرح بحدود حساب النتيجة التشغيلية.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "FEATURE-032",
+      "title": "الفواتير والخصومات",
+      "priority": "critical",
+      "status": "pending",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021",
+        "TASK-023"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "اختبار الحسابات العشرية والخصومات والضرائب والتعديلات المسجلة ومطابقة API/DB.",
+      "evidence": "لا يوجد دليل تحقق شامل مستقل في حالة المستودع الحالية.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "FEATURE-033",
+      "title": "المرتجعات",
+      "priority": "critical",
+      "status": "in_progress",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "مراجعة patch وتشغيل اختبارات التكرار والتزامن والفشل الجزئي والمخزون والتدقيق.",
+      "evidence": "PR #144 يعالج سقف قيمة المرتجع وتجميع الصفوف وصلاحيات OWNER؛ الاختبارات لم تنفذ.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "FEATURE-034",
+      "title": "المدفوعات",
+      "priority": "critical",
+      "status": "in_progress",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "اختبار idempotency والتخصيصات والتزامن وفشل refresh بعد الحفظ وعدم تكرار التسجيل.",
+      "evidence": "PR #147 يعالج retry/idempotency بالواجهة؛ CI غير منفذ.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "FEATURE-035",
+      "title": "مساحات العمل وعزل البيانات",
+      "priority": "critical",
+      "status": "in_progress",
+      "branch": null,
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "اختبار API لكل موارد البيانات مع عضويات وأدوار متعددة ورفض افتراضي.",
+      "evidence": "PR #146 يعالج النتائج القديمة في التقارير؛ العزل الكامل عبر API لم يثبت.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "AGENT-001",
+      "title": "مراقبة المهام كل 30 دقيقة ومراجعة كل ساعة",
+      "priority": "high",
+      "status": "in_progress",
+      "branch": "feat/permanent-engineering-agent-foundation",
+      "pull_request": [
+        150
+      ],
+      "commit_sha": null,
+      "dependencies": [],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "توسيع الجدولة وتوليد تقرير/أثر قابل للتدقيق؛ تأكيد توفر runners قبل ادعاء التشغيل المستمر.",
+      "evidence": "PR #150 يضيف controller يعمل يدويًا وبجدول كل 6 ساعات؛ ليس مراقبة 30 دقيقة ولا عاملًا دائمًا.",
+      "deploy_status": "not_attempted"
+    },
+    {
+      "id": "NEXT-QUEUE",
+      "title": "إنشاء الدفعة التالية من الفجوات المثبتة",
+      "priority": "medium",
+      "status": "pending",
+      "branch": "feat/permanent-engineering-agent-foundation",
+      "pull_request": null,
+      "commit_sha": null,
+      "dependencies": [
+        "TASK-021",
+        "TASK-030",
+        "FEATURE-031",
+        "FEATURE-032",
+        "FEATURE-033",
+        "FEATURE-034",
+        "FEATURE-035"
+      ],
+      "last_verified_at": "2026-10-26T06:40:00+03:00",
+      "last_test_result": "unverified",
+      "blocker": null,
+      "next_action": "استخراج فجوات فعلية من الاختبارات والمخاطر والإنتاج وإنشاء IDs فريدة؛ لا نشر تلقائي.",
+      "evidence": "لا تبدأ حتى تغلق الدفعة الحالية بأدلة.",
+      "deploy_status": "not_attempted"
+    }
+  ]
+}
