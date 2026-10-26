@@ -248,3 +248,19 @@ The new PR #144 backend test run [40254339648](https://github.com/AbdullahOmaar/
 Reviewed the route declarations in `api.py`, `core_features_api.py`, `extended_api.py`, and `assistant_api.py`. Public business workflows use trusted `get_principal` / `get_session` dependencies and the service or route-level membership guard; sensitive owner-only routes explicitly require the OWNER role. The source has no separate membership-active flag in the current model, so "inactive membership" is not a state the current schema can express. This is a code inspection, not a successful end-to-end authorization test. Cross-business and role tests remain to be run.
 
 Release verdict remains **NOT CLEARED FOR PRODUCTION**.
+
+
+## Historical PR reconciliation — 2026-10-26
+
+Reviewed PR metadata and diffs for #137–#141 against current `main`:
+- **#137 — merged:** OWNER-only protection for recurring invoice schedules and notification creation; the current `extended_api.py` route checks retain those owner gates.
+- **#138 — merged:** v1.0.0 release-candidate invoice draft/mobile work, decimal rounding tests, and release notes. Its changes are in main through `ba2376e`.
+- **#139 — merged:** accounting ledger documentation clarifying unallocated receipts and expense settlement; documentation only, not evidence of a full double-entry ledger implementation.
+- **#140 — closed without merge:** assistant/build timestamp change set was superseded/replaced by #141.
+- **#141 — merged:** UI assistant suggestions and build timestamp; this is the current main tip `dec7f26bd2bb33a4c27af4e785abe982e8486676`.
+
+No duplicate historical PR was re-applied to main during this audit. PRs #142, #143, and #144 remain open drafts and must not be merged while checks cannot execute.
+
+### Further authorization hardening in PR #144
+
+The service-layer purchase-order receiving and sales-return approval operations now require the OWNER role, matching the existing HTTP route policy. Added a regression test that verifies a STAFF membership cannot approve a sales return through the service operation. The latest commit with this change is on PR #144; automated execution remains blocked by the runner issue.
