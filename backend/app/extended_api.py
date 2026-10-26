@@ -216,8 +216,9 @@ def post_expense(business_id: UUID, body: ExpenseInput,
 def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Create a draft purchase order; owner approval is a separate privileged step."""
     def op():
-        _authorized(session, principal, business_id, owner_only=True)
+        _authorized(session, principal, business_id)
         supplier = session.scalars(select(Supplier).where(
             Supplier.id == body.supplier_id, Supplier.business_id == business_id,
             Supplier.is_active.is_(True),
