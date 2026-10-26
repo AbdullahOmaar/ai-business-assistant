@@ -14,7 +14,7 @@ from app.main import app
 from app.models import (
     Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
     Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
-    MembershipRole, SalesReturn, SalesReturnLine,
+    MembershipRole, Payment, PaymentAllocation, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -557,6 +557,66 @@ def test_staff_cannot_approve_purchase_order():
         with Session(engine) as session:
             order = session.get(PurchaseOrder, order_id)
             assert order.status == "draft"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_approving_sales_return_does_not_silently_rewrite_invoice_or_payment_balances():
+    engine, business_id, invoice_id, line_id = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        payment = Payment(
+            business_id=business_id,
+            customer_id=invoice.customer_id,
+            amount=Decimal("4.00"),
+            currency_code="EGP",
+            idempotency_key="return-does-not-refund-payment",
+        )
+        session.add(payment)
+        session.flush()
+        allocation = PaymentAllocation(
+            business_id=business_id,
+            payment_id=payment.id,
+            invoice_id=invoice_id,
+            amount=Decimal("4.00"),
+        )
+        session.add(allocation)
+        session.commit()
+        payment_id, allocation_id = payment.id, allocation.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        created = client.post(
+            f"{base}/sales-returns",
+            json={
+                "invoice_id": str(invoice_id),
+                "reason": "Returned goods; refund requires a separate audited workflow",
+                "lines": [{"invoice_line_id": str(line_id), "quantity": "0.500"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        approved = client.post(f"{base}/sales-returns/{created.json()['id']}/approve")
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["status"] == "approved"
+
+        # Until a credit-note/refund ledger exists, approving physical goods return
+        # must not pretend cash was refunded or mutate the historical issued invoice.
+        with Session(engine) as session:
+            invoice = session.get(Invoice, invoice_id)
+            payment = session.get(Payment, payment_id)
+            allocation = session.get(PaymentAllocation, allocation_id)
+            assert invoice.status == "issued"
+            assert invoice.total == Decimal("10.00")
+            assert payment.amount == Decimal("4.00")
+            assert payment.currency_code == invoice.currency_code == "EGP"
+            assert allocation.amount == Decimal("4.00")
+            assert allocation.invoice_id == invoice.id
+            assert Decimal(str(invoice.total - allocation.amount)) == Decimal("6.00")
+            approved_return = session.get(SalesReturn, UUID(created.json()["id"]))
+            assert approved_return.total == Decimal("5.00")
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
