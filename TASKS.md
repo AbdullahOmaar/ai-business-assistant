@@ -41,6 +41,15 @@
 - Acceptance: determine whether reliable workers/scheduling exist in current source; if missing, design and implement an appropriate safe, zero-cost-compatible path with tests and operational docs.
 - Constraint: confirm actual platform limits and costs before enabling recurring jobs; never assume a scheduler is running.
 
+## Consolidated production-safety task (single execution track)
+- Status: `IN_PROGRESS`
+- Task ID: `PROD-SAFETY-001`
+- Scope: consolidate the 30-item release checklist into one tracked task with sequential gates: (1) returns/payment/tenant authorization correctness, (2) financial reports and currency/timezone accuracy, (3) API input/rate-limit/CSV protections, (4) frontend workspace/payment/PWA regression checks, (5) CI/security/deployment verification.
+- Current implementation slice: return-approval quantity/value ceiling and OWNER authorization, including aggregation of duplicate source-line rows before validation.
+- Acceptance: regression tests pass locally or in GitHub Actions; PostgreSQL/backend and frontend checks are green where relevant; related existing PRs are reconciled rather than duplicated; production checks use non-mutating smoke tests only.
+- Merge gate: do not merge financial/security changes while required tests are unexecuted or failing. If Actions runner allocation is unavailable, record BLOCKED with run evidence and continue independent validation.
+- Next action: execute return-focused backend tests, then continue the next highest-priority confirmed defect in this same task.
+
 ## Active work checkpoint
 - Current rules change: branch `docs/autonomous-execution-rules`.
 - This ledger is intentionally a verification queue, not proof that the listed work is still outstanding. Reconcile before implementation.
