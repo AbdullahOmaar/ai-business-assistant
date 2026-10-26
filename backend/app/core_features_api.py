@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.models import (
     Business, BusinessMembership, Expense, Invoice, MembershipRole,
-    Payment, PaymentAllocation,
+    Payment, PaymentAllocation, SalesReturn,
 )
 from app.security import (
     AuthenticatedPrincipal, AuthorizationError, authorize_membership,
@@ -349,17 +349,46 @@ def profit_loss(
 
     revenue_rows = session.execute(invoice_query.group_by(Invoice.currency_code)).all()
     expense_rows = session.execute(expense_query.group_by(Expense.currency_code)).all()
+
+    # Returns are shown separately and are deliberately not netted from revenue:
+    # the schema does not yet allocate tax/discounts or link credit notes/refunds.
+    # Period membership follows the original invoice issue date, not return creation
+    # time, because the model does not persist an approval timestamp.
+    return_query = select(
+        Invoice.currency_code,
+        func.count(SalesReturn.id),
+        func.coalesce(func.sum(SalesReturn.total), 0),
+    ).join(
+        Invoice,
+        (Invoice.id == SalesReturn.invoice_id) & (Invoice.business_id == SalesReturn.business_id),
+    ).where(
+        SalesReturn.business_id == business_id,
+        SalesReturn.status == "approved",
+        Invoice.status == "issued",
+    )
+    if start_ts is not None:
+        return_query = return_query.where(Invoice.issue_date >= start_ts)
+    if end_ts is not None:
+        return_query = return_query.where(Invoice.issue_date < end_ts)
+    return_rows = session.execute(return_query.group_by(Invoice.currency_code)).all()
+
     revenue = {currency: (int(count), Decimal(str(total))) for currency, count, total in revenue_rows}
     expenses = {currency: (int(count), Decimal(str(total))) for currency, count, total in expense_rows}
-    currencies = sorted(set(revenue) | set(expenses))
+    approved_returns = {
+        currency: (int(count), Decimal(str(total))) for currency, count, total in return_rows
+    }
+    currencies = sorted(set(revenue) | set(expenses) | set(approved_returns))
     rows = []
     for currency in currencies:
         revenue_count, revenue_total = revenue.get(currency, (0, Decimal("0")))
         expense_count, expense_total = expenses.get(currency, (0, Decimal("0")))
+        return_count, return_total = approved_returns.get(currency, (0, Decimal("0")))
         rows.append({
             "currency_code": currency,
             "revenue": str(revenue_total),
             "revenue_invoice_count": revenue_count,
+            "approved_return_total": str(return_total),
+            "approved_return_count": return_count,
             "expenses": str(expense_total),
             "expense_count": expense_count,
             "operating_result_before_cost_of_goods": str(revenue_total - expense_total),
