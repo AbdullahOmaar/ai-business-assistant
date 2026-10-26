@@ -882,6 +882,9 @@ export class AppComponent implements OnInit {
   async loadProfitLoss(): Promise<void> {
     if (!this.business) return;
     if (this.profitLossPeriod === 'custom' && (!this.profitLossStart || !this.profitLossEnd)) {
+      this.profitLossLoadGuard.invalidate();
+      this.profitLoss = null;
+      this.reportLoading = false;
       this.reportError = this.t('حدد تاريخ البداية والنهاية.', 'Choose both a start and end date.');
       return;
     }
