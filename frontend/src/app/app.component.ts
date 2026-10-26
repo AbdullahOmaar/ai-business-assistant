@@ -703,6 +703,8 @@ export class AppComponent implements OnInit {
   }
 
   private clearWorkspaceData(): void {
+    this.profitLossLoadGuard.invalidate();
+    this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.profitLoss = null;
     this.agingReport = null;
@@ -776,6 +778,8 @@ export class AppComponent implements OnInit {
   }
 
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
+  private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
+  private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
     const loadVersion = this.workspaceLoadGuard.begin();
@@ -858,32 +862,51 @@ export class AppComponent implements OnInit {
 
   async loadReceivablesAging(): Promise<void> {
     if (!this.business) return;
+    const loadVersion = this.receivablesAgingLoadGuard.begin();
+    const businessId = this.business.id;
     this.agingLoading = true;
     this.agingError = '';
-    try { this.agingReport = await this.api.receivablesAging(this.business.id, this.agingAsOf); }
-    catch (error) { this.agingError = this.message(error); }
-    finally { this.agingLoading = false; }
+    try {
+      const report = await this.api.receivablesAging(businessId, this.agingAsOf);
+      if (!this.receivablesAgingLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) return;
+      this.agingReport = report;
+    } catch (error) {
+      if (this.receivablesAgingLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) {
+        this.agingError = this.message(error);
+      }
+    } finally {
+      if (this.receivablesAgingLoadGuard.isLatest(loadVersion)) this.agingLoading = false;
+    }
   }
 
   async loadProfitLoss(): Promise<void> {
     if (!this.business) return;
     if (this.profitLossPeriod === 'custom' && (!this.profitLossStart || !this.profitLossEnd)) {
+      this.profitLossLoadGuard.invalidate();
+      this.profitLoss = null;
+      this.reportLoading = false;
       this.reportError = this.t('حدد تاريخ البداية والنهاية.', 'Choose both a start and end date.');
       return;
     }
+    const loadVersion = this.profitLossLoadGuard.begin();
+    const businessId = this.business.id;
     this.reportLoading = true;
     this.reportError = '';
     try {
-      this.profitLoss = await this.api.profitLoss(
-        this.business.id,
+      const report = await this.api.profitLoss(
+        businessId,
         this.profitLossPeriod,
         this.profitLossPeriod === 'custom' ? this.profitLossStart : undefined,
         this.profitLossPeriod === 'custom' ? this.profitLossEnd : undefined
       );
+      if (!this.profitLossLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) return;
+      this.profitLoss = report;
     } catch (error) {
-      this.reportError = this.message(error);
+      if (this.profitLossLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) {
+        this.reportError = this.message(error);
+      }
     } finally {
-      this.reportLoading = false;
+      if (this.profitLossLoadGuard.isLatest(loadVersion)) this.reportLoading = false;
     }
   }
 
