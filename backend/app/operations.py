@@ -9,7 +9,11 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.domain_rules import summarize_money_by_currency, validate_return_quantity
+from app.domain_rules import (
+    summarize_money_by_currency,
+    validate_return_amount,
+    validate_return_quantity,
+)
 from app.models import (
     AuditEvent, Expense, Invoice, InvoiceLine, MembershipRole, Notification,
     Payment, PaymentAllocation, Product, PurchaseOrder, PurchaseOrderLine,
@@ -120,13 +124,23 @@ def approve_sales_return(
             SalesReturnLine.business_id == business_id,
             SalesReturn.status == "approved",
         ))
+        previously_returned_amount = session.scalar(select(func.coalesce(
+            func.sum(SalesReturnLine.amount), 0
+        )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+            SalesReturnLine.invoice_line_id == original_line.id,
+            SalesReturnLine.business_id == business_id,
+            SalesReturn.status == "approved",
+        ))
         validate_return_quantity(
             sold_quantity=original_line.quantity,
             previously_returned=Decimal(str(previously_returned or 0)),
             requested_quantity=return_line.quantity,
         )
-        if return_line.amount < ZERO:
-            raise WorkflowError("Return amount cannot be negative")
+        validate_return_amount(
+            invoiced_amount=original_line.line_total,
+            previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
+            requested_return_amount=return_line.amount,
+        )
         total += return_line.amount
         if original_line.product_id is not None:
             product = session.scalars(select(Product).where(
