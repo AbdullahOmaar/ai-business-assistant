@@ -269,3 +269,12 @@
 - No merge or deployment is authorized by passing evidence at this checkpoint. PR #161 remains Draft/open; #157 is a separate Draft/open UI safety change and must be reconciled independently.
 - Before merge: review return/payment/tenant authorization diffs, ensure no duplicated or conflicting UI changes, obtain passing backend/PostgreSQL tests, frontend tests/build, container build and dependency security scan on the exact candidate SHA.
 - After merge only: record merge SHA, verify `main` head and CI, then perform safe read-only production version/health checks. Never infer deployed version from the production URL alone.
+
+
+## Financial reporting clarification update — 2026-10-26
+- Status: IN_PROGRESS; executable validation remains BLOCKED.
+- Evidence reviewed in `backend/app/models.py`: invoice header stores `subtotal`, `discount_total`, `tax_total`, and `total`; sales-return header stores only `total`; return lines store quantity and amount but no tax allocation or credit-note/refund linkage. Therefore a safe net-of-return/tax formula cannot be inferred from the current return records alone.
+- Safe additive change: `backend/app/core_features_api.py` now emits `revenue_basis` with the explicit contract “gross issued invoice totals before sales returns; stored invoice tax is included”. Existing currency-separated values and formulas remain unchanged. Commit: `87712e010aa87dc717fc3d6b594e706c708e098f`.
+- Regression assertion added to `backend/tests/test_business_timezone_reporting.py` to check the new report basis while retaining the existing timezone, revenue, expense, and limitations assertions. Commit: `089cbdda74d56f035fa5a67f10b991598d54e932`.
+- These source/test edits are committed to the canonical PR branch, but tests were not executed in this environment. Do not mark VERIFIED until the test runs on the exact head and report contract compatibility are checked.
+- Next independent tasks: trace all frontend consumers of `profit-loss` to confirm additive-field compatibility; add a fixture with an approved return to prove the response remains explicitly gross-before-returns until tax/credit-note semantics are defined; review existing credit-note/refund work before implementation. No accounting amount or tax allocation was changed.
