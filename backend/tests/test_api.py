@@ -487,29 +487,38 @@ def test_staff_cannot_void_invoice():
         engine.dispose()
 
 
-def test_staff_cannot_create_approved_purchase_order():
+def test_staff_cannot_approve_purchase_order():
     engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Approval test supplier")
+        product = Product(
+            business_id=business_id, name="Approval test product",
+            unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
     previous_factory, previous_resolver = _configure_test_identity(engine)
-    _set_test_membership_role(engine, MembershipRole.STAFF)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
     try:
-        response = TestClient(app).post(
-            f"/api/v1/businesses/{business_id}/purchase-orders",
+        created = client.post(
+            f"{base}/purchase-orders",
             json={
-                "supplier_id": str(uuid4()),
-                "order_number": "PO-STAFF-1",
+                "supplier_id": str(supplier_id), "order_number": "PO-STAFF-APPROVE",
                 "currency_code": "EGP",
-                "lines": [{
-                    "product_id": str(uuid4()),
-                    "quantity": "1.000",
-                    "unit_cost": "10.00",
-                }],
+                "lines": [{"product_id": str(product_id), "quantity": "1.000", "unit_cost": "10.00"}],
             },
         )
-        assert response.status_code == 403
+        assert created.status_code == 201, created.text
+        order_id = UUID(created.json()["id"])
+        assert created.json()["status"] == "draft"
+        _set_test_membership_role(engine, MembershipRole.STAFF)
+        response = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert response.status_code == 403, response.text
         with Session(engine) as session:
-            assert session.scalar(select(PurchaseOrderLine).where(
-                PurchaseOrderLine.business_id == business_id
-            )) is None
+            order = session.get(PurchaseOrder, order_id)
+            assert order.status == "draft"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
@@ -738,7 +747,7 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
             },
         )
         assert created.status_code == 201, created.text
-        assert created.json()["status"] == "approved"
+        assert created.json()["status"] == "draft"
         order_id = UUID(created.json()["id"])
         with Session(engine) as session:
             line = session.scalar(select(PurchaseOrderLine).where(
@@ -746,6 +755,16 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
             ))
             assert line is not None
             line_id = line.id
+
+        approved = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["status"] == "approved"
+
+        invalid_receipt = client.post(
+            f"{base}/purchase-orders/{order_id}/receive",
+            json={"lines": [{"line_id": str(line_id), "quantity": "0.000"}]},
+        )
+        assert invalid_receipt.status_code == 400, invalid_receipt.text
 
         received = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
