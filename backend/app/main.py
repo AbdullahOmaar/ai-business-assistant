@@ -1,5 +1,6 @@
 """FastAPI application entry point and production runtime configuration."""
 import os
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +24,16 @@ app = FastAPI(
         "tenant-scoped authorization, and grounded assistant chat."
     ),
 )
+
+@app.middleware("http")
+async def attach_request_id(request, call_next):
+    """Attach a server-generated correlation ID without trusting caller input."""
+    request_id = str(uuid4())
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
 
 allowed_origins = [
     origin.strip()
