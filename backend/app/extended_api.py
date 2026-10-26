@@ -451,7 +451,8 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
                              session: Session = Depends(get_session),
                              principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        # Recurring schedules can trigger future financial documents; OWNER approval is required.
+        _authorized(session, principal, business_id, owner_only=True)
         if body.customer_id is not None and session.scalars(select(Invoice).where(
             Invoice.business_id == business_id, Invoice.customer_id == body.customer_id,
         ).limit(1)).first() is None:
@@ -500,7 +501,8 @@ def post_notification(business_id: UUID, body: NotificationInput,
                       session: Session = Depends(get_session),
                       principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        # Notifications may trigger downstream delivery; keep creation OWNER-only until roles are explicit.
+        _authorized(session, principal, business_id, owner_only=True)
         item = Notification(business_id=business_id, kind=body.kind, title=body.title,
             body=body.body, deduplication_key=body.deduplication_key,
             scheduled_at=body.scheduled_at, status="pending")
@@ -922,16 +924,19 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
                   session: Session = Depends(get_session),
                   principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id)
+        changes = body.model_dump(exclude_unset=True)
+        if not changes:
+            raise WorkflowError("At least one product field must be provided")
+        # Price and stock-tracking changes affect financial/inventory controls.
+        sensitive_fields = {"unit_price", "is_stock_tracked"}
+        _authorized(session, principal, business_id,
+                    owner_only=bool(sensitive_fields.intersection(changes)))
         item = session.scalars(select(Product).where(
             Product.id == product_id, Product.business_id == business_id,
             Product.is_active.is_(True),
         ).with_for_update()).one_or_none()
         if item is None:
             raise HTTPException(status_code=404, detail="Product not found")
-        changes = body.model_dump(exclude_unset=True)
-        if not changes:
-            raise WorkflowError("At least one product field must be provided")
         if changes.get("is_stock_tracked") is False and item.is_stock_tracked:
             movement_count = session.scalar(select(func.count()).select_from(StockMovement).where(
                 StockMovement.business_id == business_id, StockMovement.product_id == item.id
