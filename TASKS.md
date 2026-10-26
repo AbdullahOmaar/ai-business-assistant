@@ -45,3 +45,11 @@
 - Current rules change: branch `docs/autonomous-execution-rules`.
 - This ledger is intentionally a verification queue, not proof that the listed work is still outstanding. Reconcile before implementation.
 - Next exact action after this documentation PR: inspect latest CI and open PRs, then work the highest-priority confirmed issue through tests and evidence.
+
+
+## 2026-10-26 — Receivables aging feature (branch: feat/receivables-aging-report)
+- Status: `IN_PROGRESS` (implementation committed; validation pending).
+- Added tenant-scoped `GET /api/v1/businesses/{business_id}/reports/receivables-aging?as_of=YYYY-MM-DD`.
+- Returns issued invoice balances, aging buckets, days overdue, missing due dates, over-allocation flags, and currency-separated summaries. It does not combine currencies or mutate accounting records.
+- Added API regression test for aging boundaries, tenant isolation, and currency separation.
+- Verification: source edits were committed through GitHub Contents API. Local tests/build were not executable in this environment; require CI to validate this exact candidate SHA before merge.
