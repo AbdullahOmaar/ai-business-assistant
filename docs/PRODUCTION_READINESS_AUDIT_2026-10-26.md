@@ -310,3 +310,10 @@ Both are existing-workflow correctness fixes; no production data or deployment w
 ## Additional API compatibility finding — PR #148
 
 Static review found that the backend exposes a `PUT` settings endpoint but its CORS allow-methods list did not include `PUT`. This can block browser preflight for the existing settings route even when the origin is allowed. [PR #148](https://github.com/AbdullahOmaar/ai-business-assistant/pull/148) adds `PUT` to the method policy and a CORS preflight regression test. It is draft and unexecuted pending a functioning runner.
+
+
+## Additional backend validation/security findings — PRs #148–#149
+
+- [PR #148](https://github.com/AbdullahOmaar/ai-business-assistant/pull/148) adds `PUT` to CORS methods for the existing settings endpoint and a preflight regression test.
+- [PR #149](https://github.com/AbdullahOmaar/ai-business-assistant/pull/149) validates recurring-schedule timezone strings as IANA names and replaces the settings key's exact-name secret denylist with normalized key validation. It also bounds key length to the existing database column and adds tests for invalid timezone, separator-variant secret keys, and a safe key.
+- Both are source-reviewed drafts; neither has executed tests because GitHub Actions still fails before runner assignment.
