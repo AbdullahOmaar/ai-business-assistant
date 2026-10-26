@@ -34,3 +34,14 @@ test('rejects responses when no workspace is selected', () => {
 
   assert.equal(guard.isCurrent(request, null, 'workspace-a'), false);
 });
+
+
+test('invalidates a pending request when workspace state is cleared', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
+
+  guard.invalidate();
+
+  assert.equal(guard.isLatest(request), false);
+  assert.equal(guard.isCurrent(request, 'workspace-a', 'workspace-a'), false);
+});
