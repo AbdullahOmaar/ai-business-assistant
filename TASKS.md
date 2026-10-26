@@ -20,7 +20,7 @@
   - The connected Vercel frontend deployment for main SHA `1b58df8a6695e02b845bc84a9ee7094286f32e83` reached READY and completed Angular compilation, but its recorded build logs did not run `npm test`.
   - The latest main-branch API Vercel deployment was intentionally canceled by its configured Ignored Build Step because the commit message lacked `[release-api]`; that is not a backend test result.
 - Acceptance: full backend/frontend test suite, container build, dependency/security audit, authorization and production smoke checks against exact final SHA.
-- Next action: validate the Vercel frontend test gate proposed below; keep overall release readiness blocked until all independent gates have evidence. Continue GitHub Support escalation for the Actions runner failure.
+- Next action: retain the Vercel frontend test gate below as a working partial fallback, but keep overall release readiness blocked until all independent gates have evidence. Continue GitHub Support escalation for the Actions runner failure.
 
 ### P0 — Verify production configuration and authenticated smoke tests
 - Status: `NEEDS_VERIFICATION`
@@ -41,12 +41,13 @@
 - Blocker policy: if a physical device or deployment access is unavailable, document the unverified cases and continue independent work.
 
 ### P1 — Use existing Vercel Git integration as a frontend build/test fallback
-- Status: `IN_PROGRESS`
+- Status: `DONE` (frontend fallback verified; does not close the full-CI blocker)
 - Source: `frontend/package.json`, Vercel project `ai-business-assistant-web`, GitHub Actions runner-allocation incident.
-- Change: branch `ci/vercel-frontend-test-gate-2026-10-27`, commit `8b3be0b0abe522be6313a390ed8c2ff579b6c4f4` updates the frontend build script to run the repository's current Node test suite before `ng build`.
-- Why: Vercel is already connected to this private GitHub repository; its builds run outside GitHub Actions minutes. Existing Vercel logs prove only an Angular build, not the test suite.
-- Acceptance: inspect a Vercel preview build for the exact proposed commit and confirm `npm test` passes before Angular compilation. This provides frontend validation only; it does not replace backend, container, security, or release checks.
-- Safety: do not merge this branch or promote/deploy it to production. Keep full release readiness blocked until all required checks pass.
+- Change: Draft PR [#165](https://github.com/AbdullahOmaar/ai-business-assistant/pull/165), branch `ci/vercel-frontend-test-gate-2026-10-27`, commit tested: `1734997f4ad89f68bdf5f82134a7c8cd88cf1a6b`.
+- Implementation: frontend build now runs `npm test && ng build`. The existing `npm test` runs Node's test runner against `src/app/workspace-load-guard.spec.ts`.
+- Verification: Vercel Preview deployment [dpl_DUaMQxGAQrcipAQjp3KSRDa5wUHY](https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-web/DUaMQxGAQrcipAQjp3KSRDa5wUHY) reached `READY` from the tested commit. Logs show `# tests 4`, `# pass 4`, `# fail 0`; Angular compilation completed; npm reported `found 0 vulnerabilities`.
+- Limitation: Node emitted a non-fatal `MODULE_TYPELESS_PACKAGE_JSON` performance warning. This fallback validates only the current frontend test script and Angular compilation. It does not replace backend/PostgreSQL tests, container build, security checks, or release gates.
+- Safety: PR #165 remains Draft and unmerged. The preview is not production.
 
 ### P2 — Verify recurring invoice and notification background execution
 - Status: `NEEDS_VERIFICATION`
@@ -56,5 +57,5 @@
 
 ## Active work checkpoint
 - GitHub Actions hosted-runner allocation is blocked and under diagnosis in Draft PR #164.
-- Frontend build/test fallback is being validated through the already connected Vercel Git integration, on a separate branch; no production merge/deployment is authorized.
+- The Vercel frontend test fallback is verified for commit `1734997f4ad89f68bdf5f82134a7c8cd88cf1a6b`; no production merge/deployment is authorized.
 - No full-suite pass or overall production-ready claim is supported by the evidence currently available.
