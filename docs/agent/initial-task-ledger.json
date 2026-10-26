@@ -30,7 +30,7 @@
       "priority": "P0",
       "depends_on": [],
       "checkpoint": "Latest observed runs: 40263019235 dependency security scan, 40263019375 backend/frontend verification, and 40263019398 controller-sanity all failed immediately; jobs expose no steps/logs, and log retrieval returned BlobNotFound at 2026-10-26T03:13:53Z. This does not diagnose a code-test failure and is not a pass. Investigate GitHub Actions runner/account-level execution before trusting CI.",
-      "attempts": 2
+      "attempts": 3
     },
     {
       "id": "AGENT-003",
@@ -133,7 +133,7 @@
         "AGENT-002"
       ],
       "checkpoint": "Added workflow_dispatch, six-hour schedule, relevant pull_request path trigger, and unit-test plus ledger-validation steps. Latest run 40263019398 failed before exposing any steps/logs; the controller has not passed verification and is only a bounded validator, not an autonomous coding worker.",
-      "attempts": 1
+      "attempts": 2
     }
   ],
   "updated_at": "2026-10-26",
