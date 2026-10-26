@@ -842,11 +842,11 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         # A USD allocation must not reduce an EGP invoice's outstanding balance.
         assert invoices_by_number["AGE-30"]["allocated_amount"] == "0.00"
         assert invoices_by_number["AGE-30"]["outstanding_amount"] == "100.00"
-        assert invoices_by_number["AGE-30"]["currency_mismatch_allocations"] == [{
-            "allocation_id": invoices_by_number["AGE-30"]["currency_mismatch_allocations"][0]["allocation_id"],
-            "payment_currency_code": "USD",
-            "amount": "5.00",
-        }]
+        mismatched_allocations = invoices_by_number["AGE-30"]["currency_mismatch_allocations"]
+        assert len(mismatched_allocations) == 1
+        assert mismatched_allocations[0]["allocation_id"]
+        assert mismatched_allocations[0]["payment_currency_code"] == "USD"
+        assert mismatched_allocations[0]["amount"] == "5.00"
         assert invoices_by_number["AGE-USD"]["bucket"] == "1_30_days"
         assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
         assert invoices_by_number["AGE-NODUE"]["bucket"] == "no_due_date"
