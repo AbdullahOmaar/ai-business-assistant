@@ -80,3 +80,9 @@ No production deployment, production migration, destructive data change, or hist
 - Purchasing authorization is now represented in candidate source as a two-step workflow: staff can create a draft; owner-only approval changes it to approved; owner-only receipt records stock movements. Regression tests cover staff denial and owner approval-before-receipt.
 - Retry evidence on the latest code head still shows immediate workflow failure with no exposed steps: backend/frontend run [40365000073](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40365000073), container run [40364999911](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40364999911), and dependency scan [40364999866](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40364999866). GitHub returned empty step arrays on retry. This is not a successful test result.
 - Main and production were not changed. No merge, deploy, production migration, or data mutation was performed.
+
+
+## Test-fixture review — 2026-10-26
+- Corrected a missing ORM import in the purchase-order staff-role regression test; commit 2b907970d90a764551499b4bf050d04fc8c346e1. This is a source correction, not a passed test.
+- CI on the code candidate triggered container run 40365361368, backend/frontend run 40365361379, dependency scan 40365361391, and backend test run 40365361451. Each returned failure without step summaries; step fetches return empty/null steps. Reruns on earlier runs reproduced the same no-step failure. Treat test/build/security status as BLOCKED, not passed.
+- Main remains af4ba084cedcec7339498579ef5563ce7748bf7c. PR #161 remains Draft/open. Production was not changed.
