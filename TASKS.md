@@ -1,3 +1,14 @@
+## Execution checkpoint — 2026-10-26 17:15 UTC
+
+- Latest live PR #161 head observed immediately before this ledger edit: a94352d353b3b8fbf7a6092132964f3362aa1a5e; base/main recorded by GitHub: af4ba084cedcec7339498579ef5563ce7748bf7c. PR is open, Draft, and unmerged. Re-check head after this documentation commit because concurrent edits may advance it.
+- Re-ran failed jobs for workflow runs 40366036176 (backend/frontend), 40366036186 (container), 40366036185 (dependency scan), and 40366036177 (backend tests). GitHub accepted retries. New runs for the latest observed candidate include backend/frontend 40366168982 (queued at last query), container 40366168740 (failure), dependency scan 40366168992 (failure), and backend tests 40366169193 (failure).
+- Jobs on the latest completed attempts return steps=null / empty step lists and logs download fails with BlobNotFound. Therefore no passing test/build/audit is evidenced, and no command-level failure can be diagnosed from logs. Do not claim runner allocation failure for these exact newest attempts without runner metadata; previous runs did show runner_id=0 and no steps.
+- Current #161 changed files include backend authorization/operations/services, timezone reporting, CORS/settings validation, regression tests, frontend API/app component, TASKS.md and release audit documentation. Source diffs do not substitute for executable verification.
+- Open feature branches still require controlled reconciliation: #129 mobile invoice editor; #130 customer statements (mergeability false in latest read); #132 supplier/purchasing/expense/schedule UI; #133 tax summary; #134 broad operations/accounting consolidation (mergeability false in latest read); #157 workspace/report/payment retry UI protections. Do not merge stale/stacked branches blindly or create duplicate PRs.
+- Confirmed outstanding release scope from open issues includes #79 credit notes/refunds/customer returns, #84 inventory valuation/COGS, #85 tax configuration/reporting, #86 bank/cash reconciliation, #87 period close/lock, #106 backup/restore drill, #110 owner/staff authorization, #111 rounding, and #94 release-safety roadmap. Inspect source and existing PRs before implementing any overlapping work.
+- Status: implementation IN_PROGRESS; executable validation BLOCKED; merge/deployment BLOCKED. No main merge, production deployment, or production data mutation was performed in this checkpoint. Required next action: restore inspectable CI execution (hosted runner/platform support or authorized free runner), run backend/PostgreSQL tests, frontend checks/build, container build, and dependency audits on the exact final candidate SHA; fix observed failures and repeat before merge.
+
+
 # Project Task Ledger
 
 > Updated 2026-10-26 from live GitHub metadata. A task is VERIFIED only with implementation evidence and passing checks on the exact commit.
