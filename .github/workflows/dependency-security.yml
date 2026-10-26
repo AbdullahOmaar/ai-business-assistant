@@ -6,13 +6,13 @@ on:
     paths:
       - "backend/**"
       - "frontend/**"
-      - ".github/workflows/dependency-security.yml"
+      - ".github/workflows/**"
   push:
     branches: ["main", "feat/**", "fix/**", "chore/**"]
     paths:
       - "backend/**"
       - "frontend/**"
-      - ".github/workflows/dependency-security.yml"
+      - ".github/workflows/**"
   schedule:
     - cron: "23 8 * * 1"
   workflow_dispatch:
