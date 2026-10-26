@@ -764,7 +764,7 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
             f"{base}/purchase-orders/{order_id}/receive",
             json={"lines": [{"line_id": str(line_id), "quantity": "0.000"}]},
         )
-        assert invalid_receipt.status_code == 400, invalid_receipt.text
+        assert invalid_receipt.status_code == 422, invalid_receipt.text
 
         received = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
