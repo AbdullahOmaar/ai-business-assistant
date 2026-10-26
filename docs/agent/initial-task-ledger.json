@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "project": "AbdullahOmaar/ai-business-assistant",
+  "agent": {
+    "status": "not_deployed",
+    "mode": "safe",
+    "runtime": "cloud",
+    "budget_mode": "controlled",
+    "hard_stop_on_budget_limit": true
+  },
+  "tasks": [
+    {
+      "id": "AGENT-001",
+      "title": "Inventory existing orchestrator project and source linkage",
+      "status": "in_progress",
+      "priority": "P0",
+      "depends_on": [],
+      "checkpoint": "Vercel project exists; source repository and runtime persistence not yet verified",
+      "attempts": 1
+    },
+    {
+      "id": "AGENT-002",
+      "title": "Resolve GitHub Actions jobs failing before runner assignment",
+      "status": "blocked",
+      "priority": "P0",
+      "depends_on": [],
+      "checkpoint": "Prior runs report runner_id=0 and no steps/logs; investigate alternate execution path",
+      "attempts": 1
+    },
+    {
+      "id": "AGENT-003",
+      "title": "Select and provision durable task database",
+      "status": "blocked",
+      "priority": "P0",
+      "depends_on": ["AGENT-001"],
+      "checkpoint": "Do not reuse inactive Supabase project n8n-3a without explicit confirmation; inspect existing PostgreSQL ownership first",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-004",
+      "title": "Implement task state machine, leases, checkpoints, and event log",
+      "status": "queued",
+      "priority": "P0",
+      "depends_on": ["AGENT-003"],
+      "checkpoint": "Design in docs/PERMANENT_ENGINEERING_AGENT.md",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-005",
+      "title": "Implement worker loop, retries, heartbeats, and recovery",
+      "status": "queued",
+      "priority": "P0",
+      "depends_on": ["AGENT-004"],
+      "checkpoint": "Must run in a persistent cloud worker, not depend on a phone or ChatGPT session",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-006",
+      "title": "Implement security/test/release gates for GitHub PRs",
+      "status": "queued",
+      "priority": "P0",
+      "depends_on": ["AGENT-002", "AGENT-005"],
+      "checkpoint": "Unknown, missing, or runner-less checks must block merges and production deployments",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-007",
+      "title": "Implement hard budget caps, alert thresholds, and safe pause",
+      "status": "queued",
+      "priority": "P1",
+      "depends_on": ["AGENT-004"],
+      "checkpoint": "Proposed alerts at 70% and 90%; hard pause at 100%; exact currency/provider budget awaits runtime cost review",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-008",
+      "title": "Build owner-only status/control interface",
+      "status": "queued",
+      "priority": "P1",
+      "depends_on": ["AGENT-004", "AGENT-005"],
+      "checkpoint": "Must expose task history, blockers, health, usage, pause/resume",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-009",
+      "title": "Run staging chaos tests and rollback rehearsal",
+      "status": "queued",
+      "priority": "P0",
+      "depends_on": ["AGENT-005", "AGENT-006", "AGENT-007"],
+      "checkpoint": "Test restarts, duplicate claims, stale leases, failed checks, malicious PR instructions, and budget exhaustion",
+      "attempts": 0
+    },
+    {
+      "id": "AGENT-010",
+      "title": "Enable limited production automation after soak and evidence review",
+      "status": "queued",
+      "priority": "P0",
+      "depends_on": ["AGENT-009"],
+      "checkpoint": "No production merge/deploy until all required gates and rollback evidence pass",
+      "attempts": 0
+    }
+  ],
+  "updated_at": "2026-10-26",
+  "note": "Repository ledger seed only; a database-backed ledger is required for real automatic resumption."
+}
