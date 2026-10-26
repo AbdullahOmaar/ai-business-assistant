@@ -11,7 +11,7 @@ from app.models import (
     Product, PurchaseOrder, PurchaseOrderLine, SalesReturn, SalesReturnLine,
     StockMovement, Supplier,
 )
-from app.security import AuthenticatedPrincipal
+from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import create_customer, create_invoice, create_product, issue_invoice, record_stock_movement
 from app.operations import (
     WorkflowError, approve_sales_return, financial_summary, queue_notification,
@@ -121,6 +121,187 @@ def test_sales_return_approval_rejects_quantity_over_original_sale(operation_wor
         ))
         session.flush()
         with pytest.raises(ValueError, match="exceeds remaining"):
+            approve_sales_return(
+                session, principal=principal, business_id=business_id,
+                sales_return_id=sales_return.id,
+            )
+
+
+def test_sales_return_approval_rejects_amount_above_original_line_value(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Refund Customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-RETURN-AMOUNT", currency_code="EGP",
+            customer_id=customer.id,
+            lines=[{"product_id": str(product.id), "quantity": "2"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        sales_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_id, sales_return_id=sales_return.id,
+            invoice_line_id=line.id, quantity=Decimal("1"),
+            amount=Decimal("17.00"),
+        ))
+        session.flush()
+        with pytest.raises(ValueError, match="return amount exceeds"):
+            approve_sales_return(
+                session, principal=principal, business_id=business_id,
+                sales_return_id=sales_return.id,
+            )
+
+
+def test_sales_return_approval_rejects_cumulative_amount_above_original_line(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Refund Customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-RETURN-CUMULATIVE", currency_code="EGP",
+            customer_id=customer.id,
+            lines=[{"product_id": str(product.id), "quantity": "2"}],
+            discount_rate=Decimal("25"),
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        first_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(first_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_id, sales_return_id=first_return.id,
+            invoice_line_id=line.id, quantity=Decimal("1"),
+            amount=Decimal("10.00"),
+        ))
+        session.flush()
+        approve_sales_return(
+            session, principal=principal, business_id=business_id,
+            sales_return_id=first_return.id,
+        )
+        session.flush()
+
+        second_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(second_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_id, sales_return_id=second_return.id,
+            invoice_line_id=line.id, quantity=Decimal("1"),
+            amount=Decimal("7.00"),
+        ))
+        session.flush()
+        with pytest.raises(ValueError, match="return amount exceeds"):
+            approve_sales_return(
+                session, principal=principal, business_id=business_id,
+                sales_return_id=second_return.id,
+            )
+
+
+def test_sales_return_approval_aggregates_duplicate_lines_before_validation(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Duplicate Return Customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-RETURN-DUPLICATES", currency_code="EGP",
+            customer_id=customer.id,
+            lines=[{"product_id": str(product.id), "quantity": "1"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        sales_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add_all([
+            SalesReturnLine(
+                business_id=business_id, sales_return_id=sales_return.id,
+                invoice_line_id=line.id, quantity=Decimal("1"),
+                amount=Decimal("8.00"),
+            ),
+            SalesReturnLine(
+                business_id=business_id, sales_return_id=sales_return.id,
+                invoice_line_id=line.id, quantity=Decimal("1"),
+                amount=Decimal("8.00"),
+            ),
+        ])
+        session.flush()
+        with pytest.raises(ValueError, match="return quantity exceeds"):
+            approve_sales_return(
+                session, principal=principal, business_id=business_id,
+                sales_return_id=sales_return.id,
+            )
+
+
+def test_sales_return_approval_requires_owner_role(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Role Guard Customer",
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-RETURN-ROLE", currency_code="EGP",
+            customer_id=customer.id,
+            lines=[{"description": "Service", "quantity": "1", "unit_price": "8.00"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id))
+        sales_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_id, sales_return_id=sales_return.id,
+            invoice_line_id=line.id, quantity=Decimal("1"),
+            amount=Decimal("8.00"),
+        ))
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+        ))
+        membership.role = MembershipRole.STAFF
+        session.flush()
+        with pytest.raises(AuthorizationError, match="role is not permitted"):
             approve_sales_return(
                 session, principal=principal, business_id=business_id,
                 sales_return_id=sales_return.id,
