@@ -1,14 +1,29 @@
 # Latest execution update — 2026-10-27
 
 ## AUTHZ-INVOICE-001 — enforce OWNER-only invoice issue/void at service layer
-- Status: BLOCKED (implementation committed; executable tests not yet run).
+- Status: BLOCKED (implementation and negative regression tests are committed; Python tests are not yet executable in the available environment).
 - Base workstream: Draft PR [#161](https://github.com/AbdullahOmaar/ai-business-assistant/pull/161), branch `task/production-safety-consolidated`.
 - Change branch: `fix/owner-only-invoice-issue-void-2026-10-27`.
-- Commit `8bed66e649bfce257282f07b4f05cd1b8553e8c2`: `issue_invoice` and `void_invoice` now call the service-layer membership guard with `owner_only=True`, matching the documented release policy.
-- Commit `2b5f84b9f946b76c5373042202e19e2646ef418c`: adds negative regression tests proving STAFF cannot issue or void an invoice and that invoice state remains `draft`.
-- Evidence reviewed: `docs/PRODUCTION_DEPLOYMENT.md` specifies OWNER-only invoice issue/void; prior service code used the generic membership guard for these two entry points. Existing payment service already had OWNER-only enforcement.
-- Verification: source and test additions were re-read from the branch. No Python test run is claimed. GitHub Actions runner allocation is blocked, and the available Vercel preview only executes the frontend test suite. Do not merge until backend tests run successfully on the exact head.
-- Draft stacked PR created: [#166](https://github.com/AbdullahOmaar/ai-business-assistant/pull/166), base `task/production-safety-consolidated`, head `c29baa3bca89afe9453a5aee038256a8f8b5977a`. It is open, Draft, unmerged, and currently mergeable according to GitHub metadata. It deliberately avoids duplicating PR #161's large scope. Next: run the focused service tests and full backend/PostgreSQL suite through a working authorized runner; no such runner is currently available.
+- Source change: `issue_invoice` and `void_invoice` call the service-layer membership guard with `owner_only=True`, matching `docs/PRODUCTION_DEPLOYMENT.md`.
+- Regression tests: STAFF cannot issue or void invoices, and the invoice remains `draft` after each denial. Existing tests cover the OWNER-authorized issue/void flow.
+- PR [#166](https://github.com/AbdullahOmaar/ai-business-assistant/pull/166) was open, Draft, and unmerged at the last live check. Re-read GitHub PR metadata for the authoritative current head after this documentation commit; do not use historical SHA values from old ledger entries as current.
+- No Python tests have run on the exact candidate. GitHub Actions failed before test steps/runner allocation; no passed backend suite is claimed.
+
+## RELEASE-DEPLOY-001 — reconcile production deployment state
+- Status: BLOCKED (deployments inspected; end-to-end HTTP smoke checks could not be completed from the current execution environment).
+- Observed `main`: `1b58df8a6695e02b845bc84a9ee7094286f32e83`.
+- Frontend production deployment: Vercel deployment `dpl_7yWAtXwk14D4Go3kibvfbgJWfCCH`, state `READY`, alias `ai-business-assistant-web.vercel.app`, source SHA matches the observed `main`.
+- Backend production: latest attempt `dpl_FzS48jeLW5Yha9zb5cB98zJEzThm` was `CANCELED` by the configured Ignored Build Step, not by an observed application build failure. Build log shows the command `git log -1 --pretty=%B | grep -q '\[release-api\]' && exit 1 || exit 0`; the current main commit message lacks `[release-api]`, so Vercel intentionally skipped it.
+- The `ai-business-assistant-api.vercel.app` alias was associated with an older successful production deployment at SHA `c8078c563ad9d88f04cccee740efdb1b64527df7`. This is older than current `main`; backend/frontend version parity is not verified.
+- Vercel reported no runtime error clusters in the queried 24-hour window, but the Hobby-plan runtime log query exceeded retention. External smoke requests were not successful in this execution environment because DNS resolution for `*.vercel.app` failed locally and the web fetch returned cache/unavailable errors. Therefore `/health`, `/readyz`, `/version`, authentication, and business flows remain UNVERIFIED, not passed.
+- Safe release policy: do not override the Vercel ignored-build setting, promote a stale preview, or deploy to production before the exact candidate's required tests pass. After CI/testing is restored, use an approved commit message containing `[release-api]` to trigger the intended API deployment, then verify its SHA, aliases, and health endpoints from a network with working DNS.
+
+## CI-ENV-001 — restore executable verification
+- Status: BLOCKED (infrastructure/runtime access unavailable; not evidence of a code-level test failure).
+- The connected Desktop Commander device is offline. No Replit app matching this repository was found. The current container cannot resolve GitHub or Vercel hostnames, and no local repository checkout is present.
+- Vercel frontend Preview previously ran the frontend tests/build on SHA `1734997f4ad89f68bdf5f82134a7c8cd88cf1a6b`: 4/4 Node tests passed, Angular compilation completed, npm audit reported 0 vulnerabilities. This is frontend-only evidence and does not substitute for the backend/PostgreSQL suite or container/dependency gates.
+- Next safe action: use the API Preview build triggered by this documentation checkpoint as packaging evidence only; still obtain a working runner to execute focused invoice tests and the full backend/PostgreSQL, container, and dependency-security checks. Keep PRs Draft and unmerged until those checks pass.
+
 
 ---
 
