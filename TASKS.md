@@ -278,3 +278,11 @@
 - Regression assertion added to `backend/tests/test_business_timezone_reporting.py` to check the new report basis while retaining the existing timezone, revenue, expense, and limitations assertions. Commit: `089cbdda74d56f035fa5a67f10b991598d54e932`.
 - These source/test edits are committed to the canonical PR branch, but tests were not executed in this environment. Do not mark VERIFIED until the test runs on the exact head and report contract compatibility are checked.
 - Next independent tasks: trace all frontend consumers of `profit-loss` to confirm additive-field compatibility; add a fixture with an approved return to prove the response remains explicitly gross-before-returns until tax/credit-note semantics are defined; review existing credit-note/refund work before implementation. No accounting amount or tax allocation was changed.
+
+
+## Financial reporting contract follow-through — 2026-10-26
+- Status: IN_PROGRESS; test execution not yet verified.
+- Added a focused regression test that creates an issued invoice plus an approved sales return and asserts profit/loss remains explicitly gross-before-returns while the current schema has no tax allocation/credit-note ledger. Test file: `backend/tests/test_business_timezone_reporting.py`. Commit: `971b857423415807fdd804abb2f28277006d53fe`.
+- Updated the frontend `ProfitLossReport` type to include `revenue_basis` and displayed that basis in the report UI, so the API's gross-before-return/tax-included caveat is visible rather than hidden in backend-only limitations. Commits: `8465cb6bf3a4e96c9b55e91b108ef37bcd475e55`, `a7c0dfb36cf2007406c3d928a48e6738c2a6f33a`.
+- Existing frontend only consumes typed `currencies` and `period`; the new response field is additive and does not replace existing keys. Source inspection only; no frontend build or backend test execution has been claimed.
+- Next: verify template compilation and backend fixture on CI or an authorized local test environment; inspect all return and customer-statement surfaces for consistent disclosures; only after tax/credit-note/refund semantics are established implement net-return accounting.
