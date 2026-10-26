@@ -12,10 +12,10 @@
     {
       "id": "AGENT-001",
       "title": "Inventory existing orchestrator project and source linkage",
-      "status": "in_progress",
+      "status": "completed",
       "priority": "P0",
       "depends_on": [],
-      "checkpoint": "Vercel project exists; source repository and runtime persistence not yet verified",
+      "checkpoint": "Verified Vercel orchestrator preview is a LAMBDAS deployment sourced from separate repository AureonHQ-OS/aureon-platform (commit d4c8e721af8d293808904a7318db907f05a156ea); it is not established as the AI Business Assistant worker and cannot be reused without separate authorization.",
       "attempts": 1
     },
     {
@@ -24,7 +24,7 @@
       "status": "blocked",
       "priority": "P0",
       "depends_on": [],
-      "checkpoint": "Prior runs report runner_id=0 and no steps/logs; investigate alternate execution path",
+      "checkpoint": "Confirmed backend workflow expects a real PostgreSQL service and pytest; prior runs have runner_id=0 and no steps/logs. Need restore a runner or validate in an isolated alternate runtime.",
       "attempts": 1
     },
     {
@@ -32,8 +32,10 @@
       "title": "Select and provision durable task database",
       "status": "blocked",
       "priority": "P0",
-      "depends_on": ["AGENT-001"],
-      "checkpoint": "Do not reuse inactive Supabase project n8n-3a without explicit confirmation; inspect existing PostgreSQL ownership first",
+      "depends_on": [
+        "AGENT-001"
+      ],
+      "checkpoint": "Backend deployment already has DATABASE_URL configured in Vercel, but its underlying database owner/provider was not disclosed by secret-safe inventory. Need identify provider without reading/printing credential values; do not reuse unrelated Supabase project.",
       "attempts": 0
     },
     {
@@ -41,7 +43,9 @@
       "title": "Implement task state machine, leases, checkpoints, and event log",
       "status": "queued",
       "priority": "P0",
-      "depends_on": ["AGENT-003"],
+      "depends_on": [
+        "AGENT-003"
+      ],
       "checkpoint": "Design in docs/PERMANENT_ENGINEERING_AGENT.md",
       "attempts": 0
     },
@@ -50,7 +54,9 @@
       "title": "Implement worker loop, retries, heartbeats, and recovery",
       "status": "queued",
       "priority": "P0",
-      "depends_on": ["AGENT-004"],
+      "depends_on": [
+        "AGENT-004"
+      ],
       "checkpoint": "Must run in a persistent cloud worker, not depend on a phone or ChatGPT session",
       "attempts": 0
     },
@@ -59,7 +65,10 @@
       "title": "Implement security/test/release gates for GitHub PRs",
       "status": "queued",
       "priority": "P0",
-      "depends_on": ["AGENT-002", "AGENT-005"],
+      "depends_on": [
+        "AGENT-002",
+        "AGENT-005"
+      ],
       "checkpoint": "Unknown, missing, or runner-less checks must block merges and production deployments",
       "attempts": 0
     },
@@ -68,7 +77,9 @@
       "title": "Implement hard budget caps, alert thresholds, and safe pause",
       "status": "queued",
       "priority": "P1",
-      "depends_on": ["AGENT-004"],
+      "depends_on": [
+        "AGENT-004"
+      ],
       "checkpoint": "Proposed alerts at 70% and 90%; hard pause at 100%; exact currency/provider budget awaits runtime cost review",
       "attempts": 0
     },
@@ -77,7 +88,10 @@
       "title": "Build owner-only status/control interface",
       "status": "queued",
       "priority": "P1",
-      "depends_on": ["AGENT-004", "AGENT-005"],
+      "depends_on": [
+        "AGENT-004",
+        "AGENT-005"
+      ],
       "checkpoint": "Must expose task history, blockers, health, usage, pause/resume",
       "attempts": 0
     },
@@ -86,7 +100,11 @@
       "title": "Run staging chaos tests and rollback rehearsal",
       "status": "queued",
       "priority": "P0",
-      "depends_on": ["AGENT-005", "AGENT-006", "AGENT-007"],
+      "depends_on": [
+        "AGENT-005",
+        "AGENT-006",
+        "AGENT-007"
+      ],
       "checkpoint": "Test restarts, duplicate claims, stale leases, failed checks, malicious PR instructions, and budget exhaustion",
       "attempts": 0
     },
@@ -95,7 +113,9 @@
       "title": "Enable limited production automation after soak and evidence review",
       "status": "queued",
       "priority": "P0",
-      "depends_on": ["AGENT-009"],
+      "depends_on": [
+        "AGENT-009"
+      ],
       "checkpoint": "No production merge/deploy until all required gates and rollback evidence pass",
       "attempts": 0
     }
