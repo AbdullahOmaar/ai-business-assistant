@@ -487,6 +487,34 @@ def test_staff_cannot_void_invoice():
         engine.dispose()
 
 
+def test_staff_cannot_create_approved_purchase_order():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    _set_test_membership_role(engine, MembershipRole.STAFF)
+    try:
+        response = TestClient(app).post(
+            f"/api/v1/businesses/{business_id}/purchase-orders",
+            json={
+                "supplier_id": str(uuid4()),
+                "order_number": "PO-STAFF-1",
+                "currency_code": "EGP",
+                "lines": [{
+                    "product_id": str(uuid4()),
+                    "quantity": "1.000",
+                    "unit_cost": "10.00",
+                }],
+            },
+        )
+        assert response.status_code == 403
+        with Session(engine) as session:
+            assert session.scalar(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.business_id == business_id
+            )) is None
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_staff_can_create_but_cannot_approve_sales_return():
     engine, business_id, invoice_id, line_id = _sales_return_fixture()
     previous_factory, previous_resolver = _configure_test_identity(engine)
