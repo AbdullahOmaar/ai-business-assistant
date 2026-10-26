@@ -95,6 +95,47 @@ def validate_return_amount(*, invoiced_amount: Decimal, previously_returned_amou
         raise ValueError("return amount exceeds invoiced line amount remaining")
 
 
+def discounted_return_line_total(
+    *,
+    invoice_subtotal: Decimal,
+    invoice_discount_total: Decimal,
+    invoice_lines: Iterable[tuple[str, Decimal]],
+    target_line_id: str,
+) -> Decimal:
+    """Allocate a discounted invoice subtotal across lines in cents.
+
+    Uses the same deterministic largest-remainder allocation as the return API,
+    so every entry point enforces the same ceiling without mixing currencies or
+    inventing a separate discount policy for a workflow.
+    """
+    gross_cents = {
+        str(line_id): max(0, int(money(Decimal(str(line_total))) * 100))
+        for line_id, line_total in invoice_lines
+    }
+    gross_total_cents = sum(gross_cents.values())
+    subtotal_cents = max(0, int(money(Decimal(str(invoice_subtotal or ZERO))) * 100))
+    discount_cents = max(
+        0, int(money(Decimal(str(invoice_discount_total or ZERO))) * 100)
+    )
+    net_cents = min(
+        gross_total_cents,
+        max(0, subtotal_cents - min(discount_cents, subtotal_cents)),
+    )
+    if gross_total_cents <= 0 or net_cents <= 0:
+        return ZERO
+    shares: dict[str, int] = {}
+    remainders: list[tuple[int, str]] = []
+    for line_id, _ in invoice_lines:
+        key = str(line_id)
+        numerator = net_cents * gross_cents[key]
+        shares[key] = numerator // gross_total_cents
+        remainders.append((numerator % gross_total_cents, key))
+    cents_left = net_cents - sum(shares.values())
+    for _, key in sorted(remainders, key=lambda pair: (-pair[0], pair[1]))[:cents_left]:
+        shares[key] += 1
+    return Decimal(shares.get(str(target_line_id), 0)) / 100
+
+
 def summarize_money_by_currency(
     amounts: Iterable[tuple[str, Decimal]],
 ) -> dict[str, Decimal]:
