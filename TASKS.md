@@ -436,3 +436,10 @@
 - PR #162 (receivables aging feature) is now `CLOSED`, `merged=false`; its route and regression test were moved identically to this canonical branch. No code was discarded by closing it.
 - PR #118 (aging test/tenant boundary coverage) is now `CLOSED`, `merged=false`. Its tenant non-member test was confirmed identical to an existing test on this branch. Its unique partial-payment case (30.00 EGP allocated against a 100.00 EGP invoice) was added to the comprehensive canonical aging test in commit `55260661c2dd81debda946133f5f69c7dfbbb78c`, with assertions for 30.00 allocated and 70.00 outstanding. The stronger current handler already applies explicit same-business joins.
 - These closures remove duplicate/obsolete review tracks only; neither closure counts as a feature merge or validation success. PR #161 remains Draft/open/unmerged with release verification blocked by GitHub Actions runner failures before executable steps/logs. No version bump or deployment occurred.
+
+
+## Accounting-rounding PR reconciliation — 2026-10-26
+- PR #112 (`fix/accounting-rounding-half-up`) is now `CLOSED`, `merged=false` as superseded; this is not a feature merge.
+- Source evidence: `backend/app/domain_rules.py` SHA `65db4183de57a1cbf7a981ae46c4fb48f1aa97c8`, `backend/app/services.py` SHA `091b4fe34d62f477c75eb9dc88742cb74afe19be`, and `docs/ACCOUNTING_ROUNDING_POLICY.md` SHA `1510e93fd101ac74bf7ee99837b0c0345fd57b1a` were byte-for-byte identical between PR #112's branch and `main`. Main already has the line-level `ROUND_HALF_UP` tests in `backend/tests/test_domain_rules.py`.
+- The old PR #112 `extended_api.py` snapshot was stale and weaker than the canonical #161 sales-return workflow: #161 retains discounted-return-value allocation, duplicate-line aggregation, invoice/line locks, cumulative quantity/amount ceilings, owner-only approval, and broader API regression tests. Do not merge the old file over current code.
+- Issue #111 must be rechecked separately before closure; existing source and regression coverage are evidence of implementation presence but full CI remains blocked. Do not claim a full-suite pass from source checks.
