@@ -715,9 +715,9 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
 
 
 
-def test_receivables_aging_is_business_scoped_and_currency_separated():
+def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized():
     from datetime import datetime, timezone
-    from app.models import Customer, Invoice
+    from app.models import Customer, Invoice, Payment, PaymentAllocation
 
     engine = create_engine(
         "sqlite+pysqlite://",
@@ -733,8 +733,7 @@ def test_receivables_aging_is_business_scoped_and_currency_separated():
         customer = Customer(business_id=business.id, name="Aging customer")
         session.add(customer)
         session.flush()
-        session.add_all([
-            BusinessMembership(business_id=business.id, user_subject="test-subject", role=MembershipRole.OWNER),
+        invoices = [
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-30",
                 status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
@@ -748,10 +747,67 @@ def test_receivables_aging_is_business_scoped_and_currency_separated():
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("50.00"),
             ),
             Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-NODUE",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=None, subtotal=Decimal("30.00"), tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"), total=Decimal("30.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-NOTDUE",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 10, 31, tzinfo=timezone.utc), subtotal=Decimal("25.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("25.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-SETTLED",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 20, tzinfo=timezone.utc), subtotal=Decimal("40.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("40.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-OVER",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 9, 20, tzinfo=timezone.utc), subtotal=Decimal("20.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("20.00"),
+            ),
+            Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-OVER90",
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 5, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 6, 1, tzinfo=timezone.utc), subtotal=Decimal("10.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("10.00"),
+            ),
+            Invoice(
                 business_id=foreign_business.id, customer_id=None, invoice_number="FOREIGN",
                 status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
                 due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("900.00"),
+            ),
+        ]
+        session.add_all([
+            BusinessMembership(business_id=business.id, user_subject="test-subject", role=MembershipRole.OWNER),
+            *invoices,
+        ])
+        session.flush()
+        settled_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("40.00"),
+            currency_code="EGP", idempotency_key="aging-settled-payment",
+        )
+        over_payment = Payment(
+            business_id=business.id, customer_id=customer.id, amount=Decimal("25.00"),
+            currency_code="EGP", idempotency_key="aging-overallocated-payment",
+        )
+        session.add_all([settled_payment, over_payment])
+        session.flush()
+        session.add_all([
+            PaymentAllocation(
+                business_id=business.id, payment_id=settled_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-SETTLED"),
+                amount=Decimal("40.00"),
+            ),
+            PaymentAllocation(
+                business_id=business.id, payment_id=over_payment.id,
+                invoice_id=next(row.id for row in invoices if row.invoice_number == "AGE-OVER"),
+                amount=Decimal("25.00"),
             ),
         ])
         session.commit()
@@ -759,24 +815,46 @@ def test_receivables_aging_is_business_scoped_and_currency_separated():
 
     previous_factory, previous_resolver = _configure_test_identity(engine)
     try:
-        response = TestClient(app).get(
+        client = TestClient(app)
+        response = client.get(
             f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-26"
         )
         assert response.status_code == 200
         payload = response.json()
         assert payload["as_of"] == "2026-10-26"
         invoices_by_number = {row["invoice_number"]: row for row in payload["invoices"]}
-        assert set(invoices_by_number) == {"AGE-30", "AGE-USD"}
+        assert set(invoices_by_number) == {
+            "AGE-30", "AGE-USD", "AGE-NODUE", "AGE-NOTDUE",
+            "AGE-SETTLED", "AGE-OVER", "AGE-OVER90",
+        }
         assert "FOREIGN" not in invoices_by_number
         assert invoices_by_number["AGE-30"]["bucket"] == "31_60_days"
         assert invoices_by_number["AGE-30"]["outstanding_amount"] == "100.00"
         assert invoices_by_number["AGE-USD"]["bucket"] == "1_30_days"
         assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
+        assert invoices_by_number["AGE-NODUE"]["bucket"] == "no_due_date"
+        assert invoices_by_number["AGE-NODUE"]["days_overdue"] is None
+        assert invoices_by_number["AGE-NOTDUE"]["bucket"] == "not_due"
+        assert invoices_by_number["AGE-SETTLED"]["bucket"] == "settled"
+        assert invoices_by_number["AGE-SETTLED"]["outstanding_amount"] == "0.00"
+        assert invoices_by_number["AGE-OVER"]["bucket"] == "overallocated"
+        assert invoices_by_number["AGE-OVER"]["overallocated"] is True
+        assert invoices_by_number["AGE-OVER"]["outstanding_amount"] == "-5.00"
+        assert invoices_by_number["AGE-OVER90"]["bucket"] == "over_90_days"
         assert list(payload["by_currency"]) == ["EGP", "USD"]
-        assert payload["by_currency"]["EGP"]["31_60_days"] == 1
         assert payload["by_currency"]["EGP"]["31_60_days_amount"] == "100.00"
-        assert payload["by_currency"]["USD"]["1_30_days"] == 1
+        assert payload["by_currency"]["no_due_date_amount"] == "30.00"
+        assert payload["by_currency"]["not_due_amount"] == "25.00"
+        assert payload["by_currency"]["settled_amount"] == "0.00"
+        assert payload["by_currency"]["overallocated_amount"] == "-5.00"
+        assert payload["by_currency"]["over_90_days_amount"] == "10.00"
         assert payload["by_currency"]["USD"]["1_30_days_amount"] == "50.00"
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="unauthorized-subject")
+        denied = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-26"
+        )
+        assert denied.status_code == 403
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
