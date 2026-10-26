@@ -8,9 +8,9 @@ on:
       - "scripts/agent/**"
       - "docs/agent/**"
       - "tests/test_agent_ledger.py"
+  # One bounded hourly check avoids the duplicate hourly + every-30-minute
+  # schedule exceeding the repository's free Actions allocation.
   schedule:
-    # Bounded reconciliation every 30 minutes; separate hourly review trigger.
-    - cron: "*/30 * * * *"
     - cron: "0 * * * *"
 
 permissions:
@@ -25,7 +25,7 @@ concurrency:
 jobs:
   controller-sanity:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
             gh run list --repo "${{ github.repository }}" --limit 15 --json databaseId,name,status,conclusion,headBranch,headSha,url,createdAt
           } >> task-monitor-report.md
       - name: Hourly broader review
-        if: github.event_name == 'schedule' && github.event.schedule == '0 * * * *'
+        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
