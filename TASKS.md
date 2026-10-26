@@ -430,3 +430,9 @@
 - Independent local scratch validation completed: 5 pure domain-rule tests passed; 4 SQLAlchemy query/aggregation tests passed; 5 workspace-load-guard tests passed. These were isolated copies/harnesses (14 passing tests total), not a run of the repository's pytest, frontend package, or PostgreSQL integration suite.
 - Latest full CI for the related #162 code candidate failed before steps/logs; no code-level pass or failure is established. The main blocker remains GitHub Actions runner dispatch / account settings and unavailable local repo checkout. No merge, version bump, or production deploy occurred.
 - #162's aging code is now represented on this canonical branch; after checking the documentation/branch state, mark #162 superseded rather than merging the same route twice. Keep #161 Draft until actual backend/PostgreSQL, frontend/build, container, and dependency checks pass on the exact canonical head SHA.
+
+
+## PR deduplication status — 2026-10-26
+- PR #162 (receivables aging feature) is now `CLOSED`, `merged=false`; its route and regression test were moved identically to this canonical branch. No code was discarded by closing it.
+- PR #118 (aging test/tenant boundary coverage) is now `CLOSED`, `merged=false`. Its tenant non-member test was confirmed identical to an existing test on this branch. Its unique partial-payment case (30.00 EGP allocated against a 100.00 EGP invoice) was added to the comprehensive canonical aging test in commit `55260661c2dd81debda946133f5f69c7dfbbb78c`, with assertions for 30.00 allocated and 70.00 outstanding. The stronger current handler already applies explicit same-business joins.
+- These closures remove duplicate/obsolete review tracks only; neither closure counts as a feature merge or validation success. PR #161 remains Draft/open/unmerged with release verification blocked by GitHub Actions runner failures before executable steps/logs. No version bump or deployment occurred.
