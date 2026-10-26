@@ -1431,16 +1431,41 @@ def report_receivables_aging(
             Invoice.business_id == business_id,
             Invoice.status == "issued",
         ).order_by(Invoice.due_date.asc().nullslast(), Invoice.invoice_number.asc())).all()
-        allocated_rows = session.execute(select(
-            PaymentAllocation.invoice_id,
-            func.coalesce(func.sum(PaymentAllocation.amount), 0),
-        ).where(
-            PaymentAllocation.business_id == business_id,
-        ).group_by(PaymentAllocation.invoice_id)).all()
-        allocated_by_invoice = {
-            invoice_id: Decimal(str(amount or 0))
-            for invoice_id, amount in allocated_rows
-        }
+        allocation_rows = session.execute(
+            select(PaymentAllocation, Payment, Invoice)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
+            )
+            .join(
+                Invoice,
+                (Invoice.id == PaymentAllocation.invoice_id)
+                & (Invoice.business_id == PaymentAllocation.business_id),
+            )
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+            )
+        ).all()
+        allocated_by_invoice: dict[UUID, Decimal] = {}
+        currency_mismatches_by_invoice: dict[UUID, list[dict[str, str]]] = {}
+        for allocation, payment, invoice in allocation_rows:
+            payment_currency = payment.currency_code.strip().upper()
+            invoice_currency = invoice.currency_code.strip().upper()
+            if payment_currency == invoice_currency:
+                allocated_by_invoice[invoice.id] = (
+                    allocated_by_invoice.get(invoice.id, ZERO)
+                    + Decimal(str(allocation.amount))
+                )
+            else:
+                currency_mismatches_by_invoice.setdefault(invoice.id, []).append({
+                    "allocation_id": str(allocation.id),
+                    "payment_currency_code": payment_currency,
+                    "amount": str(allocation.amount),
+                })
 
         rows = []
         totals: dict[str, dict[str, Decimal | int]] = {}
@@ -1475,6 +1500,7 @@ def report_receivables_aging(
                 "days_overdue": (as_of - due_date).days if due_date else None,
                 "bucket": bucket,
                 "overallocated": overallocated,
+                "currency_mismatch_allocations": currency_mismatches_by_invoice.get(invoice.id, []),
             })
         return {
             "as_of": as_of.isoformat(),
@@ -1486,7 +1512,7 @@ def report_receivables_aging(
                 for currency, buckets in sorted(totals.items())
             },
             "invoices": rows,
-            "note": "Balances are based on recorded allocations only; currencies are never combined. Missing due dates are reported separately.",
+            "note": "Balances use recorded allocations only when payment and invoice currencies match. Currency-mismatched allocations are listed separately and do not reduce invoice balances. Missing due dates are reported separately; currencies are never combined.",
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
