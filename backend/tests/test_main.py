@@ -22,6 +22,7 @@ def test_cors_method_policy_includes_settings_put_route() -> None:
         allow_credentials=True,
         allow_methods=CORS_ALLOWED_METHODS,
         allow_headers=["Authorization", "Content-Type", "Accept"],
+        expose_headers=["X-Request-ID"],
     )
     client_with_cors = TestClient(middleware)
     response = client_with_cors.options(
@@ -34,6 +35,7 @@ def test_cors_method_policy_includes_settings_put_route() -> None:
     )
     assert response.status_code == 200
     assert "PUT" in response.headers["access-control-allow-methods"]
+    assert "x-request-id" in response.headers["access-control-expose-headers"].lower()
 
 
 def test_health_response_includes_server_generated_request_id() -> None:
