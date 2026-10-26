@@ -176,3 +176,9 @@
 - Main remains `af4ba084cedcec7339498579ef5563ce7748bf7c`. Production frontend points to that SHA; API remains on `c8078c563ad9d88f04cccee740efdb1b64527df7`. No deployment or merge was performed.
 - Release blockers still open: executable CI on an available runner; UI integration for purchasing/expenses/returns and multi-line invoices from existing PRs; complete credit-note/refund and supplier payable lifecycle; inventory valuation/COGS; reconciliation/period close/tax-jurisdiction review; backup restore drill; authenticated safe production smoke tests.
 - Next action: reconcile existing UI PRs (#129 and #132, plus statement/report PRs) into this candidate without overwriting current workspace/payment/timezone fixes; run all gates on one exact SHA when runner allocation works. Keep merge and deployment blocked until then.
+
+
+## Regression review — purchasing role test (2026-10-26)
+- Found and fixed a concrete test defect: the new test_staff_cannot_approve_purchase_order referenced the PurchaseOrder ORM model without importing it. Added the missing import in commit 2b907970d90a764551499b4bf050d04fc8c346e1.
+- Current candidate after that source/test commit: 2b907970d90a764551499b4bf050d04fc8c346e1; main remains af4ba084cedcec7339498579ef5563ce7748bf7c.
+- Workflows triggered for this candidate: container https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40365361368, backend/frontend https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40365361379, dependency scan https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40365361391, backend tests https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/40365361451. All jobs returned failure with no step summaries; rechecking yielded steps=null. No command execution is evidenced, so this import fix is not runtime-verified.
