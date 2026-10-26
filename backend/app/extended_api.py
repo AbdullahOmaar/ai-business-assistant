@@ -1314,3 +1314,127 @@ def assistant_insights(business_id: UUID,
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/reports/data-integrity")
+def report_data_integrity(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read-only OWNER report for legacy invoice/customer and payment-allocation inconsistencies."""
+    try:
+        authorize_membership(
+            session,
+            principal=principal,
+            business_id=business_id,
+            allowed_roles={MembershipRole.OWNER},
+        )
+        unlinked = select(Invoice).where(
+            Invoice.business_id == business_id,
+            Invoice.status == "issued",
+            Invoice.customer_id.is_(None),
+        )
+        unlinked_total = session.scalar(
+            select(func.count()).select_from(unlinked.subquery())
+        ) or 0
+        unlinked_items = session.scalars(
+            unlinked.order_by(Invoice.created_at.desc(), Invoice.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        allocation_join = (
+            select(PaymentAllocation, Payment, Invoice)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
+            )
+            .join(
+                Invoice,
+                (Invoice.id == PaymentAllocation.invoice_id)
+                & (Invoice.business_id == PaymentAllocation.business_id),
+            )
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+            )
+        )
+        currency_mismatches = allocation_join.where(
+            Payment.currency_code != Invoice.currency_code,
+        )
+        currency_mismatch_total = session.scalar(
+            select(func.count()).select_from(currency_mismatches.subquery())
+        ) or 0
+        currency_mismatch_rows = session.execute(
+            currency_mismatches
+            .order_by(Payment.received_at.desc(), PaymentAllocation.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        customer_mismatches = allocation_join.where(
+            Payment.customer_id.is_not(None),
+            Invoice.customer_id.is_not(None),
+            Payment.customer_id != Invoice.customer_id,
+        )
+        customer_mismatch_total = session.scalar(
+            select(func.count()).select_from(customer_mismatches.subquery())
+        ) or 0
+        customer_mismatch_rows = session.execute(
+            customer_mismatches
+            .order_by(Payment.received_at.desc(), PaymentAllocation.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
+
+        def allocation_item(allocation, payment, invoice):
+            return {
+                "allocation_id": str(allocation.id),
+                "payment_id": str(payment.id),
+                "payment_reference": payment.reference,
+                "payment_customer_id": str(payment.customer_id) if payment.customer_id else None,
+                "payment_currency": payment.currency_code,
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "invoice_customer_id": str(invoice.customer_id) if invoice.customer_id else None,
+                "invoice_currency": invoice.currency_code,
+                "allocated_amount": str(allocation.amount),
+            }
+
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "read_only": True,
+            "unlinked_issued_invoices": {
+                "total": int(unlinked_total),
+                "items": [
+                    {
+                        "invoice_id": str(item.id),
+                        "invoice_number": item.invoice_number,
+                        "status": item.status,
+                        "total": str(item.total),
+                        "currency_code": item.currency_code,
+                        "created_at": item.created_at.isoformat() if item.created_at else None,
+                    }
+                    for item in unlinked_items
+                ],
+            },
+            "currency_mismatched_allocations": {
+                "total": int(currency_mismatch_total),
+                "items": [allocation_item(*row) for row in currency_mismatch_rows],
+            },
+            "customer_mismatched_allocations": {
+                "total": int(customer_mismatch_total),
+                "items": [allocation_item(*row) for row in customer_mismatch_rows],
+            },
+            "limit": limit,
+            "offset": offset,
+            "warning": (
+                "This report identifies records for manual review only. It never guesses "
+                "customer links or modifies invoices, payments, or allocations."
+            ),
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
