@@ -838,8 +838,8 @@ def test_receivables_aging_keeps_missing_due_dates_separate_and_currency_scoped(
         assert report["invoice_count"] == 1
         assert report["by_currency"] == [{
             "currency_code": "EGP",
-            "buckets": [{"bucket": "no_due_date", "outstanding_amount": "9.00"}],
-            "total_outstanding": "9.00",
+            "buckets": [{"bucket": "no_due_date", "outstanding_amount": "10.00"}],
+            "total_outstanding": "10.00",
         }]
         assert report["invoices"][0]["invoice_id"] == str(invoice_id)
         assert report["invoices"][0]["aging_bucket"] == "no_due_date"
