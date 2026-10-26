@@ -738,13 +738,13 @@ def test_receivables_aging_is_business_scoped_and_currency_separated():
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-30",
                 status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 9, 26, tzinfo=timezone.utc), subtotal=Decimal("100.00"),
+                due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("100.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("100.00"),
             ),
             Invoice(
                 business_id=foreign_business.id, customer_id=None, invoice_number="FOREIGN",
                 status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 9, 26, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
+                due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("900.00"),
             ),
         ])
