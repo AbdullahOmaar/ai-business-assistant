@@ -6,7 +6,12 @@
     "mode": "safe",
     "runtime": "cloud",
     "budget_mode": "controlled",
-    "hard_stop_on_budget_limit": true
+    "hard_stop_on_budget_limit": true,
+    "monthly_spend_limit_usd": 0,
+    "paid_resource_creation": false,
+    "paid_plan_upgrade": false,
+    "stop_on_unknown_cost": true,
+    "stop_on_budget_limit": true
   },
   "tasks": [
     {
@@ -118,6 +123,17 @@
       ],
       "checkpoint": "No production merge/deploy until all required gates and rollback evidence pass",
       "attempts": 0
+    },
+    {
+      "id": "AGENT-011",
+      "title": "Implement zero-budget bounded scheduled controller",
+      "status": "in_progress",
+      "priority": "P0",
+      "depends_on": [
+        "AGENT-002"
+      ],
+      "checkpoint": "Added a workflow_dispatch plus six-hour scheduled sanity controller; not yet verified by a successful GitHub Actions run.",
+      "attempts": 1
     }
   ],
   "updated_at": "2026-10-26",
