@@ -458,3 +458,10 @@
 - Added an API regression in `backend/tests/test_business_tenant_boundaries.py` commit `8b89ab9de611738bed71ab86576d4dfd4408ac24`: one legacy unlinked invoice, one allocation with USD payment against EGP invoice, one payment/invoice customer mismatch, exclusion of another workspace's legacy invoice, exact mismatch identifiers, non-member 403, and persistence unchanged after report reads.
 - PR #116 is being retired as superseded after confirming its unique read-only report and test are represented by this stronger implementation; this is not a code merge and not a verification pass.
 - Validation remains blocked by the GitHub Actions runner issue: backend/PostgreSQL, frontend/build, container and dependency checks fail before executable steps/logs. Do not merge or deploy until the exact canonical candidate passes the full gates.
+
+
+## Data-integrity report follow-up verification — 2026-10-26
+- PR #116 is confirmed `CLOSED`, `merged=false`; its owner-only report code and regression were ported into #161, which remains the canonical Draft.
+- Ran a separate scratch SQLAlchemy harness against equivalent composite join/filter logic for the new report: 4 checks passed — unlinked issued invoice surfaced; same-business currency mismatch surfaced; same-business customer mismatch surfaced; intentionally corrupt cross-business allocation excluded by the composite business joins. A follow-up read check confirmed invoice/customer-link and payment amount remained unchanged.
+- Scope limitation: the scratch harness is not the FastAPI endpoint, repository pytest, or PostgreSQL suite. The new integrated API test `test_data_integrity_report_is_owner_only_read_only_detects_currency_and_customer_mismatches` has been added but is not yet executed. GitHub Actions jobs are still failing before steps/logs; no production data was changed.
+- Next: verify the precise current #161 candidate and Actions settings/runner restriction, then execute full backend/PostgreSQL, frontend/build, container, and dependency gates. No merge, version bump, or deployment.
