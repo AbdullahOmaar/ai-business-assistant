@@ -742,6 +742,12 @@ def test_receivables_aging_is_business_scoped_and_currency_separated():
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("100.00"),
             ),
             Invoice(
+                business_id=business.id, customer_id=customer.id, invoice_number="AGE-USD",
+                status="issued", currency_code="USD", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                due_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("50.00"),
+                tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("50.00"),
+            ),
+            Invoice(
                 business_id=foreign_business.id, customer_id=None, invoice_number="FOREIGN",
                 status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
                 due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
@@ -759,11 +765,18 @@ def test_receivables_aging_is_business_scoped_and_currency_separated():
         assert response.status_code == 200
         payload = response.json()
         assert payload["as_of"] == "2026-10-26"
-        assert len(payload["invoices"]) == 1
-        assert payload["invoices"][0]["invoice_number"] == "AGE-30"
-        assert payload["invoices"][0]["bucket"] == "31_60_days"
-        assert payload["invoices"][0]["outstanding_amount"] == "100.00"
-        assert list(payload["by_currency"]) == ["EGP"]
+        invoices_by_number = {row["invoice_number"]: row for row in payload["invoices"]}
+        assert set(invoices_by_number) == {"AGE-30", "AGE-USD"}
+        assert "FOREIGN" not in invoices_by_number
+        assert invoices_by_number["AGE-30"]["bucket"] == "31_60_days"
+        assert invoices_by_number["AGE-30"]["outstanding_amount"] == "100.00"
+        assert invoices_by_number["AGE-USD"]["bucket"] == "1_30_days"
+        assert invoices_by_number["AGE-USD"]["outstanding_amount"] == "50.00"
+        assert list(payload["by_currency"]) == ["EGP", "USD"]
+        assert payload["by_currency"]["EGP"]["31_60_days"] == 1
+        assert payload["by_currency"]["EGP"]["31_60_days_amount"] == "100.00"
+        assert payload["by_currency"]["USD"]["1_30_days"] == 1
+        assert payload["by_currency"]["USD"]["1_30_days_amount"] == "50.00"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
