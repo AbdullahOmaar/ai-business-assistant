@@ -480,3 +480,10 @@
 - The initial API preview attempt [dpl_GUA3HpGLErisssBLmLLRyH3JcLvk](https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/dpl_GUA3HpGLErisssBLmLLRyH3JcLvk) was `CANCELED` by the project's existing Ignored Build Step, which skips API builds unless the commit message contains `[release-api]`. The logs show cancellation before dependency installation or Python build; this is not a code build failure.
 - A follow-up documentation-only commit with the expected marker will request another **preview-only** API build. It does not change any Vercel project settings, production alias, or version number.
 - These Vercel preview results do not replace backend pytest/PostgreSQL, frontend unit tests, container build, or dependency workflows. GitHub Actions still has no exposed executable steps/logs. No production deployment or data mutation occurred.
+
+
+## Execution checkpoint — version 1.2.0 candidate (2026-10-26)
+
+- User requested the demo/release version be set to 1.2.0. Candidate metadata is being aligned on the existing Draft PR branch only; this is not a production release.
+- Required checks remain BLOCKED: the current consolidated safety PR has not demonstrated successful full backend/PostgreSQL tests, frontend tests/build, container build, dependency audit, authenticated workflow checks, or installed-PWA smoke tests. Prior Actions runs failed before executable steps/logs were available.
+- Production remains unchanged until those gates pass. Verify the exact resulting branch SHA, CI status, and both deployment aliases after candidate metadata updates. Do not mark release VERIFIED based on version strings alone.
