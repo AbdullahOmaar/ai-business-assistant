@@ -21,8 +21,9 @@
 4. **Procurement authorization/workflow gap.** Purchase order creation sets status `approved` for any active member, while the release runbook says staff should create drafts and sensitive procurement operations require owner authorization. No distinct approval step is present in the current route.
 5. **Business-local financial date boundaries.** Main report bounds/defaults use UTC despite a configured business timezone. This can misclassify transactions around local midnight; existing PR #154/#161 must be validated and merged before reporting is trusted.
 6. **CORS settings update.** Main CORS policy omits PUT while settings use PUT; the browser preflight fix/test is open in PR #158/#161.
-7. **Full purchase/sales UI is incomplete in main.** Current visible navigation exposes overview, customers, products, invoices, payments, assistant, reports, and audit. It does not expose complete purchasing/supplier, expense, and sales-return flows. The invoice editor remains single-line; multi-line editor is in open PR #129.
-8. **Recovery not proven.** The production backup/restore drill has not been run against a separate isolated target. Do not perform a production migration or destructive action until a zero-cost recovery path is proven and the release is approved.
+7. **Generic settings do not yet reliably reject secret-like aliases.** Main rejects only a small exact list of setting keys, while aliases such as `API-KEY`, `pwd`, `passwd`, `access-key`, or `encryption_key` are not all covered by that exact list; the API also returns the stored setting value. PR #160/#161 contains broader key validation but is not merged/verified. Do not use this table for secrets.
+8. **Full purchase/sales UI is incomplete in main.** Current visible navigation exposes overview, customers, products, invoices, payments, assistant, reports, and audit. It does not expose complete purchasing/supplier, expense, and sales-return flows. The invoice editor remains single-line; multi-line editor is in open PR #129.
+9. **Recovery not proven.** The production backup/restore drill has not been run against a separate isolated target. Do not perform a production migration or destructive action until a zero-cost recovery path is proven and the release is approved.
 
 ## P1 — accounting/operational completeness gaps
 
