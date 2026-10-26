@@ -1,6 +1,6 @@
 # Project Task Ledger
 
-> Initial handoff ledger created 2026-10-26. This is a starting snapshot from repository documentation, not a claim that each item was re-tested in this session. Reconcile every item with current source, GitHub Issues/PRs, CI, and deployment evidence before changing its status.
+> Initial handoff ledger created 2026-10-26. Statuses below reflect only evidence recorded in this repository and linked services; they are not a claim that all release checks have passed.
 
 ## Rules
 - Keep one canonical entry per task; link existing GitHub Issues/PRs instead of duplicating them.
@@ -12,10 +12,15 @@
 ## Initial tasks to reconcile
 
 ### P0 — Re-verify current CI and release readiness
-- Status: `NEEDS_VERIFICATION`
-- Source: README.md and docs/PRODUCTION_DEPLOYMENT.md
-- Acceptance: inspect latest relevant workflow runs and exact release candidate SHA; distinguish current failures from stale documentation; record verified status.
-- Next action: inspect Actions runs and current open PRs before selecting a release candidate.
+- Status: `BLOCKED`
+- Source: README.md, docs/PRODUCTION_DEPLOYMENT.md, GitHub Actions, Vercel deployments.
+- Evidence as of 2026-10-27:
+  - Current main SHA observed: `1b58df8a6695e02b845bc84a9ee7094286f32e83`.
+  - GitHub Actions jobs fail before any step with `runner_id=0`, blank runner name, and no steps/logs. Minimal diagnostic evidence and escalation notes are in Draft PR [#164](https://github.com/AbdullahOmaar/ai-business-assistant/pull/164); it is not merged.
+  - The connected Vercel frontend deployment for main SHA `1b58df8a6695e02b845bc84a9ee7094286f32e83` reached READY and completed Angular compilation, but its recorded build logs did not run `npm test`.
+  - The latest main-branch API Vercel deployment was intentionally canceled by its configured Ignored Build Step because the commit message lacked `[release-api]`; that is not a backend test result.
+- Acceptance: full backend/frontend test suite, container build, dependency/security audit, authorization and production smoke checks against exact final SHA.
+- Next action: validate the Vercel frontend test gate proposed below; keep overall release readiness blocked until all independent gates have evidence. Continue GitHub Support escalation for the Actions runner failure.
 
 ### P0 — Verify production configuration and authenticated smoke tests
 - Status: `NEEDS_VERIFICATION`
@@ -35,6 +40,14 @@
 - Acceptance: confirm the exact deployed commit, real sign-in/navigation/install/update behavior, viewport/keyboard behavior, and installed-PWA cache/version behavior on a supported browser/device when access is available.
 - Blocker policy: if a physical device or deployment access is unavailable, document the unverified cases and continue independent work.
 
+### P1 — Use existing Vercel Git integration as a frontend build/test fallback
+- Status: `IN_PROGRESS`
+- Source: `frontend/package.json`, Vercel project `ai-business-assistant-web`, GitHub Actions runner-allocation incident.
+- Change: branch `ci/vercel-frontend-test-gate-2026-10-27`, commit `8b3be0b0abe522be6313a390ed8c2ff579b6c4f4` updates the frontend build script to run the repository's current Node test suite before `ng build`.
+- Why: Vercel is already connected to this private GitHub repository; its builds run outside GitHub Actions minutes. Existing Vercel logs prove only an Angular build, not the test suite.
+- Acceptance: inspect a Vercel preview build for the exact proposed commit and confirm `npm test` passes before Angular compilation. This provides frontend validation only; it does not replace backend, container, security, or release checks.
+- Safety: do not merge this branch or promote/deploy it to production. Keep full release readiness blocked until all required checks pass.
+
 ### P2 — Verify recurring invoice and notification background execution
 - Status: `NEEDS_VERIFICATION`
 - Source: README.md known limitations
@@ -42,6 +55,6 @@
 - Constraint: confirm actual platform limits and costs before enabling recurring jobs; never assume a scheduler is running.
 
 ## Active work checkpoint
-- Current rules change: branch `docs/autonomous-execution-rules`.
-- This ledger is intentionally a verification queue, not proof that the listed work is still outstanding. Reconcile before implementation.
-- Next exact action after this documentation PR: inspect latest CI and open PRs, then work the highest-priority confirmed issue through tests and evidence.
+- GitHub Actions hosted-runner allocation is blocked and under diagnosis in Draft PR #164.
+- Frontend build/test fallback is being validated through the already connected Vercel Git integration, on a separate branch; no production merge/deployment is authorized.
+- No full-suite pass or overall production-ready claim is supported by the evidence currently available.
