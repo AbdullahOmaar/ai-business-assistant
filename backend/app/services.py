@@ -30,6 +30,7 @@ from app.models import (
     Payment,
     PaymentAllocation,
     Product,
+    SalesReturn,
     StockMovement,
     Supplier,
 )
@@ -362,6 +363,15 @@ def void_invoice(
         if Decimal(str(allocated or 0)) > ZERO:
             raise WorkflowError(
                 "This invoice has allocated payments; record a refund or credit note before correction"
+            )
+        approved_returns = session.scalar(select(func.count()).select_from(SalesReturn).where(
+            SalesReturn.business_id == business_id,
+            SalesReturn.invoice_id == invoice.id,
+            SalesReturn.status == "approved",
+        ))
+        if approved_returns:
+            raise WorkflowError(
+                "Invoice has approved sales returns; use a credit note instead of voiding"
             )
         lines = session.scalars(select(InvoiceLine).where(
             InvoiceLine.invoice_id == invoice.id,
