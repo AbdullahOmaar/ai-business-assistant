@@ -1185,3 +1185,10 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Version bump is a PATCH candidate because the release scope is security/authorization/audit correctness and release metadata consistency, with no intended breaking API change.
 - Updated candidate metadata: frontend `package.json`, backend `pyproject.toml`, FastAPI `app.version`, build-info fallback, service-worker cache fallback, bilingual in-app release history, and a cross-file version-consistency regression test.
 - Exact-head CircleCI, local test execution, production deployment, deployment SHA parity, and production smoke tests remain pending/not run until the release candidate checks and deployment quota are resolved.
+
+## Backup/restore guard hardening — 2026-10-28
+
+- Task: OPS-01 safety/automation slice. On branch `fix/backup-restore-target-safety-20261028` from main baseline `c60cc98498b67c2735836d433aec78e871ce7a64`, broadened the isolated-target emptiness check to cover user relations, routines, types, non-default schemas, and non-default extensions. Added stubbed regression coverage for identical source/target database identity and non-empty target catalogs; stub commands fail if the script reaches dump/restore operations.
+- CircleCI now runs `bash -n` on both backup scripts and `bash scripts/backup-restore-drill.test.sh` in the existing `backend-container` job (PR #228 merged as `c60cc98498b67c2735836d433aec78e871ce7a64`; exact-head checks passed all four contexts; post-merge CI status was still pending at the last observation).
+- Current branch local execution: NOT RUN (no local checkout/runtime available). Exact-head CircleCI required before merge. No database credentials, live DB connections, backups, or restore targets were used; actual isolated restore remains NOT RUN.
+- Acceptance: all four exact-head CircleCI contexts pass, including the safety test script; review diff and merge through normal repository controls. Production readiness remains blocked until a real approved isolated restore drill is executed and documented.
