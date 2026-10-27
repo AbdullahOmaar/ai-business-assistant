@@ -636,3 +636,9 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Known CI gaps remain: GitHub Actions runner allocation/dispatch failure (runner_id=0, no executable steps/logs on latest recorded runs); CircleCI authoritative config validation/hosted execution not yet evidenced; frontend lockfile not committed; actual container build and exact configured CI-version verification still outstanding. Prior isolated PostgreSQL test results are useful but do not replace current-head hosted checks.
 - Status: PR #171 merge VERIFIED; PR #54 duplicate closure VERIFIED; all-branches merge campaign PARTIALLY COMPLETE; financial/admin/product PR merges BLOCKED pending exact-head gates and reconciliation. Production deployment and production data remain unchanged.
 - Next action: recheck main SHA/status, diagnose available CI execution route, reconcile the latest accounting PR heads, then validate/merge one coherent branch at a time. Keep all security and financial release gates intact.
+
+
+## Payment API regression test — 2026-10-27
+
+- **PAY-API-01 — TODO / NOT RUN:** Added an API-level test for owner payment creation and idempotent replay; it asserts exactly one payment and one allocation are stored. This is test-only; no payment service/runtime behavior changed.
+- **Validation blocker:** GitHub Actions workflows currently fail before executable steps (runner dispatch reports no steps/logs), and private-repository cloning into a disposable Vercel sandbox was rejected. Keep this PR Draft until the backend test runs in an authorized executable environment. Do not treat the test's presence as proof the payment flow works.
