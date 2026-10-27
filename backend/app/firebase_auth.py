@@ -98,3 +98,18 @@ def configure_firebase_auth(app) -> bool:
     _firebase_app()
     app.state.principal_resolver = firebase_principal_resolver
     return True
+
+def get_firebase_admin_app():
+    """Return the configured Firebase Admin app for authorized user-directory calls.
+
+    This helper deliberately exposes the app object only to trusted backend
+    modules; HTTP responses must never include credentials or token data.
+    """
+    app = _firebase_app()
+    if app is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Firebase Authentication is not configured for the user directory.",
+        )
+    return app
+
