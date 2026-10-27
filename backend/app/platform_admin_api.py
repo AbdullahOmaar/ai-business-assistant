@@ -3,6 +3,8 @@
 Platform access is granted only by an explicit server-side allowlist of verified
 Firebase principals. There is intentionally no self-service role assignment.
 """
+import csv
+import io
 import json
 import logging
 import os
@@ -10,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
@@ -69,6 +71,15 @@ def _require_platform_admin(principal: AuthenticatedPrincipal, request: Request)
 
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _csv_safe_cell(value: object | None) -> str:
+    \"\"\"Neutralize spreadsheet formulas in untrusted CSV text cells.\"\"\"
+    text_value = \"\" if value is None else str(value)
+    significant = text_value.lstrip(\" \\t\\r\\n\")
+    if text_value.startswith((\"\\t\", \"\\r\", \"\\n\")) or significant.startswith((\"=\", \"+\", \"-\", \"@\")):
+        return \"'\" + text_value
+    return text_value
 
 
 def _normalize_datetime(value: datetime | None) -> datetime | None:
@@ -459,3 +470,79 @@ def platform_audit_events(
         "limit": limit,
         "offset": offset,
     }
+
+
+@router.get("/audit-events/export.csv")
+def export_platform_audit_events(
+    request: Request,
+    action: str | None = Query(default=None, max_length=80),
+    actor_subject: str | None = Query(default=None, max_length=128),
+    business_id: UUID | None = None,
+    created_after: datetime | None = None,
+    created_before: datetime | None = None,
+    limit: int = Query(default=1000, ge=1, le=5000),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+) -> Response:
+    """Export a bounded, redacted platform audit view; export activity is security-logged."""
+    _require_platform_admin(principal, request)
+    created_after = _normalize_datetime(created_after)
+    created_before = _normalize_datetime(created_before)
+    if created_after and created_before and created_after > created_before:
+        raise HTTPException(status_code=422, detail="created_after must not be later than created_before.")
+
+    statement = select(AuditEvent, Business.name).join(
+        Business, Business.id == AuditEvent.business_id
+    )
+    predicates = []
+    if action and action.strip():
+        predicates.append(AuditEvent.action.ilike(f"%{action.strip()}%"))
+    if actor_subject and actor_subject.strip():
+        predicates.append(AuditEvent.actor_subject.ilike(f"%{actor_subject.strip()}%"))
+    if business_id:
+        predicates.append(AuditEvent.business_id == business_id)
+    if created_after:
+        predicates.append(AuditEvent.created_at >= created_after)
+    if created_before:
+        predicates.append(AuditEvent.created_at <= created_before)
+    if predicates:
+        statement = statement.where(*predicates)
+
+    rows = session.execute(
+        statement.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc()).limit(limit + 1)
+    ).all()
+    truncated = len(rows) > limit
+    rows = rows[:limit]
+
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\\r\\n")
+    writer.writerow(("created_at", "action", "actor_subject", "business_id", "business_name", "target_type", "target_id"))
+    for event, business_name in rows:
+        writer.writerow((
+            _csv_safe_cell(_iso(event.created_at)),
+            _csv_safe_cell(event.action),
+            _csv_safe_cell(event.actor_subject),
+            _csv_safe_cell(str(event.business_id)),
+            _csv_safe_cell(business_name),
+            _csv_safe_cell(event.target_type),
+            _csv_safe_cell(event.target_id),
+        ))
+
+    _log_security_event(
+        "platform_admin.audit_exported",
+        request,
+        principal.subject,
+        "success",
+        target_type="platform_audit",
+        target_id=str(business_id) if business_id else "filtered",
+    )
+    return Response(
+        content="\\ufeff" + output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="platform-audit-events.csv"',
+            "Cache-Control": "no-store",
+            "X-Export-Row-Count": str(len(rows)),
+            "X-Export-Truncated": "true" if truncated else "false",
+        },
+    )
