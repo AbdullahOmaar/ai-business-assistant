@@ -1,3 +1,9 @@
+## Review findings addressed for expense UI — 2026-10-27
+
+- Fixed numeric input handling: Angular's number value accessor can produce a numeric runtime value, so the form now stringifies the value before trimming/serializing it. Added a regression assertion that forbids direct `expenseAmount.trim()`.
+- Preserved local wall-clock defaults/resets for `datetime-local` inputs and added a regression assertion so UTC conversion does not shift the intended entry date.
+
+
 ## Expense retry safety — 2026-10-27
 
 - PR #35 exact-head source adds a same-session safeguard for ambiguous expense-save failures: it disables repeat submission and editable fields until the latest workspace expense list/dashboard refresh succeeds. The user is prompted to inspect recent entries before retrying.

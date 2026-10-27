@@ -55,3 +55,14 @@ test('ambiguous expense save outcome blocks another submit until the expense lis
   assert.match(checkMethod, /this\.api\.expenses\(businessId\)/);
   assert.match(checkMethod, /this\.expenseSubmissionUncertain = false/);
 });
+
+test('numeric amount values are stringified before trimming and local datetime defaults preserve wall time', () => {
+  const start = ui.indexOf('async createExpense(): Promise<void>');
+  const end = ui.indexOf('async checkExpenseSubmissionOutcome(): Promise<void>', start);
+  assert.ok(start >= 0 && end > start);
+  const method = ui.slice(start, end);
+  assert.equal(method.includes('this.expenseAmount.trim()'), false);
+  assert.match(method, /String\(this\.expenseAmount \?\? ''\)\.trim\(\)/);
+  assert.match(ui, /expenseDate = new Date\(Date\.now\(\) - new Date\(\)\.getTimezoneOffset\(\) \* 60_000\)\.toISOString\(\)\.slice\(0, 16\)/);
+  assert.match(method, /this\.expenseDate = new Date\(Date\.now\(\) - new Date\(\)\.getTimezoneOffset\(\) \* 60_000\)\.toISOString\(\)\.slice\(0, 16\)/);
+});

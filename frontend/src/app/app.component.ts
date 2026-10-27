@@ -1606,7 +1606,7 @@ export class AppComponent implements OnInit {
     const description = this.expenseDescription.trim();
     const amount = Number(this.expenseAmount);
     const occurredAt = new Date(this.expenseDate);
-    if (!category || !description || !this.expenseAmount.trim() || !Number.isFinite(amount) || amount <= 0) {
+    if (!category || !description || !String(this.expenseAmount ?? '').trim() || !Number.isFinite(amount) || amount <= 0) {
       this.error = this.t('أدخل تصنيفًا ووصفًا ومبلغًا أكبر من صفر.', 'Enter a category, description, and a positive amount.');
       return;
     }
@@ -1623,7 +1623,7 @@ export class AppComponent implements OnInit {
       await this.api.createExpense(businessId, {
         category,
         description,
-        amount: this.expenseAmount.trim(),
+        amount: String(this.expenseAmount ?? '').trim(),
         currency_code: currencyCode,
         incurred_at: occurredAt.toISOString(),
         vendor_name: this.expenseVendor.trim() || undefined,
