@@ -15,32 +15,6 @@
 
 ---
 
----
-
-# Automation Testing Cycle — 2026-10-27 — IN_PROGRESS / BLOCKED
-
-This section records the current automation-testing workstream and supersedes earlier status claims for this cycle.
-
-## Ordered execution and evidence
-
-1. **Disable the exhausted GitHub Actions path: VERIFIED.** Removed `.github/workflows/frontend-e2e.yml` from `automation-testing-e2e` in commit `fc7da57be5715fcd65783fccc2740b459a85021f`. This prevents this newly added browser workflow from automatically consuming GitHub Actions minutes. No GitHub Actions workflow was manually dispatched or re-run.
-2. **Make browser tests deterministic: IMPLEMENTED, execution NOT RUN.** Updated `frontend/e2e/startup.spec.ts` in commit `20dd9c662c9870ef53c4212fb4e56596aabdd58e` to mock `/runtime-config.json` with intentionally incomplete public configuration. Tests can exercise the explicit setup screen and Arabic/English direction changes without contacting Firebase, a live API, or modifying production data.
-3. **Alternative runner config: PRESENT, hosted execution BLOCKED.** `.circleci/config.yml` defines backend tests with disposable PostgreSQL 16 and Alembic checks, frontend test/build and npm audit, Playwright Chromium smoke tests, Python dependency audit, and a disposable backend container build. No CircleCI run/status has been found for current head `fc7da57be5715fcd65783fccc2740b459a85021f`; the CircleCI project/trigger connection could not be verified through available integrations.
-4. **Latest validation: PARTIAL.** GitGuardian completed successfully on `fc7da57be5715fcd65783fccc2740b459a85021f` and reported no secrets detected across 10 scanned commits. The earlier Vercel Preview on `e65e46920f4634bbf1a1d75cbcca99630803ad84` reported 12 frontend tests passed, 0 failed, plus successful Angular production bundle generation; that is not evidence for the latest head or Playwright.
-5. **Runner fallback attempts: BLOCKED.** A new Vercel Preview request for current head was rejected with HTTP 402 `api-deployments-free-per-day` (retry after 24 hours). The available Desktop Commander device is offline. Therefore no independent execution environment is currently available through the connected tools.
-6. **Automation cycle acceptance: BLOCKED — do not mark VERIFIED.** Required remaining evidence: a real CircleCI pipeline on the latest branch head showing backend/PostgreSQL migrations and tests, frontend tests/build/audit, Playwright browser smoke results, and container build/import check. If CircleCI is not already linked, enable the project and trigger on the branch; then fix any actual failures and update this ledger with the run URL and result.
-
-## Current branch / PR
-
-- Branch: `automation-testing-e2e`
-- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Read PR #183 for the live head SHA because this ledger itself is updated by commits.
-- PR #183: draft/open, not merged: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
-- No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
-
----
-
----
-
 # Latest verified release checkpoint — 2026-10-27 00:20 UTC
 
 This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
@@ -888,3 +862,29 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **GitHub Actions:** backend tests, dependency scan, container, and combined verification jobs failed before executing steps (`steps=null`, `logs_url=null`) even after retry; treat as runner infrastructure failure, not a pass. Docker/Podman container build remains **NOT RUN**.
 - **Production smoke after merge:** API `/version` returned HTTP 200 but still reports version **1.2.0**, commit `82af326ffeec`; API `/health` returned HTTP 200. Web root returned HTTP 200. Production is therefore **not yet v1.2.1**.
 - **Deployment blockers:** the automatic frontend deployment for merge SHA `7472026c2e0b02dcdc9ea8db43574c0ff416a66b` was canceled by Vercel's Ignored Build Step because the merge commit message lacked `[release-web]`. API deployment creation previously returned HTTP 402 `api-deployments-free-per-day` with `retryAfter=86400`. Next action: trigger a tagged `[release-web] [release-api]` release commit after quota resets; verify READY deployments and production `/version`, `/health`, `/readyz` before marking release VERIFIED.
+
+---
+
+# Automation Testing Cycle — 2026-10-27 — IN_PROGRESS / BLOCKED
+
+This section records the current automation-testing workstream and supersedes earlier status claims for this cycle.
+
+## Ordered execution and evidence
+
+1. **Disable the exhausted GitHub Actions path: VERIFIED.** Removed `.github/workflows/frontend-e2e.yml` from `automation-testing-e2e` in commit `fc7da57be5715fcd65783fccc2740b459a85021f`. This prevents this newly added browser workflow from automatically consuming GitHub Actions minutes. No GitHub Actions workflow was manually dispatched or re-run.
+2. **Make browser tests deterministic: IMPLEMENTED, execution NOT RUN.** Updated `frontend/e2e/startup.spec.ts` in commit `20dd9c662c9870ef53c4212fb4e56596aabdd58e` to mock `/runtime-config.json` with intentionally incomplete public configuration. Tests can exercise the explicit setup screen and Arabic/English direction changes without contacting Firebase, a live API, or modifying production data.
+3. **Alternative runner config: PRESENT; YAML syntax/structure VERIFIED, hosted execution BLOCKED.** `.circleci/config.yml` defines disposable PostgreSQL + Alembic/pytest, frontend test/build/audit, Playwright Chromium, Python audit, and a disposable backend container build. PyYAML successfully parsed the config and confirmed the required jobs/workflows. This is not CircleCI schema validation or a pipeline run. No CircleCI connector is available in the connected tools.
+4. **Latest validation: PARTIAL / historical evidence only.** GitGuardian completed successfully on `fc7da57be5715fcd65783fccc2740b459a85021f` with no secrets detected across 10 scanned commits. The earlier Vercel Preview on `e65e46920f4634bbf1a1d75cbcca99630803ad84` reported 12 frontend tests passed and a successful Angular production bundle; neither result validates the current branch head or Playwright.
+5. **Runner fallback attempts: BLOCKED.** A Vercel Preview request for the current head was rejected with HTTP 402 `api-deployments-free-per-day` (retry after 24 hours). Attempting to create a sandbox directly from the private Git repository failed at `git clone`; an existing isolated sandbox could validate YAML syntax only, not run the full repo. Desktop Commander is offline.
+6. **Automation cycle acceptance: BLOCKED — do not mark VERIFIED.** Required remaining evidence: a real CircleCI pipeline on the latest branch head showing backend/PostgreSQL migrations and tests, frontend tests/build/audit, Playwright browser smoke results, and container build/import check. If CircleCI is not already linked, enable the project and trigger on the branch; then fix any actual failures and update this ledger with the run URL and result.
+
+## Current branch / PR
+
+- Branch: `automation-testing-e2e`
+- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Read PR #183 for the live head SHA because this ledger itself is updated by commits.
+- PR #183: draft/open, not merged: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
+- No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
+
+---
+
+---
