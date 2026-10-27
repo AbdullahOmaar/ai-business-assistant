@@ -44,15 +44,15 @@ cat > "$tmp/bin/psql" <<'PSQL_STUB'
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "${FAKE_PSQL_MODE:-distinct}" == "same_identity" ]]; then
-  printf 'same-db|127.0.0.1\\n'
+  printf 'same-db|127.0.0.1\n'
 elif [[ "$*" == *"current_database()"* ]]; then
   if [[ "$1" == "$SOURCE_DATABASE_URL" ]]; then
-    printf 'source-db|127.0.0.1\\n'
+    printf 'source-db|127.0.0.1\n'
   else
-    printf 'restore-db|127.0.0.2\\n'
+    printf 'restore-db|127.0.0.2\n'
   fi
 elif [[ "$*" == *"SELECT count(*) FROM ("* ]]; then
-  printf '%s\\n' "${FAKE_OBJECT_COUNT:-0}"
+  printf '%s\n' "${FAKE_OBJECT_COUNT:-0}"
 else
   echo 'FAIL: unexpected psql query' >&2
   exit 98
