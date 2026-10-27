@@ -1,3 +1,10 @@
+## Payment API idempotency regression re-integrated on current main — 2026-10-27
+
+- Added an API-level owner payment test that submits the same idempotency key twice and asserts the same payment ID plus exactly one payment and allocation are persisted.
+- This supplements service-level coverage and does not issue a real/production payment. Exact-head CI remains the merge gate.
+
+
+
 ## Review findings addressed for expense UI — 2026-10-27
 
 - Fixed numeric input handling: Angular's number value accessor can produce a numeric runtime value, so the form now stringifies the value before trimming/serializing it. Added a regression assertion that forbids direct `expenseAmount.trim()`.
