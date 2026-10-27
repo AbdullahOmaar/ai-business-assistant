@@ -8,9 +8,10 @@
 ## Current execution status
 - **IN_PROGRESS** — implementation is on branch `fix/invoice-payment-and-stock-quantity-2026-10-27`.
 - Changed: `backend/app/services.py`, `backend/app/api.py`, `backend/app/extended_api.py`, `backend/tests/test_services.py`, `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`.
-- Tests/build: **NOT RUN yet** for this branch. Must verify the exact PR head before merge.
+- Tests/build: **NOT RUN locally**. Exact PR head `f146d5fb785188128cf794387693792f9a100229` reports a CircleCI status of `error` and GitHub workflow runs `failure`; no root cause has been verified here. Vercel deployment lookup returned no Preview deployments for this branch. Do not interpret these signals as a passing build or as proof of a code regression.
+- Environment limitation: a direct Git clone/test attempt was blocked by DNS resolution for `github.com`. The CI/automation implementation itself remains outside this workstream; this PR stays draft until exact-head test/build evidence is available.
 - Production: **NOT DEPLOYED**. No production data, schema, secrets, or billing settings changed.
-- Next: inspect diff, run available checks on exact head, fix any failures, then request review through one PR. Deploy only after checks pass and the release quota/markers allow it.
+- Next: obtain exact-head backend tests and frontend npm test/Angular build results, review any failures with the responsible CI owners, then promote this PR for review. Deploy only after checks pass and release quota/markers allow it.
 
 ---
 
