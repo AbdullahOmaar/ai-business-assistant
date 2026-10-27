@@ -1146,3 +1146,12 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Follow-up branch adds a regression test asserting that if the workspace status + audit transaction commit fails, the workspace active state remains unchanged and no audit row is persisted. This test has not run yet.
 - Local test execution remains NOT RUN; rely on exact-head CircleCI for executed evidence.
 - No production deployment or production data mutation performed.
+
+
+### Follow-up checkpoint — 2026-10-28
+
+- PR #224 initial exact-head CircleCI: backend-container PASS (897), frontend-quality PASS (899), frontend-browser-smoke PASS (900), backend-accounting FAIL (898).
+- The failing job's detailed logs are not available through the connected GitHub integration. Source review identified that the new failure-path test used the default FastAPI `TestClient`, which re-raises server exceptions instead of returning the production-style HTTP 500 response. Updated the test to use `TestClient(app, raise_server_exceptions=False)` for that assertion; this is a reasoned fix, not yet confirmed by a rerun.
+- Added `docs/PLATFORM_ADMIN_SECURITY_REVIEW.md` rollback runbook. The runbook is documented only; no rollback/deployment executed, and production rollback target/schema compatibility remain unverified.
+- Corrected code commit: `719b0ef9361993d5387351e2b5384d02ba877956`; documentation commit: `6fc6e3d815af974446c1f9bf9e8a79163e0c208a`. Exact current PR head checks must be re-read after these commits.
+- Local tests: NOT RUN (repository checkout/runtime dependencies are unavailable in this session). Production release: NO-GO pending exact-head CI, concurrency/accessibility evidence, deployment parity, authenticated Admin smoke, and explicit authorization.
