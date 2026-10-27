@@ -637,6 +637,8 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
         })
         assert order_response.status_code == 201, order_response.text
         order_id = order_response.json()["id"]
+        approved = client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve")
+        assert approved.status_code == 200, approved.text
         listed_orders = client.get(f"/api/v1/businesses/{business_id}/purchase-orders")
         assert listed_orders.status_code == 200
         order = listed_orders.json()[0]
