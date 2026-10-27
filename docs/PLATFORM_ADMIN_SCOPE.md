@@ -104,3 +104,6 @@ No default admin, no user-controlled role/identity headers, no self-promotion, n
 ## Latest implementation checkpoint — 2026-10-27
 
 The bounded audit CSV export endpoint and authenticated download control are implemented on the feature branch. Exact-source tests and preview validation are pending; this is not a production release.
+
+
+Audit export validation remains in progress.
