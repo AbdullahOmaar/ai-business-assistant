@@ -709,3 +709,12 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - This is a generic YAML/structural check only. CircleCI's official schema validator and a hosted CircleCI run remain NOT RUN. GitHub Actions runs on the prior candidate still fail before steps (`steps: null`, `logs_url: null`); no application test/build result is evidenced by those runs.
 - Financial code review of `record_payment` confirms the current branch uses a nested savepoint for unique-key insert races and resolves a matching existing payment after an integrity conflict; PostgreSQL concurrency tests are present but NOT RUN in this environment. PR #170 inventory/financial fixes are also NOT VERIFIED on the current head.
 - PR #173 current ledger update is pending this note; keep #170/#173/#174 Draft and do not merge until required exact-head checks and the secret-scan incident review are complete. No Admin Screen changes, production merge, or deployment.
+
+
+## PR #173 current CI candidate checkpoint — 2026-10-27
+
+- Refreshed PR #173 current head: `69a043adc0fbd6188f7d6e806fb7ffe076a138f5`; `.circleci/config.yml` blob: `c9897f04d452f5c1e8ad4b31d4d92e1ae978268c`.
+- The current config has five jobs; `verify-all-changes` runs `backend-accounting`, `frontend-quality`, and `backend-container`. The frontend build script runs the current `npm test` suite before Angular compilation, so `npm run build` invokes tests and build. Since no `frontend/package-lock.json` is committed, config correctly uses `npm install --no-audit --no-fund`; do not change to `npm ci` until a reviewed lockfile is committed.
+- PyYAML parse and structural assertions passed on the current config. This is not official CircleCI schema validation and not a hosted pipeline run. No CircleCI status checks exist on the current PR head; no GitHub Actions status entries were returned for the candidate SHA.
+- Remaining activation blocker: owner must authorize/select the private repository in CircleCI. No CircleCI plugin/connector was found in available connected tools. Do not enable paid credits, guess required status contexts, weaken branch protection, or merge based only on local YAML parsing.
+- This PR remains Draft/open/unmerged and contains CI/docs changes only. No Admin Screen source was changed on PR #173; PR #172 remains separate.
