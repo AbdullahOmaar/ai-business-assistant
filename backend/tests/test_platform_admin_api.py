@@ -603,3 +603,81 @@ def test_role_grant_fails_closed_when_firebase_directory_is_unavailable(
         audit_count = session.scalar(select(PlatformAdminAuditEvent.id))
     assert grant is None
     assert audit_count is None
+
+@pytest.mark.parametrize(
+    ("query", "expected_lookup"),
+    [
+        ("directory-user-uid", "uid"),
+        ("directory@example.test", "email"),
+    ],
+)
+def test_platform_user_directory_search_uses_exact_firebase_lookup_not_pagination(
+    platform_admin_environment, monkeypatch, query, expected_lookup
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    calls = []
+    user = SimpleNamespace(
+        uid="directory-user-uid",
+        display_name="Directory User",
+        email="directory@example.test",
+        email_verified=True,
+        disabled=False,
+        user_metadata=SimpleNamespace(creation_timestamp=None, last_sign_in_timestamp=None),
+    )
+
+    monkeypatch.setattr(
+        firebase_admin.auth, "get_user",
+        lambda value, **kwargs: (calls.append(("uid", value)) or user),
+    )
+    monkeypatch.setattr(
+        firebase_admin.auth, "get_user_by_email",
+        lambda value, **kwargs: (calls.append(("email", value)) or user),
+    )
+    monkeypatch.setattr(
+        firebase_admin.auth, "list_users",
+        lambda **kwargs: pytest.fail("exact search must not enumerate the Firebase directory"),
+    )
+
+    response = platform_admin_environment["client"].get(
+        "/api/v1/platform-admin/users", params={"q": query}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert calls == [(expected_lookup, query)]
+    assert data["search_mode"] == "exact_email_or_uid"
+    assert data["has_more"] is False
+    assert data["next_page_token"] is None
+    assert len(data["items"]) == 1
+    assert data["items"][0]["uid"] == user.uid
+
+
+def test_platform_user_directory_forwards_opaque_cursor_and_page_size(platform_admin_environment, monkeypatch):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    calls = []
+
+    def list_users(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(users=[], next_page_token=None)
+
+    monkeypatch.setattr(firebase_admin.auth, "list_users", list_users)
+    response = platform_admin_environment["client"].get(
+        "/api/v1/platform-admin/users",
+        params={"page_token": "opaque-cursor-2", "limit": 7},
+    )
+
+    assert response.status_code == 200
+    assert len(calls) == 1
+    assert calls[0]["page_token"] == "opaque-cursor-2"
+    assert calls[0]["max_results"] == 7
+    assert response.json()["limit"] == 7
+    assert response.json()["has_more"] is False
+
