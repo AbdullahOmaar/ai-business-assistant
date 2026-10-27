@@ -4,14 +4,14 @@ on:
   pull_request:
     branches: ["**"]
     paths:
-      - "backend/requirements.txt"
-      - "frontend/package*.json"
+      - "backend/**"
+      - "frontend/**"
       - ".github/workflows/**"
   push:
-    branches: ["main"]
+    branches: ["main", "feat/**", "fix/**", "chore/**"]
     paths:
-      - "backend/requirements.txt"
-      - "frontend/package*.json"
+      - "backend/**"
+      - "frontend/**"
       - ".github/workflows/**"
   schedule:
     - cron: "23 8 * * 1"
@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: dependency-security-${{ github.event.pull_request.head.ref || github.ref }}
+  group: dependency-security-${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
