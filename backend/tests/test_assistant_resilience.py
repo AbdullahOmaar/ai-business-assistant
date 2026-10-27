@@ -34,6 +34,26 @@ def test_provider_retries_one_transient_server_error():
     assert client.calls == 2
 
 
+def test_provider_retries_rate_limit_once():
+    client = FakeClient([response(429), response(200)])
+    result = asyncio.run(_provider_post(client, headers={}, payload={}))
+    assert result.status_code == 200
+    assert client.calls == 2
+
+
+def test_provider_maps_final_connection_error_to_unavailable():
+    error = httpx.ConnectError(
+        "private connection diagnostic",
+        request=httpx.Request("POST", "https://example.test"),
+    )
+    client = FakeClient([error, error])
+    with pytest.raises(HTTPException) as failure:
+        asyncio.run(_provider_post(client, headers={}, payload={}))
+    assert failure.value.status_code == 503
+    assert "private connection diagnostic" not in failure.value.detail
+    assert client.calls == 2
+
+
 def test_provider_stops_after_bounded_transient_retries():
     client = FakeClient([response(503), response(503)])
     with pytest.raises(HTTPException) as error:
