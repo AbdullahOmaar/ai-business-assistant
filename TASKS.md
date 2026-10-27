@@ -951,3 +951,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Commit:** `ec35e94f4ced7c3503294c0b63a2a9f5203ade61` on the existing PR #189 branch. No application behavior, CI/security workflow, or production data was changed.
 - **Verification:** test added but **NOT RUN**; this session has no accessible local repository/runner. Existing preview evidence does not execute this backend test. The PR remains subject to the existing CI/automation and security gates; those were not manually restarted or modified.
 - **Next:** execute backend pytest and validate this test on the exact PR head when the authorized runner is available. Keep PR draft/unmerged and production unchanged until required checks pass.
+
+
+## @st continuation — mobile navigation compile defect + isolated regression run (2026-10-27 16:23 UTC)
+
+- **Confirmed defect:** exact branch source `frontend/src/app/app.component.ts` had an extra quote after the `[class.active]` binding on the mobile More button (`tab === 'release-guide'"" [attr.aria-label]`). Angular build failed with NG5002: opening tag `button` not terminated / unexpected closing tag at line 77.
+- **Fix committed:** removed the duplicate quote; commit `e08dafd24a0c7fce01753ad744a4661eaeb0c9d4`. This fixes a real template parse/build failure; no CI/security workflow or production configuration was changed.
+- **Frontend verification:** after applying the exact branch `app.component.ts` and package metadata to the isolated Node 22 sandbox, `npm test` passed **17/17**, and `npm run build` passed with Angular bundle generation complete. The initial sandbox run before syncing the exact branch file failed on the malformed quote; after the fix the build passed. Non-blocking Angular optional-chain and Node module-type warnings remain.
+- **Backend verification:** copied the PR branch's changed backend API/service/version/pyproject/test files into the isolated Python sandbox. `python -m pytest tests/test_services.py -q`: **21 passed**. Full `python -m pytest -q`: **167 passed, 1 skipped, 11 warnings**. The sandbox is not a Git checkout and its unchanged files came from an existing validation snapshot; therefore treat this as isolated source-slice validation, not proof of the full exact SHA or a hosted CI pass.
+- **CI / release:** PR #189 remains Draft/open/unmerged; exact-head hosted CI still needs to be checked after this commit. No production deployment was performed; v1.3.0 remains NOT DEPLOYED. No authenticated non-production payment/stock transaction was run.
+- **Next:** recheck latest PR head and hosted checks; retain the release gate until required checks pass and payment/inventory transaction behavior is verified in a non-production signed-in workspace.
