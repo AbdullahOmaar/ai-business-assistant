@@ -1,32 +1,34 @@
-# Execution checkpoint — independent CI and accounting release gates (2026-10-27)
+# Execution checkpoint — independent CI and financial concurrency (2026-10-27)
 
 ## Ordered task status
 
-1. **CI-ALT-01 — Prepare independent hosted CI: IN_PROGRESS.** Added `.circleci/config.yml` to the existing `fix/actions-minute-budget` branch (not main). YAML syntax parsed locally with PyYAML 6.0.3. CircleCI's own config validation and real hosted execution remain NOT RUN.
-2. **CI-FIN-02 — Accounting integrity in CI: IN_PROGRESS.** The new backend job targets a disposable PostgreSQL 16 service, waits for a connection, applies Alembic migrations, checks current revision/schema drift, runs the entire existing pytest suite, emits JUnit results, and renders offline migration SQL. Existing tests include Decimal/ROUND_HALF_UP rounding, invoice/discount/tax reconciliation, allocation limits, return caps, stock movements, currency-separated summaries, Numeric precision/idempotency constraints, role controls, and cross-business isolation. This does not yet provide full PostgreSQL-specific financial concurrency coverage.
-3. **CI-SEC-03 — Dependency/container security gates: IN_PROGRESS.** Python `pip-audit`, npm high-severity audit, and backend container build/import checks are defined. They have not executed on CircleCI; no audit or container pass is claimed for this candidate.
-4. **CI-REL-04 — Release and demo gate: IN_PROGRESS.** Added `docs/CI_AND_ACCOUNTING_AUTOMATION.md` and updated `docs/PRODUCTION_RELEASE_POLICY.md`, `docs/PRODUCTION_DEPLOYMENT.md`, and `README.md` to require exact-SHA checks and keep unavailable/missing checks BLOCKED.
-5. **CI-ACT-05 — Activate provider and enforce required statuses: BLOCKED.** CircleCI account/GitHub repository authorization is not available through the current connected tools. A repository owner must connect the private repo, validate the config with CircleCI, observe a successful run on this branch head, then make the exact observed CircleCI contexts required checks for `main`. Do not guess names, pay for credits, or bypass gates.
+1. **CI-ALT-01 — Prepare independent hosted CI: IN_PROGRESS.** Added `.circleci/config.yml` to existing PR #173 branch `fix/actions-minute-budget`, not `main`. Local YAML syntax/structure parse passed using PyYAML 6.0.3 on a local working copy matching the fetched configuration. CircleCI's authoritative config validator and a real hosted run remain NOT RUN.
+2. **CI-FIN-02 — PostgreSQL financial concurrency and idempotency: IN_PROGRESS.** Added `backend/tests/test_postgres_financial_concurrency.py` with four database-backed race scenarios: same-key payment retry (must return one payment ID), competing payment allocations (must not over-allocate an invoice), competing stock sales (must not overdraw stock), and concurrent approvals (must not over-return an invoice line). The test fixture requires explicit `CI_ALLOW_DATABASE_SCHEMA_TESTS=true`, an explicit `TEST_DATABASE_URL`, and a test/CI/disposable database name. It never falls back to `DATABASE_URL` and uses a unique disposable schema. Updated `record_payment` to recover safely from a concurrent idempotency-key uniqueness conflict using a nested savepoint and replay-detail verification.
+3. **CI-SEC-03 — Dependency/container security gates: IN_PROGRESS.** CircleCI jobs define Python `pip-audit`, npm high-severity audit, and backend container build/import verification. These have not run on this candidate; no pass is claimed.
+4. **CI-REL-04 — Release/demo gate: IN_PROGRESS.** Added `docs/CI_AND_ACCOUNTING_AUTOMATION.md`; updated `docs/PRODUCTION_RELEASE_POLICY.md`, `docs/PRODUCTION_DEPLOYMENT.md`, and `README.md` to require exact-SHA status checks and keep unavailable/missing/stale checks BLOCKED. PR #173 description records scope, evidence, and merge prerequisites.
+5. **CI-ACT-05 — Activate provider and enforce required statuses: BLOCKED.** CircleCI is not connected through the current app connector, and the available TinyFish browser profile has no recorded sign-in to CircleCI. CircleCI CLI is absent and external network resolution is unavailable in the local container. The repository owner must authorize the private repo in CircleCI, run authoritative validation/pipeline, then require the exact status contexts observed from a successful run on protected `main`.
 
 ## Evidence and validation
 
-- PR #164 recorded two minimal-runner tests (run IDs 40410080644 and 40410146188; jobs 121878252005 and 121878489680) failing before any executable step with `runner_id=0`, no runner name, no steps, and no usable logs. This is an infrastructure/runner-dispatch failure, not evidence that application tests failed or passed. The precise account billing/quota cause remains unconfirmed.
-- PR #173 remains the existing draft CI optimization branch, base `main` SHA `32e16880dfb777a5efd688ccf0eaaf8773e425e1` at last observed check. No merge, deployment, production secret change, or database write occurred.
-- Actual validation run here: local Python successfully loaded the committed config structure with PyYAML 6.0.3 and asserted config version 2.1, the five jobs, two workflows, and the PostgreSQL service declaration. Result: **YAML syntax/structure PASS only**.
-- CircleCI `circleci config validate`: **NOT RUN** (CLI absent in the available container). CircleCI hosted pipeline: **NOT RUN** (provider authorization not connected). Backend pytest, Alembic against live disposable PostgreSQL, npm audit/build, pip-audit, and Docker image build on this candidate: **NOT RUN**. GitHub Actions candidate execution remains infrastructure-blocked by prior pre-step failures.
-- The new CircleCI pipeline has no deployment commands and no production secrets; it is configured for disposable test work only. Free credits are finite. If credits or runners are unavailable, release remains BLOCKED; never enable paid overages or upgrades without explicit owner authorization.
+- PR #164 records two minimal-runner failures before executable steps (runs `40410080644` and `40410146188`; jobs `121878252005` and `121878489680`): `runner_id=0`, no runner name, no steps, and no useful logs. This demonstrates a runner-dispatch problem, not an application test failure/pass. Exact account usage/quota root cause remains unconfirmed.
+- PR #173 remains **Draft / open / not merged**. Base SHA last observed: `32e16880dfb777a5efd688ccf0eaaf8773e425e1`. Latest verified branch head at the prior update: `6b127ceed791fb0a20e05ebeb845effbc6802041`; later commits were added for the PostgreSQL tests/fix and need a fresh PR fetch before reporting a final head SHA.
+- Local structural YAML check: **PASS only**. It asserted config version 2.1, five jobs, two workflows, and a PostgreSQL service declaration. This does not validate CircleCI's schema/expression semantics or execute a build.
+- CircleCI CLI `circleci config validate`: **NOT RUN** (CLI absent; attempted outbound fetch failed with DNS resolution error for github.com). CircleCI hosted jobs: **NOT RUN**. New PostgreSQL concurrency tests: **NOT RUN** against a live PostgreSQL service. Existing backend pytest, Alembic migrations/drift, frontend tests/build, `pip-audit`, `npm audit`, and Docker build on this current candidate: **NOT RUN**.
+- No merge, production deployment, production database write, production secret change, or Admin Screen edit was performed.
+- CircleCI Free currently lists 30,000 credits/month and up to 6,000 build minutes for small Docker resource classes; credits expire monthly and private builds stop when the credit balance reaches zero. These limits are finite, and our medium jobs do not equate to the advertised maximum small-class minute count. Reference: https://circleci.com/pricing/ and https://circleci.com/docs/guides/plans-pricing/credits/.
 
-## Acceptance criteria
+## Release acceptance criteria
 
-- CircleCI official config validation passes on the exact branch head.
-- A real CircleCI run on the exact candidate SHA passes `backend-accounting`, `frontend-quality`, and `backend-container`; JUnit, audit output, migration SQL, and job logs are inspectable.
-- Branch protection requires the exact status contexts returned by that successful run.
-- Follow-up: add PostgreSQL-specific concurrency/idempotency/rollback tests; staging Firebase token rejection and cross-tenant negative tests; then real-browser Playwright checks for sign-in, workspace isolation, invoice/payment/returns, and installed-PWA update after a safe staging identity exists.
-- Do not mark release readiness VERIFIED until these gates and authorized production deployment/smoke checks are evidenced. The current operational profit/loss report is not a double-entry ledger or certified net profit; CI cannot certify unimplemented accounting capabilities.
+- CircleCI official config validation succeeds for the exact branch head.
+- An inspectable CircleCI run passes `backend-accounting`, `frontend-quality`, and `backend-container` on that exact SHA; JUnit results, migration SQL, and audit output are accessible.
+- All four PostgreSQL concurrency tests pass in the isolated test schema; add API-wide PostgreSQL integration coverage as the next increment after this pass.
+- GitHub branch protection requires exact status contexts returned by the successful CircleCI run.
+- Staging checks reject missing/expired/revoked/foreign-project Firebase tokens and cross-business resource access; real-browser tests cover sign-in, workspace isolation, invoice/payment/returns, and PWA install/update.
+- No demo or production release is VERIFIED until required checks are green on the exact SHA and authorized deployment plus safe smoke tests are evidenced. The operational profit/loss figure remains an estimate; the system does not yet have a complete double-entry ledger, inventory valuation/COGS, Greek jurisdiction-aware tax reporting, FX, bank reconciliation, or period-close controls.
 
-## Next exact action
+## Next action requiring external authorization
 
-Repository owner: authorize `AbdullahOmaar/ai-business-assistant` in CircleCI, choose the existing `.circleci/config.yml`, and run the current branch. Then return with the actual pipeline URL/results so exact status names can be inspected and safely required. All repository-side tasks that do not require that access have been implemented on the existing PR branch.
+Authorize this private repository in CircleCI and run the current PR branch. Once the first pipeline is visible, inspect its authoritative validation and statuses, correct any failures, and only then decide whether it is safe to require those statuses on `main`. No paid plan or top-up is authorized.
 
 
 ---
