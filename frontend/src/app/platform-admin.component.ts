@@ -154,7 +154,9 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
 
       @if (section === 'activity') {
         <section class="section-content" aria-labelledby="activity-title">
-          <div class="section-heading"><div><p class="eyebrow">{{ t('سجل غير قابل للتعديل من الشاشة', 'READ-ONLY RECORD') }}</p><h2 id="activity-title">{{ t('سجل التدقيق والأمان', 'Audit & security activity') }}</h2><p>{{ t('أحداث إدارية من جميع مساحات العمل، للعرض والمراجعة فقط.', 'Administrative events across workspaces, for review only.') }}</p></div><button type="button" class="outline-button" [disabled]="auditLoading" (click)="loadAudit(auditOffset)">{{ t('تحديث', 'Refresh') }}</button></div>
+          <div class="section-heading"><div><p class="eyebrow">{{ t('سجل غير قابل للتعديل من الشاشة', 'READ-ONLY RECORD') }}</p><h2 id="activity-title">{{ t('سجل التدقيق والأمان', 'Audit & security activity') }}</h2><p>{{ t('أحداث إدارية من جميع مساحات العمل، للعرض والمراجعة فقط.', 'Administrative events across workspaces, for review only.') }}</p></div><div class="heading-actions"><button type="button" class="outline-button" [disabled]="auditLoading" (click)="loadAudit(auditOffset)">{{ t('تحديث', 'Refresh') }}</button><button type="button" class="primary-button" [disabled]="auditExporting" (click)="exportAudit()">{{ auditExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button></div></div>
+          @if (auditExportError) { <div class="notice error" role="alert">{{ auditExportError }}</div> }
+          @if (auditExportMessage) { <div class="notice success" role="status" aria-live="polite">{{ auditExportMessage }}</div> }
           <form class="filters audit-filters" (ngSubmit)="loadAudit(0)"><label class="search-field"><span>{{ t('نوع العملية', 'Action') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('مثال: platform.business.deactivated', 'e.g. platform.business.deactivated')"></label><label><span>{{ t('هوية المنفّذ', 'Actor identity') }}</span><input name="auditActor" maxlength="128" [(ngModel)]="auditActor" [placeholder]="t('هوية Firebase الموثقة', 'Verified Firebase subject')"></label><label><span>{{ t('معرّف مساحة العمل', 'Workspace ID') }}</span><input name="auditBusinessId" maxlength="36" [(ngModel)]="auditBusinessId" placeholder="UUID"></label><label><span>{{ t('من تاريخ ووقت', 'Created after') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('إلى تاريخ ووقت', 'Created before') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label><button type="submit" class="primary-button" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button></form>
           @if (auditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل سجل التدقيق…', 'Loading audit events…') }}</div> }
           @if (auditError) { <div class="notice error" role="alert">{{ auditError }} <button type="button" class="text-action" (click)="loadAudit(auditOffset)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
@@ -204,7 +206,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
     .table-wrap{min-width:0;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:white}.table-wrap table{border:0;border-collapse:separate;border-spacing:0;width:100%;min-width:760px;font-size:12px;text-align:start}.table-wrap th{background:#f7fafb;color:#63758a;font-size:10px;font-weight:800;white-space:nowrap}.table-wrap th,.table-wrap td{padding:12px 13px;border-bottom:1px solid #ebf0f3;text-align:start;vertical-align:middle;max-width:300px}.table-wrap tr:last-child td{border-bottom:0}.table-wrap tbody tr:hover td{background:#fbfdfd}.table-wrap td small{display:block;margin-top:4px}.compact-table table{min-width:420px}.compact-table th,.compact-table td{padding:10px}
     .filters{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px;padding:14px;background:white;border:1px solid var(--line);border-radius:12px}.filters label,.status-form label{display:grid;gap:6px;color:#485d72;font-size:11px;font-weight:750;min-width:0}.filters label>span,.status-form label>span{color:#5f7387}.filters .search-field{flex:1 1 250px}.filters label:not(.search-field){flex:0 0 170px}.filters input,.filters select,.status-form select,.status-form textarea{min-width:0;width:100%;border:1px solid #d9e3e9;border-radius:8px;padding:10px 11px;background:#fff;color:#24374a;font-size:12px}.filters input::placeholder,.status-form textarea::placeholder{color:#95a4b2}.business-link{display:grid;gap:4px;background:transparent;border:0;padding:0;text-align:start;color:#173a4c;max-width:100%;white-space:normal}.business-link strong{font-size:12px}.business-link small{color:#6e8090;font-size:10px;overflow-wrap:anywhere}.status-pill,.role-pill{display:inline-flex;gap:6px;align-items:center;border-radius:99px;padding:5px 8px;background:#eef3f6;color:#52677a;font-size:10px;font-weight:750;white-space:nowrap}.status-active{background:#e1f6ea;color:#18784c}.status-inactive{background:#fff0ed;color:#a74436}.status-dot,.live-dot{width:6px;height:6px;display:inline-block;border-radius:50%;background:currentColor}.pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:11px}.pagination>div{display:flex;gap:7px}.pagination button{padding:7px 10px}.empty-panel{border:1px dashed #d4e0e7;border-radius:14px;background:white;padding:32px 18px;text-align:center}.empty-panel h3{margin:12px 0 4px;font-size:15px}.empty-panel p{margin:0;color:var(--muted);font-size:12px}.empty-icon{width:42px;height:42px;border-radius:13px;display:inline-grid;place-items:center;background:#eef8f5;color:#0f766e;font-size:21px}
     .detail-panel{display:grid;gap:15px;scroll-margin-top:20px}.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.detail-grid>div{display:grid;gap:7px;min-width:0;padding:12px;border:1px solid #edf1f4;border-radius:9px}.detail-grid small{font-size:10px;color:var(--muted)}.detail-grid strong{font-size:12px;overflow-wrap:anywhere}.divider{height:1px;background:var(--line)}.subject{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:normal;max-width:260px;font-size:11px}.role-pill{background:#eff4f7}.role-pill.accent{background:#e2f5ef;color:#0e766e}.muted-role{color:#6d7781}.caution{padding:12px 14px;border:1px solid #f2deb4;border-radius:10px;background:#fff9eb}.caution strong{font-size:12px;color:#85520d}.caution p{color:#876831;font-size:11px;line-height:1.6;margin:5px 0 0}.status-form{border-top:1px solid var(--line);padding-top:14px;display:grid;grid-template-columns:minmax(160px,.7fr) minmax(230px,1.5fr) auto;gap:12px;align-items:end}.status-form textarea{resize:vertical;line-height:1.5}.field-error{grid-column:1/-1;margin:0;color:#af392c;font-size:11px}
-    .audit-filters label:not(.search-field){flex:1 1 185px}.date-cell{white-space:nowrap}.summary-cell{min-width:170px;white-space:normal;overflow-wrap:anywhere;line-height:1.5}.muted{color:var(--muted)}
+    .heading-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.audit-filters label:not(.search-field){flex:1 1 185px}.date-cell{white-space:nowrap}.summary-cell{min-width:170px;white-space:normal;overflow-wrap:anywhere;line-height:1.5}.muted{color:var(--muted)}
     .permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.permission-card{display:flex;align-items:flex-start;gap:13px;background:white;border:1px solid var(--line);border-radius:14px;padding:17px;min-width:0}.permission-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;background:#edf4f7;border-radius:11px;color:#2a6270;font-size:16px}.permission-card.platform{grid-column:1/-1;background:linear-gradient(135deg,#ffffff 35%,#f0faf7 100%);border-color:#cce7df}.permission-card>div{min-width:0}.permission-card h3{margin:9px 0 6px}.permission-card p,.permission-card li{font-size:12px;color:#5c6f82;line-height:1.7}.permission-card p{margin:0}.permission-card ul{margin:9px 0 0;padding-inline-start:20px;display:grid;gap:2px}.permission-card li::marker{color:#0f766e}.accent{background:#e0f5ee;color:#0e766e}.notice{border-radius:11px;padding:12px 14px;font-size:12px;line-height:1.6;display:flex;align-items:center;justify-content:space-between;gap:12px;overflow-wrap:anywhere}.notice p{margin:5px 0 0}.notice.error{color:#94372c;border:1px solid #f2d4cf;background:#fff7f6}.notice.success{color:#176644;border:1px solid #c9ead8;background:#f0fcf5}.notice.warn{display:block;color:#7b541b;border:1px solid #efdcae;background:#fff9e9}.loading-block{display:flex;align-items:center;gap:10px;padding:18px 14px;color:#697c8e;font-size:12px;border:1px dashed #dbe5eb;border-radius:12px;background:white}.spinner{width:16px;height:16px;border:2px solid #d7e7e7;border-top-color:#0f766e;border-radius:50%;animation:spin .8s linear infinite;flex:0 0 auto}@keyframes spin{to{transform:rotate(360deg)}}.data-note{display:flex;gap:10px;align-items:flex-start;color:#506e82;background:#eef7fb;border:1px solid #d7eaf2;border-radius:11px;padding:13px}.data-note>span{color:#0d7081;font-size:16px}.data-note strong{font-size:12px}.data-note p{font-size:11px;line-height:1.7;margin:4px 0 7px;color:#597184}.data-note small{font-size:10px;color:#758b9b}.admin-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:14px;color:#758698;font-size:10px}.admin-footer>span{display:flex;align-items:center;gap:7px}.live-dot{background:#21a36c;box-shadow:0 0 0 3px #21a36c20}
     @media(max-width:1050px){.runtime-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{grid-template-columns:1fr}.table-wrap table{min-width:700px}.status-form{grid-template-columns:1fr 1.5fr}.status-form .primary-button{grid-column:1/-1;justify-self:start}}
     @media(max-width:760px){.runtime-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-shell{gap:15px}.admin-header{display:grid;gap:14px}.identity-actions{max-width:none;justify-content:flex-start}.identity{flex:1 1 100%}.section-nav{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section-nav button{justify-content:flex-start;padding:10px;min-width:0}.section-heading{align-items:flex-start}.section-heading h2{font-size:19px}.section-heading>.outline-button{max-width:45%;white-space:normal}.filters{align-items:stretch}.filters .search-field,.filters label:not(.search-field){flex:1 1 100%}.filters .primary-button{width:100%}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.permission-grid{grid-template-columns:1fr}.permission-card.platform{grid-column:auto}.pagination{align-items:flex-start;flex-direction:column}.pagination>div{width:100%}.pagination button{flex:1}.table-wrap{margin-inline:-1px}.admin-footer{font-size:10px}}
@@ -253,6 +255,9 @@ export class PlatformAdminComponent implements OnInit {
   auditOffset = 0;
   auditLoading = false;
   auditError = '';
+  auditExporting = false;
+  auditExportError = '';
+  auditExportMessage = '';
   auditAction = '';
   auditActor = '';
   auditBusinessId = '';
@@ -449,6 +454,38 @@ export class PlatformAdminComponent implements OnInit {
       this.statusError = this.errorText(error);
     } finally {
       this.statusSaving = false;
+    }
+  }
+
+  async exportAudit(): Promise<void> {
+    this.auditExporting = true;
+    this.auditExportError = '';
+    this.auditExportMessage = '';
+    try {
+      const result = await this.api.platformAuditEventsCsv({
+        action: this.auditAction.trim() || undefined,
+        actor_subject: this.auditActor.trim() || undefined,
+        business_id: this.auditBusinessId.trim() || undefined,
+        created_after: this.toIsoDateTime(this.auditFrom),
+        created_before: this.toIsoDateTime(this.auditTo),
+        limit: 1000
+      });
+      const url = URL.createObjectURL(result.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'platform-audit-events.csv';
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      this.auditExportMessage = result.truncated
+        ? this.t(`تم تنزيل أول ${result.rowCount} سجل فقط؛ توجد سجلات إضافية مطابقة.`, `Downloaded the first ${result.rowCount} matching rows; more records are available.`)
+        : this.t(`تم تنزيل ${result.rowCount} سجل.`, `Downloaded ${result.rowCount} rows.`);
+    } catch (error) {
+      this.auditExportError = this.errorText(error);
+    } finally {
+      this.auditExporting = false;
     }
   }
 
