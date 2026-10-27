@@ -1,11 +1,14 @@
 # Current execution checkpoint — 2026-10-28
 
-- **Execution branch:** `docs/audit-master-plan-2026-10-28`; existing branch reused, no new branch created. Synced latest main SHA `55b4992cd8ca782d55ecbfb9de59bae8bd02677a`; the candidate contains only audit/docs updates plus the financial lifecycle guard and regression.
-- **SEC-001 opening-stock bypass:** merged via PR [#225](https://github.com/AbdullahOmaar/ai-business-assistant/pull/225), merge SHA `e4117291ab64bbac395ba6c64c15bbf1914d27b4`. Exact PR-head CircleCI passed all four contexts and GitGuardian passed. The broader authorization/tenant-isolation audit remains in progress.
-- **FIN-001 new finding:** voiding an issued invoice after an approved sales return could restore the full original stock again. Added a server-side guard rejecting this transition and a regression asserting the invoice stays issued and stock remains 3 after a 3-unit return on a 10-unit sale.
-- **Regression evidence:** test failed against baseline with `Failed: DID NOT RAISE WorkflowError`, reproducing the bug; test passed after the fix. An isolated sandbox run with branch `services.py` and `test_operations.py` on the existing backend snapshot: **215 passed, 11 warnings, 0 skipped**. `compileall`, `alembic upgrade head`, `alembic check`, and `pip-audit` passed. This is supplemental, not a clean checkout of exact mainline.
-- **CI/release:** prior candidate `3845a9770ef0446680f5ad5f6bd9a0303250e92e` passed all four CircleCI contexts. Syncing latest main triggers new exact-head checks. Current Vercel checks report `build-rate-limit`; no deployment or production mutation performed. Branch-protection endpoint remains inaccessible to this integration (HTTP 403), so required approval rules cannot be confirmed here.
-- **Next:** verify all exact-head checks after this sync, then continue payment/return/stock lifecycle and route × role × tenant coverage. Do not merge/deploy until required approvals and release gates are confirmed.
+- **Execution branch:** `docs/audit-master-plan-2026-10-28`; existing branch reused, no new branch created. Sync target main SHA `39ca1ae2d5463c0fa7ae61125613e97d8dd19178`; candidate adds PostgreSQL concurrency coverage and updates audit/task evidence.
+- **Active queue snapshot:** 10 tasks in the prioritized active queue: 6 IN_PROGRESS, 3 BLOCKED, 1 TODO, 0 fully VERIFIED. These counts describe the broad workstreams, not individual subtask fixes.
+- **SEC-001:** opening-stock OWNER authorization fix merged via PR #225; exact PR-head CircleCI 4/4 and GitGuardian passed. Broader route × role × tenant audit remains in progress.
+- **SEC-002:** duplicate route declarations were consolidated via PR #221. Current-main CI must be evaluated on the latest SHA before the broader security workstream is closed.
+- **FIN-001:** main contains the guard preventing invoice void after an approved return (commit `6fde1b7191314a8225285f44154fa8963c89ae65`) and a SQLite regression. Candidate adds a PostgreSQL concurrency test racing return approval against voiding; either return approval wins and stock stays 3, or void wins and stock returns to 10—never both.
+- **Local verification:** baseline defect reproduction failed as expected; fixed regression passed. Current service/operation tests plus the new concurrency test and current Firebase auth regression were run in an isolated sandbox with disposable PostgreSQL 18.6: **217 passed, 11 warnings, 0 skipped**. The new race test passed **5/5 repeated runs**. `compileall`, `alembic upgrade head`, `alembic check`, and `pip-audit` passed. Sandbox was not a clean checkout of exact main, so this is supplemental evidence only.
+- **CI/release:** main SHA `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` had all four CircleCI contexts pass; latest mainline has since advanced. Exact-head CI must run for this candidate. Vercel still reports `build-rate-limit`; no deployment or production mutation performed.
+- **PR housekeeping:** latest open-PR query returned no open PRs; PR #234 merged the backup-target validation fix and duplicate PR #230 closed. The full restore drill remains blocked without an approved isolated restore target.
+- **Next:** run all four exact-head CircleCI contexts for this candidate, then continue payment/allocation and tenant-boundary verification. Do not merge/deploy without required reviews and release evidence.
 
 ---
 
@@ -129,13 +132,13 @@ Use only `TODO`, `IN_PROGRESS`, `BLOCKED`, and `VERIFIED` for current work. A st
 | ID | Priority | Task / outcome | Accountable role | Status | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
 | GOV-001 | P1 | Publish roles, task-contract rules, PR ownership, and review/release responsibilities for every contributor. | Engineering Coordinator + Task Steward | IN_PROGRESS | `CONTRIBUTING.md`, README and PR template are aligned; applicable CI passes on the exact latest SHA. |
-| CI-001 | P1 | Keep the alternate CI path reproducible and validate the current candidate. | CI Operator + QA Owner | IN_PROGRESS | CircleCI passed all four jobs on `14009b414e226297023618452317e0777522238b` (jobs /5–/8). Later documentation commits produced new head `392b47b9d0a7712e07e022b189bb6012bc04731d`; the exact-head jobs /21–/24 were pending at the last check. Recheck before verifying. |
+| CI-001 | P1 | Keep the alternate CI path reproducible and validate the current candidate. | CI Operator + QA Owner | IN_PROGRESS | Latest main SHA 0346fa32de69ad83b2d58dcbd9caadbd6580bb60 passed all four CircleCI contexts; main has since advanced and this candidate needs exact-head checks. |
 | CI-002 | P1 | Classify GitHub Actions failures without spending exhausted runner allowance. | CI Operator | BLOCKED | On the latest PR head, `backend`, `frontend`, Python audit and JavaScript audit checks failed; connected job step lists were empty and log download returned 404. GitGuardian secret scan passed. The failures are unresolved infrastructure/runner evidence, not proof of application-test failure or success. Do not rerun Actions while the allowance is exhausted. |
 | REL-001 | P0 | Reconcile source version and the production API deployment before a release. | Release Operator + Repository Owner | BLOCKED | Vercel reports production web READY on SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` and production API READY on SHA `82af326ffeec2188b5b837d86af1a76763f02fc6`; newer deployment attempts were cancelled. Verify live `/version`, `/health`, `/readyz`, aliases and deployment settings, then get release approval and deploy once safely. This audit did not deploy. |
-| PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | Metadata review: #150 is 172 commits behind `main` and not mergeable; #164 is 166 behind; #173 is 8 behind / 66 ahead and overlaps #183 in CircleCI/workflow config while containing separate concurrency tests and backend changes. Other drafts use feature branches as their base. Classify each as consolidate, rebase, close-as-superseded, or keep-blocked only after inspecting unique content and dependencies. |
-| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Opening-stock authorization fix merged in PR #225 with exact-head CircleCI 4/4 and GitGuardian success. Continue full route-to-persistence review and unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference negative coverage. |
-| FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Added guard/test for voiding an invoice after an approved return; baseline regression reproduced and fixed test passed. Continue payment idempotency/allocation, repeated-SKU stock, currency/rounding, and PostgreSQL concurrency/lifecycle checks. |
-| OPS-001 | P1 | Prove backup/restore recovers to an isolated database. | Operations / Release Operator | BLOCKED | PR #135 remains open. A backup script alone is not a restore drill; require encrypted backup, checksum verification, isolated restore, and recorded result. Never test against production. |
+| PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | The latest open-PR query returned none; PR #225 merged the opening-stock fix, PR #234 merged backup-target hardening, and duplicate PRs #212/#230/#232 closed. Recheck older chained branches/issues (#150/#164/#173/#183 and financial PRs) for unique work before marking this queue complete. Classify each as consolidate, rebase, close-as-superseded, or keep-blocked only after inspecting unique content and dependencies. |
+| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Opening-stock OWNER fix merged via PR #225 with exact-head CircleCI 4/4 and GitGuardian success. Continue route-to-persistence, unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference negative coverage. |
+| FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Guard against void-after-approved-return is on main (commit 6fde1b7) with regression coverage. Candidate adds a PostgreSQL race test; local suite 217 passed/11 warnings/0 skipped and race test passed 5/5. Continue payment idempotency/allocation, repeated-SKU stock, currency/rounding and exact-head PostgreSQL verification. |
+| OPS-001 | P1 | Prove backup/restore recovers to an isolated database. | Operations / Release Operator | BLOCKED | PR #234 merged isolated restore target-catalog validation and deterministic no-real-database safety tests. A full encrypted backup/checksum/isolated-restore drill remains BLOCKED without an approved isolated target and credentials. Never test against production. |
 | DOC-001 | P2 | Reconcile remaining documentation and task status with current source and production. | Documentation / Task Steward | IN_PROGRESS | Keep README, ADRs, runbooks, PR descriptions and the current task index consistent; preserve dated historical checkpoints but never treat them as current without reconciliation. |
 | PR-REVIEW-001 | P1 | Review high-risk open PRs in dependency order. | Engineering Coordinator + Security Reviewer | TODO | Start with CI #173/#183, payment/stock #176/#187/#189, security/permissions, and backup/recovery; then inspect older chained feature PRs. Keep Draft until exact-head gates pass; preserve unique work and avoid duplicate PRs. |
 
@@ -1225,3 +1228,47 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 ### Open follow-up / next action
 - No open PRs were present at this checkpoint. PR #212 and #222 were closed as superseded; #223, #224, #225, and #226 are merged.
 - Next: complete remaining semantic branch review; then retry Web/API production deployment after Vercel's 24-hour deployment quota resets, verify the final deployed SHA/version and safe smoke tests, and delete only verified stale remote branches when an authorized deletion operation is available.
+
+## Backup/restore guard hardening — current-main candidate — 2026-10-28
+
+- Candidate branch: `fix/backup-restore-target-safety-main-20261028`, based on current main `55b4992cd8ca782d55ecbfb9de59bae8bd02677a` (current main had advanced beyond the earlier draft candidate).
+- Hardened `scripts/backup-restore-drill.sh` target-catalog validation to reject non-empty user relations, routines, types, non-default schemas, and non-default extensions before dump/restore; retained source/target identity rejection and encrypted-backup safety checks.
+- Added stubbed regression coverage in `scripts/backup-restore-drill.test.sh` for identical database identity and non-empty target catalogs. Stubs fail if `pg_dump`, `pg_restore`, `gpg`, or checksum commands are reached, so tests do not contact a real database.
+- Updated `docs/BACKUP_RESTORE_DRILL.md` to describe the expanded target-catalog guard. No live database, credentials, backup, or restore target was used.
+- Prior candidate PR #230 exact-head CircleCI passed 4/4, but its branch had become two commits behind current main and carried a stale `TASKS.md` checkpoint; this focused candidate rebases the same reviewed script changes on current main. Exact-head CircleCI for this branch: pending.
+- Actual isolated restore drill: NOT RUN. Keep production restore readiness BLOCKED until an explicitly approved isolated restore is executed and documented.
+
+## Consolidation checkpoint — 2026-10-28, after finance and backup guard merges
+
+### Latest verified mainline changes
+- PR #231 — Firebase auth now has explicit fail-closed regression coverage when `FIREBASE_PROJECT_ID` is absent; merged as `55b4992cd8ca782d55ecbfb9de59bae8bd02677a`; exact-head CircleCI 4/4 PASS.
+- PR #233 — `void_invoice` rejects an issued invoice after approved sales returns, preventing double stock restoration; merged as `6fde1b7191314a8225285f44154fa8963c89ae65`; exact-head CircleCI 4/4 PASS.
+- PR #234 — isolated backup-restore target catalog guard now checks user relations, routines, types, non-default schemas and non-default extensions; deterministic shell tests reject same source/target identity and non-empty targets before dump/restore; runbook updated. Merged as `0346fa32de69ad83b2d58dcbd9caadbd6580bb60`; exact-head CircleCI 4/4 PASS.
+- Earlier PR #223/#224/#225/#226 and PR #228 are recorded in the prior checkpoints. Release metadata is `1.3.2`.
+
+### Latest main and CI snapshot
+- Main SHA: `0346fa32de69ad83b2d58dcbd9caadbd6580bb60`.
+- At the latest status read, `frontend-quality` and `backend-container` were PASS; `backend-accounting` and `frontend-browser-smoke` were still PENDING on post-merge main runs. The exact PR heads for #233 and #234 each passed all four CircleCI contexts.
+- The two stale drafts #230 and #232 were closed as superseded by focused, current-main PRs #234 and #233 respectively. There were no open PRs immediately after those closures; this checkpoint PR is documentation-only.
+
+### Branch inventory — latest API snapshot
+- 206 branches total, 205 non-main.
+- 200 closed PRs were returned across the fetched pages: 93 merged and 107 closed without merge.
+- 90 non-main branch heads exactly matched a merged PR head SHA. These are cleanup candidates, not an instruction to delete without checking branch-specific work.
+- Three duplicate-head groups (six refs) remain confirmed:
+  - `ci/free-local-assistant-fallback-validation` / `feat/free-local-assistant-fallback`
+  - `feat/assistant-resilience-usage-limits` / `feat/assistant-resilience-usage-limits-verified`
+  - `test/payment-integrity-regression` / `test/payment-integrity-regression-fixed`
+- Additional semantic reviews: payment-integrity and accounting-rounding branch test functions are subsets of current main; return-discount allocation logic is superseded by `domain_rules.discounted_return_line_total`; CORS/settings, timezone, sales-return guard and workspace-load-guard branches were reviewed as stale/subset candidates. A unique Firebase unconfigured-project regression was ported and merged in #231.
+- `security/owner-staff-permission-matrix` still has a unique role-policy test whose assumptions conflict with current STAFF product permissions. Status: BLOCKED pending an explicit role/permission matrix; do not merge blindly.
+- Full semantic review of all 205 non-main branches is NOT COMPLETE. The connected GitHub tools still expose no branch-delete operation, and no branch refs have been deleted. Cleanup remains BLOCKED until an authorized deletion path is available and each candidate is proven to contain no unique work.
+
+### Production deployment — BLOCKED
+- Vercel API production deployment `dpl_3c8nAFG1m99wk64eYzv1nwzjZbGu` is READY on release SHA `6773389e030416c2ef91b6db04fd9bc24cb08399`, serving version `1.3.2`; `/version`, `/readyz`, and `/health` returned HTTP 200. That deployed SHA predates PR #231/#233/#234 and is not current-main parity.
+- Web production remains on old SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`; no Web deployment exists for release SHA `6773389e030416c2ef91b6db04fd9bc24cb08399` or current main.
+- Current main Vercel Web/API checks fail with `build-rate-limit`. A direct deploy request returned HTTP 402 `api-deployments-free-per-day`, “Resource is limited - try again in 24 hours (more than 100)”, `retryAfter=86400`. No paid plan change was made.
+- CLI fallback is unavailable in the execution environment: no Vercel CLI/auth is configured and the connected Desktop Commander device is offline. Do not promote old Web/API builds as if they contained current-main code.
+- Production readiness: NOT VERIFIED. Retry deployment only after the quota resets or the owner resolves the account limit; then deploy the final current main SHA to both projects and verify aliases, `/version`, health/readiness, browser smoke, and PWA/version behavior.
+
+### Next action
+Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to finish, finish semantic branch review, and retry Web/API production deployment after the Vercel quota window. Delete only verified stale branches when an authorized deletion operation is available.

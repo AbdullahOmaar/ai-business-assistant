@@ -95,23 +95,10 @@ All paths below inherit the business ID in the prefix and require a trusted prin
 The route inventory is broader than current negative integration tests. Add explicit non-member and foreign-ID tests for supplier CRUD, stock movements, purchase orders/receiving, sales returns/approval, recurring invoices, pricing rules, notifications, settings/role enforcement, CSV import/export, and invoice lifecycle/payment reversal boundaries. Confirm authorization is evaluated before any external provider use or persistent mutation. Treat this inventory as a checklist to update whenever routes are added or changed.
 
 
-## Current-source role audit — updated 2026-10-28
+## Current-source role and financial-integrity audit — 2026-10-28
 
-**Baseline:** source review began on earlier mainline snapshots. This section is a source-level security review, not a claim that every route has exhaustive runtime authorization coverage.
-
-### Confirmed issue — opening stock through product creation
-
-- The OWNER-only check for positive `opening_quantity` now executes before product, audit, or stock writes.
-- Regression coverage verifies STAFF with positive opening stock is denied without persisted side effects, STAFF with zero opening quantity remains allowed, and OWNER with positive opening quantity succeeds.
-- Fix merged through [PR #225](https://github.com/AbdullahOmaar/ai-business-assistant/pull/225), merge commit `e4117291ab64bbac395ba6c64c15bbf1914d27b4`; all four exact-head CircleCI contexts and GitGuardian passed on PR head `84377e500d2464bcfc94394b30e9a8e3ad8a5fd3`.
-
-### SEC-002 — duplicate route declarations
-
-- The duplicate GET declarations for recurring invoices, operations health, and tax summary were consolidated through PR #221; the route-registration regression remains part of the codebase.
-- Re-check exact current-main CI before treating the merge commit as release-verified.
-
-### Remaining authorization coverage
-
-- Explicit OWNER-only checks exist for invoice issue/void, payment recording, direct stock movements, purchase-order approval/receiving, sales-return approval, recurring-invoice creation, pricing-rule creation, notification creation, settings writes, CSV import/export, customer/product deactivation, product price or stock-tracking changes, membership changes, operational health, audit-event reads, and data-integrity reporting.
-- Broader membership-authorized CRUD, expense/supplier, return-creation, and report routes still need a documented product-role matrix and route × role × tenant negative tests. Do not infer a policy change or broaden/narrow roles without that matrix.
-- A further financial integrity defect was identified during the current review: voiding an issued invoice after an approved sales return could restore the full original stock again. Candidate fix blocks voiding when approved returns exist; a regression reproduces the baseline failure and passes after the fix. The prior candidate passed all four CircleCI contexts; after syncing this newer mainline commit, exact-head CI must run again.
+- **Opening stock authorization:** positive `opening_quantity` now requires OWNER before any product/audit/stock writes. Merged via PR #225; exact PR-head CircleCI passed all four contexts and GitGuardian passed.
+- **Duplicate routes:** the repeated GET declarations for recurring invoices, operations health, and tax summary were consolidated through PR #221; retain the route-registration regression and re-check current-main CI.
+- **Invoice void after sales return:** `void_invoice` now rejects an issued invoice when an approved sales return exists, preventing a second restoration of the original sold quantity. The fix and SQLite regression test are present on main at commit `6fde1b7191314a8225285f44154fa8963c89ae65`.
+- **Concurrent lifecycle coverage:** candidate adds a PostgreSQL race test between return approval and invoice voiding. With disposable PostgreSQL 18.6, the focused race test passed **5/5 repeated runs**; the full isolated suite passed **217 tests, 11 warnings, 0 skipped**. This sandbox used the current service/test files layered over the existing backend snapshot, so exact-head CircleCI remains the gate.
+- **Remaining coverage:** complete route × role × tenant negative tests and broader payment/allocation/return/stock lifecycle review. This document records source and test evidence; it does not claim exhaustive authorization coverage or production readiness.
