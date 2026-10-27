@@ -45,6 +45,7 @@ See [ADR-001 — V0 architecture](docs/adr/ADR-001-v0-architecture.md).
 
 ## Project documentation
 
+- [Contribution guide, roles, and engineering workflow](CONTRIBUTING.md)
 - [Product scope](docs/PRODUCT_SCOPE.md)
 - [First 10 features and acceptance criteria](docs/IMPLEMENTATION_PLAN_FIRST_10_FEATURES.md)
 - [First 10 features implementation audit](docs/FIRST_10_FEATURES_AUDIT.md)

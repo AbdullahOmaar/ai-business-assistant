@@ -1,42 +1,36 @@
-# Architecture Baseline — Decision Pending
+# Architecture Baseline — Accepted V0
 
 ## Status
-**Not yet approved.** This document records constraints and decision criteria; it does not commit the project to a stack.
 
-## Options to evaluate
-- **Angular + Firebase Auth + Firestore:** potentially faster for a web-first V0, but security rules, data modeling, server-side financial operations, and automated tests must be designed carefully.
-- **Angular + API backend (for example, FastAPI) + database:** clearer server-side business logic and validation, but adds deployment and operational responsibilities.
+**Accepted for V0 implementation.** [ADR-001 — V0 Application Architecture](adr/ADR-001-v0-architecture.md), accepted on 2026-10-20 by the repository owner, is the authoritative decision. This summary must not reopen choices settled by the ADR.
 
-Flutter/mobile can be considered later if validated demand requires it; do not let a second client delay a secure web-first foundation.
+## Approved stack
 
-## Non-negotiable requirements
-- Enforce authorization and business isolation at the trusted data/API boundary.
-- Keep secrets out of source control and client bundles.
-- Validate all monetary calculations and state transitions server-side or in an equivalently trusted layer.
-- Test owner/staff permissions and cross-business isolation.
-- Make invoice/payment/expense mutations auditable.
-- Use explicit business currency; do not silently aggregate multiple currencies.
-- Keep AI integrations behind a service boundary. AI may suggest or draft, but consequential changes require human confirmation.
-- Include environment setup, migrations/schema strategy where relevant, automated tests, and a clear local-development guide.
+- Frontend: Angular (web-first).
+- Backend: Python + FastAPI, as a modular monolith with a versioned REST API.
+- Database and migrations: PostgreSQL, SQLAlchemy 2.x, Alembic.
+- Request/response validation: Pydantic.
+- Tests: pytest, API integration tests, and PostgreSQL-backed authorization/financial invariant tests.
+- Identity: the existing implementation uses a trusted Firebase ID-token verification boundary. Changing the identity provider, Firebase project, or security rules requires a separate review and approval.
+- AI: provider-neutral service boundary; consequential changes require human review and confirmation.
 
-## Existing infrastructure constraints
-- A Firebase project reportedly exists on the Spark plan with Firestore Standard; current rules were previously noted as denying client reads/writes. Treat this as unverified until re-inspected.
-- Do not modify Firebase configuration, Firestore rules, or any Railway project/resource without explicit user approval.
-- Do not provision paid services or incur costs without explicit approval and a cost review.
-- Do not reuse unrelated Railway projects/resources.
+## Required constraints
 
-## Decision checklist
-Before selecting a stack, document:
-1. Target client for V0 and expected deployment.
-2. Authentication and authorization flow.
-3. Trusted location for invoice/payment/expense calculations.
-4. Business-membership and tenant-isolation model.
-5. Automated test strategy for security and financial invariants.
-6. Hosting/runtime costs and free-tier limits.
-7. Local setup complexity and maintainability.
+- Enforce active business/workspace membership and role permissions server-side for every relevant read and write.
+- Deny cross-business access by default and prove it with negative integration tests.
+- Keep credentials and provider keys server-side, never in source control or browser assets.
+- Use decimal types with explicit rounding/currency policy. Keep invoiced sales, collected payments, allocations, expenses, and outstanding balances distinct.
+- Use transactions and audit events for consequential changes; derive stock balances from recorded movements.
+- Do not silently overwrite issued invoices, payment allocations, stock balances, or other derived financial state.
+- Use disposable test data; never point tests or migration validation at production.
 
-## Initial engineering guardrails
-- Work in small, reviewable changes.
-- Protect the default branch; use feature branches and pull requests when available.
-- Never commit credentials, tokens, real customer data, or production secrets.
-- Do not claim production readiness until security rules, tests, deployment, and operational behavior have been verified.
+## Outside this decision
+
+This ADR selects the V0 application stack only. It does not authorize deployment, paid cloud provisioning, destructive migrations, production-data changes, or changes to Firebase/Firestore/Railway resources. Operations, backups/recovery, monitoring, and cloud costs remain subject to their runbooks and required approvals. A second client such as Flutter remains deferred until validated demand justifies it.
+
+## References
+
+- [ADR-001](adr/ADR-001-v0-architecture.md)
+- [Security route inventory](SECURITY_ROUTE_INVENTORY.md)
+- [Production deployment runbook](PRODUCTION_DEPLOYMENT.md)
+- [Contributor roles and workflow](../CONTRIBUTING.md)

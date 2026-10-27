@@ -1,4 +1,47 @@
-# Workflow policy checkpoint — 2026-10-27
+# Project Task Ledger
+
+> **Active index updated 2026-10-27.** The queue below is the current summary; older checkpoints are historical evidence and may describe past states. Reconcile every status with current source, GitHub, CI, and deployment evidence.
+
+## Task states
+
+Use only `TODO`, `IN_PROGRESS`, `BLOCKED`, and `VERIFIED` for current work. A state is not proof by itself: record an exact SHA and observable evidence. Say **NOT RUN** when a check was not executed. Mark **BLOCKED** when a concrete permission, approval, or infrastructure issue prevents the next gate.
+
+## Prioritized active queue
+
+| ID | Priority | Task / outcome | Accountable role | Status | Acceptance gate / evidence |
+| --- | --- | --- | --- | --- | --- |
+| GOV-001 | P1 | Publish roles, task-contract rules, PR ownership, and review/release responsibilities for every contributor. | Engineering Coordinator + Task Steward | IN_PROGRESS | `CONTRIBUTING.md`, README and PR template are aligned; applicable CI passes on the exact latest SHA. |
+| CI-001 | P1 | Keep the alternate CI path reproducible and validate the current candidate. | CI Operator + QA Owner | IN_PROGRESS | CircleCI passed all four jobs on `14009b414e226297023618452317e0777522238b` (jobs /5–/8). Later documentation commits produced new head `392b47b9d0a7712e07e022b189bb6012bc04731d`; the exact-head jobs /21–/24 were pending at the last check. Recheck before verifying. |
+| CI-002 | P1 | Classify GitHub Actions failures without spending exhausted runner allowance. | CI Operator | BLOCKED | On the latest PR head, `backend`, `frontend`, Python audit and JavaScript audit checks failed; connected job step lists were empty and log download returned 404. GitGuardian secret scan passed. The failures are unresolved infrastructure/runner evidence, not proof of application-test failure or success. Do not rerun Actions while the allowance is exhausted. |
+| REL-001 | P0 | Reconcile source version and the production API deployment before a release. | Release Operator + Repository Owner | BLOCKED | Vercel reports production web READY on SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` and production API READY on SHA `82af326ffeec2188b5b837d86af1a76763f02fc6`; newer deployment attempts were cancelled. Verify live `/version`, `/health`, `/readyz`, aliases and deployment settings, then get release approval and deploy once safely. This audit did not deploy. |
+| PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | Metadata review: #150 is 172 commits behind `main` and not mergeable; #164 is 166 behind; #173 is 8 behind / 66 ahead and overlaps #183 in CircleCI/workflow config while containing separate concurrency tests and backend changes. Other drafts use feature branches as their base. Classify each as consolidate, rebase, close-as-superseded, or keep-blocked only after inspecting unique content and dependencies. |
+| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Audit the full route-to-persistence path and test unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference denial cases against the accepted architecture/security model. Do not claim complete from source inspection alone. |
+| FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Inspect payment idempotency/allocation, invoice transitions, repeated-SKU stock checks, returns/voids, currency and rounding invariants. Run relevant PostgreSQL integration/concurrency tests on exact candidate heads before merging payment/stock changes. |
+| OPS-001 | P1 | Prove backup/restore recovers to an isolated database. | Operations / Release Operator | BLOCKED | PR #135 remains open. A backup script alone is not a restore drill; require encrypted backup, checksum verification, isolated restore, and recorded result. Never test against production. |
+| DOC-001 | P2 | Reconcile remaining documentation and task status with current source and production. | Documentation / Task Steward | IN_PROGRESS | Keep README, ADRs, runbooks, PR descriptions and the current task index consistent; preserve dated historical checkpoints but never treat them as current without reconciliation. |
+| PR-REVIEW-001 | P1 | Review high-risk open PRs in dependency order. | Engineering Coordinator + Security Reviewer | TODO | Start with CI #173/#183, payment/stock #176/#187/#189, security/permissions, and backup/recovery; then inspect older chained feature PRs. Keep Draft until exact-head gates pass; preserve unique work and avoid duplicate PRs. |
+
+## Execution order
+
+1. Finish this contributor-role and architecture-documentation correction, then verify all applicable checks on its exact new SHA.
+2. Keep production release blocked until actual aliases/version/SHA and readiness are reconciled; deployment is outside this audit.
+3. Reconcile overlapping CI work in #173 and #183, preserving the financial concurrency source/tests from #173 and browser smoke coverage from #183. Do not merge either blindly.
+4. Diagnose runner failures from available run metadata/logs. If logs remain inaccessible, keep the infrastructure blocker explicit and rely only on the CircleCI jobs actually observed passing.
+5. Triage open PRs by overlap, stale base and dependencies. Preserve unique changes and tests before closing or consolidating anything.
+6. Complete security, financial and restore verification; update each task only with exact-SHA evidence.
+
+## Audit evidence and limitations — 2026-10-27 17:31 Cairo
+
+- Reviewed `AGENTS.md`, `README.md`, `TASKS.md`, accepted ADR-001, architecture baseline, security route inventory, production deployment runbook, PR template, four GitHub workflow files, open PR metadata, PR #183 diff, CircleCI statuses and Vercel production deployment metadata.
+- Added `CONTRIBUTING.md`; aligned `docs/ARCHITECTURE_BASELINE.md` with accepted ADR-001; linked the guide from README; and added ownership/reviewer fields to the PR template.
+- CircleCI exact-head evidence before these documentation commits: all four jobs passed on `14009b414e226297023618452317e0777522238b` at links https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/5 through /8. Fresh checks on `392b47b9d0a7712e07e022b189bb6012bc04731d` must finish before GOV-001/CI-001 can be verified.
+- GitHub Actions checks fail with no accessible job-step summaries/logs; their precise root cause remains unverified. No Actions rerun, merge, production deployment, production-data mutation, secret change, or PR closure was performed.
+- Vercel production deployment metadata identifies the active READY web/API SHAs above, while newer deployment attempts were cancelled. Live endpoint version/readiness smoke was **NOT RUN** in this audit.
+- Overall audit status: **PARTIALLY COMPLETE**. Governance documentation is authored; full PR triage, security/financial regression verification, CI runner diagnosis, and production-release reconciliation remain open.
+
+---
+
+## Historical workflow policy checkpoint — 2026-10-27
 
 ## Engineering process rules (adopted)
 
@@ -862,3 +905,43 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **GitHub Actions:** backend tests, dependency scan, container, and combined verification jobs failed before executing steps (`steps=null`, `logs_url=null`) even after retry; treat as runner infrastructure failure, not a pass. Docker/Podman container build remains **NOT RUN**.
 - **Production smoke after merge:** API `/version` returned HTTP 200 but still reports version **1.2.0**, commit `82af326ffeec`; API `/health` returned HTTP 200. Web root returned HTTP 200. Production is therefore **not yet v1.2.1**.
 - **Deployment blockers:** the automatic frontend deployment for merge SHA `7472026c2e0b02dcdc9ea8db43574c0ff416a66b` was canceled by Vercel's Ignored Build Step because the merge commit message lacked `[release-web]`. API deployment creation previously returned HTTP 402 `api-deployments-free-per-day` with `retryAfter=86400`. Next action: trigger a tagged `[release-web] [release-api]` release commit after quota resets; verify READY deployments and production `/version`, `/health`, `/readyz` before marking release VERIFIED.
+
+---
+
+# Automation Testing Cycle — 2026-10-27 — IN_PROGRESS / BLOCKED
+
+This section records the current automation-testing workstream and supersedes earlier status claims for this cycle.
+
+## Reconciliation since the prior checkpoint
+
+- Merged current `main` commit `068936f5973c695b8f61840143bd8acb37dc8baa` into this branch with merge commit `c97e71bac1846bec6015490f2680d4d1fe29f6f7`.
+- Reviewed the resulting three-way diff and found stale branch versions that would have reverted the API/package version to 1.2.0, weakened repeated-line stock validation, and deleted regression tests and the release-candidate checklist. Commit `1c49dc7fb309e873edf14cd24f0294d9a93ee76a` restored those paths to current-main blobs.
+- GitHub comparison now reports zero commits behind main and exactly four intended changed files: `.circleci/config.yml`, `TASKS.md`, `frontend/e2e/startup.spec.ts`, and `frontend/playwright.config.ts`. This is diff reconciliation only; it is not a passing test result.
+
+## Ordered execution and evidence
+
+1. **Disable the exhausted GitHub Actions path: VERIFIED.** Removed `.github/workflows/frontend-e2e.yml` from `automation-testing-e2e` in commit `fc7da57be5715fcd65783fccc2740b459a85021f`. This prevents this newly added browser workflow from automatically consuming GitHub Actions minutes. No GitHub Actions workflow was manually dispatched or re-run.
+2. **Make browser tests deterministic: IMPLEMENTED, execution NOT RUN.** Updated `frontend/e2e/startup.spec.ts` in commit `20dd9c662c9870ef53c4212fb4e56596aabdd58e` to mock `/runtime-config.json` with intentionally incomplete public configuration. Tests can exercise the explicit setup screen and Arabic/English direction changes without contacting Firebase, a live API, or modifying production data.
+3. **Alternative runner config: PRESENT; YAML syntax/structure VERIFIED, hosted execution BLOCKED.** `.circleci/config.yml` defines disposable PostgreSQL + Alembic/pytest, frontend test/build/audit, Playwright Chromium, Python audit, and a disposable backend container build. PyYAML successfully parsed the config and confirmed the required jobs/workflows. This is not CircleCI schema validation or a pipeline run. No CircleCI connector is available in the connected tools.
+4. **Latest validation: PARTIAL / historical evidence only.** GitGuardian completed successfully on `fc7da57be5715fcd65783fccc2740b459a85021f` with no secrets detected across 10 scanned commits. The earlier Vercel Preview on `e65e46920f4634bbf1a1d75cbcca99630803ad84` reported 12 frontend tests passed and a successful Angular production bundle; neither result validates the current branch head or Playwright.
+5. **Runner fallback attempts: BLOCKED.** A Vercel Preview request for the current head was rejected with HTTP 402 `api-deployments-free-per-day` (retry after 24 hours). Attempting to create a sandbox directly from the private Git repository failed at `git clone`; an existing isolated sandbox could validate YAML syntax only, not run the full repo. Desktop Commander is offline.
+6. **Automation cycle acceptance: BLOCKED — do not mark VERIFIED.** Required remaining evidence: a real CircleCI pipeline on the latest branch head showing backend/PostgreSQL migrations and tests, frontend tests/build/audit, Playwright browser smoke results, and container build/import check. If CircleCI is not already linked, enable the project and trigger on the branch; then fix any actual failures and update this ledger with the run URL and result.
+
+## Current branch / PR
+
+- Branch: `automation-testing-e2e`
+- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Reconciliation commits are listed above; this ledger update will itself advance the branch head.
+- PR #183: draft/open, not merged. GitHub currently reports mergeable=true, merge state `unstable` with no status checks; latest source compare was ahead 17 / behind 0 and showed only the four intended files: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
+- No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
+
+---
+
+---
+
+
+## CircleCI execution evidence — 2026-10-27
+
+- **VERIFIED on commit `c86c18c139b2d1dc1b8b1a45382692d94b0b9a50`:** GitHub commit status API reports all four `verify-all-changes` CircleCI jobs as `success`: `backend-accounting` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/1), `frontend-quality` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/2), `backend-container` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/3), and `frontend-browser-smoke` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/4). Status timestamps were 2026-10-27 14:03:58–14:04:40 UTC.
+- **Separate outstanding checks:** GitHub Actions check-runs on the same SHA report failures for `backend`, `frontend`, `Audit Python dependencies`, and `Audit JavaScript dependencies`; GitGuardian secret scan succeeded. These are distinct from the four successful CircleCI jobs. Logs could not be retrieved through the available connector (GitHub log download returned 404), so the cause of those failures is not asserted. Do not rerun GitHub Actions while the runner allowance is exhausted.
+- PR #183 remains Draft/open/unmerged. GitHub comparison reports branch `automation-testing-e2e` ahead 18 and behind 0 relative to `main`; changed files remain the four intended paths. CircleCI evidence above is for the exact SHA shown, not for any later commit.
+- **Next gate:** inspect the CircleCI job pages/artifacts and determine whether the separate GitHub Actions checks are required or are stale/unavailable before changing PR readiness. No production deploy or merge performed.
