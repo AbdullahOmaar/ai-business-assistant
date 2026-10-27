@@ -13,7 +13,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -833,8 +833,7 @@ def import_csv(business_id: UUID, entity_type: str,
 
 
 
-@router.get("/customers")
-def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+@router.get("/customedef list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
                    offset: int = Query(default=0, ge=0), q: str = Query(default="", max_length=120),
                    session: Session = Depends(get_session),
                    principal: AuthenticatedPrincipal = Depends(get_principal)):
@@ -844,11 +843,17 @@ def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=20
             Customer.business_id == business_id, Customer.is_active.is_(True)
         )
         if q.strip():
-            statement = statement.where(Customer.name.ilike(f"%{q.strip()}%"))
+            term = f"%{q.strip()}%"
+            statement = statement.where(or_(
+                Customer.name.ilike(term),
+                Customer.email.ilike(term),
+                Customer.phone.ilike(term),
+            ))
         items = session.scalars(statement.order_by(Customer.name).offset(offset).limit(limit)).all()
         return [_dict(x, ("id", "name", "email", "phone", "address", "notes", "created_at")) for x in items]
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+ exc
 
 
 @router.get("/customers/{customer_id}")

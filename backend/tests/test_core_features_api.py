@@ -518,3 +518,23 @@ def test_foreign_business_profile_dashboard_and_mutation_are_denied(configured_c
     assert dashboard.status_code == 403
     assert mutation.status_code == 403
 
+
+def test_customer_search_matches_name_email_and_phone(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Search Contact Fields", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={
+        "name": "Example Contact",
+        "email": "contact-search@example.com",
+        "phone": "+201155512345",
+    })
+    assert customer.status_code == 201
+
+    for term in ("Example Contact", "contact-search@example.com", "1155512345"):
+        response = configured_client.get(
+            f"/api/v1/businesses/{business_id}/customers",
+            params={"q": term},
+        )
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()] == [customer.json()["id"]]
