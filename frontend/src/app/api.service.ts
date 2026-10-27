@@ -104,6 +104,15 @@ export interface PlatformRoleAuditEventPage {
   items: PlatformRoleAuditEvent[]; total: number; limit: number; offset: number;
 }
 
+export interface DataIntegrityInvoice { invoice_id: string; invoice_number: string; status: string; total: string; currency_code: string; created_at: string | null; }
+export interface DataIntegrityAllocation { allocation_id: string; payment_id: string; payment_reference: string | null; payment_customer_id: string | null; payment_currency: string; invoice_id: string; invoice_number: string; invoice_customer_id: string | null; invoice_currency: string; allocated_amount: string; }
+export interface DataIntegrityReport {
+  generated_at: string; read_only: boolean;
+  unlinked_issued_invoices: { total: number; items: DataIntegrityInvoice[] };
+  currency_mismatched_allocations: { total: number; items: DataIntegrityAllocation[] };
+  customer_mismatched_allocations: { total: number; items: DataIntegrityAllocation[] };
+  limit: number; offset: number; warning: string;
+}
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -445,6 +454,13 @@ export class ApiService {
     if (endDate) params.set('end_date', endDate);
     const query = params.toString();
     return this.request<TaxSummaryReport>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/tax-summary' + (query ? '?' + query : ''));
+  }
+
+  dataIntegrity(businessId: string, offset = 0): Promise<DataIntegrityReport> {
+    const params = new URLSearchParams({ limit: '50', offset: String(offset) });
+    return this.request<DataIntegrityReport>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/data-integrity?' + params.toString()
+    );
   }
 
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
