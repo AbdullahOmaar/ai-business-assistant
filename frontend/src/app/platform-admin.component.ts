@@ -411,8 +411,8 @@ export class PlatformAdminComponent implements OnInit {
         action: this.auditAction.trim() || undefined,
         actor_subject: this.auditActor.trim() || undefined,
         business_id: this.auditBusinessId.trim() || undefined,
-        created_after: this.auditFrom || undefined,
-        created_before: this.auditTo || undefined,
+        created_after: this.toIsoDateTime(this.auditFrom),
+        created_before: this.toIsoDateTime(this.auditTo),
         limit: this.pageSize,
         offset: this.auditOffset
       });
@@ -427,6 +427,12 @@ export class PlatformAdminComponent implements OnInit {
     } finally {
       this.auditLoading = false;
     }
+  }
+
+  private toIsoDateTime(value: string): string | undefined {
+    if (!value.trim()) return undefined;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
   }
 
   private errorText(error: unknown): string {
