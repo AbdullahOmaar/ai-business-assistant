@@ -853,6 +853,14 @@ def change_platform_user_role(
                 PlatformRoleGrant.role == body.role,
             ).with_for_update()
         )
+        # Revoking an absent grant is already the requested state. Do not create
+        # an inactive row or emit a false "revoked" audit event for a role that
+        # was never granted.
+        if grant is None and not body.active:
+            return {
+                "changed": False, "active": False, "role": body.role,
+                "message": "The requested role state is already in effect.",
+            }
         changed = grant is None or bool(grant.is_active) != body.active
         if not changed:
             return {

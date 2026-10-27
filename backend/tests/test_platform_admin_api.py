@@ -729,3 +729,197 @@ def test_read_only_platform_roles_cannot_access_global_user_directory(
     assert response.status_code == 403
     assert response.json()["detail"] == "Platform administrator access is not granted."
 
+
+
+def test_platform_audit_csv_export_neutralizes_spreadsheet_formulas(platform_admin_environment):
+    engine = platform_admin_environment["engine"]
+    with Session(engine) as session:
+        event = session.scalar(select(AuditEvent))
+        business = session.get(Business, UUID(platform_admin_environment["alpha_id"]))
+        assert event is not None
+        assert business is not None
+        event.action = "=HYPERLINK(\"https://example.test\",\"open\")"
+        event.actor_subject = "\t=1+1"
+        event.target_id = "@SUM(1,1)"
+        business.name = "+1+1"
+        session.commit()
+
+    response = platform_admin_environment["client"].get(
+        "/api/v1/platform-admin/audit-events/export.csv",
+        params={"limit": 1},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-export-row-count"] == "1"
+    assert response.headers["x-export-truncated"] == "false"
+    assert response.text.startswith("\ufeffcreated_at,")
+    assert "'=HYPERLINK(" in response.text
+    assert "'\t=1+1" in response.text
+    assert "'@SUM(1,1)" in response.text
+    assert "'+1+1" in response.text
+
+
+def test_platform_audit_csv_export_is_bounded_and_requires_audit_permission(platform_admin_environment):
+    engine = platform_admin_environment["engine"]
+    with Session(engine) as session:
+        session.add(AuditEvent(
+            business_id=UUID(platform_admin_environment["alpha_id"]),
+            actor_subject=OWNER_SUBJECT,
+            action="invoice.updated",
+            target_type="invoice",
+            target_id="EGP-2",
+            change_summary="Second test event",
+        ))
+        session.commit()
+
+    client = platform_admin_environment["client"]
+    response = client.get(
+        "/api/v1/platform-admin/audit-events/export.csv",
+        params={"limit": 1},
+    )
+    assert response.status_code == 200
+    assert response.headers["x-export-row-count"] == "1"
+    assert response.headers["x-export-truncated"] == "true"
+
+    platform_admin_environment["subject"]["value"] = OWNER_SUBJECT
+    denied = client.get("/api/v1/platform-admin/audit-events/export.csv")
+    assert denied.status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("role", "can_manage_status", "can_view_users"),
+    [
+        ("platform_viewer", False, False),
+        ("workspace_operator", True, False),
+        ("user_manager", False, True),
+    ],
+)
+def test_delegated_platform_role_permission_matrix(
+    platform_admin_environment, monkeypatch, role, can_manage_status, can_view_users
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(
+        firebase_admin.auth,
+        "list_users",
+        lambda **kwargs: SimpleNamespace(users=[], next_page_token=None),
+    )
+    with Session(platform_admin_environment["engine"]) as session:
+        session.add(PlatformRoleGrant(
+            user_subject=STAFF_SUBJECT,
+            role=role,
+            is_active=True,
+            granted_by_subject=ADMIN_SUBJECT,
+            last_reason="Approved delegated access",
+        ))
+        session.commit()
+
+    platform_admin_environment["subject"]["value"] = STAFF_SUBJECT
+    client = platform_admin_environment["client"]
+    access = client.get("/api/v1/platform-admin/access")
+    assert access.status_code == 200
+    assert access.json()["roles"] == [role]
+    expected_permissions = {
+        "view_overview", "view_workspaces", "view_audit", "view_system_status",
+    }
+    if can_manage_status:
+        expected_permissions.add("manage_workspace_status")
+    if can_view_users:
+        expected_permissions.add("view_users")
+    assert set(access.json()["permissions"]) == expected_permissions
+    assert "manage_platform_roles" not in access.json()["permissions"]
+
+    assert client.get("/api/v1/platform-admin/overview").status_code == 200
+    assert client.get("/api/v1/platform-admin/businesses").status_code == 200
+    assert client.get("/api/v1/platform-admin/audit-events").status_code == 200
+    assert client.get("/api/v1/platform-admin/system-status").status_code == 200
+    assert client.get("/api/v1/platform-admin/role-audit-events").status_code == 200
+    assert client.get("/api/v1/platform-admin/users").status_code == (
+        200 if can_view_users else 403
+    )
+
+    status_change = client.patch(
+        f"/api/v1/platform-admin/businesses/{platform_admin_environment['alpha_id']}/status",
+        json={"is_active": False, "reason": "Role matrix test"},
+    )
+    assert status_change.status_code == (200 if can_manage_status else 403)
+
+    role_grant = client.post(
+        "/api/v1/platform-admin/users/another-user/roles",
+        json={"role": "platform_viewer", "active": True, "reason": "Must be root only"},
+    )
+    assert role_grant.status_code == 403
+
+
+def test_platform_role_change_rolls_back_when_audit_and_grant_commit_fails(
+    platform_admin_environment, monkeypatch
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(firebase_admin.auth, "get_user", lambda uid, **kwargs: SimpleNamespace(uid=uid))
+    client = platform_admin_environment["client"]
+
+    def fail_commit(_session):
+        raise RuntimeError("simulated database commit failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Session, "commit", fail_commit)
+        response = client.post(
+            "/api/v1/platform-admin/users/audit-atomicity-user/roles",
+            json={
+                "role": "platform_viewer",
+                "active": True,
+                "reason": "Atomicity regression test",
+            },
+        )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "The platform role change could not be saved."
+    with Session(platform_admin_environment["engine"]) as session:
+        grant = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:audit-atomicity-user",
+            PlatformRoleGrant.role == "platform_viewer",
+        ))
+        audit = session.scalar(select(PlatformAdminAuditEvent).where(
+            PlatformAdminAuditEvent.target_subject == "firebase:test-project:audit-atomicity-user",
+            PlatformAdminAuditEvent.action == "platform.user_role.granted",
+        ))
+    assert grant is None
+    assert audit is None
+
+
+def test_revoking_absent_platform_role_is_idempotent_and_does_not_create_false_audit(
+    platform_admin_environment, monkeypatch
+):
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    client = platform_admin_environment["client"]
+    response = client.post(
+        "/api/v1/platform-admin/users/never-granted-user/roles",
+        json={
+            "role": "platform_viewer",
+            "active": False,
+            "reason": "Confirm role is already absent",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["changed"] is False
+    assert response.json()["active"] is False
+    with Session(platform_admin_environment["engine"]) as session:
+        grant = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:never-granted-user",
+            PlatformRoleGrant.role == "platform_viewer",
+        ))
+        audit = session.scalar(select(PlatformAdminAuditEvent).where(
+            PlatformAdminAuditEvent.target_subject == "firebase:test-project:never-granted-user",
+            PlatformAdminAuditEvent.action == "platform.user_role.revoked",
+        ))
+    assert grant is None
+    assert audit is None

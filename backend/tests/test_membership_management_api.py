@@ -121,3 +121,28 @@ def test_membership_role_patch_rejects_extra_fields(configured_client):
         json={"role": "owner", "user_subject": "attacker-selected-subject"},
     )
     assert response.status_code == 422
+
+
+def test_workspace_owner_cannot_access_another_workspaces_memberships(configured_client):
+    owned_business_id = create_workspace(configured_client)
+
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("other-workspace-owner")
+    other_business_id = create_workspace(configured_client)
+    other_membership_id = add_member(other_business_id, "other-workspace-staff")
+
+    # Restore the first workspace owner and attempt IDOR-style access to the
+    # second workspace's membership collection and a known membership ID.
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    listing = configured_client.get(f"/api/v1/businesses/{other_business_id}/memberships")
+    changed = configured_client.patch(
+        f"/api/v1/businesses/{other_business_id}/memberships/{other_membership_id}",
+        json={"role": "owner"},
+    )
+    removed = configured_client.delete(
+        f"/api/v1/businesses/{other_business_id}/memberships/{other_membership_id}"
+    )
+
+    assert owned_business_id != other_business_id
+    assert listing.status_code == 403
+    assert changed.status_code == 403
+    assert removed.status_code == 403
