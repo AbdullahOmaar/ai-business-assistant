@@ -108,3 +108,35 @@ The super-admin permission set is derived from the configured server-side allowl
 ## Release decision
 
 **NO-GO for declaring Platform Admin production-ready.** The live API readiness endpoint is responsive, but deployed source parity, authenticated end-to-end behavior, concurrency coverage, and exact-head checks for the newly added CSV tests remain unresolved. No production data, secrets, identity configuration, or deployments were changed in this review.
+
+
+## Operational rollback runbook (documented; NOT executed)
+
+This runbook is a checklist, not evidence that rollback has been tested. It deliberately does not change production.
+
+### Preconditions and decision
+
+1. Declare an incident and identify the affected surface (Web, API, or both), current production deployment IDs, live `/version` response, and the last known-good deployment IDs/SHAs.
+2. Confirm the candidate rollback target is a known-good deployment for the same project/environment and that its configuration and database schema remain compatible.
+3. Record incident owner, reason, UTC timestamp, approval, current and target SHAs, and the intended validation/abort criteria. Never use a rollback to bypass release approval.
+
+### Execute only with explicit release/incident authorization
+
+1. Prefer the platform's deployment rollback/promote-to-known-good mechanism for the affected Vercel project. Do not rebuild source as a substitute for restoring a known-good artifact unless that is the approved plan.
+2. Roll back Web and API independently only when evidence shows which surface is affected; keep their API contract and schema compatibility in view.
+3. Do not revert or rewrite database migrations, delete records, rotate credentials, or change Firebase allowlists as part of an application rollback without separate explicit authorization and a reviewed data-recovery plan.
+4. If the deployment platform reports quota, protection, or permission errors, stop the production change and escalate the exact error; do not bypass protection.
+
+### Verification and closeout
+
+1. Verify the active production aliases resolve to the intended deployment IDs and inspect each deployment's source SHA.
+2. Check `/readyz` and `/version` for the API, then run approved, non-destructive authenticated Admin smoke tests: access/permission resolution, overview read, workspace list, audit read, and a denied request with a delegated role. Never perform a real role grant or workspace status mutation as a smoke test.
+3. Check runtime logs and error rates for regressions; verify that the live API and Web builds are mutually compatible.
+4. Record actual command/UI actions, timestamps, HTTP results, deployment IDs/SHAs, smoke outcomes, and remaining risks in `TASKS.md`. Rollback is VERIFIED only when all evidence is captured and reviewed.
+
+### Current status
+
+- Runbook written: yes.
+- Rollback executed: **NOT RUN** (no incident/rollback authorization).
+- Last-known-good deployment identity and schema compatibility: **NOT VERIFIED**.
+- Production Admin authenticated smoke after rollback: **NOT RUN**.
