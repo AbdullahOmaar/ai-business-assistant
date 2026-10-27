@@ -750,3 +750,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Validation note: the Admin frontend helper tests are included in the full frontend test glob; a fresh non-production Vercel preview is requested from this exact candidate. No production deployment is requested.
 
 - Preview checkpoint: request a non-production build for this exact, main-synced Admin branch head; production aliases remain untouched.
+
+
+## Verification result — Platform Admin frontend preview — 2026-10-27
+
+- Vercel preview dpl_E7Xgnw7q6XSAyJyS9uwqCvQxubGb reached READY on source SHA 5e9af868256fec955e37b9ddee7cda5d4df8d004.
+- Build logs show npm test: 7 passed, 0 failed; Angular Application bundle generation complete; deployment completed. Initial bundle: 569.28 kB raw and 127.87 kB estimated transfer.
+- This verifies the frontend tests and build only. Authenticated browser behavior remains NOT RUN because the preview URL is not accessible through the available browser-fetch tool; real Firebase allowlist tests, PostgreSQL integration, and container build remain outstanding.
+- Application source did not change after the tested SHA; later commits only update task documentation and main ancestry. PR #172 remains Draft/open/unmerged. No production alias, allowlist, database, or secret was changed.
