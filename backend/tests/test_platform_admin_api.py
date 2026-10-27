@@ -541,7 +541,10 @@ def test_delegated_role_change_is_rejected_even_when_user_supplies_root_headers(
     )
     assert response.status_code == 403
 
-def test_role_grant_returns_not_found_for_missing_firebase_account_without_persisting(platform_admin_environment, monkeypatch):
+
+def test_role_grant_returns_not_found_for_missing_firebase_account_without_persisting(
+    platform_admin_environment, monkeypatch
+):
     import firebase_admin.auth
     import app.platform_admin_api as platform_admin_api
 
@@ -571,7 +574,9 @@ def test_role_grant_returns_not_found_for_missing_firebase_account_without_persi
     assert audit_count is None
 
 
-def test_role_grant_fails_closed_when_firebase_directory_is_unavailable(platform_admin_environment, monkeypatch):
+def test_role_grant_fails_closed_when_firebase_directory_is_unavailable(
+    platform_admin_environment, monkeypatch
+):
     import firebase_admin.auth
     import app.platform_admin_api as platform_admin_api
 
