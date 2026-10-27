@@ -894,3 +894,11 @@ This section records the current automation-testing workstream and supersedes ea
 ---
 
 ---
+
+
+## CircleCI execution evidence — 2026-10-27
+
+- **VERIFIED on commit `c86c18c139b2d1dc1b8b1a45382692d94b0b9a50`:** GitHub commit status API reports all four `verify-all-changes` CircleCI jobs as `success`: `backend-accounting` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/1), `frontend-quality` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/2), `backend-container` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/3), and `frontend-browser-smoke` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/4). Status timestamps were 2026-10-27 14:03:58–14:04:40 UTC.
+- **Separate outstanding checks:** GitHub Actions check-runs on the same SHA report failures for `backend`, `frontend`, `Audit Python dependencies`, and `Audit JavaScript dependencies`; GitGuardian secret scan succeeded. These are distinct from the four successful CircleCI jobs. Logs could not be retrieved through the available connector (GitHub log download returned 404), so the cause of those failures is not asserted. Do not rerun GitHub Actions while the runner allowance is exhausted.
+- PR #183 remains Draft/open/unmerged. GitHub comparison reports branch `automation-testing-e2e` ahead 18 and behind 0 relative to `main`; changed files remain the four intended paths. CircleCI evidence above is for the exact SHA shown, not for any later commit.
+- **Next gate:** inspect the CircleCI job pages/artifacts and determine whether the separate GitHub Actions checks are required or are stale/unavailable before changing PR readiness. No production deploy or merge performed.
