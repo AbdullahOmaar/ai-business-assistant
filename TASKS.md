@@ -869,6 +869,12 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 
 This section records the current automation-testing workstream and supersedes earlier status claims for this cycle.
 
+## Reconciliation since the prior checkpoint
+
+- Merged current `main` commit `068936f5973c695b8f61840143bd8acb37dc8baa` into this branch with merge commit `c97e71bac1846bec6015490f2680d4d1fe29f6f7`.
+- Reviewed the resulting three-way diff and found stale branch versions that would have reverted the API/package version to 1.2.0, weakened repeated-line stock validation, and deleted regression tests and the release-candidate checklist. Commit `1c49dc7fb309e873edf14cd24f0294d9a93ee76a` restored those paths to current-main blobs.
+- GitHub comparison now reports zero commits behind main and exactly four intended changed files: `.circleci/config.yml`, `TASKS.md`, `frontend/e2e/startup.spec.ts`, and `frontend/playwright.config.ts`. This is diff reconciliation only; it is not a passing test result.
+
 ## Ordered execution and evidence
 
 1. **Disable the exhausted GitHub Actions path: VERIFIED.** Removed `.github/workflows/frontend-e2e.yml` from `automation-testing-e2e` in commit `fc7da57be5715fcd65783fccc2740b459a85021f`. This prevents this newly added browser workflow from automatically consuming GitHub Actions minutes. No GitHub Actions workflow was manually dispatched or re-run.
@@ -881,8 +887,8 @@ This section records the current automation-testing workstream and supersedes ea
 ## Current branch / PR
 
 - Branch: `automation-testing-e2e`
-- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Read PR #183 for the live head SHA because this ledger itself is updated by commits.
-- PR #183: draft/open, not merged: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
+- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Reconciliation commits are listed above; this ledger update will itself advance the branch head.
+- PR #183: draft/open, not merged. GitHub currently reports mergeable=true, merge state `unstable` with no status checks; latest source compare was ahead 17 / behind 0 and showed only the four intended files: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
 - No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
 
 ---
