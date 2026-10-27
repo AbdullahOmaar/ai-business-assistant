@@ -130,7 +130,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
       @if (section === 'activity') {
         <section class="section-content" aria-labelledby="activity-title">
           <div class="section-heading"><div><p class="eyebrow">{{ t('سجل غير قابل للتعديل من الشاشة', 'READ-ONLY RECORD') }}</p><h2 id="activity-title">{{ t('سجل التدقيق والأمان', 'Audit & security activity') }}</h2><p>{{ t('أحداث إدارية من جميع مساحات العمل، للعرض والمراجعة فقط.', 'Administrative events across workspaces, for review only.') }}</p></div><button type="button" class="outline-button" [disabled]="auditLoading" (click)="loadAudit(auditOffset)">{{ t('تحديث', 'Refresh') }}</button></div>
-          <form class="filters audit-filters" (ngSubmit)="loadAudit(0)"><label class="search-field"><span>{{ t('نوع العملية', 'Action') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('مثال: platform.business.deactivated', 'e.g. platform.business.deactivated')"></label><label><span>{{ t('من تاريخ ووقت', 'Created after') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('إلى تاريخ ووقت', 'Created before') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label><button type="submit" class="primary-button" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button></form>
+          <form class="filters audit-filters" (ngSubmit)="loadAudit(0)"><label class="search-field"><span>{{ t('نوع العملية', 'Action') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('مثال: platform.business.deactivated', 'e.g. platform.business.deactivated')"></label><label><span>{{ t('هوية المنفّذ', 'Actor identity') }}</span><input name="auditActor" maxlength="128" [(ngModel)]="auditActor" [placeholder]="t('هوية Firebase الموثقة', 'Verified Firebase subject')"></label><label><span>{{ t('معرّف مساحة العمل', 'Workspace ID') }}</span><input name="auditBusinessId" maxlength="36" [(ngModel)]="auditBusinessId" placeholder="UUID"></label><label><span>{{ t('من تاريخ ووقت', 'Created after') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('إلى تاريخ ووقت', 'Created before') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label><button type="submit" class="primary-button" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button></form>
           @if (auditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل سجل التدقيق…', 'Loading audit events…') }}</div> }
           @if (auditError) { <div class="notice error" role="alert">{{ auditError }} <button type="button" class="text-action" (click)="loadAudit(auditOffset)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
           @if (!auditLoading && !auditError && !auditEvents.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">◷</span><h3>{{ t('لا توجد أحداث مطابقة', 'No matching events') }}</h3><p>{{ t('سيظهر هنا نشاط الإدارة المسجل.', 'Recorded admin activity will appear here.') }}</p></div> }
@@ -222,6 +222,8 @@ export class PlatformAdminComponent implements OnInit {
   auditLoading = false;
   auditError = '';
   auditAction = '';
+  auditActor = '';
+  auditBusinessId = '';
   auditFrom = '';
   auditTo = '';
 
@@ -398,6 +400,8 @@ export class PlatformAdminComponent implements OnInit {
     try {
       const result = await this.api.platformAuditEvents({
         action: this.auditAction.trim() || undefined,
+        actor_subject: this.auditActor.trim() || undefined,
+        business_id: this.auditBusinessId.trim() || undefined,
         created_after: this.auditFrom || undefined,
         created_before: this.auditTo || undefined,
         limit: this.pageSize,
