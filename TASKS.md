@@ -1,3 +1,9 @@
+## Owner data-integrity review UI — 2026-10-27
+
+- Added owner-gated, read-only UI for the existing workspace-authorized data-integrity report, including unlinked issued invoices and payment allocation currency/customer mismatches.
+- Added regression coverage for owner gating, API wiring, and clearing report state on workspace switches.
+- Validation must pass on the exact current-main PR head before merge; no production deployment performed.
+
 ## Customer search by contact fields — 2026-10-27
 
 - Extended the workspace-scoped customer `q` filter to match name, email, and phone while retaining active-customer and tenant scoping.
