@@ -827,3 +827,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **UI-INV-03 — IN_PROGRESS:** Invoice creation is collapsed in a native disclosure, independent from filtering existing invoices by customer.
 - **Merge approach:** Reapplied the minimal UI changes on the latest main rather than merging stale conflicting PR #178/#179. Exact-head preview build/tests must pass before merge or production deployment.
 - **Status: IN_PROGRESS;** production aliases unchanged.
+
+
+## Automation Testing workstream — 2026-10-27
+
+- **AT-01 — Backend regression suite and PostgreSQL 16 migration/schema checks: IN_PROGRESS.** Existing backend-tests workflow covers PostgreSQL 16, migrations, Alembic drift, pytest, and offline SQL generation; exact current-main hosted execution remains blocked before steps.
+- **AT-02 — Frontend unit tests and production build: IN_PROGRESS.** Existing frontend test script discovers all `*.spec.ts`; Vercel build logs have passed on prior SHAs, but current-main exact-SHA evidence must be refreshed.
+- **AT-03 — Alternative CI runner: BLOCKED.** A CircleCI configuration exists on the separate `fix/actions-minute-budget` branch, but hosted CircleCI execution for this private repository has not been evidenced. GitHub Actions runs have failed before executing steps; do not classify these as test failures or passes.
+- **AT-04 — Browser smoke automation: IN_PROGRESS.** Added a Playwright Chromium smoke workflow, browser config, and tests for startup leaving the splash screen, absence of uncaught page errors, and Arabic/English direction switching. Tests avoid credentials and production data mutation. Playwright execution is pending an executable runner.
+- **AT-05 — Authenticated end-to-end coverage: TODO/BLOCKED.** Owner sign-in, workspace/tenant isolation, invoice/payment/returns flows require a dedicated non-production Firebase identity and disposable PostgreSQL fixture. Do not use production credentials or submit real financial mutations.
+- **Current evidence:** no test run has yet been observed for this branch's new Playwright suite. The workflow is not VERIFIED until it executes and reports a passing result on the exact commit.
