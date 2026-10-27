@@ -1,3 +1,14 @@
+# Mainline integration checkpoint — 2026-10-27
+
+- **PR #183 — VERIFIED MERGED:** CI/browser smoke and contributor governance merged as d979c59c725b398b132a52cfa0f824edde96fd95. Four CircleCI checks passed on its exact head and four checks passed on main after the merge.
+- **PR #191 — VERIFIED MERGED:** PostgreSQL financial concurrency tests and payment idempotency savepoint recovery merged as 4538cf4de7f44e1a4e031f770157a780830f9259. All four CircleCI checks passed on the exact candidate and main after merge.
+- **REL-001 — IN_PROGRESS:** integrating the v1.3.0 invoice/payment/stock/feature-guide slice on top of current main while preserving the merged concurrency fix. This is source integration only; no production deployment is authorized by this checkpoint.
+- **ADMIN-001 — IN_PROGRESS:** Platform Admin user directory/role-grant changes remain separate until reconciled with the release guide/navigation and verified on the current mainline.
+- **CI status:** the exact current main SHA 4538cf4de7f44e1a4e031f770157a780830f9259 has successful CircleCI backend-container, backend-accounting, frontend-quality, and frontend-browser-smoke checks. Vercel status contexts also reported success; this alone does not establish deployed source/version parity.
+- **Release safety:** do not mark v1.3.0 live until production web/API deployed SHA and version parity plus health/readiness and relevant safe smoke checks are verified.
+
+---
+
 # Project Task Ledger
 
 > **Active index updated 2026-10-27.** The queue below is the current summary; older checkpoints are historical evidence and may describe past states. Reconcile every status with current source, GitHub, CI, and deployment evidence.

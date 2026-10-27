@@ -129,6 +129,66 @@ def test_invoice_persisted_lines_reconcile_half_cent_rounding(workspace):
         assert invoice.total == Decimal("0.05")
 
 
+def test_product_creation_records_opening_stock_atomically(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Opening stock item", unit_price=Decimal("12.00"),
+            is_stock_tracked=True, opening_quantity=Decimal("7.500"),
+        )
+        movements = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        )).all()
+        assert product.is_stock_tracked is True
+        assert len(movements) == 1
+        assert movements[0].movement_type == "opening"
+        assert movements[0].quantity_delta == Decimal("7.500")
+        assert movements[0].reference_type == "product_opening"
+
+    with Session(engine) as session:
+        with pytest.raises(WorkflowError, match="requires stock tracking"):
+            create_product(
+                session, principal=principal, business_id=business_id,
+                name="Invalid stock item", unit_price=Decimal("12.00"),
+                is_stock_tracked=False, opening_quantity=Decimal("1.000"),
+            )
+
+
+
+def test_draft_invoice_edit_keeps_line_totals_and_invoice_totals_reconciled(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-DRAFT-EDIT", currency_code="EGP",
+            lines=[{"description": "Initial", "quantity": "1", "unit_price": "1.00"}],
+        )
+
+        edited = replace_draft_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=invoice.id, invoice_number="INV-DRAFT-EDIT",
+            currency_code="EGP",
+            lines=[
+                {"description": "Half-cent A", "quantity": "1.500", "unit_price": "0.01"},
+                {"description": "Half-cent B", "quantity": "1.500", "unit_price": "0.01"},
+            ],
+            discount_rate=Decimal("25"), tax_rate=Decimal("50"),
+        )
+        lines = session.scalars(
+            select(InvoiceLine).where(InvoiceLine.invoice_id == edited.id)
+            .order_by(InvoiceLine.id)
+        ).all()
+        stored_line_total = sum((line.line_total for line in lines), Decimal("0.00"))
+
+        assert [line.line_total for line in lines] == [Decimal("0.02"), Decimal("0.02")]
+        assert edited.subtotal == stored_line_total == Decimal("0.04")
+        assert edited.discount_total == Decimal("0.01")
+        assert edited.tax_total == Decimal("0.02")
+        assert edited.total == stored_line_total - edited.discount_total + edited.tax_total
+        assert edited.total == Decimal("0.05")
+
 def test_stock_movements_prevent_negative_inventory(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
