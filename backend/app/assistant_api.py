@@ -5,6 +5,7 @@ to the configured model provider. It never accepts an identity in the payload.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from datetime import date
@@ -24,6 +25,33 @@ from app.models import Business, Customer, Expense, Invoice, Product, Supplier
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}/assistant", tags=["AI assistant"])
+
+async def _provider_post(client: httpx.AsyncClient, *, headers: dict, payload: dict) -> httpx.Response:
+    """Retry at most once for transient provider/network failures."""
+    for attempt in range(2):
+        try:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+        except httpx.TransportError as exc:
+            if attempt == 0:
+                await asyncio.sleep(0.2)
+                continue
+            if isinstance(exc, httpx.TimeoutException):
+                raise HTTPException(status_code=504, detail="The AI request timed out. Please try again.") from exc
+            raise HTTPException(status_code=503, detail="The AI provider is temporarily unavailable. Please try again.") from exc
+        if response.status_code == 429 or response.status_code >= 500:
+            if attempt == 0:
+                await asyncio.sleep(0.2)
+                continue
+            raise HTTPException(status_code=503, detail="The AI provider is temporarily unavailable. Please try again.")
+        if response.status_code >= 400:
+            raise HTTPException(status_code=502, detail="The AI provider could not complete this request.")
+        return response
+    raise HTTPException(status_code=503, detail="The AI provider is temporarily unavailable. Please try again.")
+
 
 
 class ChatMessage(BaseModel):
@@ -51,6 +79,9 @@ async def chat(
         authorize_membership(session, principal=principal, business_id=business_id)
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail="No access to this business workspace.") from exc
+
+    if sum(len(item.content) for item in body.history) > 8000:
+        raise HTTPException(status_code=413, detail="Conversation history is too long. Please start a new conversation.")
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
@@ -215,20 +246,21 @@ async def chat(
 
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(35.0, connect=10.0)) as client:
-            response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
+        provider_payload = {
+            "model": model,
+            "messages": messages,
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+            "max_tokens": 900,
+        }
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(18.0, connect=5.0, read=15.0, write=10.0, pool=5.0)
+        ) as client:
+            response = await _provider_post(
+                client,
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0.2,
-                    "max_tokens": 900,
-                },
+                payload=provider_payload,
             )
-        if response.status_code >= 400:
-            raise HTTPException(status_code=502, detail="The AI provider could not complete this request.")
         payload = response.json()
         raw = payload["choices"][0]["message"]["content"]
         parsed = json.loads(raw)
