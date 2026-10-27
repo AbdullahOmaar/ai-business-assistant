@@ -462,6 +462,34 @@ def test_product_csv_preview_is_read_only_and_reports_duplicate_skus(configured_
     assert products.status_code == 200
     assert products.json() == []
 
+    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nsku-1,Second,2.00\n"
+    duplicate = configured_client.post(
+        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["valid"] is False
+    assert any(error["code"] == "duplicate_in_file" for error in duplicate.json()["errors"])
+
+
+def test_product_csv_import_rejects_duplicate_sku_batch_before_writing(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "CSV Import Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    endpoint = f"/api/v1/businesses/{business_id}/imports/products.csv"
+    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nSKU-1,Second,2.00\n"
+
+    response = configured_client.post(
+        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert response.status_code == 422
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
+
 
 def test_foreign_business_profile_dashboard_and_mutation_are_denied(configured_client):
     from app import main as main_module
@@ -490,30 +518,3 @@ def test_foreign_business_profile_dashboard_and_mutation_are_denied(configured_c
     assert dashboard.status_code == 403
     assert mutation.status_code == 403
 
-    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nsku-1,Second,2.00\n"
-    duplicate = configured_client.post(
-        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
-    )
-    assert duplicate.status_code == 200
-    assert duplicate.json()["valid"] is False
-    assert any(error["code"] == "duplicate_in_file" for error in duplicate.json()["errors"])
-
-
-def test_product_csv_import_rejects_duplicate_sku_batch_before_writing(configured_client):
-    business = configured_client.post("/api/v1/businesses", json={
-        "name": "CSV Import Shop", "currency_code": "EGP"
-    }).json()
-    business_id = business["id"]
-    endpoint = f"/api/v1/businesses/{business_id}/imports/products.csv"
-    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nSKU-1,Second,2.00\n"
-
-    response = configured_client.post(
-        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
-    )
-    assert response.status_code == 422
-
-    products = configured_client.get(
-        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
-    )
-    assert products.status_code == 200
-    assert products.json() == []
