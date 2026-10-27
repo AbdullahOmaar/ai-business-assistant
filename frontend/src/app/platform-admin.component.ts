@@ -100,7 +100,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
                 <tr><td><button type="button" class="business-link" (click)="openBusiness(item)"><strong>{{ item.name }}</strong><small>{{ item.contact_email || item.phone || item.id }}</small></button></td><td><span class="status-pill" [class.status-active]="item.is_active" [class.status-inactive]="!item.is_active"><span class="status-dot"></span>{{ item.is_active ? t('نشطة', 'Active') : t('معطّلة', 'Inactive') }}</span></td><td>{{ item.currency_code }}</td><td>{{ item.member_count }}</td><td>{{ formatDate(item.created_at) }}</td><td><button type="button" class="outline-button small-button" (click)="openBusiness(item)">{{ t('التفاصيل', 'Details') }}</button></td></tr>
               }
             </tbody></table></div>
-            <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ businesses.length ? businessOffset + 1 : 0 }}–{{ businessOffset + businesses.length }} {{ t('من', 'of') }} {{ businessTotal }}</span><div><button type="button" class="outline-button" [disabled]="businessOffset === 0 || businessesLoading" (click)="loadBusinesses(Math.max(0, businessOffset - pageSize))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="businessOffset + pageSize >= businessTotal || businessesLoading" (click)="loadBusinesses(businessOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
+            <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ businesses.length ? businessOffset + 1 : 0 }}–{{ businessOffset + businesses.length }} {{ t('من', 'of') }} {{ businessTotal }}</span><div><button type="button" class="outline-button" [disabled]="businessOffset === 0 || businessesLoading" (click)="loadBusinesses(previousPageOffset(businessOffset))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="businessOffset + pageSize >= businessTotal || businessesLoading" (click)="loadBusinesses(businessOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
           }
           @if (detailsLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل التفاصيل…', 'Loading details…') }}</div> }
           @if (detailsError) { <div class="notice error" role="alert">{{ detailsError }}</div> }
@@ -138,7 +138,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
             <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('الشركة', 'Workspace') }}</th><th>{{ t('المنفذ', 'Actor') }}</th><th>{{ t('الكيان', 'Target') }}</th><th>{{ t('الملخص', 'Summary') }}</th></tr></thead><tbody>
               @for (event of auditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td><span class="status-pill">{{ event.action }}</span></td><td><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject">{{ event.actor_subject || '—' }}</td><td>{{ event.target_type }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell">{{ event.change_summary || '—' }}</td></tr> }
             </tbody></table></div>
-            <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('من', 'of') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(Math.max(0, auditOffset - pageSize))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
+            <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('من', 'of') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(previousPageOffset(auditOffset))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
           }
         </section>
       }
@@ -231,6 +231,10 @@ export class PlatformAdminComponent implements OnInit {
     void this.refreshOverview();
     void this.loadBusinesses(0);
     void this.loadAudit(0);
+  }
+
+  previousPageOffset(offset: number): number {
+    return Math.max(0, offset - this.pageSize);
   }
 
   get initials(): string {
