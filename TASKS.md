@@ -2,8 +2,8 @@
 
 ## Task order (old first, new second)
 
-1. **OLD TASK — invoice payment and stock quantities (PR #189): IN_PROGRESS pending validation.** Added a direct invoice-to-payment action with the outstanding amount prefilled, invoice balance fields, stock opening quantity on product creation, derived stock quantity display, and a backend regression test. These changes are part of the same v1.3.0 release candidate below.
-2. **NEW TASK — in-app feature catalogue and release history: IMPLEMENTED, validation NOT RUN.** Added a bilingual, collapsible feature guide reachable from the sidebar and mobile More menu. It shows available capabilities by area, role/setup caveats, and newest-first changes for versions 1.3.0, 1.2.1, 1.2.0, and 1.0.0.
+1. **OLD TASK — invoice payment and stock quantities (PR #189): PARTIALLY VERIFIED.** Added a direct invoice-to-payment action with the outstanding amount prefilled, invoice balance fields, stock opening quantity on product creation, derived stock quantity display, and a backend regression test. These changes are part of the same v1.3.0 release candidate below.
+2. **NEW TASK — in-app feature catalogue and release history: PREVIEW BUILD VERIFIED; manual UI interaction NOT RUN.** Added a bilingual, collapsible feature guide reachable from the sidebar and mobile More menu. It shows available capabilities by area, role/setup caveats, and newest-first changes for versions 1.3.0, 1.2.1, 1.2.0, and 1.0.0.
 3. **VERSION ALIGNMENT — IN_PROGRESS.** Candidate version is 1.3.0 across frontend package metadata and backend API/package metadata. The release guide is sourced from `frontend/src/app/release-guide.ts`; release update steps are documented in `docs/RELEASE_HISTORY.md` and required in `AGENTS.md`.
 4. **Verification and merge — BLOCKED pending exact-head check evidence.** Source review is possible through GitHub, but local build/tests were not run because the remote shell/repository clone is unavailable in this session. The previously observed CircleCI status for this branch was `error`; this workstream does not alter or own the automation/security infrastructure. Do not merge while required checks/protections are failing or unavailable.
 5. **Production — NOT DEPLOYED.** No deployment or production data/settings changes were made. Version 1.3.0 must not be described as live until the actual deployed SHA/version is confirmed.
@@ -16,11 +16,11 @@
 - Earlier PR #189 work remains in the same candidate: `backend/app/services.py`, `backend/app/api.py`, `backend/app/extended_api.py`, `backend/tests/test_services.py`, `frontend/src/app/api.service.ts`.
 
 ## Acceptance criteria
-- [ ] Exact-head frontend build and unit checks pass.
-- [ ] Exact-head backend tests and available API/package checks pass.
-- [ ] Confirm version displayed in UI and API metadata match 1.3.0 in the built candidate.
-- [ ] Review the page in Arabic/English and a mobile viewport; verify the More menu entry is accessible.
-- [ ] Resolve required merge gates, merge only when allowed, then verify main SHA.
+- [x] Frontend preview build and unit checks passed on source SHA `64872ff23063b534a2710e5c64cb97513cf5f762`; Vercel build completed and 12 tests ran successfully before Angular build completion.
+- [ ] Backend unit tests (pytest) remain NOT RUN in this workstream; API preview build completed and `/health`, `/readyz`, `/version`, `/openapi.json` returned HTTP 200.
+- [x] API preview `/version` reports 1.3.0; frontend build log generated UI metadata v1.3.0. The built JS asset contains the feature guide/version history and payment/stock text.
+- [ ] Browser-level review in Arabic/English and mobile viewport remains NOT RUN; the frontend asset and PWA manifest returned HTTP 200.
+- [ ] Resolve required merge gates (CircleCI `error`; GitHub Actions runs failed without recorded steps), then merge only when allowed and verify main SHA.
 - [ ] Deploy only through the release runbook when authorized; verify production alias, SHA/version and relevant smoke flows.
 
 ---
