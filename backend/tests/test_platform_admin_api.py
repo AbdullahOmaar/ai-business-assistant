@@ -893,3 +893,33 @@ def test_platform_role_change_rolls_back_when_audit_and_grant_commit_fails(
         ))
     assert grant is None
     assert audit is None
+
+
+def test_revoking_absent_platform_role_is_idempotent_and_does_not_create_false_audit(
+    platform_admin_environment, monkeypatch
+):
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    client = platform_admin_environment["client"]
+    response = client.post(
+        "/api/v1/platform-admin/users/never-granted-user/roles",
+        json={
+            "role": "platform_viewer",
+            "active": False,
+            "reason": "Confirm role is already absent",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["changed"] is False
+    assert response.json()["active"] is False
+    with Session(platform_admin_environment["engine"]) as session:
+        grant = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:never-granted-user",
+            PlatformRoleGrant.role == "platform_viewer",
+        ))
+        audit = session.scalar(select(PlatformAdminAuditEvent).where(
+            PlatformAdminAuditEvent.target_subject == "firebase:test-project:never-granted-user",
+            PlatformAdminAuditEvent.action == "platform.user_role.revoked",
+        ))
+    assert grant is None
+    assert audit is None
