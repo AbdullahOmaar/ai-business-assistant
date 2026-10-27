@@ -601,6 +601,7 @@ def test_role_grant_fails_closed_when_firebase_directory_is_unavailable(
     assert grant is None
     assert audit_count is None
 
+
 @pytest.mark.parametrize(
     ("query", "expected_lookup"),
     [
@@ -653,7 +654,9 @@ def test_platform_user_directory_search_uses_exact_firebase_lookup_not_paginatio
     assert data["items"][0]["uid"] == user.uid
 
 
-def test_platform_user_directory_forwards_opaque_cursor_and_page_size(platform_admin_environment, monkeypatch):
+def test_platform_user_directory_forwards_opaque_cursor_and_page_size(
+    platform_admin_environment, monkeypatch
+):
     import firebase_admin.auth
     import app.platform_admin_api as platform_admin_api
 
@@ -677,6 +680,7 @@ def test_platform_user_directory_forwards_opaque_cursor_and_page_size(platform_a
     assert calls[0]["max_results"] == 7
     assert response.json()["limit"] == 7
     assert response.json()["has_more"] is False
+
 
 def test_platform_user_directory_returns_empty_results_when_exact_lookup_finds_no_user(
     platform_admin_environment, monkeypatch
