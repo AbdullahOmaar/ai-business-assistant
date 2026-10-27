@@ -39,7 +39,7 @@ Observed UI flows include access refresh, system status, overview, user search/p
 
 ### Workspace membership boundary
 
-Files inspected: `backend/app/security.py`, `backend/tests/test_membership_management_api.py`. The authorization primitive scopes membership by both workspace ID and principal subject and rejects inactive workspaces. Existing membership tests cover owner list/change, non-owner denial, last-owner protection and rejection of extra payload fields. Concurrent last-owner changes and production PostgreSQL locking behavior still need explicit verification.
+Files inspected: `backend/app/security.py`, `backend/tests/test_membership_management_api.py`. The authorization primitive scopes membership by both workspace ID and principal subject and rejects inactive workspaces. Existing membership tests cover owner list/change, non-owner denial, last-owner protection and rejection of extra payload fields. This review branch adds cross-workspace list/patch/delete IDOR regression coverage; it awaits exact-head CI. Concurrent last-owner changes and production PostgreSQL locking behavior still need explicit verification.
 
 ## Permission matrix observed in code
 
@@ -63,7 +63,8 @@ The super-admin permission set is derived from the configured server-side allowl
 2. **Stale admin snapshots after failed refresh — fixed on review branch.** The overview and runtime-health refresh handlers previously retained the last successful values after a later request failed, including a 403. The branch now clears those snapshots and extends the mocked Playwright flow to check that they disappear; exact-head browser smoke is pending.
 3. **Production source parity is not established.** `/version` reports `877243840576`; current main is `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Vercel status checks show the daily build-rate-limit page. This is an operational mismatch, not proof that the live application is broken or exploitable.
 4. **CSV export regression coverage was missing in the inspected Admin test file.** Two tests have now been added for formula neutralization, bounded export metadata, no-store behavior, and denial without audit permission. They are not verified until the exact-head CircleCI run completes.
-5. **Production authenticated Admin E2E has not been run in this review.** Public readiness and version endpoints do not validate a signed-in user's role enforcement or the complete browser workflow.
+5. **Cross-workspace membership IDOR regression is now covered by a new test, but is not yet CI-verified.** The test checks that an owner of Workspace A cannot list, change, or remove a known membership in Workspace B.
+6. **Production authenticated Admin E2E has not been run in this review.** Public readiness and version endpoints do not validate a signed-in user's role enforcement or the complete browser workflow.
 
 ### Risks requiring more evidence / follow-up
 
@@ -101,7 +102,7 @@ The super-admin permission set is derived from the configured server-side allowl
 
 - GitHub branch-protection API returned HTTP 403 `Resource not accessible by integration`; repository rulesets API returned HTTP 403 stating the feature is unavailable for this repository plan. Branch protection requirements therefore remain **unverified**, not absent.
 - The public API Admin access probe could not reach the app because Vercel deployment authentication blocked the fetch tool and the direct web fetch was inaccessible. Do not infer the app's HTTP authorization result from this probe.
-- Latest code/test head `0a0dce8a0f2ad496aa32744992c8f111aa106720` had CircleCI runs 849–852 pending at the last status check. The latest documentation-only head is newer; its checks must be read separately if they run.
+- Latest code/test head `7e935995c932121e261d8c5d337df93226b6e31b` had CircleCI runs 866–868 pending at the last status check; the backend-container status was not yet present. A later documentation-only commit is newer and should not be confused with this tested code snapshot.
 - No production deployment was attempted. The task itself prohibits deployment without explicit release authorization.
 
 ## Release decision
