@@ -35,6 +35,47 @@ export interface AuditEventPage { items: AuditEvent[]; total: number; limit: num
 export interface ReceivablesAgingReport { as_of_date: string; source: string; currency_policy: string; invoice_count: number; by_currency: ReceivablesAgingCurrencySummary[]; invoices: ReceivablesAgingInvoice[]; data_quality_warnings: ReceivablesAgingWarning[]; limitations: string[]; }
 export interface CustomerStatementEvent { occurred_at: string; event_type: string; source_id: string; reference: string | null; invoice_id?: string; currency_code: string; debit: string; credit: string; affects_balance: boolean; balance: string; }
 export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
+
+export interface PlatformAdminOverview {
+  generated_at: string;
+  businesses: { total: number; active: number; inactive: number };
+  users: { distinct_subjects: number; memberships: number };
+  invoices: { count: number; by_currency_and_status: Array<{ currency_code: string; status: string; count: number; total: string }> };
+  payments: { count: number; by_currency: Array<{ currency_code: string; count: number; total: string }> };
+  audit_events: { count: number };
+  limitations: string[];
+}
+export interface PlatformSystemStatus {
+  status: 'healthy' | 'degraded';
+  checked_at: string;
+  release: { version: string; commit: string; environment: string };
+  dependencies: { database: 'healthy' | 'unavailable' | 'unconfigured'; identity_verifier: 'configured' | 'unconfigured' };
+  limitations: string[];
+}
+export interface PlatformBusiness {
+  id: string; name: string; currency_code: string; locale: string; timezone: string;
+  contact_email?: string | null; phone?: string | null; is_active: boolean;
+  created_at: string | null; updated_at: string | null; member_count: number;
+}
+export interface PlatformMembership {
+  id: string; user_subject: string; role: 'owner' | 'staff'; created_at: string | null;
+}
+export interface PlatformBusinessPage {
+  items: PlatformBusiness[]; total: number; limit: number; offset: number;
+  sort_by: 'created_at' | 'name' | 'members'; sort_order: 'asc' | 'desc';
+}
+export interface PlatformBusinessDetails {
+  business: PlatformBusiness;
+  memberships: PlatformMembership[];
+  limitations: string[];
+}
+export interface PlatformAuditEvent {
+  id: string; business_id: string; business_name: string; actor_subject: string | null;
+  action: string; target_type: string; target_id: string | null;
+  change_summary: string | null; created_at: string | null;
+}
+export interface PlatformAuditEventPage { items: PlatformAuditEvent[]; total: number; limit: number; offset: number; }
+
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -92,6 +133,35 @@ export class ApiService {
     return await response.json() as T;
   }
 
+  private async requestBlob(path: string): Promise<Response> {
+    const config = await this.auth.getRuntimeConfig();
+    const configuredBase = (config.apiBaseUrl || '').trim();
+    const base = configuredBase.endsWith('/') ? configuredBase.slice(0, -1) : configuredBase;
+    if (!base || base.includes('YOUR-BACKEND')) {
+      throw new Error('The backend URL is not configured in runtime-config.json.');
+    }
+    const token = await this.auth.idToken();
+    let response: Response;
+    try {
+      response = await fetch(base + path, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'text/csv' },
+        cache: 'no-store'
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
+    }
+    if (!response.ok) {
+      let message = `Request failed (${response.status}).`;
+      try {
+        const payload = await response.json();
+        if (typeof payload.detail === 'string') message = payload.detail;
+      } catch { /* response body may be empty */ }
+      throw new Error(message);
+    }
+    return response;
+  }
+
   private async requestCsv<T>(path: string, csvText: string): Promise<T> {
     const config = await this.auth.getRuntimeConfig();
     const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
@@ -136,6 +206,71 @@ export class ApiService {
     return this.requestCsv(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/imports/products.csv`, csvText
     );
+  }
+
+
+  platformAdminAccess(): Promise<{ is_platform_admin: boolean }> {
+    return this.request<{ is_platform_admin: boolean }>('/api/v1/platform-admin/access');
+  }
+
+  platformAdminOverview(): Promise<PlatformAdminOverview> {
+    return this.request<PlatformAdminOverview>('/api/v1/platform-admin/overview');
+  }
+
+  platformAdminSystemStatus(): Promise<PlatformSystemStatus> {
+    return this.request<PlatformSystemStatus>('/api/v1/platform-admin/system-status');
+  }
+
+  platformBusinesses(filters: {
+    q?: string; status?: 'all' | 'active' | 'inactive';
+    sort_by?: 'created_at' | 'name' | 'members'; sort_order?: 'asc' | 'desc';
+    limit?: number; offset?: number;
+  } = {}): Promise<PlatformBusinessPage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return this.request<PlatformBusinessPage>(`/api/v1/platform-admin/businesses?${params.toString()}`);
+  }
+
+  platformBusinessDetails(businessId: string): Promise<PlatformBusinessDetails> {
+    return this.request<PlatformBusinessDetails>(
+      `/api/v1/platform-admin/businesses/${encodeURIComponent(businessId)}`
+    );
+  }
+
+  platformBusinessStatus(businessId: string, body: { is_active: boolean; reason: string }): Promise<{
+    business: PlatformBusiness; changed: boolean; message: string;
+  }> {
+    return this.request<{ business: PlatformBusiness; changed: boolean; message: string }>(
+      `/api/v1/platform-admin/businesses/${encodeURIComponent(businessId)}/status`, 'PATCH', body
+    );
+  }
+
+  platformAuditEvents(filters: {
+    action?: string; actor_subject?: string; business_id?: string; created_after?: string; created_before?: string;
+    limit?: number; offset?: number;
+  } = {}): Promise<PlatformAuditEventPage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return this.request<PlatformAuditEventPage>(`/api/v1/platform-admin/audit-events?${params.toString()}`);
+  }
+
+  platformAuditEventsCsv(filters: {
+    action?: string; actor_subject?: string; business_id?: string; created_after?: string; created_before?: string;
+    limit?: number;
+  } = {}): Promise<{ blob: Blob; truncated: boolean; rowCount: number }> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return this.requestBlob(`/api/v1/platform-admin/audit-events/export.csv?${params.toString()}`).then(async response => ({
+      blob: await response.blob(),
+      truncated: response.headers.get('X-Export-Truncated') === 'true',
+      rowCount: Number(response.headers.get('X-Export-Row-Count') || 0)
+    }));
   }
 
   listBusinesses(): Promise<Business[]> {
