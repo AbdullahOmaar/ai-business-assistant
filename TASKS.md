@@ -12,8 +12,8 @@ This checkpoint supersedes older release notes below where they describe PR #168
 
 ## Deployment configuration correction
 
-- Found and corrected the frontend Vercel Ignore Build Step. Before correction, its command was `git log -1 --pretty=%B | grep -q '\\[release-web\\]' && exit 0 || exit 1`. It returned success (exit 0) when the release marker was present, which Vercel interpreted as “skip deployment”; this canceled the post-merge production attempt despite the release marker.
-- Updated only `commandForIgnoringBuildStep` for the frontend project to `git log -1 --pretty=%B | grep -q '\\[release-web\\]' && exit 1 || exit 0`. Confirmed by the subsequent production build logs: the corrected command ran and the deployment reached READY.
+- Found and corrected the frontend Vercel Ignore Build Step. Before correction, its command was `git log -1 --pretty=%B | grep -q '\[release-web\]' && exit 0 || exit 1`. It returned success (exit 0) when the release marker was present, which Vercel interpreted as “skip deployment”; this canceled the post-merge production attempt despite the release marker.
+- Updated only `commandForIgnoringBuildStep` for the frontend project to `git log -1 --pretty=%B | grep -q '\[release-web\]' && exit 1 || exit 0`. Confirmed by the subsequent production build logs: the corrected command ran and the deployment reached READY.
 - Exact production deployment: `dpl_62oniFz5kFHy3evLLfdF7XSgG6mo`, source SHA `96cefa42b68a94ddc87b10563c3c26bd6784c394`, READY, alias `ai-business-assistant-web.vercel.app`.
 - No paid plan changes, database migrations, row edits, Firebase setting changes, or secret changes were made.
 
