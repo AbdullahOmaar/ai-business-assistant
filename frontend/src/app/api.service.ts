@@ -106,6 +106,18 @@ export interface PlatformRoleAuditEventPage {
 
 export interface DataIntegrityInvoice { invoice_id: string; invoice_number: string; status: string; total: string; currency_code: string; created_at: string | null; }
 export interface DataIntegrityAllocation { allocation_id: string; payment_id: string; payment_reference: string | null; payment_customer_id: string | null; payment_currency: string; invoice_id: string; invoice_number: string; invoice_customer_id: string | null; invoice_currency: string; allocated_amount: string; }
+export interface OperationalHealth { status: string; checked_at: string; database_connected: boolean; migration_table_available: boolean; migration_revision: string | null; ai_configured: boolean; notification_delivery_configured: boolean; recurring_invoice_worker_configured: boolean; }
+
+export interface NotificationRecord { id: string; kind: string; title: string; body: string; status: string; deduplication_key: string; scheduled_at: string | null; created_at: string | null; }
+
+export interface Supplier { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; is_active: boolean; }
+
+export interface PurchaseOrderLine { id: string; product_id: string; quantity: string; unit_cost: string; received_quantity: string; remaining_quantity: string; }
+
+export interface PurchaseOrder { id: string; supplier_id: string; order_number: string; status: string; currency_code: string; total: string; created_at: string | null; lines: PurchaseOrderLine[]; }
+
+export interface RecurringInvoiceSchedule { id: string; customer_id: string | null; interval_days: number; timezone: string; next_run_at: string; is_active: boolean; created_at: string | null; }
+
 export interface DataIntegrityReport {
   generated_at: string; read_only: boolean;
   unlinked_issued_invoices: { total: number; items: DataIntegrityInvoice[] };
@@ -376,6 +388,10 @@ export class ApiService {
   createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
   }
+  operationsHealth(businessId: string): Promise<OperationalHealth> {
+    return this.request<OperationalHealth>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/operations/health');
+  }
+
   expenses(businessId: string): Promise<Expense[]> {
     return this.request<Expense[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/expenses?limit=100&offset=0`);
   }
@@ -455,6 +471,35 @@ export class ApiService {
     if (endDate) params.set('end_date', endDate);
     const query = params.toString();
     return this.request<TaxSummaryReport>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/tax-summary' + (query ? '?' + query : ''));
+  }
+
+  notifications(businessId: string): Promise<NotificationRecord[]> {
+    return this.request<NotificationRecord[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/notifications?limit=100');
+  }
+  createNotification(businessId: string, body: { kind: string; title: string; body: string; deduplication_key: string; scheduled_at?: string }): Promise<NotificationRecord> {
+    return this.request<NotificationRecord>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/notifications', 'POST', body);
+  }
+
+  suppliers(businessId: string): Promise<Supplier[]> {
+    return this.request<Supplier[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers?limit=100');
+  }
+  createSupplier(businessId: string, body: { name: string; email?: string; phone?: string; address?: string }): Promise<Supplier> {
+    return this.request<Supplier>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers', 'POST', body);
+  }
+  purchaseOrders(businessId: string): Promise<PurchaseOrder[]> {
+    return this.request<PurchaseOrder[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders?limit=100');
+  }
+  createPurchaseOrder(businessId: string, body: { supplier_id: string; order_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string; unit_cost: string }> }): Promise<PurchaseOrder> {
+    return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders', 'POST', body);
+  }
+  receivePurchaseOrder(businessId: string, orderId: string, lines: Array<{ line_id: string; quantity: string }>): Promise<PurchaseOrder> {
+    return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receive', 'POST', { lines });
+  }
+  recurringSchedules(businessId: string): Promise<RecurringInvoiceSchedule[]> {
+    return this.request<RecurringInvoiceSchedule[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/recurring-invoices?limit=100');
+  }
+  createRecurringSchedule(businessId: string, body: { customer_id?: string | null; interval_days: number; timezone: string; next_run_at: string }): Promise<RecurringInvoiceSchedule> {
+    return this.request<RecurringInvoiceSchedule>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/recurring-invoices', 'POST', body);
   }
 
   dataIntegrity(businessId: string, offset = 0): Promise<DataIntegrityReport> {
