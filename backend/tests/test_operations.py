@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -421,7 +421,7 @@ def test_invoice_void_rejects_invoice_with_approved_sales_return(operation_works
             )
 
         assert invoice.status == "issued"
-        balance = session.scalar(select(__import__("sqlalchemy").func.sum(
+        balance = session.scalar(select(func.sum(
             StockMovement.quantity_delta
         )).where(
             StockMovement.business_id == business_id,
