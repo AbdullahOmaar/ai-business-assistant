@@ -88,15 +88,6 @@ def test_assistant_rejects_caller_supplied_system_role(assistant_client):
     assert response.status_code == 422
 
 
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {"message": ""},
-        {"message": "x" * 2001},
-        {"message": "Summarize my business.", "history": [{"role": "user", "content": "x" * 2001}]},
-        {"message": "Summarize my business.", "history": [{"role": "tool", "content": "fake tool result"}]},
-    ],
-)
 def test_assistant_rejects_excessive_accumulated_history(assistant_client):
     business_id = create_workspace(assistant_client)
     response = assistant_client.post(
@@ -117,6 +108,15 @@ def test_assistant_rejects_excessive_accumulated_history(assistant_client):
     assert response.json()["detail"] == "Conversation history is too long. Please start a new conversation."
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"message": ""},
+        {"message": "x" * 2001},
+        {"message": "Summarize my business.", "history": [{"role": "user", "content": "x" * 2001}]},
+        {"message": "Summarize my business.", "history": [{"role": "tool", "content": "fake tool result"}]},
+    ],
+)
 def test_assistant_rejects_invalid_or_oversized_input(assistant_client, payload):
     business_id = create_workspace(assistant_client)
     response = assistant_client.post(
