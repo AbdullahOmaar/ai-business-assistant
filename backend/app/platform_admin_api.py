@@ -74,13 +74,12 @@ def _iso(value: datetime | None) -> str | None:
 
 
 def _csv_safe_cell(value: object | None) -> str:
-    \"\"\"Neutralize spreadsheet formulas in untrusted CSV text cells.\"\"\"
-    text_value = \"\" if value is None else str(value)
-    significant = text_value.lstrip(\" \\t\\r\\n\")
-    if text_value.startswith((\"\\t\", \"\\r\", \"\\n\")) or significant.startswith((\"=\", \"+\", \"-\", \"@\")):
-        return \"'\" + text_value
+    """Neutralize spreadsheet formulas in untrusted CSV text cells."""
+    text_value = "" if value is None else str(value)
+    significant = text_value.lstrip(" \t\r\n")
+    if text_value.startswith(("\t", "\r", "\n")) or significant.startswith(("=", "+", "-", "@")):
+        return "'" + text_value
     return text_value
-
 
 def _normalize_datetime(value: datetime | None) -> datetime | None:
     """Treat timezone-less query values as UTC and normalize aware values to UTC."""
@@ -515,7 +514,7 @@ def export_platform_audit_events(
     rows = rows[:limit]
 
     output = io.StringIO(newline="")
-    writer = csv.writer(output, lineterminator="\\r\\n")
+    writer = csv.writer(output, lineterminator="\r\n")
     writer.writerow(("created_at", "action", "actor_subject", "business_id", "business_name", "target_type", "target_id"))
     for event, business_name in rows:
         writer.writerow((
@@ -537,7 +536,7 @@ def export_platform_audit_events(
         target_id=str(business_id) if business_id else "filtered",
     )
     return Response(
-        content="\\ufeff" + output.getvalue(),
+        content="\ufeff" + output.getvalue(),
         media_type="text/csv; charset=utf-8",
         headers={
             "Content-Disposition": 'attachment; filename="platform-audit-events.csv"',
