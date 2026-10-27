@@ -31,7 +31,7 @@ from app.models import (
     SalesReturnLine,
     StockMovement,
 )
-from app.operations import WorkflowError as OperationsWorkflowError, approve_sales_return
+from app.operations import approve_sales_return
 from app.security import AuthenticatedPrincipal
 from app.services import (
     WorkflowError,
@@ -204,7 +204,7 @@ def test_concurrent_payments_cannot_overallocate_an_invoice(postgres_engine, pg_
                 )
                 session.commit()
                 return ("ok", payment.id)
-            except WorkflowError as exc:
+            except ValueError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
             except Exception as exc:
@@ -316,7 +316,7 @@ def test_concurrent_approvals_cannot_overreturn_invoice_line(postgres_engine, pg
                 )
                 session.commit()
                 return ("ok", result.id)
-            except OperationsWorkflowError as exc:
+            except ValueError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
             except Exception as exc:
