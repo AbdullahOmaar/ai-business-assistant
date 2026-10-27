@@ -1,3 +1,30 @@
+# Execution checkpoint — independent CI and accounting release gates (2026-10-27)
+
+## Current task status
+
+- **CI-ALT-01 — Add a hosted CI alternative:** IN_PROGRESS. Repository stack confirmed from `README.md`, workflow files, and project manifests: FastAPI/Python 3.12 + PostgreSQL/Alembic + Angular/Node 22. No `.circleci/config.yml` exists on the inspected branch.
+- **CI-FIN-02 — Preserve accounting regression gates:** IN_PROGRESS. Existing tests already cover Decimal/ROUND_HALF_UP calculations, line/discount/tax reconciliation, payment allocation limits, returns capped by invoiced amounts, currency separation, numeric DB storage, idempotency uniqueness, stock/workflow behavior, and cross-business access. The alternate CI must run these tests against a real disposable PostgreSQL service and must not replace them with mock-only checks.
+- **CI-SEC-03 — Dependency and container checks:** TODO. Candidate gate will audit Python/npm dependencies and build/import-check the backend container.
+- **CI-REL-04 — Release gate and evidence:** TODO. Document exact-SHA checks, required negative authorization tests, reconciliation expectations, and no-demo/no-deploy rules while a critical check is missing or failing.
+- **CI-ACT-05 — Activate alternate provider and require its checks:** BLOCKED pending repository-owner one-time CircleCI/GitHub authorization. The connector available in this session can change repository files and PRs, but no CircleCI account/API connection is currently available to activate a project, run a CircleCI pipeline, or alter branch-protection required checks.
+
+## Evidence and scope
+
+- PR #164 documents repeated hosted-runner failures before any step: `runner_id=0`, no runner name, no steps/logs. This is an infrastructure dispatch failure, not evidence that app tests failed or passed. Exact account/quota root cause remains unconfirmed.
+- PR #173 already reduces duplicate GitHub Actions triggers and keeps existing checks. Continue from this branch to avoid duplicating the CI optimization PR.
+- In scope: `.circleci/config.yml`, CI/release runbook, and this ledger. No Admin Screen edits, production database changes, secrets, merges, or deployments.
+- Acceptance for verification: CircleCI's own config validation passes; a real CircleCI run on the exact PR head runs PostgreSQL migrations plus the complete pytest suite, frontend tests/build, dependency audits, and container build/import; all required jobs pass; test results and commit SHA are inspectable. Only then mark CI-ALT-01 verified.
+- Release rule: until these alternate checks run successfully and required checks are enforced, GitHub Actions remains blocked/unverified and demo/production release readiness stays **BLOCKED**.
+
+## Immediate next steps
+
+1. Commit a CircleCI configuration on this branch for backend/PostgreSQL/accounting, frontend, security, and container gates.
+2. Add a zero-cost setup/validation runbook and explicit finance/demo/deployment gates.
+3. Parse-check the YAML locally if tooling is available; then request CircleCI's authoritative config validation and first actual run after the owner authorizes the GitHub integration.
+4. Verify every change and update this checkpoint with actual commit/PR/pipeline evidence; do not claim CI execution until an inspectable run exists.
+
+---
+
 # Latest verified release checkpoint — 2026-10-27 00:20 UTC
 
 This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
