@@ -702,3 +702,10 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Fix commit: 402a9f4051460df266e996db25ff55579b9bac74. Current-head secret scan recheck is NOT RUN; the historic finding may remain visible until GitGuardian rescans/incident is reviewed. Do not claim the alert is resolved based only on the source edit.
 - CircleCI CLI validation and hosted pipeline remain NOT RUN. GitHub Actions runner allocation failures still do not expose executable steps. No merge or production deployment occurred.
 - Next: recheck PR #173 head/checks and GitGuardian result; validate CircleCI YAML with an independent parser; inspect financial concurrency tests and PR #170; merge only if the exact-head required gates pass and no unresolved security issue remains.
+
+
+## Independent config validation — 2026-10-27
+- Fetched `.circleci/config.yml` from the current PR branch and ran PyYAML parsing in a fresh disposable Vercel sandbox. Result: PASS for YAML parsing; CircleCI `version: 2.1`; all five declared jobs present; the `verify-all-changes` workflow includes `backend-accounting`, `frontend-quality`, and `backend-container`; no literal PostgreSQL test password remains; two `npm install --no-audit --no-fund` calls remain and no `npm ci` is configured without a lockfile.
+- This is a generic YAML/structural check only. CircleCI's official schema validator and a hosted CircleCI run remain NOT RUN. GitHub Actions runs on the prior candidate still fail before steps (`steps: null`, `logs_url: null`); no application test/build result is evidenced by those runs.
+- Financial code review of `record_payment` confirms the current branch uses a nested savepoint for unique-key insert races and resolves a matching existing payment after an integrity conflict; PostgreSQL concurrency tests are present but NOT RUN in this environment. PR #170 inventory/financial fixes are also NOT VERIFIED on the current head.
+- PR #173 current ledger update is pending this note; keep #170/#173/#174 Draft and do not merge until required exact-head checks and the secret-scan incident review are complete. No Admin Screen changes, production merge, or deployment.
