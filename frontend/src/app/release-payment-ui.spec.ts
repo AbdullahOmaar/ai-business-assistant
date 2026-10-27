@@ -28,3 +28,10 @@ test('payment retries preserve the idempotency key after an uncertain result', (
   assert.match(handler, /Preserve entered values and the idempotency key if the save failed or its outcome is uncertain/);
   assert.match(handler, /this\.paymentIdempotencyKey = ''/);
 });
+
+
+test('payment API failures render a visible accessible alert in the payment panel', () => {
+  assert.match(source, /\[attr\.role\]="paymentError \? 'alert' : 'status'"/);
+  assert.match(source, /this\.paymentMessage = this\.message\(error\)/);
+  assert.match(source, /this\.paymentError = true/);
+});
