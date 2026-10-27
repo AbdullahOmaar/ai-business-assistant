@@ -203,3 +203,10 @@ Source review also found repeated GET route handler declarations in `backend/app
 - A malformed multiline import in the regression test was found and corrected; it is not enough to establish the full CI failure's root cause. GitHub Actions failure logs/steps were unavailable through the connected API, and the current security branch has no CircleCI contexts yet.
 - Current main CircleCI snapshot: backend-accounting, frontend-quality, and browser-smoke pending; Vercel web/API fail with `build-rate-limit`. Production parity/authenticated smoke and backup restore remain NOT RUN.
 - Status: **IMPLEMENTED ON CANDIDATE, NOT VERIFIED**. Keep PR #212 Draft until exact-head CircleCI and focused/full backend tests pass. No merge or deployment performed.
+
+
+## SEC-002 execution checkpoint — 2026-10-28
+
+- Removed identical duplicate GET route definitions from `backend/app/extended_api.py`, retaining one handler each for recurring-invoice listing, operational health, and tax summary.
+- Added `backend/tests/test_extended_api_route_registration.py` to guard against duplicate method/path registrations.
+- Static source count check confirms 1/1/1 definitions remain. Runtime pytest and exact-head CI are NOT RUN / NOT AVAILABLE, so the candidate is not yet verified.
