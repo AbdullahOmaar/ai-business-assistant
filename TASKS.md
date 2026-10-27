@@ -746,3 +746,5 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Next: refresh the exact PR head and inspect changed-file diff; run the full frontend test/build/audit in an authorized sandbox if source transfer works; continue with real PostgreSQL and identity boundary gates. Keep production settings, allowlists, data, and aliases unchanged.
 
 - Follow-up validation action: request a **non-production frontend preview** for the updated Admin test suite using the repository's documented `[release-web]` preview marker. This marker is on the feature branch only; it is not a production merge or alias promotion.
+
+- Validation note: the Admin frontend helper tests are included in the full frontend test glob; a fresh non-production Vercel preview is requested from this exact candidate. No production deployment is requested.
