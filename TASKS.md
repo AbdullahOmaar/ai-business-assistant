@@ -1,3 +1,17 @@
+# Active execution checkpoint — 2026-10-27 00:45 UTC
+
+This section records the current execution state and supplements, rather than erases, the release history below.
+
+## Ordered execution status
+
+1. **TASK-01 — Financial correctness and authorization: IN_PROGRESS.** Current main already contains HALF_UP line-level rounding, cross-business payment guards, owner-only invoice operations, and cumulative sales-return amount/quantity guards. Dedicated regression coverage is being added for currency mismatch, over-allocation, cross-business allocation, idempotency-key payload changes, and multiple approved returns; these tests still need a successful run on the current candidate SHA.
+2. **TASK-02 — CI, dependency audit, and container gates: BLOCKED.** Actions on current main and rebased PR #170 repeatedly terminate within about three seconds before test steps execute. PR #170 head SHA 832a6b834e3c has failed checks without usable executed-step evidence; do not represent this as code-test success or failure. Runner recovery or an authorized local/remote test environment is required.
+3. **TASK-03 — PR hygiene: IN_PROGRESS.** Closed stale PR #53 after confirming its two added test functions are byte-for-byte identical to current main. Closed duplicate PR #41 because it pointed to the same head/base commit as #42. PR #170 is being rebased onto the current mainline and expanded with targeted regression coverage.
+4. **TASK-04 — Version 1.2.1 release candidate: IN_PROGRESS / BLOCKED.** Version metadata is being aligned across backend FastAPI, backend package metadata, and frontend package metadata. This branch is a release candidate only; it is not released until required test/build/security gates and current main SHA checks pass.
+5. **TASK-05 — Production deployment: BLOCKED.** Production FE currently serves previously verified SHA 96cefa42b68a and API /version responds with 1.2.0 at commit 021f964bdb83. Newest deployments for main SHA 32e16880... are canceled. Do not trigger production deployment until the candidate is verified and deployment quota/status permits a coordinated release.
+6. **TASK-06 — Database and browser end-to-end: BLOCKED.** Existing backup/restore drill was verified only on an isolated branch; real PostgreSQL migration integration, Firebase invalid-token/cross-tenant checks, and browser/PWA/payment end-to-end flows remain unverified.
+
+---
 # Latest verified release checkpoint — 2026-10-27 00:20 UTC
 
 This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
