@@ -13,6 +13,17 @@ Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; me
 Additional checks: `npm audit --audit-level=high` reported **0 vulnerabilities**. Earlier `pip-audit` and offline Alembic SQL generation passed on prior snapshots. Live authenticated Firebase E2E and production bootstrap remain NOT RUN; no production configuration, secrets, database data, or deployment were changed. Isolated sandbox results are not a substitute for exact-head CI.
 ---
 
+## ADM-MEM-001 — Owner-managed workspace memberships — 2026-10-28
+
+- Status: IN_PROGRESS — conflict-resolved candidate prepared against the latest main SHA `53ecc6bac5d4e45a5fab5375d4fe067822d9ffa1`; exact-head CI and merge are pending.
+- Scope: owner-only membership listing, role changes, and member removal; audit events for role changes/removal; protect the last owner; workspace-row locking for concurrent membership mutations; reject extra payload fields.
+- Conflict resolution: keep the current-main timezone-aware dashboard and sales-return changes, then integrate only the membership model/routes from the stale branch. No unrelated operations/accounting PRs are included.
+- Regression gates: list/promote/demote/remove, last-owner protection, non-owner denial, extra-field rejection, and audit events in `backend/tests/test_membership_management_api.py`.
+- Acceptance: all required CircleCI checks pass on the exact PR head; then merge, verify main SHA and deployment SHA/version parity, and run safe production smoke checks.
+- Exact-head checks before this candidate: NOT RUN. Production deployment: NOT RUN.
+
+---
+
 ## Owner data-integrity review UI — 2026-10-27
 
 - Added owner-gated, read-only UI for the existing workspace-authorized data-integrity report, including unlinked issued invoices and payment allocation currency/customer mismatches.
