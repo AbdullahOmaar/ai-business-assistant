@@ -1252,11 +1252,6 @@ export class AppComponent implements OnInit {
     return report ? Math.max(report.unlinked_issued_invoices.total, report.currency_mismatched_allocations.total, report.customer_mismatched_allocations.total) : 0;
   }
 
-  get maxIntegrityTotal(): number {
-    const report = this.dataIntegrityReport;
-    return report ? Math.max(report.unlinked_issued_invoices.total, report.currency_mismatched_allocations.total, report.customer_mismatched_allocations.total) : 0;
-  }
-
   async loadAuditEvents(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
     this.auditLoading = true;
