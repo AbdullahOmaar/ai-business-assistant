@@ -725,3 +725,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Aligned backend/pyproject.toml version with release candidate 1.2.1 from PR #170 to avoid stale package metadata after integrating the CI/payment changes.
 - Commits: services 58ae550976c9caa96e8f5065f4482de34da78d3e; regression test c821a1cf66545677551f2d557d36ee8ec3a11235; version metadata d5e00b528aa3da4fd83a9b1ed45886c40fe4d1c5.
 - Tests for these newest edits are NOT RUN in this tool session. Previous independent sandbox results do not verify the current head. PR #173 remains Draft; do not merge until current-head checks pass and GitGuardian review is clear.
+
+
+## Current-head isolated verification — 2026-10-27
+- The latest PR #173 head is a24d70e99427e1eaa552399c2e3e4f06f3bf4e01. Reconstructed the exact current `backend/app/services.py`, `backend/app/models.py`, `backend/app/security.py`, `backend/app/domain_rules.py`, and `backend/tests/test_services.py` from the branch in a disposable Vercel sandbox; no production credentials or data were used.
+- `python -m compileall -q app tests`: PASS.
+- `PYTHONPATH=/vercel/pr173test python -m pytest -q tests/test_services.py`: PASS, 15 passed in 0.54s, including the newly added duplicate-SKU oversell regression test.
+- Additional source invariant assertions: PASS; aggregate quantity validation occurs before any sale movements are added.
+- This sandbox run covered SQLite service tests only; PostgreSQL concurrency tests, CircleCI official schema validation/hosted execution, Docker build, and full repo checkout integration remain NOT RUN on the latest head.
+- GitHub Actions automatically retriggered on the new head; workflow runs 40443566618 (backend/frontend), 40443566688 (container), and 40443566737 (dependency scan) again failed before executable steps. Runner job responses still report `steps: null` and `logs_url: null`. Retrying previous failed jobs also returned success from the API request but the underlying attempts remain non-executing; no check passed.
+- No merge: PR #173 remains Draft; PR #170 and #174 remain Draft. Main unchanged. Security alert review and exact-head hosted gates remain release blockers.
