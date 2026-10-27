@@ -22,7 +22,7 @@ Do not upgrade to a paid plan, enable paid overages/automatic credit purchases, 
 The `.circleci/config.yml` workflow is intentionally non-deploying and does not use production credentials or data.
 
 1. **Backend and accounting gate:** starts a disposable PostgreSQL 16 service; waits for an actual connection; installs the backend requirements; applies Alembic migrations to that test database; verifies the current revision and ORM/migration drift; runs the complete pytest suite and emits a JUnit report; renders offline migration SQL; and audits the declared Python dependencies.
-2. **Frontend gate:** uses Node 22, installs the current manifest, runs the npm high-severity audit, and executes `npm run build`. The repo's build script runs its unit tests before the Angular production build.
+2. **Frontend gate:** uses `cimg/node:22.12` (Angular 20's supported Node 22 range starts at 22.12), prints the actual Node/npm versions, installs the current manifest, runs the npm high-severity audit, and executes `npm run build`. The repo's build script runs its unit tests before the Angular production build. The frontend currently has no committed `package-lock.json`, so `npm install` resolves the declared semver ranges anew and is not yet deterministic across runs. Add and review a committed lockfile when registry access is available, then switch this gate to `npm ci`.
 3. **Container gate:** builds the backend Docker image and verifies that the image can import `app.main`. It does not publish the image.
 4. **Scheduled dependency audit:** reruns Python and npm dependency audits every Monday at 08:23 UTC, in addition to the per-change checks.
 
@@ -74,6 +74,7 @@ The repository's accounting integrity audit documents these unimplemented capabi
 
 Remaining follow-up after the CircleCI run becomes available:
 - Added `backend/tests/test_postgres_financial_concurrency.py` with isolated-schema PostgreSQL tests for same-key concurrent payment retries, competing allocations against one invoice, competing stock sales, and concurrent approvals of over-sized returns. The fixture requires an explicit `CI_ALLOW_DATABASE_SCHEMA_TESTS=true`, a separate `TEST_DATABASE_URL`, and a database name containing a delimited `test`, `ci`, `disposable`, or `tmp` token; it never falls back to `DATABASE_URL`. The tests and payment-race fix remain unverified until the real CircleCI PostgreSQL job runs.
+- Add a reviewed `frontend/package-lock.json` from a successful dependency resolution and switch CI to `npm ci`; current manifest-only installs are not yet deterministic.
 - Complete staging Firebase invalid/expired/wrong-project token rejection and API-wide cross-tenant negative tests with non-production credentials.
 - Add real-browser Playwright coverage for sign-in, workspace isolation, invoice issue/void, payment recording/allocation, sales return, and installed-PWA startup/update once a safe staging target and test identity are available.
 - If a zero-cost CircleCI allowance is exhausted, stop safely and use a reviewed alternate runner (existing local hardware or a separately authorized free tier); do not silently enable paid credits or mark checks green without execution.
