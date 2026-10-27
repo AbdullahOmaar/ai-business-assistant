@@ -1123,3 +1123,26 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Branch protection: GitHub API returned HTTP 403 `Resource not accessible by integration`; repository rulesets API returned HTTP 403 indicating rulesets are unavailable on the repository plan. Branch protection requirements remain unverified, not absent.
 - Vercel deployment listing: READ-ONLY listing succeeded after resolving the linked team/project IDs. Latest READY production deployment metadata is recorded above; no deployment was attempted.
 - Next action: resolve the latest exact-head CircleCI runs, fix any failures, then complete concurrency/accessibility evidence. Keep merge/deployment blocked until checks pass, branch-protection requirements are known, and production deployment is explicitly authorized.
+
+
+## Platform Admin hardening — post-merge verification update — 2026-10-28
+
+| Task ID | Priority | Evidence | Status |
+| --- | --- | --- | --- |
+| ADM-01 | P0 | Current main is merge commit `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`. CircleCI contexts backend-container (882), frontend-quality (881), backend-accounting (883), and frontend-browser-smoke (884) all passed on that merge commit. Vercel Web status remains blocked by the daily build-rate limit; API deployment check passed, but production Web/API source parity and authenticated Admin smoke remain unverified. | IN_PROGRESS |
+| ADM-02–ADM-05 | P0 | Route/permission inventory and authz regression coverage were merged through PR #223. Firebase revocation latency measurement and full endpoint-by-role negative coverage remain follow-up work. | IN_PROGRESS |
+| ADM-06 | P0 | Existing membership code locks the workspace row and protects the last OWNER; cross-workspace membership list/patch/delete regression was merged. SQLite tests do not establish concurrent PostgreSQL race safety. | IN_PROGRESS |
+| ADM-07 | P0 | Role-grant/audit atomicity regression and absent-role revoke no-op were merged. A separate workspace status/audit commit-failure regression has been added on `security/platform-admin-audit-atomicity-followup`; exact-head CI pending. | IN_PROGRESS |
+| ADM-08–ADM-10 | P0/P1 | CSV injection/bounds/access tests and stale UI snapshot clearing were merged; exact merge SHA CI passed all four contexts. Data-minimization policy still needs product confirmation. | IN_PROGRESS |
+| ADM-11–ADM-12 | P1 | Source review shows locale direction and basic ARIA states, but full keyboard/screen-reader/mobile/WCAG 2.2 AA and complete sensitive-workflow acceptance are NOT RUN. | NOT RUN |
+| ADM-13–ADM-14 | P1 | PR #223 merged as `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; all four CircleCI contexts passed on merge SHA. | IN_PROGRESS |
+| ADM-15 | P1 | No deployment performed. Production Web deployment remains blocked by Vercel daily build-rate limit and explicit production-release authorization is still required. | BLOCKED |
+| ADM-16 | P1 | Rollback steps and post-rollback evidence still need to be written and reviewed. | NOT RUN |
+
+### Current execution record
+
+- PR #223 is merged; merge SHA: `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`.
+- Merge SHA CircleCI: backend-container PASS (882), frontend-quality PASS (881), backend-accounting PASS (883), frontend-browser-smoke PASS (884).
+- Follow-up branch adds a regression test asserting that if the workspace status + audit transaction commit fails, the workspace active state remains unchanged and no audit row is persisted. This test has not run yet.
+- Local test execution remains NOT RUN; rely on exact-head CircleCI for executed evidence.
+- No production deployment or production data mutation performed.
