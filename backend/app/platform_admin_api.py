@@ -3,6 +3,8 @@
 Platform access is granted only by an explicit server-side allowlist of verified
 Firebase principals. There is intentionally no self-service role assignment.
 """
+import json
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Literal
@@ -18,9 +20,33 @@ from app.models import AuditEvent, Business, BusinessMembership, Invoice, Paymen
 from app.security import AuthenticatedPrincipal
 
 router = APIRouter(prefix="/api/v1/platform-admin", tags=["platform administration"])
+logger = logging.getLogger(__name__)
 
 
-def _require_platform_admin(principal: AuthenticatedPrincipal) -> None:
+def _log_security_event(
+    event: str,
+    request: Request,
+    actor_subject: str,
+    outcome: str,
+    *,
+    target_type: str | None = None,
+    target_id: str | None = None,
+    level: int = logging.INFO,
+) -> None:
+    """Emit a safe single-line JSON security event without credentials or request payloads."""
+    payload = {
+        "event": event,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "request_id": getattr(request.state, "request_id", None),
+        "actor_subject": actor_subject,
+        "outcome": outcome,
+        "target_type": target_type,
+        "target_id": target_id,
+    }
+    logger.log(level, json.dumps(payload, separators=(",", ":"), ensure_ascii=True))
+
+
+def _require_platform_admin(principal: AuthenticatedPrincipal, request: Request) -> None:
     """Fail closed unless the verified identity is explicitly allowlisted by ops."""
     configured = os.getenv("PLATFORM_SUPER_ADMIN_UIDS", "")
     allowed_subjects = {
@@ -29,6 +55,15 @@ def _require_platform_admin(principal: AuthenticatedPrincipal) -> None:
         if item.strip()
     }
     if not allowed_subjects or principal.subject not in allowed_subjects:
+        _log_security_event(
+            "platform_admin.access_denied",
+            request,
+            principal.subject,
+            "denied",
+            target_type="route",
+            target_id=request.url.path,
+            level=logging.WARNING,
+        )
         raise HTTPException(status_code=403, detail="Platform administrator access is not granted.")
 
 
@@ -70,10 +105,11 @@ class BusinessStatusInput(BaseModel):
 
 @router.get("/access")
 def platform_admin_access(
+    request: Request,
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict[str, bool]:
     """A minimal authorization probe used to decide whether to render admin navigation."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
     return {"is_platform_admin": True}
 
 
@@ -83,7 +119,7 @@ def platform_admin_system_status(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Expose only safe runtime/readiness metadata to an authorized platform admin."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
 
     checked_at = datetime.now(timezone.utc).isoformat()
     factory = getattr(request.app.state, "session_factory", None)
@@ -133,11 +169,12 @@ def platform_admin_system_status(
 
 @router.get("/overview")
 def platform_admin_overview(
+    request: Request,
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Return real platform-level counts; financial totals remain separated by currency."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
 
     business_total = int(session.scalar(select(func.count(Business.id))) or 0)
     active_businesses = int(session.scalar(
@@ -208,6 +245,7 @@ def platform_admin_overview(
 
 @router.get("/businesses")
 def list_platform_businesses(
+    request: Request,
     q: str | None = Query(default=None, max_length=160),
     status: Literal["all", "active", "inactive"] = Query(default="all"),
     sort_by: Literal["created_at", "name", "members"] = Query(default="created_at"),
@@ -218,7 +256,7 @@ def list_platform_businesses(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Search platform workspaces with bounded pagination and no destructive operations."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
 
     member_count = (
         select(func.count(BusinessMembership.id))
@@ -267,11 +305,12 @@ def list_platform_businesses(
 @router.get("/businesses/{business_id}")
 def platform_business_details(
     business_id: UUID,
+    request: Request,
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read business metadata and membership roles; never returns credentials or tokens."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
     business = session.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=404, detail="Business not found.")
@@ -303,11 +342,12 @@ def platform_business_details(
 def update_platform_business_status(
     business_id: UUID,
     body: BusinessStatusInput,
+    request: Request,
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Activate/deactivate workspace access with a required reason and an audit event."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
     reason = body.reason.strip()
     if len(reason) < 3:
         raise HTTPException(status_code=422, detail="A meaningful reason (at least 3 characters) is required.")
@@ -336,6 +376,14 @@ def update_platform_business_status(
         ))
         session.commit()
         session.refresh(business)
+        _log_security_event(
+            "platform_admin.business_status_changed",
+            request,
+            principal.subject,
+            "success",
+            target_type="business",
+            target_id=str(business.id),
+        )
         return {
             "business": _business_payload(business),
             "changed": True,
@@ -351,6 +399,7 @@ def update_platform_business_status(
 
 @router.get("/audit-events")
 def platform_audit_events(
+    request: Request,
     action: str | None = Query(default=None, max_length=80),
     actor_subject: str | None = Query(default=None, max_length=128),
     business_id: UUID | None = None,
@@ -362,7 +411,7 @@ def platform_audit_events(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read-only, paginated platform audit stream; audit mutations are not exposed."""
-    _require_platform_admin(principal)
+    _require_platform_admin(principal, request)
     created_after = _normalize_datetime(created_after)
     created_before = _normalize_datetime(created_before)
     if created_after and created_before and created_after > created_before:
