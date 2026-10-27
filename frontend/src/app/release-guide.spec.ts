@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide.ts';
 
 test('feature catalogue has unique sections and bilingual user-facing content', () => {
@@ -65,4 +68,23 @@ test('v1.3.0 release notes cover invoice payments, opening stock, and the featur
   assert.match(release.changesEn.join(' '), /invoice/i);
   assert.match(release.changesEn.join(' '), /opening quantities/i);
   assert.match(release.changesEn.join(' '), /in-app.*guide/i);
+});
+
+
+test('1.3.2 release metadata is consistent across frontend and backend', () => {
+  const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+  const frontendPackage = JSON.parse(readFileSync(resolve(repositoryRoot, 'frontend/package.json'), 'utf8'));
+  const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
+  const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
+  const buildInfo = readFileSync(resolve(repositoryRoot, 'frontend/src/app/build-info.ts'), 'utf8');
+  const serviceWorker = readFileSync(resolve(repositoryRoot, 'frontend/public/sw.js'), 'utf8');
+
+  assert.equal(frontendPackage.version, '1.3.2');
+  assert.match(backendPackage, /^version = "1.3.2"$/m);
+  assert.match(backendApp, /version="1.3.2"/);
+  assert.match(buildInfo, /version: '1.3.2'/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.2-[^']+';/);
+  assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
+  assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /Platform Admin/i);
+  assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /audit/i);
 });
