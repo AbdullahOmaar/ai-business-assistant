@@ -80,6 +80,9 @@ async def chat(
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail="No access to this business workspace.") from exc
 
+    if sum(len(item.content) for item in body.history) > 8000:
+        raise HTTPException(status_code=413, detail="Conversation history is too long. Please start a new conversation.")
+
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
     business_name = session.scalar(select(Business.name).where(
