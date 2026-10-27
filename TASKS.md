@@ -827,3 +827,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **UI-INV-03 — IN_PROGRESS:** Invoice creation is collapsed in a native disclosure, independent from filtering existing invoices by customer.
 - **Merge approach:** Reapplied the minimal UI changes on the latest main rather than merging stale conflicting PR #178/#179. Exact-head preview build/tests must pass before merge or production deployment.
 - **Status: IN_PROGRESS;** production aliases unchanged.
+
+
+## Release candidate v1.2.1 — 2026-10-27
+
+- **REL-01 — IN_PROGRESS:** Align frontend package metadata, backend package metadata, FastAPI `/version` metadata, and the frontend local build-info fallback at `1.2.1`. The existing frontend prebuild script remains the source of generated commit/build timestamp and versioned service-worker cache name.
+- **Baseline:** candidate branch `chore/release-v1.2.1-2026-10-27`, created from main SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` (mobile UI refinements, PR #182).
+- **Validation:** NOT RUN at source-edit time. Require Vercel preview build logs and available tests before merge. After merge, verify the exact main SHA, production deployments, `/health`, `/readyz`, `/version`, manifest and main JS bundle. Do not mark VERIFIED until observed.
+- **Release intent:** PR title will include `[release-web]` and `[release-api]` markers so the currently configured Vercel ignore-build-step rules can trigger both builds after merge. No production secret, Firebase UID, database row, migration, billing, or paid resource is changed by this version-only update.
