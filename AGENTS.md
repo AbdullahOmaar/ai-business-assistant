@@ -66,6 +66,13 @@ Stop and ask for human input only when necessary for a material product decision
 - Avoid destructive database operations. Review migrations and rollback/recovery implications before proposing or applying them.
 - Do not run production migrations or consequential production data changes without the required explicit approval.
 
+## Versioning and user-facing feature guide
+- Keep `frontend/package.json`, `backend/pyproject.toml`, and `backend/app/main.py` on the same release version for a coordinated full-stack release. Update `frontend/src/app/build-info.ts` fallback only as needed for local runs; production build metadata is generated from the frontend package version.
+- The in-app feature catalogue and release notes are sourced from `frontend/src/app/release-guide.ts`. Update the feature catalogue when user-visible behavior changes, and add a concise version entry whenever preparing a versioned release.
+- Write release notes in everyday language, in Arabic and English. Each entry must list only changes included in that version, distinguish new behavior from existing features, and mention role/setup limitations where applicable.
+- Do not label an unreleased candidate as deployed. Keep the UI version tied to generated build metadata, and verify the merged SHA plus actual deployed version before describing a release as live.
+- The maintainer-facing update procedure is documented in `docs/RELEASE_HISTORY.md`.
+
 ## CI, merge, and deployment
 - Use the existing repository checks; see `.github/workflows/` and `docs/PRODUCTION_DEPLOYMENT.md`.
 - Verify checks on the exact candidate commit before merging.
