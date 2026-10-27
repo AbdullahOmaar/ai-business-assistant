@@ -1,3 +1,14 @@
+# Execution checkpoint — 2026-10-27 (v1.3.0 + Platform Admin mobile integration)
+
+- **Finding:** cross-branch integration test caught that the release candidate's mobile More active-state omitted the Platform Admin destination, and its desktop-only admin link was not hidden by the four-slot mobile layout. The release guide already belongs in More; it must not create a fifth bottom-nav slot.
+- **Fixes:** updated `frontend/src/app/app.component.ts` to hide `.platform-admin-nav` from the mobile sidebar, expose Platform Admin in the mobile More menu when available, and preserve active-state behavior for audit/admin/release-guide destinations. Code commits: `18f6aba3cf4c51d43ac1b083bc2bcd5a452b20e6`, `8c30c25fc40b6b01d11d5ab38f0fc96447dcf032`, `47538def63d05034c559d1f251da3975a1c838aa`.
+- **Regression checks:** the first integration run exposed the missing admin mobile CSS; after fixing it, a template binding typo was caught by Angular compilation and corrected. Final combined-source check in the isolated Node 22 sandbox: `npm test` — **17 passed, 0 failed**; `npm run build` — **PASS**, Angular bundle generated. The sandbox used the release candidate's app/API/version/feature-guide sources plus the existing Platform Admin mobile-navigation regression spec to exercise cross-branch compatibility; this is isolated verification, not hosted CI.
+- **Feature guide tests:** `frontend/src/app/release-guide.spec.ts` validates unique sections, bilingual labels/details, unique newest-first semantic versions, matched Arabic/English release notes, and v1.3.0 coverage. First run caught an over-escaped semver regex, fixed in `7ee7bc2d696d687112a8ebd79e8a59301b0e298b`.
+- **CI/delivery:** current PR #189 candidate still requires exact-head hosted checks; CircleCI last reported `error` at pipeline 72 before the latest code commits. PR #189 remains Draft/open/unmerged and v1.3.0 is **NOT DEPLOYED**. PR #183 is the separate CI-config candidate with four green CircleCI contexts, but is Draft/open without reviews; no checks were bypassed and no merge/deployment was performed.
+- **Next:** recheck exact-head CI, run backend regression tests on the combined release/admin candidate, and get the CI configuration reviewed before merge/deployment.
+
+---
+
 # Execution checkpoint — 2026-10-27 (release guide regression coverage)
 
 - **Task:** strengthen automated checks for the v1.3.0 bilingual feature catalogue and release history in PR #189.
