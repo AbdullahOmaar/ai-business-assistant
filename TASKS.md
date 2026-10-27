@@ -1185,3 +1185,32 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Version bump is a PATCH candidate because the release scope is security/authorization/audit correctness and release metadata consistency, with no intended breaking API change.
 - Updated candidate metadata: frontend `package.json`, backend `pyproject.toml`, FastAPI `app.version`, build-info fallback, service-worker cache fallback, bilingual in-app release history, and a cross-file version-consistency regression test.
 - Exact-head CircleCI, local test execution, production deployment, deployment SHA parity, and production smoke tests remain pending/not run until the release candidate checks and deployment quota are resolved.
+
+## Post-release consolidation checkpoint — 2026-10-28 (latest main)
+
+### Current verified source and quality
+- Current main SHA: `c60cc98498b67c2735836d433aec78e871ce7a64`. The latest commit is `ci: run backup restore safety guard tests`; compare against the prior release merge `6773389e030416c2ef91b6db04fd9bc24cb08399` shows only `.circleci/config.yml` changed.
+- CircleCI on the exact current main SHA: backend-container PASS (1036), frontend-quality PASS (1035), frontend-browser-smoke PASS (1034), backend-accounting PASS (1033). 4/4 CircleCI contexts pass.
+- Version metadata on the release merge: frontend `package.json`, backend `pyproject.toml`, FastAPI `/version`, build-info fallback, PWA cache fallback, and bilingual release history were aligned to `1.3.2`. PR #226 merged as `6773389e030416c2ef91b6db04fd9bc24cb08399`; exact-head CircleCI passed 4/4.
+
+### Deployment verification and blocker
+- API production deployment `dpl_3c8nAFG1m99wk64eYzv1nwzjZbGu` is READY for release SHA `6773389e030416c2ef91b6db04fd9bc24cb08399`. Read-only smoke checks returned HTTP 200 for `/version` (`1.3.2`, commit `6773389e0304`), `/readyz`, and `/health`.
+- API deployment source SHA is not the latest `main` SHA because PR #228 subsequently changed only CircleCI configuration. Exact SHA parity with current main is therefore NOT VERIFIED.
+- Web production remains on older source SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`; no Web deployment exists for release SHA `6773389e030416c2ef91b6db04fd9bc24cb08399` or current main.
+- Current main Vercel Web and API checks both fail with `build-rate-limit`. A direct authorized Vercel deployment attempt returned HTTP 402 `payment_required`, code `api-deployments-free-per-day`, message “Resource is limited - try again in 24 hours (more than 100)”, `retryAfter=86400`. No plan upgrade or billing change was made.
+- CLI fallback was investigated: no Vercel CLI or local Vercel auth is present in this execution environment, and the connected Desktop Commander device is offline. Do not promote the old Web deployment or claim production deployment complete. Retry after the quota reset, or have the account owner resolve the plan/quota requirement.
+
+### Branch inventory progress
+- Current GitHub API count: 200 branches total, 199 non-main; open PR count: 0 at this checkpoint.
+- Of the 199 non-main branches, 83 heads exactly match a merged PR head SHA among the fetched closed-PR history; these are cleanup candidates pending final per-branch safety verification. Three duplicate-head groups were confirmed:
+  - `ci/free-local-assistant-fallback-validation` and `feat/free-local-assistant-fallback`
+  - `feat/assistant-resilience-usage-limits` and `feat/assistant-resilience-usage-limits-verified`
+  - `test/payment-integrity-regression` and `test/payment-integrity-regression-fixed`
+- Semantic review found the payment-integrity and accounting-rounding test branches contain no unique test-function names versus current main. The old return-discount branch's helper is superseded by `domain_rules.discounted_return_line_total` on main and its tests are older subsets. These are stale/duplicate candidates, not merges to replay.
+- `security/owner-staff-permission-matrix` contains a unique STAFF workflow policy test, but it encodes product permissions that differ from current main. Keep BLOCKED pending an approved role/permission matrix; do not silently broaden or restrict STAFF permissions.
+- Full semantic review of all 199 non-main branches is NOT COMPLETE. Exact merged-head matching alone does not prove every remaining branch obsolete.
+- Remote branch deletion is BLOCKED by tool capability: the connected GitHub action set exposes no branch-delete operation. No branch refs were deleted. Final cleanup requires an authorized GitHub deletion path and per-branch confirmation that no unique work remains.
+
+### Open follow-up / next action
+- No open PRs were present at this checkpoint. PR #212 and #222 were closed as superseded; #223, #224, #225, and #226 are merged.
+- Next: complete remaining semantic branch review; then retry Web/API production deployment after Vercel's 24-hour deployment quota resets, verify the final deployed SHA/version and safe smoke tests, and delete only verified stale remote branches when an authorized deletion operation is available.
