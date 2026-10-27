@@ -1,3 +1,20 @@
+# Workflow policy checkpoint — 2026-10-27
+
+## Engineering process rules (adopted)
+
+- **Branch discipline:** Avoid one branch per tiny task/edit. Group related changes, implementation, tests, and documentation into one coherent work item and PR. Reuse an existing in-progress branch when safe; split only for independent release/review/safety boundaries. Check open PRs first and prevent duplicate work.
+- **Deployment discipline:** Production deployment is tied to a meaningful release, not every small task or commit. Batch related changes, complete validation, merge the release candidate, and deploy once per affected project for an important feature/feature bundle or critical fix. Do not redeploy an unaffected project.
+- **Release safeguards:** Before deployment, confirm the exact main SHA, applicable checks, release markers ([release-web] / [release-api]), and Ignore Build Step behavior. Do not repeatedly retry quota-blocked deployments. Verify READY state, deployed SHA/version, health/readiness, and relevant smoke checks afterward.
+- **Exceptions:** A critical security/production fix can be expedited with focused tests and documented evidence; required protections and authorization are never bypassed.
+
+## Acceptance / verification
+
+- Rules are recorded in AGENTS.md for all coding agents and in docs/PRODUCTION_DEPLOYMENT.md for release operators.
+- This checkpoint records policy adoption only; it does not change application behavior or authorize a production deployment.
+- Status: **IN_PROGRESS** until the documentation PR is reviewed/merged. No tests or deployment are required for this documentation-only change; GitHub checks remain the source of merge-gate evidence.
+
+---
+
 # Latest verified release checkpoint — 2026-10-27 00:20 UTC
 
 This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
