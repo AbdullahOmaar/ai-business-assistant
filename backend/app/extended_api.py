@@ -833,7 +833,8 @@ def import_csv(business_id: UUID, entity_type: str,
 
 
 
-@router.get("/customedef list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
+@router.get("/customers")
+def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
                    offset: int = Query(default=0, ge=0), q: str = Query(default="", max_length=120),
                    session: Session = Depends(get_session),
                    principal: AuthenticatedPrincipal = Depends(get_principal)):
@@ -853,7 +854,6 @@ def import_csv(business_id: UUID, entity_type: str,
         return [_dict(x, ("id", "name", "email", "phone", "address", "notes", "created_at")) for x in items]
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
- exc
 
 
 @router.get("/customers/{customer_id}")
