@@ -1,11 +1,10 @@
 ## Automation / E2E cycle — 2026-10-27
 
-- **AUTO-E2E-001 — IN_PROGRESS:** rebased the mobile startup smoke change onto the latest mainline after detecting the PR branch had diverged (4 commits ahead / 4 behind). Exact-head CI must rerun before verification.
-- **Coverage added:** deterministic safe-setup startup, no stuck splash / uncaught page errors, bidirectional Arabic/English direction switch, and 360×800 mobile layout checks. The mobile case also checks horizontal overflow in both RTL and LTR.
-- **CI evidence on previous candidate** `9fec057f48ba2f3fd71d5f3eeb7f30129ca1b4e4`: CircleCI 4/4 passed (backend-container run 229, frontend-quality 230, backend-accounting 232, frontend-browser-smoke 231); GitGuardian secret scan passed.
-- **GitHub Actions security audit — BLOCKED:** Python and npm audit jobs failed before steps started (`runner_id=0`, empty steps); dependency audit results are unavailable. Other Actions workflows show the same runner/log pattern. Do not mislabel this as a dependency vulnerability or a clean audit.
-- **Authenticated sign-in/business-flow E2E — NOT RUN:** dedicated test identity/secrets are unavailable. No production data or deployment was touched.
-- **Merge gate:** PR #195 stays draft/unmerged until exact-head CircleCI completes, GitHub Actions infrastructure / required-check policy is understood, and authenticated E2E is run or its approved test-identity dependency is resolved.
+- **AUTO-E2E-001 — VERIFIED (source/CI):** rebased the mobile startup E2E change onto current main; branch compare confirms 1 commit ahead and 0 behind. Candidate `247a56eb36c6137bf1d399cb59889464e4c43a8e` passed all four CircleCI jobs: backend-accounting (337), backend-container (340), frontend-quality (339), and frontend-browser-smoke (338). GitGuardian secret scan also passed.
+- **Coverage:** deterministic safe-setup startup, no stuck splash / uncaught page errors, bidirectional Arabic/English direction switch, and 360×800 mobile layout checks with horizontal-overflow assertions in both RTL and LTR.
+- **AUTO-CI-002 — BLOCKED:** GitHub Actions backend, frontend, Python dependency audit, and JavaScript dependency audit fail before any steps run (`runner_id=0`, empty steps); log downloads return `BlobNotFound`. Exact infrastructure cause is not exposed by available evidence. Dependency-audit results are unavailable, not passed. This pattern also appears on main.
+- **AUTO-E2E-003 — NOT RUN:** authenticated Firebase sign-in/business-flow E2E requires dedicated test identity/secrets that are not available to this run. No production data was touched.
+- **AUTO-GATE-004 — BLOCKED:** PR #195 remains draft/unmerged pending resolution of GitHub Actions runner/log access, confirmation of required-check/branch-protection policy (API returned 403), and authenticated E2E. No deployment or production operation was performed.
 
 ## Owner data-integrity review UI — 2026-10-27
 
