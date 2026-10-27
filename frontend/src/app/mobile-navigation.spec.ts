@@ -10,7 +10,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.ok(mobileSidebarStart >= 0 && mobileItemsStart > mobileSidebarStart);
 
   const mobileSidebarStyles = source.slice(mobileSidebarStart, mobileItemsStart);
-  assert.match(mobileSidebarStyles, /grid-template-columns:repeat\(4,minmax\(0,1fr)\)/);
+  assert.match(mobileSidebarStyles, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(
     source,
     /\.sidebar>\.mobile-extra,\.sidebar>\.platform-admin-nav\{display:none\}/,
