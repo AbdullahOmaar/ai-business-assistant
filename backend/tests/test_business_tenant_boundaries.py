@@ -533,3 +533,58 @@ def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_cust
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, Invoice, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tax-owner")
+    try:
+        business_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Tax workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="tax-owner", role=MembershipRole.OWNER))
+            session.add_all([
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-1", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 5, tzinfo=timezone.utc), subtotal=Decimal("100.00"), tax_total=Decimal("14.00"), discount_total=Decimal("0.00"), total=Decimal("114.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-2", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 15, tzinfo=timezone.utc), subtotal=Decimal("50.00"), tax_total=Decimal("7.00"), discount_total=Decimal("0.00"), total=Decimal("57.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-USD-1", status="issued", currency_code="USD", issue_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("20.00"), tax_total=Decimal("3.00"), discount_total=Decimal("0.00"), total=Decimal("23.00")),
+            ])
+            session.commit()
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/reports/tax-summary?start_date=2026-10-01&end_date=2026-10-31")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        totals = {row["currency_code"]: row for row in payload["currencies"]}
+        assert totals["EGP"]["tax_total"] == "21.00"
+        assert totals["EGP"]["invoice_count"] == 2
+        assert totals["USD"]["tax_total"] == "3.00"
+        assert totals["USD"]["invoice_count"] == 1
+        assert payload["limitations"]
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/reports/tax-summary")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()

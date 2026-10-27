@@ -1,3 +1,9 @@
+## Tax summary report re-integrated on current main — 2026-10-27
+
+- Added an owner-gated, workspace-authorized tax summary endpoint and bilingual UI, using saved tax totals from issued invoices, date filtering, and separate totals per currency.
+- Added API regression coverage for currency separation, date ranges, and workspace authorization. This operational report is not a jurisdiction-specific tax filing.
+- Exact-head CircleCI gates are required before merge; no production deployment performed.
+
 ## Admin Firebase directory failure-path regression tests — 2026-10-27
 
 - Added regression coverage for missing Firebase accounts and unavailable directory lookups; failures must not persist role grants or audit events and must not leak upstream exception details.
