@@ -14,8 +14,8 @@
 
 ## Evidence and known blockers
 
-- PR #173 is still **Draft / open / not merged**. Base SHA: `32e16880dfb777a5efd688ccf0eaaf8773e425e1`. The branch head immediately before this ledger update was `7478b592bd47c921b1b2a8efd13d4610b41db9a1`.
-- GitHub Actions still fails before runner execution on that head. Runs `40443210360` (dependency audits), `40443210413` (backend/frontend), and `40443210365` (container) all failed within ~3–4 seconds; every job had `runner_id=0`, empty runner name and `steps=0`. This confirms a runner allocation/dispatch failure, not an application test result. The exact account billing/quota root cause remains unconfirmed.
+- PR #173 is still **Draft / open / not merged**. Base SHA: `32e16880dfb777a5efd688ccf0eaaf8773e425e1`. The branch head immediately before this ledger-only update was `9cb0a49a51709c73c6f43c65dbb26c891820d00a`.
+- GitHub Actions still fails before runner execution on that head. Runs `40443305348` (backend/frontend), `40443305554` (container), and `40443305418` (dependency audits) failed within ~3–4 seconds; every job had `runner_id=0`, empty runner name and `steps=0`. This ledger update is documentation-only; no application or CI workflow code was changed by it. This confirms a runner allocation/dispatch failure, not an application test result. The exact account billing/quota root cause remains unconfirmed.
 - Final CircleCI YAML syntax/structure and expected-job assertions **PASS** locally. CircleCI official validator/hosted workflow **NOT RUN**. No CircleCI check contexts are available to add to branch protection yet.
 - Docker CLI/daemon was unavailable; Docker image build is **NOT RUN**. Python import smoke check passed but does not substitute for container verification.
 - Runtime differences: sandbox Python 3.14.4, Node 24.22.1, PostgreSQL 18.6. CircleCI declares Python 3.12, Node 22.12, PostgreSQL 16; exact configured runtime verification remains outstanding.
