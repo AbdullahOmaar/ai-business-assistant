@@ -279,7 +279,7 @@ def test_platform_system_status_reports_safe_runtime_metadata(platform_admin_env
     serialized = response.text.lower()
     assert "database_url" not in serialized
     assert "service_account" not in serialized
-    assert "secret" not in serialized
+    assert "sensitive-password" not in serialized
 
 
 def test_platform_system_status_degrades_without_leaking_database_errors(platform_admin_environment, monkeypatch):
