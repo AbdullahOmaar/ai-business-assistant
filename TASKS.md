@@ -1,3 +1,11 @@
+## Expense management UI re-integrated on current main — 2026-10-27
+
+- Reworked the stale PR #35 expense entry/history feature against current main instead of merging its 200+ commits of obsolete ancestry.
+- Added typed API access, validation for positive amounts and valid local date/time, workspace-specific loading/refresh, bilingual navigation and form, and regression coverage.
+- Exact-head CircleCI validation is required before merge. No production deployment was performed.
+
+
+
 ## Angular template parse failure fixed — 2026-10-27
 
 - Vercel Preview of exact diagnostic SHA `969bd23caee3d795ce19aad0141e1b074c9b53ab` proved the frontend unit suite passed **19/19**, then Angular production build failed with `NG5002` at `frontend/src/app/app.component.ts:77`: the mobile More button's `[class.active]` attribute had an extra double quote after `tab === 'release-guide'`.
