@@ -197,7 +197,7 @@ export class ApiService {
   platformBusinessStatus(businessId: string, body: { is_active: boolean; reason: string }): Promise<{
     business: PlatformBusiness; changed: boolean; message: string;
   }> {
-    return this.request(
+    return this.request<{ business: PlatformBusiness; changed: boolean; message: string }>(
       `/api/v1/platform-admin/businesses/${encodeURIComponent(businessId)}/status`, 'PATCH', body
     );
   }
