@@ -202,6 +202,21 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.2',
+    titleAr: 'تقوية الصلاحيات وسلامة العمليات',
+    titleEn: 'Authorization and workflow integrity hardening',
+    changesAr: [
+      'تقوية صلاحيات إدارة المنصة وعزل مساحات العمل والتحقق قبل حفظ التغييرات.',
+      'تأمين تصدير CSV وسجل العمليات ومعالجة حالات فشل المعاملات.',
+      'توحيد بيانات إصدار الواجهة وواجهة API وتحسين تحديث ذاكرة PWA.',
+    ],
+    changesEn: [
+      'Hardened Platform Admin permissions, workspace isolation, and pre-write authorization.',
+      'Strengthened CSV export and audit integrity, including transaction-failure handling.',
+      'Aligned frontend/API release metadata and versioned the PWA shell cache.',
+    ],
+  },
+  {
     version: '1.3.1',
     titleAr: 'تحديث إصدار الصيانة',
     titleEn: 'Maintenance release update',
