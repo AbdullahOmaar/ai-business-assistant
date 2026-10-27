@@ -26,7 +26,7 @@ The Admin Center is an operational control plane, not a back door into customer 
 
 | Priority | Capability | Acceptance criteria / dependency | Status |
 |---|---|---|---|
-| P1 | System status and release information | Read-only, least-information status: application version/commit, API/database readiness, Firebase verifier readiness, last successful health check and safe dependency state. Never expose environment variables, secrets, connection strings, full exception traces or customer data. Report unknown separately from healthy. Requires explicit server-side implementation and tests. | TODO |
+| P1 | System status and release information | Read-only, least-information status: application version/commit, API/database readiness, Firebase verifier configuration, and timestamp of the current check. Never expose environment variables, secrets, connection strings, full exception traces or customer data. Configuration status must not be represented as validation of a specific Firebase token. | Backend endpoint, typed client contract and Arabic/English overview panel implemented. Unit/API tests cover healthy, degraded, denied and no-secret behavior; frontend preview build on latest source still pending. | IN_PROGRESS |
 | P1 | Security events and alerting | Record denied platform access and sensitive admin operations through structured logs/telemetry; include request/correlation ID, actor when verified, action, target, outcome, timestamp and reason. Redact tokens, cookies, secrets and unnecessary personal data. Define alert thresholds and retention from an actual telemetry source. | TODO |
 | P1 | Audit integrity and export | Restrict audit read access, preserve records against ordinary application modification, document retention, and provide bounded CSV export only if needed. Export itself must be logged and filtered; test CSV formula injection, output limits and redaction. | TODO |
 | P1 | Operational support diagnostics | Safe, tenant-free error summaries and deployment/runtime events from an authorized provider; link to the source of truth. No customer payloads or raw logs in the UI by default. | TODO |
@@ -66,6 +66,13 @@ The Admin Center is an operational control plane, not a back door into customer 
 - **Status: BLOCKED on provider onboarding; configuration exists in PR #173 but has not been run.**
 - Use CircleCI as an independent CI provider for disposable PostgreSQL, backend tests/migrations, frontend checks/audits, and container build. Validate its config with CircleCI's own CLI/service and capture real run URL + exact SHA.
 - Owner action needed: authorize/select this private repository in CircleCI and select the committed `.circleci/config.yml`. YAML parsing alone is not a pipeline result. Do not pay, increase billing, or bypass required checks.
+
+### ADM-07 — Safe runtime status panel
+- **Status: IN_PROGRESS.**
+- Implement the authorized read-only `GET /api/v1/platform-admin/system-status` endpoint and display runtime/release status in the overview panel.
+- Acceptance: show version, shortened commit, environment, database connectivity and whether the identity verifier is configured; report degraded/unconfigured states truthfully; never expose secrets/DSNs/exception text; reject non-allowlisted identities.
+- Evidence: Admin API tests and full backend suite pass in the isolated sandbox (**155 passed, 1 skipped**); frontend type/build validation on the exact latest source is pending.
+- Explicit limit: `checked_at` is the timestamp of the current check, not a historical uptime/last-success metric. Firebase verifier “configured” is not proof that a particular token is valid.
 
 ### ADM-06 — Reconcile evidence and merge
 - **Status: BLOCKED pending the remaining release gates and exact-source review.**
