@@ -827,3 +827,14 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **UI-INV-03 — IN_PROGRESS:** Invoice creation is collapsed in a native disclosure, independent from filtering existing invoices by customer.
 - **Merge approach:** Reapplied the minimal UI changes on the latest main rather than merging stale conflicting PR #178/#179. Exact-head preview build/tests must pass before merge or production deployment.
 - **Status: IN_PROGRESS;** production aliases unchanged.
+
+
+## Execution checkpoint — inventory integrity, mobile navigation, release 1.2.1 — 2026-10-27
+
+- **EXEC-01 — Current-main review: VERIFIED.** Work branch `fix/inventory-and-admin-mobile-nav-v1.2.1` was created from main SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e`; current main was not edited directly. Relevant source, tests, runbook, current deployments, and open PRs were inspected.
+- **FIN-INV-01 — Duplicate-line inventory oversell: IN_PROGRESS.** Changed `backend/app/services.py` to aggregate requested quantities by tracked product, validate all product balances before writing any sale movements, and retain the existing transaction/audit behavior. Added `test_invoice_issue_aggregates_repeated_product_lines_before_stock_check` to `backend/tests/test_services.py`. Test execution on this exact branch is pending; do not mark verified until it runs.
+- **UI-NAV-01 — Four-slot mobile bottom navigation: IN_PROGRESS.** Kept the four-column mobile layout (Home, Invoices, Customers, More), hid the separate desktop Platform Admin button from the mobile bar, added Platform Admin to the conditional More menu, and extended the More active-state list. Desktop admin navigation remains intact. Added `frontend/src/app/mobile-navigation.spec.ts`; execution pending.
+- **REL-121 — Version alignment: IN_PROGRESS.** Set FastAPI runtime version, backend package version, and frontend package version to `1.2.1`. Verify build metadata and package/version parity during testing.
+- **CI-ALT-01 — CI runner blocker: BLOCKED.** Latest mainline GitHub Actions status shows backend, frontend, and dependency jobs failing before execution under the existing runner-allocation issue. These statuses are not evidence of code-test failures or successful validation. A Vercel preview and credential-free alternate test run are being evaluated; no CI gate is being bypassed.
+- **PR/Release gate: NOT RUN.** This branch has not been merged and no production alias or production data has been changed by this work. Merge/deployment is conditional on exact-branch regression/build evidence and resolving or explicitly recording any remaining release gate. No production migration is included.
+- **Next actions:** run backend compile/tests and frontend tests/build, inspect resulting diff and release metadata, reconcile any failures, confirm PR mergeability and exact SHA, then promote only what passes the applicable release gates.
