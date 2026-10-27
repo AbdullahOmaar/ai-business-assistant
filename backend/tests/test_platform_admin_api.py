@@ -140,6 +140,15 @@ def test_business_search_status_and_pagination_are_bounded(platform_admin_enviro
     client = platform_admin_environment["client"]
     searched = client.get("/api/v1/platform-admin/businesses", params={"q": "Alpha", "status": "active", "limit": 1})
     inactive = client.get("/api/v1/platform-admin/businesses", params={"status": "inactive", "limit": 1, "offset": 0})
+    names_ascending = client.get(
+        "/api/v1/platform-admin/businesses",
+        params={"sort_by": "name", "sort_order": "asc", "limit": 25},
+    )
+    member_count_descending = client.get(
+        "/api/v1/platform-admin/businesses",
+        params={"sort_by": "members", "sort_order": "desc", "limit": 25},
+    )
+    unsupported_sort = client.get("/api/v1/platform-admin/businesses", params={"sort_by": "secret_column"})
     too_many = client.get("/api/v1/platform-admin/businesses", params={"limit": 1000})
 
     assert searched.status_code == 200
@@ -148,6 +157,11 @@ def test_business_search_status_and_pagination_are_bounded(platform_admin_enviro
     assert searched.json()["items"][0]["member_count"] == 2
     assert inactive.status_code == 200
     assert inactive.json()["items"][0]["name"] == "Beta Studio"
+    assert names_ascending.status_code == 200
+    assert [item["name"] for item in names_ascending.json()["items"]] == ["Alpha Retail", "Beta Studio"]
+    assert member_count_descending.status_code == 200
+    assert [item["member_count"] for item in member_count_descending.json()["items"]] == [2, 1]
+    assert unsupported_sort.status_code == 422
     assert too_many.status_code == 422
 
 
