@@ -403,8 +403,10 @@ def test_platform_user_directory_lists_auth_accounts_without_membership(platform
     assert owner["memberships"][0]["role"] == "owner"
     assert unassigned["memberships"] == []
     assert unassigned["disabled"] is True
-    for forbidden in ("password", "id_token", "refresh_token", "provider_data"):
-        assert forbidden not in response.text.lower()
+    for row in data["items"]:
+        # Assert sensitive fields are absent from returned account objects. The
+        # response's human-readable limitations intentionally mention these terms.
+        assert not {"password", "id_token", "refresh_token", "provider_data"} & {key.lower() for key in row}
 
 
 def test_delegated_user_manager_can_read_directory_but_cannot_change_workspace_status(platform_admin_environment, monkeypatch):
