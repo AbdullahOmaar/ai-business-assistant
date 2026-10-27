@@ -185,8 +185,6 @@ def test_assistant_provider_timeout_returns_safe_error(monkeypatch, assistant_cl
         json={"message": "Summarize my business."},
     )
 
-    assert response.status_code == 502
-    assert response.json()["detail"] == (
-        "The AI provider returned an invalid or unavailable response."
-    )
+    assert response.status_code == 504
+    assert response.json()["detail"] == "The AI request timed out. Please try again."
     assert "private provider diagnostic" not in response.text
