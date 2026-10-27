@@ -747,3 +747,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Known CI gaps remain: GitHub Actions runner allocation/dispatch failure (runner_id=0, no executable steps/logs on latest recorded runs); CircleCI authoritative config validation/hosted execution not yet evidenced; frontend lockfile not committed; actual container build and exact configured CI-version verification still outstanding. Prior isolated PostgreSQL test results are useful but do not replace current-head hosted checks.
 - Status: PR #171 merge VERIFIED; PR #54 duplicate closure VERIFIED; all-branches merge campaign PARTIALLY COMPLETE; financial/admin/product PR merges BLOCKED pending exact-head gates and reconciliation. Production deployment and production data remain unchanged.
 - Next action: recheck main SHA/status, diagnose available CI execution route, reconcile the latest accounting PR heads, then validate/merge one coherent branch at a time. Keep all security and financial release gates intact.
+
+
+## CI alternative follow-up — 2026-10-27
+
+- Reconciled latest main ancestry into fix/actions-minute-budget. Current merge base is main SHA d0afc6653a00005e61859f2d8c3f9eebca73c333; comparison reports ahead 51 / behind 0. PR #173 is mergeable but remains Draft.
+- Attempted official CircleCI CLI validation as the non-GitHub-Actions alternative. The isolated sandbox has no circleci or Docker/Podman binary. Downloading the official CLI installer from packages.circleci.com failed with DNS resolution error (curl exit 6). No CircleCI hosted run or official validation is claimed.
+- Generated a temporary frontend package-lock.json with npm install --package-lock-only --ignore-scripts --no-audit --no-fund in an isolated sandbox; npm reported up to date. The lockfile was not committed, so the repository remains non-deterministic and CircleCI must continue using npm install until a reviewed lockfile is committed.
+- Still BLOCKED: CircleCI account/project authorization and network access for official validation, actual Docker/container build, and authoritative hosted checks. Do not weaken gates, enable paid overages, or merge based on local-only evidence.
