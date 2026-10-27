@@ -299,7 +299,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">{{ t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
-                @if (paymentMessage) { <p class="footnote" role="status" aria-live="polite">{{ paymentMessage }}</p> }
+                @if (paymentMessage) { <p [class.error]="paymentError" [attr.role]="paymentError ? 'alert' : 'status'" aria-live="polite">{{ paymentMessage }}</p> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list">
                   @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
@@ -535,6 +535,7 @@ export class AppComponent implements OnInit {
   paymentAmount = '';
   paymentAllocationAmount = '';
   paymentMessage = '';
+  paymentError = false;
   paymentInvoiceId = '';
   paymentMethod = 'cash';
   paymentReference = '';
@@ -1356,6 +1357,7 @@ export class AppComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.paymentMessage = '';
+    this.paymentError = false;
     if (!this.paymentIdempotencyKey) {
       this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     }
@@ -1382,6 +1384,7 @@ export class AppComponent implements OnInit {
       this.paymentReference = '';
       this.paymentIdempotencyKey = '';
       this.paymentMessage = this.t('تم تسجيل الدفعة بنجاح.', 'Payment recorded successfully.');
+      this.paymentError = false;
 
       try {
         const [payments, dashboard, invoices] = await Promise.all([
@@ -1403,7 +1406,10 @@ export class AppComponent implements OnInit {
       }
     } catch (error) {
       // Preserve entered values and the idempotency key if the save failed or its outcome is uncertain.
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (this.business?.id === businessId) {
+        this.paymentMessage = this.message(error) || this.t('تعذر تسجيل الدفعة. لم يتم تأكيد النتيجة؛ لا تغيّر البيانات وأعد المحاولة بنفس الطلب بعد التحقق من سجل المدفوعات.', 'Could not confirm the payment. Keep the entered values and verify the payment list before retrying.');
+        this.paymentError = true;
+      }
     } finally {
       this.loading = false;
     }
