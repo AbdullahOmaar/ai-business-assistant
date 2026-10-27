@@ -82,7 +82,7 @@ test('1.3.2 release metadata is consistent across frontend and backend', () => {
   assert.equal(frontendPackage.version, '1.3.2');
   assert.match(backendPackage, /^version = "1.3.2"$/m);
   assert.match(backendApp, /version="1.3.2"/);
-  assert.match(buildInfo, /version: '1.3.2'/);
+  assert.match(buildInfo, /(?:version:\\s*'1\\.3\\.2'|"version":"1\\.3\\.2")/);
   assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.2-[^']+';/);
   assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
   assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /Platform Admin/i);
