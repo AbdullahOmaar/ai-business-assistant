@@ -818,3 +818,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **API gate:** Python 3.12 selected, bytecode compilation and build completed, deployment completed. A post-deployment health check is recorded below.
 - **Post-deployment browser smoke:** normal sign-in form rendered and JavaScript initialized; no stuck loading state, no credentials entered, no data changed.
 - **Not a full production-readiness declaration:** hosted GitHub Actions/CircleCI, actual container image build, live PostgreSQL integration/rollback, and authenticated Firebase admin/tenant-boundary E2E remain NOT RUN/BLOCKED. Platform Admin still requires a securely verified Firebase UID before allowlist enrollment.
+
+
+## Mobile UI rebased onto current main — 2026-10-27
+
+- **UI-MOB-01 — IN_PROGRESS:** Reapplied header version/build metadata and responsive customer/audit table presentation on a fresh branch from current `main`, preserving Platform Admin changes.
+- **UI-INV-03 — IN_PROGRESS:** Separated invoice customer filtering from a collapsed invoice-creation disclosure.
+- **Merge hygiene:** PR #179 could not be merged because GitHub reports merge conflicts after `main` advanced. PR #178 is an older duplicate candidate; do not merge it. The current-main reapplication is on `fix/mobile-ui-rebased-on-main` for preview validation.
+- **Validation gate:** Preview must complete the frontend tests/build and branch must be checked for mergeability before merge. GitHub Actions has recently failed before steps due Runner allocation. No production promotion yet.
