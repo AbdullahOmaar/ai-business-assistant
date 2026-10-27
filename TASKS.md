@@ -732,3 +732,5 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Local isolated Node test run for the new helper: **2 passed, 0 failed** (node --experimental-strip-types --test .../platform-admin-helpers.spec.ts). This validates the pure helper only; it is not an exact repository frontend build.
 - Still NOT RUN on the exact PR head: complete npm test, Angular production build, frontend audit, authenticated browser UI/accessibility test. GitHub Actions statuses remain empty because jobs previously failed before runner allocation; do not interpret absent status entries as green.
 - Next: refresh the exact PR head and inspect changed-file diff; run the full frontend test/build/audit in an authorized sandbox if source transfer works; continue with real PostgreSQL and identity boundary gates. Keep production settings, allowlists, data, and aliases unchanged.
+
+- Follow-up validation action: request a **non-production frontend preview** for the updated Admin test suite using the repository's documented `[release-web]` preview marker. This marker is on the feature branch only; it is not a production merge or alias promotion.
