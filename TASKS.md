@@ -1,44 +1,3 @@
-# Execution checkpoint — independent CI and accounting automation (2026-10-27)
-
-## Ordered task status
-
-1. **CI-ALT-01 — Independent hosted CI configuration: IN_PROGRESS.** Added `.circleci/config.yml` to PR #173 branch `fix/actions-minute-budget`, not `main`. Final committed YAML was parsed in an isolated sandbox using PyYAML; assertions passed for CircleCI version 2.1, five jobs, two workflows, PostgreSQL 16 service and Node 22.12 frontend image, with no deploy command in job steps. CircleCI official CLI 1.11.0 `circleci config validate` **PASS** after fixing an unescaped shell heredoc that the first validation caught; hosted execution remains **NOT RUN**.
-2. **CI-FIN-02 — Accounting and PostgreSQL concurrency regression tests: VERIFIED in the isolated sandbox.** Full backend suite on a disposable PostgreSQL **18.6** database: **149 passed in 6.98 s**, no skips. Includes four PostgreSQL race tests: same idempotency-key payment retry, competing invoice allocations, concurrent stock sales and competing sales-return approvals. `python -m compileall -q app tests` passed. The sandbox application/frontend files were fetched from source commit `69a043adc0fbd6188f7d6e806fb7ffe076a138f5`; the final concurrency test file was taken from blob `470dcc29ee0eaa293d4cc86f60ad5b3739168a2d` (test fix commit `11f600fa892793ba172e2eaa47505b8f1b63da2c`). The sandbox was assembled from versioned files but was not a full Git clone. Exact provider/version validation in CircleCI remains pending.
-3. **CI-DB-03 — Migration and schema drift: VERIFIED in disposable sandbox.** On PostgreSQL 18.6, `alembic upgrade head` succeeded, `alembic current` returned `0003_business_workflows (head)`, and `alembic check` returned `No new upgrade operations detected.` The configured CI target remains PostgreSQL 16 and has not run yet.
-4. **CI-SEC-04 — Dependency checks: VERIFIED in sandbox, with lockfile caveat.** `pip-audit -r requirements.txt` reported **No known vulnerabilities found**. `npm audit --audit-level=high` reported **0 vulnerabilities** for the sandbox's transient resolved frontend dependency tree. Neither result proves future resolutions safe; frontend resolution is still nondeterministic until a repository lockfile exists.
-5. **CI-FE-05 — Frontend checks: VERIFIED in sandbox.** `npm run build` passed with **5/5** frontend unit tests and Angular production bundle generation; initial bundle total **489.92 kB**. Sandbox used Node 24.22.1 and Python 3.14.4, not the configured CI versions. The build-info script had no `.git` metadata in the assembled sandbox and fell back to an unknown commit marker.
-6. **CI-CONT-06 — Container build: BLOCKED / NOT RUN.** `python -c 'import app.main'` passed (“FastAPI import OK”), but Docker CLI/daemon was unavailable. The real image build remains required.
-7. **CI-REL-07 — Release/demo evidence: IN_PROGRESS.** `docs/CI_AND_ACCOUNTING_AUTOMATION.md`, `docs/PRODUCTION_RELEASE_POLICY.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `README.md` and this ledger document exact-SHA release gates and blockers. No merge, deployment, production database write, production-secret change or Admin Screen code change occurred.
-8. **CI-ACT-08 — Activate CircleCI and enforce required statuses: BLOCKED.** The current workspace has no CircleCI account integration; a browser profile with CircleCI login is not available. The repository owner must authorize this private repository, validate/run the config, inspect real successful status names and require those exact checks on protected `main`. Never guess status names or enable paid overages.
-9. **CI-FE-09 — Deterministic npm dependency graph: TODO.** `frontend/package-lock.json` is absent in Git. Sandbox `npm install` created only a temporary local lock and resolved 417 packages; nothing was committed from the sandbox. Generate/review a repository lockfile and change CI to `npm ci` when dependency versions are intentionally approved.
-
-## Evidence and known blockers
-
-- New validation on 2026-10-27: CircleCI CLI **1.11.0** installed in a disposable Vercel sandbox; first `circleci config validate` caught `Unclosed '<<' tag` in the PostgreSQL readiness command. Replaced the shell heredoc with a quoted multiline `python -c` script; the subsequent authoritative CLI validation returned `Config file ... is valid.` The fix is committed in the PR branch (commit `d221af2764af067873031d2c8c455a4557f7fc81`). `circleci config process` also passed and expanded all five jobs and both workflows.
-- Frontend lock experiment: generated a temporary npm lockfile (lockfile v3, 506 package entries) from the current `frontend/package.json`; `npm ci --ignore-scripts --no-audit --no-fund` installed 417 packages and `npm audit --audit-level=high` reported `found 0 vulnerabilities`. This lockfile remains **sandbox-only and uncommitted**; repository still lacks `frontend/package-lock.json`.
-
-- PR #173 is still **Draft / open / not merged**. Base SHA: `d0afc6653a00005e61859f2d8c3f9eebca73c333`. Current branch head at this checkpoint: `516175043f1cf1d8336888f239bc9957eeb09698`.
-- GitHub Actions still fails before runner execution on that head. Latest observed runs on current head `516175043f1cf1d8336888f239bc9957eeb09698`: `40446611714` (container), `40446611722` (backend/frontend), and `40446611712` (dependency audits) failed within ~3–4 seconds; every job had `runner_id=0`, empty runner name and `steps=0`. This ledger update is documentation-only; no application or CI workflow code was changed by it. This confirms a runner allocation/dispatch failure, not an application test result. The exact account billing/quota root cause remains unconfirmed.
-- CircleCI official CLI 1.11.0 validation **PASS** on the current config after replacing the heredoc with a quoted multiline Python command. Hosted workflow **NOT RUN** because the repository is not authorized in CircleCI. No CircleCI check contexts are available to add to branch protection yet.
-- Docker CLI/daemon was unavailable; Docker image build is **NOT RUN**. Python import smoke check passed but does not substitute for container verification.
-- Runtime differences: sandbox Python 3.14.4, Node 24.22.1, PostgreSQL 18.6. CircleCI declares Python 3.12, Node 22.12, PostgreSQL 16; exact configured runtime verification remains outstanding.
-- The npm audit used a newly resolved transient install because the repository has no lockfile. Do not claim deterministic frontend dependency resolution.
-- A default TinyFish browser profile exists but has no authenticated sites recorded; no CircleCI account is connected. Hosted CircleCI validation cannot be performed through the current connections without the repository owner authorizing CircleCI.
-- The operational profit/loss view is not a complete double-entry general ledger. CI cannot certify unimplemented period close, inventory valuation/COGS, tax jurisdiction compliance, FX accounting, bank reconciliation or receivables-aging controls.
-- No demo or production release is **VERIFIED** until exact-SHA CircleCI runs pass, required checks are enforced, container build passes and authorized deployment/smoke evidence exists.
-
-## Next actions, in order
-
-1. Add a reviewed frontend lockfile and use `npm ci`.
-2. Have the repo owner authorize the current private GitHub repository in CircleCI and run `.circleci/config.yml`; fix any actual validator or hosted-job failures.
-3. Re-run backend/PostgreSQL, Alembic, all four concurrency tests, dependency audits and frontend tests/build in CircleCI on the exact current PR head using the configured runtime versions; capture provider URLs and artifacts.
-4. Run the actual backend container build/import job.
-5. Inspect status context names from successful CircleCI execution, then require those exact contexts on protected `main`.
-6. Only after those gates pass, decide merge/readiness. Do not merge/deploy or alter paid settings to bypass blockers.
-
-
----
-
 # Latest verified release checkpoint — 2026-10-27 00:20 UTC
 
 This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
@@ -667,80 +626,6 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - No merge, production deployment, version bump, production-data mutation, or paid-resource change was performed. Next: obtain inspectable CI execution using an authorized available runner, then run the full backend/PostgreSQL, frontend tests/build, container, and dependency gates on the exact updated head before considering merge.
 
 
-## GitHub Actions minute-budget mitigation — 2026-10-27
-
-- Status: IN_PROGRESS; workflow changes prepared on branch `fix/actions-minute-budget`; runtime verification BLOCKED until GitHub-hosted jobs execute normally.
-- Evidence: GitHub Actions API reported 2,420 historical workflow runs. In the latest 100 fetched runs, all 100 were failures; several distinct workflows repeatedly triggered for PR #172 at the same timestamps (including push and pull_request events). Latest jobs finished within seconds, returned no executable step summaries, and log retrieval returned BlobNotFound. This is consistent with an execution/infrastructure or account-usage blocker, but the exact billing/quota cause is NOT confirmed because the billing-usage endpoint was unavailable through the connected GitHub tool.
-- Changes on `fix/actions-minute-budget`:
-  - `.github/workflows/ci.yml`: run push CI only on `main` (feature branches are tested by pull_request), add per-branch concurrency cancellation, and consolidate PostgreSQL migration-current/check/offline-SQL checks into the main backend CI job.
-  - `.github/workflows/backend-tests.yml`: retain the extended backend test workflow for manual `workflow_dispatch` runs instead of running the same backend tests on every PR.
-  - `.github/workflows/backend-container.yml`: build on PRs and main pushes, not both feature-branch pushes and PR updates; add concurrency cancellation.
-  - `.github/workflows/dependency-security.yml`: limit PR/push triggers to dependency manifests and workflow definitions, restrict push runs to main, and key concurrency by PR head branch where available. Scheduled and manual scans remain enabled.
-- Expected impact: reduce duplicate feature-branch push/PR runs and skip dependency audits for source-only edits while retaining PR CI, security scans on dependency changes, scheduled audits, and manual extended checks.
-- Validation: re-fetched all four modified workflows from this branch and parsed each with Python PyYAML `safe_load`; all four parse successfully and expose the expected job structure (1 container job, 1 manual backend test job, 2 CI jobs, and 2 security-scan jobs). This is syntax parsing only, not GitHub Actions expression/schema validation. Workflow execution, application tests/build on the branch, and Actions-minute consumption measurements remain NOT RUN because GitHub jobs fail before a runner/first step. Do not merge based on YAML parsing alone.
-- Next: re-fetch and inspect all changed workflow files, open a draft PR, and inspect its CI status. If jobs still fail before steps, verify the repository/account Actions usage/billing limit and wait for reset or use an authorized alternative runner. Do not weaken required checks or claim production readiness.
-
-
-## Independent CI follow-up — 2026-10-27
-
-- Fixed `.circleci/config.yml` after source review found that `frontend-quality` had a step named “Run frontend unit tests and production build” but only ran `npm run build`, and dependency jobs used non-reproducible `npm install` despite a lockfile.
-- Config now uses `npm ci --no-audit --no-fund` in both frontend-quality and scheduled frontend audit jobs, and runs `npm test` before `npm run build`.
-- New commit: `46514f218476c60ca0b715427bc4509cf9808400`; config blob `0b600178852d023fc15ef3b4b328b32261509b20`.
-- Offline validation completed in the already-existing Vercel Sandbox with PyYAML: YAML parsed; expected five jobs were present; assertions confirmed npm ci, frontend test/build steps and container setup_remote_docker/build command. Result: passed as a local structure check only.
-- NOT RUN: CircleCI CLI/config validation (CLI absent and package repositories unreachable); CircleCI hosted pipeline/required jobs (private repository not yet authorized/selected in CircleCI); exact-SHA PostgreSQL/container/front-end checks under CircleCI. Do not call this an independent CI pass until a real CircleCI run URL and successful jobs are recorded.
-- Next action: authorize this private GitHub repo inside CircleCI and select `.circleci/config.yml`; validate and run on this PR SHA. Do not pay/upgrade, disable protections, or use GitHub Actions as an assumed substitute.
-
-## CI config review correction — 2026-10-27
-
-- **CI-LOCK-01 — CircleCI frontend install mismatch: FIXED IN PR BRANCH, NOT YET RUN.** Review of `.circleci/config.yml` found both frontend jobs used `npm ci`, but the repository has no committed `frontend/package-lock.json`. That would make the alternative CI pipeline fail before testing. Updated both install commands to `npm install --no-audit --no-fund`, matching the documented manifest-only install limitation, and removed the redundant standalone `npm test` before `npm run build` because the existing package build script already runs tests before `ng build`. New commit: `f4a4e1c8bc13e4265ac5b9bab7338712bdd4c227`. The reviewed docs still explicitly track a lockfile plus `npm ci` as a follow-up once registry access allows a reviewed lockfile to be generated.
-- **Verification:** source-level checks confirm two `npm install` commands and zero `npm ci` commands remain in the CircleCI config. YAML parser execution was NOT RUN in this attempt because the previously available Vercel Sandbox stopped (`410 sandbox_stopped`); CircleCI CLI validation and hosted run remain NOT RUN. This is a targeted config correction, not a passing CI result.
-- **Next:** validate CircleCI schema and run its three per-change jobs on this exact branch head after the repository is authorized in CircleCI. Do not merge or make required checks from guessed status contexts.
-- **Post-correction structural check:** fetched the exact current `.circleci/config.yml` blob `343b3d0addf253426b92a325ec407ebc838e5fa8` and passed six targeted text assertions: no `npm ci`, exactly two manifest-only install commands, all five jobs present, frontend tests/build invoked once through `npm run build`, test-named PostgreSQL URL configured, and no production-deploy job. A fresh Vercel sandbox lacked PyYAML (`ModuleNotFoundError: No module named 'yaml'`); YAML parser/official CircleCI schema validation remains NOT RUN. Do not elevate static assertions to full config validation.
-- **YAML parse recovery:** installed PyYAML in the disposable Vercel sandbox and parsed the exact current `.circleci/config.yml` blob `343b3d0addf253426b92a325ec407ebc838e5fa8` successfully; output reported CircleCI `version=2.1`, all five expected jobs, and the three per-change jobs in `verify-all-changes`. The focused static assertions above also passed. **Official CircleCI CLI/schema validation and a hosted run remain NOT RUN.**
-
-
-## CI/security follow-up — 2026-10-27
-- Status: IN_PROGRESS; PR #173 remains Draft and must not merge yet.
-- GitGuardian raised a generic-password finding for the disposable PostgreSQL credentials in an earlier .circleci/config.yml commit. Removed the literal password from the current configuration: the isolated CI PostgreSQL service now uses POSTGRES_HOST_AUTH_METHOD=trust, and its test-only connection strings no longer embed a password. This is scoped to the disposable CircleCI service, not production.
-- Fix commit: 402a9f4051460df266e996db25ff55579b9bac74. Current-head secret scan recheck is NOT RUN; the historic finding may remain visible until GitGuardian rescans/incident is reviewed. Do not claim the alert is resolved based only on the source edit.
-- CircleCI CLI validation and hosted pipeline remain NOT RUN. GitHub Actions runner allocation failures still do not expose executable steps. No merge or production deployment occurred.
-- Next: recheck PR #173 head/checks and GitGuardian result; validate CircleCI YAML with an independent parser; inspect financial concurrency tests and PR #170; merge only if the exact-head required gates pass and no unresolved security issue remains.
-
-
-## Independent config validation — 2026-10-27
-- Fetched `.circleci/config.yml` from the current PR branch and ran PyYAML parsing in a fresh disposable Vercel sandbox. Result: PASS for YAML parsing; CircleCI `version: 2.1`; all five declared jobs present; the `verify-all-changes` workflow includes `backend-accounting`, `frontend-quality`, and `backend-container`; no literal PostgreSQL test password remains; two `npm install --no-audit --no-fund` calls remain and no `npm ci` is configured without a lockfile.
-- This is a generic YAML/structural check only. CircleCI's official schema validator and a hosted CircleCI run remain NOT RUN. GitHub Actions runs on the prior candidate still fail before steps (`steps: null`, `logs_url: null`); no application test/build result is evidenced by those runs.
-- Financial code review of `record_payment` confirms the current branch uses a nested savepoint for unique-key insert races and resolves a matching existing payment after an integrity conflict; PostgreSQL concurrency tests are present but NOT RUN in this environment. PR #170 inventory/financial fixes are also NOT VERIFIED on the current head.
-- PR #173 current ledger update is pending this note; keep #170/#173/#174 Draft and do not merge until required exact-head checks and the secret-scan incident review are complete. No Admin Screen changes, production merge, or deployment.
-
-
-## PR #173 current CI candidate checkpoint — 2026-10-27
-
-- Refreshed PR #173 current head: `69a043adc0fbd6188f7d6e806fb7ffe076a138f5`; `.circleci/config.yml` blob: `c9897f04d452f5c1e8ad4b31d4d92e1ae978268c`.
-- The current config has five jobs; `verify-all-changes` runs `backend-accounting`, `frontend-quality`, and `backend-container`. The frontend build script runs the current `npm test` suite before Angular compilation, so `npm run build` invokes tests and build. Since no `frontend/package-lock.json` is committed, config correctly uses `npm install --no-audit --no-fund`; do not change to `npm ci` until a reviewed lockfile is committed.
-- PyYAML parse and structural assertions passed on the current config. This is not official CircleCI schema validation and not a hosted pipeline run. No CircleCI status checks exist on the current PR head; no GitHub Actions status entries were returned for the candidate SHA.
-- Remaining activation blocker: owner must authorize/select the private repository in CircleCI. No CircleCI plugin/connector was found in available connected tools. Do not enable paid credits, guess required status contexts, weaken branch protection, or merge based only on local YAML parsing.
-- This PR remains Draft/open/unmerged and contains CI/docs changes only. No Admin Screen source was changed on PR #173; PR #172 remains separate.
-
-
-## Cross-PR regression prevention — 2026-10-27
-- Updated PR #173 to carry the duplicate-SKU inventory protection from PR #170 because both branches edit backend/app/services.py; merging the CI/payment branch without this port could otherwise reintroduce the oversell defect.
-- issue_invoice now aggregates all requested quantities by stock-tracked product, validates every aggregate before adding any sale movements, and retains stable product row locking. Added regression test test_invoice_issue_aggregates_repeated_product_lines_before_stock_check to backend/tests/test_services.py.
-- Aligned backend/pyproject.toml version with release candidate 1.2.1 from PR #170 to avoid stale package metadata after integrating the CI/payment changes.
-- Commits: services 58ae550976c9caa96e8f5065f4482de34da78d3e; regression test c821a1cf66545677551f2d557d36ee8ec3a11235; version metadata d5e00b528aa3da4fd83a9b1ed45886c40fe4d1c5.
-- Tests for these newest edits are NOT RUN in this tool session. Previous independent sandbox results do not verify the current head. PR #173 remains Draft; do not merge until current-head checks pass and GitGuardian review is clear.
-
-
-## Current-head isolated verification — 2026-10-27
-- The latest PR #173 head is a24d70e99427e1eaa552399c2e3e4f06f3bf4e01. Reconstructed the exact current `backend/app/services.py`, `backend/app/models.py`, `backend/app/security.py`, `backend/app/domain_rules.py`, and `backend/tests/test_services.py` from the branch in a disposable Vercel sandbox; no production credentials or data were used.
-- `python -m compileall -q app tests`: PASS.
-- `PYTHONPATH=/vercel/pr173test python -m pytest -q tests/test_services.py`: PASS, 15 passed in 0.54s, including the newly added duplicate-SKU oversell regression test.
-- Additional source invariant assertions: PASS; aggregate quantity validation occurs before any sale movements are added.
-- This sandbox run covered SQLite service tests only; PostgreSQL concurrency tests, CircleCI official schema validation/hosted execution, Docker build, and full repo checkout integration remain NOT RUN on the latest head.
-- GitHub Actions automatically retriggered on the new head; workflow runs 40443566618 (backend/frontend), 40443566688 (container), and 40443566737 (dependency scan) again failed before executable steps. Runner job responses still report `steps: null` and `logs_url: null`. Retrying previous failed jobs also returned success from the API request but the underlying attempts remain non-executing; no check passed.
-- No merge: PR #173 remains Draft; PR #170 and #174 remain Draft. Main unchanged. Security alert review and exact-head hosted gates remain release blockers.
-
-
 ## Merge campaign checkpoint — 2026-10-27 03:28 UTC
 
 - User requested autonomous task execution and merging all branches. Applied the repository safety rule: merge only coherent, verified changes; do not bypass CI/security/branch protections or merge stale/duplicate branches just to empty the PR list.
@@ -753,9 +638,45 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Next action: recheck main SHA/status, diagnose available CI execution route, reconcile the latest accounting PR heads, then validate/merge one coherent branch at a time. Keep all security and financial release gates intact.
 
 
-## CI alternative follow-up — 2026-10-27
+## Execution checkpoint — 2026-10-27 — workspace release metadata and payment UX
 
-- Reconciled latest main ancestry into fix/actions-minute-budget. Current merge base is main SHA d0afc6653a00005e61859f2d8c3f9eebca73c333; comparison reports ahead 51 / behind 0. PR #173 is mergeable but remains Draft.
-- Attempted official CircleCI CLI validation as the non-GitHub-Actions alternative. The isolated sandbox has no circleci or Docker/Podman binary. Downloading the official CLI installer from packages.circleci.com was blocked by the tool safety layer before execution; DNS failure is NOT verified. No CircleCI hosted run or official validation is claimed.
-- Generated a temporary frontend package-lock.json with npm install --package-lock-only --ignore-scripts --no-audit --no-fund in an isolated sandbox; npm reported up to date. The lockfile was not committed, so the repository remains non-deterministic and CircleCI must continue using npm install until a reviewed lockfile is committed.
-- Still BLOCKED: CircleCI account/project authorization and network access for official validation, actual Docker/container build, and authoritative hosted checks. Do not weaken gates, enable paid overages, or merge based on local-only evidence.
+- **UI-RELEASE-01 — Show release version beside Workspace label: IN_PROGRESS.** Added a sidebar metadata block showing UI/API versions and the frontend build timestamp formatted in Africa/Cairo; added the same timestamp to the mobile version strip because the sidebar is replaced by the mobile navigation dock. The timestamp is explicitly labeled as build time (deployment approximation), not falsely represented as an authoritative Vercel deployment-created timestamp.
+- **PAY-UX-01 — Payment authorization clarity: IN_PROGRESS.** The API intentionally enforces owner-only payment recording. The UI previously displayed payment navigation to all workspace roles, which could lead staff users to submit requests that the server correctly rejects. Payment navigation and form are now owner-gated, and non-owners receive a clear explanation; server-side authorization remains authoritative.
+- **PAY-TEST-01 — Regression coverage: IN_PROGRESS.** Added `frontend/src/app/release-payment-ui.spec.ts` for release metadata, mobile timestamp visibility, owner-only payment controls, and idempotency-key preservation. Frontend test script now includes all `*.spec.ts` files. Exact-branch tests/build and preview deployment are pending.
+- **PAY-DIAG-01 — Root cause limitation:** production API `/version` responds HTTP 200 (v1.2.0, commit `021f964bdb83`), and Vercel's aggregated runtime-error view reported no runtime errors for the last 24 hours. Detailed runtime logs were unavailable on the current Hobby retention window. No authenticated production payment request was replayed because that could create a real financial record. The exact user-facing payment failure remains unconfirmed; next validate the API route and inspect authenticated failure details using a non-production test workspace.
+- **Merge/deploy gates:** no production payment, database, or alias was changed. This branch requires exact-head frontend tests/build and preview checks before merge. Financial backend changes still require the current-head PostgreSQL and CI gates; do not merge all branches blindly.
+
+- **Preview trigger — 2026-10-27:** Added a `[release-web]` checkpoint commit to ensure the Vercel Ignore Build Step does not cancel the UI candidate preview. PR #175 remains Draft; exact-head build/test result will be recorded after the deployment reaches a terminal state.
+
+- **PAY-API-01 — Owner payment endpoint regression:** Added a backend API test that records a payment for an issued invoice and replays the same idempotency key, asserting one payment and one allocation are persisted. The test is committed but NOT RUN yet because the available hosted runner failures occur before steps and the private repository could not be cloned into the disposable Vercel sandbox. A new `[release-web]` commit requests an updated frontend preview for the new exact head.
+
+- **UI-STATEMENT-01 — integrated into PR #175:** ported the six-column customer statement scroll containment and long-reference wrapping onto the current mainline component to avoid the stale-base conflict in PR #174. Added the existing two CSS contract tests to the same branch; mobile-browser E2E remains NOT VERIFIED due to Vercel SSO.
+
+- **Exact-head Preview verification — 2026-10-27:** Vercel deployment `dpl_HR8628wrZSw6hGC6qk2r2aJhaChm` reached READY for source SHA `7c407bf894ae235a730a6084d7ef45611142808e`. Build logs report **10 frontend tests passed, 0 failed**, followed by successful Angular bundle generation (main bundle 458.21 kB raw / 104.32 kB estimated transfer). Preview root returned HTTP 200 with Arabic RTL HTML; its served JS bundle includes the workspace release metadata, build/deployment label, owner-only payment messaging, and statement overflow styles. This is source/build smoke evidence, not an authenticated financial transaction test or real mobile touch E2E.
+- **Production payment workflow:** NOT VERIFIED. The backend API success/idempotency test exists on this branch but has NOT RUN. Do not claim that the owner's payment failure is fully fixed until this backend test and a non-production signed-in payment flow pass. GitHub Actions remain infrastructure-blocked before steps.
+
+- **PAY-API-01 — isolated for validation:** moved the new owner-payment API test out of the UI release branch because it has not yet executed; it must pass in a separate backend test PR before any backend/payment release claim. The UI PR now contains only frontend code, frontend regression tests, and task evidence.
+
+
+## Production release checkpoint — 2026-10-27 — workspace release metadata and mobile UX
+
+- **UI-RELEASE-01 — VERIFIED COMPLETE:** PR #175 merged as `1a2ae107e76f7576f044b8b8314f1528660d895e`. Production frontend then received the static demo/roadmap via PR #59, merge SHA `a41f3d99760a1294c17de1538e9a91f5ae9fc6d9`. Vercel frontend production deployment `dpl_4e2h8htrBipt3kffvao4Whjmh5TH` is READY for that exact SHA. Build logs report **10 frontend tests passed, 0 failed**, and Angular bundle generation completed.
+- **Production smoke — VERIFIED:** `https://ai-business-assistant-web.vercel.app/` returned HTTP 200 with Arabic RTL HTML; `/demo/` returned HTTP 200. The served bundle `main-NBJUDCSA.js` contains the workspace release metadata, build/deploy-time label, owner-only payment message, and customer-statement mobile overflow styles. UI/API versions currently render from package/runtime metadata as UI 1.2.0 / API 1.2.0. The timestamp is the frontend build time in Cairo timezone, not an authoritative Vercel deployment-created timestamp.
+- **API deployment — intentionally NOT promoted:** Vercel canceled the API deployment because the commit did not include the configured `[release-api]` marker. Production API remains `1.2.0`, commit `021f964bdb83`; `/health` and `/readyz` both returned HTTP 200. No backend code, database, or production payment record was changed in this release.
+- **PAY-UX-01 — PARTIALLY COMPLETE:** UI now hides payment entry for non-owner roles and displays an explicit owner-only explanation, matching the existing server-side authorization. This addresses the verified UI/API permission mismatch, but a separate owner-side “payment does not work” failure is **NOT VERIFIED** because no authenticated non-production payment workflow was available. No real production payment was submitted.
+- **PAY-API-01 — BLOCKED / NOT RUN:** Draft PR #176 adds an API regression test for owner payment creation and idempotent replay. GitHub Actions on the exact candidate head fails before executable steps (`steps=null`, no logs, `runner_id=0`); private-repository cloning into the Vercel sandbox was rejected. Keep the test PR Draft until it runs in an authorized executable environment.
+- **Merge hygiene:** PR #171 merged (`13736dd...`); PR #175 merged (`1a2ae10...`); PR #45 merged (`43a3d7c...`); PR #59 merged (`a41f3d9...`); PR #11 merged (`492bf01...`); PR #12 merged (`41edbea...`). PR #54 closed as duplicate; PR #174 closed as superseded by #175; PR #157 closed after confirming its core logic/tests were already on main; PRs #1/#5/#8/#9 closed as stale or superseded documentation/architecture proposals.
+- **Remaining release gates:** PR #170 (financial/inventory integrity) and #173 (CI/PostgreSQL/container gates) remain Draft pending exact-head PostgreSQL/concurrency and CI evidence; PR #172 Platform Admin remains Draft pending negative authorization tests; PR #135 backup/restore script remains unmerged because an actual isolated restore drill is not evidenced; PR #43 assistant retry/cost controls remain unmerged pending review of bounded retry/cost exposure. Do not merge these blindly.
+- **Current mainline:** last confirmed application-code release SHA `a41f3d99760a1294c17de1538e9a91f5ae9fc6d9`; subsequent main commits `492bf01...` and `41edbea...` are documentation-only learning workflow/plan merges. Production frontend remains verified on `a41f3...`; API remains on `021f964bdb83`.
+
+
+## CI and accounting release-gate checkpoint — 2026-10-27 10:40 UTC
+
+- CI-ALT-01 — CircleCI pipeline configuration: PARTIALLY VERIFIED. .circleci/config.yml is committed on PR #173; CircleCI CLI 1.11.0 config validate and config process passed in the prior isolated sandbox. Hosted CircleCI execution remains NOT RUN because this private repository has not been authorized in CircleCI.
+- CI-FIN-02 — Financial concurrency regressions: VERIFIED LOCALLY, NOT YET HOSTED. The isolated sandbox reported 149 backend tests passed against disposable PostgreSQL 18.6, including four concurrency regressions. This was not a full Git clone or an exact run on the current PR head.
+- CI-FE-05 — Frontend: PARTIALLY VERIFIED. Five frontend tests and Angular production build passed in the isolated sandbox. A temporary npm lockfile installed via npm ci and audit reported zero known vulnerabilities, but the lockfile has not been committed; repository CI is not yet deterministic.
+- CI-DB-03 — Migration/schema drift: VERIFIED LOCALLY ONLY. PostgreSQL 18.6 migration upgrade/current/schema-drift checks passed. Configured CircleCI PostgreSQL 16 execution is NOT RUN.
+- CI-CONT-06 — Container build: NOT RUN. Docker/Podman was unavailable in the sandbox; no actual image build has passed.
+- CI-ACT-08 — Authoritative CI/release gate: BLOCKED. Current PR head has no reported commit status checks; latest GitHub Actions attempts failed before steps (runner_id=0, empty runner name, zero steps). CircleCI authorization is still required. Repository branch-protection/ruleset reads are blocked by GitHub integration permissions/plan restrictions; do not expose the private repository or bypass required checks.
+- PR reconciliation: PR #173 branch diverged from current main by six main commits. A merge reconciliation is being prepared to preserve current main's demo/docs/UI updates and this PR's CI/accounting changes. Do not merge to main until current-head CI evidence, the deterministic lockfile, and the container build are verified.
+- Production: No production code, credentials, database, payment records, or deployment changed during these checks. Production readiness is NOT VERIFIED.

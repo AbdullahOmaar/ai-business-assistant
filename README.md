@@ -12,8 +12,11 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
 - **GitHub Actions / CI status:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
-- **Independent CI configuration:** [.circleci/config.yml](.circleci/config.yml) (CircleCI account authorization and a successful exact-SHA run are still required before treating it as an active release gate)
+- **Independent CI configuration:** [.circleci/config.yml](.circleci/config.yml) (CircleCI authorization and a successful exact-SHA run are required before treating it as an active release gate)
 - **CI and accounting automation runbook:** [docs/CI_AND_ACCOUNTING_AUTOMATION.md](docs/CI_AND_ACCOUNTING_AUTOMATION.md)
+- **Interactive feature demo (branch preview):** `/demo/` (fictional local-only data; no production API calls)
+- **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
+- **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
 - **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
 - **Tenant, invoice, and AI regression tests:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/51
 - **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
@@ -60,7 +63,7 @@ The repository includes:
 - Angular email/password sign-in, authenticated API client, live dashboard/customer/product/invoice views, invoice draft editing/issuing/voiding, and a record-grounded AI chat UI.
 - Invoice issuance stock deductions as auditable stock movements for tracked products and insufficient-stock validation.
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
-- GitHub Actions workflows for backend tests, PostgreSQL migration validation, dependency security scans, and Angular production builds; an independent CircleCI pipeline configuration has been prepared, but it is not active until repository authorization and a successful exact-SHA run are verified.
+- GitHub Actions for backend tests, PostgreSQL migration validation, and Angular production builds.
 - Regression tests for cross-business authorization boundaries, invoice state transitions, and AI input/provider safety.
 
 ## Release blockers and known limitations
@@ -71,7 +74,7 @@ The repository includes:
 - Issued invoices with allocated payments must not be voided directly; refunds/credit notes need a separate workflow.
 - The quick editor supports a single product line per draft even though the API supports multiple lines.
 - Recurring invoice schedules and notification records still need background execution/delivery workers.
-- Do not consider a release complete until all required CI checks are green for the exact release commit, production deployment is confirmed, and authenticated smoke tests are completed safely. The prepared CircleCI configuration is not a passing check until an inspectable pipeline actually runs.
+- Do not consider a release complete until CI is green for the release commit, production deployment is confirmed, and authenticated smoke tests are completed safely.
 
 Review [the production runbook](docs/PRODUCTION_DEPLOYMENT.md) before production use.
 
