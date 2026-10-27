@@ -5,9 +5,10 @@ import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatemen
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
+import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'platform-admin';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'release-guide' | 'platform-admin';
 
 @Component({
   selector: 'aba-root',
@@ -72,12 +73,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('سجل العمليات', 'Activity log')" [attr.title]="t('سجل العمليات', 'Activity log')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
                     @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports'].includes(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports','audit','platform-admin'].includes(tab) || tab === 'release-guide'"" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'release-guide'" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
+              @if (platformAdminAvailable) { <button class="nav-item" role="menuitem" [class.active]="tab === 'platform-admin'" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
 <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
                             <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
@@ -223,6 +227,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   <input [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName">
                   <input [attr.aria-label]="t('سعر الوحدة', 'Unit price')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('سعر الوحدة', 'Unit price')" required [(ngModel)]="productPrice">
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
+                  @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required></label> }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 <section class="csv-import-panel" aria-label="CSV product import">
@@ -247,7 +252,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                   @if (importMessage) { <p role="status">{{ importMessage }}</p> }
                 </section>
                 <div class="list">
-                  @for (product of products; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('تتم متابعة المخزون', 'Stock tracked') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
+                  @for (product of products; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('المخزون: ', 'Stock: ') + (product.stock_quantity ?? '0') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
                   @if (!products.length) { <p class="empty">{{ t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.') }}</p> }
                 </div>
               </section>
@@ -282,7 +287,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
                 </details>
                 @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list">
-                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
+                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
                   @if (!filteredInvoices.length) { <p class="empty">{{ invoices.length ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.') }}</p> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
@@ -332,6 +337,70 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
+            @if (tab === 'release-guide') {
+              <section class="panel release-guide-panel">
+                <div class="section-head">
+                  <div>
+                    <p class="eyebrow">{{ t('دليل مبسط', 'QUICK GUIDE') }}</p>
+                    <h2>{{ t('مميزات التطبيق والإصدارات', 'App features & versions') }}</h2>
+                    <p>{{ t('اعرف الموجود في التطبيق، ثم افتح الإصدار لمعرفة ما أُضيف مقارنة بالإصدارات السابقة.', 'Browse what the app offers, then open a version to see what changed from earlier releases.') }}</p>
+                  </div>
+                  <span class="version-pill">{{ t('إصدار الواجهة', 'UI version') }} · v{{ appVersion }}</span>
+                </div>
+
+                <h3 class="release-guide-heading">{{ t('المميزات المتاحة', 'Available features') }}</h3>
+                <p class="footnote">{{ t('افتح القسم الذي تحتاجه فقط. بعض الأدوات تعتمد على صلاحية الحساب أو إعداد الخدمة.', 'Open only the section you need. Some tools depend on your account permissions or service setup.') }}</p>
+                <div class="release-guide-groups">
+                  @for (group of featureCatalog; track group.id) {
+                    <details class="release-feature-group">
+                      <summary>
+                        <strong>{{ t(group.titleAr, group.titleEn) }}</strong>
+                        <small>{{ t(group.noteAr, group.noteEn) }}</small>
+                      </summary>
+                      <ul>
+                        @for (feature of group.features; track feature.titleEn) {
+                          <li>
+                            <strong>{{ t(feature.titleAr, feature.titleEn) }}</strong>
+                            <span>{{ t(feature.detailAr, feature.detailEn) }}</span>
+                          </li>
+                        }
+                      </ul>
+                    </details>
+                  }
+                </div>
+
+                <div class="section-head release-history-title">
+                  <div>
+                    <h2>{{ t('سجل الإصدارات', 'Version history') }}</h2>
+                    <p>{{ t('كل إصدار يعرض الإضافات والتحسينات الجديدة فقط.', 'Each version lists only its new additions and improvements.') }}</p>
+                  </div>
+                </div>
+                <div class="release-history">
+                  @for (release of releaseHistory; track release.version) {
+                    <details class="release-version" [open]="release.version === appVersion">
+                      <summary>
+                        <span class="version-pill">v{{ release.version }}</span>
+                        <strong>{{ t(release.titleAr, release.titleEn) }}</strong>
+                        @if (release.version === appVersion) {
+                          <span class="count">{{ t('الإصدار الحالي', 'Current version') }}</span>
+                        }
+                      </summary>
+                      @if (language === 'ar') {
+                        <ul>
+                          @for (change of release.changesAr; track change) { <li>{{ change }}</li> }
+                        </ul>
+                      } @else {
+                        <ul>
+                          @for (change of release.changesEn; track change) { <li>{{ change }}</li> }
+                        </ul>
+                      }
+                    </details>
+                  }
+                </div>
+                <p class="footnote">{{ t('يتم تحديث هذا الدليل عند تجهيز إصدار جديد. الميزات التي تتطلب صلاحية أو إعدادًا تظهر ملاحظتها داخل قسمها.', 'This guide is updated for each new version. Features requiring permissions or setup are identified in their section.') }}</p>
+              </section>
+            }
+
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
                 <div class="section-head"><div><h2>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }}</h2><p>{{ t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') }}</p></div><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></div>
@@ -356,6 +425,18 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
   styles: [`
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}button,input,select,textarea{font:inherit}
+    .release-guide-heading{margin:18px 0 4px;font-size:16px}.release-history-title{margin-top:26px}
+    .release-guide-groups,.release-history{display:grid;gap:10px;margin:12px 0 22px;min-width:0}
+    .release-feature-group,.release-version{border:1px solid #dbe4ea;border-radius:13px;background:#fff;min-width:0;overflow:hidden}
+    .release-feature-group>summary,.release-version>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;list-style:none;cursor:pointer;padding:13px 14px}
+    .release-feature-group>summary::-webkit-details-marker,.release-version>summary::-webkit-details-marker{display:none}
+    .release-feature-group>summary:after,.release-version>summary:after{content:'＋';margin-inline-start:auto;display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:8px;background:#f1f5f9;color:#334155}
+    .release-feature-group[open]>summary:after,.release-version[open]>summary:after{content:'−'}
+    .release-feature-group>summary strong{font-size:14px;flex:1 1 160px}.release-feature-group>summary small{flex:1 1 100%;font-size:12px;color:#64748b;line-height:1.5;overflow-wrap:anywhere}
+    .release-feature-group ul,.release-version ul{margin:0;padding:0 32px 14px 0;display:grid;gap:10px;font-size:13px;line-height:1.55}
+    .shell.english .release-feature-group ul,.shell.english .release-version ul{padding:0 0 14px 32px}
+    .release-feature-group li strong{display:block;font-size:13px}.release-feature-group li span{display:block;margin-top:2px;color:#475569;font-size:12px;overflow-wrap:anywhere}
+    .release-version>summary strong{font-size:14px;flex:1 1 160px}.release-version ul{padding-top:2px}.release-version .count{font-size:11px}
     .csv-import-panel{display:grid;gap:10px;margin:18px 0;padding:14px;border:1px solid #d1d5db;border-radius:12px;background:#f8fafc}.csv-import-panel h3,.csv-import-panel p{margin:0}.csv-import-panel h3{font-size:15px}.csv-import-panel p,.csv-import-panel small{font-size:12px;line-height:1.5;color:#4b5563}.csv-import-actions{display:flex;flex-wrap:wrap;gap:8px}.csv-import-errors{margin:0;padding-inline-start:22px;font-size:12px;color:#991b1b;display:grid;gap:5px;overflow-wrap:anywhere}.invoice-lines{display:grid;gap:10px;flex-basis:100%;width:100%}.invoice-lines-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.invoice-line-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc}.invoice-line-row label{display:grid;gap:5px;min-width:0}.invoice-line-row select,.invoice-line-row input{width:100%;min-width:0}@media(max-width:600px){.invoice-line-row{grid-template-columns:minmax(0,1fr) minmax(88px,.65fr)}.invoice-line-row button{grid-column:1/-1;justify-self:start}}.topbar-heading{display:grid;gap:5px;min-width:0}.workspace-build-card{justify-self:start;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;border:1px solid #dbe4ea;border-radius:12px;background:#fff;box-shadow:0 2px 8px #0f172a08}.workspace-build-card .version-pill{font-size:11px;white-space:nowrap}.workspace-build-card small{font-size:11px;color:#64748b;overflow-wrap:anywhere}.invoice-create-disclosure{margin:14px 0 18px;border:1px solid #cbd5e1;border-radius:16px;background:#f8fafc;overflow:hidden}.invoice-create-disclosure>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;background:#fff;font-weight:800;color:#0f172a}.invoice-create-disclosure>summary::-webkit-details-marker{display:none}.invoice-create-disclosure>summary:after{content:'＋';display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:#ccfbf1;color:#115e59;font-size:19px}.invoice-create-disclosure[open]>summary:after{content:'−'}.invoice-create-disclosure>summary small{font-weight:500;color:#64748b;font-size:11px}.invoice-create-disclosure>.invoice-form{padding:14px;border-top:1px solid #e2e8f0}.customer-invoice-filter{padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.customer-invoice-filter label{width:100%;min-width:0}.customer-invoice-filter select{width:100%;min-width:0}.list-row{min-width:0;flex-wrap:wrap;gap:12px}.list-row .grow{min-width:120px;overflow-wrap:anywhere}.list-row>strong{overflow-wrap:anywhere;max-width:100%}.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:12px}.table-wrap table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0}.table-wrap th,.table-wrap td{padding:11px 12px;text-align:start;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}.table-wrap th{position:sticky;top:0;background:#f1f5f9;color:#334155;font-size:12px;white-space:nowrap}.table-wrap tbody tr:nth-child(even){background:#f8fafc}.table-wrap tbody tr:last-child td{border-bottom:0}@media(max-width:600px){.topbar-heading{width:100%}.workspace-build-card{width:100%;justify-content:flex-start}.workspace-build-card small{flex-basis:100%}.invoice-create-disclosure>summary{align-items:flex-start;flex-wrap:wrap}.invoice-create-disclosure>summary small{flex:1 1 100%;order:2}.invoice-create-disclosure>.invoice-form{display:grid;grid-template-columns:minmax(0,1fr)}.list-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start}.list-row .grow{min-width:0}.list-row>button,.list-row>strong{grid-column:2;justify-self:start}.table-wrap table{min-width:760px}}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
     .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:#f8fafc}.warning-notice{border-color:#f59e0b;background:#fffbeb}.divider{height:1px;background:#e5e7eb;margin:22px 0}
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:left}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
@@ -371,7 +452,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
       .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:#99f6e4;color:#065f46;background:#ecfdf5;font-weight:800}.install-floating{display:block;position:fixed;top:12px;right:12px;z-index:50;box-shadow:0 6px 20px #0f172a22}.install-help-floating{display:flex;position:fixed;top:62px;right:12px;z-index:50;width:min(360px,calc(100vw - 24px));box-shadow:0 8px 28px #0f172a22}.main,.shell.english .main{padding-top:76px}.shell.install-help-open .main{padding-top:164px}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;right:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(250px,calc(100vw - 20px));padding:8px;background:#0f172a;border:1px solid #334155;border-radius:16px;box-shadow:0 18px 50px #02061755;gap:4px}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{box-shadow:inset 3px 0 #5eead4}.mobile-more-menu .mobile-menu-action{border-top:1px solid #334155;border-radius:8px;margin-top:2px}
       .global-loading{position:fixed;inset:0 0 auto;z-index:1000;height:3px;background:#ccfbf1;overflow:hidden}.global-loading>span:first-child{position:absolute;inset:0 auto 0 0;width:35%;background:#0f766e;animation:loading-sweep 1.15s ease-in-out infinite}.loading-label{position:absolute;top:10px;right:12px;background:#0f766e;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 14px #0f172a22}@keyframes loading-sweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@media(prefers-reduced-motion:reduce){.global-loading>span:first-child{animation:none;width:100%}}
     .sidebar{position:fixed;inset:auto 0 0;width:100%;min-height:0;height:auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;background:rgba(15,23,42,.97);border-top:1px solid #334155;box-shadow:0 -8px 28px #0f172a20;backdrop-filter:blur(16px);z-index:20}
-      .brand,.brand>span:last-child,.nav-label,.workspace-release-meta,.sidebar-bottom,.sidebar>.mobile-extra{display:none}
+      .brand,.brand>span:last-child,.nav-label,.workspace-release-meta,.sidebar-bottom{display:none}.sidebar>.mobile-extra,.sidebar>.platform-admin-nav{display:none}
       .nav-item{min-width:0;min-height:58px;margin:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;font-size:10px;line-height:1.1;text-align:center;white-space:normal;color:#cbd5e1}
       .nav-item>span:not(.nav-icon){display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
       .nav-item .nav-icon{display:grid;flex:0 0 27px;width:27px;height:27px;font-size:17px;border-radius:9px}
@@ -466,6 +547,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
 })
 export class AppComponent implements OnInit {
   readonly appVersion = APP_BUILD_INFO.version;
+  readonly featureCatalog = FEATURE_CATALOG;
+  readonly releaseHistory = RELEASE_HISTORY;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   readonly buildTimeLabel = APP_BUILD_INFO.builtAt ? new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' }).format(new Date(APP_BUILD_INFO.builtAt)) : 'وقت البناء غير متاح';
   apiVersionLabel = 'غير متاح';
@@ -523,6 +606,7 @@ export class AppComponent implements OnInit {
   productName = '';
   productPrice = '';
   stockTracked = false;
+  productOpeningQuantity = '0';
   importCsvText = '';
   importFileName = '';
   importLoading = false;
@@ -694,9 +778,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', 'platform-admin': 'إدارة المنصة'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
@@ -1177,9 +1261,10 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       await this.api.createProduct(this.business.id, {
-        name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked
+        name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked,
+        opening_quantity: this.stockTracked ? this.productOpeningQuantity : '0'
       });
-      this.productName = ''; this.productPrice = ''; this.stockTracked = false;
+      this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
       this.products = await this.api.products(this.business.id);
       if (this.products.length) this.invoiceProductId = this.products[0].id;
     } catch (error) {
@@ -1366,6 +1451,31 @@ export class AppComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  hasOutstandingBalance(invoice: Invoice): boolean {
+    const amount = Number(invoice.outstanding_amount);
+    return invoice.outstanding_amount !== undefined && Number.isFinite(amount) && amount > 0;
+  }
+
+  payInvoice(invoice: Invoice): void {
+    if (!this.business || this.business.role !== 'owner' || invoice.status !== 'issued') return;
+    if (!invoice.customer_id || invoice.outstanding_amount === undefined) {
+      this.error = this.t('تعذر تحديد العميل أو الرصيد المستحق. حدّث البيانات وحاول مرة أخرى.', 'Could not determine the customer or outstanding balance. Refresh data and try again.');
+      return;
+    }
+    const outstanding = Number(invoice.outstanding_amount);
+    if (!Number.isFinite(outstanding) || outstanding <= 0) {
+      this.error = this.t('الفاتورة مسددة بالكامل أو لا يوجد رصيد مستحق.', 'This invoice is fully paid or has no outstanding balance.');
+      return;
+    }
+    this.error = '';
+    this.tab = 'payments';
+    this.paymentCustomerId = invoice.customer_id;
+    this.paymentInvoiceId = invoice.id;
+    this.paymentAmount = outstanding.toFixed(2);
+    this.paymentAllocationAmount = outstanding.toFixed(2);
+    this.paymentMessage = this.t('تم اختيار الفاتورة وتحديد الرصيد المستحق. راجع المبلغ وطريقة الدفع ثم سجّل الدفعة.', 'Invoice selected and outstanding balance filled in. Review the amount and method, then record the payment.');
   }
 
   async createPayment(): Promise<void> {
