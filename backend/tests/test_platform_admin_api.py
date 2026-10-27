@@ -1,7 +1,6 @@
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -130,11 +129,11 @@ def test_platform_admin_overview_uses_real_counts_and_keeps_currency_totals_sepa
     assert data["users"] == {"distinct_subjects": 2, "memberships": 3}
     assert data["invoices"]["count"] == 2
     assert data["payments"]["count"] == 2
-    payment_totals = {row["currency_code"]: row["total"] for row in data["payments"]["by_currency"]}
-    assert payment_totals == {"EGP": "60.00", "USD": "12.00"}
-    invoice_totals = {(row["currency_code"], row["status"]): row["total"] for row in data["invoices"]["by_currency_and_status"]}
-    assert invoice_totals[("EGP", "issued")] == "100.00"
-    assert invoice_totals[("USD", "draft")] == "25.00"
+    payment_totals = {row["currency_code"]: Decimal(row["total"]) for row in data["payments"]["by_currency"]}
+    assert payment_totals == {"EGP": Decimal("60.00"), "USD": Decimal("12.00")}
+    invoice_totals = {(row["currency_code"], row["status"]): Decimal(row["total"]) for row in data["invoices"]["by_currency_and_status"]}
+    assert invoice_totals[("EGP", "issued")] == Decimal("100.00")
+    assert invoice_totals[("USD", "draft")] == Decimal("25.00")
 
 
 def test_business_search_status_and_pagination_are_bounded(platform_admin_environment):
