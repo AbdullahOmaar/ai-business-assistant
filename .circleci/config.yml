@@ -124,6 +124,13 @@ jobs:
     working_directory: ~/project
     steps:
       - checkout
+      - run:
+          name: Verify backup/restore safety guards without database access
+          command: |
+            set -euo pipefail
+            bash -n scripts/backup-restore-drill.sh
+            bash -n scripts/backup-restore-drill.test.sh
+            bash scripts/backup-restore-drill.test.sh
       - setup_remote_docker
       - run:
           name: Build and import-check the backend container

@@ -30,6 +30,7 @@ from app.models import (
     Payment,
     PaymentAllocation,
     Product,
+    SalesReturn,
     StockMovement,
     Supplier,
 )
@@ -122,8 +123,7 @@ def create_product(
     if opening_quantity > ZERO and not is_stock_tracked:
         raise WorkflowError("Opening stock requires stock tracking to be enabled")
     if opening_quantity > ZERO:
-        # Match the OWNER-only standalone stock-movement API. Without this check,
-        # STAFF could bypass that boundary by setting opening_quantity on product creation.
+        # Authorize before any product/audit/stock writes to prevent STAFF side effects.
         _membership(session, principal, business_id, owner_only=True)
     product = Product(
         business_id=business_id, name=name.strip(), unit_price=unit_price,
@@ -363,6 +363,15 @@ def void_invoice(
         if Decimal(str(allocated or 0)) > ZERO:
             raise WorkflowError(
                 "This invoice has allocated payments; record a refund or credit note before correction"
+            )
+        approved_returns = session.scalar(select(func.count()).select_from(SalesReturn).where(
+            SalesReturn.business_id == business_id,
+            SalesReturn.invoice_id == invoice.id,
+            SalesReturn.status == "approved",
+        ))
+        if approved_returns:
+            raise WorkflowError(
+                "Invoice has approved sales returns; use a credit note instead of voiding"
             )
         lines = session.scalars(select(InvoiceLine).where(
             InvoiceLine.invoice_id == invoice.id,

@@ -12,7 +12,7 @@ from app.models import (
     StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError
-from app.services import create_customer, create_invoice, create_product, issue_invoice, record_stock_movement
+from app.services import create_customer, create_invoice, create_product, issue_invoice, record_stock_movement, void_invoice
 from app.operations import (
     WorkflowError, approve_sales_return, financial_summary, queue_notification,
     receive_purchase_order,
@@ -368,3 +368,69 @@ def test_notification_deduplication_and_currency_separated_summary(operation_wor
             "allocated_payments": {},
             "expenses": {},
         }
+
+
+def test_invoice_void_rejects_invoice_with_approved_sales_return(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Returned Goods Customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Returned Goods", unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("10.000"), reason="Opening stock",
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-RETURN-VOID", currency_code="EGP",
+            customer_id=customer.id,
+            lines=[{"product_id": str(product.id), "quantity": "10"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=invoice.id,
+        )
+        line = session.scalar(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.business_id == business_id,
+        ))
+        sales_return = SalesReturn(
+            business_id=business_id, invoice_id=invoice.id, status="draft",
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_id, sales_return_id=sales_return.id,
+            invoice_line_id=line.id, quantity=Decimal("3.000"), amount=Decimal("30.00"),
+        ))
+        session.flush()
+        approve_sales_return(
+            session, principal=principal, business_id=business_id,
+            sales_return_id=sales_return.id,
+        )
+        session.flush()
+
+        with pytest.raises(WorkflowError, match="approved sales returns"):
+            void_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id, reason="Must not double-restore returned stock",
+            )
+
+        assert invoice.status == "issued"
+        balance = session.scalar(select(__import__("sqlalchemy").func.sum(
+            StockMovement.quantity_delta
+        )).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        ))
+        assert Decimal(str(balance)) == Decimal("3.000")
+        assert session.scalar(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+            StockMovement.reference_type == "invoice_void",
+            StockMovement.reference_id == invoice.id,
+        )) is None

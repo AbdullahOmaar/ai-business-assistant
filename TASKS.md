@@ -1,16 +1,13 @@
 # Current execution checkpoint — 2026-10-28
 
-- **Working branch:** `docs/audit-master-plan-2026-10-28`; no new branch created. Synced with current `main` SHA `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`, preserving the latest Platform Admin API, tests, and review documentation. Net diff against main remains 5 files: `AGENTS.md`, `TASKS.md`, `backend/app/services.py`, `backend/tests/test_business_tenant_boundaries.py`, and `docs/SECURITY_ROUTE_INVENTORY.md`.
-- **SEC-001:** the positive-`opening_quantity` OWNER check runs before product, audit, or stock writes. Regression coverage includes STAFF zero-quantity success, STAFF positive-quantity denial with no persisted side effects, and OWNER success.
-- **SEC-002:** duplicate GET route cleanup and route-registration regression were already on main; retained without duplicate edits.
-- **Full backend gate reproduced locally on the synced source tree** with CI-matching Python **3.12.15** and PostgreSQL **16.15** using a disposable local DB: `alembic upgrade head` **PASS**; `alembic current` **0004_platform_user_roles (head)**; `alembic check` **PASS / no new operations**; full `pytest -q` **214 passed, 11 warnings, 0 skipped** (9.00s); `compileall` **PASS**; offline `alembic upgrade head --sql` **PASS, 391 lines**; `pip-audit -r requirements.txt` **no known vulnerabilities**. All PostgreSQL concurrency tests ran. No production/shared database was used.
-- **CircleCI discrepancy on code candidate `e9bc6a31f541152aa266eb13597086c6eff63a15`:** backend-container and frontend-quality passed; frontend-browser-smoke is pending; backend-accounting reports failure. The complete backend-accounting commands pass locally with the same Python/PostgreSQL major versions, so the CI failure is not reproduced. Exact failing step/root cause remains unconfirmed because CircleCI logs require an authenticated session/token. Do not bypass this required gate.
-- **PR / delivery:** PR [#212](https://github.com/AbdullahOmaar/ai-business-assistant/pull/212) is open and Draft. Branch is 0 commits behind main. No merge to main or production deployment performed.
-- **FIN-001 progress:** issue [#111](https://github.com/AbdullahOmaar/ai-business-assistant/issues/111) was closed after verifying shared `ROUND_HALF_UP` calculations and half-cent reconciliation tests. Broader financial concurrency/lifecycle review remains IN_PROGRESS until exact-head CI is green and the remaining security/operations gates are resolved.
-- **Next:** obtain authenticated CircleCI logs or rerun the backend-accounting job in CircleCI, compare its environment/steps with the passing local reproduction, and keep PR Draft until exact-head checks pass.
+- **Execution branch:** `docs/audit-master-plan-2026-10-28`; reused existing branch, no new branch created. Branch sync includes mainline at `c60cc98498b67c2735836d433aec78e871ce7a64`; exact candidate SHA is the resulting branch head.
+- **SEC-001 opening-stock bypass:** merged via PR [#225](https://github.com/AbdullahOmaar/ai-business-assistant/pull/225), merge SHA `e4117291ab64bbac395ba6c64c15bbf1914d27b4`. Exact PR-head CircleCI passed all four contexts; GitGuardian passed. The broader authentication/authorization and tenant-isolation audit remains in progress.
+- **FIN-001 new finding:** `void_invoice` previously allowed voiding an issued invoice after an approved sales return. Since the return already adds stock, voiding the original invoice restored the full sold quantity again (e.g. stock balance 3 could become 13). Added a server-side guard to reject this lifecycle transition and a regression test asserting the invoice remains issued and stock stays at 3.
+- **Regression evidence:** the new test failed against baseline code with `Failed: DID NOT RAISE WorkflowError`, reproducing the defect; it passed with the fix (**1 passed**). An isolated sandbox run using the latest `services.py` and `test_operations.py` from main SHA `c60cc98498b67c2735836d433aec78e871ce7a64` layered over the existing backend snapshot reported **215 passed, 11 warnings, 0 skipped**. `compileall`, `alembic upgrade head`, `alembic check`, and `pip-audit` completed successfully. Because the sandbox was not a clean checkout of the exact main SHA, this is supplemental evidence, not exact-head CI.
+- **CI / release:** the exact candidate branch checks must still run after this commit. Current-main Vercel checks previously reported `build-rate-limit`; no deployment or production mutation performed. Branch-protection endpoint is inaccessible to the connected GitHub integration (HTTP 403), so required approvals cannot be confirmed from this connection.
+- **Next:** review the exact-head CircleCI results for this candidate, then continue payment/return/stock lifecycle and route × role × tenant coverage. Do not merge or deploy until the required review/release gates are confirmed.
 
 ---
-
 
 ## Platform Admin — five-task execution — 2026-10-27
 
@@ -136,8 +133,8 @@ Use only `TODO`, `IN_PROGRESS`, `BLOCKED`, and `VERIFIED` for current work. A st
 | CI-002 | P1 | Classify GitHub Actions failures without spending exhausted runner allowance. | CI Operator | BLOCKED | On the latest PR head, `backend`, `frontend`, Python audit and JavaScript audit checks failed; connected job step lists were empty and log download returned 404. GitGuardian secret scan passed. The failures are unresolved infrastructure/runner evidence, not proof of application-test failure or success. Do not rerun Actions while the allowance is exhausted. |
 | REL-001 | P0 | Reconcile source version and the production API deployment before a release. | Release Operator + Repository Owner | BLOCKED | Vercel reports production web READY on SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` and production API READY on SHA `82af326ffeec2188b5b837d86af1a76763f02fc6`; newer deployment attempts were cancelled. Verify live `/version`, `/health`, `/readyz`, aliases and deployment settings, then get release approval and deploy once safely. This audit did not deploy. |
 | PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | Metadata review: #150 is 172 commits behind `main` and not mergeable; #164 is 166 behind; #173 is 8 behind / 66 ahead and overlaps #183 in CircleCI/workflow config while containing separate concurrency tests and backend changes. Other drafts use feature branches as their base. Classify each as consolidate, rebase, close-as-superseded, or keep-blocked only after inspecting unique content and dependencies. |
-| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Audit the full route-to-persistence path and test unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference denial cases against the accepted architecture/security model. Do not claim complete from source inspection alone. |
-| FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Inspect payment idempotency/allocation, invoice transitions, repeated-SKU stock checks, returns/voids, currency and rounding invariants. Run relevant PostgreSQL integration/concurrency tests on exact candidate heads before merging payment/stock changes. |
+| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Opening-stock authorization fix merged in PR #225 with exact-head CircleCI 4/4 and GitGuardian success. Continue the full route-to-persistence audit and unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference negative coverage; do not claim the broader audit complete from this fix alone. |
+| FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Found and guarded invoice void after an approved sales return to prevent double stock restoration; baseline regression reproduced and fixed test passed. Continue payment idempotency/allocation, repeated-SKU stock, currency/rounding, and PostgreSQL concurrency/lifecycle checks on exact candidate heads. |
 | OPS-001 | P1 | Prove backup/restore recovers to an isolated database. | Operations / Release Operator | BLOCKED | PR #135 remains open. A backup script alone is not a restore drill; require encrypted backup, checksum verification, isolated restore, and recorded result. Never test against production. |
 | DOC-001 | P2 | Reconcile remaining documentation and task status with current source and production. | Documentation / Task Steward | IN_PROGRESS | Keep README, ADRs, runbooks, PR descriptions and the current task index consistent; preserve dated historical checkpoints but never treat them as current without reconciliation. |
 | PR-REVIEW-001 | P1 | Review high-risk open PRs in dependency order. | Engineering Coordinator + Security Reviewer | TODO | Start with CI #173/#183, payment/stock #176/#187/#189, security/permissions, and backup/recovery; then inspect older chained feature PRs. Keep Draft until exact-head gates pass; preserve unique work and avoid duplicate PRs. |
@@ -1137,3 +1134,65 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Branch protection: GitHub API returned HTTP 403 `Resource not accessible by integration`; repository rulesets API returned HTTP 403 indicating rulesets are unavailable on the repository plan. Branch protection requirements remain unverified, not absent.
 - Vercel deployment listing: READ-ONLY listing succeeded after resolving the linked team/project IDs. Latest READY production deployment metadata is recorded above; no deployment was attempted.
 - Next action: resolve the latest exact-head CircleCI runs, fix any failures, then complete concurrency/accessibility evidence. Keep merge/deployment blocked until checks pass, branch-protection requirements are known, and production deployment is explicitly authorized.
+
+
+## Platform Admin hardening — post-merge verification update — 2026-10-28
+
+| Task ID | Priority | Evidence | Status |
+| --- | --- | --- | --- |
+| ADM-01 | P0 | Current main is merge commit `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`. CircleCI contexts backend-container (882), frontend-quality (881), backend-accounting (883), and frontend-browser-smoke (884) all passed on that merge commit. Vercel Web status remains blocked by the daily build-rate limit; API deployment check passed, but production Web/API source parity and authenticated Admin smoke remain unverified. | IN_PROGRESS |
+| ADM-02–ADM-05 | P0 | Route/permission inventory and authz regression coverage were merged through PR #223. Firebase revocation latency measurement and full endpoint-by-role negative coverage remain follow-up work. | IN_PROGRESS |
+| ADM-06 | P0 | Existing membership code locks the workspace row and protects the last OWNER; cross-workspace membership list/patch/delete regression was merged. SQLite tests do not establish concurrent PostgreSQL race safety. | IN_PROGRESS |
+| ADM-07 | P0 | Role-grant/audit atomicity regression and absent-role revoke no-op were merged. A separate workspace status/audit commit-failure regression has been added on `security/platform-admin-audit-atomicity-followup`; exact-head CI pending. | IN_PROGRESS |
+| ADM-08–ADM-10 | P0/P1 | CSV injection/bounds/access tests and stale UI snapshot clearing were merged; exact merge SHA CI passed all four contexts. Data-minimization policy still needs product confirmation. | IN_PROGRESS |
+| ADM-11–ADM-12 | P1 | Source review shows locale direction and basic ARIA states, but full keyboard/screen-reader/mobile/WCAG 2.2 AA and complete sensitive-workflow acceptance are NOT RUN. | NOT RUN |
+| ADM-13–ADM-14 | P1 | PR #223 merged as `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; all four CircleCI contexts passed on merge SHA. | IN_PROGRESS |
+| ADM-15 | P1 | No deployment performed. Production Web deployment remains blocked by Vercel daily build-rate limit and explicit production-release authorization is still required. | BLOCKED |
+| ADM-16 | P1 | Rollback steps and post-rollback evidence still need to be written and reviewed. | NOT RUN |
+
+### Current execution record
+
+- PR #223 is merged; merge SHA: `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`.
+- Merge SHA CircleCI: backend-container PASS (882), frontend-quality PASS (881), backend-accounting PASS (883), frontend-browser-smoke PASS (884).
+- Follow-up branch adds a regression test asserting that if the workspace status + audit transaction commit fails, the workspace active state remains unchanged and no audit row is persisted. This test has not run yet.
+- Local test execution remains NOT RUN; rely on exact-head CircleCI for executed evidence.
+- No production deployment or production data mutation performed.
+
+
+### Follow-up checkpoint — 2026-10-28
+
+- PR #224 initial exact-head CircleCI: backend-container PASS (897), frontend-quality PASS (899), frontend-browser-smoke PASS (900), backend-accounting FAIL (898).
+- The failing job's detailed logs are not available through the connected GitHub integration. Source review identified that the new failure-path test used the default FastAPI `TestClient`, which re-raises server exceptions instead of returning the production-style HTTP 500 response. Updated the test to use `TestClient(app, raise_server_exceptions=False)` for that assertion; this is a reasoned fix, not yet confirmed by a rerun.
+- Added `docs/PLATFORM_ADMIN_SECURITY_REVIEW.md` rollback runbook. The runbook is documented only; no rollback/deployment executed, and production rollback target/schema compatibility remain unverified.
+- Corrected code commit: `719b0ef9361993d5387351e2b5384d02ba877956`; documentation commit: `6fc6e3d815af974446c1f9bf9e8a79163e0c208a`. Exact current PR head checks must be re-read after these commits.
+- Local tests: NOT RUN (repository checkout/runtime dependencies are unavailable in this session). Production release: NO-GO pending exact-head CI, concurrency/accessibility evidence, deployment parity, authenticated Admin smoke, and explicit authorization.
+
+
+### Deployment evidence refresh — 2026-10-28
+
+- Vercel API production deployment `dpl_5VH6yC7nN8oTPS65Z78rTAaJFErA` is READY at source SHA `8626ce2a30ae9a343bc8e9c72a0d98b6c5aa3890`, matching current `main` at inspection time.
+- Latest listed READY Web production deployment `dpl_3PLEvrGRx6rb6hamkVNV5Nq5is9K` is source SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`, which does not match current `main`. No Web production deployment was found for the current main SHA in the Vercel deployment listing.
+- Web deployment build events show a successful build and a warning that the initial JS bundle exceeded the configured 700 kB budget by 30.87 kB (total 730.87 kB). This is a performance warning, not a build failure. The GitHub Vercel Web status still reports the build-rate-limit failure, so the current Web production alias remains a release gate.
+- No production deployment, promotion, alias change, rollback, or data mutation was performed. Do not infer production Admin behavior from public readiness alone; authenticated Admin smoke remains NOT RUN.
+
+## Repository consolidation and release checkpoint — 2026-10-28
+
+### Verified merges in this execution
+- PR #223 — Platform Admin authorization/audit/CSV/workspace-isolation hardening; merged as `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; exact-head CircleCI passed 4/4.
+- PR #224 — workspace status/audit transaction atomicity regression; merged as `51a8af25b362a7d9e12823dc64f23bccc4cd95a9`; exact-head CircleCI passed 4/4.
+- PR #225 — opening-stock OWNER guard now executes before product/audit/stock writes; missing test model imports corrected; merged as `e4117291ab64bbac395ba6c64c15bbf1914d27b4`; exact-head CircleCI passed 4/4.
+- PR #212 was closed as superseded by #225. Its older branch was not merged wholesale because it also carried stale audit/task material.
+
+### Current repository snapshot
+- Main SHA at release branch creation: `e4117291ab64bbac395ba6c64c15bbf1914d27b4`.
+- The three latest main post-merge CircleCI contexts were pending at the last status read; re-check exact main SHA before release approval.
+- GitHub API inventory returned 197 branches total (196 non-main). Of those, 83 non-main branch heads exactly match a merged PR head SHA from the 188 closed PRs returned by the API; these are cleanup candidates, not auto-delete authorization. Three duplicate-head groups were found: `ci/free-local-assistant-fallback-validation`/`feat/free-local-assistant-fallback`, `feat/assistant-resilience-usage-limits`/`feat/assistant-resilience-usage-limits-verified`, and `test/payment-integrity-regression`/`test/payment-integrity-regression-fixed`. Semantic diff review of all remaining branches is still IN_PROGRESS; do not claim the full inventory is complete.
+- Available GitHub connector actions do not expose a remote branch-delete operation. No branches have been deleted; cleanup requires an authorized deletion path and per-branch no-unique-work verification.
+- PR #222 remains an outdated Draft documentation PR and needs an evidence-based close/update decision.
+- Vercel status checks currently report `build-rate-limit` for both Web and API on the Hobby team. No paid-plan change was made. A production release is NOT VERIFIED until the release SHA is deployed to both projects, aliases/versions are checked, and safe smoke tests pass.
+
+### Release candidate v1.3.2
+- Release branch: `release/v1.3.2-security-consolidation-20261028`.
+- Version bump is a PATCH candidate because the release scope is security/authorization/audit correctness and release metadata consistency, with no intended breaking API change.
+- Updated candidate metadata: frontend `package.json`, backend `pyproject.toml`, FastAPI `app.version`, build-info fallback, service-worker cache fallback, bilingual in-app release history, and a cross-file version-consistency regression test.
+- Exact-head CircleCI, local test execution, production deployment, deployment SHA parity, and production smoke tests remain pending/not run until the release candidate checks and deployment quota are resolved.
