@@ -1,14 +1,17 @@
 # Current execution checkpoint — 2026-10-28
 
-- **Working branch:** `docs/audit-master-plan-2026-10-28`; no new branch created. Main was rechecked at `068b0b4825765684078c3db44ecd9cafbb7e1cf4` before syncing this candidate.
-- **SEC-001:** moved the OWNER-only positive-opening-stock authorization check ahead of product, audit, and stock writes. Regression coverage includes STAFF zero-quantity success, STAFF positive-quantity denial with no persisted side effects, and OWNER success.
-- **SEC-002:** duplicate GET route cleanup and `test_extended_api_route_registration.py` are already present on current main; retained them rather than reapplying duplicate changes.
-- **Alternate-runner verification:** in a credential-free Vercel sandbox, current-main backend app/test sources were loaded, the candidate service guard was applied, and the opening-stock regression was combined with current-main tenant tests. `python -m pytest -q --disable-warnings --tb=short`: **201 passed, 5 skipped, 11 warnings in 9.50s**. `python -m compileall -q app tests`: **PASS**. This is isolated source-tree evidence, not exact-head CircleCI or live PostgreSQL evidence.
-- **Route regression:** `test_extended_api_route_registration.py` passed as part of the suite; the three duplicate route paths are registered once.
-- **CI / delivery:** exact-head CircleCI is not yet verified. GitHub Actions failures previously returned no usable step/log output. PR #212 is closed without merge; after syncing and inspecting the current diff, create/reopen a review PR on this same branch. No merge to main or production deployment performed.
-- **Next:** sync this branch with current main without dropping main's newer assistant-security/health-test changes, run the exact candidate checks, reconcile PR state/diff, then proceed to FIN-001.
+- **Working branch:** `docs/audit-master-plan-2026-10-28`; no new branch created. Synced this branch with `main` SHA `068b0b4825765684078c3db44ecd9cafbb7e1cf4` using a merge commit; current code diff against main is limited to the OWNER-only opening-stock guard and its regression test, plus this audit/task documentation.
+- **SEC-001:** moved the OWNER-only positive-`opening_quantity` authorization check ahead of product, audit, and stock writes. Regression coverage includes STAFF zero-quantity success, STAFF positive-quantity denial with no persisted side effects, and OWNER success.
+- **SEC-002:** duplicate GET route cleanup and `test_extended_api_route_registration.py` were already present on current main; retained them rather than reapplying duplicate changes.
+- **Alternate-runner verification on candidate `97a5058e7d019ef924c49656a58ed74e54fb6dab`:** `python -m pytest -q -rs --disable-warnings --tb=short`: **201 passed, 5 skipped, 11 warnings in 8.44s**; `python -m compileall -q app tests`: **PASS**; `pip-audit -r requirements.txt`: **No known vulnerabilities found**; offline `alembic upgrade head --sql`: **PASS, 391 lines**. This is isolated source-tree evidence, not live PostgreSQL integration.
+- **Skipped tests:** one test requires `TEST_DATABASE_URL`; four financial concurrency tests require explicit opt-in and PostgreSQL row-lock semantics. The sandbox has no PostgreSQL server/container runtime.
+- **Exact-head CI on candidate `97a5058...`:** CircleCI `backend-container`, `frontend-quality`, and `frontend-browser-smoke` passed; `backend-accounting` failed. The CircleCI job details could not be retrieved (web access redirects to `app.circleci.com`, sandbox DNS could not resolve that host, and no CircleCI token is configured), so the failing step/root cause is **not confirmed**. Do not treat the alternate suite as a substitute for this gate.
+- **PR / delivery:** PR [#212](https://github.com/AbdullahOmaar/ai-business-assistant/pull/212) is reopened and remains Draft; current candidate `97a5058e7d019ef924c49656a58ed74e54fb6dab` is 0 commits behind main with a 5-file net diff. No merge to main or production deployment performed.
+- **FIN-001 progress:** issue [#111](https://github.com/AbdullahOmaar/ai-business-assistant/issues/111) was closed after verifying the shared `ROUND_HALF_UP` calculation path and half-cent reconciliation tests. Broader payment/idempotency/stock/return concurrency remains IN_PROGRESS pending PostgreSQL-backed tests.
+- **Next:** obtain actionable `backend-accounting` logs or an authorized disposable PostgreSQL runner; fix/retest any evidenced failure, then continue the financial concurrency and remaining security review. Do not use production/shared Neon branches as test targets.
 
 ---
+
 
 ## Platform Admin — five-task execution — 2026-10-27
 
