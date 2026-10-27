@@ -1,3 +1,8 @@
+## Customer search by contact fields — 2026-10-27
+
+- Extended the workspace-scoped customer `q` filter to match name, email, and phone while retaining active-customer and tenant scoping.
+- Added API regression coverage for all three fields. Fresh checks on the current-main candidate are required before merge.
+
 ## Tax summary report re-integrated on current main — 2026-10-27
 
 - Added an owner-gated, workspace-authorized tax summary endpoint and bilingual UI, using saved tax totals from issued invoices, date filtering, and separate totals per currency.

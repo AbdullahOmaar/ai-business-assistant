@@ -13,7 +13,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -844,7 +844,12 @@ def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=20
             Customer.business_id == business_id, Customer.is_active.is_(True)
         )
         if q.strip():
-            statement = statement.where(Customer.name.ilike(f"%{q.strip()}%"))
+            term = f"%{q.strip()}%"
+            statement = statement.where(or_(
+                Customer.name.ilike(term),
+                Customer.email.ilike(term),
+                Customer.phone.ilike(term),
+            ))
         items = session.scalars(statement.order_by(Customer.name).offset(offset).limit(limit)).all()
         return [_dict(x, ("id", "name", "email", "phone", "address", "notes", "created_at")) for x in items]
     except AuthorizationError as exc:
