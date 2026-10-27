@@ -258,7 +258,7 @@ export class ApiService {
   platformRoleAuditEvents(filters: { limit?: number; offset?: number } = {}): Promise<PlatformRoleAuditEventPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     return this.request<PlatformRoleAuditEventPage>(
       `/api/v1/platform-admin/role-audit-events?${params.toString()}`
