@@ -1,14 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'release-guide' | 'platform-admin';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'assistant' | 'reports' | 'audit' | 'release-guide' | 'platform-admin';
 
 @Component({
   selector: 'aba-root',
@@ -72,12 +72,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           @if (platformAdminAvailable) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('إدارة المنصة', 'Platform admin')" [attr.title]="t('إدارة المنصة', 'Platform admin')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
 @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('سجل العمليات', 'Activity log')" [attr.title]="t('سجل العمليات', 'Activity log')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
                     @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('المصروفات', 'Expenses')" [attr.title]="t('المصروفات', 'Expenses')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','assistant','reports','audit','platform-admin'].includes(tab) || tab === 'release-guide'" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','expenses','assistant','reports','audit','platform-admin'].includes(tab) || tab === 'release-guide'" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
+              <button class="nav-item" role="menuitem" [class.active]="tab === 'expenses'" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'release-guide'" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
@@ -401,6 +403,48 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
+            @if (tab === 'expenses') {
+              <section class="panel">
+                <div class="section-head">
+                  <div>
+                    <h2>{{ t('تسجيل مصروف', 'Record an expense') }}</h2>
+                    <p>{{ t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.') }}</p>
+                  </div>
+                  <span class="count">{{ expenses.length }} {{ t('مصروفات', 'expenses') }}</span>
+                </div>
+                <form class="inline-form expense-form" (ngSubmit)="createExpense()">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" maxlength="80" [placeholder]="t('التصنيف', 'Category')" required [(ngModel)]="expenseCategory">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('وصف المصروف', 'Expense description')" name="expenseDescription" maxlength="500" [placeholder]="t('الوصف', 'Description')" required [(ngModel)]="expenseDescription">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مبلغ المصروف', 'Expense amount')" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ', 'Amount')" required [(ngModel)]="expenseAmount">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تاريخ ووقت المصروف', 'Expense date and time')" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('المورد', 'Vendor')" name="expenseVendor" maxlength="160" [placeholder]="t('المورد (اختياري)', 'Vendor (optional)')" [(ngModel)]="expenseVendor">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مرجع المصروف', 'Expense reference')" name="expenseReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="expenseReference">
+                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain || !expenseCategory.trim() || !expenseDescription.trim() || !expenseAmount">{{ t('حفظ المصروف', 'Save expense') }}</button>
+                </form>
+                <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business?.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
+                @if (expenseMessage) { <p class="notice" role="status">{{ expenseMessage }}</p> }
+                @if (expenseSubmissionUncertain) {
+                  <div class="error" role="alert">
+                    {{ t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.') }}
+                    <button class="secondary" type="button" (click)="checkExpenseSubmissionOutcome()" [disabled]="loading">{{ t('فحص قائمة المصروفات', 'Check expense list') }}</button>
+                  </div>
+                }
+                <div class="list">
+                  @for (expense of expenses; track expense.id) {
+                    <article class="list-row">
+                      <div class="expense-mark" aria-hidden="true">−</div>
+                      <div class="grow">
+                        <strong>{{ expense.category }} · {{ expense.amount }} {{ expense.currency_code }}</strong>
+                        <small>{{ expense.description }} · {{ expense.incurred_at | date:'medium' }}</small>
+                        <small>{{ expense.vendor_name || t('بدون مورد', 'No vendor') }}{{ expense.reference ? ' · ' + expense.reference : '' }}</small>
+                      </div>
+                    </article>
+                  }
+                  @if (!expenses.length) { <p class="empty">{{ t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.') }}</p> }
+                </div>
+              </section>
+            }
+
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
                 <div class="section-head"><div><h2>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }}</h2><p>{{ t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') }}</p></div><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></div>
@@ -440,10 +484,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
     .csv-import-panel{display:grid;gap:10px;margin:18px 0;padding:14px;border:1px solid #d1d5db;border-radius:12px;background:#f8fafc}.csv-import-panel h3,.csv-import-panel p{margin:0}.csv-import-panel h3{font-size:15px}.csv-import-panel p,.csv-import-panel small{font-size:12px;line-height:1.5;color:#4b5563}.csv-import-actions{display:flex;flex-wrap:wrap;gap:8px}.csv-import-errors{margin:0;padding-inline-start:22px;font-size:12px;color:#991b1b;display:grid;gap:5px;overflow-wrap:anywhere}.invoice-lines{display:grid;gap:10px;flex-basis:100%;width:100%}.invoice-lines-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.invoice-line-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc}.invoice-line-row label{display:grid;gap:5px;min-width:0}.invoice-line-row select,.invoice-line-row input{width:100%;min-width:0}@media(max-width:600px){.invoice-line-row{grid-template-columns:minmax(0,1fr) minmax(88px,.65fr)}.invoice-line-row button{grid-column:1/-1;justify-self:start}}.topbar-heading{display:grid;gap:5px;min-width:0}.workspace-build-card{justify-self:start;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;border:1px solid #dbe4ea;border-radius:12px;background:#fff;box-shadow:0 2px 8px #0f172a08}.workspace-build-card .version-pill{font-size:11px;white-space:nowrap}.workspace-build-card small{font-size:11px;color:#64748b;overflow-wrap:anywhere}.invoice-create-disclosure{margin:14px 0 18px;border:1px solid #cbd5e1;border-radius:16px;background:#f8fafc;overflow:hidden}.invoice-create-disclosure>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;background:#fff;font-weight:800;color:#0f172a}.invoice-create-disclosure>summary::-webkit-details-marker{display:none}.invoice-create-disclosure>summary:after{content:'＋';display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:#ccfbf1;color:#115e59;font-size:19px}.invoice-create-disclosure[open]>summary:after{content:'−'}.invoice-create-disclosure>summary small{font-weight:500;color:#64748b;font-size:11px}.invoice-create-disclosure>.invoice-form{padding:14px;border-top:1px solid #e2e8f0}.customer-invoice-filter{padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.customer-invoice-filter label{width:100%;min-width:0}.customer-invoice-filter select{width:100%;min-width:0}.list-row{min-width:0;flex-wrap:wrap;gap:12px}.list-row .grow{min-width:120px;overflow-wrap:anywhere}.list-row>strong{overflow-wrap:anywhere;max-width:100%}.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:12px}.table-wrap table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0}.table-wrap th,.table-wrap td{padding:11px 12px;text-align:start;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}.table-wrap th{position:sticky;top:0;background:#f1f5f9;color:#334155;font-size:12px;white-space:nowrap}.table-wrap tbody tr:nth-child(even){background:#f8fafc}.table-wrap tbody tr:last-child td{border-bottom:0}@media(max-width:600px){.topbar-heading{width:100%}.workspace-build-card{width:100%;justify-content:flex-start}.workspace-build-card small{flex-basis:100%}.invoice-create-disclosure>summary{align-items:flex-start;flex-wrap:wrap}.invoice-create-disclosure>summary small{flex:1 1 100%;order:2}.invoice-create-disclosure>.invoice-form{display:grid;grid-template-columns:minmax(0,1fr)}.list-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start}.list-row .grow{min-width:0}.list-row>button,.list-row>strong{grid-column:2;justify-self:start}.table-wrap table{min-width:760px}}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
     .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:#f8fafc}.warning-notice{border-color:#f59e0b;background:#fffbeb}.divider{height:1px;background:#e5e7eb;margin:22px 0}
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:left}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
-    .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:#9ca3af;line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
+    .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:#9ca3af;line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}.quick-card{text-align:left;padding:18px}.quick-card strong,.quick-card span{display:block}.quick-card strong{font-size:13px;margin-bottom:8px}.quick-card span{font-size:11px;color:#6b7280}
-    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-suggestions{margin:14px 0}.assistant-suggestions>p{font-size:11px;font-weight:800;color:#64748b;margin:0 0 9px}.suggestion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.suggestion-card{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:3px;text-align:start;padding:12px;border:1px solid #dbeafe;border-radius:13px;background:linear-gradient(135deg,#fff 0%,#f0f9ff 100%);color:#1e293b;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.suggestion-card:hover{transform:translateY(-2px);border-color:#7dd3fc;box-shadow:0 8px 20px #0f172a0c}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#dbeafe;color:#1d4ed8;font-size:17px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.4}@media(max-width:480px){.suggestion-grid{grid-template-columns:1fr}.suggestion-card{padding:10px}}.chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
+    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-suggestions{margin:14px 0}.assistant-suggestions>p{font-size:11px;font-weight:800;color:#64748b;margin:0 0 9px}.suggestion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.suggestion-card{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:3px;text-align:start;padding:12px;border:1px solid #dbeafe;border-radius:13px;background:linear-gradient(135deg,#fff 0%,#f0f9ff 100%);color:#1e293b;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.suggestion-card:hover{transform:translateY(-2px);border-color:#7dd3fc;box-shadow:0 8px 20px #0f172a0c}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:#dbeafe;color:#1d4ed8;font-size:17px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.4}@media(max-width:480px){.suggestion-grid{grid-template-columns:1fr}.suggestion-card{padding:10px}}.chat-log{min-height:180px;max-height:440px;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
     .mobile-version-strip{display:none}
     @media(max-width:1050px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form{grid-template-columns:repeat(2,minmax(0,1fr))}.inline-form .primary{grid-column:1/-1}}@media(max-width:760px){
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
@@ -598,6 +642,15 @@ export class AppComponent implements OnInit {
   products: Product[] = [];
   invoices: Invoice[] = [];
   payments: Payment[] = [];
+  expenses: Expense[] = [];
+  expenseCategory = 'General';
+  expenseDescription = '';
+  expenseAmount = '';
+  expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  expenseVendor = '';
+  expenseReference = '';
+  expenseMessage = '';
+  expenseSubmissionUncertain = false;
   businessName = '';
   currencyCode = 'EGP';
   customerName = '';
@@ -778,9 +831,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
+      payments: 'المدفوعات', expenses: 'المصروفات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
@@ -827,6 +880,9 @@ export class AppComponent implements OnInit {
       this.products = [];
       this.invoices = [];
       this.payments = [];
+    this.expenses = [];
+    this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
       this.chatMessages = [];
       this.error = '';
     } catch (error) {
@@ -882,6 +938,9 @@ export class AppComponent implements OnInit {
     this.products = [];
     this.invoices = [];
     this.payments = [];
+    this.expenses = [];
+    this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
     this.chatMessages = [];
     this.chatDraft = '';
     this.chatError = '';
@@ -967,8 +1026,8 @@ export class AppComponent implements OnInit {
     this.loading = true;
     this.error = '';
     try {
-      const [dashboard, عميل, منتج, فاتورة, دفعة] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id)
+      const [dashboard, عميل, منتج, فاتورة, دفعة, مصروفات] = await Promise.all([
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id), this.api.expenses(id)
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
@@ -978,6 +1037,7 @@ export class AppComponent implements OnInit {
       this.products = منتج;
       this.invoices = فاتورة;
       this.payments = دفعة;
+      this.expenses = مصروفات;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
@@ -1537,6 +1597,89 @@ export class AppComponent implements OnInit {
     this.paymentAmount = outstanding.toFixed(2);
     this.paymentAllocationAmount = outstanding.toFixed(2);
     this.paymentMessage = this.t('تم اختيار الفاتورة وتحديد الرصيد المستحق. راجع المبلغ وطريقة الدفع ثم سجّل الدفعة.', 'Invoice selected and outstanding balance filled in. Review the amount and method, then record the payment.');
+  }
+
+  async createExpense(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    const category = this.expenseCategory.trim();
+    const description = this.expenseDescription.trim();
+    const amount = Number(this.expenseAmount);
+    const occurredAt = new Date(this.expenseDate);
+    if (!category || !description || !String(this.expenseAmount ?? '').trim() || !Number.isFinite(amount) || amount <= 0) {
+      this.error = this.t('أدخل تصنيفًا ووصفًا ومبلغًا أكبر من صفر.', 'Enter a category, description, and a positive amount.');
+      return;
+    }
+    if (!this.expenseDate || !Number.isFinite(occurredAt.getTime())) {
+      this.error = this.t('أدخل تاريخًا ووقتًا صحيحين للمصروف.', 'Enter a valid expense date and time.');
+      return;
+    }
+    const currencyCode = this.business.currency_code;
+    this.loading = true;
+    this.error = '';
+    this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
+    try {
+      await this.api.createExpense(businessId, {
+        category,
+        description,
+        amount: String(this.expenseAmount ?? '').trim(),
+        currency_code: currencyCode,
+        incurred_at: occurredAt.toISOString(),
+        vendor_name: this.expenseVendor.trim() || undefined,
+        reference: this.expenseReference.trim() || undefined
+      });
+      if (this.business?.id !== businessId) return;
+      this.expenseCategory = 'General';
+      this.expenseDescription = '';
+      this.expenseAmount = '';
+      this.expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+      this.expenseVendor = '';
+      this.expenseReference = '';
+      this.expenseMessage = this.t('تم تسجيل المصروف بنجاح.', 'Expense recorded successfully.');
+      try {
+        const [expenses, dashboard] = await Promise.all([
+          this.api.expenses(businessId),
+          this.api.dashboard(businessId)
+        ]);
+        if (this.business?.id !== businessId) return;
+        this.expenses = expenses;
+        this.dashboard = dashboard;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.error = this.t('تم تسجيل المصروف، لكن تعذر تحديث القائمة. أعد تحميل البيانات.', 'Expense was saved, but the list could not refresh. Reload workspace data.');
+        }
+      }
+    } catch (error) {
+      if (this.business?.id === businessId) {
+        this.expenseSubmissionUncertain = true;
+        this.error = this.t('تعذر تأكيد نتيجة حفظ المصروف. حدّث القائمة قبل إعادة المحاولة.', 'Could not confirm the expense save result. Refresh the list before retrying.') + ' ' + this.message(error);
+      }
+    } finally {
+      if (this.business?.id === businessId) this.loading = false;
+    }
+  }
+
+  async checkExpenseSubmissionOutcome(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.loading = true;
+    this.error = '';
+    try {
+      const [expenses, dashboard] = await Promise.all([
+        this.api.expenses(businessId),
+        this.api.dashboard(businessId)
+      ]);
+      if (this.business?.id !== businessId) return;
+      this.expenses = expenses;
+      this.dashboard = dashboard;
+      this.expenseSubmissionUncertain = false;
+      this.expenseMessage = this.t('تم تحديث القائمة. راجع آخر المصروفات قبل إعادة المحاولة.', 'Expense list refreshed. Review recent entries before retrying.');
+    } catch (error) {
+      if (this.business?.id === businessId) this.error = this.message(error);
+    } finally {
+      if (this.business?.id === businessId) this.loading = false;
+    }
   }
 
   async createPayment(): Promise<void> {

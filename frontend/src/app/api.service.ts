@@ -19,6 +19,7 @@ export interface InvoiceDetail extends Invoice {
 }
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
+export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
 export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; approved_return_total: string; approved_return_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
 export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; revenue_basis: string; currencies: ProfitLossRow[]; limitations: string[]; }
@@ -311,6 +312,15 @@ export class ApiService {
   }
   createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
+  }
+  expenses(businessId: string): Promise<Expense[]> {
+    return this.request<Expense[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/expenses?limit=100&offset=0`);
+  }
+  createExpense(businessId: string, body: {
+    category: string; description: string; amount: string; currency_code: string;
+    incurred_at: string; vendor_name?: string; reference?: string;
+  }): Promise<Expense> {
+    return this.request<Expense>(`/api/v1/businesses/${encodeURIComponent(businessId)}/expenses`, 'POST', body);
   }
   payments(businessId: string): Promise<Payment[]> {
     return this.request<Payment[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments?limit=100`);

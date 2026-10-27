@@ -1,3 +1,24 @@
+## Review findings addressed for expense UI — 2026-10-27
+
+- Fixed numeric input handling: Angular's number value accessor can produce a numeric runtime value, so the form now stringifies the value before trimming/serializing it. Added a regression assertion that forbids direct `expenseAmount.trim()`.
+- Preserved local wall-clock defaults/resets for `datetime-local` inputs and added a regression assertion so UTC conversion does not shift the intended entry date.
+
+
+## Expense retry safety — 2026-10-27
+
+- PR #35 exact-head source adds a same-session safeguard for ambiguous expense-save failures: it disables repeat submission and editable fields until the latest workspace expense list/dashboard refresh succeeds. The user is prompted to inspect recent entries before retrying.
+- This is a UI-level safeguard, not a substitute for persistent server-side idempotency; the current database schema has no expense idempotency key. Adding database idempotency requires a coordinated migration/release and is not included in this PR. No production schema changes were applied.
+
+
+
+## Expense management UI re-integrated on current main — 2026-10-27
+
+- Reworked the stale PR #35 expense entry/history feature against current main instead of merging its 200+ commits of obsolete ancestry.
+- Added typed API access, validation for positive amounts and valid local date/time, workspace-specific loading/refresh, bilingual navigation and form, and regression coverage.
+- Exact-head CircleCI validation is required before merge. No production deployment was performed.
+
+
+
 ## Angular template parse failure fixed — 2026-10-27
 
 - Vercel Preview of exact diagnostic SHA `969bd23caee3d795ce19aad0141e1b074c9b53ab` proved the frontend unit suite passed **19/19**, then Angular production build failed with `NG5002` at `frontend/src/app/app.component.ts:77`: the mobile More button's `[class.active]` attribute had an extra double quote after `tab === 'release-guide'`.
