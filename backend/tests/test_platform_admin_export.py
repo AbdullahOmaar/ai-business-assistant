@@ -47,3 +47,16 @@ def test_platform_audit_export_denies_non_admin(platform_admin_environment, monk
     monkeypatch.setenv("PLATFORM_SUPER_ADMIN_UIDS", OWNER_SUBJECT)
     response = platform_admin_environment["client"].get("/api/v1/platform-admin/audit-events/export.csv")
     assert response.status_code == 403
+
+
+def test_platform_audit_export_rejects_invalid_ranges_and_unbounded_limits(platform_admin_environment):
+    client = platform_admin_environment["client"]
+    invalid_range = client.get(
+        "/api/v1/platform-admin/audit-events/export.csv",
+        params={"created_after": "2026-10-27T12:00:00Z", "created_before": "2026-10-27T11:00:00Z"},
+    )
+    excessive_limit = client.get(
+        "/api/v1/platform-admin/audit-events/export.csv", params={"limit": 5001}
+    )
+    assert invalid_range.status_code == 422
+    assert excessive_limit.status_code == 422
