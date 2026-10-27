@@ -461,6 +461,7 @@ def test_payment_rejects_currency_mismatch(workspace):
         with pytest.raises(WorkflowError, match="currencies must match"):
             record_payment(
                 session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
                 amount=Decimal("20"), currency_code="USD", idempotency_key="currency-mismatch",
                 allocations=[(invoice.id, Decimal("20"))],
             )
@@ -480,6 +481,7 @@ def test_payment_rejects_allocation_above_invoice_outstanding(workspace):
         with pytest.raises(ValueError, match="allocation exceeds invoice outstanding balance"):
             record_payment(
                 session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
                 amount=Decimal("120"), currency_code="EGP", idempotency_key="overpay",
                 allocations=[(invoice.id, Decimal("120"))],
             )
@@ -488,6 +490,7 @@ def test_payment_rejects_allocation_above_invoice_outstanding(workspace):
 def test_payment_rejects_invoice_from_another_business(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         foreign_business = Business(name="Other shop", currency_code="EGP")
         session.add(foreign_business)
         session.flush()
@@ -512,6 +515,7 @@ def test_payment_rejects_invoice_from_another_business(workspace):
         with pytest.raises(WorkflowError, match="issued invoice in this business"):
             record_payment(
                 session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
                 amount=Decimal("20"), currency_code="EGP", idempotency_key="foreign-invoice",
                 allocations=[(invoice.id, Decimal("20"))],
             )
@@ -530,12 +534,14 @@ def test_payment_idempotency_key_rejects_changed_amount(workspace):
         issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
         record_payment(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             amount=Decimal("20"), currency_code="EGP", idempotency_key="same-key",
             allocations=[(invoice.id, Decimal("20"))],
         )
         with pytest.raises(WorkflowError, match="different payment details"):
             record_payment(
                 session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
                 amount=Decimal("25"), currency_code="EGP", idempotency_key="same-key",
                 allocations=[(invoice.id, Decimal("25"))],
             )
