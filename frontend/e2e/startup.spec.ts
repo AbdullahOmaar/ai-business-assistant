@@ -23,6 +23,8 @@ test('boots into the explicit setup screen instead of a stuck splash', async ({ 
 
   await expect(page.getByRole('heading', { name: /اربط مساحة عملك الآمنة|Connect your secure workspace/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/جارٍ تشغيل التطبيق|Starting the app/)).toHaveCount(0);
+  // Missing Firebase settings must fail closed to the setup screen, not show a usable sign-in form.
+  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
   expect(uncaughtErrors).toEqual([]);
 });
 
