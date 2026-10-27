@@ -450,8 +450,10 @@ def test_payment_cannot_allocate_invoice_from_another_business(workspace):
 def test_payment_rejects_currency_mismatch(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-CURRENCY-001", currency_code="EGP",
             lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
         )
@@ -467,8 +469,10 @@ def test_payment_rejects_currency_mismatch(workspace):
 def test_payment_rejects_allocation_above_invoice_outstanding(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-OVERPAY-001", currency_code="EGP",
             lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
         )
@@ -494,8 +498,10 @@ def test_payment_rejects_invoice_from_another_business(workspace):
             role=MembershipRole.OWNER,
         ))
         session.flush()
+        foreign_customer = _make_customer(session, foreign_principal, foreign_business.id)
         invoice = create_invoice(
             session, principal=foreign_principal, business_id=foreign_business.id,
+            customer_id=foreign_customer.id,
             invoice_number="INV-FOREIGN-001", currency_code="EGP",
             lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
         )
@@ -514,8 +520,10 @@ def test_payment_rejects_invoice_from_another_business(workspace):
 def test_payment_idempotency_key_rejects_changed_amount(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-IDEMPOTENCY-001", currency_code="EGP",
             lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
         )
@@ -545,8 +553,10 @@ def test_invoice_issue_aggregates_repeated_product_lines_before_stock_check(work
             product_id=product.id, movement_type="opening",
             quantity_delta=Decimal("3.000"),
         )
+        customer = _make_customer(session, principal, business_id)
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
             invoice_number="INV-DUPLICATE-SKU", currency_code="EGP",
             lines=[
                 {"product_id": str(product.id), "quantity": "2"},
