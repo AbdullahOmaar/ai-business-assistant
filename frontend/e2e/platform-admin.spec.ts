@@ -11,6 +11,8 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   const apiRequests: Array<{ url: string; method: string; authorization?: string; body?: unknown }> = [];
   const authRequests: Array<{ url: string; body?: unknown }> = [];
   let roleGranted = false;
+  let overviewFailure = false;
+  let systemStatusFailure = false;
 
   page.on('pageerror', error => uncaughtErrors.push(error.message));
   await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
@@ -268,6 +270,10 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
       return;
     }
     if (path === '/api/v1/platform-admin/overview' && request.method() === 'GET') {
+      if (overviewFailure) {
+        await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Platform administrator access is not granted.' }) });
+        return;
+      }
       await route.fulfill({
         status: 200, headers: corsHeaders,
         body: JSON.stringify({
@@ -283,6 +289,10 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
       return;
     }
     if (path === '/api/v1/platform-admin/system-status' && request.method() === 'GET') {
+      if (systemStatusFailure) {
+        await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Platform administrator access is not granted.' }) });
+        return;
+      }
       await route.fulfill({
         status: 200, headers: corsHeaders,
         body: JSON.stringify({
@@ -373,5 +383,17 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   expect(authRequests.some(item => item.url.includes('accounts:signInWithPassword'))).toBe(true);
   expect(apiRequests.length).toBeGreaterThan(0);
   expect(apiRequests.every(item => item.authorization === `Bearer ${idToken}`)).toBe(true);
+
+  // A failed refresh after access revocation must not leave previously loaded
+  // platform metrics or runtime health displayed as if they were current.
+  await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
+  await expect(page.getByText('Member identities')).toBeVisible();
+  await expect(page.getByText('Healthy').first()).toBeVisible();
+  overviewFailure = true;
+  await page.getByRole('button', { name: /Refresh data|تحديث البيانات/ }).click();
+  await expect(page.getByText('Member identities')).toHaveCount(0);
+  systemStatusFailure = true;
+  await page.getByRole('button', { name: /Check now|فحص الآن/ }).click();
+  await expect(page.getByText('Healthy')).toHaveCount(0);
   expect(uncaughtErrors).toEqual([]);
 });

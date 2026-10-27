@@ -481,6 +481,7 @@ export class PlatformAdminComponent implements OnInit {
     try {
       this.systemStatus = await this.api.platformAdminSystemStatus();
     } catch (error) {
+      this.systemStatus = null;
       this.systemStatusError = this.errorText(error);
     } finally {
       this.systemStatusLoading = false;
@@ -503,6 +504,7 @@ export class PlatformAdminComponent implements OnInit {
     try {
       this.overview = await this.api.platformAdminOverview();
     } catch (error) {
+      this.overview = null;
       this.overviewError = this.errorText(error);
       this.pageError = this.overviewError;
     } finally {

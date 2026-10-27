@@ -1,18 +1,15 @@
 # Current execution checkpoint — 2026-10-28
 
-- **Working branch:** `docs/audit-master-plan-2026-10-28`; no new branch created. Synced with `main` SHA `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Net code change is the OWNER-only opening-stock guard and merged regression test; remaining changes are audit/task documentation.
+- **Working branch:** `docs/audit-master-plan-2026-10-28`; no new branch created. Main advanced to `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890` during execution; this sync preserves the new Platform Admin code/tests/docs from main and overlays only the opening-stock guard/regression plus audit/task documentation.
 - **SEC-001:** the positive-`opening_quantity` OWNER check runs before product, audit, or stock writes. Regression coverage includes STAFF zero-quantity success, STAFF positive-quantity denial with no persisted side effects, and OWNER success.
 - **SEC-002:** duplicate GET route cleanup and route-registration regression were already on main; retained without duplicate edits.
-- **Full backend gate reproduced locally with CI-matching runtimes** on the candidate code snapshot: Python **3.12.15**, PostgreSQL **16.15**, disposable database `ai_business_assistant_test`, `CI_ALLOW_DATABASE_SCHEMA_TESTS=true`. `alembic upgrade head`: **PASS**; `alembic current`: **0004_platform_user_roles (head)**; `alembic check`: **PASS / no new upgrade operations**; full `pytest -q`: **206 passed, 11 warnings, 0 skipped** (8.96s); offline `alembic upgrade head --sql`: **PASS, 391 lines**; `pip-audit -r requirements.txt`: **No known vulnerabilities found**. All PostgreSQL concurrency tests ran; no production/shared database was used.
-- **CircleCI discrepancy:** candidate `d795a6fa720d972b7fdc262dea6290190ba385df` reports `backend-container`, `frontend-quality`, and `frontend-browser-smoke` **success**, but `backend-accounting` **failure**. The complete backend-accounting steps above pass locally with the same Python/PostgreSQL major versions and CI commands, so the CI failure is **not reproduced**; its failing step/root cause remains unconfirmed because CircleCI logs are inaccessible without an authenticated CircleCI session/token. Do not bypass the required gate.
-- **PR / delivery:** PR [#212](https://github.com/AbdullahOmaar/ai-business-assistant/pull/212) is open and Draft. Before this checkpoint-only commit, the branch was 0 commits behind main with a 5-file net diff. No merge to main or production deployment performed.
-- **FIN-001 progress:** issue [#111](https://github.com/AbdullahOmaar/ai-business-assistant/issues/111) was closed after verifying shared `ROUND_HALF_UP` calculations and half-cent reconciliation tests. Broader financial concurrency/lifecycle coverage remains IN_PROGRESS until CircleCI's failure is explained and exact-head gates pass.
-- **Next:** obtain authenticated CircleCI logs or rerun its backend-accounting job; compare the CircleCI environment/steps with the passing local reproduction. Keep PR Draft until exact-head checks pass.
+- **Full backend gate reproduced locally before this latest main advance** with CI-matching Python **3.12.15** and PostgreSQL **16.15** on a disposable local database: `alembic upgrade head`, `alembic current` (`0004_platform_user_roles`), `alembic check` (no new operations), full `pytest -q` (**206 passed, 11 warnings, 0 skipped** in 8.96s), offline `alembic upgrade head --sql` (**391 lines**), and `pip-audit -r requirements.txt` (**no known vulnerabilities**) all passed. This source snapshot predates the newest Platform Admin additions now being preserved; rerun on the synced tree.
+- **CircleCI discrepancy on previous candidate `d795a6fa720d972b7fdc262dea6290190ba385df`:** backend-container, frontend-quality, and frontend-browser-smoke passed; backend-accounting failed. The full backend-accounting steps pass locally with the same Python/PostgreSQL versions and commands, so the failure is not reproduced; exact failing step/root cause remains unconfirmed because CircleCI logs require an authenticated session/token. Do not bypass the gate.
+- **PR / delivery:** PR [#212](https://github.com/AbdullahOmaar/ai-business-assistant/pull/212) is open and Draft. Sync this branch with current main and rerun the checks before deciding whether to merge. No merge to main or production deployment performed.
+- **FIN-001 progress:** issue [#111](https://github.com/AbdullahOmaar/ai-business-assistant/issues/111) was closed after verifying shared `ROUND_HALF_UP` calculations and half-cent reconciliation tests. Broader financial concurrency/lifecycle coverage remains IN_PROGRESS pending exact-head gates.
+- **Next:** preserve latest main's Platform Admin changes, rerun backend tests/migrations/audit on the synced source, and recheck CircleCI. Keep PR Draft until all required exact-head checks pass.
 
 ---
-
-
-
 
 ## Platform Admin — five-task execution — 2026-10-27
 
@@ -1106,3 +1103,36 @@ This section records the current automation-testing workstream and supersedes ea
 - Current main SHA is `8a1ebbfe334980b02795e238be05fad560bd4f28`; PR #217's exact-head CircleCI checks were 4/4 success, while the merge-commit CircleCI checks were pending at the last read.
 - Vercel web/API checks fail with `build-rate-limit` on the Hobby team. The latest listed production API deployment is on SHA `8772438405764734bda6f475e31bd50c22341c86`; the latest listed web deployment is on SHA `f9a51952822ecbdea4004250930c7cf17c1371fc`. The current main SHA is not confirmed deployed. No deployment, paid plan upgrade, or production mutation was performed.
 - Next: verify PR #219's exact-head CircleCI result and post-merge checks; revisit Vercel after the build-rate limit resets or obtain explicit authorization for a paid-plan change.
+
+
+## Platform Admin review & hardening checkpoint — 2026-10-28
+
+Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-admin-hardening-2026-10-28`. This checkpoint records only evidence observed during this run; it does not replace older task history.
+
+| Task ID | Priority | Evidence / current finding | Status |
+| --- | --- | --- | --- |
+| ADM-01 | P0 | Current main SHA: `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Baseline CircleCI contexts passed. Latest READY production Web source SHA is `8a1ebbfe334980b02795e238be05fad560bd4f28`; API source SHA is `8772438405764734bda6f475e31bd50c22341c86`. API `/readyz` returned HTTP 200 and `/version` reports `877243840576`. Vercel status checks show the daily build-rate-limit page. | IN_PROGRESS |
+| ADM-02 | P0 | Inspected Platform Admin API, UI, Firebase resolver, request dependencies, membership routes/tests, and role models. Initial route/permission/data/audit/test inventory is in `docs/PLATFORM_ADMIN_SECURITY_REVIEW.md`. Full test mapping and accessibility workflow verification remain. | IN_PROGRESS |
+| ADM-03 | P0 | Firebase resolver uses `check_revoked=True`, validates project audience/issuer, and creates project-qualified subjects. Existing tests cover missing bearer, invalid/revoked tokens, wrong-project claims and version metadata. Production authenticated verification remains untested. | IN_PROGRESS |
+| ADM-04 | P0 | Explicit server-side permission map and Platform-vs-Workspace role boundary reviewed. Added a parameterized delegated-role endpoint matrix; added cross-workspace membership list/patch/delete IDOR regression tests. CircleCI on latest code head is pending. | IN_PROGRESS |
+| ADM-05 | P0 | Role grants are read from the database during request authorization; existing regression test verifies access denial after revocation. Real Firebase revocation latency is not measured. | IN_PROGRESS |
+| ADM-06 | P0 | Membership mutation routes lock the workspace row and protect the last owner; existing tests cover sequential owner protection. Concurrent PostgreSQL stress/integration validation remains outstanding. | IN_PROGRESS |
+| ADM-07 | P0 | Grant/audit writes share one transaction. Added a commit-failure rollback test and fixed absent-role revocation so it does not create a misleading revoke audit record. Latest CircleCI pending. | IN_PROGRESS |
+| ADM-08 | P1 | Added CSV formula-injection, export-bound, no-store, truncation and authorization regression tests. The CSV-only commit `7978e5e66f4869faf284074736f24a8193c715ae` passed all four CircleCI contexts; later additions await CI. | IN_PROGRESS |
+| ADM-09 | P0 | Reviewed global overview, workspace membership summaries, and Firebase user directory fields. Role-based data-minimization policy needs product confirmation; no confirmed cross-workspace bypass observed in inspected routes. | IN_PROGRESS |
+| ADM-10 | P1 | Fixed stale overview/system-status snapshots after failed refreshes; added mocked Playwright coverage for 403 responses. Latest CircleCI pending. | IN_PROGRESS |
+| ADM-11 | P1 | Source shows Arabic RTL/English LTR and some ARIA states, but full keyboard, screen-reader, mobile and WCAG 2.2 AA validation has not run. | NOT RUN |
+| ADM-12 | P1 | Reviewed reason-required workspace status and role grant/revoke flows, confirmation and API error handling. End-to-end acceptance remains pending. | IN_PROGRESS |
+| ADM-13 | P1 | Added permission-matrix, audit atomicity, absent-role revoke and CSV security regression tests. Latest code head `0a0dce8a0f2ad496aa32744992c8f111aa106720` has CircleCI runs 849–852 pending. | IN_PROGRESS |
+| ADM-14 | P1 | Extended mocked Playwright Admin E2E to assert stale overview/runtime data disappears after 403 responses. Exact-head browser smoke is pending. | IN_PROGRESS |
+| ADM-15 | P1 | Production Web/API source SHAs do not match main; deployment status checks show a daily quota failure. Production deploy is not authorized by this task and remains blocked pending explicit release authorization and verified gates. | BLOCKED |
+| ADM-16 | P1 | Rollback/restore execution and post-rollback verification are not yet documented or run for this review. | NOT RUN |
+
+### Change and verification record
+
+- Changed on the review branch: `backend/app/platform_admin_api.py` — avoid a false revoke audit when the role is already absent; `backend/tests/test_platform_admin_api.py` — CSV, delegated permission matrix, audit atomicity and absent-role revoke tests; `backend/tests/test_membership_management_api.py` — cross-workspace IDOR regression; `frontend/src/app/platform-admin.component.ts` — clear stale overview/runtime snapshots after refresh errors; `frontend/e2e/platform-admin.spec.ts` — mocked 403 regression; `docs/PLATFORM_ADMIN_SECURITY_REVIEW.md` and `TASKS.md` — inventory and evidence ledger. No production code has been deployed, and no production credentials/database were changed.
+- Test execution: local execution NOT RUN in this environment. CircleCI on CSV-only code/test commit `7978e5e66f4869faf284074736f24a8193c715ae`: `backend-container` PASS (run 813), `backend-accounting` PASS (run 814), `frontend-quality` PASS (run 815), `frontend-browser-smoke` PASS (run 816). Latest code/test head `7e935995c932121e261d8c5d337df93226b6e31b`: runs 866–868 are pending at last check (backend-container result not yet present). Earlier commit `adf8ed2` had backend-accounting failure; source inspection found a tab-assertion mismatch and corrected it in `7978e5e`. CircleCI logs for that failure were inaccessible, so the causal link is inferred rather than log-confirmed.
+- Production checks: read-only HTTP checks only. The Admin endpoint probe was blocked before reaching the app by Vercel deployment authentication; no authenticated admin session or mutation workflow was exercised.
+- Branch protection: GitHub API returned HTTP 403 `Resource not accessible by integration`; repository rulesets API returned HTTP 403 indicating rulesets are unavailable on the repository plan. Branch protection requirements remain unverified, not absent.
+- Vercel deployment listing: READ-ONLY listing succeeded after resolving the linked team/project IDs. Latest READY production deployment metadata is recorded above; no deployment was attempted.
+- Next action: resolve the latest exact-head CircleCI runs, fix any failures, then complete concurrency/accessibility evidence. Keep merge/deployment blocked until checks pass, branch-protection requirements are known, and production deployment is explicitly authorized.
