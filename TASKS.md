@@ -1041,3 +1041,10 @@ This section records the current automation-testing workstream and supersedes ea
 
 **Next action:** re-check the exact post-merge main statuses; keep production activation blocked until authenticated browser/authorization E2E and release gates are satisfied.
 
+
+
+## Operations API route-scope correction — 2026-10-28
+
+- Corrected the newly added supplier, purchase-order, recurring-invoice and operational-health route decorators to include `/businesses/{business_id}`. The previous decorators registered global paths while the API contract and regression tests call workspace-scoped URLs.
+- The prior candidate head had a failing `backend-accounting` CircleCI check. CI logs were not accessible through the connected GitHub tools, so the route mismatch is a static-review finding; the rerun must confirm whether it resolves the failure.
+- Keep PR #205 blocked until every required exact-head check passes. PR #204 has the same scope and should not be merged alongside #205.

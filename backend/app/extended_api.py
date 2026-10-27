@@ -219,7 +219,7 @@ def post_expense(business_id: UUID, body: ExpenseInput,
                         "currency_code", "incurred_at", "vendor_name", "reference", "created_at"))
 
 
-@router.get("/suppliers")
+@router.get("/businesses/{business_id}/suppliers")
 def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                   offset: int = Query(default=0, ge=0),
                   session: Session = Depends(get_session),
@@ -233,7 +233,7 @@ def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=2
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
-@router.post("/suppliers", status_code=201)
+@router.post("/businesses/{business_id}/suppliers", status_code=201)
 def post_supplier(business_id: UUID, body: SupplierInput,
                   session: Session = Depends(get_session),
                   principal: AuthenticatedPrincipal = Depends(get_principal)):
@@ -255,7 +255,7 @@ def post_supplier(business_id: UUID, body: SupplierInput,
     item = _commit(session, op)
     return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
 
-@router.get("/purchase-orders")
+@router.get("/businesses/{business_id}/purchase-orders")
 def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                          offset: int = Query(default=0, ge=0),
                          session: Session = Depends(get_session),
@@ -562,7 +562,7 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
     return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
 
 
-@router.get("/recurring-invoices")
+@router.get("/businesses/{business_id}/recurring-invoices")
 def list_recurring_schedules(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                              offset: int = Query(default=0, ge=0),
                              session: Session = Depends(get_session),
@@ -1218,7 +1218,7 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
 
 
 
-@router.get("/operations/health")
+@router.get("/businesses/{business_id}/operations/health")
 def operations_health(business_id: UUID, session: Session = Depends(get_session),
                       principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Owner-only, read-only operational readiness snapshot with no secret values."""
