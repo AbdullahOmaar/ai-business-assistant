@@ -8,9 +8,10 @@ Status: evidence-based review in progress; this is not a production-readiness at
 ## Executive summary
 
 - The Platform Admin API is a FastAPI router with a server-side bootstrap allowlist and database-backed delegated platform roles. Workspace membership roles remain a separate authorization domain.
+- This review branch fixes two confirmed edge cases: absent-role revocation no longer writes a false revoke event, and failed overview/runtime refreshes clear stale snapshots.
 - Firebase identity resolution verifies ID tokens with revocation checking, validates the configured project's audience and issuer, and emits project-qualified subjects.
 - Existing code uses explicit permission checks for the main read/write endpoints. Workspace status changes and delegated role changes persist their corresponding audit records in the same database transaction as the mutation.
-- CircleCI reports all four contexts successful on baseline SHA `068b0b4825765684078c3db44ecd9cafbb7e1cf4`.
+- CircleCI reports all four contexts successful on baseline SHA `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. The CSV-only review commit `7978e5e66f4869faf284074736f24a8193c715ae` also passed all four contexts; later code/test changes are pending at the latest status read.
 - Production API `/readyz` returned HTTP 200, but `/version` reported commit `877243840576`, not the current main SHA. Vercel deployment metadata identifies latest READY production Web deployment `dpl_3PLEvrGRx6rb6hamkVNV5Nq5is9K` at source SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`, and API deployment `dpl_8i3a1jJgXf5LKweh7wGcL6W7tgAF` at source SHA `8772438405764734bda6f475e31bd50c22341c86`. Both differ from main. GitHub Vercel status checks link to a daily build-rate-limit page. Production source parity and authenticated admin workflows remain unverified.
 
 ## Architecture and route inventory
@@ -58,9 +59,11 @@ The super-admin permission set is derived from the configured server-side allowl
 
 ### Confirmed from current evidence
 
-1. **Production source parity is not established.** `/version` reports `877243840576`; current main is `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Vercel status checks show the daily build-rate-limit page. This is an operational mismatch, not proof that the live application is broken or exploitable.
-2. **CSV export regression coverage was missing in the inspected Admin test file.** Two tests have now been added for formula neutralization, bounded export metadata, no-store behavior, and denial without audit permission. They are not verified until the exact-head CircleCI run completes.
-3. **Production authenticated Admin E2E has not been run in this review.** Public readiness and version endpoints do not validate a signed-in user's role enforcement or the complete browser workflow.
+1. **False audit event for absent role revocation — fixed on review branch.** Previously, a super-admin revoking a role with no grant row created an inactive grant and wrote a `platform.user_role.revoked` event even though no active role had been removed. The branch now returns an unchanged state without writing a grant or audit event; regression coverage is pending exact-head CI.
+2. **Stale admin snapshots after failed refresh — fixed on review branch.** The overview and runtime-health refresh handlers previously retained the last successful values after a later request failed, including a 403. The branch now clears those snapshots and extends the mocked Playwright flow to check that they disappear; exact-head browser smoke is pending.
+3. **Production source parity is not established.** `/version` reports `877243840576`; current main is `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Vercel status checks show the daily build-rate-limit page. This is an operational mismatch, not proof that the live application is broken or exploitable.
+4. **CSV export regression coverage was missing in the inspected Admin test file.** Two tests have now been added for formula neutralization, bounded export metadata, no-store behavior, and denial without audit permission. They are not verified until the exact-head CircleCI run completes.
+5. **Production authenticated Admin E2E has not been run in this review.** Public readiness and version endpoints do not validate a signed-in user's role enforcement or the complete browser workflow.
 
 ### Risks requiring more evidence / follow-up
 
@@ -83,6 +86,23 @@ The super-admin permission set is derived from the configured server-side allowl
 | ADM-08/13 | P1 | Run the new CSV export tests, then add missing edge cases if they reveal gaps. | Exact-head CircleCI success; formula, authorization, bounds and response headers verified. | IN_PROGRESS |
 | ADM-10/11/12/14 | P1 | Run frontend unit/build and Playwright checks for errors, empty states, RTL/LTR, keyboard and mobile. | Test output and accessibility review; do not infer from source alone. | NOT RUN |
 | ADM-15/16 | P1 | Define release/rollback gates and verify after explicit release authorization. | Candidate SHA, green required checks, deployment SHA/version, health and safe smoke evidence. | NOT RUN |
+
+## References consulted
+
+- [OWASP ASVS 5.0](https://owasp.org/www-project-application-security-verification-standard/) — verification requirements for application security controls.
+- [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) — deny-by-default, least privilege, and server-side authorization on every request.
+- [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) — security event logging and minimizing sensitive log content.
+- [OWASP Web Security Testing Guide](https://owasp.org/www-project-web-security-testing-guide/) — authentication, authorization, input validation and business-logic test methodology.
+- [Firebase Admin ID token verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens) and [session revocation](https://firebase.google.com/docs/auth/admin/manage-sessions) — token verification and revocation-check behavior.
+- [WCAG 2.2](https://www.w3.org/TR/WCAG22/) — accessibility criteria for the planned frontend review.
+- [NIST Separation of Duty glossary](https://csrc.nist.gov/glossary/term/separation_of_duty) — separation-of-duty principles for privileged operations.
+
+## Access and release blockers
+
+- GitHub branch-protection API returned HTTP 403 `Resource not accessible by integration`; repository rulesets API returned HTTP 403 stating the feature is unavailable for this repository plan. Branch protection requirements therefore remain **unverified**, not absent.
+- The public API Admin access probe could not reach the app because Vercel deployment authentication blocked the fetch tool and the direct web fetch was inaccessible. Do not infer the app's HTTP authorization result from this probe.
+- Latest code/test head `0a0dce8a0f2ad496aa32744992c8f111aa106720` had CircleCI runs 849–852 pending at the last status check. The latest documentation-only head is newer; its checks must be read separately if they run.
+- No production deployment was attempted. The task itself prohibits deployment without explicit release authorization.
 
 ## Release decision
 
