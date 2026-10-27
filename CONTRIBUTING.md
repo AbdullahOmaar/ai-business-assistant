@@ -46,7 +46,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 ## 3. Standard contribution workflow
 
 1. **Inspect before editing.** Read `AGENTS.md`, this guide, relevant code/tests, ADRs, `TASKS.md`, current `main`, open PRs/issues, and the latest applicable CI state.
-2. **Choose the right work item.** Reuse an existing branch/PR when its goal and review boundary match. Avoid a branch per tiny change and avoid bundling unrelated features.
+2. **Enforce one-branch discipline.** Each contributor/agent may have only one active work branch at a time. Inspect existing branches/PRs first and reuse the matching active branch. Batch related small fixes, tests, and docs on that branch; verify and merge it before starting another. Create a new branch only for a genuinely new, substantial feature or an independently reviewable/security-sensitive change boundary. Do not create a branch merely for a new chat, agent, commit, or tiny task. Never bypass required PR checks or protections.
 3. **Record the contract.** Mark the task `IN_PROGRESS`; state scope, owner, verifier, acceptance criteria, risks, and tests.
 4. **Implement end to end.** Include validation, authorization, failure/empty states, persistence/API behavior, tests, and docs where applicable.
 5. **Verify and review.** Run relevant tests, type checks/lint, build, migration checks, and security audits. Inspect for regressions, leaked secrets, unrelated edits, and compatibility breaks. Re-run affected checks after fixes.
@@ -54,7 +54,16 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 7. **Integrate safely.** Reconcile with current `main`; preserve mainline changes and unique work from other PRs. Never bypass repository protection or merge stale/conflicting branches blindly.
 8. **Close the loop.** Update `TASKS.md` with exact evidence, status, blockers, and next action. The coordinator independently reconciles claims with source, GitHub, CI, and deployment state.
 
-## 4. Additional gates for sensitive work
+## 4. Branch and PR discipline (mandatory)
+
+- Maintain **one active branch per contributor/agent**. Check open PRs and branches before creating anything; reuse the matching in-progress branch whenever the scope is coherent.
+- Do not create a branch for each issue subtask, commit, small bug fix, test, refactor, or documentation change. Group related work into one focused branch/PR.
+- After implementation, run relevant tests, review the complete diff, update TASKS.md, and merge only after exact-head required checks and reviews pass. Verify the merge on main before beginning another branch.
+- Create a new branch only for a genuinely new large feature or a change that must be independently reviewed/released due to security, permission, ownership, dependency, or conflict boundaries.
+- Do not combine unrelated features to reduce branch count. If work becomes materially independent, finish the current PR safely first, then create the new branch and document the reason.
+- This policy never permits direct pushes to protected main, bypassing checks/reviews, or deleting a branch that may contain unique work.
+
+## 5. Additional gates for sensitive work
 
 ### Authentication and tenant isolation
 - Derive the acting identity from the trusted verification boundary, not user-controlled IDs or headers.
@@ -73,7 +82,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
 - If a runner/quota is unavailable, record the evidence and use an already-authorized alternative; do not repeatedly retry exhausted CI capacity or bypass the gate.
 
-## 5. Required handoff report
+## 6. Required handoff report
 
 Every substantive handoff must state:
 - **Status:** VERIFIED / PARTIALLY COMPLETE / NOT RUN / BLOCKED.
