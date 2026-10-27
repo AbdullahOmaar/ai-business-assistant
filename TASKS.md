@@ -1,3 +1,8 @@
+## Admin Firebase directory failure-path regression tests — 2026-10-27
+
+- Added regression coverage for missing Firebase accounts and unavailable directory lookups; failures must not persist role grants or audit events and must not leak upstream exception details.
+- Original PR head passed four CircleCI checks; this refreshed, main-based candidate requires new checks before merge.
+
 ## Payment failure feedback re-integrated on current main — 2026-10-27
 
 - Reapplied the payment error UX fix to current main without merging the stale branch history: payment API errors render as an accessible alert in the payment panel, preserve entered values and the idempotency key on uncertain outcomes, and clear error state on a new attempt or success.
