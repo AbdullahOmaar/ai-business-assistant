@@ -51,6 +51,7 @@ class ProductCreate(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     unit: str = Field(default="unit", min_length=1, max_length=32)
     is_stock_tracked: bool = False
+    opening_quantity: Decimal = Field(default=Decimal("0"), ge=0, max_digits=14, decimal_places=3)
 
 
 class InvoiceLineInput(BaseModel):
