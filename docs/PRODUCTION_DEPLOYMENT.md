@@ -40,7 +40,7 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 ## Release gates
 
-1. Verify CI passes on the exact release candidate SHA, including backend tests, frontend build/audit, and backend container verification.
+1. Verify all required CI checks pass on the exact release candidate SHA. The intended independent gate is CircleCI `backend-accounting` (PostgreSQL migrations/schema drift + full pytest/accounting suite + Python audit), `frontend-quality` (npm audit + unit tests + Angular production build), and `backend-container` (container build/import). These checks are configured in `.circleci/config.yml`; configuration alone is not execution evidence. Until the repository owner authorizes CircleCI and a successful run is visible for the exact SHA, mark this gate BLOCKED. Require the exact CircleCI status contexts on protected `main` after their names are observed in a successful pipeline. GitHub Actions may be retained as a secondary gate when its runners function. Never waive a missing/unavailable/stale check.
 2. Confirm the production database's current Alembic revision and schema without modifying data.
 3. Take a production backup and prove it can be restored into an isolated non-production database; record recovery evidence.
 4. Review migration SQL and run the migration against a disposable PostgreSQL database or restored non-production clone. Only run production migrations after explicit owner approval and the approved backup/rollback plan.
@@ -53,6 +53,13 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 Do not reuse the existing inactive Supabase project named for n8n without explicit confirmation that it belongs to this app. Do not store production credentials in GitHub files.
 
+
+
+## Independent CI activation gate
+
+The repository contains `.circleci/config.yml` and `docs/CI_AND_ACCOUNTING_AUTOMATION.md` to run financial/backend tests against a disposable PostgreSQL 16 service, check Alembic migration drift, run the frontend unit tests and production build, audit Python/npm dependencies, and build/import-check the API image. It does not deploy or connect to production credentials. CircleCI is not considered active until the owner authorizes this private repository, the provider's own config validation succeeds, and an inspectable pipeline passes on the current candidate SHA. Do not mark this gate verified merely because the file parses as YAML or a pipeline is configured.
+
+When the alternate provider is active, protect `main` with the exact status contexts observed from a successful CircleCI run. Do not guess context names. Keep all required checks enforced after GitHub Actions recovers. If CircleCI credits or a runner are unavailable, classify release readiness as BLOCKED; do not purchase credits/upgrade or skip accounting tests without explicit authorization.
 
 ## Release 0.2.0 authorization and restore gates
 
