@@ -1224,6 +1224,10 @@ export class AppComponent implements OnInit {
   }
 
   setTab(tab: Tab): void {
+    if (tab === 'integrity' && this.business?.role !== 'owner') {
+      this.tab = 'overview';
+      return;
+    }
     if (tab === 'platform-admin' && !this.platformAdminAvailable) {
       this.tab = 'overview';
       return;
