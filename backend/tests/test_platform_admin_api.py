@@ -1,3 +1,6 @@
+import json
+import logging
+
 import pytest
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -312,3 +315,47 @@ def test_platform_system_status_rejects_non_allowlisted_principal(platform_admin
     platform_admin_environment["subject"]["value"] = OWNER_SUBJECT
     response = client.get("/api/v1/platform-admin/system-status")
     assert response.status_code == 403
+
+
+def test_denied_platform_access_emits_redacted_structured_security_event(platform_admin_environment, caplog):
+    client = platform_admin_environment["client"]
+    platform_admin_environment["subject"]["value"] = OWNER_SUBJECT
+
+    with caplog.at_level(logging.WARNING, logger="app.platform_admin_api"):
+        response = client.get("/api/v1/platform-admin/overview")
+
+    assert response.status_code == 403
+    records = [record for record in caplog.records if record.name == "app.platform_admin_api"]
+    assert records
+    event = json.loads(records[-1].getMessage())
+    assert event["event"] == "platform_admin.access_denied"
+    assert event["outcome"] == "denied"
+    assert event["actor_subject"] == OWNER_SUBJECT
+    assert event["target_id"] == "/api/v1/platform-admin/overview"
+    assert event["request_id"]
+    assert event["timestamp"].endswith("+00:00")
+    assert "authorization" not in event
+    assert "cookie" not in event
+    assert "token" not in event
+
+
+def test_successful_status_change_emits_structured_security_event(platform_admin_environment, caplog):
+    client = platform_admin_environment["client"]
+    business_id = platform_admin_environment["alpha_id"]
+
+    with caplog.at_level(logging.INFO, logger="app.platform_admin_api"):
+        response = client.patch(
+            f"/api/v1/platform-admin/businesses/{business_id}/status",
+            json={"is_active": False, "reason": "Security review"},
+        )
+
+    assert response.status_code == 200
+    records = [record for record in caplog.records if record.name == "app.platform_admin_api"]
+    events = [json.loads(record.getMessage()) for record in records]
+    event = next(item for item in events if item["event"] == "platform_admin.business_status_changed")
+    assert event["outcome"] == "success"
+    assert event["actor_subject"] == ADMIN_SUBJECT
+    assert event["target_type"] == "business"
+    assert event["target_id"] == business_id
+    assert event["request_id"]
+    assert "Security review" not in json.dumps(event)
