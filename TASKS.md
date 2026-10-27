@@ -1,3 +1,14 @@
+# Execution checkpoint — 2026-10-27 (latest Admin regression rerun)
+
+- **Task:** re-run the Platform Admin backend checks on the isolated source snapshot corresponding to the latest code-bearing candidate. The latest PR head `f34c26ef1d06b82633f6a0b3643dfb483a468b85` changes `TASKS.md` only; the last code-bearing fix is `cabc370728838f8380b80be61851ee1ee509fca4`.
+- **Verification:** `python -m compileall -q app tests` — PASS; `python -m pytest -q --tb=short` — **174 passed, 1 skipped, 11 warnings**; `python -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**; offline `alembic upgrade head --sql` — PASS, 391 lines including revision `0004_platform_user_roles`; `python -m pip_audit -r requirements.txt` — no known vulnerabilities.
+- **Scope limit:** this sandbox rerun is isolated source-snapshot evidence, not an exact-hosted-CI run. Container build and authenticated Firebase browser E2E remain **NOT RUN**; the sandbox has no Docker, Podman, or `psql`.
+- **CI:** exact candidate status is CircleCI `error`, pipeline [70](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/70). The failure details are not available through the authenticated connector. `.circleci/config.yml` is not present on this candidate/main; PR #183 adds the tested config and has four successful CircleCI contexts, but remains Draft/open with no reviews. Do not bypass checks or merge draft CI work without the required review/authorization.
+- **Delivery:** PR #190 remains Draft/open/unmerged. No production deployment, database mutation, secret/config change, or admin UID enrollment occurred.
+- **Next:** obtain owner-visible CircleCI pipeline details or review/authorize PR #183's CI configuration; then run the container and authenticated authorization E2E gates before merge.
+
+---
+
 # Admin execution checkpoint — 2026-10-27 (PostgreSQL validation and fix)
 
 - **Alternative runner:** used the existing Vercel sandbox `sbx_HjgJqAJfL3BCiZQyN8dg1m8wkEAp`; no GitHub Actions job was used to run tests.
