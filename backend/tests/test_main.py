@@ -57,3 +57,14 @@ def test_health_response_includes_server_generated_request_id() -> None:
     request_id = response.headers["X-Request-ID"]
     assert str(UUID(request_id)) == request_id
     assert request_id != "caller-controlled-value"
+
+
+def test_version_endpoint_reports_release_metadata() -> None:
+    response = client.get("/version")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["version"] == "1.2.1"
+    assert set(payload) == {"version", "commit", "environment"}
+    assert isinstance(payload["commit"], str)
+    assert len(payload["commit"]) <= 12
