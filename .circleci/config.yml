@@ -31,7 +31,7 @@ jobs:
           name: Wait for isolated PostgreSQL service
           command: |
             cd backend
-            python - <<'PY'
+            python -c '
             import time
             import psycopg
 
@@ -46,7 +46,7 @@ jobs:
                     if time.monotonic() >= deadline:
                         raise SystemExit("PostgreSQL did not become ready within 90 seconds.")
                     time.sleep(2)
-            PY
+            '
       - run:
           name: Apply migrations and check schema drift against PostgreSQL
           command: |
