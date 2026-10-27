@@ -6,7 +6,7 @@
     "start": "ng serve",
     "prebuild": "node scripts/write-build-info.mjs",
     "build": "npm test && ng build",
-    "test": "node --experimental-strip-types --test src/app/workspace-load-guard.spec.ts"
+    "test": "node --experimental-strip-types --test src/app/*.spec.ts"
   },
   "dependencies": {
     "@angular/common": "^20.0.0",
