@@ -5,6 +5,7 @@ import {
   ApiService, PlatformAdminOverview, PlatformAuditEvent, PlatformBusiness,
   PlatformBusinessDetails, PlatformMembership, PlatformSystemStatus
 } from './api.service';
+import { hasMeaningfulPlatformAdminReason } from './platform-admin-helpers';
 
 type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
 
@@ -419,7 +420,7 @@ export class PlatformAdminComponent implements OnInit {
     const current = details?.business;
     const reason = this.statusReason.trim();
     if (!details || !current || this.statusSaving) return;
-    if (reason.length < 3) {
+    if (!hasMeaningfulPlatformAdminReason(reason)) {
       this.statusError = this.t('اكتب سببًا واضحًا لا يقل عن 3 أحرف.', 'Enter a meaningful reason of at least 3 characters.');
       return;
     }
