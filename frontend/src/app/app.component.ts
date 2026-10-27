@@ -5,6 +5,7 @@ import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatemen
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
+import { buildCsv } from './csv-export';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 
@@ -1807,13 +1808,7 @@ export class AppComponent implements OnInit {
       payment.reference || '',
       payment.allocations.length,
     ]);
-    const escapeCsvCell = (value: unknown): string => {
-      let text = String(value ?? '');
-      // Prefix formula-leading cells, including values preceded by whitespace/control characters.
-      if (/^[\s\u0000-\u001F]*[=+\-@]/.test(text)) text = "'" + text;
-      return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
-    };
-    const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const csv = buildCsv(headers, rows);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
