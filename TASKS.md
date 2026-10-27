@@ -1,3 +1,18 @@
+## Platform Admin — five-task execution — 2026-10-27
+
+Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
+
+| ID | Task | Status | Evidence / acceptance gate |
+| --- | --- | --- | --- |
+| ADM-01 | Harden Firebase User Directory lookups and delegated-role authorization. | VERIFIED (isolated backend suite) | Typed `auth.UserNotFoundError`, exact UID/email lookup, cursor forwarding, and least-privilege regression tests. `python -m pytest -q --disable-warnings --tb=short -rN`: **184 passed, 5 skipped, 11 warnings**; `python -m compileall -q app tests` exit 0. |
+| ADM-02 | Preserve Platform Admin access when the signed-in root admin has no workspace. | VERIFIED (isolated frontend/E2E) | Empty-workspace tab ordering fix retained. Frontend unit suite **18 passed**; `npm run build` exit 0; Playwright Admin E2E passed locally after fixing the Firebase account lookup mock and role-cell selector. Angular emitted existing NG8107 warnings. |
+| ADM-03 | Prove the signed-in directory/search/role-grant flow in Chromium E2E. | LOCAL PASS; exact-head CI pending | Local Chromium E2E: **1 passed**. The initial failure was traced to `accounts:lookup` returning an empty Firebase user list; the mock now returns the signed-in test user. The role-grant assertion now targets the exact role cell. Need green CircleCI Browser Smoke on the latest commit. |
+| ADM-04 | Reconcile the Admin changes with the latest mainline without losing unrelated main changes. | VERIFIED (tree/refs) | Sync commit `874ad67dafa2036977e7fbe0b2bc089e745833ef` has parents `main` `955e2314439a32a0266936da0d03947de61e8ec7` and prior feature head `50ccb09e3bd4842c30a3ed64406bc2660b74d928`. Main ref was rechecked at `955e231...`; recheck before merge. |
+| ADM-05 | Run release gates, review permissions/PR state, then merge PR #202. | IN_PROGRESS / merge blocked | PR #202 remains Draft. Prior sync head passed backend-container, frontend-quality and backend-accounting but failed Browser Smoke; fixes were committed at `372a71c` (Firebase lookup mock) and `427cbb7` (role-cell assertion). Exact-head CircleCI is running/pending; keep Draft and do not bypass unknown branch-protection requirements. |
+
+Additional checks: `npm audit --audit-level=high` reported **0 vulnerabilities**. Earlier `pip-audit` and offline Alembic SQL generation passed on prior snapshots. Live authenticated Firebase E2E and production bootstrap remain NOT RUN; no production configuration, secrets, database data, or deployment were changed. Isolated sandbox results are not a substitute for exact-head CI.
+---
+
 ## Owner data-integrity review UI — 2026-10-27
 
 - Added owner-gated, read-only UI for the existing workspace-authorized data-integrity report, including unlinked issued invoices and payment allocation currency/customer mismatches.
