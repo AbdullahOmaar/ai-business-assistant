@@ -152,3 +152,7 @@ def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
     assert sum(returnable, Decimal("0")) == Decimal("497.55")
     assert sum(1 for amount in returnable if amount == Decimal("0.99")) == 245
     assert all(money(amount) == amount for amount in returnable)
+
+
+def test_empty_stock_movements_produce_zero_balance() -> None:
+    assert derive_stock_balance([]) == D("0.000")

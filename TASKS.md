@@ -827,3 +827,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **UI-INV-03 — IN_PROGRESS:** Invoice creation is collapsed in a native disclosure, independent from filtering existing invoices by customer.
 - **Merge approach:** Reapplied the minimal UI changes on the latest main rather than merging stale conflicting PR #178/#179. Exact-head preview build/tests must pass before merge or production deployment.
 - **Status: IN_PROGRESS;** production aliases unchanged.
+
+
+## Release v1.2.1 rebase attempt — 2026-10-27
+
+- Recreated the release candidate from the latest main SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` on branch `fix/release-v1.2.1-rebased-main-2026-10-27`, avoiding the stale PR #170 base instead of force-pushing or overwriting shared history.
+- Reapplied version 1.2.1 to frontend package, backend package and FastAPI metadata; reapplied duplicate-SKU stock aggregation and added regression coverage for cross-tenant business access, zero stock balance, payment allocation/currency/idempotency and sales-return approval.
+- Added `docs/RELEASE_CANDIDATE_v1.2.1.md` as the release evidence ledger. This is a new candidate branch; it has not been merged or deployed.
+- **Status: IN_PROGRESS / BLOCKED pending exact-head test/build and CI gate results.** Earlier tests are not a substitute for running this rebased candidate. GitHub Actions previously failed before steps were allocated; Vercel API deployment quota previously returned HTTP 402. Do not bypass required checks or merge without confirming current PR gates.
