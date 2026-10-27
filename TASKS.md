@@ -647,3 +647,5 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Merge/deploy gates:** no production payment, database, or alias was changed. This branch requires exact-head frontend tests/build and preview checks before merge. Financial backend changes still require the current-head PostgreSQL and CI gates; do not merge all branches blindly.
 
 - **Preview trigger — 2026-10-27:** Added a `[release-web]` checkpoint commit to ensure the Vercel Ignore Build Step does not cancel the UI candidate preview. PR #175 remains Draft; exact-head build/test result will be recorded after the deployment reaches a terminal state.
+
+- **PAY-API-01 — Owner payment endpoint regression:** Added a backend API test that records a payment for an issued invoice and replays the same idempotency key, asserting one payment and one allocation are persisted. The test is committed but NOT RUN yet because the available hosted runner failures occur before steps and the private repository could not be cloned into the disposable Vercel sandbox. A new `[release-web]` commit requests an updated frontend preview for the new exact head.
