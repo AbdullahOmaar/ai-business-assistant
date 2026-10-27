@@ -1090,3 +1090,19 @@ This section records the current automation-testing workstream and supersedes ea
 - Current main SHA is `8a1ebbfe334980b02795e238be05fad560bd4f28`; PR #217's exact-head CircleCI checks were 4/4 success, while the merge-commit CircleCI checks were pending at the last read.
 - Vercel web/API checks fail with `build-rate-limit` on the Hobby team. The latest listed production API deployment is on SHA `8772438405764734bda6f475e31bd50c22341c86`; the latest listed web deployment is on SHA `f9a51952822ecbdea4004250930c7cf17c1371fc`. The current main SHA is not confirmed deployed. No deployment, paid plan upgrade, or production mutation was performed.
 - Next: verify PR #219's exact-head CircleCI result and post-merge checks; revisit Vercel after the build-rate limit resets or obtain explicit authorization for a paid-plan change.
+
+
+## Branch consolidation update — 2026-10-28 (latest verified state)
+
+### Additional verified merges
+- PR #219 — added the 8,000-character accumulated conversation-history limit and regression coverage; merge SHA `0b915a8de0fc173ee508b9b64145092e16b0accd`. Exact-head CircleCI: 4/4 success.
+- PR #221 — removed five duplicate FastAPI handler registrations (43 route registrations reduced to 38, preserving every unique route) and added a route-registration regression test; merge SHA `05a20ca36032de242d981f064dae6a31ca09db41`. Exact-head CircleCI: 4/4 success.
+- PR #220 — enforced OWNER-only positive opening-stock quantity through product creation, added STAFF-denial/no-side-effects and OWNER-success regression coverage, and preserved the audit master plan; merge SHA `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Exact-head CircleCI: 4/4 success. The initial candidate's accounting test failed because the regression test lacked local imports; those imports were added and the corrected exact-head run passed.
+- PR #212 — closed as a duplicate container after isolating its unique security fix and route deduplication into #220/#221. The original branch's route cleanup was not merged wholesale.
+
+### Current state and remaining gates
+- Current main SHA: `068b0b4825765684078c3db44ecd9cafbb7e1cf4`.
+- At the latest status read, post-merge CircleCI on this main SHA was still pending: frontend-quality, backend-accounting, and frontend-browser-smoke. Backend-container had not yet reported in that read. Re-poll all contexts before calling the merge commit verified.
+- Vercel web and API checks still fail with `build-rate-limit` on the Hobby team. This is an external deployment quota blocker; no plan upgrade or manual production deployment was performed. Current-main production deployment remains unverified.
+- No open pull requests were returned by the latest open-PR query.
+- Next: verify all post-merge CircleCI contexts on current main; then reassess deployment once Vercel's build quota is available or the owner explicitly authorizes a paid-plan change.
