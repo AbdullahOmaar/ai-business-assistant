@@ -12,6 +12,11 @@ export class WorkspaceLoadGuard {
     return version === this.version;
   }
 
+  /** Invalidates every pending request without starting a replacement request. */
+  invalidate(): void {
+    this.version += 1;
+  }
+
   isCurrent(
     version: number,
     currentWorkspaceId: string | null | undefined,
