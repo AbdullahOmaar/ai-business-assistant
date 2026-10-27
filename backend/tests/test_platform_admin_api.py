@@ -755,7 +755,7 @@ def test_platform_audit_csv_export_neutralizes_spreadsheet_formulas(platform_adm
     assert response.headers["x-export-truncated"] == "false"
     assert response.text.startswith("\ufeffcreated_at,")
     assert "'=HYPERLINK(" in response.text
-    assert "'\\t=1+1" in response.text
+    assert "'\t=1+1" in response.text
     assert "'@SUM(1,1)" in response.text
     assert "'+1+1" in response.text
 
