@@ -1163,3 +1163,25 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Latest listed READY Web production deployment `dpl_3PLEvrGRx6rb6hamkVNV5Nq5is9K` is source SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`, which does not match current `main`. No Web production deployment was found for the current main SHA in the Vercel deployment listing.
 - Web deployment build events show a successful build and a warning that the initial JS bundle exceeded the configured 700 kB budget by 30.87 kB (total 730.87 kB). This is a performance warning, not a build failure. The GitHub Vercel Web status still reports the build-rate-limit failure, so the current Web production alias remains a release gate.
 - No production deployment, promotion, alias change, rollback, or data mutation was performed. Do not infer production Admin behavior from public readiness alone; authenticated Admin smoke remains NOT RUN.
+
+## Repository consolidation and release checkpoint — 2026-10-28
+
+### Verified merges in this execution
+- PR #223 — Platform Admin authorization/audit/CSV/workspace-isolation hardening; merged as `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; exact-head CircleCI passed 4/4.
+- PR #224 — workspace status/audit transaction atomicity regression; merged as `51a8af25b362a7d9e12823dc64f23bccc4cd95a9`; exact-head CircleCI passed 4/4.
+- PR #225 — opening-stock OWNER guard now executes before product/audit/stock writes; missing test model imports corrected; merged as `e4117291ab64bbac395ba6c64c15bbf1914d27b4`; exact-head CircleCI passed 4/4.
+- PR #212 was closed as superseded by #225. Its older branch was not merged wholesale because it also carried stale audit/task material.
+
+### Current repository snapshot
+- Main SHA at release branch creation: `e4117291ab64bbac395ba6c64c15bbf1914d27b4`.
+- The three latest main post-merge CircleCI contexts were pending at the last status read; re-check exact main SHA before release approval.
+- GitHub API inventory returned 197 branches total (196 non-main). Of those, 83 non-main branch heads exactly match a merged PR head SHA from the 188 closed PRs returned by the API; these are cleanup candidates, not auto-delete authorization. Three duplicate-head groups were found: `ci/free-local-assistant-fallback-validation`/`feat/free-local-assistant-fallback`, `feat/assistant-resilience-usage-limits`/`feat/assistant-resilience-usage-limits-verified`, and `test/payment-integrity-regression`/`test/payment-integrity-regression-fixed`. Semantic diff review of all remaining branches is still IN_PROGRESS; do not claim the full inventory is complete.
+- Available GitHub connector actions do not expose a remote branch-delete operation. No branches have been deleted; cleanup requires an authorized deletion path and per-branch no-unique-work verification.
+- PR #222 remains an outdated Draft documentation PR and needs an evidence-based close/update decision.
+- Vercel status checks currently report `build-rate-limit` for both Web and API on the Hobby team. No paid-plan change was made. A production release is NOT VERIFIED until the release SHA is deployed to both projects, aliases/versions are checked, and safe smoke tests pass.
+
+### Release candidate v1.3.2
+- Release branch: `release/v1.3.2-security-consolidation-20261028`.
+- Version bump is a PATCH candidate because the release scope is security/authorization/audit correctness and release metadata consistency, with no intended breaking API change.
+- Updated candidate metadata: frontend `package.json`, backend `pyproject.toml`, FastAPI `app.version`, build-info fallback, service-worker cache fallback, bilingual in-app release history, and a cross-file version-consistency regression test.
+- Exact-head CircleCI, local test execution, production deployment, deployment SHA parity, and production smoke tests remain pending/not run until the release candidate checks and deployment quota are resolved.
