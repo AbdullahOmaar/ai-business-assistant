@@ -109,3 +109,10 @@ The bounded audit CSV export endpoint and authenticated download control are imp
 Audit export validation remains in progress.
 
 A fresh non-production frontend preview is requested after the API base normalization fix.
+
+
+## Latest preview verification — 2026-10-27
+
+- Corrected Admin frontend candidate 9da95e2e1071d933f9f356b965cf68bc1078326c reached Vercel Preview READY. The frontend test run reports 7 passed, 0 failed; Angular application bundle generation completed; deployment completed.
+- API Preview dpl_BSDW4rhdM6c82964NkNCYimfuq7u reached READY and compiled Python bytecode on app-source snapshot b49f8a849023abc1154695a967b2287678840f89. Backend CSV export tests have not run yet.
+- Runtime API smoke remains blocked by Vercel SSO; no authorized test principal/session is available. PostgreSQL write/rollback, real Firebase token validation, and container build remain NOT RUN. No production alias or data was changed.
