@@ -1090,3 +1090,25 @@ This section records the current automation-testing workstream and supersedes ea
 - Current main SHA is `8a1ebbfe334980b02795e238be05fad560bd4f28`; PR #217's exact-head CircleCI checks were 4/4 success, while the merge-commit CircleCI checks were pending at the last read.
 - Vercel web/API checks fail with `build-rate-limit` on the Hobby team. The latest listed production API deployment is on SHA `8772438405764734bda6f475e31bd50c22341c86`; the latest listed web deployment is on SHA `f9a51952822ecbdea4004250930c7cf17c1371fc`. The current main SHA is not confirmed deployed. No deployment, paid plan upgrade, or production mutation was performed.
 - Next: verify PR #219's exact-head CircleCI result and post-merge checks; revisit Vercel after the build-rate limit resets or obtain explicit authorization for a paid-plan change.
+
+
+## Platform Admin review & hardening checkpoint — 2026-10-28
+
+Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-admin-hardening-2026-10-28`. This checkpoint records only evidence observed during this run; it does not replace older task history.
+
+| Task ID | Priority | Evidence / current finding | Status |
+| --- | --- | --- | --- |
+| ADM-01 | P0 | Current main candidate SHA: `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. CircleCI `backend-container`, `frontend-quality`, `frontend-browser-smoke`, and `backend-accounting` are success on that SHA. Vercel Web/API status checks fail with the build-rate-limit page. Public API `/readyz` returned HTTP 200; `/version` returned version `1.3.1`, commit `877243840576`, environment `production`. Deployment/main SHA parity is not satisfied by current evidence. | IN_PROGRESS |
+| ADM-02 | P0 | Inspected `backend/app/platform_admin_api.py`, `frontend/src/app/platform-admin.component.ts`, `backend/app/security.py`, `backend/app/firebase_auth.py`, `backend/app/main.py`, and related tests. Routes include access, system status, overview, workspace listing/details/status, audit listing/CSV export, Firebase user directory, delegated role grant/revoke, and role-audit history. Complete UI-to-route inventory remains to be documented. | IN_PROGRESS |
+| ADM-03 | P0 | Firebase resolver verifies ID tokens with revocation checks, validates audience/issuer against configured project, and constructs project-qualified subjects. Error branches and deployment credential behavior still need full verification. | IN_PROGRESS |
+| ADM-04 | P0 | Server-side platform role permission map is explicit; workspace OWNER/STAFF roles are separate. Existing tests cover default-deny, delegated-role boundaries, and role-grant restrictions. Full endpoint-by-role matrix and negative coverage remain. | IN_PROGRESS |
+| ADM-08 | P1 | Added CSV export regression tests for formula neutralization, bounded row count/truncation headers, no-store response, and audit-permission denial in `backend/tests/test_platform_admin_api.py`. Exact-head CI/test results are pending. | IN_PROGRESS |
+| ADM-05, ADM-06, ADM-07, ADM-09–ADM-16 | P0/P1/P2 | Not yet fully investigated or validated in this checkpoint. Do not treat as complete. | NOT RUN |
+
+### Change and verification record
+
+- Changed: `backend/tests/test_platform_admin_api.py` — added two tests for the existing `/api/v1/platform-admin/audit-events/export.csv` contract. No production code, credentials, database, or deployment was changed.
+- Test execution: NOT RUN in a local repository environment; the new branch's CircleCI checks must run against the exact branch head before these tests can be marked verified.
+- Production checks: read-only HTTP checks only. No authenticated admin session or mutation workflow was exercised.
+- Vercel deployment listing: NOT RUN because the available list tool required project and team IDs that were not established in this run. The observed GitHub Vercel status links indicate the daily build-rate limit.
+- Next action: finish the route/permission inventory, run exact-head CircleCI, then address any confirmed authorization, audit, or integrity gaps without deploying to production.
