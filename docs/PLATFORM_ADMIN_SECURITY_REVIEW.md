@@ -140,3 +140,12 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - Rollback executed: **NOT RUN** (no incident/rollback authorization).
 - Last-known-good deployment identity and schema compatibility: **NOT VERIFIED**.
 - Production Admin authenticated smoke after rollback: **NOT RUN**.
+
+## Post-merge verification checkpoint — 2026-10-28
+
+- Current `main` SHA: `e4117291ab64bbac395ba6c64c15bbf1914d27b4` (PR #225 merge).
+- PR #224 merged as `51a8af25b362a7d9e12823dc64f23bccc4cd95a9`; its exact-head and post-merge CircleCI runs passed all four contexts. Workspace status mutation and audit-event persistence rollback together on commit failure.
+- PR #225 merged as `e4117291ab64bbac395ba6c64c15bbf1914d27b4`; positive opening stock now requires OWNER before any product, audit, or stock writes. Exact-head CircleCI passed all four contexts (959, 957, 958, 960); post-merge CircleCI passed all four contexts (968, 967, 966, 963). GitGuardian scan passed on the exact PR head.
+- Current merge SHA Vercel Web and API checks both report the external `build-rate-limit` failure. No deployment, promotion, alias change, rollback, or production data mutation was performed.
+- Remaining gates unchanged: authenticated production Admin smoke NOT RUN; PostgreSQL concurrent last-owner/membership validation NOT RUN; full keyboard/screen-reader/mobile/WCAG 2.2 AA review NOT RUN; product confirmation of role-based data minimization pending; backup/restore drill NOT RUN; rollback runbook documented but not executed. Production readiness remains **NO-GO**.
+- Branch protection remains unverified: GitHub integration access returned HTTP 403. This does not establish that protections are absent.
