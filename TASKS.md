@@ -14,7 +14,7 @@ This section records the current automation-testing workstream and supersedes ea
 ## Current branch / PR
 
 - Branch: `automation-testing-e2e`
-- Latest known head: `fc7da57be5715fcd65783fccc2740b459a85021f`
+- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Read PR #183 for the live head SHA because this ledger itself is updated by commits.
 - PR #183: draft/open, not merged: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
 - No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
 
