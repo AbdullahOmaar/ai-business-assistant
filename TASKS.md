@@ -1,3 +1,31 @@
+# Latest verified release checkpoint — 2026-10-27 00:20 UTC
+
+This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
+
+## Ordered task status
+
+1. **TASK-01 — Accounting, authorization, and tenant isolation: IN_PROGRESS.** PR #161 and #166 are merged. The tested backend candidate returned 144 passed, 1 skipped, including OWNER-only invoice issue/void and STAFF denial tests. Python dependency audit reported no known vulnerabilities. Full Firebase invalid-token and all-route tenant-isolation tests remain unverified against production.
+2. **TASK-02 — GitHub Actions and container/security gates: BLOCKED.** Hosted jobs previously failed before executable steps/logs appeared because runner allocation was unavailable under the current allowance. Do not call it a passing CI result. A Docker/Podman container build was not possible in the alternate sandbox. Use an authorized free runner or restore GitHub-hosted Actions execution before calling the full CI gate VERIFIED.
+3. **TASK-03 — PR reconciliation: VERIFIED for this release slice.** PR #161 merged as `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`; #166 merged as `5c71c9c2b622b7ec8009e26d959030a570a8db98`; #167 reconciled the task ledger as `021f964bdb839e9610a3b8690833ae1537269258`; #168 payment/report UI safety merged as `96cefa42b68a94ddc87b10563c3c26bd6784c394`.
+4. **TASK-04 — Frontend build and payment/report safety: VERIFIED for bundle/tests; browser-level behavior IN_PROGRESS.** PR #168 Preview `dpl_53nUgACae3r8gA6t4B2FaHGuCaVi` was READY on head `6edeb62fe37a0e072e248fd976cf0d73aa285971`. Build logs show `npm test`: 5 passed, 0 failed; Angular bundle generation completed. The preview root and JavaScript asset returned HTTP 200, and the bundle includes the payment-success and “do not record again” warning text. After merge, frontend production deployment `dpl_62oniFz5kFHy3evLLfdF7XSgG6mo` became READY on exact main SHA `96cefa42b68a94ddc87b10563c3c26bd6784c394`. Production root and `/manifest.webmanifest` returned HTTP 200. Root references `main-Q42BBHZC.js`, which returned HTTP 200 and contains the expected payment safety messages. Vercel reported no frontend runtime errors in the queried last 30 minutes. These checks prove static delivery, not a real browser/login/PWA end-to-end test.
+5. **TASK-05 — Production releases: IN_PROGRESS, basic smoke checks passed.** The production API alias `https://ai-business-assistant-api.vercel.app` returns HTTP 200 for `/health`, `/readyz`, and `/version`; it reports version `1.2.0`, commit `021f964bdb83`. PR #168 changed frontend files only after that API release, so it did not introduce new API source changes. The frontend production alias now points to the exact merged web commit `96cefa42...`.
+
+## Deployment configuration correction
+
+- Found and corrected the frontend Vercel Ignore Build Step. Before correction, its command was `git log -1 --pretty=%B | grep -q '\[release-web\]' && exit 0 || exit 1`. It returned success (exit 0) when the release marker was present, which Vercel interpreted as “skip deployment”; this canceled the post-merge production attempt despite the release marker.
+- Updated only `commandForIgnoringBuildStep` for the frontend project to `git log -1 --pretty=%B | grep -q '\[release-web\]' && exit 1 || exit 0`. Confirmed by the subsequent production build logs: the corrected command ran and the deployment reached READY.
+- Exact production deployment: `dpl_62oniFz5kFHy3evLLfdF7XSgG6mo`, source SHA `96cefa42b68a94ddc87b10563c3c26bd6784c394`, READY, alias `ai-business-assistant-web.vercel.app`.
+- No paid plan changes, database migrations, row edits, Firebase setting changes, or secret changes were made.
+
+## Database evidence and remaining release gates
+
+- Neon database revision remains `0003_business_workflows`. A manual snapshot restore drill was performed on a separate branch; schema revision and counts for businesses (2), customers (4), invoices (19), invoice_lines (21), payments (0), payment_allocations (0), sales_returns (0), stock_movements (0), and audit_events (48) matched the original. The original branch was restored as default `main`; no production data rows were edited.
+- Offline Alembic SQL generation succeeded across revisions 0001–0003, but real PostgreSQL migration/integration tests are still required.
+- An unauthenticated API data-route check could not be completed: Vercel Authentication blocked the inspection tool at the share-link stage with HTTP 401 before the request reached the application. Do not interpret this as a product authorization pass or failure.
+- Remaining P0: exact-main GitHub Actions suite, container build, real PostgreSQL migration/integration, Firebase invalid-token and cross-tenant tests, and real-browser sign-in/workspace/payment/PWA update flows. Do not claim the entire project is production-ready until these gates are evidenced.
+
+---
+
 # Latest verified release checkpoint — 2026-10-27 00:01 UTC
 
 This checkpoint supersedes older entries below where they describe PR #161/#166 as open, unmerged, or not deployed. Historical notes are retained for audit history.
