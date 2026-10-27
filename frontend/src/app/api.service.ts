@@ -203,7 +203,7 @@ export class ApiService {
   }
 
   platformAuditEvents(filters: {
-    action?: string; business_id?: string; created_after?: string; created_before?: string;
+    action?: string; actor_subject?: string; business_id?: string; created_after?: string; created_before?: string;
     limit?: number; offset?: number;
   } = {}): Promise<PlatformAuditEventPage> {
     const params = new URLSearchParams();
