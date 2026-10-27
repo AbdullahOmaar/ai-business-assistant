@@ -531,3 +531,37 @@ def test_payment_idempotency_key_rejects_changed_amount(workspace):
                 amount=Decimal("25"), currency_code="EGP", idempotency_key="same-key",
                 allocations=[(invoice.id, Decimal("25"))],
             )
+
+
+def test_invoice_issue_aggregates_repeated_product_lines_before_stock_check(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Flour", unit_price=Decimal("12.00"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("3.000"),
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_number="INV-DUPLICATE-SKU", currency_code="EGP",
+            lines=[
+                {"product_id": str(product.id), "quantity": "2"},
+                {"product_id": str(product.id), "quantity": "2"},
+            ],
+        )
+        with pytest.raises(WorkflowError, match="required 4"):
+            issue_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id,
+            )
+        movements = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        )).all()
+        assert len(movements) == 1
+        assert movements[0].quantity_delta == Decimal("3.000")
+        assert invoice.status == "draft"
