@@ -1,3 +1,8 @@
+## Operations readiness API re-integrated on current main — 2026-10-27
+
+- Added tenant-authorized supplier create/list, purchase-order list, recurring-invoice schedule list, and owner-only read-only operational health endpoints.
+- Added regression coverage for list/create flows, workspace isolation, and owner-only health access. Exact-head CI is required before merge.
+
 ## Customer search by contact fields — 2026-10-27
 
 - Extended the workspace-scoped customer `q` filter to match name, email, and phone while retaining active-customer and tenant scoping.

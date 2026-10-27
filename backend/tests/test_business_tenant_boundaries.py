@@ -588,3 +588,132 @@ def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scoped():
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, MembershipRole, Product
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("operations-owner")
+    try:
+        business_id, product_id = uuid4(), uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Operations workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="operations-owner", role=MembershipRole.OWNER))
+            session.add(Product(id=product_id, business_id=business_id, name="Stock item", unit_price=Decimal("10.00"), is_stock_tracked=True))
+            session.commit()
+        client = TestClient(app)
+        supplier_response = client.post(f"/api/v1/businesses/{business_id}/suppliers", json={"name": "  Supplier One  ", "email": "supplier@example.com"})
+        assert supplier_response.status_code == 201, supplier_response.text
+        supplier = supplier_response.json()
+        assert supplier["name"] == "Supplier One"
+        listed_suppliers = client.get(f"/api/v1/businesses/{business_id}/suppliers")
+        assert listed_suppliers.status_code == 200
+        assert [item["id"] for item in listed_suppliers.json()] == [supplier["id"]]
+
+        foreign_business_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=foreign_business_id, name="Foreign workspace", currency_code="USD"))
+            session.commit()
+        for endpoint in ("suppliers", "purchase-orders", "recurring-invoices", "operations/health"):
+            denied = client.get(f"/api/v1/businesses/{foreign_business_id}/{endpoint}")
+            assert denied.status_code == 403, (endpoint, denied.text)
+
+        order_response = client.post(f"/api/v1/businesses/{business_id}/purchase-orders", json={
+            "supplier_id": supplier["id"], "order_number": "PO-OPS-1", "currency_code": "EGP",
+            "lines": [{"product_id": str(product_id), "quantity": "2.000", "unit_cost": "5.00"}],
+        })
+        assert order_response.status_code == 201, order_response.text
+        order_id = order_response.json()["id"]
+        listed_orders = client.get(f"/api/v1/businesses/{business_id}/purchase-orders")
+        assert listed_orders.status_code == 200
+        order = listed_orders.json()[0]
+        assert order["id"] == order_id
+        assert order["lines"][0]["remaining_quantity"] == "2.000"
+        received = client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive", json={
+            "lines": [{"line_id": order["lines"][0]["id"], "quantity": "1.000"}],
+        })
+        assert received.status_code == 200, received.text
+        after_receive = client.get(f"/api/v1/businesses/{business_id}/purchase-orders").json()[0]
+        assert after_receive["lines"][0]["remaining_quantity"] == "1.000"
+
+        schedule = client.post(f"/api/v1/businesses/{business_id}/recurring-invoices", json={
+            "customer_id": None, "interval_days": 30, "timezone": "UTC",
+            "next_run_at": datetime(2026, 10, 26, tzinfo=timezone.utc).isoformat(),
+        })
+        assert schedule.status_code == 201, schedule.text
+        listed_schedules = client.get(f"/api/v1/businesses/{business_id}/recurring-invoices")
+        assert listed_schedules.status_code == 200
+        assert listed_schedules.json()[0]["id"] == schedule.json()["id"]
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_operational_health_is_owner_only_read_only_and_reports_missing_workers():
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("health-owner")
+    try:
+        business_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Health workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(business_id=business_id, user_subject="health-owner", role=MembershipRole.OWNER))
+            session.commit()
+        client = TestClient(app)
+        response = client.get(f"/api/v1/businesses/{business_id}/operations/health")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["database_connected"] is True
+        assert payload["status"] == "degraded"
+        assert payload["migration_table_available"] is False
+        assert payload["notification_delivery_configured"] is False
+        assert payload["recurring_invoice_worker_configured"] is False
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+        denied = client.get(f"/api/v1/businesses/{business_id}/operations/health")
+        assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
