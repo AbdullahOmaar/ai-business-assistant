@@ -50,6 +50,14 @@ A failed first approach is not a stopping condition. Diagnose the failure, read 
 Stop and ask for human input only when necessary for a material product decision, missing access/secret/approval, irreversible or high-risk action, unresolved conflicting requirements, or no safe feasible alternative. State the exact decision/access needed; do not ask the user to restate the whole task.
 
 ## Git and change safety
+
+### Branch and deployment cadence (mandatory)
+- Do not create a branch for every tiny task, edit, or subtask. Group related changes toward one user-visible outcome into a single coherent work item and one short-lived branch/PR. Keep working on that branch while the scope remains coherent; split only when changes are independently releasable, need different review/permissions, or create a meaningful safety/conflict boundary.
+- Before creating a branch, inspect existing branches and open PRs and reuse/update the appropriate in-progress branch when safe. Avoid duplicate branches/PRs and close superseded work only after confirming it is redundant.
+- Do not deploy after every commit, fix, or small task. Validate locally/CI and use previews when useful; deploy to production only for a meaningful, approved release—normally a new important feature, a deliberate feature bundle, or a critical production fix.
+- Batch related changes and tests, merge the approved release candidate, then trigger at most one production deployment per affected Vercel project for that release. Do not trigger the unaffected project. Do not retry deployment attempts repeatedly when quota, configuration, or build gates block them; diagnose first and wait for the platform limit to reset if needed.
+- Before a production deployment, verify exact candidate SHA, applicable tests/build/security gates, required release markers such as [release-web]/[release-api], and project ignore-build configuration. After deployment, verify deployment state, alias, deployed SHA/version, health/readiness, and safe smoke checks. A merge or HTTP 200 alone is not proof of release success.
+- Emergency/security fixes may use an expedited release, but still require focused validation, explicit authorization where required, and post-deploy verification. Never bypass repository protections or required checks to satisfy cadence.
 - Inspect current branch, status, diff, and existing uncommitted work before editing.
 - Never discard or overwrite unrelated user changes.
 - Use a focused branch and coherent commits where supported.
