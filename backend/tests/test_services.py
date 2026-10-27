@@ -129,6 +129,33 @@ def test_invoice_persisted_lines_reconcile_half_cent_rounding(workspace):
         assert invoice.total == Decimal("0.05")
 
 
+def test_product_creation_records_opening_stock_atomically(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Opening stock item", unit_price=Decimal("12.00"),
+            is_stock_tracked=True, opening_quantity=Decimal("7.500"),
+        )
+        movements = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        )).all()
+        assert product.is_stock_tracked is True
+        assert len(movements) == 1
+        assert movements[0].movement_type == "opening"
+        assert movements[0].quantity_delta == Decimal("7.500")
+        assert movements[0].reference_type == "product_opening"
+
+    with Session(engine) as session:
+        with pytest.raises(WorkflowError, match="requires stock tracking"):
+            create_product(
+                session, principal=principal, business_id=business_id,
+                name="Invalid stock item", unit_price=Decimal("12.00"),
+                is_stock_tracked=False, opening_quantity=Decimal("1.000"),
+            )
+
+
 def test_stock_movements_prevent_negative_inventory(workspace):
     engine, business_id, principal = workspace
     with Session(engine) as session:
