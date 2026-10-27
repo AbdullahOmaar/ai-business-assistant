@@ -295,7 +295,7 @@ def platform_admin_overview(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Return real platform-level counts; financial totals remain separated by currency."""
-    _require_platform_admin(principal, request, session)
+    _require_platform_permission(principal, request, session, "view_overview")
 
     business_total = int(session.scalar(select(func.count(Business.id))) or 0)
     active_businesses = int(session.scalar(
@@ -377,7 +377,7 @@ def list_platform_businesses(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Search platform workspaces with bounded pagination and no destructive operations."""
-    _require_platform_admin(principal, request, session)
+    _require_platform_permission(principal, request, session, "view_workspaces")
 
     member_count = (
         select(func.count(BusinessMembership.id))
@@ -431,7 +431,7 @@ def platform_business_details(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read business metadata and membership roles; never returns credentials or tokens."""
-    _require_platform_admin(principal, request, session)
+    _require_platform_permission(principal, request, session, "view_workspaces")
     business = session.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=404, detail="Business not found.")
@@ -532,7 +532,7 @@ def platform_audit_events(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read-only, paginated platform audit stream; audit mutations are not exposed."""
-    _require_platform_admin(principal, request, session)
+    _require_platform_permission(principal, request, session, "view_audit")
     created_after = _normalize_datetime(created_after)
     created_before = _normalize_datetime(created_before)
     if created_after and created_before and created_after > created_before:
@@ -595,7 +595,7 @@ def export_platform_audit_events(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> Response:
     """Export a bounded, redacted platform audit view; export activity is security-logged."""
-    _require_platform_admin(principal, request, session)
+    _require_platform_permission(principal, request, session, "view_audit")
     created_after = _normalize_datetime(created_after)
     created_before = _normalize_datetime(created_before)
     if created_after and created_before and created_after > created_before:
@@ -925,7 +925,7 @@ def list_platform_role_audit_events(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read-only, paginated history of delegated platform role changes."""
-    _require_platform_admin(principal, request, session)
+    _require_platform_permission(principal, request, session, "view_audit")
     total = int(session.scalar(select(func.count(PlatformAdminAuditEvent.id))) or 0)
     events = session.scalars(
         select(PlatformAdminAuditEvent)
