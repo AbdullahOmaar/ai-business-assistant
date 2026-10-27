@@ -37,6 +37,7 @@ export interface ReceivablesAgingReport { as_of_date: string; source: string; cu
 export interface CustomerStatementEvent { occurred_at: string; event_type: string; source_id: string; reference: string | null; invoice_id?: string; currency_code: string; debit: string; credit: string; affects_balance: boolean; balance: string; }
 export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
 
+export interface TaxSummaryReport { period: { start_date: string | null; end_date: string | null }; source: string; currencies: Array<{ currency_code: string; tax_total: string; invoice_count: number }>; limitations: string[]; }
 export interface PlatformAdminOverview {
   generated_at: string;
   businesses: { total: number; active: number; inactive: number };
@@ -436,6 +437,14 @@ export class ApiService {
   customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
     const params = new URLSearchParams({ limit: '50', offset: String(offset) });
     return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
+  }
+
+  taxSummary(businessId: string, startDate?: string, endDate?: string): Promise<TaxSummaryReport> {
+    const params = new URLSearchParams();
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    const query = params.toString();
+    return this.request<TaxSummaryReport>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/tax-summary' + (query ? '?' + query : ''));
   }
 
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
