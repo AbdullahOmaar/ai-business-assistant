@@ -83,6 +83,33 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
       return;
     }
 
+    if (new URL(request.url()).pathname.endsWith('/accounts:lookup')) {
+      // Firebase Auth performs an account lookup immediately after password sign-in.
+      // Returning an empty user list makes the SDK reject the otherwise successful
+      // mocked sign-in with auth/internal-error before the app can load.
+      await route.fulfill({
+        status: 200,
+        headers: firebaseHeaders,
+        body: JSON.stringify({
+          users: [{
+            localId: adminUid,
+            email: 'admin@example.test',
+            emailVerified: true,
+            displayName: 'Admin Test',
+            lastLoginAt: '1793059200000',
+            createdAt: '1790812800000',
+            providerUserInfo: [{
+              providerId: 'password',
+              federatedId: 'admin@example.test',
+              email: 'admin@example.test',
+              rawId: 'admin@example.test',
+            }],
+          }],
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       headers: firebaseHeaders,
