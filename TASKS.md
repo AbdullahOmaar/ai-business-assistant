@@ -676,3 +676,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Expected impact: reduce duplicate feature-branch push/PR runs and skip dependency audits for source-only edits while retaining PR CI, security scans on dependency changes, scheduled audits, and manual extended checks.
 - Validation: re-fetched all four modified workflows from this branch and parsed each with Python PyYAML `safe_load`; all four parse successfully and expose the expected job structure (1 container job, 1 manual backend test job, 2 CI jobs, and 2 security-scan jobs). This is syntax parsing only, not GitHub Actions expression/schema validation. Workflow execution, application tests/build on the branch, and Actions-minute consumption measurements remain NOT RUN because GitHub jobs fail before a runner/first step. Do not merge based on YAML parsing alone.
 - Next: re-fetch and inspect all changed workflow files, open a draft PR, and inspect its CI status. If jobs still fail before steps, verify the repository/account Actions usage/billing limit and wait for reset or use an authorized alternative runner. Do not weaken required checks or claim production readiness.
+
+
+## Independent CI follow-up — 2026-10-27
+
+- Fixed `.circleci/config.yml` after source review found that `frontend-quality` had a step named “Run frontend unit tests and production build” but only ran `npm run build`, and dependency jobs used non-reproducible `npm install` despite a lockfile.
+- Config now uses `npm ci --no-audit --no-fund` in both frontend-quality and scheduled frontend audit jobs, and runs `npm test` before `npm run build`.
+- New commit: `46514f218476c60ca0b715427bc4509cf9808400`; config blob `0b600178852d023fc15ef3b4b328b32261509b20`.
+- Offline validation completed in the already-existing Vercel Sandbox with PyYAML: YAML parsed; expected five jobs were present; assertions confirmed npm ci, frontend test/build steps and container setup_remote_docker/build command. Result: passed as a local structure check only.
+- NOT RUN: CircleCI CLI/config validation (CLI absent and package repositories unreachable); CircleCI hosted pipeline/required jobs (private repository not yet authorized/selected in CircleCI); exact-SHA PostgreSQL/container/front-end checks under CircleCI. Do not call this an independent CI pass until a real CircleCI run URL and successful jobs are recorded.
+- Next action: authorize this private GitHub repo inside CircleCI and select `.circleci/config.yml`; validate and run on this PR SHA. Do not pay/upgrade, disable protections, or use GitHub Actions as an assumed substitute.
