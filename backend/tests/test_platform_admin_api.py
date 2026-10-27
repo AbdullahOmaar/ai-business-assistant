@@ -408,8 +408,20 @@ def test_platform_user_directory_lists_auth_accounts_without_membership(platform
 
 
 def test_delegated_user_manager_can_read_directory_but_cannot_change_workspace_status(platform_admin_environment, monkeypatch):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
     from app.models import PlatformRoleGrant
 
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(
+        firebase_admin.auth, "list_users",
+        lambda **kwargs: SimpleNamespace(users=[SimpleNamespace(
+            uid="workspace-owner-uid", display_name="Owner", email="owner@example.test",
+            email_verified=True, disabled=False,
+            user_metadata=SimpleNamespace(creation_timestamp=None, last_sign_in_timestamp=None)
+        )], next_page_token=None),
+    )
     with Session(platform_admin_environment["engine"]) as session:
         session.add(PlatformRoleGrant(
             user_subject=STAFF_SUBJECT,
@@ -433,6 +445,9 @@ def test_delegated_user_manager_can_read_directory_but_cannot_change_workspace_s
     assert "user_manager" in access.json()["roles"]
     assert "view_users" in access.json()["permissions"]
     assert overview.status_code == 200
+    directory = platform_admin_environment["client"].get("/api/v1/platform-admin/users")
+    assert directory.status_code == 200
+    assert directory.json()["items"][0]["uid"] == "workspace-owner-uid"
     assert status_change.status_code == 403
 
 
@@ -489,6 +504,30 @@ def test_only_bootstrap_super_admin_can_grant_delegated_roles_and_changes_are_au
     }
     assert all(event.actor_subject == ADMIN_SUBJECT for event in audits)
     assert all(event.reason.strip() for event in audits)
+    role_audit = client.get("/api/v1/platform-admin/role-audit-events")
+    assert role_audit.status_code == 200
+    assert role_audit.json()["total"] == 2
+    assert {event["action"] for event in role_audit.json()["items"]} == {
+        "platform.user_role.granted", "platform.user_role.revoked"
+    }
+    platform_admin_environment["subject"]["value"] = STAFF_SUBJECT
+    revoked_access = client.get("/api/v1/platform-admin/access")
+    assert revoked_access.status_code == 403
+
+
+def test_disabled_firebase_account_cannot_receive_delegated_platform_roles(platform_admin_environment, monkeypatch):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(firebase_admin.auth, "get_user", lambda uid, **kwargs: SimpleNamespace(uid=uid, disabled=True))
+    response = platform_admin_environment["client"].post(
+        "/api/v1/platform-admin/users/disabled-user/roles",
+        json={"role": "user_manager", "active": True, "reason": "Cannot grant disabled account"},
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Disabled Firebase accounts cannot be granted platform roles."
 
 
 def test_delegated_role_change_is_rejected_even_when_user_supplies_root_headers(platform_admin_environment):
