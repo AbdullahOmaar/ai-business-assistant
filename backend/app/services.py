@@ -121,6 +121,9 @@ def create_product(
         raise WorkflowError("Opening stock quantity cannot be negative")
     if opening_quantity > ZERO and not is_stock_tracked:
         raise WorkflowError("Opening stock requires stock tracking to be enabled")
+    if opening_quantity > ZERO:
+        # Authorize before any product/audit/stock writes to prevent STAFF side effects.
+        _membership(session, principal, business_id, owner_only=True)
     product = Product(
         business_id=business_id, name=name.strip(), unit_price=unit_price,
         sku=sku.strip() or None if sku else None, description=description,
@@ -131,9 +134,6 @@ def create_product(
     _audit(session, business_id=business_id, principal=principal,
            action="product.created", target_type="product", target_id=product.id)
     if opening_quantity > ZERO:
-        # Match the OWNER-only standalone stock-movement API. Without this check,
-        # STAFF could bypass that boundary by setting opening_quantity on product creation.
-        _membership(session, principal, business_id, owner_only=True)
         record_stock_movement(
             session, principal=principal, business_id=business_id,
             product_id=product.id, movement_type="opening",
