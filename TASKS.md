@@ -722,3 +722,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Re-ran validation in the existing Vercel Sandbox after syncing current backend files: Admin suite **13 passed in 1.36s**; compile/compileall passed; full backend suite **157 passed, 1 skipped in 6.71s**. These are isolated sandbox results, not hosted exact-SHA CI.
 - Updated `docs/PLATFORM_ADMIN_SCOPE.md` with the new P1 security-events capability and remaining boundaries.
 - Still NOT RUN: central log collection, alert thresholds/retention/dashboard, logging of pre-route invalid/expired Firebase token failures, Docker, hosted CircleCI, and real PostgreSQL status-change locking/rollback. No production configuration/data changed.
+
+
+## Execution checkpoint — Platform Admin UI validation — 2026-10-27
+
+- **Status:** IN_PROGRESS; no merge or production deployment.
+- Added frontend/src/app/platform-admin-helpers.ts and frontend/src/app/platform-admin-helpers.spec.ts to isolate and test the minimum meaningful reason required before a workspace status change.
+- Updated frontend/src/app/platform-admin.component.ts to use the shared validator and frontend/package.json so npm test discovers every src/app/*.spec.ts test rather than only the workspace-load-guard test.
+- Local isolated Node test run for the new helper: **2 passed, 0 failed** (node --experimental-strip-types --test .../platform-admin-helpers.spec.ts). This validates the pure helper only; it is not an exact repository frontend build.
+- Still NOT RUN on the exact PR head: complete npm test, Angular production build, frontend audit, authenticated browser UI/accessibility test. GitHub Actions statuses remain empty because jobs previously failed before runner allocation; do not interpret absent status entries as green.
+- Next: refresh the exact PR head and inspect changed-file diff; run the full frontend test/build/audit in an authorized sandbox if source transfer works; continue with real PostgreSQL and identity boundary gates. Keep production settings, allowlists, data, and aliases unchanged.
