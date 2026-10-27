@@ -38,6 +38,7 @@
 - Tests/build: **NOT RUN locally**. Exact PR head `f146d5fb785188128cf794387693792f9a100229` reports a CircleCI status of `error` and GitHub workflow runs `failure`; no root cause has been verified here. Vercel deployment lookup returned no Preview deployments for this branch. Do not interpret these signals as a passing build or as proof of a code regression.
 - Environment limitation: a direct Git clone/test attempt was blocked by DNS resolution for `github.com`. The CI/automation implementation itself remains outside this workstream; this PR stays draft until exact-head test/build evidence is available.
 - Production: **NOT DEPLOYED**. No production data, schema, secrets, or billing settings changed.
+- **Preview build diagnostic (2026-10-27):** Direct Vercel preview attempts on candidate `ff19f9959b503e621edcc84999854ca9103b141f` were both canceled by the configured Ignore Build Step because the commit message lacked `[release-web]` / `[release-api]`. This is expected gate behavior, not a build failure. A new marker-bearing commit is being prepared to allow preview validation; production remains blocked until checks and merge gates pass.
 - Next: obtain exact-head backend tests and frontend npm test/Angular build results, review any failures with the responsible CI owners, then promote this PR for review. Deploy only after checks pass and release quota/markers allow it.
 
 ---
