@@ -13,7 +13,7 @@ from app.models import (
     SalesReturn, SalesReturnLine, StockMovement,
 )
 from app.security import AuthenticatedPrincipal
-from app.services import create_invoice, create_product, issue_invoice, void_invoice
+from app.services import create_customer, create_invoice, create_product, issue_invoice, void_invoice
 
 
 @pytest.fixture()
@@ -49,8 +49,13 @@ def _issued_invoice(session, business_id, principal, quantity=Decimal("5")):
         product_id=product.id, movement_type="opening",
         quantity_delta=Decimal("20.000"),
     )
+    customer = create_customer(
+        session, principal=principal, business_id=business_id,
+        name=f"Return customer {uuid4().hex[:8]}",
+    )
     invoice = create_invoice(
         session, principal=principal, business_id=business_id,
+        customer_id=customer.id,
         invoice_number=f"INV-RET-{uuid4().hex[:8]}", currency_code="EGP",
         lines=[{"product_id": str(product.id), "quantity": str(quantity)}],
     )
