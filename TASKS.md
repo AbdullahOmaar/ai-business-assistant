@@ -14,7 +14,7 @@
 
 ## Evidence and known blockers
 
-- New validation on 2026-10-27: CircleCI CLI **1.11.0** installed in a disposable Vercel sandbox; first `circleci config validate` caught `Unclosed '<<' tag` in the PostgreSQL readiness command. Replaced the shell heredoc with a quoted multiline `python -c` script; the subsequent authoritative CLI validation returned `Config file ... is valid.` The fix is committed in the PR branch (commit `d221af2764af067873031d2c8c455a4557f7fc81`).
+- New validation on 2026-10-27: CircleCI CLI **1.11.0** installed in a disposable Vercel sandbox; first `circleci config validate` caught `Unclosed '<<' tag` in the PostgreSQL readiness command. Replaced the shell heredoc with a quoted multiline `python -c` script; the subsequent authoritative CLI validation returned `Config file ... is valid.` The fix is committed in the PR branch (commit `d221af2764af067873031d2c8c455a4557f7fc81`). `circleci config process` also passed and expanded all five jobs and both workflows.
 - Frontend lock experiment: generated a temporary npm lockfile (lockfile v3, 506 package entries) from the current `frontend/package.json`; `npm ci --ignore-scripts --no-audit --no-fund` installed 417 packages and `npm audit --audit-level=high` reported `found 0 vulnerabilities`. This lockfile remains **sandbox-only and uncommitted**; repository still lacks `frontend/package-lock.json`.
 
 - PR #173 is still **Draft / open / not merged**. Base SHA: `d0afc6653a00005e61859f2d8c3f9eebca73c333`. Current branch head at this checkpoint: `516175043f1cf1d8336888f239bc9957eeb09698`.
