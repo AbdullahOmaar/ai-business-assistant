@@ -1214,3 +1214,12 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 ### Open follow-up / next action
 - No open PRs were present at this checkpoint. PR #212 and #222 were closed as superseded; #223, #224, #225, and #226 are merged.
 - Next: complete remaining semantic branch review; then retry Web/API production deployment after Vercel's 24-hour deployment quota resets, verify the final deployed SHA/version and safe smoke tests, and delete only verified stale remote branches when an authorized deletion operation is available.
+
+## Backup/restore guard hardening — current-main candidate — 2026-10-28
+
+- Candidate branch: `fix/backup-restore-target-safety-main-20261028`, based on current main `55b4992cd8ca782d55ecbfb9de59bae8bd02677a` (current main had advanced beyond the earlier draft candidate).
+- Hardened `scripts/backup-restore-drill.sh` target-catalog validation to reject non-empty user relations, routines, types, non-default schemas, and non-default extensions before dump/restore; retained source/target identity rejection and encrypted-backup safety checks.
+- Added stubbed regression coverage in `scripts/backup-restore-drill.test.sh` for identical database identity and non-empty target catalogs. Stubs fail if `pg_dump`, `pg_restore`, `gpg`, or checksum commands are reached, so tests do not contact a real database.
+- Updated `docs/BACKUP_RESTORE_DRILL.md` to describe the expanded target-catalog guard. No live database, credentials, backup, or restore target was used.
+- Prior candidate PR #230 exact-head CircleCI passed 4/4, but its branch had become two commits behind current main and carried a stale `TASKS.md` checkpoint; this focused candidate rebases the same reviewed script changes on current main. Exact-head CircleCI for this branch: pending.
+- Actual isolated restore drill: NOT RUN. Keep production restore readiness BLOCKED until an explicitly approved isolated restore is executed and documented.

@@ -56,7 +56,25 @@ if [[ "$source_identity" == "$restore_identity" ]]; then
   exit 2
 fi
 
-existing_objects="$(psql "$RESTORE_DATABASE_URL" -X -A -t -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') AND ascii(c.relkind) IN (114, 112, 118, 109, 83)")"
+existing_objects="$(psql "$RESTORE_DATABASE_URL" -X -A -t -v ON_ERROR_STOP=1 -c "
+SELECT count(*) FROM (
+  SELECT c.oid FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname <> 'information_schema' AND left(n.nspname, 3) <> 'pg_'
+  UNION ALL
+  SELECT p.oid FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname <> 'information_schema' AND left(n.nspname, 3) <> 'pg_'
+  UNION ALL
+  SELECT t.oid FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE n.nspname <> 'information_schema' AND left(n.nspname, 3) <> 'pg_'
+  UNION ALL
+  SELECT n.oid FROM pg_namespace n
+    WHERE n.nspname NOT IN ('public', 'information_schema') AND left(n.nspname, 3) <> 'pg_'
+  UNION ALL
+  SELECT e.oid FROM pg_extension e WHERE e.extname <> 'plpgsql'
+) AS user_objects;")"
 if [[ "$existing_objects" != "0" ]]; then
   echo "Restore target is not empty; refusing to overwrite existing objects." >&2
   exit 2
