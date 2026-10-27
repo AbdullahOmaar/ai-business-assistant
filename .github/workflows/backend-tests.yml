@@ -1,14 +1,14 @@
 name: Backend tests
 
 on:
-  pull_request:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-tests.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: backend-tests-manual-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
