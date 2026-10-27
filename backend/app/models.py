@@ -612,3 +612,48 @@ class SalesReturnLine(Base):
     invoice_line_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+
+class PlatformRoleGrant(Base):
+    """A delegated platform role assigned by a bootstrap super administrator.
+
+    Root/super-admin membership remains an out-of-band deployment setting and
+    cannot be represented or granted through this table.
+    """
+
+    __tablename__ = "platform_role_grants"
+    __table_args__ = (
+        UniqueConstraint("user_subject", "role", name="uq_platform_role_user_role"),
+        CheckConstraint(
+            "role IN ('platform_viewer', 'workspace_operator', 'user_manager')",
+            name="ck_platform_role_grants_allowed_role",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    user_subject: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(40), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    granted_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    granted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    revoked_by_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_reason: Mapped[str] = mapped_column(String(500), nullable=False)
+
+
+class PlatformAdminAuditEvent(Base):
+    """Append-only audit evidence for platform role grants and revocations."""
+
+    __tablename__ = "platform_admin_audit_events"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    actor_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    target_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    role: Mapped[str] = mapped_column(String(40), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
