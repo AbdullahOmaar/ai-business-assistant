@@ -1,3 +1,14 @@
+# Execution checkpoint — 2026-10-27 (release guide regression coverage)
+
+- **Task:** strengthen automated checks for the v1.3.0 bilingual feature catalogue and release history in PR #189.
+- **Implementation:** added `frontend/src/app/release-guide.spec.ts`; commit `e6340279c29b1127d43c5078064ece6d2936f56c`. The first test run caught an over-escaped semantic-version regex; corrected it in commit `7ee7bc2d696d687112a8ebd79e8a59301b0e298b`.
+- **Verification:** `npm test` in the isolated Node 22 sandbox — **17 passed, 0 failed**. `npm run build` — **PASS**, 17 tests and Angular bundle generation completed. The sandbox had the release-guide module/spec from the PR, but its app component/package baseline was older than the exact PR head; therefore this is source-slice verification, **not** an exact-PR-head full UI build.
+- **CI:** exact candidate status is CircleCI `error`, pipeline [72](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/72). Root cause remains unconfirmed. PR #189 does not add `.circleci/config.yml`; the separate PR #183 has four successful CircleCI contexts but remains Draft/open with no reviews. Do not merge around failed checks; CI-config integration needs review/authorization.
+- **Delivery:** PR #189 remains Draft/open/unmerged; v1.3.0 is **NOT DEPLOYED**. No production database, secrets, settings, or deployments were changed.
+- **Next:** review/authorize the CI configuration PR or provide owner-visible pipeline error details, then rerun exact-head frontend/backend checks before promoting the v1.3.0 candidate.
+
+---
+
 # Release candidate checkpoint — 2026-10-27
 
 ## Task order (old first, new second)
