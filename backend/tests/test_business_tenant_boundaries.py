@@ -7,8 +7,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, MembershipRole, Product, StockMovement
-from app.security import AuthenticatedPrincipal
+from app.models import (\n    AuditEvent,\n    Base,\n    BusinessMembership,\n    MembershipRole,\n    Product,\n    StockMovement,\n)\nfrom app.security import AuthenticatedPrincipal
 
 
 def test_non_member_cannot_read_dashboard_or_mutate_workspace():
