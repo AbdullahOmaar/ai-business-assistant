@@ -837,3 +837,5 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **AT-04 — Browser smoke automation: IN_PROGRESS.** Added a Playwright Chromium smoke workflow, browser config, and tests for startup leaving the splash screen, absence of uncaught page errors, and Arabic/English direction switching. Tests avoid credentials and production data mutation. Playwright execution is pending an executable runner.
 - **AT-05 — Authenticated end-to-end coverage: TODO/BLOCKED.** Owner sign-in, workspace/tenant isolation, invoice/payment/returns flows require a dedicated non-production Firebase identity and disposable PostgreSQL fixture. Do not use production credentials or submit real financial mutations.
 - **Current evidence:** no test run has yet been observed for this branch's new Playwright suite. The workflow is not VERIFIED until it executes and reports a passing result on the exact commit.
+
+- **Preview execution checkpoint:** requested an isolated Vercel frontend Preview for this automation branch to reuse the configured frontend test/build pipeline; this is a Preview only and must not update production aliases.
