@@ -1,0 +1,204 @@
+# Independent CI for this private repository.
+# Runs only tests, audits, and a disposable image build; it never deploys or touches production.
+version: 2.1
+
+jobs:
+  backend-accounting:
+    docker:
+      - image: cimg/python:3.12
+      - image: postgres:16
+        environment:
+          POSTGRES_DB: ai_business_assistant_test
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+    resource_class: medium
+    working_directory: ~/project
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres@localhost:5432/ai_business_assistant_test
+      TEST_DATABASE_URL: postgresql+psycopg://postgres@localhost:5432/ai_business_assistant_test
+      CI_ALLOW_DATABASE_SCHEMA_TESTS: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - checkout
+      - run:
+          name: Install backend test and audit dependencies
+          command: |
+            set -euo pipefail
+            python -m pip install --upgrade pip
+            python -m pip install -r backend/requirements.txt pip-audit
+      - run:
+          name: Wait for isolated PostgreSQL service
+          command: |
+            cd backend
+            python -c '
+            import time
+            import psycopg
+
+            deadline = time.monotonic() + 90
+            dsn = "postgresql://postgres@localhost:5432/ai_business_assistant_test"
+            while True:
+                try:
+                    with psycopg.connect(dsn, connect_timeout=3):
+                        print("Disposable PostgreSQL is accepting connections.")
+                    break
+                except psycopg.OperationalError:
+                    if time.monotonic() >= deadline:
+                        raise SystemExit("PostgreSQL did not become ready within 90 seconds.")
+                    time.sleep(2)
+            '
+      - run:
+          name: Apply migrations and check schema drift against PostgreSQL
+          command: |
+            set -euo pipefail
+            cd backend
+            mkdir -p test-results
+            python -m alembic upgrade head
+            python -m alembic current
+            python -m alembic check
+      - run:
+          name: Run full backend and financial regression suite
+          command: |
+            set -euo pipefail
+            cd backend
+            python -m pytest -q --junitxml=test-results/pytest.xml
+      - run:
+          name: Verify offline migration SQL generation
+          command: |
+            set -euo pipefail
+            cd backend
+            python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
+            test -s /tmp/alembic-upgrade.sql
+      - run:
+          name: Audit Python dependencies
+          command: |
+            set -o pipefail
+            pip-audit -r backend/requirements.txt 2>&1 | tee /tmp/pip-audit.txt
+      - store_test_results:
+          path: backend/test-results
+      - store_artifacts:
+          path: backend/test-results/pytest.xml
+          destination: backend-pytest.xml
+      - store_artifacts:
+          path: /tmp/pip-audit.txt
+          destination: pip-audit.txt
+      - store_artifacts:
+          path: /tmp/alembic-upgrade.sql
+          destination: alembic-upgrade.sql
+
+  frontend-quality:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: medium
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Verify Node runtime and install frontend dependencies
+          command: |
+            set -euo pipefail
+            node --version
+            npm --version
+            cd frontend
+            npm install --no-audit --no-fund
+      - run:
+          name: Audit npm dependencies
+          command: |
+            set -o pipefail
+            cd frontend
+            npm audit --audit-level=high 2>&1 | tee /tmp/npm-audit.txt
+      - run:
+          name: Run frontend tests and production build
+          command: |
+            set -euo pipefail
+            cd frontend
+            npm run build
+      - store_artifacts:
+          path: /tmp/npm-audit.txt
+          destination: npm-audit.txt
+
+  backend-container:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    working_directory: ~/project
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build and import-check the backend container
+          command: |
+            set -euo pipefail
+            docker build --pull --tag ai-business-assistant-backend:ci ./backend
+            docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
+
+  dependency-audit-python:
+    docker:
+      - image: cimg/python:3.12
+    resource_class: small
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Audit Python dependencies
+          command: |
+            python -m pip install --upgrade pip pip-audit
+            pip-audit -r backend/requirements.txt
+
+  dependency-audit-frontend:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: small
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Audit frontend dependencies
+          command: |
+            set -euo pipefail
+            cd frontend
+            npm install --no-audit --no-fund
+            npm audit --audit-level=high
+
+
+  frontend-browser-smoke:
+    docker:
+      - image: mcr.microsoft.com/playwright:v1.55.0-noble
+    resource_class: medium
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install frontend dependencies and run Chromium E2E
+          command: |
+            set -euo pipefail
+            cd frontend
+            npm install --no-audit --no-fund
+            npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
+            npx playwright --version
+            npx playwright test
+      - store_test_results:
+          path: frontend/test-results
+      - store_artifacts:
+          path: frontend/test-results/e2e-junit.xml
+          destination: frontend-e2e-junit.xml
+
+workflows:
+  verify-all-changes:
+    jobs:
+      - backend-accounting
+      - frontend-quality
+      - frontend-browser-smoke
+      - backend-container
+
+  scheduled-dependency-audit:
+    triggers:
+      - schedule:
+          cron: "23 8 * * 1"
+          filters:
+            branches:
+              only:
+                - main
+    jobs:
+      - dependency-audit-python
+      - dependency-audit-frontend

@@ -1,70 +1,94 @@
-# Execution checkpoint — 2026-10-27 (latest Admin regression rerun)
+## Review findings addressed for expense UI — 2026-10-27
 
-- **Task:** re-run the Platform Admin backend checks on the isolated source snapshot corresponding to the latest code-bearing candidate. The latest PR head `f34c26ef1d06b82633f6a0b3643dfb483a468b85` changes `TASKS.md` only; the last code-bearing fix is `cabc370728838f8380b80be61851ee1ee509fca4`.
-- **Verification:** `python -m compileall -q app tests` — PASS; `python -m pytest -q --tb=short` — **174 passed, 1 skipped, 11 warnings**; `python -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**; offline `alembic upgrade head --sql` — PASS, 391 lines including revision `0004_platform_user_roles`; `python -m pip_audit -r requirements.txt` — no known vulnerabilities.
-- **Scope limit:** this sandbox rerun is isolated source-snapshot evidence, not an exact-hosted-CI run. Container build and authenticated Firebase browser E2E remain **NOT RUN**; the sandbox has no Docker, Podman, or `psql`.
-- **CI:** exact candidate status is CircleCI `error`, pipeline [70](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/70). The failure details are not available through the authenticated connector. `.circleci/config.yml` is not present on this candidate/main; PR #183 adds the tested config and has four successful CircleCI contexts, but remains Draft/open with no reviews. Do not bypass checks or merge draft CI work without the required review/authorization.
-- **Delivery:** PR #190 remains Draft/open/unmerged. No production deployment, database mutation, secret/config change, or admin UID enrollment occurred.
-- **Next:** obtain owner-visible CircleCI pipeline details or review/authorize PR #183's CI configuration; then run the container and authenticated authorization E2E gates before merge.
+- Fixed numeric input handling: Angular's number value accessor can produce a numeric runtime value, so the form now stringifies the value before trimming/serializing it. Added a regression assertion that forbids direct `expenseAmount.trim()`.
+- Preserved local wall-clock defaults/resets for `datetime-local` inputs and added a regression assertion so UTC conversion does not shift the intended entry date.
 
----
 
-# Admin execution checkpoint — 2026-10-27 (PostgreSQL validation and fix)
+## Expense retry safety — 2026-10-27
 
-- **Alternative runner:** used the existing Vercel sandbox `sbx_HjgJqAJfL3BCiZQyN8dg1m8wkEAp`; no GitHub Actions job was used to run tests.
-- **Schema drift bug found and fixed:** applying revision `0004_platform_user_roles` to an isolated PostgreSQL 16 Neon validation branch succeeded, but `alembic check` initially detected the migration-created index `ix_platform_admin_audit_events_created_at` was missing from SQLAlchemy model metadata. Added the matching `Index` to `backend/app/models.py`; commit `cabc370728838f8380b80be61851ee1ee509fca4`.
-- **Real PostgreSQL migration:** created isolated Neon branch `admin-validation-20261027` (`br-snowy-snow-b9gqz98k`) from main; verified starting revision `0003_business_workflows`; `alembic upgrade head` completed to `0004_platform_user_roles`; then `alembic check` returned **No new upgrade operations detected** after the model fix. Only the isolated validation branch was migrated; production/default branch was not changed.
-- **Backend regression:** `python3 -m pytest -q --tb=short` — **174 passed, 1 skipped, 11 warnings**; `python3 -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**; `python3 -m compileall -q app tests` — **PASS** after applying the model fix in the sandbox.
-- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS** (Angular bundle generated). Remaining non-blocking warnings: Angular NG8107 optional chaining and Node module type.
-- **Dependency audits:** `npm audit --audit-level=high` — **0 vulnerabilities**; `python3 -m pip_audit -r requirements.txt` — **No known vulnerabilities found**.
-- **Container:** **NOT RUN**; sandbox has no Docker, Podman, or alternate container builder. `npm run lint` remains unavailable because there is no lint script.
-- **CI/review:** PR #190 current head is `cabc370728838f8380b80be61851ee1ee509fca4`; PR remains Draft/open/unmerged with CircleCI status `error`. Available connector did not expose CircleCI failure logs/root cause. Alternative-runner evidence is recorded, but no required status or branch protection was bypassed.
-- **Still open:** authenticated Firebase browser E2E and explicit unauthorized/authorized admin session tests; container image build; root allowlist activation. No production deployment or secret/config change occurred. The temporary Neon validation branch is isolated from production and contains only the migration change; cleanup remains pending because the available tool's destructive-operation guard blocked an attempted downgrade command, which was not retried.
-- **Next:** resolve the CircleCI error from owner-visible pipeline logs/authorized runner, execute container build and authenticated browser authorization flows, then review PR #190 gates before considering merge. Do not activate production admin until a verified UID is configured out-of-band.
+- PR #35 exact-head source adds a same-session safeguard for ambiguous expense-save failures: it disables repeat submission and editable fields until the latest workspace expense list/dashboard refresh succeeds. The user is prompted to inspect recent entries before retrying.
+- This is a UI-level safeguard, not a substitute for persistent server-side idempotency; the current database schema has no expense idempotency key. Adding database idempotency requires a coordinated migration/release and is not included in this PR. No production schema changes were applied.
 
----
 
-# Admin execution checkpoint — 2026-10-27 (alternative Vercel sandbox)
 
-- **Runner used:** existing authorized Vercel sandbox session `sbx_HjgJqAJfL3BCiZQyN8dg1m8wkEAp`, project `ai-business-assistant-api`. This is the alternative execution environment; GitHub Actions was not used as the test runner.
-- **Candidate provenance:** tests ran against the sandbox's Admin source snapshot previously recorded as `2f5a899f61cb4278e79cb47fb503a7a1a8e3a1a0`. Current PR head is `51eccd20bb8ed5850290ee194caba4f8e5ca9293`; latest differences since the tested snapshot are task-ledger/checkpoint documentation. The sandbox is a source snapshot, not a Git checkout, so no local Git status/HEAD could be independently read there.
-- **Backend:** `python3 -m pytest -q --tb=short` — **174 passed, 1 skipped, 11 warnings**. Focused Admin regression: `python3 -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**. `python3 -m compileall -q app tests` — **PASS**.
-- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS**, Angular production bundle generated. Non-blocking Angular NG8107 optional-chain warnings and Node module-type warnings remain.
-- **Dependency security:** `npm audit --audit-level=high` — **0 vulnerabilities**; `python3 -m pip_audit -r requirements.txt` — **No known vulnerabilities found**.
-- **Migration:** `DATABASE_URL=postgresql+psycopg://ci:ci@127.0.0.1:5432/ai_business_assistant python3 -m alembic upgrade head --sql` — **PASS**, generated 391 lines and includes revision `0004_platform_user_roles`, `platform_role_grants`, and `platform_admin_audit_events`. This is offline SQL generation, not a live migration.
-- **Live database/container:** **NOT RUN**. This sandbox has no `docker`, `podman`, or `psql` binary; the presence of a Python PostgreSQL driver does not provide a server. Disposable PostgreSQL 16 migration/schema-drift/integration and container build remain open.
-- **Hosted gate:** PR #190 remains Draft/open/unmerged. CircleCI Pipeline is still `error` (latest PR description records pipeline 65; failure logs/root cause not exposed by available authenticated connector). Passing alternative-runner tests do not clear a required hosted status, and no branch-protection bypass was attempted.
-- **Production/access:** no production deployment, database mutation, secret/config change, or Firebase UID enrollment was performed. `PLATFORM_SUPER_ADMIN_UIDS` must be configured out-of-band only after verified identity.
-- **Status:** ADM-02 global directory **VERIFIED in isolated tests**; ADM-03 delegated RBAC **VERIFIED in isolated regression tests, live DB/audit persistence still unverified**; ADM-04 UI/build **VERIFIED by unit tests/build, authenticated browser E2E NOT RUN**; ADM-05 **PARTIALLY VERIFIED / remaining live DB, container, browser gates**; ADM-06 **BLOCKED by Draft PR and CircleCI error**; ADM-07 **BLOCKED by secure bootstrap configuration**.
-- **Next actions:** diagnose/resolve CircleCI pipeline 65 from its owner-visible logs or an authorized CircleCI runner; use a disposable PostgreSQL 16 database for migration/integration and run the container build on an authorized container-capable runner; then review the exact PR head and merge only if all required gates pass.
+## Expense management UI re-integrated on current main — 2026-10-27
 
----
+- Reworked the stale PR #35 expense entry/history feature against current main instead of merging its 200+ commits of obsolete ancestry.
+- Added typed API access, validation for positive amounts and valid local date/time, workspace-specific loading/refresh, bilingual navigation and form, and regression coverage.
+- Exact-head CircleCI validation is required before merge. No production deployment was performed.
 
-# Platform Admin verification checkpoint — 2026-10-27 15:38 UTC
 
-## Current evidence
-- **Scope:** PR #190, `feat/platform-admin-user-directory-and-roles`; tested snapshot head `2f5a899f61cb4278e79cb47fb503a7a1a8e3a1a0`. Main SHA observed before this task-ledger update: `068936f5973c695b8f61840143bd8acb37dc8baa`.
-- **Backend:** `python3 -m pytest -q --tb=short` — **174 passed, 1 skipped**. Admin regression file: `python3 -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**. Tests use the isolated sandbox; they do not prove PostgreSQL production integration.
-- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS** (Angular production build).
-- **Security/dependencies:** `npm audit --audit-level=high` — **0 vulnerabilities**; `pip-audit -r requirements.txt` — **no known vulnerabilities**; `python3 -m compileall -q app tests` — **PASS**.
-- **Migration:** offline `alembic upgrade head --sql` generation — **PASS**, 391 lines including `0004_platform_user_roles`. Live PostgreSQL migration/schema-drift checks are **NOT RUN**: PostgreSQL, Docker, and Podman are unavailable in this sandbox.
-- **Follow-up fixes committed to this branch:** corrected the directory privacy test to inspect returned account objects rather than explanatory response text; corrected numeric audit-filter serialization so values such as `limit=0` are not silently omitted.
-- **Lint:** `npm run lint` — **NOT RUN / unavailable** because the frontend package has no `lint` script. The production build provides Angular compilation/type-check evidence.
-- **Hosted gate:** The latest observed CircleCI status on code-bearing PR #190 commit `ce73878905d19b1e93bcf6c650349c09e5b8db85` was **error**, pipeline [65](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/65). The current task-ledger-only head has no status posted yet. Exact root cause could not be confirmed from the available authenticated tools. Do not treat CI as passing.
-- **Delivery:** PR #172 is merged at `17e8533de376d2438ea5dee57ee6a86b30c9f081`. PR #190 remains **Draft/open**, not merged. No production deployment or production database change was performed.
 
-## Status and next actions
-1. **IN_PROGRESS — PR #190:** review current exact-head checks and diagnose the CircleCI error; keep Draft until required hosted checks pass.
-2. **BLOCKED — PostgreSQL integration:** run migration, schema drift, and backend tests against disposable PostgreSQL 16 on an authorized runner.
-3. **NOT RUN — authenticated browser/authorization E2E:** verify global directory and delegated-role flows, including denied unauthorized/cross-tenant requests.
-4. **BLOCKED — production activation:** verify `PLATFORM_SUPER_ADMIN_UIDS` is configured out-of-band before enabling access; never guess or change production secrets without authorization.
-5. **Merge/deploy:** do not merge around failed required checks or deploy until acceptance gates are satisfied and release authorization is in place.
+## Angular template parse failure fixed — 2026-10-27
 
-This checkpoint records observed evidence only; isolated green tests and dependency audits do not establish production readiness.
+- Vercel Preview of exact diagnostic SHA `969bd23caee3d795ce19aad0141e1b074c9b53ab` proved the frontend unit suite passed **19/19**, then Angular production build failed with `NG5002` at `frontend/src/app/app.component.ts:77`: the mobile More button's `[class.active]` attribute had an extra double quote after `tab === 'release-guide'`.
+- Removed the duplicate quote and added `frontend/src/app/app.component-template-safety.spec.ts` to prevent this exact regression. The fix is not verified until the new exact-head build and CircleCI checks pass.
+- No production deployment or database operation was performed.
+
+
+## Current mainline integration — 2026-10-27 17:35 UTC
+
+- **Mainline after PR #115:** merged commit `11c9308eb935f4305a49c946b6cdae50130516f0`. At the checkpoint before the release reconciliation, all four CircleCI checks and both Vercel status contexts reported success on this SHA. The PR #115 merge includes issued-invoice printing with HTML escaping and focused source regression tests; manual Android Chrome / installed-PWA print-to-PDF smoke remains unverified.
+- **REL-001 / PR #192:** branch `integrate/release-v1-3-main-20261027` refreshed against the current mainline. Integration commit `d8c36a12232aee6578d9ca9f48b6c1d14c919297` preserves the v1.3.0 invoice allocation/outstanding balance, opening stock, and bilingual release guide changes while manually composing them with PR #115's print action. On this exact SHA, backend-container and backend-accounting passed; frontend-quality failed and browser-smoke remained pending. The failure root cause is not yet evidenced by CircleCI logs; this checkpoint must not be treated as verified.
+- **OPS-001 / PR #135:** backup/restore drill branch refreshed against the same mainline; local shell syntax checks and two non-destructive output-safety cases passed. Exact-head CircleCI was still running at the time of this checkpoint. The production backup/restore drill itself is NOT RUN because no approved source credentials and isolated restore target were available.
+- **Release safety:** these are source/preview validation steps only. No production deployment or production database operation was performed.
+
+
+# Mainline integration checkpoint — 2026-10-27
+
+- **PR #183 — VERIFIED MERGED:** CI/browser smoke and contributor governance merged as d979c59c725b398b132a52cfa0f824edde96fd95. Four CircleCI checks passed on its exact head and four checks passed on main after the merge.
+- **PR #191 — VERIFIED MERGED:** PostgreSQL financial concurrency tests and payment idempotency savepoint recovery merged as 4538cf4de7f44e1a4e031f770157a780830f9259. All four CircleCI checks passed on the exact candidate and main after merge.
+- **REL-001 — IN_PROGRESS:** integrating the v1.3.0 invoice/payment/stock/feature-guide slice on top of current main while preserving the merged concurrency fix. This is source integration only; no production deployment is authorized by this checkpoint.
+- **ADMIN-001 — IN_PROGRESS:** Platform Admin user directory/role-grant changes remain separate until reconciled with the release guide/navigation and verified on the current mainline.
+- **CI status:** the exact current main SHA 4538cf4de7f44e1a4e031f770157a780830f9259 has successful CircleCI backend-container, backend-accounting, frontend-quality, and frontend-browser-smoke checks. Vercel status contexts also reported success; this alone does not establish deployed source/version parity.
+- **Release safety:** do not mark v1.3.0 live until production web/API deployed SHA and version parity plus health/readiness and relevant safe smoke checks are verified.
 
 ---
 
-# Workflow policy checkpoint — 2026-10-27
+# Project Task Ledger
+
+> **Active index updated 2026-10-27.** The queue below is the current summary; older checkpoints are historical evidence and may describe past states. Reconcile every status with current source, GitHub, CI, and deployment evidence.
+
+## Task states
+
+Use only `TODO`, `IN_PROGRESS`, `BLOCKED`, and `VERIFIED` for current work. A state is not proof by itself: record an exact SHA and observable evidence. Say **NOT RUN** when a check was not executed. Mark **BLOCKED** when a concrete permission, approval, or infrastructure issue prevents the next gate.
+
+## Prioritized active queue
+
+| ID | Priority | Task / outcome | Accountable role | Status | Acceptance gate / evidence |
+| --- | --- | --- | --- | --- | --- |
+| GOV-001 | P1 | Publish roles, task-contract rules, PR ownership, and review/release responsibilities for every contributor. | Engineering Coordinator + Task Steward | IN_PROGRESS | `CONTRIBUTING.md`, README and PR template are aligned; applicable CI passes on the exact latest SHA. |
+| CI-001 | P1 | Keep the alternate CI path reproducible and validate the current candidate. | CI Operator + QA Owner | IN_PROGRESS | CircleCI passed all four jobs on `14009b414e226297023618452317e0777522238b` (jobs /5–/8). Later documentation commits produced new head `392b47b9d0a7712e07e022b189bb6012bc04731d`; the exact-head jobs /21–/24 were pending at the last check. Recheck before verifying. |
+| CI-002 | P1 | Classify GitHub Actions failures without spending exhausted runner allowance. | CI Operator | BLOCKED | On the latest PR head, `backend`, `frontend`, Python audit and JavaScript audit checks failed; connected job step lists were empty and log download returned 404. GitGuardian secret scan passed. The failures are unresolved infrastructure/runner evidence, not proof of application-test failure or success. Do not rerun Actions while the allowance is exhausted. |
+| REL-001 | P0 | Reconcile source version and the production API deployment before a release. | Release Operator + Repository Owner | BLOCKED | Vercel reports production web READY on SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` and production API READY on SHA `82af326ffeec2188b5b837d86af1a76763f02fc6`; newer deployment attempts were cancelled. Verify live `/version`, `/health`, `/readyz`, aliases and deployment settings, then get release approval and deploy once safely. This audit did not deploy. |
+| PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | Metadata review: #150 is 172 commits behind `main` and not mergeable; #164 is 166 behind; #173 is 8 behind / 66 ahead and overlaps #183 in CircleCI/workflow config while containing separate concurrency tests and backend changes. Other drafts use feature branches as their base. Classify each as consolidate, rebase, close-as-superseded, or keep-blocked only after inspecting unique content and dependencies. |
+| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Audit the full route-to-persistence path and test unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference denial cases against the accepted architecture/security model. Do not claim complete from source inspection alone. |
+| FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Inspect payment idempotency/allocation, invoice transitions, repeated-SKU stock checks, returns/voids, currency and rounding invariants. Run relevant PostgreSQL integration/concurrency tests on exact candidate heads before merging payment/stock changes. |
+| OPS-001 | P1 | Prove backup/restore recovers to an isolated database. | Operations / Release Operator | BLOCKED | PR #135 remains open. A backup script alone is not a restore drill; require encrypted backup, checksum verification, isolated restore, and recorded result. Never test against production. |
+| DOC-001 | P2 | Reconcile remaining documentation and task status with current source and production. | Documentation / Task Steward | IN_PROGRESS | Keep README, ADRs, runbooks, PR descriptions and the current task index consistent; preserve dated historical checkpoints but never treat them as current without reconciliation. |
+| PR-REVIEW-001 | P1 | Review high-risk open PRs in dependency order. | Engineering Coordinator + Security Reviewer | TODO | Start with CI #173/#183, payment/stock #176/#187/#189, security/permissions, and backup/recovery; then inspect older chained feature PRs. Keep Draft until exact-head gates pass; preserve unique work and avoid duplicate PRs. |
+
+## Execution order
+
+1. Finish this contributor-role and architecture-documentation correction, then verify all applicable checks on its exact new SHA.
+2. Keep production release blocked until actual aliases/version/SHA and readiness are reconciled; deployment is outside this audit.
+3. Reconcile overlapping CI work in #173 and #183, preserving the financial concurrency source/tests from #173 and browser smoke coverage from #183. Do not merge either blindly.
+4. Diagnose runner failures from available run metadata/logs. If logs remain inaccessible, keep the infrastructure blocker explicit and rely only on the CircleCI jobs actually observed passing.
+5. Triage open PRs by overlap, stale base and dependencies. Preserve unique changes and tests before closing or consolidating anything.
+6. Complete security, financial and restore verification; update each task only with exact-SHA evidence.
+
+## Audit evidence and limitations — 2026-10-27 17:31 Cairo
+
+- Reviewed `AGENTS.md`, `README.md`, `TASKS.md`, accepted ADR-001, architecture baseline, security route inventory, production deployment runbook, PR template, four GitHub workflow files, open PR metadata, PR #183 diff, CircleCI statuses and Vercel production deployment metadata.
+- Added `CONTRIBUTING.md`; aligned `docs/ARCHITECTURE_BASELINE.md` with accepted ADR-001; linked the guide from README; and added ownership/reviewer fields to the PR template.
+- CircleCI exact-head evidence before these documentation commits: all four jobs passed on `14009b414e226297023618452317e0777522238b` at links https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/5 through /8. Fresh checks on `392b47b9d0a7712e07e022b189bb6012bc04731d` must finish before GOV-001/CI-001 can be verified.
+- GitHub Actions checks fail with no accessible job-step summaries/logs; their precise root cause remains unverified. No Actions rerun, merge, production deployment, production-data mutation, secret change, or PR closure was performed.
+- Vercel production deployment metadata identifies the active READY web/API SHAs above, while newer deployment attempts were cancelled. Live endpoint version/readiness smoke was **NOT RUN** in this audit.
+- Overall audit status: **PARTIALLY COMPLETE**. Governance documentation is authored; full PR triage, security/financial regression verification, CI runner diagnosis, and production-release reconciliation remain open.
+
+---
+
+## Historical workflow policy checkpoint — 2026-10-27
 
 ## Engineering process rules (adopted)
 
@@ -929,33 +953,55 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Production smoke after merge:** API `/version` returned HTTP 200 but still reports version **1.2.0**, commit `82af326ffeec`; API `/health` returned HTTP 200. Web root returned HTTP 200. Production is therefore **not yet v1.2.1**.
 - **Deployment blockers:** the automatic frontend deployment for merge SHA `7472026c2e0b02dcdc9ea8db43574c0ff416a66b` was canceled by Vercel's Ignored Build Step because the merge commit message lacked `[release-web]`. API deployment creation previously returned HTTP 402 `api-deployments-free-per-day` with `retryAfter=86400`. Next action: trigger a tagged `[release-web] [release-api]` release commit after quota resets; verify READY deployments and production `/version`, `/health`, `/readyz` before marking release VERIFIED.
 
-## Admin-only work plan — 2026-10-27 (candidate: feat/platform-admin-user-directory-and-roles)
+---
 
-| Task | Scope / acceptance criteria | Status |
-|---|---|---|
-| ADM-01 — Inventory existing Admin work | Confirm PR #172's core screen/API is already in main; identify PR #187 as mixed inventory/payment/mobile work and port only the admin navigation portion. Avoid duplicate merges or unrelated finance changes. | VERIFIED |
-| ADM-02 — Global identity directory | List all Firebase Auth accounts, not only workspace members; cursor pagination; exact email/UID lookup; safe fields only; membership and platform-role columns shown separately; no credentials/tokens. | VERIFIED in isolated sandbox — backend suite 174 passed, 1 skipped; Firebase/Auth integration remains mocked. |
-| ADM-03 — Delegated platform RBAC | Roles: Platform Viewer, Workspace Operator, User Manager. Root remains out-of-band; no self-grants; no in-app root assignment; every grant/revoke requires a reason and creates a durable audit event in the same transaction. | IN_PROGRESS — code and tests added; execution pending |
-| ADM-04 — Admin UX and mobile access | Separate Users & Access view, Arabic/English copy, permissions explained, narrow-screen table overflow, More-menu access for Platform Admin and correct active state. | IN_PROGRESS — 10 frontend tests and Angular production build pass; authenticated browser flow pending. |
-| ADM-05 — Regression/security verification | Run focused/full backend tests, Alembic upgrade against PostgreSQL 16, frontend unit tests/build/audit, and inspect auth/data boundary. Distinguish runner failures from test failures. | IN_PROGRESS — isolated backend 174 passed/1 skipped, frontend 10 passed, Angular build, npm/pip audits, compileall, and offline Alembic SQL pass; hosted CI is red with no executable steps/logs; live PostgreSQL/browser E2E NOT RUN. |
-| ADM-06 — PR review and merge | Review complete file diff against main, evaluate required checks, create/update one Admin-only PR, merge only after applicable gates pass and confirm new main SHA. Do not merge mixed-scope PR #187 wholesale. | BLOCKED — PR #190 remains Draft; CircleCI status is error, GitHub Actions jobs expose no steps/logs; do not merge until required CI gate is resolved. |
-| ADM-07 — Production activation | Do not deploy in this task. A verified bootstrap super-admin UID must be configured out-of-band before anyone can use the root screen; current production notes say the allowlist is unset. | BLOCKED — config prerequisite; no UID guessed |
+# Automation Testing Cycle — 2026-10-27 — IN_PROGRESS / BLOCKED
 
-**Candidate source changes actually written**
-- `backend/app/models.py`, `backend/app/firebase_auth.py`, `backend/app/platform_admin_api.py`, `backend/migrations/versions/0004_platform_user_roles.py`
-- `backend/tests/test_platform_admin_api.py`
-- `frontend/src/app/api.service.ts`, `frontend/src/app/platform-admin.component.ts`, `frontend/src/app/app.component.ts`
-- `frontend/src/app/mobile-navigation.spec.ts`, `frontend/src/app/platform-admin-user-management.spec.ts`
-- `docs/PLATFORM_ADMIN_SCOPE.md`, `TASKS.md`
+This section records the current automation-testing workstream and supersedes earlier status claims for this cycle.
 
-**Current validation truth:** no local repository checkout/network runner was available in this session; direct HTTPS to GitHub failed DNS resolution. Source code and regression tests have been committed on the feature branch, but tests/build/migrations for this exact candidate have not been run. The branch's GitHub status currently reports CircleCI Pipeline = error; that must be inspected, not marked green. No production database, secret/configuration or deployment was changed.
+## Reconciliation since the prior checkpoint
+
+- Merged current `main` commit `068936f5973c695b8f61840143bd8acb37dc8baa` into this branch with merge commit `c97e71bac1846bec6015490f2680d4d1fe29f6f7`.
+- Reviewed the resulting three-way diff and found stale branch versions that would have reverted the API/package version to 1.2.0, weakened repeated-line stock validation, and deleted regression tests and the release-candidate checklist. Commit `1c49dc7fb309e873edf14cd24f0294d9a93ee76a` restored those paths to current-main blobs.
+- GitHub comparison now reports zero commits behind main and exactly four intended changed files: `.circleci/config.yml`, `TASKS.md`, `frontend/e2e/startup.spec.ts`, and `frontend/playwright.config.ts`. This is diff reconciliation only; it is not a passing test result.
+
+## Ordered execution and evidence
+
+1. **Disable the exhausted GitHub Actions path: VERIFIED.** Removed `.github/workflows/frontend-e2e.yml` from `automation-testing-e2e` in commit `fc7da57be5715fcd65783fccc2740b459a85021f`. This prevents this newly added browser workflow from automatically consuming GitHub Actions minutes. No GitHub Actions workflow was manually dispatched or re-run.
+2. **Make browser tests deterministic: IMPLEMENTED, execution NOT RUN.** Updated `frontend/e2e/startup.spec.ts` in commit `20dd9c662c9870ef53c4212fb4e56596aabdd58e` to mock `/runtime-config.json` with intentionally incomplete public configuration. Tests can exercise the explicit setup screen and Arabic/English direction changes without contacting Firebase, a live API, or modifying production data.
+3. **Alternative runner config: PRESENT; YAML syntax/structure VERIFIED, hosted execution BLOCKED.** `.circleci/config.yml` defines disposable PostgreSQL + Alembic/pytest, frontend test/build/audit, Playwright Chromium, Python audit, and a disposable backend container build. PyYAML successfully parsed the config and confirmed the required jobs/workflows. This is not CircleCI schema validation or a pipeline run. No CircleCI connector is available in the connected tools.
+4. **Latest validation: PARTIAL / historical evidence only.** GitGuardian completed successfully on `fc7da57be5715fcd65783fccc2740b459a85021f` with no secrets detected across 10 scanned commits. The earlier Vercel Preview on `e65e46920f4634bbf1a1d75cbcca99630803ad84` reported 12 frontend tests passed and a successful Angular production bundle; neither result validates the current branch head or Playwright.
+5. **Runner fallback attempts: BLOCKED.** A Vercel Preview request for the current head was rejected with HTTP 402 `api-deployments-free-per-day` (retry after 24 hours). Attempting to create a sandbox directly from the private Git repository failed at `git clone`; an existing isolated sandbox could validate YAML syntax only, not run the full repo. Desktop Commander is offline.
+6. **Automation cycle acceptance: BLOCKED — do not mark VERIFIED.** Required remaining evidence: a real CircleCI pipeline on the latest branch head showing backend/PostgreSQL migrations and tests, frontend tests/build/audit, Playwright browser smoke results, and container build/import check. If CircleCI is not already linked, enable the project and trigger on the branch; then fix any actual failures and update this ledger with the run URL and result.
+
+## Current branch / PR
+
+- Branch: `automation-testing-e2e`
+- Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Reconciliation commits are listed above; this ledger update will itself advance the branch head.
+- PR #183: draft/open, not merged. GitHub currently reports mergeable=true, merge state `unstable` with no status checks; latest source compare was ahead 17 / behind 0 and showed only the four intended files: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
+- No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
+
+---
+
+---
 
 
-## Admin execution checkpoint — 2026-10-27 15:25 UTC
+## CircleCI execution evidence — 2026-10-27
 
-- **ADM-01 — VERIFIED:** Compared `feat/platform-admin-user-directory-and-roles` against `main`: 26 commits ahead, 0 behind; changed-file summary is confined to Platform Admin API/model/migration/tests, Admin UI/mobile navigation, API service, scope docs, and this ledger. Existing PR #190 is the Admin-only review candidate; PR #187 remains mixed inventory/payment/mobile work and is not merged as part of this task.
-- **ADM-02/03/04 — implementation present; verification BLOCKED:** Firebase user subjects match the backend principal format `firebase:{project_id}:{uid}`; root access is based on the server-side `PLATFORM_SUPER_ADMIN_UIDS` allowlist; delegated grants are DB-backed and paired with audit events in one transaction. Tests/UI structural checks are authored but are not proof of execution.
-- **ADM-05 — BLOCKED by inspectable CI:** GitHub Actions runs on the candidate reported failure for backend/frontend (run `40525288432`), backend tests (`40525288136`), dependency security scan (`40525287922`), and backend container (`40525287897`). Jobs returned no executable steps; job-log retrieval returned `BlobNotFound`. This is insufficient evidence to classify source tests as failed or passed. No exact-candidate local test/build, PostgreSQL 16 migration/integration, container build, or signed-in Firebase browser flow was run in this session.
-- **ADM-06 — BLOCKED / not merged:** PR #190 remains the candidate to review; do not merge until required checks are inspectable and applicable gates pass. Current `main` base observed during compare: `068936f5973c695b8f61840143bd8acb37dc8baa`; feature head is 26 commits ahead and 0 behind at time of compare. No merge SHA exists for this work.
-- **ADM-07 — BLOCKED / no deployment:** Production allowlist remains a separately managed prerequisite. No UID was guessed; no production secrets, configuration, database, or deployment were changed.
-- **Next action:** obtain an authorized runner that can execute the exact candidate checks (or restore GitHub Actions runner allocation), run backend and frontend tests/build/audits, apply migration to disposable PostgreSQL 16, build the backend container, then re-check PR review/status and merge only if all required gates pass.
+- **VERIFIED on commit `c86c18c139b2d1dc1b8b1a45382692d94b0b9a50`:** GitHub commit status API reports all four `verify-all-changes` CircleCI jobs as `success`: `backend-accounting` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/1), `frontend-quality` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/2), `backend-container` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/3), and `frontend-browser-smoke` (https://circleci.com/gh/AbdullahOmaar/ai-business-assistant/4). Status timestamps were 2026-10-27 14:03:58–14:04:40 UTC.
+- **Separate outstanding checks:** GitHub Actions check-runs on the same SHA report failures for `backend`, `frontend`, `Audit Python dependencies`, and `Audit JavaScript dependencies`; GitGuardian secret scan succeeded. These are distinct from the four successful CircleCI jobs. Logs could not be retrieved through the available connector (GitHub log download returned 404), so the cause of those failures is not asserted. Do not rerun GitHub Actions while the runner allowance is exhausted.
+- PR #183 remains Draft/open/unmerged. GitHub comparison reports branch `automation-testing-e2e` ahead 18 and behind 0 relative to `main`; changed files remain the four intended paths. CircleCI evidence above is for the exact SHA shown, not for any later commit.
+- **Next gate:** inspect the CircleCI job pages/artifacts and determine whether the separate GitHub Actions checks are required or are stale/unavailable before changing PR readiness. No production deploy or merge performed.
+
+## Platform Admin execution — 2026-10-27
+
+- **Single-branch workflow:** continue in `feat/platform-admin-user-directory-and-roles`; do not create a second Admin feature branch.
+- **ADM-01 — Reconcile with current main:** IN_PROGRESS until the merge commit and post-merge-base checks are verified.
+- **ADM-02 — Global Firebase user directory:** code/tests already exist on the candidate branch; verify exact-email/UID lookup, cursor pagination, no workspace-membership requirement, and safe response fields.
+- **ADM-03 — Delegated roles and audit:** verify server-side bootstrap root allowlist, no self-grant/root assignment, disabled-account rejection, meaningful reason, durable grant/revoke audit, and authorization denial cases.
+- **ADM-04 — Admin UI/mobile navigation:** retain current main navigation and add the Users & Access flow, responsive directory, and bilingual role-management UI.
+- **ADM-05 — Validation:** run focused/full backend tests, frontend unit tests/build, dependency audits, and migration/schema-drift checks against the reconciled source. Live authenticated Firebase browser E2E and container build remain separate gates until run.
+- **ADM-06 — Merge gate:** keep PR #190 Draft until current-head required checks and review gates pass; do not bypass protection.
+- **ADM-07 — Production activation:** NOT AUTHORIZED in this task. Do not set production secrets or guess a bootstrap UID; no production deployment or DB mutation.
+- **Evidence note:** a previous sandbox snapshot failed test collection because its `app/api.py` imported `record_payment` missing from that snapshot's `app/services.py`. This is a stale/inconsistent test-source finding; it is not a passing test and must be rechecked against the reconciled branch.
+

@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide.ts';
+
+test('feature catalogue has unique sections and bilingual user-facing content', () => {
+  const ids = FEATURE_CATALOG.map((section) => section.id);
+
+  assert.ok(ids.length > 0);
+  assert.equal(new Set(ids).size, ids.length);
+
+  for (const section of FEATURE_CATALOG) {
+    assert.ok(section.titleAr.trim(), `Arabic section title missing: ${section.id}`);
+    assert.ok(section.titleEn.trim(), `English section title missing: ${section.id}`);
+    assert.ok(section.noteAr.trim(), `Arabic section note missing: ${section.id}`);
+    assert.ok(section.noteEn.trim(), `English section note missing: ${section.id}`);
+    assert.ok(section.features.length > 0, `Section has no features: ${section.id}`);
+
+    for (const feature of section.features) {
+      assert.ok(feature.titleAr.trim(), `Arabic feature title missing: ${section.id}`);
+      assert.ok(feature.titleEn.trim(), `English feature title missing: ${section.id}`);
+      assert.ok(feature.detailAr.trim(), `Arabic feature detail missing: ${section.id}`);
+      assert.ok(feature.detailEn.trim(), `English feature detail missing: ${section.id}`);
+    }
+  }
+});
+
+test('release history has unique semantic versions in newest-first order', () => {
+  const versions = RELEASE_HISTORY.map((release) => release.version);
+  const parse = (version: string) => {
+    assert.match(version, /^\d+\.\d+\.\d+$/, `Invalid semantic version: ${version}`);
+    return version.split('.').map(Number);
+  };
+
+  assert.ok(versions.length > 0);
+  assert.equal(new Set(versions).size, versions.length);
+
+  for (let index = 1; index < versions.length; index += 1) {
+    const previous = parse(versions[index - 1]);
+    const current = parse(versions[index]);
+    const previousValue = previous[0] * 1_000_000 + previous[1] * 1_000 + previous[2];
+    const currentValue = current[0] * 1_000_000 + current[1] * 1_000 + current[2];
+    assert.ok(previousValue > currentValue, `${versions[index - 1]} must precede ${versions[index]}`);
+  }
+});
+
+test('every release has concise Arabic and English titles and matching change lists', () => {
+  for (const release of RELEASE_HISTORY) {
+    assert.ok(release.titleAr.trim(), `Arabic release title missing: ${release.version}`);
+    assert.ok(release.titleEn.trim(), `English release title missing: ${release.version}`);
+    assert.ok(release.changesAr.length > 0, `Arabic changes missing: ${release.version}`);
+    assert.equal(
+      release.changesAr.length,
+      release.changesEn.length,
+      `Arabic/English change count differs: ${release.version}`,
+    );
+    assert.ok(release.changesAr.every((change) => change.trim().length > 0));
+    assert.ok(release.changesEn.every((change) => change.trim().length > 0));
+  }
+});
+
+test('v1.3.0 release notes cover invoice payments, opening stock, and the feature guide', () => {
+  const latest = RELEASE_HISTORY[0];
+
+  assert.equal(latest.version, '1.3.0');
+  assert.match(latest.changesEn.join(' '), /invoice/i);
+  assert.match(latest.changesEn.join(' '), /opening quantities/i);
+  assert.match(latest.changesEn.join(' '), /in-app.*guide/i);
+});

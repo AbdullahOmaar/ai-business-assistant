@@ -1105,9 +1105,25 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
         items = session.scalars(select(Invoice).where(
             Invoice.business_id == business_id
         ).order_by(Invoice.created_at.desc()).offset(offset).limit(limit)).all()
-        return [_dict(x, ("id", "invoice_number", "customer_id", "status", "currency_code",
-                          "subtotal", "discount_total", "tax_total", "total", "issue_date", "created_at"))
-                for x in items]
+        allocation_rows = session.execute(
+            select(PaymentAllocation.invoice_id, func.coalesce(func.sum(PaymentAllocation.amount), 0))
+            .where(PaymentAllocation.business_id == business_id)
+            .group_by(PaymentAllocation.invoice_id)
+        ).all()
+        allocated_by_invoice = {
+            invoice_id: Decimal(str(amount or ZERO))
+            for invoice_id, amount in allocation_rows
+        }
+        result = []
+        for invoice in items:
+            row = _dict(invoice, ("id", "invoice_number", "customer_id", "status", "currency_code",
+                                  "subtotal", "discount_total", "tax_total", "total", "issue_date", "created_at"))
+            allocated = allocated_by_invoice.get(invoice.id, ZERO)
+            outstanding = max(ZERO, Decimal(str(invoice.total)) - allocated) if invoice.status == "issued" else ZERO
+            row["allocated_payments"] = str(allocated)
+            row["outstanding_amount"] = str(outstanding)
+            result.append(row)
+        return result
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
