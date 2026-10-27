@@ -105,9 +105,15 @@ The route inventory is broader than current negative integration tests. Add expl
 - Existing explicit OWNER-only checks observed for invoice issue/void, payment recording, direct stock movements, purchase-order approval/receiving, sales-return approval, recurring-invoice creation, pricing-rule creation, notification creation, settings writes, CSV import/export, customer/product deactivation, product price or stock-tracking changes, membership changes, operational health, audit-event reads, and data-integrity reporting.
 - Many ordinary CRUD, expense/supplier, return-creation, and report routes currently use membership authorization. Whether STAFF should have those powers is a product/business-policy question; this audit does **not** infer permission from current implementation and does not broaden or narrow these routes without an approved matrix.
 
-### Follow-up: repeated route declarations
+### SEC-002 — duplicate route declarations consolidated on candidate
 
-Static source inspection found repeated GET handler definitions in `backend/app/extended_api.py` for `/recurring-invoices`, `/operations/health`, and `/reports/tax-summary`. Their bodies appear materially similar in the inspected snippets, but runtime route-selection behavior has not been tested. Track this separately: compare whole function bodies, consolidate safely, and add a route-table regression test that asserts one handler per method/path.
+Static source inspection found identical repeated GET handlers. The candidate removes the later duplicate definitions and keeps the first implementation for each path:
+
+- `GET /api/v1/businesses/{business_id}/recurring-invoices`: 2 declarations → 1.
+- `GET /api/v1/businesses/{business_id}/operations/health`: 3 declarations → 1.
+- `GET /api/v1/businesses/{business_id}/reports/tax-summary`: 3 declarations → 1.
+
+Regression test: `backend/tests/test_extended_api_route_registration.py::test_extended_api_registers_each_reported_get_route_once` checks exactly one GET route for each path. The test and the API change are on the existing audit branch; runtime test execution and exact-head CircleCI remain pending. Do not mark this item VERIFIED until backend accounting and the route test pass.
 
 ### Validation boundary
 
