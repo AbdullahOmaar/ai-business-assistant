@@ -5,13 +5,14 @@ import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatemen
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
+import { PlatformAdminComponent } from './platform-admin.component';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'assistant' | 'reports' | 'audit' | 'platform-admin';
 
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="mobileMoreOpen = false">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -58,6 +59,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('التنقل الرئيسي', 'Main navigation')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
+          @if (platformAdminAvailable) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('إدارة المنصة', 'Platform admin')" [attr.title]="t('إدارة المنصة', 'Platform admin')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
@@ -81,6 +83,9 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
           <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('جلسة موثّقة', 'Verified session') }}<small>{{ t('يتحقق الخادم من صلاحيات مساحة العمل', 'The server verifies workspace permissions') }}</small></div>
         </aside>
         <main class="main">
+          @if (tab === 'platform-admin' && platformAdminAvailable) {
+            <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
+          } @else {
           <div class="mobile-version-row"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span></div>
           <header class="topbar">
             <div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
@@ -336,6 +341,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
             }
           }
           <footer>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }} <span>{{ t('جلسة Firebase موثّقة · واجهة API معزولة حسب النشاط · قاعدة بيانات PostgreSQL', 'Verified Firebase session · business-scoped API · PostgreSQL database') }}</span></footer>
+          }
         </main>
       }
     </div>
@@ -461,6 +467,7 @@ export class AppComponent implements OnInit {
   initialized = false;
   setupNeeded = false;
   signedIn = false;
+  platformAdminAvailable = false;
   signingUp = false;
   loading = false;
   error = '';
@@ -659,6 +666,7 @@ export class AppComponent implements OnInit {
       if (user) {
         this.signedIn = true;
         this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+        await this.checkPlatformAdminAccess();
         await this.loadBusinesses();
       }
     } catch (error) {
@@ -679,9 +687,21 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات'
+      payments: 'المدفوعات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+  }
+
+  private async checkPlatformAdminAccess(): Promise<void> {
+    this.platformAdminAvailable = false;
+    try {
+      const access = await this.api.platformAdminAccess();
+      this.platformAdminAvailable = access.is_platform_admin === true;
+    } catch {
+      // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
+      this.platformAdminAvailable = false;
+      if (this.tab === 'platform-admin') this.tab = 'overview';
+    }
   }
 
   async submitAuth(): Promise<void> {
@@ -693,6 +713,7 @@ export class AppComponent implements OnInit {
         : await this.auth.signIn(this.email, this.password);
       this.signedIn = true;
       this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+      await this.checkPlatformAdminAccess();
       await this.loadBusinesses();
     } catch (error) {
       this.error = this.message(error, 'auth');
@@ -706,6 +727,8 @@ export class AppComponent implements OnInit {
     try {
       await this.auth.signOut();
       this.signedIn = false;
+      this.platformAdminAvailable = false;
+      this.tab = 'overview';
       this.businesses = [];
       this.business = null;
       this.dashboard = null;
@@ -738,6 +761,7 @@ export class AppComponent implements OnInit {
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
+        if (this.platformAdminAvailable) this.tab = 'platform-admin';
         this.clearWorkspaceData();
         return;
       }
@@ -994,6 +1018,10 @@ export class AppComponent implements OnInit {
   }
 
   setTab(tab: Tab): void {
+    if (tab === 'platform-admin' && !this.platformAdminAvailable) {
+      this.tab = 'overview';
+      return;
+    }
     this.tab = tab;
     this.error = '';
     this.mobileMoreOpen = false;
