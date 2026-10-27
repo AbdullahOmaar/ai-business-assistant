@@ -18,7 +18,11 @@ from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
-from app.models import AuditEvent, Business, BusinessMembership, Invoice, Payment
+from app.firebase_auth import get_firebase_admin_app
+from app.models import (
+    AuditEvent, Business, BusinessMembership, Invoice, Payment,
+    PlatformAdminAuditEvent, PlatformRoleGrant,
+)
 from app.security import AuthenticatedPrincipal
 
 router = APIRouter(prefix="/api/v1/platform-admin", tags=["platform administration"])
@@ -48,25 +52,97 @@ def _log_security_event(
     logger.log(level, json.dumps(payload, separators=(",", ":"), ensure_ascii=True))
 
 
-def _require_platform_admin(principal: AuthenticatedPrincipal, request: Request) -> None:
-    """Fail closed unless the verified identity is explicitly allowlisted by ops."""
+PLATFORM_ROOT_PERMISSIONS = frozenset({
+    "view_overview", "view_workspaces", "view_audit", "view_system_status",
+    "view_users", "manage_workspace_status", "manage_platform_roles",
+})
+PLATFORM_ROLE_PERMISSIONS = {
+    "platform_viewer": frozenset({
+        "view_overview", "view_workspaces", "view_audit", "view_system_status",
+    }),
+    "workspace_operator": frozenset({
+        "view_overview", "view_workspaces", "view_audit", "view_system_status",
+        "manage_workspace_status",
+    }),
+    "user_manager": frozenset({
+        "view_overview", "view_workspaces", "view_audit", "view_system_status",
+        "view_users",
+    }),
+}
+PLATFORM_ROLE_LABELS = {
+    "platform_viewer": "Platform Viewer",
+    "workspace_operator": "Workspace Operator",
+    "user_manager": "User Manager",
+}
+
+
+def _configured_super_admin_subjects() -> set[str]:
     configured = os.getenv("PLATFORM_SUPER_ADMIN_UIDS", "")
-    allowed_subjects = {
+    return {
         item.strip()
         for item in configured.replace(";", ",").split(",")
         if item.strip()
     }
-    if not allowed_subjects or principal.subject not in allowed_subjects:
-        _log_security_event(
-            "platform_admin.access_denied",
-            request,
-            principal.subject,
-            "denied",
-            target_type="route",
-            target_id=request.url.path,
-            level=logging.WARNING,
+
+
+def _platform_roles_and_permissions(
+    principal: AuthenticatedPrincipal, session: Session
+) -> tuple[list[str], frozenset[str], bool]:
+    """Resolve grants only from the server DB or the protected bootstrap allowlist."""
+    if principal.subject in _configured_super_admin_subjects():
+        return ["platform_super_admin"], PLATFORM_ROOT_PERMISSIONS, True
+
+    grants = session.scalars(
+        select(PlatformRoleGrant.role).where(
+            PlatformRoleGrant.user_subject == principal.subject,
+            PlatformRoleGrant.is_active.is_(True),
         )
-        raise HTTPException(status_code=403, detail="Platform administrator access is not granted.")
+    ).all()
+    roles = sorted({role for role in grants if role in PLATFORM_ROLE_PERMISSIONS})
+    permissions: set[str] = set()
+    for role in roles:
+        permissions.update(PLATFORM_ROLE_PERMISSIONS[role])
+    return roles, frozenset(permissions), False
+
+
+def _deny_platform_access(principal: AuthenticatedPrincipal, request: Request) -> None:
+    _log_security_event(
+        "platform_admin.access_denied",
+        request,
+        principal.subject,
+        "denied",
+        target_type="route",
+        target_id=request.url.path,
+        level=logging.WARNING,
+    )
+    raise HTTPException(status_code=403, detail="Platform administrator access is not granted.")
+
+
+def _require_platform_permission(
+    principal: AuthenticatedPrincipal,
+    request: Request,
+    session: Session,
+    permission: str,
+) -> tuple[list[str], frozenset[str], bool]:
+    roles, permissions, is_super_admin = _platform_roles_and_permissions(principal, session)
+    if permission not in permissions:
+        _deny_platform_access(principal, request)
+    return roles, permissions, is_super_admin
+
+
+def _require_platform_admin(
+    principal: AuthenticatedPrincipal, request: Request, session: Session
+) -> tuple[list[str], frozenset[str], bool]:
+    """Compatibility guard for read-only platform sections."""
+    return _require_platform_permission(principal, request, session, "view_overview")
+
+
+def _require_platform_super_admin(
+    principal: AuthenticatedPrincipal, request: Request
+) -> None:
+    """Only the out-of-band bootstrap super-admin may assign delegated platform roles."""
+    if principal.subject not in _configured_super_admin_subjects():
+        _deny_platform_access(principal, request)
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -116,20 +192,30 @@ class BusinessStatusInput(BaseModel):
 @router.get("/access")
 def platform_admin_access(
     request: Request,
+    session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
-) -> dict[str, bool]:
-    """A minimal authorization probe used to decide whether to render admin navigation."""
-    _require_platform_admin(principal, request)
-    return {"is_platform_admin": True}
+) -> dict:
+    """Return the caller's effective platform role and permission set."""
+    roles, permissions, is_super_admin = _platform_roles_and_permissions(principal, session)
+    if not permissions:
+        _deny_platform_access(principal, request)
+    return {
+        "is_platform_admin": True,
+        "is_platform_super_admin": is_super_admin,
+        "roles": roles,
+        "permissions": sorted(permissions),
+    }
+
 
 
 @router.get("/system-status")
 def platform_admin_system_status(
     request: Request,
+    session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Expose only safe runtime/readiness metadata to an authorized platform admin."""
-    _require_platform_admin(principal, request)
+    _require_platform_permission(principal, request, session, "view_system_status")
 
     checked_at = datetime.now(timezone.utc).isoformat()
     factory = getattr(request.app.state, "session_factory", None)
@@ -137,11 +223,10 @@ def platform_admin_system_status(
         database_status = "unconfigured"
     else:
         try:
-            with factory() as session:
-                session.execute(text("SELECT 1"))
+            with factory() as status_session:
+                status_session.execute(text("SELECT 1"))
             database_status = "healthy"
         except Exception:
-            # Never expose driver messages, DSNs, schema names, or exception text.
             database_status = "unavailable"
 
     project_configured = bool(os.getenv("FIREBASE_PROJECT_ID", "").strip())
@@ -177,6 +262,7 @@ def platform_admin_system_status(
     }
 
 
+
 @router.get("/overview")
 def platform_admin_overview(
     request: Request,
@@ -184,7 +270,7 @@ def platform_admin_overview(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Return real platform-level counts; financial totals remain separated by currency."""
-    _require_platform_admin(principal, request)
+    _require_platform_admin(principal, request, session)
 
     business_total = int(session.scalar(select(func.count(Business.id))) or 0)
     active_businesses = int(session.scalar(
@@ -266,7 +352,7 @@ def list_platform_businesses(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Search platform workspaces with bounded pagination and no destructive operations."""
-    _require_platform_admin(principal, request)
+    _require_platform_admin(principal, request, session)
 
     member_count = (
         select(func.count(BusinessMembership.id))
@@ -320,7 +406,7 @@ def platform_business_details(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read business metadata and membership roles; never returns credentials or tokens."""
-    _require_platform_admin(principal, request)
+    _require_platform_admin(principal, request, session)
     business = session.get(Business, business_id)
     if business is None:
         raise HTTPException(status_code=404, detail="Business not found.")
@@ -357,7 +443,7 @@ def update_platform_business_status(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Activate/deactivate workspace access with a required reason and an audit event."""
-    _require_platform_admin(principal, request)
+    _require_platform_permission(principal, request, session, "manage_workspace_status")
     reason = body.reason.strip()
     if len(reason) < 3:
         raise HTTPException(status_code=422, detail="A meaningful reason (at least 3 characters) is required.")
@@ -421,7 +507,7 @@ def platform_audit_events(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Read-only, paginated platform audit stream; audit mutations are not exposed."""
-    _require_platform_admin(principal, request)
+    _require_platform_admin(principal, request, session)
     created_after = _normalize_datetime(created_after)
     created_before = _normalize_datetime(created_before)
     if created_after and created_before and created_after > created_before:
@@ -484,7 +570,7 @@ def export_platform_audit_events(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> Response:
     """Export a bounded, redacted platform audit view; export activity is security-logged."""
-    _require_platform_admin(principal, request)
+    _require_platform_admin(principal, request, session)
     created_after = _normalize_datetime(created_after)
     created_before = _normalize_datetime(created_before)
     if created_after and created_before and created_after > created_before:
@@ -545,3 +631,290 @@ def export_platform_audit_events(
             "X-Export-Truncated": "true" if truncated else "false",
         },
     )
+
+class PlatformRoleChangeInput(BaseModel):
+    role: Literal["platform_viewer", "workspace_operator", "user_manager"]
+    active: bool
+    reason: str = Field(min_length=3, max_length=500)
+
+
+def _firebase_timestamp(milliseconds: object) -> str | None:
+    if not isinstance(milliseconds, (int, float)) or milliseconds <= 0:
+        return None
+    try:
+        return datetime.fromtimestamp(float(milliseconds) / 1000, tz=timezone.utc).isoformat()
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _platform_user_subject(project_id: str, uid: str) -> str:
+    return f"firebase:{project_id}:{uid}"
+
+
+def _platform_user_payload(user: object, project_id: str, roles_by_subject: dict[str, list[str]],
+                           membership_by_subject: dict[str, list[dict]]) -> dict:
+    uid = str(getattr(user, "uid", ""))
+    subject = _platform_user_subject(project_id, uid)
+    metadata = getattr(user, "user_metadata", None)
+    is_super_admin = subject in _configured_super_admin_subjects()
+    roles = ["platform_super_admin"] if is_super_admin else roles_by_subject.get(subject, [])
+    return {
+        "uid": uid,
+        "subject": subject,
+        "display_name": getattr(user, "display_name", None) or "",
+        "email": getattr(user, "email", None) or "",
+        "email_verified": bool(getattr(user, "email_verified", False)),
+        "disabled": bool(getattr(user, "disabled", False)),
+        "created_at": _firebase_timestamp(getattr(metadata, "creation_timestamp", None)),
+        "last_sign_in_at": _firebase_timestamp(getattr(metadata, "last_sign_in_timestamp", None)),
+        "is_platform_super_admin": is_super_admin,
+        "roles": roles,
+        "memberships": membership_by_subject.get(subject, []),
+    }
+
+
+def _load_user_role_and_membership_maps(
+    session: Session, subjects: list[str]
+) -> tuple[dict[str, list[str]], dict[str, list[dict]]]:
+    if not subjects:
+        return {}, {}
+    grants = session.scalars(
+        select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject.in_(subjects),
+            PlatformRoleGrant.is_active.is_(True),
+        ).order_by(PlatformRoleGrant.role.asc())
+    ).all()
+    roles_by_subject: dict[str, list[str]] = {}
+    for grant in grants:
+        if grant.role in PLATFORM_ROLE_PERMISSIONS:
+            roles_by_subject.setdefault(grant.user_subject, []).append(grant.role)
+
+    memberships = session.execute(
+        select(BusinessMembership, Business.name)
+        .join(Business, Business.id == BusinessMembership.business_id)
+        .where(BusinessMembership.user_subject.in_(subjects))
+        .order_by(Business.name.asc(), BusinessMembership.role.asc())
+    ).all()
+    membership_by_subject: dict[str, list[dict]] = {}
+    for membership, business_name in memberships:
+        membership_by_subject.setdefault(membership.user_subject, []).append({
+            "business_id": str(membership.business_id),
+            "business_name": business_name,
+            "role": membership.role.value,
+        })
+    return roles_by_subject, membership_by_subject
+
+
+@router.get("/users")
+def list_platform_users(
+    request: Request,
+    q: str | None = Query(default=None, max_length=254),
+    page_token: str | None = Query(default=None, max_length=4096),
+    limit: int = Query(default=25, ge=1, le=100),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+) -> dict:
+    """List all Firebase Auth accounts, including users with no workspace membership.
+
+    Firebase Auth supports opaque cursor pagination. A non-empty q is an exact
+    email or UID lookup, not a misleading server-wide substring search.
+    """
+    _require_platform_permission(principal, request, session, "view_users")
+    project_id = os.getenv("FIREBASE_PROJECT_ID", "").strip()
+    if not project_id:
+        raise HTTPException(status_code=503, detail="Firebase user directory is not configured.")
+
+    from firebase_admin import auth
+
+    firebase_app = get_firebase_admin_app()
+    next_page_token: str | None = None
+    try:
+        if q and q.strip():
+            query = q.strip()
+            try:
+                user = (
+                    auth.get_user_by_email(query, app=firebase_app)
+                    if "@" in query else auth.get_user(query, app=firebase_app)
+                )
+            except Exception as exc:
+                if type(exc).__name__ in {"UserNotFoundError", "UserNotFoundException"}:
+                    user = None
+                else:
+                    _log_security_event(
+                        "platform_admin.user_directory_failed", request, principal.subject,
+                        "error", target_type="user_directory", level=logging.ERROR,
+                    )
+                    raise HTTPException(status_code=503, detail="Firebase user directory is temporarily unavailable.") from exc
+            users = [user] if user is not None else []
+        else:
+            page = auth.list_users(page_token=page_token or None, max_results=limit, app=firebase_app)
+            users = list(page.users)
+            next_page_token = page.next_page_token or None
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _log_security_event(
+            "platform_admin.user_directory_failed", request, principal.subject,
+            "error", target_type="user_directory", level=logging.ERROR,
+        )
+        raise HTTPException(status_code=503, detail="Firebase user directory is temporarily unavailable.") from exc
+
+    subjects = [_platform_user_subject(project_id, str(getattr(user, "uid", ""))) for user in users]
+    roles_by_subject, membership_by_subject = _load_user_role_and_membership_maps(session, subjects)
+    return {
+        "items": [
+            _platform_user_payload(user, project_id, roles_by_subject, membership_by_subject)
+            for user in users
+            if getattr(user, "uid", None)
+        ],
+        "limit": limit,
+        "next_page_token": next_page_token,
+        "has_more": bool(next_page_token),
+        "search_mode": "exact_email_or_uid" if q and q.strip() else "cursor_pagination",
+        "limitations": [
+            "Firebase Auth is authoritative for account identity; workspace memberships are shown separately.",
+            "A search query matches an exact email or UID. Blank search lists every account in cursor-paginated batches.",
+            "Passwords, ID tokens, refresh tokens and provider credentials are never returned.",
+        ],
+    }
+
+
+@router.post("/users/{user_uid}/roles")
+def change_platform_user_role(
+    user_uid: str,
+    body: PlatformRoleChangeInput,
+    request: Request,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+) -> dict:
+    """Grant or revoke a bounded delegated role; root admin cannot be granted in-app."""
+    _require_platform_super_admin(principal, request)
+    reason = body.reason.strip()
+    if len(reason) < 3:
+        raise HTTPException(status_code=422, detail="A meaningful reason (at least 3 characters) is required.")
+    if not user_uid or len(user_uid) > 128 or "/" in user_uid:
+        raise HTTPException(status_code=422, detail="A valid Firebase user UID is required.")
+
+    project_id = os.getenv("FIREBASE_PROJECT_ID", "").strip()
+    if not project_id:
+        raise HTTPException(status_code=503, detail="Firebase user directory is not configured.")
+    target_subject = _platform_user_subject(project_id, user_uid)
+    if target_subject == principal.subject:
+        raise HTTPException(status_code=409, detail="Administrators cannot change their own platform grants.")
+    if target_subject in _configured_super_admin_subjects():
+        raise HTTPException(status_code=409, detail="Bootstrap super-admin access is managed outside this screen.")
+
+    if body.active:
+        from firebase_admin import auth
+        firebase_app = get_firebase_admin_app()
+        try:
+            auth.get_user(user_uid, app=firebase_app)
+        except Exception as exc:
+            if type(exc).__name__ in {"UserNotFoundError", "UserNotFoundException"}:
+                raise HTTPException(status_code=404, detail="Firebase user not found.") from exc
+            _log_security_event(
+                "platform_admin.user_role_change_failed", request, principal.subject,
+                "error", target_type="user", target_id=user_uid, level=logging.ERROR,
+            )
+            raise HTTPException(status_code=503, detail="Firebase user directory is temporarily unavailable.") from exc
+
+    try:
+        grant = session.scalar(
+            select(PlatformRoleGrant).where(
+                PlatformRoleGrant.user_subject == target_subject,
+                PlatformRoleGrant.role == body.role,
+            ).with_for_update()
+        )
+        changed = grant is None or bool(grant.is_active) != body.active
+        if not changed:
+            return {
+                "changed": False, "active": body.active, "role": body.role,
+                "message": "The requested role state is already in effect.",
+            }
+
+        now = datetime.now(timezone.utc)
+        if grant is None:
+            grant = PlatformRoleGrant(
+                user_subject=target_subject,
+                role=body.role,
+                is_active=body.active,
+                granted_by_subject=principal.subject,
+                granted_at=now,
+                revoked_by_subject=None if body.active else principal.subject,
+                revoked_at=None if body.active else now,
+                last_reason=reason,
+            )
+            session.add(grant)
+        else:
+            grant.is_active = body.active
+            grant.last_reason = reason
+            if body.active:
+                grant.granted_by_subject = principal.subject
+                grant.granted_at = now
+                grant.revoked_by_subject = None
+                grant.revoked_at = None
+            else:
+                grant.revoked_by_subject = principal.subject
+                grant.revoked_at = now
+
+        action = "platform.user_role.granted" if body.active else "platform.user_role.revoked"
+        session.add(PlatformAdminAuditEvent(
+            actor_subject=principal.subject,
+            action=action,
+            target_subject=target_subject,
+            role=body.role,
+            reason=reason,
+        ))
+        session.commit()
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception as exc:
+        session.rollback()
+        _log_security_event(
+            "platform_admin.user_role_change_failed", request, principal.subject,
+            "error", target_type="user", target_id=user_uid, level=logging.ERROR,
+        )
+        raise HTTPException(status_code=500, detail="The platform role change could not be saved.") from exc
+
+    _log_security_event(
+        "platform_admin.user_role_changed", request, principal.subject,
+        "success", target_type="user", target_id=user_uid,
+    )
+    return {
+        "changed": True, "active": body.active, "role": body.role,
+        "message": "Platform access change saved and recorded in the audit log.",
+    }
+
+
+@router.get("/role-audit-events")
+def list_platform_role_audit_events(
+    request: Request,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=1000000),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+) -> dict:
+    """Read-only, paginated history of delegated platform role changes."""
+    _require_platform_admin(principal, request, session)
+    total = int(session.scalar(select(func.count(PlatformAdminAuditEvent.id))) or 0)
+    events = session.scalars(
+        select(PlatformAdminAuditEvent)
+        .order_by(PlatformAdminAuditEvent.created_at.desc(), PlatformAdminAuditEvent.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [{
+            "id": str(event.id),
+            "actor_subject": event.actor_subject,
+            "action": event.action,
+            "target_subject": event.target_subject,
+            "role": event.role,
+            "reason": event.reason,
+            "created_at": _iso(event.created_at),
+        } for event in events],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
