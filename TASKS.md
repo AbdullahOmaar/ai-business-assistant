@@ -818,3 +818,12 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **API gate:** Python 3.12 selected, bytecode compilation and build completed, deployment completed. A post-deployment health check is recorded below.
 - **Post-deployment browser smoke:** normal sign-in form rendered and JavaScript initialized; no stuck loading state, no credentials entered, no data changed.
 - **Not a full production-readiness declaration:** hosted GitHub Actions/CircleCI, actual container image build, live PostgreSQL integration/rollback, and authenticated Firebase admin/tenant-boundary E2E remain NOT RUN/BLOCKED. Platform Admin still requires a securely verified Firebase UID before allowlist enrollment.
+
+
+## Mobile UI merge recovery — 2026-10-27
+
+- **UI-MOBILE-01 — IN_PROGRESS:** Reapplied the UI/API version and build timestamp layout to the current mainline component while preserving the already-merged Platform Admin imports, tab, and template.
+- **UI-MOBILE-02 — IN_PROGRESS:** Reapplied mobile customer action layout and activity-log horizontal scrolling.
+- **UI-INVOICE-03 — IN_PROGRESS:** Reapplied collapsed-by-default invoice creation, separate from customer filtering; editing a draft should expand the form.
+- **Merge recovery:** PR #179 could not be merged because GitHub reports merge conflicts against the updated mainline. Created branch `fix/mobile-ui-on-latest-main` from current `main` and applied the PR's component hunks to the latest component rather than replacing it with the older branch version. The PR #179 TASKS patch was not copied because it contains stale claims that PR #172 is still Draft.
+- **Validation gate:** Run a fresh Vercel preview build and frontend tests on this branch, inspect exact deployment events, then merge only after conflict status is clear. GitHub Actions runner allocation remains an independent blocker. No production promotion yet.
