@@ -1,3 +1,29 @@
+## Angular template parse failure fixed — 2026-10-27
+
+- Vercel Preview of exact diagnostic SHA `969bd23caee3d795ce19aad0141e1b074c9b53ab` proved the frontend unit suite passed **19/19**, then Angular production build failed with `NG5002` at `frontend/src/app/app.component.ts:77`: the mobile More button's `[class.active]` attribute had an extra double quote after `tab === 'release-guide'`.
+- Removed the duplicate quote and added `frontend/src/app/app.component-template-safety.spec.ts` to prevent this exact regression. The fix is not verified until the new exact-head build and CircleCI checks pass.
+- No production deployment or database operation was performed.
+
+
+## Current mainline integration — 2026-10-27 17:35 UTC
+
+- **Mainline after PR #115:** merged commit `11c9308eb935f4305a49c946b6cdae50130516f0`. At the checkpoint before the release reconciliation, all four CircleCI checks and both Vercel status contexts reported success on this SHA. The PR #115 merge includes issued-invoice printing with HTML escaping and focused source regression tests; manual Android Chrome / installed-PWA print-to-PDF smoke remains unverified.
+- **REL-001 / PR #192:** branch `integrate/release-v1-3-main-20261027` refreshed against the current mainline. Integration commit `d8c36a12232aee6578d9ca9f48b6c1d14c919297` preserves the v1.3.0 invoice allocation/outstanding balance, opening stock, and bilingual release guide changes while manually composing them with PR #115's print action. On this exact SHA, backend-container and backend-accounting passed; frontend-quality failed and browser-smoke remained pending. The failure root cause is not yet evidenced by CircleCI logs; this checkpoint must not be treated as verified.
+- **OPS-001 / PR #135:** backup/restore drill branch refreshed against the same mainline; local shell syntax checks and two non-destructive output-safety cases passed. Exact-head CircleCI was still running at the time of this checkpoint. The production backup/restore drill itself is NOT RUN because no approved source credentials and isolated restore target were available.
+- **Release safety:** these are source/preview validation steps only. No production deployment or production database operation was performed.
+
+
+# Mainline integration checkpoint — 2026-10-27
+
+- **PR #183 — VERIFIED MERGED:** CI/browser smoke and contributor governance merged as d979c59c725b398b132a52cfa0f824edde96fd95. Four CircleCI checks passed on its exact head and four checks passed on main after the merge.
+- **PR #191 — VERIFIED MERGED:** PostgreSQL financial concurrency tests and payment idempotency savepoint recovery merged as 4538cf4de7f44e1a4e031f770157a780830f9259. All four CircleCI checks passed on the exact candidate and main after merge.
+- **REL-001 — IN_PROGRESS:** integrating the v1.3.0 invoice/payment/stock/feature-guide slice on top of current main while preserving the merged concurrency fix. This is source integration only; no production deployment is authorized by this checkpoint.
+- **ADMIN-001 — IN_PROGRESS:** Platform Admin user directory/role-grant changes remain separate until reconciled with the release guide/navigation and verified on the current mainline.
+- **CI status:** the exact current main SHA 4538cf4de7f44e1a4e031f770157a780830f9259 has successful CircleCI backend-container, backend-accounting, frontend-quality, and frontend-browser-smoke checks. Vercel status contexts also reported success; this alone does not establish deployed source/version parity.
+- **Release safety:** do not mark v1.3.0 live until production web/API deployed SHA and version parity plus health/readiness and relevant safe smoke checks are verified.
+
+---
+
 # Project Task Ledger
 
 > **Active index updated 2026-10-27.** The queue below is the current summary; older checkpoints are historical evidence and may describe past states. Reconcile every status with current source, GitHub, CI, and deployment evidence.
