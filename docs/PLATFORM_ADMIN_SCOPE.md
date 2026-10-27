@@ -99,3 +99,8 @@ The Admin Center is an operational control plane, not a back door into customer 
 ## Explicit exclusions for this delivery
 
 No default admin, no user-controlled role/identity headers, no self-promotion, no unverified user enumeration, no global role editing, no workspace deletion, no account impersonation, no direct payment/refund/balance mutation, no mixed-currency aggregation, no secrets/log payload exposure, no production allowlist or migration change, no paid plan/runner change, and no claiming a preview build is proof of authenticated production behavior.
+
+
+## Latest implementation checkpoint — 2026-10-27
+
+The bounded audit CSV export endpoint and authenticated download control are implemented on the feature branch. Exact-source tests and preview validation are pending; this is not a production release.
