@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.models import AuditEvent, Base, Business, BusinessMembership, Invoice, Payment, MembershipRole
-from app.security import AuthenticatedPrincipal
+from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
 
 ADMIN_SUBJECT = "firebase:test-project:platform-admin-uid"
 OWNER_SUBJECT = "firebase:test-project:workspace-owner-uid"
@@ -213,6 +213,15 @@ def test_status_change_requires_reason_and_adds_audit_event(platform_admin_envir
     assert len(platform_events) == 1
     assert platform_events[0].actor_subject == ADMIN_SUBJECT
     assert platform_events[0].change_summary == "Compliance review"
+
+    # Suspension must immediately block the ordinary workspace authorization path.
+    with Session(platform_admin_environment["engine"]) as session:
+        with pytest.raises(AuthorizationError, match="No active membership"):
+            authorize_membership(
+                session,
+                principal=AuthenticatedPrincipal(subject=OWNER_SUBJECT),
+                business_id=UUID(business_id),
+            )
 
 
 def test_platform_audit_is_read_only_and_supports_action_filter(platform_admin_environment):
