@@ -218,7 +218,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
               } @else if (canManagePlatformRoles) {
                 <div class="role-editor">
                   <div><h4>{{ t('إسناد صلاحية منصة', 'Assign a platform role') }}</h4><p>{{ t('اختار الدور المحدد والصريح، واكتب سببًا لا يقل عن 3 أحرف. لا يوجد دور يسمح بترقية الذات إلى مسؤول الجذر.', 'Choose an explicit role and enter a reason of at least 3 characters. No role can grant bootstrap root access.') }}</p></div>
-                  <form class="user-role-form" (ngSubmit)="savePlatformRole(true)">
+                  <form class="user-role-form" (ngSubmit)="savePlatformRole()">
                     <label><span>{{ t('الدور المراد منحه', 'Role to grant') }}</span><select name="selectedPlatformRole" [(ngModel)]="selectedPlatformRole"><option value="platform_viewer">{{ t('مشاهد المنصة — قراءة فقط', 'Platform Viewer — read-only') }}</option><option value="workspace_operator">{{ t('مشغّل مساحات العمل — عرض وتفعيل/تعطيل', 'Workspace Operator — view and change workspace status') }}</option><option value="user_manager">{{ t('مدير دليل المستخدمين — عرض الحسابات والعضويات', 'User Manager — view accounts and memberships') }}</option></select></label>
                     <label class="role-reason"><span>{{ t('سبب التغيير (إلزامي)', 'Reason (required)') }}</span><textarea name="roleReason" [(ngModel)]="roleReason" maxlength="500" rows="2" required [placeholder]="t('اكتب سببًا إداريًا واضحًا', 'Enter a clear administrative reason')"></textarea></label>
                     <div class="role-submit-actions"><button type="submit" class="primary-button" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason)" (click)="roleChangeActive = true">{{ roleSaving ? t('جارٍ الحفظ…', 'Saving…') : t('منح الصلاحية', 'Grant role') }}</button><button type="submit" class="quiet-button signout" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason) || !selectedAdminUser.roles.includes(selectedPlatformRole)" (click)="roleChangeActive = false">{{ t('إلغاء الصلاحية المحددة', 'Revoke selected role') }}</button></div>
@@ -559,6 +559,7 @@ export class PlatformAdminComponent implements OnInit {
   selectAdminUser(user: PlatformAdminUser): void {
     this.selectedAdminUser = user;
     this.selectedPlatformRole = 'platform_viewer';
+    this.roleChangeActive = true;
     this.roleReason = '';
     this.roleError = '';
     this.roleMessage = '';
