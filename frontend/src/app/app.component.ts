@@ -1813,7 +1813,7 @@ export class AppComponent implements OnInit {
       if (/^[\s\u0000-\u001F]*[=+\-@]/.test(text)) text = "'" + text;
       return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
     };
-    const csv = '\\uFEFF' + [headers, ...rows].map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
+    const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(escapeCsvCell).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
