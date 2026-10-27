@@ -254,3 +254,61 @@ def test_platform_audit_is_read_only_and_supports_action_filter(platform_admin_e
     assert mixed_timezone_invalid.status_code == 422
     assert mixed_timezone_invalid.json()["detail"] == "created_after must not be later than created_before."
     assert mixed_timezone_valid.status_code == 200
+
+
+def test_platform_system_status_reports_safe_runtime_metadata(platform_admin_environment, monkeypatch):
+    client = platform_admin_environment["client"]
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setenv("VERCEL_GIT_COMMIT_SHA", "a" * 40)
+    monkeypatch.setenv("VERCEL_ENV", "preview")
+    response = client.get("/api/v1/platform-admin/system-status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "healthy"
+    assert payload["dependencies"] == {
+        "database": "healthy",
+        "identity_verifier": "configured",
+    }
+    assert payload["release"] == {
+        "version": app.version,
+        "commit": "a" * 12,
+        "environment": "preview",
+    }
+    assert payload["checked_at"].endswith("+00:00")
+    serialized = response.text.lower()
+    assert "database_url" not in serialized
+    assert "service_account" not in serialized
+    assert "secret" not in serialized
+
+
+def test_platform_system_status_degrades_without_leaking_database_errors(platform_admin_environment, monkeypatch):
+    client = platform_admin_environment["client"]
+    monkeypatch.delenv("FIREBASE_PROJECT_ID", raising=False)
+    original_factory = app.state.session_factory
+
+    def broken_factory():
+        raise RuntimeError("postgres://sensitive-user:sensitive-password@db.example/private")
+
+    app.state.session_factory = broken_factory
+    try:
+        response = client.get("/api/v1/platform-admin/system-status")
+    finally:
+        app.state.session_factory = original_factory
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "degraded"
+    assert payload["dependencies"] == {
+        "database": "unavailable",
+        "identity_verifier": "unconfigured",
+    }
+    assert "sensitive-password" not in response.text
+    assert "db.example" not in response.text
+
+
+def test_platform_system_status_rejects_non_allowlisted_principal(platform_admin_environment):
+    client = platform_admin_environment["client"]
+    platform_admin_environment["subject"]["value"] = OWNER_SUBJECT
+    response = client.get("/api/v1/platform-admin/system-status")
+    assert response.status_code == 403
