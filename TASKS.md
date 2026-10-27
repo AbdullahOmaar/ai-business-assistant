@@ -1,3 +1,23 @@
+# Latest Platform Admin verification checkpoint — 2026-10-27
+
+## Evidence from isolated verification sandbox
+- **Backend:** `python3 -m pytest -q` — **174 passed, 1 skipped** (7.40s). This is isolated evidence with test doubles/SQLite where configured, not production or PostgreSQL integration.
+- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS** (Angular production build completed). Non-blocking warnings remain for optional chaining and missing Git metadata in this non-clone sandbox.
+- **Security/dependencies:** `npm audit --audit-level=high` — **0 vulnerabilities**; `pip-audit -r requirements.txt` — **no known vulnerabilities**.
+- **Python:** `python3 -m compileall -q app tests` — **PASS**.
+- **Migration:** `DATABASE_URL=postgresql+psycopg://ci:ci@127.0.0.1:5432/ai_business_assistant python3 -m alembic upgrade head --sql` — **PASS**, generated 391 lines including revision `0004_platform_user_roles`. This is offline SQL generation only. Live PostgreSQL apply/integration is **NOT RUN** because PostgreSQL, Docker, and Podman are unavailable in the sandbox.
+- **Test corrections on this branch:** fixed a false-positive privacy assertion that matched the API's intentional human-readable limitation text; fixed TypeScript's invalid number-versus-string comparison in numeric role-audit filters.
+- **Hosted gates:** PR head `e3af6206c9a262b44bf107f8ef37fbb32da558d5`. CircleCI status is `error` (pipeline 61). GitHub Actions dependency, backend/frontend, container, and backend-test runs failed with `steps=null` and `logs_url=null`; they provide no evidence of test execution. `.circleci/config.yml` is absent from `main` and exists on separate Draft CI work, so the exact CircleCI root cause could not be confirmed from the available authenticated view.
+- **Delivery:** PR #172 is already merged (merge SHA `17e8533de376d2438ea5dee57ee6a86b30c9f081`). PR #190 remains Draft/open; no merge, production database change, or deployment was performed.
+
+## Remaining gates
+1. Resolve the CircleCI configuration/runner status without adding duplicate CI work to this Admin PR.
+2. Run the migration and tests against disposable PostgreSQL 16, plus authenticated browser/authorization flows.
+3. Recheck exact-head required statuses and review the final diff; only then make PR #190 merge-ready.
+4. Keep production activation blocked until `PLATFORM_SUPER_ADMIN_UIDS` is configured out-of-band and verified. Never guess a UID or change production secrets/configuration without authorization.
+
+---
+
 # Workflow policy checkpoint — 2026-10-27
 
 ## Engineering process rules (adopted)
@@ -868,11 +888,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 | Task | Scope / acceptance criteria | Status |
 |---|---|---|
 | ADM-01 — Inventory existing Admin work | Confirm PR #172's core screen/API is already in main; identify PR #187 as mixed inventory/payment/mobile work and port only the admin navigation portion. Avoid duplicate merges or unrelated finance changes. | VERIFIED |
-| ADM-02 — Global identity directory | List all Firebase Auth accounts, not only workspace members; cursor pagination; exact email/UID lookup; safe fields only; membership and platform-role columns shown separately; no credentials/tokens. | IN_PROGRESS — code and tests added; execution pending |
+| ADM-02 — Global identity directory | List all Firebase Auth accounts, not only workspace members; cursor pagination; exact email/UID lookup; safe fields only; membership and platform-role columns shown separately; no credentials/tokens. | VERIFIED in isolated sandbox — backend suite 174 passed, 1 skipped; Firebase/Auth integration remains mocked. |
 | ADM-03 — Delegated platform RBAC | Roles: Platform Viewer, Workspace Operator, User Manager. Root remains out-of-band; no self-grants; no in-app root assignment; every grant/revoke requires a reason and creates a durable audit event in the same transaction. | IN_PROGRESS — code and tests added; execution pending |
-| ADM-04 — Admin UX and mobile access | Separate Users & Access view, Arabic/English copy, permissions explained, narrow-screen table overflow, More-menu access for Platform Admin and correct active state. | IN_PROGRESS — implementation and structural tests added; build pending |
-| ADM-05 — Regression/security verification | Run focused/full backend tests, Alembic upgrade against PostgreSQL 16, frontend unit tests/build/audit, and inspect auth/data boundary. Distinguish runner failures from test failures. | BLOCKED pending execution for exact candidate SHA |
-| ADM-06 — PR review and merge | Review complete file diff against main, evaluate required checks, create/update one Admin-only PR, merge only after applicable gates pass and confirm new main SHA. Do not merge mixed-scope PR #187 wholesale. | TODO / gated by ADM-05 |
+| ADM-04 — Admin UX and mobile access | Separate Users & Access view, Arabic/English copy, permissions explained, narrow-screen table overflow, More-menu access for Platform Admin and correct active state. | IN_PROGRESS — 10 frontend tests and Angular production build pass; authenticated browser flow pending. |
+| ADM-05 — Regression/security verification | Run focused/full backend tests, Alembic upgrade against PostgreSQL 16, frontend unit tests/build/audit, and inspect auth/data boundary. Distinguish runner failures from test failures. | IN_PROGRESS — isolated backend 174 passed/1 skipped, frontend 10 passed, Angular build, npm/pip audits, compileall, and offline Alembic SQL pass; hosted CI is red with no executable steps/logs; live PostgreSQL/browser E2E NOT RUN. |
+| ADM-06 — PR review and merge | Review complete file diff against main, evaluate required checks, create/update one Admin-only PR, merge only after applicable gates pass and confirm new main SHA. Do not merge mixed-scope PR #187 wholesale. | BLOCKED — PR #190 remains Draft; CircleCI status is error, GitHub Actions jobs expose no steps/logs; do not merge until required CI gate is resolved. |
 | ADM-07 — Production activation | Do not deploy in this task. A verified bootstrap super-admin UID must be configured out-of-band before anyone can use the root screen; current production notes say the allowlist is unset. | BLOCKED — config prerequisite; no UID guessed |
 
 **Candidate source changes actually written**
