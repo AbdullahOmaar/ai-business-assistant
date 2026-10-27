@@ -1,14 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport } from './api.service';
+import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, DataIntegrityReport } from './api.service';
 import { AuthService } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'assistant' | 'reports' | 'audit' | 'release-guide' | 'platform-admin';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'assistant' | 'reports' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin';
 
 @Component({
   selector: 'aba-root',
@@ -86,6 +86,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               @if (platformAdminAvailable) { <button class="nav-item" role="menuitem" [class.active]="tab === 'platform-admin'" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
 <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
                             <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
+              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'integrity'" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('سلامة البيانات', 'Data integrity') }}</span></button> }
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
               <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('تسجيل الخروج', 'Sign out') }}</span></button>
             </div>
@@ -445,6 +446,27 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               </section>
             }
 
+            @if (tab === 'integrity' && business?.role === 'owner') {
+              <section class="panel">
+                <div class="section-head"><div><h2>{{ t('مراجعة سلامة البيانات', 'Data integrity review') }}</h2><p>{{ t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') }}</p></div><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></div>
+                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
+                @if (integrityError) { <p class="error" role="alert">{{ integrityError }}</p> }
+                @if (dataIntegrityReport) {
+                  <div class="notice warning-notice"><strong>{{ t('مراجعة يدوية فقط', 'Manual review only') }}</strong><span>{{ dataIntegrityReport.warning }}</span></div>
+                  <div class="metric-grid">
+                    <article class="metric"><span>{{ t('فواتير صادرة بلا عميل', 'Issued invoices without a customer') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
+                    <article class="metric"><span>{{ t('تخصيصات بعملات مختلفة', 'Currency-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
+                    <article class="metric"><span>{{ t('تخصيصات بعملاء مختلفين', 'Customer-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
+                  </div>
+                  <h3>{{ t('الفواتير غير المرتبطة', 'Unlinked issued invoices') }}</h3>
+                  <div class="list">@for (invoice of dataIntegrityReport.unlinked_issued_invoices.items; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</strong><small>{{ invoice.created_at ? (invoice.created_at | date:'short') : '—' }} · {{ invoice.invoice_id }}</small></div></article> }</div>
+                  <h3>{{ t('تخصيصات المدفوعات التي تحتاج مراجعة', 'Payment allocations needing review') }}</h3>
+                  <div class="list">@for (item of dataIntegrityReport.currency_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.payment_currency }}</strong><small>{{ t('عملة الفاتورة:', 'Invoice currency:') }} {{ item.invoice_currency }} · {{ t('مرجع الدفعة:', 'Payment reference:') }} {{ item.payment_reference || item.payment_id }}</small></div></article> } @for (item of dataIntegrityReport.customer_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.invoice_currency }}</strong><small>{{ t('عميل الدفعة:', 'Payment customer:') }} {{ item.payment_customer_id || '—' }} · {{ t('عميل الفاتورة:', 'Invoice customer:') }} {{ item.invoice_customer_id || '—' }}</small></div></article> }</div>
+                  <div class="inline-form"><span class="muted">{{ t('الصفحة', 'Offset') }} {{ dataIntegrityReport.offset }} · {{ t('حد الصفحة', 'Page size') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('التالي', 'Next') }}</button></div>
+                }
+              </section>
+            }
+
             @if (tab === 'assistant') {
               <section class="panel chat-panel">
                 <div class="section-head"><div><h2>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }}</h2><p>{{ t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') }}</p></div><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></div>
@@ -614,6 +636,10 @@ export class AppComponent implements OnInit {
   auditOffset = 0;
   auditLoading = false;
   auditError = '';
+  dataIntegrityReport: DataIntegrityReport | null = null;
+  integrityLoading = false;
+  integrityError = '';
+  integrityOffset = 0;
   auditAction = '';
   auditTargetType = '';
   businesses: Business[] = [];
@@ -832,9 +858,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', expenses: 'المصروفات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
+      payments: 'المدفوعات', expenses: 'المصروفات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', assistant: 'AI business assistant', reports: 'Profit & loss', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
@@ -934,6 +960,10 @@ export class AppComponent implements OnInit {
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.profitLoss = null;
+    this.dataIntegrityReport = null;
+    this.integrityError = '';
+    this.integrityLoading = false;
+    this.integrityOffset = 0;
     this.agingReport = null;
     this.customers = [];
     this.products = [];
@@ -1147,6 +1177,30 @@ export class AppComponent implements OnInit {
     }
   }
 
+  async loadDataIntegrity(offset = 0): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const businessId = this.business.id;
+    this.integrityLoading = true;
+    this.integrityError = '';
+    this.integrityOffset = offset;
+    try {
+      const result = await this.api.dataIntegrity(businessId, offset);
+      if (this.business?.id !== businessId) return;
+      this.dataIntegrityReport = result;
+    } catch (error) {
+      if (this.business?.id !== businessId) return;
+      this.dataIntegrityReport = null;
+      this.integrityError = this.message(error);
+    } finally {
+      if (this.business?.id === businessId) this.integrityLoading = false;
+    }
+  }
+
+  get maxIntegrityTotal(): number {
+    const report = this.dataIntegrityReport;
+    return report ? Math.max(report.unlinked_issued_invoices.total, report.currency_mismatched_allocations.total, report.customer_mismatched_allocations.total) : 0;
+  }
+
   async loadAuditEvents(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
     this.auditLoading = true;
@@ -1179,6 +1233,7 @@ export class AppComponent implements OnInit {
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();
     if (tab === 'audit') void this.loadAuditEvents(0);
+    if (tab === 'integrity' && this.business?.role === 'owner') void this.loadDataIntegrity(0);
   }
 
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {

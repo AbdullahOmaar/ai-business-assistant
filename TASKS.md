@@ -1,3 +1,9 @@
+## Owner data-integrity review UI re-integrated on current main — 2026-10-27
+
+- Added an owner-gated, read-only UI for the existing data-integrity report, covering unlinked issued invoices and payment allocation currency/customer mismatches.
+- Reused the existing owner-authorized endpoint and backend regression coverage; UI hides the feature for non-owners and clears report state on workspace switches.
+- Fresh CircleCI validation is required before merge; no data was modified and no production deployment performed.
+
 ## Admin Firebase directory failure-path regression tests — 2026-10-27
 
 - Added regression coverage for missing Firebase accounts and unavailable directory lookups; failures must not persist role grants or audit events and must not leak upstream exception details.
