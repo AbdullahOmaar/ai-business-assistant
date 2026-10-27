@@ -1009,9 +1009,9 @@ export class AppComponent implements OnInit {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', expenses: 'المصروفات', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
+      payments: 'المدفوعات', expenses: 'المصروفات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', assistant: 'AI business assistant', reports: 'Profit & loss', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Profit & loss', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
