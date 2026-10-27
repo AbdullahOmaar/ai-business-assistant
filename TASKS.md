@@ -1,3 +1,11 @@
+## Current mainline integration — 2026-10-27 17:35 UTC
+
+- **Mainline after PR #115:** merged commit `11c9308eb935f4305a49c946b6cdae50130516f0`. At the checkpoint before the release reconciliation, all four CircleCI checks and both Vercel status contexts reported success on this SHA. The PR #115 merge includes issued-invoice printing with HTML escaping and focused source regression tests; manual Android Chrome / installed-PWA print-to-PDF smoke remains unverified.
+- **REL-001 / PR #192:** branch `integrate/release-v1-3-main-20261027` refreshed against the current mainline. Integration commit `d8c36a12232aee6578d9ca9f48b6c1d14c919297` preserves the v1.3.0 invoice allocation/outstanding balance, opening stock, and bilingual release guide changes while manually composing them with PR #115's print action. On this exact SHA, backend-container and backend-accounting passed; frontend-quality failed and browser-smoke remained pending. The failure root cause is not yet evidenced by CircleCI logs; this checkpoint must not be treated as verified.
+- **OPS-001 / PR #135:** backup/restore drill branch refreshed against the same mainline; local shell syntax checks and two non-destructive output-safety cases passed. Exact-head CircleCI was still running at the time of this checkpoint. The production backup/restore drill itself is NOT RUN because no approved source credentials and isolated restore target were available.
+- **Release safety:** these are source/preview validation steps only. No production deployment or production database operation was performed.
+
+
 # Mainline integration checkpoint — 2026-10-27
 
 - **PR #183 — VERIFIED MERGED:** CI/browser smoke and contributor governance merged as d979c59c725b398b132a52cfa0f824edde96fd95. Four CircleCI checks passed on its exact head and four checks passed on main after the merge.
