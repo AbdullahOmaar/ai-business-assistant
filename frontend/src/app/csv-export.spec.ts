@@ -17,5 +17,5 @@ test('quotes commas, quotes, and line breaks using CSV escaping rules', () => {
 
 test('builds UTF-8 BOM-prefixed CSV with CRLF rows', () => {
   const csv = buildCsv(['name', 'amount'], [['customer', 12], ['=cmd', 4]]);
-  assert.equal(csv, '\uFEFFname,amount\r\ncustomer,12\r\n'=cmd,4');
+  assert.equal(csv, "\uFEFFname,amount\r\ncustomer,12\r\n'=cmd,4");
 });
