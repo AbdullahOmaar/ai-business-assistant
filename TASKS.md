@@ -1,3 +1,10 @@
+## Payment failure feedback re-integrated on current main — 2026-10-27
+
+- Reapplied the payment error UX fix to current main without merging the stale branch history: payment API errors render as an accessible alert in the payment panel, preserve entered values and the idempotency key on uncertain outcomes, and clear error state on a new attempt or success.
+- Added/updated the payment UI regression test. Exact-head CircleCI validation is required before merge; no payment was created and no production deployment was performed.
+
+
+
 ## Review findings addressed for expense UI — 2026-10-27
 
 - Fixed numeric input handling: Angular's number value accessor can produce a numeric runtime value, so the form now stringifies the value before trimming/serializing it. Added a regression assertion that forbids direct `expenseAmount.trim()`.
