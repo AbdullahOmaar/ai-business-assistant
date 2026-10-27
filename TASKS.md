@@ -1,3 +1,8 @@
+## Operations readiness API re-integrated on current main — 2026-10-27
+
+- Added tenant-authorized supplier create/list, purchase-order list, recurring-invoice schedule list, and owner-only read-only operational health endpoints.
+- Added regression coverage for workflow listing, receipt quantities, workspace isolation, and owner-only health access. Exact-head CI is required before merge.
+
 ## Owner data-integrity review UI — 2026-10-27
 
 - Added owner-gated, read-only UI for the existing workspace-authorized data-integrity report, including unlinked issued invoices and payment allocation currency/customer mismatches.
