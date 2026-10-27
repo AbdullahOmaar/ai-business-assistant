@@ -1,3 +1,21 @@
+# Mainline reconciliation checkpoint — 2026-10-27 14:45 Cairo
+
+## Ordered task status — priority: all accepted work must land on current main
+
+1. **MAIN-01 — Inspect current main and candidate: VERIFIED.** Current main SHA is `05e00689f76407f51136b486c41e8c204cddccf1`. PR #173 branch is `fix/actions-minute-budget`; compare reports 65 commits ahead and 4 behind with merge base `7269d46cd8eb9a989d929c54ba06a48333663a4d`. The main-only Platform Admin implementation and subsequent release evidence must be preserved.
+2. **MAIN-02 — Restore CI triggers: IMPLEMENTED, exact-head run pending.** Restored the PR trigger in `.github/workflows/backend-tests.yml`, restored broad backend/frontend/workflow path filters and main/feature push triggers in `.github/workflows/dependency-security.yml` and `.github/workflows/ci.yml`, and restored main/feature/chore push triggers in `.github/workflows/backend-container.yml`. Commits returned by GitHub: `a8fc5de96ee4de18677283501e500d2f9eb91a32`, `9d7df2964e6b89b9f955f75285459ad89aca49d2`, `ee6b873da557f84aa7e0149ef5c9082e182b71b2`, `f3dfaaad79d524ccb972cce4f125ceece0606f83`. Verify the current branch files and latest head before merging.
+3. **MAIN-03 — Deterministic frontend lockfile: BLOCKED.** A generated `frontend/package-lock.json` exists in the isolated Vercel sandbox (lockfile v3, 506 package entries, 258181 bytes); it has not been committed to this branch. Do not claim dependency determinism or switch to `npm ci` until the lockfile is committed and verified against `frontend/package.json`.
+4. **MAIN-04 — Exact-head CI and security: BLOCKED / pending.** Historical GitHub Actions attempts failed before any executable step (`runner_id=0`, no steps/logs), so they are infrastructure failures, not code test results. Re-check workflows triggered by the trigger-restoration commits. CircleCI official config validation previously passed on the config version recorded in the prior checkpoint; CircleCI hosted jobs remain NOT RUN because this private repository is not authorized there. Docker/Podman image build remains NOT RUN.
+5. **MAIN-05 — Financial regression evidence: PARTIAL.** Prior isolated sandbox evidence: backend full suite 149 passed against disposable PostgreSQL 18.6, migrations/current/alembic-check passed, pip-audit clean; frontend build passed with 5 tests and npm audit reported 0 vulnerabilities. These results were not produced on the current exact PR head or configured Python 3.12/PostgreSQL 16 matrix. The four PostgreSQL concurrency cases must pass in the actual configured CI environment before marking complete.
+6. **MAIN-06 — Secret scan review: BLOCKED / owner review required.** GitGuardian reported a historical generic-password finding in an earlier `.circleci/config.yml` commit. The current config uses password-free disposable PostgreSQL connection settings with `POSTGRES_HOST_AUTH_METHOD=trust`; the historical finding still needs a fresh scan/incident review to distinguish test-only data from a real credential. No production credential has been disclosed here and no secret rotation was performed.
+7. **MAIN-07 — Merge: BLOCKED.** Do not merge PR #173 until the current main changes are preserved, the deterministic lockfile is committed, exact-head CI/security checks pass, and an actual container build is evidenced. GitHub's mergeable flag is not a test result.
+8. **MAIN-08 — Production deployment: BLOCKED pending merge.** Production frontend and API were last both READY on source SHA `82af326ffeec2188b5b837d86af1a76763f02fc6`. Later main commits are documentation-only and their Vercel attempts were CANCELED by the configured ignore-build step. After a verified merge, trigger the documented `[release-web]` and `[release-api]` markers as appropriate, then verify deployment source SHA, health/readiness/version, and safe smoke checks. No production data or payment was changed.
+
+## Current outcome
+**PARTIALLY COMPLETE.** CI trigger restoration is committed to the PR branch; lockfile commit, exact-head CI, CircleCI hosted run, Docker build, merge, and post-merge deployment verification remain open. Do not report that all work is on main until the merged commit SHA and production source SHAs prove it.
+
+---
+
 # Automation / mainline reconciliation checkpoint — 2026-10-27 14:25 Cairo
 
 ## Ordered task status for PR #173
