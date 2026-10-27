@@ -27,7 +27,7 @@ test('feature catalogue has unique sections and bilingual user-facing content', 
 test('release history has unique semantic versions in newest-first order', () => {
   const versions = RELEASE_HISTORY.map((release) => release.version);
   const parse = (version: string) => {
-    assert.match(version, /^\\d+\\.\\d+\\.\\d+$/, `Invalid semantic version: ${version}`);
+    assert.match(version, /^\d+\.\d+\.\d+$/, `Invalid semantic version: ${version}`);
     return version.split('.').map(Number);
   };
 
