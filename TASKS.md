@@ -1,3 +1,19 @@
+# Admin execution checkpoint — 2026-10-27 (alternative Vercel sandbox)
+
+- **Runner used:** existing authorized Vercel sandbox session `sbx_HjgJqAJfL3BCiZQyN8dg1m8wkEAp`, project `ai-business-assistant-api`. This is the alternative execution environment; GitHub Actions was not used as the test runner.
+- **Candidate provenance:** tests ran against the sandbox's Admin source snapshot previously recorded as `2f5a899f61cb4278e79cb47fb503a7a1a8e3a1a0`. Current PR head is `51eccd20bb8ed5850290ee194caba4f8e5ca9293`; latest differences since the tested snapshot are task-ledger/checkpoint documentation. The sandbox is a source snapshot, not a Git checkout, so no local Git status/HEAD could be independently read there.
+- **Backend:** `python3 -m pytest -q --tb=short` — **174 passed, 1 skipped, 11 warnings**. Focused Admin regression: `python3 -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**. `python3 -m compileall -q app tests` — **PASS**.
+- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS**, Angular production bundle generated. Non-blocking Angular NG8107 optional-chain warnings and Node module-type warnings remain.
+- **Dependency security:** `npm audit --audit-level=high` — **0 vulnerabilities**; `python3 -m pip_audit -r requirements.txt` — **No known vulnerabilities found**.
+- **Migration:** `DATABASE_URL=postgresql+psycopg://ci:ci@127.0.0.1:5432/ai_business_assistant python3 -m alembic upgrade head --sql` — **PASS**, generated 391 lines and includes revision `0004_platform_user_roles`, `platform_role_grants`, and `platform_admin_audit_events`. This is offline SQL generation, not a live migration.
+- **Live database/container:** **NOT RUN**. This sandbox has no `docker`, `podman`, or `psql` binary; the presence of a Python PostgreSQL driver does not provide a server. Disposable PostgreSQL 16 migration/schema-drift/integration and container build remain open.
+- **Hosted gate:** PR #190 remains Draft/open/unmerged. CircleCI Pipeline is still `error` (latest PR description records pipeline 65; failure logs/root cause not exposed by available authenticated connector). Passing alternative-runner tests do not clear a required hosted status, and no branch-protection bypass was attempted.
+- **Production/access:** no production deployment, database mutation, secret/config change, or Firebase UID enrollment was performed. `PLATFORM_SUPER_ADMIN_UIDS` must be configured out-of-band only after verified identity.
+- **Status:** ADM-02 global directory **VERIFIED in isolated tests**; ADM-03 delegated RBAC **VERIFIED in isolated regression tests, live DB/audit persistence still unverified**; ADM-04 UI/build **VERIFIED by unit tests/build, authenticated browser E2E NOT RUN**; ADM-05 **PARTIALLY VERIFIED / remaining live DB, container, browser gates**; ADM-06 **BLOCKED by Draft PR and CircleCI error**; ADM-07 **BLOCKED by secure bootstrap configuration**.
+- **Next actions:** diagnose/resolve CircleCI pipeline 65 from its owner-visible logs or an authorized CircleCI runner; use a disposable PostgreSQL 16 database for migration/integration and run the container build on an authorized container-capable runner; then review the exact PR head and merge only if all required gates pass.
+
+---
+
 # Platform Admin verification checkpoint — 2026-10-27 15:38 UTC
 
 ## Current evidence
