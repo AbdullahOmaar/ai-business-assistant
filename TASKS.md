@@ -748,3 +748,5 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Follow-up validation action: request a **non-production frontend preview** for the updated Admin test suite using the repository's documented `[release-web]` preview marker. This marker is on the feature branch only; it is not a production merge or alias promotion.
 
 - Validation note: the Admin frontend helper tests are included in the full frontend test glob; a fresh non-production Vercel preview is requested from this exact candidate. No production deployment is requested.
+
+- Preview checkpoint: request a non-production build for this exact, main-synced Admin branch head; production aliases remain untouched.
