@@ -36,6 +36,15 @@ def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
 
 
+def _normalize_datetime(value: datetime | None) -> datetime | None:
+    """Treat timezone-less query values as UTC and normalize aware values to UTC."""
+    if value is None:
+        return None
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _business_payload(business: Business, member_count: int | None = None) -> dict:
     payload = {
         "id": str(business.id),
@@ -300,6 +309,8 @@ def platform_audit_events(
 ) -> dict:
     """Read-only, paginated platform audit stream; audit mutations are not exposed."""
     _require_platform_admin(principal)
+    created_after = _normalize_datetime(created_after)
+    created_before = _normalize_datetime(created_before)
     if created_after and created_before and created_after > created_before:
         raise HTTPException(status_code=422, detail="created_after must not be later than created_before.")
 
