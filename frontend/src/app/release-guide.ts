@@ -202,6 +202,17 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.1',
+    titleAr: 'تحديث إصدار الصيانة',
+    titleEn: 'Maintenance release update',
+    changesAr: [
+      'تحديث رقم إصدار الواجهة وواجهة API إلى 1.3.1 مع الحفاظ على خصائص الإصدار السابق.',
+    ],
+    changesEn: [
+      'Updated the frontend and API release version to 1.3.1 while preserving the previous release features.',
+    ],
+  },
+  {
     version: '1.3.0',
     titleAr: 'السداد والمخزون ودليل التطبيق',
     titleEn: 'Payments, stock, and app guide',
