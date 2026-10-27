@@ -11,8 +11,8 @@ Status: evidence-based review in progress; this is not a production-readiness at
 - This review branch fixes two confirmed edge cases: absent-role revocation no longer writes a false revoke event, and failed overview/runtime refreshes clear stale snapshots.
 - Firebase identity resolution verifies ID tokens with revocation checking, validates the configured project's audience and issuer, and emits project-qualified subjects.
 - Existing code uses explicit permission checks for the main read/write endpoints. Workspace status changes and delegated role changes persist their corresponding audit records in the same database transaction as the mutation.
-- CircleCI reports all four contexts successful on baseline SHA `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. The CSV-only review commit `7978e5e66f4869faf284074736f24a8193c715ae` also passed all four contexts; later code/test changes are pending at the latest status read.
-- Production API `/readyz` returned HTTP 200, but `/version` reported commit `877243840576`, not the current main SHA. Vercel deployment metadata identifies latest READY production Web deployment `dpl_3PLEvrGRx6rb6hamkVNV5Nq5is9K` at source SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`, and API deployment `dpl_8i3a1jJgXf5LKweh7wGcL6W7tgAF` at source SHA `8772438405764734bda6f475e31bd50c22341c86`. Both differ from main. GitHub Vercel status checks link to a daily build-rate-limit page. Production source parity and authenticated admin workflows remain unverified.
+- PR #223 merged to `main` as `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; all four CircleCI contexts passed on that merge SHA (backend-container 882, frontend-quality 881, backend-accounting 883, frontend-browser-smoke 884). Follow-up PR #224 adds workspace-status/audit rollback coverage. Its initial backend-accounting run failed; the test harness was corrected to return HTTP 500 instead of re-raising, and the latest PR head awaits exact-head CI.
+- Current `main` is `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`. Vercel lists READY production API deployment `dpl_5VH6yC7nN8oTPS65Z78rTAaJFErA` at this exact SHA. The latest listed READY production Web deployment `dpl_3PLEvrGRx6rb6hamkVNV5Nq5is9K` is at older SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`; no Web deployment for current main was listed. Its build succeeded but warned that the initial JS bundle is 730.87 kB, 30.87 kB above the 700 kB budget. The GitHub Vercel Web status reports a build-rate-limit failure. Authenticated production Admin workflows remain unverified; no deployment was triggered by this review.
 
 ## Architecture and route inventory
 
@@ -59,11 +59,11 @@ The super-admin permission set is derived from the configured server-side allowl
 
 ### Confirmed from current evidence
 
-1. **False audit event for absent role revocation — fixed on review branch.** Previously, a super-admin revoking a role with no grant row created an inactive grant and wrote a `platform.user_role.revoked` event even though no active role had been removed. The branch now returns an unchanged state without writing a grant or audit event; regression coverage is pending exact-head CI.
-2. **Stale admin snapshots after failed refresh — fixed on review branch.** The overview and runtime-health refresh handlers previously retained the last successful values after a later request failed, including a 403. The branch now clears those snapshots and extends the mocked Playwright flow to check that they disappear; exact-head browser smoke is pending.
-3. **Production source parity is not established.** `/version` reports `877243840576`; current main is `068b0b4825765684078c3db44ecd9cafbb7e1cf4`. Vercel status checks show the daily build-rate-limit page. This is an operational mismatch, not proof that the live application is broken or exploitable.
-4. **CSV export regression coverage was missing in the inspected Admin test file.** Two tests have now been added for formula neutralization, bounded export metadata, no-store behavior, and denial without audit permission. They are not verified until the exact-head CircleCI run completes.
-5. **Cross-workspace membership IDOR regression is now covered by a new test, but is not yet CI-verified.** The test checks that an owner of Workspace A cannot list, change, or remove a known membership in Workspace B.
+1. **False audit event for absent role revocation — merged and CI-verified.** PR #223 merged as `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; its four CircleCI contexts passed on the merge SHA. The regression test asserts no grant row or revoke event is created.
+2. **Stale admin snapshots after failed refresh — merged and CI-verified.** The component clears overview/runtime snapshots after failed refresh; PR #223's four CircleCI contexts passed on the merge SHA, including frontend browser smoke.
+3. **Web/API deployment parity is partial.** API production is on current main SHA `8626ce2a30ae9a343bc9e8c72a0d98b6c5aa3890`; latest listed Web production remains on older SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`, and the Vercel Web status reports a build-rate-limit failure. This mismatch is an operational release blocker, not proof of an application vulnerability.
+4. **CSV export hardening — merged and CI-verified.** Tests cover formula neutralization, bounded export metadata, no-store behavior, and denial without audit permission; all four CircleCI contexts passed on PR #223's merge SHA.
+5. **Cross-workspace membership IDOR regression — merged and CI-verified.** The test checks that an owner of Workspace A cannot list, change, or remove a known membership in Workspace B; PR #223's exact merge SHA passed all four CircleCI contexts.
 6. **Production authenticated Admin E2E has not been run in this review.** Public readiness and version endpoints do not validate a signed-in user's role enforcement or the complete browser workflow.
 
 ### Risks requiring more evidence / follow-up
@@ -102,12 +102,12 @@ The super-admin permission set is derived from the configured server-side allowl
 
 - GitHub branch-protection API returned HTTP 403 `Resource not accessible by integration`; repository rulesets API returned HTTP 403 stating the feature is unavailable for this repository plan. Branch protection requirements therefore remain **unverified**, not absent.
 - The public API Admin access probe could not reach the app because Vercel deployment authentication blocked the fetch tool and the direct web fetch was inaccessible. Do not infer the app's HTTP authorization result from this probe.
-- Latest code/test head `7e935995c932121e261d8c5d337df93226b6e31b` had CircleCI runs 866–868 pending at the last status check; the backend-container status was not yet present. A later documentation-only commit is newer and should not be confused with this tested code snapshot.
+- Follow-up PR #224 current head is tracked in GitHub; exact-head CI must pass before merge. Its earlier backend-accounting run failed, and the test harness was adjusted in commit `719b0ef9361993d5387351e2b5384d02ba877956`. Latest checks after the subsequent docs commit were still pending at the last status read.
 - No production deployment was attempted. The task itself prohibits deployment without explicit release authorization.
 
 ## Release decision
 
-**NO-GO for declaring Platform Admin production-ready.** The live API readiness endpoint is responsive, but deployed source parity, authenticated end-to-end behavior, concurrency coverage, and exact-head checks for the newly added CSV tests remain unresolved. No production data, secrets, identity configuration, or deployments were changed in this review.
+**NO-GO for declaring Platform Admin production-ready.** API production matches current main, but Web production is behind and its Vercel status is blocked; authenticated Admin smoke, PostgreSQL concurrency evidence, full accessibility validation, and exact-head CI for follow-up PR #224 remain unresolved. No production data, secrets, identity configuration, deployment, promotion, or rollback was changed in this review.
 
 
 ## Operational rollback runbook (documented; NOT executed)
