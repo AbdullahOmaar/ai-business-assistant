@@ -23,6 +23,8 @@ test('boots into the explicit setup screen instead of a stuck splash', async ({ 
 
   await expect(page.getByRole('heading', { name: /اربط مساحة عملك الآمنة|Connect your secure workspace/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/جارٍ تشغيل التطبيق|Starting the app/)).toHaveCount(0);
+  // Missing Firebase settings must fail closed to the setup screen, not show a usable sign-in form.
+  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
   expect(uncaughtErrors).toEqual([]);
 });
 
@@ -39,4 +41,31 @@ test('switches startup language and layout direction both ways', async ({ page }
   await page.locator('.language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+});
+
+test('keeps the safe setup screen usable at a narrow mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/');
+
+  await expect(
+    page.getByRole('heading', {
+      name: /اربط مساحة عملك الآمنة|Connect your secure workspace/,
+    }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.language-toggle')).toBeVisible();
+
+  const assertNoHorizontalOverflow = async () => {
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+  };
+
+  await assertNoHorizontalOverflow();
+
+  // Exercise the narrow layout in both writing directions, not only the default Arabic view.
+  await page.locator('.language-toggle').click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await assertNoHorizontalOverflow();
 });
