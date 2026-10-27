@@ -413,16 +413,22 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <span class="count">{{ expenses.length }} {{ t('مصروفات', 'expenses') }}</span>
                 </div>
                 <form class="inline-form expense-form" (ngSubmit)="createExpense()">
-                  <input [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" maxlength="80" [placeholder]="t('التصنيف', 'Category')" required [(ngModel)]="expenseCategory">
-                  <input [attr.aria-label]="t('وصف المصروف', 'Expense description')" name="expenseDescription" maxlength="500" [placeholder]="t('الوصف', 'Description')" required [(ngModel)]="expenseDescription">
-                  <input [attr.aria-label]="t('مبلغ المصروف', 'Expense amount')" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ', 'Amount')" required [(ngModel)]="expenseAmount">
-                  <input [attr.aria-label]="t('تاريخ ووقت المصروف', 'Expense date and time')" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
-                  <input [attr.aria-label]="t('المورد', 'Vendor')" name="expenseVendor" maxlength="160" [placeholder]="t('المورد (اختياري)', 'Vendor (optional)')" [(ngModel)]="expenseVendor">
-                  <input [attr.aria-label]="t('مرجع المصروف', 'Expense reference')" name="expenseReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="expenseReference">
-                  <button class="primary" type="submit" [disabled]="loading || !expenseCategory.trim() || !expenseDescription.trim() || !expenseAmount">{{ t('حفظ المصروف', 'Save expense') }}</button>
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" maxlength="80" [placeholder]="t('التصنيف', 'Category')" required [(ngModel)]="expenseCategory">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('وصف المصروف', 'Expense description')" name="expenseDescription" maxlength="500" [placeholder]="t('الوصف', 'Description')" required [(ngModel)]="expenseDescription">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مبلغ المصروف', 'Expense amount')" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ', 'Amount')" required [(ngModel)]="expenseAmount">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تاريخ ووقت المصروف', 'Expense date and time')" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('المورد', 'Vendor')" name="expenseVendor" maxlength="160" [placeholder]="t('المورد (اختياري)', 'Vendor (optional)')" [(ngModel)]="expenseVendor">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مرجع المصروف', 'Expense reference')" name="expenseReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="expenseReference">
+                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain || !expenseCategory.trim() || !expenseDescription.trim() || !expenseAmount">{{ t('حفظ المصروف', 'Save expense') }}</button>
                 </form>
                 <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business?.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
                 @if (expenseMessage) { <p class="notice" role="status">{{ expenseMessage }}</p> }
+                @if (expenseSubmissionUncertain) {
+                  <div class="error" role="alert">
+                    {{ t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.') }}
+                    <button class="secondary" type="button" (click)="checkExpenseSubmissionOutcome()" [disabled]="loading">{{ t('فحص قائمة المصروفات', 'Check expense list') }}</button>
+                  </div>
+                }
                 <div class="list">
                   @for (expense of expenses; track expense.id) {
                     <article class="list-row">
@@ -644,6 +650,7 @@ export class AppComponent implements OnInit {
   expenseVendor = '';
   expenseReference = '';
   expenseMessage = '';
+  expenseSubmissionUncertain = false;
   businessName = '';
   currencyCode = 'EGP';
   customerName = '';
@@ -875,6 +882,7 @@ export class AppComponent implements OnInit {
       this.payments = [];
     this.expenses = [];
     this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
       this.chatMessages = [];
       this.error = '';
     } catch (error) {
@@ -932,6 +940,7 @@ export class AppComponent implements OnInit {
     this.payments = [];
     this.expenses = [];
     this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
     this.chatMessages = [];
     this.chatDraft = '';
     this.chatError = '';
@@ -1609,6 +1618,7 @@ export class AppComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
     try {
       await this.api.createExpense(businessId, {
         category,
@@ -1640,6 +1650,31 @@ export class AppComponent implements OnInit {
           this.error = this.t('تم تسجيل المصروف، لكن تعذر تحديث القائمة. أعد تحميل البيانات.', 'Expense was saved, but the list could not refresh. Reload workspace data.');
         }
       }
+    } catch (error) {
+      if (this.business?.id === businessId) {
+        this.expenseSubmissionUncertain = true;
+        this.error = this.t('تعذر تأكيد نتيجة حفظ المصروف. حدّث القائمة قبل إعادة المحاولة.', 'Could not confirm the expense save result. Refresh the list before retrying.') + ' ' + this.message(error);
+      }
+    } finally {
+      if (this.business?.id === businessId) this.loading = false;
+    }
+  }
+
+  async checkExpenseSubmissionOutcome(): Promise<void> {
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.loading = true;
+    this.error = '';
+    try {
+      const [expenses, dashboard] = await Promise.all([
+        this.api.expenses(businessId),
+        this.api.dashboard(businessId)
+      ]);
+      if (this.business?.id !== businessId) return;
+      this.expenses = expenses;
+      this.dashboard = dashboard;
+      this.expenseSubmissionUncertain = false;
+      this.expenseMessage = this.t('تم تحديث القائمة. راجع آخر المصروفات قبل إعادة المحاولة.', 'Expense list refreshed. Review recent entries before retrying.');
     } catch (error) {
       if (this.business?.id === businessId) this.error = this.message(error);
     } finally {

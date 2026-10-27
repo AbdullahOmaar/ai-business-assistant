@@ -1,3 +1,10 @@
+## Expense retry safety — 2026-10-27
+
+- PR #35 exact-head source adds a same-session safeguard for ambiguous expense-save failures: it disables repeat submission and editable fields until the latest workspace expense list/dashboard refresh succeeds. The user is prompted to inspect recent entries before retrying.
+- This is a UI-level safeguard, not a substitute for persistent server-side idempotency; the current database schema has no expense idempotency key. Adding database idempotency requires a coordinated migration/release and is not included in this PR. No production schema changes were applied.
+
+
+
 ## Expense management UI re-integrated on current main — 2026-10-27
 
 - Reworked the stale PR #35 expense entry/history feature against current main instead of merging its 200+ commits of obsolete ancestry.

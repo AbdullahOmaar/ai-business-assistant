@@ -39,3 +39,19 @@ test('expense submission rejects invalid amounts and dates and sends current wor
   assert.match(method, /incurred_at: occurredAt\.toISOString\(\)/);
   assert.match(method, /this\.business\?\.id !== businessId/);
 });
+
+test('ambiguous expense save outcome blocks another submit until the expense list is refreshed', () => {
+  const start = ui.indexOf('async createExpense(): Promise<void>');
+  const end = ui.indexOf('async createPayment(): Promise<void>', start);
+  assert.ok(start >= 0 && end > start);
+  const method = ui.slice(start, end);
+  assert.match(method, /this\.expenseSubmissionUncertain = true/);
+  assert.match(ui, /expenseSubmissionUncertain \|\| !expenseCategory\.trim\(\)/);
+  assert.match(ui, /\[disabled\]="loading \|\| expenseSubmissionUncertain"/);
+  assert.match(ui, /checkExpenseSubmissionOutcome\(\)/);
+  const checkStart = ui.indexOf('async checkExpenseSubmissionOutcome(): Promise<void>');
+  const checkEnd = ui.indexOf('async createPayment(): Promise<void>', checkStart);
+  const checkMethod = ui.slice(checkStart, checkEnd);
+  assert.match(checkMethod, /this\.api\.expenses\(businessId\)/);
+  assert.match(checkMethod, /this\.expenseSubmissionUncertain = false/);
+});
