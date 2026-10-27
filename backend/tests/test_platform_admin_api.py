@@ -548,14 +548,11 @@ def test_role_grant_returns_not_found_for_missing_firebase_account_without_persi
     import firebase_admin.auth
     import app.platform_admin_api as platform_admin_api
 
-    class UserNotFoundError(Exception):
-        pass
-
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
     monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
 
     def missing_user(uid, **kwargs):
-        raise UserNotFoundError("not found")
+        raise firebase_admin.auth.UserNotFoundError("not found")
 
     monkeypatch.setattr(firebase_admin.auth, "get_user", missing_user)
     response = platform_admin_environment["client"].post(
@@ -680,4 +677,31 @@ def test_platform_user_directory_forwards_opaque_cursor_and_page_size(platform_a
     assert calls[0]["max_results"] == 7
     assert response.json()["limit"] == 7
     assert response.json()["has_more"] is False
+
+def test_platform_user_directory_returns_empty_results_when_exact_lookup_finds_no_user(
+    platform_admin_environment, monkeypatch
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+
+    def missing_email(email, **kwargs):
+        raise firebase_admin.auth.UserNotFoundError("missing email")
+
+    monkeypatch.setattr(firebase_admin.auth, "get_user_by_email", missing_email)
+    monkeypatch.setattr(
+        firebase_admin.auth, "list_users",
+        lambda **kwargs: pytest.fail("exact email lookup must not enumerate users"),
+    )
+    response = platform_admin_environment["client"].get(
+        "/api/v1/platform-admin/users", params={"q": "missing@example.test"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["search_mode"] == "exact_email_or_uid"
+    assert response.json()["has_more"] is False
+    assert response.json()["next_page_token"] is None
 
