@@ -676,3 +676,5 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **UI-MOBILE-02 — IN_PROGRESS:** Improve customer list wrapping/action layout and make the activity-log table horizontally scrollable on mobile without crushing columns.
 - **UI-INVOICE-03 — IN_PROGRESS:** Separate the existing-invoice customer filter from invoice creation; put creation behind an explicit expand/collapse button, collapsed by default and auto-expanded when editing an existing draft.
 - **Validation:** Changes are isolated on `ui/mobile-customers-invoices-audit`; frontend tests/build and preview are required before merge. No API, authorization, or financial logic is intentionally changed. Preview validation is being triggered through the existing `[release-web]` Vercel build marker; this is preview-only, not production promotion.
+
+- **Build-failure follow-up:** The first preview build exposed a source-string corruption in the candidate branch; the app component was reconstructed from `main` and the UI changes reapplied without rewriting escaped newline sequences. Re-run preview build before any merge.
