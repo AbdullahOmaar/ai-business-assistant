@@ -14,8 +14,8 @@ test('workspace navigation shows UI/API versions and the build/deploy timestamp'
 
 test('payment controls are only exposed to workspace owners', () => {
   assert.match(source, /business\?\.role === 'owner'.{0,400}المدفوعات/s);
-  assert.match(source, /tab === 'payments' && business\?\.role !== 'owner'/);
-  assert.match(source, /tab === 'payments' && business\?\.role === 'owner'/);
+  assert.match(source, /tab === 'payments' && business(?:\?\.|\.)role !== 'owner'/);
+  assert.match(source, /tab === 'payments' && business(?:\?\.|\.)role === 'owner'/);
   assert.match(source, /Recording payments is restricted to workspace owners/);
 });
 
