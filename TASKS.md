@@ -1094,3 +1094,12 @@ This section records the current automation-testing workstream and supersedes ea
 - **Validation:** local application tests NOT RUN because this execution environment has no checked-out repository/worktree. Exact-head CircleCI must verify the new candidate; previous green checks for older SHAs do not apply. At baseline, main's four CircleCI contexts were pending and Vercel web/API contexts indicated build-rate-limit failures.
 - **Safety:** no PR merge, branch closure, production mutation, or deployment performed. The broader OWNER/STAFF route matrix remains IN_PROGRESS because role policy must be agreed before unrelated permissions change.
 - **Next action:** inspect CircleCI on the final candidate SHA; fix failures and rerun before declaring SEC-001 slice VERIFIED.
+
+
+## SEC-001 follow-up checkpoint — 2026-10-28
+
+- **Current main:** `8a1ebbfe334980b02795e238be05fad560bd4f28` (PR #217). Working branch `docs/audit-master-plan-2026-10-28` was synced with this SHA; comparison reports 10 commits ahead, 0 behind. No new branch was created.
+- **Confirmed CI issue in candidate test source:** the multiline `app.models` import had literal backslash-n text rather than actual newlines. Corrected in commit `10ee3778dec2751c8534c78e3a31f026715ea727`, then synced with latest main in `fc3004ec8bd0b617d2cd332c4008102e0a2efbda`.
+- **Validation status:** CircleCI has not reported checks for `fc3004e` yet (combined status returned no contexts). GitHub Actions workflow-run metadata for this SHA reports failure for Backend tests, dependency security scan, backend/frontend verification, and container verification; job steps/log downloads returned no usable log content, so the exact failing step is **NOT CONFIRMED**. The malformed import is a confirmed source defect and is fixed, but it cannot be claimed as the sole cause of all failures.
+- **Required next action:** get an actionable exact-SHA CircleCI run and logs, or a working authorized log/artifact path; run the focused backend test and full backend accounting suite. Do not mark SEC-001 verified until results are green on the exact head.
+- **Safety:** no merge, deployment, branch closure, or broad role-policy changes. PR #212 remains draft and open.
