@@ -668,3 +668,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Merge hygiene:** PR #171 merged (`13736dd...`); PR #175 merged (`1a2ae10...`); PR #45 merged (`43a3d7c...`); PR #59 merged (`a41f3d9...`); PR #11 merged (`492bf01...`); PR #12 merged (`41edbea...`). PR #54 closed as duplicate; PR #174 closed as superseded by #175; PR #157 closed after confirming its core logic/tests were already on main; PRs #1/#5/#8/#9 closed as stale or superseded documentation/architecture proposals.
 - **Remaining release gates:** PR #170 (financial/inventory integrity) and #173 (CI/PostgreSQL/container gates) remain Draft pending exact-head PostgreSQL/concurrency and CI evidence; PR #172 Platform Admin remains Draft pending negative authorization tests; PR #135 backup/restore script remains unmerged because an actual isolated restore drill is not evidenced; PR #43 assistant retry/cost controls remain unmerged pending review of bounded retry/cost exposure. Do not merge these blindly.
 - **Current mainline:** last confirmed application-code release SHA `a41f3d99760a1294c17de1538e9a91f5ae9fc6d9`; subsequent main commits `492bf01...` and `41edbea...` are documentation-only learning workflow/plan merges. Production frontend remains verified on `a41f3...`; API remains on `021f964bdb83`.
+
+
+## Mobile UI refinement — 2026-10-27
+
+- **UI-MOB-01 — IN_PROGRESS:** Move UI/API version and build timestamp into a compact card at the top-left of the page header; remove duplicate version pills from the main/mobile header while retaining sidebar metadata.
+- **UI-MOB-02 — IN_PROGRESS:** Improve customer and invoice list wrapping and make activity/customer-statement tables horizontally scrollable on mobile without dropping financial/audit columns.
+- **UI-INV-03 — IN_PROGRESS:** Separate invoice creation into a collapsed native disclosure (`details/summary`), independent from the existing-invoice customer filter.
+- **Validation:** Added static regression checks. Hosted GitHub Actions has had runner-dispatch failures; run exact-branch frontend tests/build and preview smoke checks before merging or promoting.
