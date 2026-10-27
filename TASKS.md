@@ -8,7 +8,7 @@
 - **Migration:** offline `alembic upgrade head --sql` generation — **PASS**, 391 lines including `0004_platform_user_roles`. Live PostgreSQL migration/schema-drift checks are **NOT RUN**: PostgreSQL, Docker, and Podman are unavailable in this sandbox.
 - **Follow-up fixes committed to this branch:** corrected the directory privacy test to inspect returned account objects rather than explanatory response text; corrected numeric audit-filter serialization so values such as `limit=0` are not silently omitted.
 - **Lint:** `npm run lint` — **NOT RUN / unavailable** because the frontend package has no `lint` script. The production build provides Angular compilation/type-check evidence.
-- **Hosted gate:** CircleCI status for PR #190 is **error**, pipeline [65](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/61). Exact root cause could not be confirmed from the available authenticated tools. Do not treat this as passing CI.
+- **Hosted gate:** The latest observed CircleCI status on code-bearing PR #190 commit `ce73878905d19b1e93bcf6c650349c09e5b8db85` was **error**, pipeline [65](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/65). The current task-ledger-only head has no status posted yet. Exact root cause could not be confirmed from the available authenticated tools. Do not treat CI as passing.
 - **Delivery:** PR #172 is merged at `17e8533de376d2438ea5dee57ee6a86b30c9f081`. PR #190 remains **Draft/open**, not merged. No production deployment or production database change was performed.
 
 ## Status and next actions
