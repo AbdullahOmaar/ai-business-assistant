@@ -44,11 +44,16 @@ from app.services import (
 
 @pytest.fixture()
 def postgres_engine():
-    configured_url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+    configured_url = os.getenv("TEST_DATABASE_URL")
+    if os.getenv("CI_ALLOW_DATABASE_SCHEMA_TESTS") != "true":
+        pytest.skip("PostgreSQL concurrency tests require explicit opt-in for isolated-schema creation.")
     if not configured_url:
         pytest.skip("Set TEST_DATABASE_URL to a disposable PostgreSQL database to run concurrency tests.")
 
     url = make_url(configured_url)
+    database_name = (url.database or "").lower()
+    if not any(marker in database_name for marker in ("test", "ci", "disposable", "tmp")):
+        pytest.fail("Refusing schema creation: TEST_DATABASE_URL database name must include test, ci, disposable, or tmp.")
     if url.get_backend_name() != "postgresql":
         pytest.skip("Financial concurrency tests require PostgreSQL row-lock semantics.")
 
