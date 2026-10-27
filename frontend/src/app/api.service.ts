@@ -133,6 +133,34 @@ export class ApiService {
     return await response.json() as T;
   }
 
+  private async requestBlob(path: string): Promise<Response> {
+    const config = await this.auth.getRuntimeConfig();
+    const base = (config.apiBaseUrl || '').trim().replace(/\\/$/, '');
+    if (!base || base.includes('YOUR-BACKEND')) {
+      throw new Error('The backend URL is not configured in runtime-config.json.');
+    }
+    const token = await this.auth.idToken();
+    let response: Response;
+    try {
+      response = await fetch(base + path, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'text/csv' },
+        cache: 'no-store'
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
+    }
+    if (!response.ok) {
+      let message = `Request failed (${response.status}).`;
+      try {
+        const payload = await response.json();
+        if (typeof payload.detail === 'string') message = payload.detail;
+      } catch { /* response body may be empty */ }
+      throw new Error(message);
+    }
+    return response;
+  }
+
   private async requestCsv<T>(path: string, csvText: string): Promise<T> {
     const config = await this.auth.getRuntimeConfig();
     const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
@@ -227,6 +255,21 @@ export class ApiService {
       if (value !== undefined && value !== '') params.set(key, String(value));
     }
     return this.request<PlatformAuditEventPage>(`/api/v1/platform-admin/audit-events?${params.toString()}`);
+  }
+
+  platformAuditEventsCsv(filters: {
+    action?: string; actor_subject?: string; business_id?: string; created_after?: string; created_before?: string;
+    limit?: number;
+  } = {}): Promise<{ blob: Blob; truncated: boolean; rowCount: number }> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return this.requestBlob(`/api/v1/platform-admin/audit-events/export.csv?${params.toString()}`).then(async response => ({
+      blob: await response.blob(),
+      truncated: response.headers.get('X-Export-Truncated') === 'true',
+      rowCount: Number(response.headers.get('X-Export-Row-Count') || 0)
+    }));
   }
 
   listBusinesses(): Promise<Business[]> {
