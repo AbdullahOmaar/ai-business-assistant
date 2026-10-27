@@ -1223,3 +1223,38 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Updated `docs/BACKUP_RESTORE_DRILL.md` to describe the expanded target-catalog guard. No live database, credentials, backup, or restore target was used.
 - Prior candidate PR #230 exact-head CircleCI passed 4/4, but its branch had become two commits behind current main and carried a stale `TASKS.md` checkpoint; this focused candidate rebases the same reviewed script changes on current main. Exact-head CircleCI for this branch: pending.
 - Actual isolated restore drill: NOT RUN. Keep production restore readiness BLOCKED until an explicitly approved isolated restore is executed and documented.
+
+## Consolidation checkpoint — 2026-10-28, after finance and backup guard merges
+
+### Latest verified mainline changes
+- PR #231 — Firebase auth now has explicit fail-closed regression coverage when `FIREBASE_PROJECT_ID` is absent; merged as `55b4992cd8ca782d55ecbfb9de59bae8bd02677a`; exact-head CircleCI 4/4 PASS.
+- PR #233 — `void_invoice` rejects an issued invoice after approved sales returns, preventing double stock restoration; merged as `6fde1b7191314a8225285f44154fa8963c89ae65`; exact-head CircleCI 4/4 PASS.
+- PR #234 — isolated backup-restore target catalog guard now checks user relations, routines, types, non-default schemas and non-default extensions; deterministic shell tests reject same source/target identity and non-empty targets before dump/restore; runbook updated. Merged as `0346fa32de69ad83b2d58dcbd9caadbd6580bb60`; exact-head CircleCI 4/4 PASS.
+- Earlier PR #223/#224/#225/#226 and PR #228 are recorded in the prior checkpoints. Release metadata is `1.3.2`.
+
+### Latest main and CI snapshot
+- Main SHA: `0346fa32de69ad83b2d58dcbd9caadbd6580bb60`.
+- At the latest status read, `frontend-quality` and `backend-container` were PASS; `backend-accounting` and `frontend-browser-smoke` were still PENDING on post-merge main runs. The exact PR heads for #233 and #234 each passed all four CircleCI contexts.
+- The two stale drafts #230 and #232 were closed as superseded by focused, current-main PRs #234 and #233 respectively. There were no open PRs immediately after those closures; this checkpoint PR is documentation-only.
+
+### Branch inventory — latest API snapshot
+- 206 branches total, 205 non-main.
+- 200 closed PRs were returned across the fetched pages: 93 merged and 107 closed without merge.
+- 90 non-main branch heads exactly matched a merged PR head SHA. These are cleanup candidates, not an instruction to delete without checking branch-specific work.
+- Three duplicate-head groups (six refs) remain confirmed:
+  - `ci/free-local-assistant-fallback-validation` / `feat/free-local-assistant-fallback`
+  - `feat/assistant-resilience-usage-limits` / `feat/assistant-resilience-usage-limits-verified`
+  - `test/payment-integrity-regression` / `test/payment-integrity-regression-fixed`
+- Additional semantic reviews: payment-integrity and accounting-rounding branch test functions are subsets of current main; return-discount allocation logic is superseded by `domain_rules.discounted_return_line_total`; CORS/settings, timezone, sales-return guard and workspace-load-guard branches were reviewed as stale/subset candidates. A unique Firebase unconfigured-project regression was ported and merged in #231.
+- `security/owner-staff-permission-matrix` still has a unique role-policy test whose assumptions conflict with current STAFF product permissions. Status: BLOCKED pending an explicit role/permission matrix; do not merge blindly.
+- Full semantic review of all 205 non-main branches is NOT COMPLETE. The connected GitHub tools still expose no branch-delete operation, and no branch refs have been deleted. Cleanup remains BLOCKED until an authorized deletion path is available and each candidate is proven to contain no unique work.
+
+### Production deployment — BLOCKED
+- Vercel API production deployment `dpl_3c8nAFG1m99wk64eYzv1nwzjZbGu` is READY on release SHA `6773389e030416c2ef91b6db04fd9bc24cb08399`, serving version `1.3.2`; `/version`, `/readyz`, and `/health` returned HTTP 200. That deployed SHA predates PR #231/#233/#234 and is not current-main parity.
+- Web production remains on old SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`; no Web deployment exists for release SHA `6773389e030416c2ef91b6db04fd9bc24cb08399` or current main.
+- Current main Vercel Web/API checks fail with `build-rate-limit`. A direct deploy request returned HTTP 402 `api-deployments-free-per-day`, “Resource is limited - try again in 24 hours (more than 100)”, `retryAfter=86400`. No paid plan change was made.
+- CLI fallback is unavailable in the execution environment: no Vercel CLI/auth is configured and the connected Desktop Commander device is offline. Do not promote old Web/API builds as if they contained current-main code.
+- Production readiness: NOT VERIFIED. Retry deployment only after the quota resets or the owner resolves the account limit; then deploy the final current main SHA to both projects and verify aliases, `/version`, health/readiness, browser smoke, and PWA/version behavior.
+
+### Next action
+Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to finish, finish semantic branch review, and retry Web/API production deployment after the Vercel quota window. Delete only verified stale branches when an authorized deletion operation is available.
