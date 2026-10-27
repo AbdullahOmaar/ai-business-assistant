@@ -94,9 +94,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install frontend dependencies
+          name: Verify Node runtime and install frontend dependencies
           command: |
             set -euo pipefail
+            node --version
+            npm --version
             cd frontend
             npm install --no-audit --no-fund
       - run:
