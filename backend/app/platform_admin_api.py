@@ -147,6 +147,8 @@ def platform_admin_overview(
 def list_platform_businesses(
     q: str | None = Query(default=None, max_length=160),
     status: Literal["all", "active", "inactive"] = Query(default="all"),
+    sort_by: Literal["created_at", "name", "members"] = Query(default="created_at"),
+    sort_order: Literal["asc", "desc"] = Query(default="desc"),
     limit: int = Query(default=25, ge=1, le=100),
     offset: int = Query(default=0, ge=0, le=1000000),
     session: Session = Depends(get_session),
@@ -179,14 +181,23 @@ def list_platform_businesses(
         count_statement = count_statement.where(predicate)
 
     total = int(session.scalar(count_statement) or 0)
+    sort_columns = {
+        "created_at": Business.created_at,
+        "name": Business.name,
+        "members": member_count,
+    }
+    sort_column = sort_columns[sort_by]
+    sort_expression = sort_column.desc() if sort_order == "desc" else sort_column.asc()
     rows = session.execute(
-        statement.order_by(Business.created_at.desc(), Business.id).limit(limit).offset(offset)
+        statement.order_by(sort_expression, Business.id.asc()).limit(limit).offset(offset)
     ).all()
     return {
         "items": [_business_payload(business, count) for business, count in rows],
         "total": total,
         "limit": limit,
         "offset": offset,
+        "sort_by": sort_by,
+        "sort_order": sort_order,
     }
 
 
