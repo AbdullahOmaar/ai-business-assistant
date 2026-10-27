@@ -668,3 +668,10 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Merge hygiene:** PR #171 merged (`13736dd...`); PR #175 merged (`1a2ae10...`); PR #45 merged (`43a3d7c...`); PR #59 merged (`a41f3d9...`); PR #11 merged (`492bf01...`); PR #12 merged (`41edbea...`). PR #54 closed as duplicate; PR #174 closed as superseded by #175; PR #157 closed after confirming its core logic/tests were already on main; PRs #1/#5/#8/#9 closed as stale or superseded documentation/architecture proposals.
 - **Remaining release gates:** PR #170 (financial/inventory integrity) and #173 (CI/PostgreSQL/container gates) remain Draft pending exact-head PostgreSQL/concurrency and CI evidence; PR #172 Platform Admin remains Draft pending negative authorization tests; PR #135 backup/restore script remains unmerged because an actual isolated restore drill is not evidenced; PR #43 assistant retry/cost controls remain unmerged pending review of bounded retry/cost exposure. Do not merge these blindly.
 - **Current mainline:** last confirmed application-code release SHA `a41f3d99760a1294c17de1538e9a91f5ae9fc6d9`; subsequent main commits `492bf01...` and `41edbea...` are documentation-only learning workflow/plan merges. Production frontend remains verified on `a41f3...`; API remains on `021f964bdb83`.
+
+
+## Payment failure visibility — 2026-10-27
+
+- PAY-UI-02 — IN_PROGRESS: Payment failures were assigned to the global error banner, while the payment form's local feedback rendered only paymentMessage. Add an accessible alert beside the payment action and a regression test so API errors are visible in context.
+- Safety: Preserve entered values and the idempotency key on failure; do not retry or create any production payment as part of verification.
+- Validation: Code/test update is proposed in PR; hosted CI is blocked by runner dispatch. Run frontend tests/build and smoke-test the payment error UI before declaring verified.
