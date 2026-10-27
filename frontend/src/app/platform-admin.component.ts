@@ -359,9 +359,10 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   async updateBusinessStatus(): Promise<void> {
-    const current = this.selectedDetails?.business;
+    const details = this.selectedDetails;
+    const current = details?.business;
     const reason = this.statusReason.trim();
-    if (!current || this.statusSaving) return;
+    if (!details || !current || this.statusSaving) return;
     if (reason.length < 3) {
       this.statusError = this.t('اكتب سببًا واضحًا لا يقل عن 3 أحرف.', 'Enter a meaningful reason of at least 3 characters.');
       return;
@@ -381,9 +382,11 @@ export class PlatformAdminComponent implements OnInit {
     try {
       const result = await this.api.platformBusinessStatus(current.id, { is_active: this.desiredStatus, reason });
       this.successMessage = result.message;
-      this.selectedDetails.business = result.business;
-      this.statusReason = '';
-      this.desiredStatus = result.business.is_active;
+      details.business = result.business;
+      if (this.selectedDetails === details) {
+        this.statusReason = '';
+        this.desiredStatus = result.business.is_active;
+      }
       await Promise.all([this.loadBusinesses(this.businessOffset), this.refreshOverview(), this.loadAudit(0)]);
     } catch (error) {
       this.statusError = this.errorText(error);
