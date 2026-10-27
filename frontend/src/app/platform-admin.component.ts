@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   ApiService, PlatformAdminOverview, PlatformAuditEvent, PlatformBusiness,
-  PlatformBusinessDetails, PlatformMembership
+  PlatformBusinessDetails, PlatformMembership, PlatformSystemStatus
 } from './api.service';
 
 type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
@@ -49,6 +49,28 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
           </div>
           @if (overviewLoading && !overview) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ جلب المؤشرات من الخادم…', 'Loading live metrics from the server…') }}</div> }
           @if (overviewError && !overviewLoading) { <div class="notice error" role="alert">{{ overviewError }} <button class="text-action" type="button" (click)="refreshOverview()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
+          <article class="panel system-status-panel" aria-labelledby="system-status-title">
+            <div class="panel-heading">
+              <div><p class="eyebrow">{{ t('صحة التشغيل', 'RUNTIME HEALTH') }}</p><h3 id="system-status-title">{{ t('حالة النظام والإصدار', 'System status & release') }}</h3><p>{{ t('فحص آمن للجاهزية دون عرض أسرار أو بيانات عملاء.', 'Safe readiness checks without exposing secrets or customer data.') }}</p></div>
+              <button type="button" class="outline-button" [disabled]="systemStatusLoading" (click)="refreshSystemStatus()">{{ systemStatusLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص الآن', 'Check now') }}</button>
+            </div>
+            @if (systemStatusLoading && !systemStatus) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ فحص الاعتمادات…', 'Checking dependencies…') }}</div> }
+            @if (systemStatusError) { <div class="notice error" role="alert">{{ systemStatusError }} <button type="button" class="text-action" (click)="refreshSystemStatus()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
+            @if (systemStatus; as runtime) {
+              <div class="runtime-summary">
+                <span class="status-pill" [class.status-active]="runtime.status === 'healthy'" [class.status-inactive]="runtime.status !== 'healthy'">{{ runtime.status === 'healthy' ? t('سليم', 'Healthy') : t('يحتاج مراجعة', 'Degraded') }}</span>
+                <span>{{ t('آخر فحص', 'Last checked') }}: {{ formatDate(runtime.checked_at) }}</span>
+              </div>
+              <div class="runtime-grid">
+                <div><small>{{ t('إصدار API', 'API version') }}</small><strong>{{ runtime.release.version }}</strong></div>
+                <div><small>{{ t('معرّف الإصدار', 'Commit') }}</small><strong class="runtime-commit">{{ runtime.release.commit }}</strong></div>
+                <div><small>{{ t('البيئة', 'Environment') }}</small><strong>{{ runtime.release.environment }}</strong></div>
+                <div><small>{{ t('قاعدة البيانات', 'Database') }}</small><strong [class.runtime-good]="runtime.dependencies.database === 'healthy'" [class.runtime-bad]="runtime.dependencies.database !== 'healthy'">{{ dependencyStatusLabel(runtime.dependencies.database) }}</strong></div>
+                <div><small>{{ t('التحقق من الهوية', 'Identity verifier') }}</small><strong [class.runtime-good]="runtime.dependencies.identity_verifier === 'configured'" [class.runtime-bad]="runtime.dependencies.identity_verifier !== 'configured'">{{ dependencyStatusLabel(runtime.dependencies.identity_verifier) }}</strong></div>
+              </div>
+              <p class="runtime-note">{{ t('حالة التحقق تعني أن الإعداد موجود، ولا تثبت صحة رمز مستخدم بعينه.', 'Verifier status means configuration exists; it does not validate an individual user token.') }}</p>
+            }
+          </article>
           @if (overview; as data) {
             <div class="metric-grid">
               <article class="metric-card"><div class="metric-icon teal" aria-hidden="true">▦</div><span>{{ t('مساحات العمل', 'Workspaces') }}</span><strong>{{ data.businesses.total }}</strong><small>{{ data.businesses.active }} {{ t('نشطة', 'active') }} · {{ data.businesses.inactive }} {{ t('معطّلة', 'inactive') }}</small></article>
@@ -175,6 +197,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
     .quiet-button,.outline-button,.primary-button,.text-action{border:1px solid #d8e2e9;background:#fff;border-radius:9px;padding:9px 12px;color:#284256;font-size:12px;font-weight:700;white-space:nowrap}.quiet-button:hover,.outline-button:hover{background:#f1f7f8;border-color:#b8d5d2}.signout{border-color:#e4d8d6;color:#9a4944}.primary-button{background:#0f766e;border-color:#0f766e;color:white}.primary-button:hover{background:#0b625b}.text-action{padding:0;border:0;background:transparent;color:#0f766e}
     .section-nav{display:flex;gap:6px;flex-wrap:wrap;padding:5px;background:#edf3f6;border:1px solid #e4ebf0;border-radius:12px;width:fit-content;max-width:100%}.section-nav button{display:flex;align-items:center;gap:8px;border:1px solid transparent;border-radius:9px;padding:10px 13px;color:#627387;background:transparent;font-size:12px;font-weight:700}.section-nav button.active{background:#fff;border-color:#e2e9ef;color:#0f766e;box-shadow:0 2px 8px #2033440b}.nav-count{background:#e7f5f2;color:#0f766e;border-radius:20px;padding:2px 7px;font-size:10px}
     .section-content{display:grid;gap:17px;min-width:0}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0}.section-heading>div{min-width:0}.section-heading .eyebrow{margin-bottom:5px}.section-heading h2{margin:0;font-size:22px;letter-spacing:-.025em}.section-heading p:not(.eyebrow){margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.55}.outline-button{flex:0 0 auto}.small-button{padding:6px 9px;font-size:11px}
+    .system-status-panel{margin-bottom:16px}.runtime-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:10px 0 14px}.runtime-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.runtime-grid>div{display:grid;gap:6px;min-width:0;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}.runtime-grid small{font-size:10px;color:var(--muted)}.runtime-grid strong{font-size:12px;overflow-wrap:anywhere}.runtime-grid .runtime-commit{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.runtime-good{color:#18784c}.runtime-bad{color:#a74436}.runtime-note{font-size:10px;line-height:1.5;color:var(--muted);margin:12px 0 0}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric-card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;box-shadow:0 6px 18px #243b5307;min-width:0}.metric-card{padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:155px}.metric-icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:15px;margin-bottom:4px}.teal{background:#dff5ee;color:#09776b}.blue{background:#e5f0ff;color:#2c62a2}.violet{background:#efeaff;color:#6c53ac}.amber{background:#fff2dc;color:#986015}.metric-card>span:not(.metric-icon){font-size:12px;color:#65778a;font-weight:650}.metric-card>strong{font-size:29px;letter-spacing:-.04em;color:#12263a;line-height:1.1;overflow-wrap:anywhere}.metric-card small{font-size:11px;color:#6c7c8e;line-height:1.45}
     .content-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.3fr);gap:14px}.panel{padding:17px}.panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;min-width:0}.panel-heading h3,.permission-card h3{margin:0;color:#1a2c40;font-size:15px}.panel-heading p{color:var(--muted);font-size:11px;line-height:1.5;margin:5px 0 0}.read-only{flex:0 0 auto;background:#eff7f5;color:#0f766e;border-radius:7px;padding:5px 7px;font-size:9px;font-weight:800;letter-spacing:.06em}.currency-list{display:grid;margin-top:15px}.currency-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #edf1f4}.currency-row:last-child{border-bottom:0}.currency-row>div{display:grid;gap:3px}.currency-row>div strong{font-size:13px}.currency-row small{font-size:10px;color:var(--muted)}.amount{font-variant-numeric:tabular-nums;white-space:nowrap}.amount span{font-size:10px;color:#718195}.empty-state{color:#75879a;font-size:12px;line-height:1.5;padding:12px 0;margin:0}
     .table-wrap{min-width:0;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:12px;background:white}.table-wrap table{border:0;border-collapse:separate;border-spacing:0;width:100%;min-width:760px;font-size:12px;text-align:start}.table-wrap th{background:#f7fafb;color:#63758a;font-size:10px;font-weight:800;white-space:nowrap}.table-wrap th,.table-wrap td{padding:12px 13px;border-bottom:1px solid #ebf0f3;text-align:start;vertical-align:middle;max-width:300px}.table-wrap tr:last-child td{border-bottom:0}.table-wrap tbody tr:hover td{background:#fbfdfd}.table-wrap td small{display:block;margin-top:4px}.compact-table table{min-width:420px}.compact-table th,.compact-table td{padding:10px}
@@ -199,6 +222,9 @@ export class PlatformAdminComponent implements OnInit {
   overview: PlatformAdminOverview | null = null;
   overviewLoading = false;
   overviewError = '';
+  systemStatus: PlatformSystemStatus | null = null;
+  systemStatusLoading = false;
+  systemStatusError = '';
   pageError = '';
   successMessage = '';
 
@@ -235,6 +261,7 @@ export class PlatformAdminComponent implements OnInit {
 
   ngOnInit(): void {
     void this.refreshOverview();
+    void this.refreshSystemStatus();
     void this.loadBusinesses(0);
     void this.loadAudit(0);
   }
@@ -283,7 +310,29 @@ export class PlatformAdminComponent implements OnInit {
 
   async refreshAll(): Promise<void> {
     this.pageError = '';
-    await Promise.all([this.refreshOverview(), this.loadBusinesses(this.businessOffset), this.loadAudit(this.auditOffset)]);
+    await Promise.all([this.refreshOverview(), this.refreshSystemStatus(), this.loadBusinesses(this.businessOffset), this.loadAudit(this.auditOffset)]);
+  }
+
+  async refreshSystemStatus(): Promise<void> {
+    this.systemStatusLoading = true;
+    this.systemStatusError = '';
+    try {
+      this.systemStatus = await this.api.platformAdminSystemStatus();
+    } catch (error) {
+      this.systemStatusError = this.errorText(error);
+    } finally {
+      this.systemStatusLoading = false;
+    }
+  }
+
+  dependencyStatusLabel(status: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      healthy: { ar: 'سليم', en: 'Healthy' },
+      unavailable: { ar: 'غير متاح', en: 'Unavailable' },
+      unconfigured: { ar: 'غير مُعد', en: 'Not configured' },
+      configured: { ar: 'مُعد', en: 'Configured' },
+    };
+    return labels[status]?.[this.language === 'ar' ? 'ar' : 'en'] || status;
   }
 
   async refreshOverview(): Promise<void> {
@@ -443,3 +492,5 @@ export class PlatformAdminComponent implements OnInit {
     return message || this.t('حدث خطأ غير متوقع أثناء الاتصال بالخادم.', 'An unexpected server error occurred.');
   }
 }
+
+<style>
