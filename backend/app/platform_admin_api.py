@@ -202,6 +202,7 @@ def platform_admin_access(
     return {
         "is_platform_admin": True,
         "is_platform_super_admin": is_super_admin,
+        "subject": principal.subject,
         "roles": roles,
         "permissions": sorted(permissions),
     }
