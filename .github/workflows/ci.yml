@@ -8,7 +8,7 @@ on:
       - "frontend/**"
       - ".github/workflows/**"
   push:
-    branches: ["main"]
+    branches: ["main", "feat/**"]
     paths:
       - "backend/**"
       - "frontend/**"
@@ -42,7 +42,7 @@ jobs:
       run:
         working-directory: backend
     env:
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/ai_business_assistant_test
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/ai_business_assistant_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
