@@ -839,3 +839,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Current evidence:** no test run has yet been observed for this branch's new Playwright suite. The workflow is not VERIFIED until it executes and reports a passing result on the exact commit.
 
 - **Preview execution checkpoint:** requested an isolated Vercel frontend Preview for this automation branch to reuse the configured frontend test/build pipeline; this is a Preview only and must not update production aliases.
+
+
+## Automation Testing execution evidence — 2026-10-27 12:30 UTC
+
+- Exact candidate at this checkpoint: `804754b7325585fa63b4017f689c67f64c2a5825`.
+- **Frontend unit tests/build — VERIFIED on this candidate:** Vercel Preview `dpl_9Hfj418HSVsbFJfy1SR8EopdXUy5` reached READY. Build logs show `# tests 12`, `# pass 12`, `# fail 0`; npm audit reported 0 vulnerabilities; Angular production bundle generation and deployment completed. This verifies unit tests/build for the current candidate SHA, not the new Playwright tests.
+- **GitHub Actions — BLOCKED before test execution:** exact-head runs `40503977919` (backend/frontend), `40503978154` (frontend browser smoke), and `40503977871` (dependency security) concluded failure with `steps=null`. No test code executed in those jobs; do not classify these as test failures or passes.
+- **Playwright E2E — NOT RUN:** added startup/splash, uncaught-page-error, and RTL/LTR switching tests. The runner has not executed them yet.
+- **Alternative runner prepared, not verified:** CircleCI config adds a browser-capable Playwright job alongside existing backend/PostgreSQL, frontend, and container checks. Hosted CircleCI run is still not evidenced for this private repo; use its run results once the repo is authorized there. Do not claim the fallback is operational until a real pipeline executes.
+- **Release policy:** PR #183 remains Draft. No production deployment, user authentication, production database writes, or payment mutations were performed.
