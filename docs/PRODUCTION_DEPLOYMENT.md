@@ -109,3 +109,14 @@ A successful migration test against a disposable PostgreSQL database is not evid
 - Sales-return line amounts are allocated from the stored invoice net subtotal in integer cents with deterministic largest-remainder allocation.
 - Regression coverage creates and issues a real discounted invoice through the API, then creates and approves a full return and verifies the return total equals the invoice total.
 - Backend, container, frontend/backend verification, and dependency audit passed before merge; independent review found no major issues.
+
+
+## Platform Admin Screen and explicit super-admin access
+
+- The platform-wide endpoints live under `/api/v1/platform-admin`. They use the same trusted Firebase ID-token verifier and PostgreSQL request-session dependencies as the rest of the API.
+- Platform access is denied unless `PLATFORM_SUPER_ADMIN_UIDS` is configured in the **backend server environment** as a comma-separated list of exact verified principals. Each item must use the fully qualified subject returned by the server, `firebase:{FIREBASE_PROJECT_ID}:{firebase_uid}`. Do not place emails, passwords, tokens, or service-account JSON in this variable, source code, the frontend runtime config, or screenshots. The variable being unset or empty denies all platform-admin access.
+- Never add this allowlist through the UI, a request body, a workspace role, or automatic first-user registration. Only an authorized infrastructure administrator may configure the server environment after independently verifying the Firebase UID and intended project.
+- `GET /api/v1/platform-admin/overview`, `/businesses`, `/businesses/{id}`, and `/audit-events` are read-only. Monetary totals remain separated by currency; they are not converted or added together.
+- `PATCH /api/v1/platform-admin/businesses/{id}/status` requires an explanatory reason and records a business-scoped audit event in the same database transaction. It disables/enables workspace access via the existing membership authorization behavior; it does not delete the workspace, its membership rows, invoices, payments, or other records. Treat the audit event and change as one commit.
+- The existing workspace `OWNER` and `STAFF` roles do not imply platform access. This screen does not create Firebase users, invite platform admins, mutate membership roles, or change invoice/payment/allocation balances because the current application has no safe user-directory/invitation or privileged financial-correction workflow.
+- Before allowing production use, add the allowlist only through the platform’s secret/configuration settings after explicit identity verification; then test the `403` denial cases and authorized access against a non-production deployment. Do not enable it with a guessed UID.
