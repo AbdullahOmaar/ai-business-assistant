@@ -853,3 +853,43 @@ def test_delegated_platform_role_permission_matrix(
         json={"role": "platform_viewer", "active": True, "reason": "Must be root only"},
     )
     assert role_grant.status_code == 403
+
+
+def test_platform_role_change_rolls_back_when_audit_and_grant_commit_fails(
+    platform_admin_environment, monkeypatch
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(firebase_admin.auth, "get_user", lambda uid, **kwargs: SimpleNamespace(uid=uid))
+    client = platform_admin_environment["client"]
+
+    def fail_commit(_session):
+        raise RuntimeError("simulated database commit failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Session, "commit", fail_commit)
+        response = client.post(
+            "/api/v1/platform-admin/users/audit-atomicity-user/roles",
+            json={
+                "role": "platform_viewer",
+                "active": True,
+                "reason": "Atomicity regression test",
+            },
+        )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "The platform role change could not be saved."
+    with Session(platform_admin_environment["engine"]) as session:
+        grant = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:audit-atomicity-user",
+            PlatformRoleGrant.role == "platform_viewer",
+        ))
+        audit = session.scalar(select(PlatformAdminAuditEvent).where(
+            PlatformAdminAuditEvent.target_subject == "firebase:test-project:audit-atomicity-user",
+            PlatformAdminAuditEvent.action == "platform.user_role.granted",
+        ))
+    assert grant is None
+    assert audit is None
