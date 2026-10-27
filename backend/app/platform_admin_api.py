@@ -8,9 +8,9 @@ from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
@@ -75,6 +75,60 @@ def platform_admin_access(
     """A minimal authorization probe used to decide whether to render admin navigation."""
     _require_platform_admin(principal)
     return {"is_platform_admin": True}
+
+
+@router.get("/system-status")
+def platform_admin_system_status(
+    request: Request,
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+) -> dict:
+    """Expose only safe runtime/readiness metadata to an authorized platform admin."""
+    _require_platform_admin(principal)
+
+    checked_at = datetime.now(timezone.utc).isoformat()
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
+        database_status = "unconfigured"
+    else:
+        try:
+            with factory() as session:
+                session.execute(text("SELECT 1"))
+            database_status = "healthy"
+        except Exception:
+            # Never expose driver messages, DSNs, schema names, or exception text.
+            database_status = "unavailable"
+
+    project_configured = bool(os.getenv("FIREBASE_PROJECT_ID", "").strip())
+    resolver_configured = getattr(request.app.state, "principal_resolver", None) is not None
+    identity_status = (
+        "configured" if project_configured and resolver_configured else "unconfigured"
+    )
+    overall_status = (
+        "healthy" if database_status == "healthy" and identity_status == "configured"
+        else "degraded"
+    )
+    commit = (
+        os.getenv("VERCEL_GIT_COMMIT_SHA", "").strip()
+        or os.getenv("GITHUB_SHA", "").strip()
+        or "unknown"
+    )
+    return {
+        "status": overall_status,
+        "checked_at": checked_at,
+        "release": {
+            "version": request.app.version,
+            "commit": commit[:12],
+            "environment": os.getenv("VERCEL_ENV", "unknown"),
+        },
+        "dependencies": {
+            "database": database_status,
+            "identity_verifier": identity_status,
+        },
+        "limitations": [
+            "Identity status reports configuration only; it does not validate a specific Firebase token.",
+            "This endpoint does not expose secrets, connection strings, customer data, or exception details.",
+        ],
+    }
 
 
 @router.get("/overview")
