@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import AuditEvent, Base, Product, StockMovement
+from app.models import AuditEvent, Base, BusinessMembership, MembershipRole, Product, StockMovement
 from app.security import AuthenticatedPrincipal
 
 
