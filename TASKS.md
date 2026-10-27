@@ -1051,3 +1051,11 @@ This section records the current automation-testing workstream and supersedes ea
 
 **Next action:** re-check the exact post-merge main statuses; keep production activation blocked until authenticated browser/authorization E2E and release gates are satisfied.
 
+
+
+## Workspace membership management reconciliation — 2026-10-28
+
+- Refreshed the existing `feat/workspace-membership-management` branch from current `main` to resolve stale-base conflicts without merging the older branch tree wholesale.
+- Reintegrated owner-only membership listing, role updates, and member removal; adds workspace-row locking, a fresh owner authorization check under lock, last-owner protection, strict request validation, and audit events.
+- Added the existing focused membership API regression suite. Exact-head CircleCI validation is pending after the branch update; local execution was unavailable in this connected GitHub-only workspace. Do not merge until required checks pass.
+- No production records or credentials were changed by this source reconciliation.

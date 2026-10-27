@@ -8,7 +8,7 @@ from decimal import Decimal
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import (
-    Business, BusinessMembership, Expense, Invoice, MembershipRole,
+    AuditEvent, Business, BusinessMembership, Expense, Invoice, MembershipRole,
     Payment, PaymentAllocation, SalesReturn,
 )
 from app.security import (
@@ -46,6 +46,12 @@ class BusinessPatch(BaseModel):
     contact_email: str | None = Field(default=None, max_length=254)
     phone: str | None = Field(default=None, max_length=32)
     address: str | None = Field(default=None, max_length=500)
+
+
+
+class MembershipRolePatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: MembershipRole
 
 
 def _serialize_business(item: Business) -> dict:
@@ -139,6 +145,157 @@ def list_businesses(session: Session = Depends(get_session),
         {**_serialize_business(business), "role": role.value}
         for business, role in rows
     ]
+
+
+
+@router.get("/businesses/{business_id}/memberships")
+def list_business_memberships(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List identities and roles for workspace owners only."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    rows = session.scalars(
+        select(BusinessMembership)
+        .where(BusinessMembership.business_id == business_id)
+        .order_by(BusinessMembership.created_at, BusinessMembership.id)
+    ).all()
+    return [
+        {
+            "id": str(row.id),
+            "user_subject": row.user_subject,
+            "role": row.role.value,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        }
+        for row in rows
+    ]
+
+
+@router.patch("/businesses/{business_id}/memberships/{membership_id}")
+def update_business_membership_role(
+    business_id: UUID,
+    membership_id: UUID,
+    body: MembershipRolePatch,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Allow owners to change roles with last-owner protection and audit history."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+        business = session.scalars(
+            select(Business).where(
+                Business.id == business_id, Business.is_active.is_(True)
+            ).with_for_update()
+        ).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        # Re-check under the workspace lock so a concurrent demotion cannot
+        # leave a stale owner authorization valid for this mutation.
+        _authorize(session, principal, business_id, owner_only=True)
+        membership = session.scalars(
+            select(BusinessMembership).where(
+                BusinessMembership.id == membership_id,
+                BusinessMembership.business_id == business_id,
+            ).with_for_update()
+        ).one_or_none()
+        if membership is None:
+            raise HTTPException(status_code=404, detail="Membership not found")
+        if membership.role is MembershipRole.OWNER and body.role is not MembershipRole.OWNER:
+            owner_count = session.scalar(
+                select(func.count()).select_from(BusinessMembership).where(
+                    BusinessMembership.business_id == business_id,
+                    BusinessMembership.role == MembershipRole.OWNER,
+                )
+            ) or 0
+            if owner_count <= 1:
+                raise HTTPException(status_code=422, detail="A workspace must retain at least one owner")
+        old_role = membership.role
+        membership.role = body.role
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="membership.role_changed",
+            target_type="business_membership",
+            target_id=str(membership.id),
+            change_summary=f"Role changed from {old_role.value} to {body.role.value}",
+        ))
+        session.commit()
+        session.refresh(membership)
+        return {
+            "id": str(membership.id),
+            "user_subject": membership.user_subject,
+            "role": membership.role.value,
+            "created_at": membership.created_at.isoformat() if membership.created_at else None,
+        }
+    except AuthorizationError as exc:
+        session.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception:
+        session.rollback()
+        raise
+
+
+@router.delete("/businesses/{business_id}/memberships/{membership_id}", status_code=204)
+def remove_business_membership(
+    business_id: UUID,
+    membership_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Remove a member while preserving an owner and recording the action."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+        business = session.scalars(
+            select(Business).where(
+                Business.id == business_id, Business.is_active.is_(True)
+            ).with_for_update()
+        ).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        _authorize(session, principal, business_id, owner_only=True)
+        membership = session.scalars(
+            select(BusinessMembership).where(
+                BusinessMembership.id == membership_id,
+                BusinessMembership.business_id == business_id,
+            ).with_for_update()
+        ).one_or_none()
+        if membership is None:
+            raise HTTPException(status_code=404, detail="Membership not found")
+        if membership.role is MembershipRole.OWNER:
+            owner_count = session.scalar(
+                select(func.count()).select_from(BusinessMembership).where(
+                    BusinessMembership.business_id == business_id,
+                    BusinessMembership.role == MembershipRole.OWNER,
+                )
+            ) or 0
+            if owner_count <= 1:
+                raise HTTPException(status_code=422, detail="A workspace must retain at least one owner")
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="membership.removed",
+            target_type="business_membership",
+            target_id=str(membership.id),
+        ))
+        session.delete(membership)
+        session.commit()
+        return Response(status_code=204)
+    except AuthorizationError as exc:
+        session.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception:
+        session.rollback()
+        raise
 
 
 @router.post("/businesses", status_code=201)
