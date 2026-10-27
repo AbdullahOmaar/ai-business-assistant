@@ -1,3 +1,22 @@
+# Workflow policy checkpoint — 2026-10-27
+
+## Engineering process rules (adopted)
+
+- **Branch discipline:** Avoid one branch per tiny task/edit. Group related changes, implementation, tests, and documentation into one coherent work item and PR. Reuse an existing in-progress branch when safe; split only for independent release/review/safety boundaries. Check open PRs first and prevent duplicate work.
+- **Deployment discipline:** Production deployment is tied to a meaningful release, not every small task or commit. Batch related changes, complete validation, merge the release candidate, and deploy once per affected project for an important feature/feature bundle or critical fix. Do not redeploy an unaffected project.
+- **Release safeguards:** Before deployment, confirm the exact main SHA, applicable checks, release markers ([release-web] / [release-api]), and Ignore Build Step behavior. Do not repeatedly retry quota-blocked deployments. Verify READY state, deployed SHA/version, health/readiness, and relevant smoke checks afterward.
+- **Exceptions:** A critical security/production fix can be expedited with focused tests and documented evidence; required protections and authorization are never bypassed.
+
+## Acceptance / verification
+
+- Rules are recorded in AGENTS.md for all coding agents and in docs/PRODUCTION_DEPLOYMENT.md for release operators.
+- This checkpoint records policy adoption only; it does not change application behavior or authorize a production deployment.
+- Status: **IN_PROGRESS** until the documentation PR is reviewed/merged. No tests or deployment are required for this documentation-only change; GitHub checks remain the source of merge-gate evidence.
+
+---
+
+---
+
 # Automation Testing Cycle — 2026-10-27 — IN_PROGRESS / BLOCKED
 
 This section records the current automation-testing workstream and supersedes earlier status claims for this cycle.
@@ -17,6 +36,8 @@ This section records the current automation-testing workstream and supersedes ea
 - Implementation commits: `20dd9c662c9870ef53c4212fb4e56596aabdd58e` (deterministic Playwright fixture) and `fc7da57be5715fcd65783fccc2740b459a85021f` (remove Actions workflow). Read PR #183 for the live head SHA because this ledger itself is updated by commits.
 - PR #183: draft/open, not merged: https://github.com/AbdullahOmaar/ai-business-assistant/pull/183
 - No production deployment was created for this change. The attempted new Vercel Preview was blocked by the platform quota before a deployment was created.
+
+---
 
 ---
 
@@ -851,37 +872,19 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Status: IN_PROGRESS;** production aliases unchanged.
 
 
-## Automation Testing workstream — 2026-10-27
+## Release v1.2.1 rebase attempt — 2026-10-27
 
-- **AT-01 — Backend regression suite and PostgreSQL 16 migration/schema checks: IN_PROGRESS.** Existing backend-tests workflow covers PostgreSQL 16, migrations, Alembic drift, pytest, and offline SQL generation; exact current-main hosted execution remains blocked before steps.
-- **AT-02 — Frontend unit tests and production build: IN_PROGRESS.** Existing frontend test script discovers all `*.spec.ts`; Vercel build logs have passed on prior SHAs, but current-main exact-SHA evidence must be refreshed.
-- **AT-03 — Alternative CI runner: BLOCKED.** A CircleCI configuration exists on the separate `fix/actions-minute-budget` branch, but hosted CircleCI execution for this private repository has not been evidenced. GitHub Actions runs have failed before executing steps; do not classify these as test failures or passes.
-- **AT-04 — Browser smoke automation: IN_PROGRESS.** Added a Playwright Chromium smoke workflow, browser config, and tests for startup leaving the splash screen, absence of uncaught page errors, and Arabic/English direction switching. Tests avoid credentials and production data mutation. Playwright execution is pending an executable runner.
-- **AT-05 — Authenticated end-to-end coverage: TODO/BLOCKED.** Owner sign-in, workspace/tenant isolation, invoice/payment/returns flows require a dedicated non-production Firebase identity and disposable PostgreSQL fixture. Do not use production credentials or submit real financial mutations.
-- **Current evidence:** no test run has yet been observed for this branch's new Playwright suite. The workflow is not VERIFIED until it executes and reports a passing result on the exact commit.
-
-- **Preview execution checkpoint:** requested an isolated Vercel frontend Preview for this automation branch to reuse the configured frontend test/build pipeline; this is a Preview only and must not update production aliases.
+- Recreated the release candidate from the latest main SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` on branch `fix/release-v1.2.1-rebased-main-2026-10-27`, avoiding the stale PR #170 base instead of force-pushing or overwriting shared history.
+- Reapplied version 1.2.1 to frontend package, backend package and FastAPI metadata; reapplied duplicate-SKU stock aggregation and added regression coverage for cross-tenant business access, zero stock balance, payment allocation/currency/idempotency and sales-return approval.
+- Added `docs/RELEASE_CANDIDATE_v1.2.1.md` as the release evidence ledger. The candidate was merged via PR #185 as commit `7472026c2e0b02dcdc9ea8db43574c0ff416a66b`; production deployment remains pending.
+- **Status: MERGED / DEPLOY BLOCKED.** The rebased backend suite passed 169 tests, 1 skipped; frontend tests passed 5/5 and Angular production build completed in the isolated verification environment. GitHub Actions retries still failed before steps were allocated; container build remains NOT RUN. Production `/version` still returns 1.2.0 at API SHA 82af326ffeec. The frontend auto-deployment for merge SHA 7472026c2e0b02dcdc9ea8db43574c0ff416a66b was canceled because Vercel's Ignored Build Step did not see `[release-web]` in the merge commit message. API deployment creation was previously blocked by Vercel's free daily quota (HTTP 402, retryAfter 86400). Do not claim v1.2.1 is released until both deployments are READY and production `/version` confirms the new version.
 
 
-## Automation Testing execution evidence — 2026-10-27 12:30 UTC
+## Post-merge checkpoint — v1.2.1 — 2026-10-27
 
-- Exact candidate at this checkpoint: `804754b7325585fa63b4017f689c67f64c2a5825`.
-- **Frontend unit tests/build — VERIFIED on this candidate:** Vercel Preview `dpl_9Hfj418HSVsbFJfy1SR8EopdXUy5` reached READY. Build logs show `# tests 12`, `# pass 12`, `# fail 0`; npm audit reported 0 vulnerabilities; Angular production bundle generation and deployment completed. This verifies unit tests/build for the current candidate SHA, not the new Playwright tests.
-- **GitHub Actions — BLOCKED before test execution:** exact-head runs `40503977919` (backend/frontend), `40503978154` (frontend browser smoke), and `40503977871` (dependency security) concluded failure with `steps=null`. No test code executed in those jobs; do not classify these as test failures or passes.
-- **Playwright E2E — NOT RUN:** added startup/splash, uncaught-page-error, and RTL/LTR switching tests. The runner has not executed them yet.
-- **Alternative runner prepared, not verified:** CircleCI config adds a browser-capable Playwright job alongside existing backend/PostgreSQL, frontend, and container checks. Hosted CircleCI run is still not evidenced for this private repo; use its run results once the repo is authorized there. Do not claim the fallback is operational until a real pipeline executes.
-- **Release policy:** PR #183 remains Draft. No production deployment, user authentication, production database writes, or payment mutations were performed.
-
-
-## Automation Testing reinspection — 2026-10-27 16:22 Cairo — IN_PROGRESS / BLOCKED
-
-- **TASK-01 — current state rechecked:** GitHub PR #183 is open, Draft, not merged, and currently reports `mergeable=false`. Branch `automation-testing-e2e` head is `1c6d197a2a6f582436fa3ad9fae85cf062bf1215` (supersedes older SHAs in earlier entries). Base `main` is at `ada234f1a6ae87e6e0b38f3d8ae972dfb5bf797a`; comparison reports branch diverged, 12 commits ahead and 2 behind. Do not merge until the mainline divergence and checks are resolved.
-- **Repository instructions reviewed:** `AGENTS.md`, `README.md`, current branch `TASKS.md`, `.circleci/config.yml`, `frontend/package.json`, `frontend/playwright.config.ts`, and `frontend/e2e/startup.spec.ts` were fetched from GitHub. Current frontend package scripts are `npm test` (Node test runner over `src/app/*.spec.ts`) and `npm run build` (tests followed by Angular build). Playwright uses a local Angular dev server at `127.0.0.1:4200` and emits JUnit to `frontend/test-results/e2e-junit.xml`.
-- **CircleCI config review — static inspection only:** config defines backend/PostgreSQL 16 migrations, Alembic drift check, pytest/JUnit, offline migration SQL, pip-audit; frontend npm audit and build; Chromium Playwright smoke; disposable Docker build/import check; and a scheduled main-only dependency audit. The declared jobs do not define a production deployment step and the database URL targets a disposable test database. Static review does not prove CircleCI accepts the config or that commands pass in its images.
-- **Alternative-runner execution — BLOCKED:** available connected tool inventory exposes GitHub and Vercel integrations but no CircleCI project/config/trigger/run operation. Current commit status query returned no statuses, and no CircleCI run URL/artifacts were available. No GitHub Actions workflow was dispatched or rerun. Do not infer a test pass from missing status checks.
-- **Playwright — NOT RUN:** test source and config reviewed; no Chromium execution result, JUnit report, screenshot, or trace exists as evidence for the current head.
-- **Exact-head checks — NOT RUN / BLOCKED:** backend pytest with disposable PostgreSQL, Alembic upgrade/check, frontend unit tests and Angular production build, npm audit, pip-audit, and Docker build were not executed in this session because no authorized runnable checkout/runner is available through the connected tools. Previously recorded test results on older SHAs are historical only.
-- **Workflow trigger discovery:** `verify-all-changes` has no explicit branch filter, so it is intended to run on pushes/PRs according to CircleCI's VCS integration and project settings; the weekly dependency workflow is restricted to `main`. Actual VCS integration, project authorization, trigger delivery, pipeline status, and artifact access remain unverified.
-- **GitHub Actions workflow safety:** the PR diff removes `.github/workflows/frontend-e2e.yml`; this inspection did not dispatch or rerun Actions. Other repository workflows were not enumerated from the API in this pass, so do not claim that every Actions workflow has been disabled. Existing Actions may still trigger if configured; no attempt was made to run them.
-- **Decision:** leave PR #183 open and unmerged. Do not deploy Production for this test-automation task. To reach VERIFIED, link/authorize this private repo in CircleCI, run the current branch head, collect actual job results and artifacts, fix any observed failures, then reconcile/rebase the 2 missing main commits and rerun the pipeline on the resulting exact candidate SHA.
-- **Status: PARTIALLY COMPLETE / BLOCKED.** Source/config review is evidenced; CircleCI hosted execution and the required test matrix are not verified. Next required access: CircleCI project must be linked/authorized and a pipeline run on `1c6d197a2a6f582436fa3ad9fae85cf062bf1215` (or a reconciled successor) must be observable.
+- **PR #185 merged:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/185
+- **Merge SHA:** `7472026c2e0b02dcdc9ea8db43574c0ff416a66b`; GitHub confirms merged=true. Main contains frontend and backend package version 1.2.1 and FastAPI version metadata update.
+- **Alternative release-candidate verification:** backend `py_compile` passed; full backend suite **169 passed, 1 skipped in 4.67s** in the persistent Vercel regression sandbox. Frontend `npm run build` passed: **5 tests passed** and Angular bundle generation completed; NG8107 warnings remain non-fatal.
+- **GitHub Actions:** backend tests, dependency scan, container, and combined verification jobs failed before executing steps (`steps=null`, `logs_url=null`) even after retry; treat as runner infrastructure failure, not a pass. Docker/Podman container build remains **NOT RUN**.
+- **Production smoke after merge:** API `/version` returned HTTP 200 but still reports version **1.2.0**, commit `82af326ffeec`; API `/health` returned HTTP 200. Web root returned HTTP 200. Production is therefore **not yet v1.2.1**.
+- **Deployment blockers:** the automatic frontend deployment for merge SHA `7472026c2e0b02dcdc9ea8db43574c0ff416a66b` was canceled by Vercel's Ignored Build Step because the merge commit message lacked `[release-web]`. API deployment creation previously returned HTTP 402 `api-deployments-free-per-day` with `retryAfter=86400`. Next action: trigger a tagged `[release-web] [release-api]` release commit after quota resets; verify READY deployments and production `/version`, `/health`, `/readyz` before marking release VERIFIED.
