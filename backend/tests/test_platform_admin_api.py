@@ -1,5 +1,6 @@
 import json
 import logging
+from types import SimpleNamespace
 
 import pytest
 from decimal import Decimal
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import AuditEvent, Base, Business, BusinessMembership, Invoice, Payment, MembershipRole
+from app.models import (AuditEvent, Base, Business, BusinessMembership, Invoice, Payment, MembershipRole, PlatformAdminAuditEvent, PlatformRoleGrant)
 from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
 
 ADMIN_SUBJECT = "firebase:test-project:platform-admin-uid"
@@ -359,3 +360,143 @@ def test_successful_status_change_emits_structured_security_event(platform_admin
     assert event["target_id"] == business_id
     assert event["request_id"]
     assert "Security review" not in json.dumps(event)
+
+def test_platform_user_directory_lists_auth_accounts_without_membership(platform_admin_environment, monkeypatch):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    user_with_membership = SimpleNamespace(
+        uid="workspace-owner-uid",
+        display_name="Workspace Owner",
+        email="owner@example.test",
+        email_verified=True,
+        disabled=False,
+        user_metadata=SimpleNamespace(creation_timestamp=1_760_000_000_000, last_sign_in_timestamp=1_760_100_000_000),
+    )
+    user_without_membership = SimpleNamespace(
+        uid="never-joined-workspace",
+        display_name="Unassigned User",
+        email="unassigned@example.test",
+        email_verified=False,
+        disabled=True,
+        user_metadata=SimpleNamespace(creation_timestamp=None, last_sign_in_timestamp=None),
+    )
+    monkeypatch.setattr(
+        firebase_admin.auth,
+        "list_users",
+        lambda **kwargs: SimpleNamespace(users=[user_with_membership, user_without_membership], next_page_token="cursor-2"),
+    )
+
+    response = platform_admin_environment["client"].get("/api/v1/platform-admin/users", params={"limit": 2})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_more"] is True
+    assert data["next_page_token"] == "cursor-2"
+    assert len(data["items"]) == 2
+    owner = next(row for row in data["items"] if row["uid"] == "workspace-owner-uid")
+    unassigned = next(row for row in data["items"] if row["uid"] == "never-joined-workspace")
+    assert owner["email"] == "owner@example.test"
+    assert owner["memberships"][0]["business_name"] == "Alpha Retail"
+    assert owner["memberships"][0]["role"] == "owner"
+    assert unassigned["memberships"] == []
+    assert unassigned["disabled"] is True
+    for forbidden in ("password", "id_token", "refresh_token", "provider_data"):
+        assert forbidden not in response.text.lower()
+
+
+def test_delegated_user_manager_can_read_directory_but_cannot_change_workspace_status(platform_admin_environment, monkeypatch):
+    from app.models import PlatformRoleGrant
+
+    with Session(platform_admin_environment["engine"]) as session:
+        session.add(PlatformRoleGrant(
+            user_subject=STAFF_SUBJECT,
+            role="user_manager",
+            is_active=True,
+            granted_by_subject=ADMIN_SUBJECT,
+            last_reason="Approved user directory access",
+        ))
+        session.commit()
+
+    platform_admin_environment["subject"]["value"] = STAFF_SUBJECT
+    access = platform_admin_environment["client"].get("/api/v1/platform-admin/access")
+    overview = platform_admin_environment["client"].get("/api/v1/platform-admin/overview")
+    status_change = platform_admin_environment["client"].patch(
+        f"/api/v1/platform-admin/businesses/{platform_admin_environment['alpha_id']}/status",
+        json={"is_active": False, "reason": "Should be denied"},
+    )
+
+    assert access.status_code == 200
+    assert access.json()["is_platform_super_admin"] is False
+    assert "user_manager" in access.json()["roles"]
+    assert "view_users" in access.json()["permissions"]
+    assert overview.status_code == 200
+    assert status_change.status_code == 403
+
+
+def test_only_bootstrap_super_admin_can_grant_delegated_roles_and_changes_are_audited(platform_admin_environment, monkeypatch):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(firebase_admin.auth, "get_user", lambda uid, **kwargs: SimpleNamespace(uid=uid))
+    client = platform_admin_environment["client"]
+
+    grant = client.post(
+        "/api/v1/platform-admin/users/staff-user/roles",
+        json={"role": "workspace_operator", "active": True, "reason": "Support duty approved"},
+    )
+    repeated = client.post(
+        "/api/v1/platform-admin/users/staff-user/roles",
+        json={"role": "workspace_operator", "active": True, "reason": "Support duty approved"},
+    )
+    revoke = client.post(
+        "/api/v1/platform-admin/users/staff-user/roles",
+        json={"role": "workspace_operator", "active": False, "reason": "Support duty ended"},
+    )
+    self_grant = client.post(
+        "/api/v1/platform-admin/users/platform-admin-uid/roles",
+        json={"role": "user_manager", "active": True, "reason": "Self grant"},
+    )
+    root_grant = client.post(
+        "/api/v1/platform-admin/users/platform-admin-uid/roles",
+        json={"role": "workspace_operator", "active": True, "reason": "Do not replace root"},
+    )
+    invalid_root_role = client.post(
+        "/api/v1/platform-admin/users/staff-user/roles",
+        json={"role": "platform_super_admin", "active": True, "reason": "Must be impossible"},
+    )
+
+    assert grant.status_code == 200 and grant.json()["changed"] is True
+    assert repeated.status_code == 200 and repeated.json()["changed"] is False
+    assert revoke.status_code == 200 and revoke.json()["changed"] is True
+    assert self_grant.status_code == 409
+    assert root_grant.status_code == 409
+    assert invalid_root_role.status_code == 422
+    with Session(platform_admin_environment["engine"]) as session:
+        grant_record = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:staff-user",
+            PlatformRoleGrant.role == "workspace_operator",
+        ))
+        audits = session.scalars(select(PlatformAdminAuditEvent).order_by(PlatformAdminAuditEvent.action)).all()
+    assert grant_record is not None and grant_record.is_active is False
+    assert len(audits) == 2
+    assert {event.action for event in audits} == {
+        "platform.user_role.granted", "platform.user_role.revoked"
+    }
+    assert all(event.actor_subject == ADMIN_SUBJECT for event in audits)
+    assert all(event.reason.strip() for event in audits)
+
+
+def test_delegated_role_change_is_rejected_even_when_user_supplies_root_headers(platform_admin_environment):
+    platform_admin_environment["subject"]["value"] = STAFF_SUBJECT
+    response = platform_admin_environment["client"].post(
+        "/api/v1/platform-admin/users/new-user/roles",
+        headers={"X-Role": "platform_super_admin", "X-User-ID": ADMIN_SUBJECT},
+        json={"role": "platform_viewer", "active": True, "reason": "Attempted grant"},
+    )
+    assert response.status_code == 403
+
