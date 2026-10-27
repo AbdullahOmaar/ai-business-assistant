@@ -143,12 +143,16 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
                 </tbody></table></div>
               } @else { <p class="empty-state">{{ t('لا توجد عضويات.', 'No memberships found.') }}</p> }
               <div class="caution"><strong>{{ t('إدارة الوصول إلى مساحة العمل', 'Workspace access control') }}</strong><p>{{ t('تعطيل مساحة العمل يمنع الوصول إلى بياناتها عبر تحقق العضوية. لا يؤدي ذلك إلى حذف الشركة أو سجلاتها.', 'Deactivating a workspace blocks membership-based access to its data. It does not delete the company or its records.') }}</p></div>
-              <form class="status-form" (ngSubmit)="updateBusinessStatus()">
-                <label><span>{{ t('الحالة المطلوبة', 'Desired status') }}</span><select name="desiredStatus" [(ngModel)]="desiredStatus"><option [ngValue]="true">{{ t('تفعيل الوصول', 'Activate access') }}</option><option [ngValue]="false">{{ t('تعطيل الوصول', 'Deactivate access') }}</option></select></label>
-                <label class="reason-field"><span>{{ t('سبب إداري مطلوب', 'Required administrative reason') }}</span><textarea name="statusReason" [(ngModel)]="statusReason" maxlength="500" minlength="3" required rows="2" [placeholder]="t('اكتب سببًا واضحًا لتوثيقه في سجل التدقيق', 'Enter a meaningful reason; it will be recorded in the audit log')"></textarea></label>
-                <button type="submit" class="primary-button" [disabled]="statusSaving || desiredStatus === detail.business.is_active">{{ statusSaving ? t('جارٍ حفظ التغيير…', 'Saving…') : (desiredStatus ? t('تأكيد تفعيل الوصول', 'Confirm activation') : t('تأكيد تعطيل الوصول', 'Confirm deactivation')) }}</button>
-                @if (statusError) { <p class="field-error" role="alert">{{ statusError }}</p> }
-              </form>
+              @if (canManageWorkspaceStatus) {
+                <form class="status-form" (ngSubmit)="updateBusinessStatus()">
+                  <label><span>{{ t('الحالة المطلوبة', 'Desired status') }}</span><select name="desiredStatus" [(ngModel)]="desiredStatus"><option [ngValue]="true">{{ t('تفعيل الوصول', 'Activate access') }}</option><option [ngValue]="false">{{ t('تعطيل الوصول', 'Deactivate access') }}</option></select></label>
+                  <label class="reason-field"><span>{{ t('سبب إداري مطلوب', 'Required administrative reason') }}</span><textarea name="statusReason" [(ngModel)]="statusReason" maxlength="500" minlength="3" required rows="2" [placeholder]="t('اكتب سببًا واضحًا لتوثيقه في سجل التدقيق', 'Enter a meaningful reason; it will be recorded in the audit log')"></textarea></label>
+                  <button type="submit" class="primary-button" [disabled]="statusSaving || desiredStatus === detail.business.is_active">{{ statusSaving ? t('جارٍ حفظ التغيير…', 'Saving…') : (desiredStatus ? t('تأكيد تفعيل الوصول', 'Confirm activation') : t('تأكيد تعطيل الوصول', 'Confirm deactivation')) }}</button>
+                  @if (statusError) { <p class="field-error" role="alert">{{ statusError }}</p> }
+                </form>
+              } @else {
+                <div class="notice" role="note">{{ t('صلاحية قراءة فقط: يمكنك مراجعة حالة مساحة العمل وعضوياتها، لكن تغيير حالتها يحتاج دور مشغّل مساحات العمل.', 'Read-only access: you can inspect workspace status and memberships, but changing status requires the Workspace Operator role.') }}</div>
+              }
             </article>
           }
         </section>
@@ -381,6 +385,10 @@ export class PlatformAdminComponent implements OnInit {
 
   get canManagePlatformRoles(): boolean {
     return this.access?.is_platform_super_admin === true;
+  }
+
+  get canManageWorkspaceStatus(): boolean {
+    return this.access?.permissions.includes('manage_workspace_status') ?? false;
   }
 
   readonly hasMeaningfulPlatformAdminReason = hasMeaningfulPlatformAdminReason;
