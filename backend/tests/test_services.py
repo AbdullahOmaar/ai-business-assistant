@@ -445,3 +445,139 @@ def test_payment_cannot_allocate_invoice_from_another_business(workspace):
                 currency_code="EGP", idempotency_key="cross-tenant-payment",
                 allocations=[(invoice_b.id, Decimal("10.00"))],
             )
+
+
+def test_payment_rejects_currency_mismatch(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
+            invoice_number="INV-CURRENCY-001", currency_code="EGP",
+            lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
+        )
+        issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
+        with pytest.raises(WorkflowError, match="currencies must match"):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
+                amount=Decimal("20"), currency_code="USD", idempotency_key="currency-mismatch",
+                allocations=[(invoice.id, Decimal("20"))],
+            )
+
+
+def test_payment_rejects_allocation_above_invoice_outstanding(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
+            invoice_number="INV-OVERPAY-001", currency_code="EGP",
+            lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
+        )
+        issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
+        with pytest.raises(ValueError, match="allocation exceeds invoice outstanding balance"):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
+                amount=Decimal("120"), currency_code="EGP", idempotency_key="overpay",
+                allocations=[(invoice.id, Decimal("120"))],
+            )
+
+
+def test_payment_rejects_invoice_from_another_business(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        foreign_business = Business(name="Other shop", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        foreign_principal = AuthenticatedPrincipal(subject="other-user")
+        from app.models import BusinessMembership, MembershipRole
+        session.add(BusinessMembership(
+            business_id=foreign_business.id, user_subject=foreign_principal.subject,
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        foreign_customer = _make_customer(session, foreign_principal, foreign_business.id)
+        invoice = create_invoice(
+            session, principal=foreign_principal, business_id=foreign_business.id,
+            customer_id=foreign_customer.id,
+            invoice_number="INV-FOREIGN-001", currency_code="EGP",
+            lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
+        )
+        issue_invoice(
+            session, principal=foreign_principal, business_id=foreign_business.id,
+            invoice_id=invoice.id,
+        )
+        with pytest.raises(WorkflowError, match="issued invoice in this business"):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
+                amount=Decimal("20"), currency_code="EGP", idempotency_key="foreign-invoice",
+                allocations=[(invoice.id, Decimal("20"))],
+            )
+
+
+def test_payment_idempotency_key_rejects_changed_amount(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        customer = _make_customer(session, principal, business_id)
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
+            invoice_number="INV-IDEMPOTENCY-001", currency_code="EGP",
+            lines=[{"description": "Service", "quantity": "1", "unit_price": "100"}],
+        )
+        issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
+        record_payment(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
+            amount=Decimal("20"), currency_code="EGP", idempotency_key="same-key",
+            allocations=[(invoice.id, Decimal("20"))],
+        )
+        with pytest.raises(WorkflowError, match="different payment details"):
+            record_payment(
+                session, principal=principal, business_id=business_id,
+                customer_id=customer.id,
+                amount=Decimal("25"), currency_code="EGP", idempotency_key="same-key",
+                allocations=[(invoice.id, Decimal("25"))],
+            )
+
+
+def test_invoice_issue_aggregates_repeated_product_lines_before_stock_check(workspace):
+    engine, business_id, principal = workspace
+    with Session(engine) as session:
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Flour", unit_price=Decimal("12.00"), is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("3.000"),
+        )
+        customer = _make_customer(session, principal, business_id)
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id,
+            invoice_number="INV-DUPLICATE-SKU", currency_code="EGP",
+            lines=[
+                {"product_id": str(product.id), "quantity": "2"},
+                {"product_id": str(product.id), "quantity": "2"},
+            ],
+        )
+        with pytest.raises(WorkflowError, match="required 4"):
+            issue_invoice(
+                session, principal=principal, business_id=business_id,
+                invoice_id=invoice.id,
+            )
+        movements = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        )).all()
+        assert len(movements) == 1
+        assert movements[0].quantity_delta == Decimal("3.000")
+        assert invoice.status == "draft"
