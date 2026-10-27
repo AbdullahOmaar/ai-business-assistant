@@ -1,20 +1,24 @@
-# Latest Platform Admin verification checkpoint — 2026-10-27
+# Platform Admin verification checkpoint — 2026-10-27 15:38 UTC
 
-## Evidence from isolated verification sandbox
-- **Backend:** `python3 -m pytest -q` — **174 passed, 1 skipped** (7.40s). This is isolated evidence with test doubles/SQLite where configured, not production or PostgreSQL integration.
-- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS** (Angular production build completed). Non-blocking warnings remain for optional chaining and missing Git metadata in this non-clone sandbox.
-- **Security/dependencies:** `npm audit --audit-level=high` — **0 vulnerabilities**; `pip-audit -r requirements.txt` — **no known vulnerabilities**.
-- **Python:** `python3 -m compileall -q app tests` — **PASS**.
-- **Migration:** `DATABASE_URL=postgresql+psycopg://ci:ci@127.0.0.1:5432/ai_business_assistant python3 -m alembic upgrade head --sql` — **PASS**, generated 391 lines including revision `0004_platform_user_roles`. This is offline SQL generation only. Live PostgreSQL apply/integration is **NOT RUN** because PostgreSQL, Docker, and Podman are unavailable in the sandbox.
-- **Test corrections on this branch:** fixed a false-positive privacy assertion that matched the API's intentional human-readable limitation text; fixed TypeScript's invalid number-versus-string comparison in numeric role-audit filters.
-- **Hosted gates:** PR head `e3af6206c9a262b44bf107f8ef37fbb32da558d5`. CircleCI status is `error` (pipeline 61). GitHub Actions dependency, backend/frontend, container, and backend-test runs failed with `steps=null` and `logs_url=null`; they provide no evidence of test execution. `.circleci/config.yml` is absent from `main` and exists on separate Draft CI work, so the exact CircleCI root cause could not be confirmed from the available authenticated view.
-- **Delivery:** PR #172 is already merged (merge SHA `17e8533de376d2438ea5dee57ee6a86b30c9f081`). PR #190 remains Draft/open; no merge, production database change, or deployment was performed.
+## Current evidence
+- **Scope:** PR #190, `feat/platform-admin-user-directory-and-roles`; tested snapshot head `2f5a899f61cb4278e79cb47fb503a7a1a8e3a1a0`. Main SHA observed before this task-ledger update: `068936f5973c695b8f61840143bd8acb37dc8baa`.
+- **Backend:** `python3 -m pytest -q --tb=short` — **174 passed, 1 skipped**. Admin regression file: `python3 -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**. Tests use the isolated sandbox; they do not prove PostgreSQL production integration.
+- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS** (Angular production build).
+- **Security/dependencies:** `npm audit --audit-level=high` — **0 vulnerabilities**; `pip-audit -r requirements.txt` — **no known vulnerabilities**; `python3 -m compileall -q app tests` — **PASS**.
+- **Migration:** offline `alembic upgrade head --sql` generation — **PASS**, 391 lines including `0004_platform_user_roles`. Live PostgreSQL migration/schema-drift checks are **NOT RUN**: PostgreSQL, Docker, and Podman are unavailable in this sandbox.
+- **Follow-up fixes committed to this branch:** corrected the directory privacy test to inspect returned account objects rather than explanatory response text; corrected numeric audit-filter serialization so values such as `limit=0` are not silently omitted.
+- **Lint:** `npm run lint` — **NOT RUN / unavailable** because the frontend package has no `lint` script. The production build provides Angular compilation/type-check evidence.
+- **Hosted gate:** CircleCI status for PR #190 is **error**, pipeline [61](https://app.circleci.com/pipelines/gh/AbdullahOmaar/ai-business-assistant/61). Exact root cause could not be confirmed from the available authenticated tools. Do not treat this as passing CI.
+- **Delivery:** PR #172 is merged at `17e8533de376d2438ea5dee57ee6a86b30c9f081`. PR #190 remains **Draft/open**, not merged. No production deployment or production database change was performed.
 
-## Remaining gates
-1. Resolve the CircleCI configuration/runner status without adding duplicate CI work to this Admin PR.
-2. Run the migration and tests against disposable PostgreSQL 16, plus authenticated browser/authorization flows.
-3. Recheck exact-head required statuses and review the final diff; only then make PR #190 merge-ready.
-4. Keep production activation blocked until `PLATFORM_SUPER_ADMIN_UIDS` is configured out-of-band and verified. Never guess a UID or change production secrets/configuration without authorization.
+## Status and next actions
+1. **IN_PROGRESS — PR #190:** review current exact-head checks and diagnose the CircleCI error; keep Draft until required hosted checks pass.
+2. **BLOCKED — PostgreSQL integration:** run migration, schema drift, and backend tests against disposable PostgreSQL 16 on an authorized runner.
+3. **NOT RUN — authenticated browser/authorization E2E:** verify global directory and delegated-role flows, including denied unauthorized/cross-tenant requests.
+4. **BLOCKED — production activation:** verify `PLATFORM_SUPER_ADMIN_UIDS` is configured out-of-band before enabling access; never guess or change production secrets without authorization.
+5. **Merge/deploy:** do not merge around failed required checks or deploy until acceptance gates are satisfied and release authorization is in place.
+
+This checkpoint records observed evidence only; isolated green tests and dependency audits do not establish production readiness.
 
 ---
 
