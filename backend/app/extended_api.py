@@ -337,43 +337,6 @@ def operations_health(business_id: UUID, session: Session = Depends(get_session)
     }
 
 
-@router.get("/operations/health")
-def operations_health(business_id: UUID, session: Session = Depends(get_session),
-                      principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Owner-only, read-only operational readiness snapshot with no secret values."""
-    try:
-        _authorized(session, principal, business_id, owner_only=True)
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    database_connected = False
-    migration_table_available = False
-    migration_revision = None
-    try:
-        session.execute(text("SELECT 1"))
-        database_connected = True
-        try:
-            migration_revision = session.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).scalar_one_or_none()
-            migration_table_available = migration_revision is not None
-        except SQLAlchemyError:
-            session.rollback()
-            migration_table_available = False
-            migration_revision = None
-    except SQLAlchemyError:
-        session.rollback()
-    notification_delivery_configured = False
-    recurring_invoice_worker_configured = False
-    healthy = database_connected and migration_table_available
-    return {
-        "status": "ok" if healthy else "degraded",
-        "checked_at": datetime.now(timezone.utc).isoformat(),
-        "database_connected": database_connected,
-        "migration_table_available": migration_table_available,
-        "migration_revision": migration_revision,
-        "ai_configured": bool(os.getenv("OPENAI_API_KEY")),
-        "notification_delivery_configured": notification_delivery_configured,
-        "recurring_invoice_worker_configured": recurring_invoice_worker_configured,
-    }
-
 @router.get("/reports/tax-summary")
 def report_tax_summary(
     business_id: UUID,
@@ -693,99 +656,6 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
     ret = _commit(session, op)
     return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
 
-
-@router.get("/recurring-invoices")
-def list_recurring_schedules(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
-                             offset: int = Query(default=0, ge=0),
-                             session: Session = Depends(get_session),
-                             principal: AuthenticatedPrincipal = Depends(get_principal)):
-    try:
-        _authorized(session, principal, business_id)
-        items = session.scalars(select(RecurringInvoiceSchedule).where(
-            RecurringInvoiceSchedule.business_id == business_id,
-        ).order_by(RecurringInvoiceSchedule.next_run_at, RecurringInvoiceSchedule.id).offset(offset).limit(limit)).all()
-        return [_dict(item, ("id", "business_id", "customer_id", "interval_days", "timezone", "next_run_at", "is_active", "created_at")) for item in items]
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-
-
-@router.get("/operations/health")
-def operations_health(business_id: UUID, session: Session = Depends(get_session),
-                      principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Owner-only, read-only operational readiness snapshot with no secret values."""
-    try:
-        _authorized(session, principal, business_id, owner_only=True)
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    database_connected = False
-    migration_table_available = False
-    migration_revision = None
-    try:
-        session.execute(text("SELECT 1"))
-        database_connected = True
-        try:
-            migration_revision = session.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).scalar_one_or_none()
-            migration_table_available = migration_revision is not None
-        except SQLAlchemyError:
-            session.rollback()
-            migration_table_available = False
-            migration_revision = None
-    except SQLAlchemyError:
-        session.rollback()
-    notification_delivery_configured = False
-    recurring_invoice_worker_configured = False
-    healthy = database_connected and migration_table_available
-    return {
-        "status": "ok" if healthy else "degraded",
-        "checked_at": datetime.now(timezone.utc).isoformat(),
-        "database_connected": database_connected,
-        "migration_table_available": migration_table_available,
-        "migration_revision": migration_revision,
-        "ai_configured": bool(os.getenv("OPENAI_API_KEY")),
-        "notification_delivery_configured": notification_delivery_configured,
-        "recurring_invoice_worker_configured": recurring_invoice_worker_configured,
-    }
-
-
-@router.get("/reports/tax-summary")
-def report_tax_summary(
-    business_id: UUID,
-    start_date: date | None = None,
-    end_date: date | None = None,
-    session: Session = Depends(get_session),
-    principal: AuthenticatedPrincipal = Depends(get_principal),
-):
-    """Summarize saved tax totals from issued invoices, separated by currency."""
-    try:
-        _authorized(session, principal, business_id)
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    if start_date and end_date and start_date > end_date:
-        raise HTTPException(status_code=422, detail="start_date must not be after end_date")
-    statement = select(
-        Invoice.currency_code,
-        func.coalesce(func.sum(Invoice.tax_total), 0),
-        func.count(Invoice.id),
-    ).where(Invoice.business_id == business_id, Invoice.status == "issued")
-    if start_date:
-        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
-    if end_date:
-        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
-    rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
-    return {
-        "period": {"start_date": start_date.isoformat() if start_date else None,
-                   "end_date": end_date.isoformat() if end_date else None},
-        "source": "issued_invoice_tax_snapshots",
-        "currencies": [
-            {"currency_code": currency, "tax_total": str(money(Decimal(str(total)))), "invoice_count": count}
-            for currency, total, count in rows
-        ],
-        "limitations": [
-            "Uses saved tax totals on issued invoices; it does not recalculate historical taxes.",
-            "Currency totals are kept separate and are not converted.",
-            "This is an operational summary, not a jurisdiction-specific tax filing.",
-        ],
-    }
 
 @router.post("/recurring-invoices", status_code=201)
 def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
@@ -1427,47 +1297,6 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
-
-
-@router.get("/reports/tax-summary")
-def report_tax_summary(
-    business_id: UUID,
-    start_date: date | None = None,
-    end_date: date | None = None,
-    session: Session = Depends(get_session),
-    principal: AuthenticatedPrincipal = Depends(get_principal),
-):
-    """Summarize saved tax totals from issued invoices, separated by currency."""
-    try:
-        _authorized(session, principal, business_id)
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    if start_date and end_date and start_date > end_date:
-        raise HTTPException(status_code=422, detail="start_date must not be after end_date")
-    statement = select(
-        Invoice.currency_code,
-        func.coalesce(func.sum(Invoice.tax_total), 0),
-        func.count(Invoice.id),
-    ).where(Invoice.business_id == business_id, Invoice.status == "issued")
-    if start_date:
-        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
-    if end_date:
-        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
-    rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
-    return {
-        "period": {"start_date": start_date.isoformat() if start_date else None,
-                   "end_date": end_date.isoformat() if end_date else None},
-        "source": "issued_invoice_tax_snapshots",
-        "currencies": [
-            {"currency_code": currency, "tax_total": str(money(Decimal(str(total)))), "invoice_count": count}
-            for currency, total, count in rows
-        ],
-        "limitations": [
-            "Uses saved tax totals on issued invoices; it does not recalculate historical taxes.",
-            "Currency totals are kept separate and are not converted.",
-            "This is an operational summary, not a jurisdiction-specific tax filing.",
-        ],
-    }
 
 
 @router.get("/reports/receivables-aging")
