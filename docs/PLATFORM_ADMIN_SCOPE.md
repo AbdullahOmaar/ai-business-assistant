@@ -27,7 +27,7 @@ The Admin Center is an operational control plane, not a back door into customer 
 | Priority | Capability | Acceptance criteria / dependency | Status |
 |---|---|---|---|
 | P1 | System status and release information | Read-only, least-information status: application version/commit, API/database readiness, Firebase verifier configuration, and timestamp of the current check. Never expose environment variables, secrets, connection strings, full exception traces or customer data. Configuration status must not be represented as validation of a specific Firebase token. | Backend endpoint, typed client contract and Arabic/English overview panel implemented. Unit/API tests cover healthy, degraded, denied and no-secret behavior; frontend tests/build and dependency audits passed in an isolated sandbox populated from the current branch sources. A hosted exact-head preview build is not available because the project's intentional Vercel Ignore Build Step canceled deployment without the release marker; no production release marker was added. | IN_PROGRESS |
-| P1 | Security events and alerting | Record denied platform access and sensitive admin operations through structured logs/telemetry; include request/correlation ID, actor when verified, action, target, outcome, timestamp and reason. Redact tokens, cookies, secrets and unnecessary personal data. Define alert thresholds and retention from an actual telemetry source. | TODO |
+| P1 | Security events and alerting | Record denied platform access and sensitive admin operations through structured logs/telemetry; include request/correlation ID, actor when verified, action, target, outcome and timestamp. Redact tokens, cookies, secrets and unnecessary personal data. Define alert thresholds and retention from an actual telemetry source. | JSON security logs now record allowlist-denied requests and successful workspace status changes with request ID, verified actor, target and outcome; tests verify redaction. Alerting, log retention, central collection and unverified-token denial telemetry still need an approved operational source. | IN_PROGRESS |
 | P1 | Audit integrity and export | Restrict audit read access, preserve records against ordinary application modification, document retention, and provide bounded CSV export only if needed. Export itself must be logged and filtered; test CSV formula injection, output limits and redaction. | TODO |
 | P1 | Operational support diagnostics | Safe, tenant-free error summaries and deployment/runtime events from an authorized provider; link to the source of truth. No customer payloads or raw logs in the UI by default. | TODO |
 | P2 | User directory and invitations | Only after an approved Firebase Admin user-directory integration and a source of truth for profiles/status; no enumeration, invitations or email/name claims before that integration exists. Test cross-tenant privacy and invitation abuse. | DEFERRED |
@@ -66,6 +66,13 @@ The Admin Center is an operational control plane, not a back door into customer 
 - **Status: BLOCKED on provider onboarding; configuration exists in PR #173 but has not been run.**
 - Use CircleCI as an independent CI provider for disposable PostgreSQL, backend tests/migrations, frontend checks/audits, and container build. Validate its config with CircleCI's own CLI/service and capture real run URL + exact SHA.
 - Owner action needed: authorize/select this private repository in CircleCI and select the committed `.circleci/config.yml`. YAML parsing alone is not a pipeline result. Do not pay, increase billing, or bypass required checks.
+
+### ADM-08 — Structured Admin security events
+- **Status: IN_PROGRESS.**
+- Emit single-line JSON events for verified principals denied by the platform allowlist and for successful workspace status changes.
+- Acceptance: include timestamp, request ID, verified actor, outcome, and route/business target; never include Authorization/Cookie headers, token values, raw request bodies, status reason, or exception text.
+- Evidence: focused Admin suite **13 passed**; full backend suite **157 passed, 1 skipped**. Tests parse log records and assert request ID/actor/target are present while sensitive fields and the business reason are absent.
+- Remaining: no central telemetry connector/source is available; alert thresholds, retention, dashboarding, and logging of pre-route invalid/expired-token failures remain NOT RUN. Do not claim alerting is implemented.
 
 ### ADM-07 — Safe runtime status panel
 - **Status: IN_PROGRESS.**
