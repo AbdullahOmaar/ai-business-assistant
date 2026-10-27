@@ -135,7 +135,8 @@ export class ApiService {
 
   private async requestBlob(path: string): Promise<Response> {
     const config = await this.auth.getRuntimeConfig();
-    const base = (config.apiBaseUrl || '').trim().replace(/\\/$/, '');
+    const configuredBase = (config.apiBaseUrl || '').trim();
+    const base = configuredBase.endsWith('/') ? configuredBase.slice(0, -1) : configuredBase;
     if (!base || base.includes('YOUR-BACKEND')) {
       throw new Error('The backend URL is not configured in runtime-config.json.');
     }
