@@ -88,6 +88,27 @@ def test_assistant_rejects_caller_supplied_system_role(assistant_client):
     assert response.status_code == 422
 
 
+def test_assistant_rejects_excessive_accumulated_history(assistant_client):
+    # Every message is valid on its own; only the aggregate history exceeds 8,000 characters.
+    business_id = create_workspace(assistant_client)
+    response = assistant_client.post(
+        f"/api/v1/businesses/{business_id}/assistant/chat",
+        json={
+            "message": "Summarize my business.",
+            "history": [
+                {"role": "user", "content": "x" * 1500},
+                {"role": "assistant", "content": "y" * 1500},
+                {"role": "user", "content": "z" * 1500},
+                {"role": "assistant", "content": "w" * 1500},
+                {"role": "user", "content": "a" * 1500},
+                {"role": "assistant", "content": "b" * 1500},
+            ],
+        },
+    )
+    assert response.status_code == 413
+    assert response.json()["detail"] == "Conversation history is too long. Please start a new conversation."
+
+
 @pytest.mark.parametrize(
     "payload",
     [
