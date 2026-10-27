@@ -1,6 +1,5 @@
 from decimal import Decimal
-from threading import current_thread
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -194,7 +193,7 @@ def test_status_change_requires_reason_and_adds_audit_event(platform_admin_envir
 
     with Session(platform_admin_environment["engine"]) as session:
         events = session.scalars(
-            select(AuditEvent).where(AuditEvent.business_id == __import__("uuid").UUID(business_id))
+            select(AuditEvent).where(AuditEvent.business_id == UUID(business_id))
         ).all()
     platform_events = [event for event in events if event.action == "platform.business.deactivated"]
     assert len(platform_events) == 1
