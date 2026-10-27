@@ -785,3 +785,71 @@ def test_platform_audit_csv_export_is_bounded_and_requires_audit_permission(plat
     platform_admin_environment["subject"]["value"] = OWNER_SUBJECT
     denied = client.get("/api/v1/platform-admin/audit-events/export.csv")
     assert denied.status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("role", "can_manage_status", "can_view_users"),
+    [
+        ("platform_viewer", False, False),
+        ("workspace_operator", True, False),
+        ("user_manager", False, True),
+    ],
+)
+def test_delegated_platform_role_permission_matrix(
+    platform_admin_environment, monkeypatch, role, can_manage_status, can_view_users
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+    monkeypatch.setattr(
+        firebase_admin.auth,
+        "list_users",
+        lambda **kwargs: SimpleNamespace(users=[], next_page_token=None),
+    )
+    with Session(platform_admin_environment["engine"]) as session:
+        session.add(PlatformRoleGrant(
+            user_subject=STAFF_SUBJECT,
+            role=role,
+            is_active=True,
+            granted_by_subject=ADMIN_SUBJECT,
+            last_reason="Approved delegated access",
+        ))
+        session.commit()
+
+    platform_admin_environment["subject"]["value"] = STAFF_SUBJECT
+    client = platform_admin_environment["client"]
+    access = client.get("/api/v1/platform-admin/access")
+    assert access.status_code == 200
+    assert access.json()["roles"] == [role]
+    expected_permissions = {
+        "view_overview", "view_workspaces", "view_audit", "view_system_status",
+    }
+    if can_manage_status:
+        expected_permissions.add("manage_workspace_status")
+    if can_view_users:
+        expected_permissions.add("view_users")
+    assert set(access.json()["permissions"]) == expected_permissions
+    assert "manage_platform_roles" not in access.json()["permissions"]
+
+    assert client.get("/api/v1/platform-admin/overview").status_code == 200
+    assert client.get("/api/v1/platform-admin/businesses").status_code == 200
+    assert client.get("/api/v1/platform-admin/audit-events").status_code == 200
+    assert client.get("/api/v1/platform-admin/system-status").status_code == 200
+    assert client.get("/api/v1/platform-admin/role-audit-events").status_code == 200
+    assert client.get("/api/v1/platform-admin/users").status_code == (
+        200 if can_view_users else 403
+    )
+
+    status_change = client.patch(
+        f"/api/v1/platform-admin/businesses/{platform_admin_environment['alpha_id']}/status",
+        json={"is_active": False, "reason": "Role matrix test"},
+    )
+    assert status_change.status_code == (200 if can_manage_status else 403)
+
+    role_grant = client.post(
+        "/api/v1/platform-admin/users/another-user/roles",
+        json={"role": "platform_viewer", "active": True, "reason": "Must be root only"},
+    )
+    assert role_grant.status_code == 403
