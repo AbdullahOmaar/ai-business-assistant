@@ -919,3 +919,13 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **Still NOT RUN:** backend pytest, authenticated payment transaction and idempotent replay against a test database, live stock transaction through authenticated UI, and manual responsive/Arabic-English browser interaction. Preview HTTP 200/build evidence is not a substitute for those checks.
 - **Release decision:** PR #189 remains Draft and unmerged. Production deployment remains blocked by required checks; no production data or configuration was modified. No code defect was proven during this read-only source review, so no speculative code edit was made.
 - **Next:** CI owners resolve runner/check failures; then run backend tests and non-production signed-in payment/stock flows on the exact candidate SHA before promoting review and release.
+
+
+## @st continuation — accounting regression coverage (2026-10-27)
+
+- **Task:** strengthen invoice total reconciliation for draft edits (related to open accounting issue #111/#109).
+- **Evidence:** current source already applies the shared `money(...)` HALF_UP policy when persisting edited invoice line totals, and existing tests cover create-invoice half-cent reconciliation. The missing coverage was the equivalent invariant after replacing draft lines.
+- **Change:** added `test_draft_invoice_edit_keeps_line_totals_and_invoice_totals_reconciled` in `backend/tests/test_services.py`. It replaces a draft with two 1.500 × 0.01 lines, then asserts stored line totals, subtotal, discount, tax, and invoice total reconcile.
+- **Commit:** `ec35e94f4ced7c3503294c0b63a2a9f5203ade61` on the existing PR #189 branch. No application behavior, CI/security workflow, or production data was changed.
+- **Verification:** test added but **NOT RUN**; this session has no accessible local repository/runner. Existing preview evidence does not execute this backend test. The PR remains subject to the existing CI/automation and security gates; those were not manually restarted or modified.
+- **Next:** execute backend pytest and validate this test on the exact PR head when the authorized runner is available. Keep PR draft/unmerged and production unchanged until required checks pass.
