@@ -862,3 +862,25 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **GitHub Actions:** backend tests, dependency scan, container, and combined verification jobs failed before executing steps (`steps=null`, `logs_url=null`) even after retry; treat as runner infrastructure failure, not a pass. Docker/Podman container build remains **NOT RUN**.
 - **Production smoke after merge:** API `/version` returned HTTP 200 but still reports version **1.2.0**, commit `82af326ffeec`; API `/health` returned HTTP 200. Web root returned HTTP 200. Production is therefore **not yet v1.2.1**.
 - **Deployment blockers:** the automatic frontend deployment for merge SHA `7472026c2e0b02dcdc9ea8db43574c0ff416a66b` was canceled by Vercel's Ignored Build Step because the merge commit message lacked `[release-web]`. API deployment creation previously returned HTTP 402 `api-deployments-free-per-day` with `retryAfter=86400`. Next action: trigger a tagged `[release-web] [release-api]` release commit after quota resets; verify READY deployments and production `/version`, `/health`, `/readyz` before marking release VERIFIED.
+
+## Admin-only work plan — 2026-10-27 (candidate: feat/platform-admin-user-directory-and-roles)
+
+| Task | Scope / acceptance criteria | Status |
+|---|---|---|
+| ADM-01 — Inventory existing Admin work | Confirm PR #172's core screen/API is already in main; identify PR #187 as mixed inventory/payment/mobile work and port only the admin navigation portion. Avoid duplicate merges or unrelated finance changes. | VERIFIED |
+| ADM-02 — Global identity directory | List all Firebase Auth accounts, not only workspace members; cursor pagination; exact email/UID lookup; safe fields only; membership and platform-role columns shown separately; no credentials/tokens. | IN_PROGRESS — code and tests added; execution pending |
+| ADM-03 — Delegated platform RBAC | Roles: Platform Viewer, Workspace Operator, User Manager. Root remains out-of-band; no self-grants; no in-app root assignment; every grant/revoke requires a reason and creates a durable audit event in the same transaction. | IN_PROGRESS — code and tests added; execution pending |
+| ADM-04 — Admin UX and mobile access | Separate Users & Access view, Arabic/English copy, permissions explained, narrow-screen table overflow, More-menu access for Platform Admin and correct active state. | IN_PROGRESS — implementation and structural tests added; build pending |
+| ADM-05 — Regression/security verification | Run focused/full backend tests, Alembic upgrade against PostgreSQL 16, frontend unit tests/build/audit, and inspect auth/data boundary. Distinguish runner failures from test failures. | BLOCKED pending execution for exact candidate SHA |
+| ADM-06 — PR review and merge | Review complete file diff against main, evaluate required checks, create/update one Admin-only PR, merge only after applicable gates pass and confirm new main SHA. Do not merge mixed-scope PR #187 wholesale. | TODO / gated by ADM-05 |
+| ADM-07 — Production activation | Do not deploy in this task. A verified bootstrap super-admin UID must be configured out-of-band before anyone can use the root screen; current production notes say the allowlist is unset. | BLOCKED — config prerequisite; no UID guessed |
+
+**Candidate source changes actually written**
+- `backend/app/models.py`, `backend/app/firebase_auth.py`, `backend/app/platform_admin_api.py`, `backend/migrations/versions/0004_platform_user_roles.py`
+- `backend/tests/test_platform_admin_api.py`
+- `frontend/src/app/api.service.ts`, `frontend/src/app/platform-admin.component.ts`, `frontend/src/app/app.component.ts`
+- `frontend/src/app/mobile-navigation.spec.ts`, `frontend/src/app/platform-admin-user-management.spec.ts`
+- `docs/PLATFORM_ADMIN_SCOPE.md`, `TASKS.md`
+
+**Current validation truth:** no local repository checkout/network runner was available in this session; direct HTTPS to GitHub failed DNS resolution. Source code and regression tests have been committed on the feature branch, but tests/build/migrations for this exact candidate have not been run. The branch's GitHub status currently reports CircleCI Pipeline = error; that must be inspected, not marked green. No production database, secret/configuration or deployment was changed.
+
