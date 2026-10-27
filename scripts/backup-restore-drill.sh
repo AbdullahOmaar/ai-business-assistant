@@ -19,20 +19,35 @@ case "$BACKUP_PATH" in
   /*) ;;
   *) echo "BACKUP_PATH must be absolute." >&2; exit 2 ;;
 esac
-case "$BACKUP_PATH" in
-  "$PWD"/*) echo "Store backups outside the repository." >&2; exit 2 ;;
-esac
-for command_name in pg_dump pg_restore psql gpg sha256sum; do
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+repo_root="$(cd -- "$script_dir/.." && pwd -P)"
+canonical_backup_path="$(realpath -m -- "$BACKUP_PATH")"
+encrypted_backup="${BACKUP_PATH}.gpg"
+canonical_encrypted_backup="$(realpath -m -- "$encrypted_backup")"
+for candidate in "$canonical_backup_path" "$canonical_encrypted_backup"; do
+  case "$candidate" in
+    "$repo_root"|"$repo_root"/*)
+      echo "Store backups outside the repository." >&2
+      exit 2
+      ;;
+  esac
+done
+if [[ -e "$encrypted_backup" || -e "${encrypted_backup}.sha256" ]]; then
+  echo "Backup output already exists; refusing to overwrite it: $encrypted_backup" >&2
+  exit 2
+fi
+
+for command_name in pg_dump pg_restore psql gpg sha256sum realpath; do
   command -v "$command_name" >/dev/null || { echo "Missing required command: $command_name" >&2; exit 127; }
 done
 
 umask 077
-mkdir -p "$(dirname "$BACKUP_PATH")"
+mkdir -p "$(dirname -- "$BACKUP_PATH")"
 temporary_directory="$(mktemp -d)"
-trap "rm -rf $temporary_directory" EXIT
+trap 'rm -rf -- "$temporary_directory"' EXIT
 raw_backup="$temporary_directory/production.dump"
 restore_dump="$temporary_directory/restore.dump"
-encrypted_backup="${BACKUP_PATH}.gpg"
 
 source_identity="$(psql "$SOURCE_DATABASE_URL" -X -A -t -v ON_ERROR_STOP=1 -c "SELECT current_database() || '|' || COALESCE(inet_server_addr()::text, 'local')")"
 restore_identity="$(psql "$RESTORE_DATABASE_URL" -X -A -t -v ON_ERROR_STOP=1 -c "SELECT current_database() || '|' || COALESCE(inet_server_addr()::text, 'local')")"
