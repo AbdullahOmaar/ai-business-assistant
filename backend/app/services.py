@@ -10,6 +10,7 @@ from typing import Iterable
 from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain_rules import (
@@ -429,7 +430,7 @@ def issue_invoice(
             raise WorkflowError("Invoice product not found in this business")
         products[product_id] = product
 
-    # Aggregate requested quantity per product before validating any stock.
+    # Aggregate requested quantity per product before validating stock.
     # Repeated lines for the same SKU must not spend the same available balance.
     required_by_product: dict[UUID, Decimal] = {}
     for line in lines:
@@ -477,6 +478,35 @@ def issue_invoice(
     return invoice
 
 
+def _resolve_payment_replay(
+    session: Session,
+    existing: Payment,
+    *,
+    amount: Decimal,
+    currency: str,
+    customer_id: UUID,
+    method: str | None,
+    reference: str | None,
+    requested_map: dict[UUID, Decimal],
+) -> Payment:
+    """Return a matching idempotent payment or reject key reuse with new details."""
+    prior_allocations = session.scalars(select(PaymentAllocation).where(
+        PaymentAllocation.business_id == existing.business_id,
+        PaymentAllocation.payment_id == existing.id,
+    )).all()
+    prior_map = {item.invoice_id: item.amount for item in prior_allocations}
+    if (
+        existing.amount != amount
+        or existing.currency_code != currency
+        or existing.customer_id != customer_id
+        or existing.method != method
+        or existing.reference != reference
+        or prior_map != requested_map
+    ):
+        raise WorkflowError("Idempotency key was already used for different payment details")
+    return existing
+
+
 def record_payment(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
     amount: Decimal, currency_code: str, idempotency_key: str,
@@ -506,28 +536,47 @@ def record_payment(
         Payment.idempotency_key == idempotency_key.strip(),
     ).with_for_update()).one_or_none()
     if existing is not None:
-        prior_allocations = session.scalars(select(PaymentAllocation).where(
-            PaymentAllocation.business_id == business_id,
-            PaymentAllocation.payment_id == existing.id,
-        )).all()
-        prior_map = {item.invoice_id: item.amount for item in prior_allocations}
-        if (
-            existing.amount != amount
-            or existing.currency_code != currency
-            or existing.customer_id != customer_id
-            or existing.method != method
-            or existing.reference != reference
-            or prior_map != requested_map
-        ):
-            raise WorkflowError("Idempotency key was already used for different payment details")
-        return existing
+        return _resolve_payment_replay(
+            session,
+            existing,
+            amount=amount,
+            currency=currency,
+            customer_id=customer_id,
+            method=method,
+            reference=reference,
+            requested_map=requested_map,
+        )
+
     payment = Payment(
         business_id=business_id, customer_id=customer_id, amount=amount,
         currency_code=currency, idempotency_key=idempotency_key.strip(),
         method=method, reference=reference,
     )
-    session.add(payment)
-    session.flush()
+    # The initial lookup does not lock a missing key. Two concurrent retries can
+    # therefore both attempt the insert. Savepoint isolation lets us recover from
+    # the unique-key race without leaving the caller's outer transaction unusable.
+    try:
+        with session.begin_nested():
+            session.add(payment)
+            session.flush()
+    except IntegrityError:
+        existing = session.scalars(select(Payment).where(
+            Payment.business_id == business_id,
+            Payment.idempotency_key == idempotency_key.strip(),
+        ).with_for_update()).one_or_none()
+        if existing is None:
+            # The integrity error was unrelated to an idempotency-key race.
+            raise
+        return _resolve_payment_replay(
+            session,
+            existing,
+            amount=amount,
+            currency=currency,
+            customer_id=customer_id,
+            method=method,
+            reference=reference,
+            requested_map=requested_map,
+        )
     allocated_total = ZERO
     for invoice_id, allocation_amount in requested:
         invoice = session.scalars(select(Invoice).where(
