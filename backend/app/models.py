@@ -15,6 +15,7 @@ from sqlalchemy import (
     Enum as SqlEnum,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Numeric,
     String,
     UniqueConstraint,
@@ -646,6 +647,7 @@ class PlatformAdminAuditEvent(Base):
     """Append-only audit evidence for platform role grants and revocations."""
 
     __tablename__ = "platform_admin_audit_events"
+    __table_args__ = (Index("ix_platform_admin_audit_events_created_at", "created_at"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     actor_subject: Mapped[str] = mapped_column(String(128), nullable=False)
