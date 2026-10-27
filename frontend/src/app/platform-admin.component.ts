@@ -89,6 +89,8 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
           <form class="filters" (ngSubmit)="loadBusinesses(0)">
             <label class="search-field"><span>{{ t('بحث', 'Search') }}</span><input name="businessSearch" [(ngModel)]="businessQuery" maxlength="160" [placeholder]="t('اسم الشركة أو البريد أو الهاتف', 'Company, email, or phone')" /></label>
             <label><span>{{ t('حالة الوصول', 'Access status') }}</span><select name="businessStatus" [(ngModel)]="businessStatus"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="active">{{ t('نشطة', 'Active') }}</option><option value="inactive">{{ t('معطّلة', 'Inactive') }}</option></select></label>
+            <label><span>{{ t('ترتيب حسب', 'Sort by') }}</span><select name="businessSortBy" [(ngModel)]="businessSortBy"><option value="created_at">{{ t('تاريخ الإنشاء', 'Creation date') }}</option><option value="name">{{ t('اسم مساحة العمل', 'Workspace name') }}</option><option value="members">{{ t('عدد الأعضاء', 'Member count') }}</option></select></label>
+            <label><span>{{ t('اتجاه الترتيب', 'Sort direction') }}</span><select name="businessSortOrder" [(ngModel)]="businessSortOrder"><option value="desc">{{ t('تنازلي', 'Descending') }}</option><option value="asc">{{ t('تصاعدي', 'Ascending') }}</option></select></label>
             <button class="primary-button" type="submit" [disabled]="businessesLoading">{{ t('تطبيق', 'Apply') }}</button>
           </form>
           @if (businessesLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل مساحات العمل…', 'Loading workspaces…') }}</div> }
@@ -205,6 +207,8 @@ export class PlatformAdminComponent implements OnInit {
   businessesError = '';
   businessQuery = '';
   businessStatus: 'all' | 'active' | 'inactive' = 'all';
+  businessSortBy: 'created_at' | 'name' | 'members' = 'created_at';
+  businessSortOrder: 'asc' | 'desc' = 'desc';
   businessOffset = 0;
   businessTotal = 0;
 
@@ -311,6 +315,8 @@ export class PlatformAdminComponent implements OnInit {
       const result = await this.api.platformBusinesses({
         q: this.businessQuery.trim() || undefined,
         status: this.businessStatus,
+        sort_by: this.businessSortBy,
+        sort_order: this.businessSortOrder,
         limit: this.pageSize,
         offset: this.businessOffset
       });
