@@ -1,3 +1,8 @@
+## Customer search by contact fields — 2026-10-27
+
+- Extended the existing workspace-scoped customer `q` filter to search name, email, and phone with SQLAlchemy-bound expressions, retaining active-customer and tenant scoping.
+- Added API regression coverage for all three search fields. Fresh CircleCI checks are required before merge.
+
 ## Admin Firebase directory failure-path regression tests — 2026-10-27
 
 - Added regression coverage for missing Firebase accounts and unavailable directory lookups; failures must not persist role grants or audit events and must not leak upstream exception details.
