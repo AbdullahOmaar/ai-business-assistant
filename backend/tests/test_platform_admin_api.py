@@ -930,7 +930,9 @@ def test_workspace_status_change_rolls_back_when_audit_commit_fails(
     platform_admin_environment, monkeypatch
 ):
     business_id = UUID(platform_admin_environment["alpha_id"])
-    client = platform_admin_environment["client"]
+    # The production app converts an unhandled route exception to HTTP 500.
+    # Disable TestClient's test-only exception re-raise for this failure-path assertion.
+    client = TestClient(app, raise_server_exceptions=False)
 
     def fail_commit(_session):
         raise RuntimeError("simulated workspace audit commit failure")
