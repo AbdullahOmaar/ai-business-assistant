@@ -10,6 +10,8 @@ test('data integrity review is owner-gated and read-only', () => {
   assert.match(ui, /loadDataIntegrity\(0\)/);
   assert.match(ui, /Manual review only/);
   assert.match(api, /reports\/data-integrity/);
+  assert.match(ui, /Dashboard, DataIntegrityReport,/);
+  assert.match(api, /dataIntegrity\(businessId: string/);
 });
 
 test('data integrity report is cleared when switching workspace', () => {
