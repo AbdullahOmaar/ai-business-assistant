@@ -78,3 +78,28 @@ Remaining follow-up after the CircleCI run becomes available:
 - Complete staging Firebase invalid/expired/wrong-project token rejection and API-wide cross-tenant negative tests with non-production credentials.
 - Add real-browser Playwright coverage for sign-in, workspace isolation, invoice issue/void, payment recording/allocation, sales return, and installed-PWA startup/update once a safe staging target and test identity are available.
 - If a zero-cost CircleCI allowance is exhausted, stop safely and use a reviewed alternate runner (existing local hardware or a separately authorized free tier); do not silently enable paid credits or mark checks green without execution.
+
+
+## Independent verification performed on 2026-10-27
+
+The following checks were executed in an isolated Vercel Sandbox after GitHub Actions repeatedly failed before allocating a runner. The sandbox was populated with repository files fetched from GitHub: backend/frontend application files from commit `69a043adc0fbd6188f7d6e806fb7ffe076a138f5`, plus the current PostgreSQL concurrency-test file from blob `470dcc29ee0eaa293d4cc86f60ad5b3739168a2d` (test-fix commit `11f600fa892793ba172e2eaa47505b8f1b63da2c`). The source was assembled from versioned files but was not a full Git clone; no production credentials or production database were used.
+
+| Check | Observed result | Evidence / limitation |
+|---|---|---|
+| Python compile | **PASS** | `python -m compileall -q app tests` |
+| Full backend suite | **149 passed** | `python -m pytest -q --tb=short -p no:warnings`; 6.98 seconds, with all four PostgreSQL concurrency tests enabled. |
+| PostgreSQL migrations/drift | **PASS** | Disposable local PostgreSQL **18.6**: `alembic upgrade head`, current revision `0003_business_workflows`, then `alembic check` → “No new upgrade operations detected.” |
+| PostgreSQL concurrency regressions | **4/4 passed** | Same-key payment replay, competing payment allocations, concurrent stock sales, and concurrent sales-return approvals ran against the disposable PostgreSQL service/schema. |
+| Python dependency audit | **PASS** | `pip-audit -r requirements.txt` → “No known vulnerabilities found.” This reports the packages/resolutions available to that sandbox at audit time. |
+| Frontend unit tests/build | **PASS** | `npm run build`: 5 tests passed; Angular production bundle built, initial total **489.92 kB**, build exit code 0. |
+| npm dependency audit | **PASS** | `npm audit --audit-level=high` → “found 0 vulnerabilities” for the sandbox's resolved tree. |
+| FastAPI import | **PASS** | `python -c 'import app.main'` → “FastAPI import OK.” |
+| Docker image build | **NOT RUN** | Docker CLI/daemon was unavailable in the sandbox. A Python import check is not a substitute for building/running the image. |
+| CircleCI config validator/hosted workflow | **NOT RUN** | The config parses with PyYAML and expected jobs/workflows were asserted locally; CircleCI's authoritative validator and hosted pipeline remain pending owner authorization. |
+
+### Limits of this verification
+
+- The sandbox used Python **3.14.4**, Node **24.22.1** and PostgreSQL **18.6**, while the proposed CircleCI jobs use Python **3.12**, Node **22.12** and PostgreSQL **16**. These results provide substantive independent regression evidence, but do not replace a passing CircleCI run on its specified versions.
+- The frontend repository still has no committed `package-lock.json`. `npm install` resolves the manifest's semver ranges afresh; the npm audit/build result is not a deterministic lockfile-based reproduction. Generate/review/commit a lockfile and switch CI to `npm ci` when dependency-registry access is available.
+- The frontend build-info script could not read a Git commit inside the assembled sandbox because it was not a Git checkout; it fell back to an unknown commit marker. This was a test-environment provenance limitation, not a source build failure.
+- These tests do not prove the unimplemented double-entry ledger, period close, inventory valuation/COGS, local tax compliance, FX accounting, or bank reconciliation features exist. Release readiness remains **BLOCKED** until CircleCI validates/runs on the exact PR head, branch protection requires the observed status contexts, Docker/container build passes, lockfile reproducibility is fixed, and remaining staging authorization/browser gates are completed.
