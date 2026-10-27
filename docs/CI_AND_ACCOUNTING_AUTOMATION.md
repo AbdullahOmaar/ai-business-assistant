@@ -30,7 +30,7 @@ All three per-change jobs must pass on the exact commit under review. A missing,
 
 ## Financial rules that the release gate protects
 
-The pipeline runs the existing domain and workflow tests rather than creating a second, divergent set of financial calculations. Existing coverage includes:
+The pipeline runs the existing domain and workflow tests rather than creating a second, divergent set of financial calculations. A new PostgreSQL-only concurrency test module supplements those existing tests and is enabled only in the CircleCI job against the explicitly named disposable test database. Existing and new coverage includes:
 
 - Exact `Decimal` money calculations and the documented `ROUND_HALF_UP` policy.
 - Line-level rounding, invoice subtotal/discount/tax/total reconciliation, and invalid inputs.
@@ -40,7 +40,7 @@ The pipeline runs the existing domain and workflow tests rather than creating a 
 - Currency-separated reporting and cross-business authorization denials.
 - Invoice lifecycle constraints, sensitive-role restrictions, and audit-aware workflows.
 
-The PostgreSQL service adds real-database migration and schema-drift checks. **It does not by itself prove that every service/API financial workflow has been integration-tested against PostgreSQL.** The complete pytest suite still includes isolated SQLite-based tests; this limitation must remain visible until dedicated PostgreSQL workflow/concurrency tests are added and observed passing.
+The PostgreSQL service adds real-database migration and schema-drift checks. The new concurrency module runs selected payment/stock/return workflows against PostgreSQL with isolated schema per test; it does not yet prove that every API workflow has PostgreSQL integration coverage. The overall pytest suite still includes isolated SQLite-based tests. These new tests are written but not yet executed against CircleCI.
 
 No monetary discrepancy, unbalanced expected total, over-allocation, over-return, duplicate financial mutation, cross-business access, invalid migration, high-severity dependency finding, or container import failure can be waived merely to prepare a demo.
 
@@ -73,7 +73,7 @@ If any required job is failing/unavailable, any material financial difference is
 The repository's accounting integrity audit documents these unimplemented capabilities: a balanced double-entry general ledger and period close; inventory valuation and reliable cost of goods sold; jurisdiction-aware tax policy/reporting; exchange rates and FX gains/losses; bank reconciliation and customer statements/receivables aging. The current profit/loss figure is an operational estimate, not certified net profit. CI can guard existing behavior but cannot certify features the application has not implemented.
 
 Remaining follow-up after the CircleCI run becomes available:
-- Add dedicated PostgreSQL integration/concurrency tests for payment idempotency, allocation races, cumulative returns, stock reservation/deduction, and rollback behavior.
+- Added `backend/tests/test_postgres_financial_concurrency.py` with isolated-schema PostgreSQL tests for same-key concurrent payment retries, competing allocations against one invoice, competing stock sales, and concurrent approvals of over-sized returns. The fixture requires an explicit `CI_ALLOW_DATABASE_SCHEMA_TESTS=true`, a separate `TEST_DATABASE_URL`, and a database name containing `test`, `ci`, `disposable`, or `tmp`; it never falls back to `DATABASE_URL`. The tests and payment-race fix remain unverified until the real CircleCI PostgreSQL job runs.
 - Complete staging Firebase invalid/expired/wrong-project token rejection and API-wide cross-tenant negative tests with non-production credentials.
 - Add real-browser Playwright coverage for sign-in, workspace isolation, invoice issue/void, payment recording/allocation, sales return, and installed-PWA startup/update once a safe staging target and test identity are available.
 - If a zero-cost CircleCI allowance is exhausted, stop safely and use a reviewed alternate runner (existing local hardware or a separately authorized free tier); do not silently enable paid credits or mark checks green without execution.
