@@ -53,7 +53,10 @@ export interface PlatformBusiness {
 export interface PlatformMembership {
   id: string; user_subject: string; role: 'owner' | 'staff'; created_at: string | null;
 }
-export interface PlatformBusinessPage { items: PlatformBusiness[]; total: number; limit: number; offset: number; }
+export interface PlatformBusinessPage {
+  items: PlatformBusiness[]; total: number; limit: number; offset: number;
+  sort_by: 'created_at' | 'name' | 'members'; sort_order: 'asc' | 'desc';
+}
 export interface PlatformBusinessDetails {
   business: PlatformBusiness;
   memberships: PlatformMembership[];
@@ -179,7 +182,9 @@ export class ApiService {
   }
 
   platformBusinesses(filters: {
-    q?: string; status?: 'all' | 'active' | 'inactive'; limit?: number; offset?: number;
+    q?: string; status?: 'all' | 'active' | 'inactive';
+    sort_by?: 'created_at' | 'name' | 'members'; sort_order?: 'asc' | 'desc';
+    limit?: number; offset?: number;
   } = {}): Promise<PlatformBusinessPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
