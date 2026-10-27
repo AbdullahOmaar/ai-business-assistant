@@ -278,6 +278,7 @@ def update_platform_business_status(
 @router.get("/audit-events")
 def platform_audit_events(
     action: str | None = Query(default=None, max_length=80),
+    actor_subject: str | None = Query(default=None, max_length=128),
     business_id: UUID | None = None,
     created_after: datetime | None = None,
     created_before: datetime | None = None,
@@ -298,6 +299,8 @@ def platform_audit_events(
     predicates = []
     if action and action.strip():
         predicates.append(AuditEvent.action.ilike(f"%{action.strip()}%"))
+    if actor_subject and actor_subject.strip():
+        predicates.append(AuditEvent.actor_subject.ilike(f"%{actor_subject.strip()}%"))
     if business_id:
         predicates.append(AuditEvent.business_id == business_id)
     if created_after:
