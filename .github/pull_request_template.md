@@ -1,6 +1,13 @@
 ## Summary
 <!-- What user-visible behavior or defect does this change address? -->
 
+## Ownership and review
+- **Task / issue ID:**
+- **Implementation owner:**
+- **Verification owner:**
+- **Security / financial reviewer (when applicable):**
+- **Release operator (when applicable):**
+
 ## Acceptance criteria
 - [ ] The requested outcome is implemented end to end.
 - [ ] Related UI/API/persistence/authorization behavior is covered where applicable.
