@@ -709,3 +709,23 @@ def test_platform_user_directory_returns_empty_results_when_exact_lookup_finds_n
     assert response.json()["has_more"] is False
     assert response.json()["next_page_token"] is None
 
+@pytest.mark.parametrize("role", ["platform_viewer", "workspace_operator"])
+def test_read_only_platform_roles_cannot_access_global_user_directory(
+    platform_admin_environment, role
+):
+    with Session(platform_admin_environment["engine"]) as session:
+        session.add(PlatformRoleGrant(
+            user_subject=STAFF_SUBJECT,
+            role=role,
+            is_active=True,
+            granted_by_subject=ADMIN_SUBJECT,
+            last_reason="Least-privilege directory access test",
+        ))
+        session.commit()
+
+    platform_admin_environment["subject"]["value"] = STAFF_SUBJECT
+    response = platform_admin_environment["client"].get("/api/v1/platform-admin/users")
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Platform administrator access is not granted."
+
