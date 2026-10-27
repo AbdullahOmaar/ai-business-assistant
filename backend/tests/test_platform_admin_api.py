@@ -241,3 +241,16 @@ def test_platform_audit_is_read_only_and_supports_action_filter(platform_admin_e
     assert filtered_actor.json()["total"] == 1
     assert invalid_range.status_code == 422
     assert deleted.status_code == 405
+
+    # Mixed naive/UTC inputs must not cause Python's aware-vs-naive TypeError.
+    mixed_timezone_invalid = client.get(
+        "/api/v1/platform-admin/audit-events",
+        params={"created_after": "2026-10-27T12:00:00", "created_before": "2026-10-27T11:00:00Z"},
+    )
+    mixed_timezone_valid = client.get(
+        "/api/v1/platform-admin/audit-events",
+        params={"created_after": "2026-10-27T10:00:00", "created_before": "2026-10-27T11:00:00Z"},
+    )
+    assert mixed_timezone_invalid.status_code == 422
+    assert mixed_timezone_invalid.json()["detail"] == "created_after must not be later than created_before."
+    assert mixed_timezone_valid.status_code == 200
