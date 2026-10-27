@@ -6,6 +6,7 @@
 - Obtain source and restore URLs from the approved secret manager; do not paste them into chat or shell history.
 - The restore target must be a newly created, empty, disposable database that is not the production database.
 - The script refuses identical database URLs, compares database/server identity, checks that the target has no user objects, and requires an explicit confirmation flag.
+- It resolves output paths before writing, refuses paths inside the repository, and refuses to overwrite an existing encrypted backup or checksum.
 - The script writes an AES-256 encrypted custom-format dump with restrictive permissions, verifies that the dump can be read, restores it into the isolated target, and checks the restored Alembic revision table.
 - Store the encrypted backup and checksum in an approved encrypted backup location with access controls and retention. The script does not create cloud storage or incur provider charges.
 
@@ -23,6 +24,14 @@ Run:
 
 ```bash
 bash scripts/backup-restore-drill.sh
+```
+
+Run the non-destructive output-safety regression checks with:
+
+```bash
+bash -n scripts/backup-restore-drill.sh
+bash -n scripts/backup-restore-drill.test.sh
+bash scripts/backup-restore-drill.test.sh
 ```
 
 ## Release gate status
