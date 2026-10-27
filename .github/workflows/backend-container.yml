@@ -7,13 +7,17 @@ on:
       - "backend/**"
       - ".github/workflows/backend-container.yml"
   push:
-    branches: ["main", "feat/**", "chore/**"]
+    branches: ["main"]
     paths:
       - "backend/**"
       - ".github/workflows/backend-container.yml"
 
 permissions:
   contents: read
+
+concurrency:
+  group: backend-container-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
