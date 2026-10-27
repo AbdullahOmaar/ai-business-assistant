@@ -1,3 +1,10 @@
+## Angular template parse failure fixed — 2026-10-27
+
+- Vercel Preview of exact diagnostic SHA `969bd23caee3d795ce19aad0141e1b074c9b53ab` proved the frontend unit suite passed **19/19**, then Angular production build failed with `NG5002` at `frontend/src/app/app.component.ts:77`: the mobile More button's `[class.active]` attribute had an extra double quote after `tab === 'release-guide'`.
+- Removed the duplicate quote and added `frontend/src/app/app.component-template-safety.spec.ts` to prevent this exact regression. The fix is not verified until the new exact-head build and CircleCI checks pass.
+- No production deployment or database operation was performed.
+
+
 ## Current mainline integration — 2026-10-27 17:35 UTC
 
 - **Mainline after PR #115:** merged commit `11c9308eb935f4305a49c946b6cdae50130516f0`. At the checkpoint before the release reconciliation, all four CircleCI checks and both Vercel status contexts reported success on this SHA. The PR #115 merge includes issued-invoice printing with HTML escaping and focused source regression tests; manual Android Chrome / installed-PWA print-to-PDF smoke remains unverified.
