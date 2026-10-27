@@ -7,7 +7,7 @@
 - The restore target must be a newly created, empty, disposable database that is not the production database.
 - The script refuses identical database URLs, compares database/server identity, checks that the target has no user objects, and requires an explicit confirmation flag.
 - It resolves output paths before writing, refuses paths inside the repository, and refuses to overwrite an existing encrypted backup or checksum.
-- The script writes an AES-256 encrypted custom-format dump with restrictive permissions, verifies that the dump can be read, restores it into the isolated target, and checks the restored Alembic revision table.
+- The script writes an AES-256 encrypted custom-format dump with restrictive permissions, verifies that the dump can be read, restores it into the isolated target, and checks the restored Alembic revision table. The empty-target guard checks user relations, routines, types, non-default schemas, and non-default extensions before any dump or restore operation.
 - Store the encrypted backup and checksum in an approved encrypted backup location with access controls and retention. The script does not create cloud storage or incur provider charges.
 
 ## Run
