@@ -203,9 +203,17 @@ def test_status_change_requires_reason_and_adds_audit_event(platform_admin_envir
 def test_platform_audit_is_read_only_and_supports_action_filter(platform_admin_environment):
     client = platform_admin_environment["client"]
     listed = client.get("/api/v1/platform-admin/audit-events", params={"action": "invoice.issued"})
+    filtered_actor = client.get("/api/v1/platform-admin/audit-events", params={"actor_subject": "workspace-owner-uid"})
+    invalid_range = client.get(
+        "/api/v1/platform-admin/audit-events",
+        params={"created_after": "2026-10-27T12:00:00Z", "created_before": "2026-10-27T11:00:00Z"},
+    )
     deleted = client.delete("/api/v1/platform-admin/audit-events")
 
     assert listed.status_code == 200
     assert listed.json()["total"] == 1
     assert listed.json()["items"][0]["action"] == "invoice.issued"
+    assert filtered_actor.status_code == 200
+    assert filtered_actor.json()["total"] == 1
+    assert invalid_range.status_code == 422
     assert deleted.status_code == 405
