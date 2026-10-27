@@ -7,6 +7,7 @@ drop or truncate the shared database.
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 import os
+import re
 from threading import Barrier
 from uuid import uuid4
 
@@ -52,7 +53,7 @@ def postgres_engine():
 
     url = make_url(configured_url)
     database_name = (url.database or "").lower()
-    if not any(marker in database_name for marker in ("test", "ci", "disposable", "tmp")):
+    if not re.search(r"(?:^|[_-])(?:test|ci|disposable|tmp)(?:$|[_-])", database_name):
         pytest.fail("Refusing schema creation: TEST_DATABASE_URL database name must include test, ci, disposable, or tmp.")
     if url.get_backend_name() != "postgresql":
         pytest.skip("Financial concurrency tests require PostgreSQL row-lock semantics.")
@@ -60,9 +61,11 @@ def postgres_engine():
     schema = f"ci_financial_{uuid4().hex}"
     admin_engine = create_engine(url, pool_pre_ping=True)
     engine = None
+    schema_created = False
     try:
         with admin_engine.begin() as connection:
             connection.execute(text(f'CREATE SCHEMA "{schema}"'))
+        schema_created = True
 
         # Every pooled connection uses the isolated schema as its search path.
         engine = create_engine(
@@ -77,8 +80,9 @@ def postgres_engine():
     finally:
         if engine is not None:
             engine.dispose()
-        with admin_engine.begin() as connection:
-            connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
+        if schema_created:
+            with admin_engine.begin() as connection:
+                connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
         admin_engine.dispose()
 
 
