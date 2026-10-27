@@ -1155,3 +1155,11 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 - Added `docs/PLATFORM_ADMIN_SECURITY_REVIEW.md` rollback runbook. The runbook is documented only; no rollback/deployment executed, and production rollback target/schema compatibility remain unverified.
 - Corrected code commit: `719b0ef9361993d5387351e2b5384d02ba877956`; documentation commit: `6fc6e3d815af974446c1f9bf9e8a79163e0c208a`. Exact current PR head checks must be re-read after these commits.
 - Local tests: NOT RUN (repository checkout/runtime dependencies are unavailable in this session). Production release: NO-GO pending exact-head CI, concurrency/accessibility evidence, deployment parity, authenticated Admin smoke, and explicit authorization.
+
+
+### Deployment evidence refresh — 2026-10-28
+
+- Vercel API production deployment `dpl_5VH6yC7nN8oTPS65Z78rTAaJFErA` is READY at source SHA `8626ce2a30ae9a343bc8e9c72a0d98b6c5aa3890`, matching current `main` at inspection time.
+- Latest listed READY Web production deployment `dpl_3PLEvrGRx6rb6hamkVNV5Nq5is9K` is source SHA `8a1ebbfe334980b02795e238be05fad560bd4f28`, which does not match current `main`. No Web production deployment was found for the current main SHA in the Vercel deployment listing.
+- Web deployment build events show a successful build and a warning that the initial JS bundle exceeded the configured 700 kB budget by 30.87 kB (total 730.87 kB). This is a performance warning, not a build failure. The GitHub Vercel Web status still reports the build-rate-limit failure, so the current Web production alias remains a release gate.
+- No production deployment, promotion, alias change, rollback, or data mutation was performed. Do not infer production Admin behavior from public readiness alone; authenticated Admin smoke remains NOT RUN.
