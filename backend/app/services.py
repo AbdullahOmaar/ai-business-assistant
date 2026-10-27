@@ -131,6 +131,9 @@ def create_product(
     _audit(session, business_id=business_id, principal=principal,
            action="product.created", target_type="product", target_id=product.id)
     if opening_quantity > ZERO:
+        # Match the OWNER-only standalone stock-movement API. Without this check,
+        # STAFF could bypass that boundary by setting opening_quantity on product creation.
+        _membership(session, principal, business_id, owner_only=True)
         record_stock_movement(
             session, principal=principal, business_id=business_id,
             product_id=product.id, movement_type="opening",
