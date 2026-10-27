@@ -160,7 +160,6 @@ If the task is too large, split it into independently reviewable subtasks with e
 - The final report must separate: verified complete, partially complete, not run, blocked, changed files/commit or PR, and the exact next action.
 - Production readiness requires exact-release-SHA checks, merge authorization, confirmed deployment version/SHA, and safe end-to-end smoke tests. Never infer readiness from source code, preview success, or HTTP 200 alone.
 
-
 ## Master audit plan and cross-session continuity
 - The canonical audit/planning reference is `docs/AUDIT_MASTER_PLAN.md`. Read it before any new audit, planning, design, or implementation session, together with this file and the latest relevant `TASKS.md` checkpoint.
 - At session start, re-check current `main` SHA, working-tree status when local access exists, relevant Issues/PRs, exact-head CI, and deployment evidence. Treat audit-plan counts/SHA/status as a dated snapshot, not live truth.

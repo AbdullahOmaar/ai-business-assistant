@@ -1,3 +1,15 @@
+# Current execution checkpoint — 2026-10-28
+
+- **Working branch:** `docs/audit-master-plan-2026-10-28`; no new branch created. Main was rechecked at `068b0b4825765684078c3db44ecd9cafbb7e1cf4` before syncing this candidate.
+- **SEC-001:** moved the OWNER-only positive-opening-stock authorization check ahead of product, audit, and stock writes. Regression coverage includes STAFF zero-quantity success, STAFF positive-quantity denial with no persisted side effects, and OWNER success.
+- **SEC-002:** duplicate GET route cleanup and `test_extended_api_route_registration.py` are already present on current main; retained them rather than reapplying duplicate changes.
+- **Alternate-runner verification:** in a credential-free Vercel sandbox, current-main backend app/test sources were loaded, the candidate service guard was applied, and the opening-stock regression was combined with current-main tenant tests. `python -m pytest -q --disable-warnings --tb=short`: **201 passed, 5 skipped, 11 warnings in 9.50s**. `python -m compileall -q app tests`: **PASS**. This is isolated source-tree evidence, not exact-head CircleCI or live PostgreSQL evidence.
+- **Route regression:** `test_extended_api_route_registration.py` passed as part of the suite; the three duplicate route paths are registered once.
+- **CI / delivery:** exact-head CircleCI is not yet verified. GitHub Actions failures previously returned no usable step/log output. PR #212 is closed without merge; after syncing and inspecting the current diff, create/reopen a review PR on this same branch. No merge to main or production deployment performed.
+- **Next:** sync this branch with current main without dropping main's newer assistant-security/health-test changes, run the exact candidate checks, reconcile PR state/diff, then proceed to FIN-001.
+
+---
+
 ## Platform Admin — five-task execution — 2026-10-27
 
 Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
@@ -118,12 +130,11 @@ Use only `TODO`, `IN_PROGRESS`, `BLOCKED`, and `VERIFIED` for current work. A st
 | ID | Priority | Task / outcome | Accountable role | Status | Acceptance gate / evidence |
 | --- | --- | --- | --- | --- | --- |
 | GOV-001 | P1 | Publish roles, task-contract rules, PR ownership, and review/release responsibilities for every contributor. | Engineering Coordinator + Task Steward | IN_PROGRESS | `CONTRIBUTING.md`, README and PR template are aligned; applicable CI passes on the exact latest SHA. |
-| CI-001 | P1 | Keep the alternate CI path reproducible and validate the current candidate. | CI Operator + QA Owner | IN_PROGRESS | On current `main` `cacc889679a7994dd2e54a51c58c1df827963580`, CircleCI reports backend-accounting, frontend-quality, and browser-smoke pending; Vercel web/API contexts fail with `build-rate-limit`. The security branch head has no CircleCI status contexts yet. Validate exact head only; do not reuse older green results. |
-| CI-002 | P1 | Classify GitHub Actions failures without spending exhausted runner allowance. | CI Operator | BLOCKED | Workflow-run metadata on candidate `fc3004ec8bd0b617d2cd332c4008102e0a2efbda` reported failures for backend tests, dependency audits, frontend/backend verification, and container verification; job steps/log downloads returned no usable content. A malformed test import was fixed, but the exact CI failure cause is not confirmed. Do not rerun Actions while runner allowance/log access is unavailable. |
-| REL-001 | P0 | Reconcile source version and the production API deployment before a release. | Release Operator + Repository Owner | BLOCKED | Current `main` SHA is `cacc889679a7994dd2e54a51c58c1df827963580`; Vercel web/API status contexts fail with `build-rate-limit`. Historical READY deployment SHAs do not prove current parity. Live authenticated `/version`, `/health`, `/readyz` and safe E2E checks are NOT RUN. Keep release blocked until quota/access and authorization/release gates are satisfied. |
-| PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | Current GitHub snapshot lists 2 open PRs: #212 (security guard + audit plan) and #219 (AI conversation history cap); #218 is merged to `main` as `cacc889679a7994dd2e54a51c58c1df827963580`. Inspect unique diffs/dependencies and exact-head checks before merge/closure; no bulk actions. |
-| SEC-001 | P0 | Close the confirmed initial-stock authorization bypass and continue the auth/tenant audit. | Security Reviewer + QA Owner | IN_PROGRESS | Candidate service guard requires OWNER for positive `opening_quantity` before product/audit/stock writes; regression test covers STAFF denial/no side effects and OWNER success. Fixed a malformed multiline test import. Exact-head CircleCI is still absent and GitHub Actions logs were inaccessible; the fix is NOT VERIFIED. Continue the full route × role × tenant matrix. |
-| SEC-002 | P2 | Remove duplicate route handlers and enforce unique method/path registration. | API Maintainer + QA Owner | IN_PROGRESS | Removed duplicate GET definitions for recurring-invoice listing (2→1), operational health (3→1), and tax summary (3→1) after confirming their bodies were identical. Added `backend/tests/test_extended_api_route_registration.py` to assert one GET registration per full path. Exact-head backend CI remains required; local tests NOT RUN. |
+| CI-001 | P1 | Keep the alternate CI path reproducible and validate the current candidate. | CI Operator + QA Owner | IN_PROGRESS | CircleCI passed all four jobs on `14009b414e226297023618452317e0777522238b` (jobs /5–/8). Later documentation commits produced new head `392b47b9d0a7712e07e022b189bb6012bc04731d`; the exact-head jobs /21–/24 were pending at the last check. Recheck before verifying. |
+| CI-002 | P1 | Classify GitHub Actions failures without spending exhausted runner allowance. | CI Operator | BLOCKED | On the latest PR head, `backend`, `frontend`, Python audit and JavaScript audit checks failed; connected job step lists were empty and log download returned 404. GitGuardian secret scan passed. The failures are unresolved infrastructure/runner evidence, not proof of application-test failure or success. Do not rerun Actions while the allowance is exhausted. |
+| REL-001 | P0 | Reconcile source version and the production API deployment before a release. | Release Operator + Repository Owner | BLOCKED | Vercel reports production web READY on SHA `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` and production API READY on SHA `82af326ffeec2188b5b837d86af1a76763f02fc6`; newer deployment attempts were cancelled. Verify live `/version`, `/health`, `/readyz`, aliases and deployment settings, then get release approval and deploy once safely. This audit did not deploy. |
+| PR-001 | P1 | Triage stale, overlapping and chained PRs without losing unique code/tests. | Engineering Coordinator | IN_PROGRESS | Metadata review: #150 is 172 commits behind `main` and not mergeable; #164 is 166 behind; #173 is 8 behind / 66 ahead and overlaps #183 in CircleCI/workflow config while containing separate concurrency tests and backend changes. Other drafts use feature branches as their base. Classify each as consolidate, rebase, close-as-superseded, or keep-blocked only after inspecting unique content and dependencies. |
+| SEC-001 | P0 | Verify server-side authentication, authorization and tenant-isolation controls. | Security Reviewer + QA Owner | IN_PROGRESS | Audit the full route-to-persistence path and test unauthenticated, unauthorized-role, cross-business, malformed-input and mismatched-reference denial cases against the accepted architecture/security model. Do not claim complete from source inspection alone. |
 | FIN-001 | P0 | Verify invoice/payment/stock integrity across retries, concurrency and lifecycle transitions. | Security / Financial Reviewer + QA Owner | IN_PROGRESS | Inspect payment idempotency/allocation, invoice transitions, repeated-SKU stock checks, returns/voids, currency and rounding invariants. Run relevant PostgreSQL integration/concurrency tests on exact candidate heads before merging payment/stock changes. |
 | OPS-001 | P1 | Prove backup/restore recovers to an isolated database. | Operations / Release Operator | BLOCKED | PR #135 remains open. A backup script alone is not a restore drill; require encrypted backup, checksum verification, isolated restore, and recorded result. Never test against production. |
 | DOC-001 | P2 | Reconcile remaining documentation and task status with current source and production. | Documentation / Task Steward | IN_PROGRESS | Keep README, ADRs, runbooks, PR descriptions and the current task index consistent; preserve dated historical checkpoints but never treat them as current without reconciliation. |
@@ -131,14 +142,13 @@ Use only `TODO`, `IN_PROGRESS`, `BLOCKED`, and `VERIFIED` for current work. A st
 
 ## Execution order
 
-1. **SEC-001 — IN_PROGRESS:** validate the OWNER-only positive-opening-stock guard and its regression test on an exact candidate SHA; resolve CI/log access first.
-2. **SEC-001 — IN_PROGRESS:** finish route × role × tenant negative coverage. Do not change unrelated OWNER/STAFF permissions before the business matrix is documented.
-3. **SEC-002 — IN_PROGRESS:** duplicate route definitions have been removed and a route-table regression test added; verify exact-head CI and test behavior before marking complete.
-4. **FIN-001 — IN_PROGRESS:** inspect payment idempotency/allocation, invoice lifecycle, stock/returns, currency and rounding; run PostgreSQL concurrency/integration tests.
-5. **CI-001 / CI-002 — IN_PROGRESS/BLOCKED:** obtain exact-head CircleCI evidence and actionable failure logs; do not rerun exhausted GitHub Actions jobs or treat missing logs as a pass.
-6. **PR-001 — IN_PROGRESS:** review the two currently open PRs (#212 and #219) for unique changes and dependencies; do not bulk merge/close.
-7. **REL-001 — BLOCKED:** reconcile deployed SHA/version and safe authenticated smoke after Vercel build quota/access permits and release gates are satisfied.
-8. **OPS-001 — BLOCKED:** perform an isolated backup/restore drill only with an approved isolated target and access.
+1. Finish this contributor-role and architecture-documentation correction, then verify all applicable checks on its exact new SHA.
+2. Keep production release blocked until actual aliases/version/SHA and readiness are reconciled; deployment is outside this audit.
+3. Reconcile overlapping CI work in #173 and #183, preserving the financial concurrency source/tests from #173 and browser smoke coverage from #183. Do not merge either blindly.
+4. Diagnose runner failures from available run metadata/logs. If logs remain inaccessible, keep the infrastructure blocker explicit and rely only on the CircleCI jobs actually observed passing.
+5. Triage open PRs by overlap, stale base and dependencies. Preserve unique changes and tests before closing or consolidating anything.
+6. Complete security, financial and restore verification; update each task only with exact-SHA evidence.
+
 ## Audit evidence and limitations — 2026-10-27 17:31 Cairo
 
 - Reviewed `AGENTS.md`, `README.md`, `TASKS.md`, accepted ADR-001, architecture baseline, security route inventory, production deployment runbook, PR template, four GitHub workflow files, open PR metadata, PR #183 diff, CircleCI statuses and Vercel production deployment metadata.
@@ -1092,21 +1102,3 @@ This section records the current automation-testing workstream and supersedes ea
 - Current main SHA is `8a1ebbfe334980b02795e238be05fad560bd4f28`; PR #217's exact-head CircleCI checks were 4/4 success, while the merge-commit CircleCI checks were pending at the last read.
 - Vercel web/API checks fail with `build-rate-limit` on the Hobby team. The latest listed production API deployment is on SHA `8772438405764734bda6f475e31bd50c22341c86`; the latest listed web deployment is on SHA `f9a51952822ecbdea4004250930c7cf17c1371fc`. The current main SHA is not confirmed deployed. No deployment, paid plan upgrade, or production mutation was performed.
 - Next: verify PR #219's exact-head CircleCI result and post-merge checks; revisit Vercel after the build-rate limit resets or obtain explicit authorization for a paid-plan change.
-
-
-## Security execution checkpoint — 2026-10-28 (latest verified repository snapshot)
-
-- **Current main:** `cacc889679a7994dd2e54a51c58c1df827963580` (PR #218 task-ledger update). Security work remains on the existing `docs/audit-master-plan-2026-10-28` branch; no new branch was created.
-- **Branch synchronization:** latest main was checked against the branch before this sync. Preserve PR #218's TASKS.md updates and branch-consolidation evidence; the current candidate is being rebuilt on top of the latest main tree.
-- **Security candidate:** positive `opening_quantity` requires OWNER before writes. Test import syntax defect was corrected in `10ee3778dec2751c8534c78e3a31f026715ea727`; exact-head test execution remains unverified.
-- **CI:** current main reports CircleCI backend-accounting, frontend-quality, and browser-smoke pending; Vercel web/API fail with `build-rate-limit`. The security candidate has no CircleCI status contexts yet. GitHub Actions metadata reported failures but step/log retrieval returned no usable evidence; do not infer the precise failing step or claim a pass.
-- **Open PRs at snapshot:** #212 (this security/audit candidate) and #219 (AI history cap). #219 is separate ongoing work; no merge/closure performed by this execution.
-- **Next action:** sync this branch with latest main while preserving its changes, then obtain an actionable exact-head CI run and validate the focused security test plus full backend suite. PR #212 remains Draft until verification passes.
-
-
-## SEC-002 execution checkpoint — 2026-10-28
-
-- Source review on the current candidate found identical repeated GET handler bodies in `backend/app/extended_api.py`: `/recurring-invoices` appeared twice, `/operations/health` three times, and `/reports/tax-summary` three times.
-- Removed only the later duplicate definitions, retaining the first implementation of each route. Static source verification now finds exactly one decorator per target path.
-- Added `backend/tests/test_extended_api_route_registration.py`, asserting exactly one GET route for each full path on the router.
-- **Validation:** source-level duplicate count check passed. Python/pytest and CircleCI are **NOT RUN / NOT AVAILABLE** on this exact candidate; do not mark SEC-002 VERIFIED until backend accounting passes.
