@@ -28,6 +28,10 @@ test('the UI exposes only delegated roles and keeps root management out of band'
   assert.doesNotMatch(source, /value="platform_super_admin"/);
   assert.match(source, /Root access cannot be granted, changed, or revoked from this UI/);
   assert.match(source, /APPEND-ONLY ACCESS HISTORY/);
+  assert.match(source, /identity-access-summary/);
+  assert.match(source, /platformPermissionLabel/);
+  assert.match(source, /canManageWorkspaceStatus/);
+  assert.match(source, /Read-only access: you can inspect workspace status/);
 });
 
 test('the user directory supports narrow-screen scrolling and mobile navigation', () => {
