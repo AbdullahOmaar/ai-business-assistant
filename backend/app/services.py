@@ -429,21 +429,37 @@ def issue_invoice(
             raise WorkflowError("Invoice product not found in this business")
         products[product_id] = product
 
+    # Aggregate quantities per tracked product before checking stock. Repeated
+    # invoice lines must consume a single shared stock balance, not each reuse it.
+    required_by_product: dict[UUID, Decimal] = {}
     for line in lines:
         product = products.get(line.product_id)
-        if product is None or not product.is_stock_tracked:
-            continue
+        if product is not None and product.is_stock_tracked:
+            required_by_product[product.id] = (
+                required_by_product.get(product.id, ZERO) + line.quantity
+            )
+
+    # Validate every product before recording any sale movements. This keeps a
+    # stock shortage from leaving a partially-consumed invoice in the session.
+    for product_id, required in required_by_product.items():
+        product = products[product_id]
         current = session.scalar(select(func.coalesce(
             func.sum(StockMovement.quantity_delta), 0
         )).where(
             StockMovement.business_id == business_id,
-            StockMovement.product_id == product.id,
+            StockMovement.product_id == product_id,
         ))
         available = Decimal(str(current or 0))
-        if available < line.quantity:
+        if available < required:
             raise WorkflowError(
-                f"Insufficient stock for {product.name}: available {available}, required {line.quantity}"
+                f"Insufficient stock for {product.name}: available {available}, required {required}"
             )
+
+    # Only consume stock after all totals passed validation.
+    for line in lines:
+        product = products.get(line.product_id)
+        if product is None or not product.is_stock_tracked:
+            continue
         session.add(StockMovement(
             business_id=business_id,
             product_id=product.id,
