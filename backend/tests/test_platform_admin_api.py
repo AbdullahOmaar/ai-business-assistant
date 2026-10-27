@@ -729,3 +729,59 @@ def test_read_only_platform_roles_cannot_access_global_user_directory(
     assert response.status_code == 403
     assert response.json()["detail"] == "Platform administrator access is not granted."
 
+
+
+def test_platform_audit_csv_export_neutralizes_spreadsheet_formulas(platform_admin_environment):
+    engine = platform_admin_environment["engine"]
+    with Session(engine) as session:
+        event = session.scalar(select(AuditEvent))
+        business = session.get(Business, UUID(platform_admin_environment["alpha_id"]))
+        assert event is not None
+        assert business is not None
+        event.action = "=HYPERLINK(\"https://example.test\",\"open\")"
+        event.actor_subject = "\t=1+1"
+        event.target_id = "@SUM(1,1)"
+        business.name = "+1+1"
+        session.commit()
+
+    response = platform_admin_environment["client"].get(
+        "/api/v1/platform-admin/audit-events/export.csv",
+        params={"limit": 1},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-export-row-count"] == "1"
+    assert response.headers["x-export-truncated"] == "false"
+    assert response.text.startswith("\ufeffcreated_at,")
+    assert "'=HYPERLINK(" in response.text
+    assert "'\\t=1+1" in response.text
+    assert "'@SUM(1,1)" in response.text
+    assert "'+1+1" in response.text
+
+
+def test_platform_audit_csv_export_is_bounded_and_requires_audit_permission(platform_admin_environment):
+    engine = platform_admin_environment["engine"]
+    with Session(engine) as session:
+        session.add(AuditEvent(
+            business_id=UUID(platform_admin_environment["alpha_id"]),
+            actor_subject=OWNER_SUBJECT,
+            action="invoice.updated",
+            target_type="invoice",
+            target_id="EGP-2",
+            change_summary="Second test event",
+        ))
+        session.commit()
+
+    client = platform_admin_environment["client"]
+    response = client.get(
+        "/api/v1/platform-admin/audit-events/export.csv",
+        params={"limit": 1},
+    )
+    assert response.status_code == 200
+    assert response.headers["x-export-row-count"] == "1"
+    assert response.headers["x-export-truncated"] == "true"
+
+    platform_admin_environment["subject"]["value"] = OWNER_SUBJECT
+    denied = client.get("/api/v1/platform-admin/audit-events/export.csv")
+    assert denied.status_code == 403
