@@ -89,6 +89,7 @@ def test_assistant_rejects_caller_supplied_system_role(assistant_client):
 
 
 def test_assistant_rejects_excessive_accumulated_history(assistant_client):
+    # Every message is valid on its own; only the aggregate history exceeds 8,000 characters.
     business_id = create_workspace(assistant_client)
     response = assistant_client.post(
         f"/api/v1/businesses/{business_id}/assistant/chat",
