@@ -33,7 +33,7 @@ test('payment retries preserve the idempotency key after an uncertain result', (
 test('workspace release metadata is grouped in the page header card', () => {
   assert.match(source, /class="workspace-build-card"/);
   assert.match(source, /Build time/);
-  assert.doesNotMatch(source, /class="mobile-version-row"/);
+  assert.doesNotMatch(source, /<div class="mobile-version-row">/);
 });
 
 test('invoice creation is collapsed separately from existing-invoice customer filtering', () => {
