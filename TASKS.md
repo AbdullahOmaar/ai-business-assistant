@@ -1067,3 +1067,25 @@ This section records the current automation-testing workstream and supersedes ea
 
 **Next action:** re-check the exact post-merge main statuses; keep production activation blocked until authenticated browser/authorization E2E and release gates are satisfied.
 
+
+
+## Branch consolidation pass — 2026-10-28
+
+### Verified merges on current main
+- PR #208 — startup/mobile E2E coverage; merge SHA `8772438405764734bda1e53f64c3ea98f768` (exact-head CircleCI: 4/4 success).
+- PR #210 — formula-safe payment CSV export and CSV unit tests; merge SHA `7721291231cb4985468bcde6813143d13afa5fae` (exact-head CircleCI: 4/4 success).
+- PR #213 — mobile audit/invoice layout polish; merge SHA `52ea765da234c1a7421febd232d40676cff42587` (exact-head CircleCI: 4/4 success). The first candidate had a missing closing wrapper; the replacement fixed it before merge.
+- PR #214 — customer/product/invoice search, status filtering, safe CSV export, and filter unit tests; merge SHA `ac770fdfd079acc1bca4e360bc278b10c6e9d074` (exact-head CircleCI: 4/4 success).
+- PR #215 — supplier, purchasing/receiving, recurring schedule, notification queue, and owner-only operational-health UI; workspace-scoped state is cleared on workspace change/logout; merge SHA `64e44b01c39256a669a5fdb3002f4a7b9dafcc48` (exact-head CircleCI: 4/4 success).
+
+### Stale branch disposition
+- Closed as superseded/duplicate after comparison with current main: PRs #15–#19, #47, #56, #57, #73, #128, #132, #134, #181, #195.
+- PR #150 was closed because its new GitHub Actions workflow violates the current CircleCI-only CI constraint and its seeded ledger was stale. A compliant replacement would refresh the ledger from current records and validate it within existing `.circleci/config.yml`.
+- The first replacement candidates #209 and #211 were closed after newer current-main candidates were opened. Original PR #43 was closed as superseded.
+- Unrelated draft PR #212 was not changed.
+
+### Remaining verification and deployment blockers
+- AI resilience: PR #216's clean-main candidate still has a failing `backend-accounting` check; the CircleCI job page is not accessible through the available connector, so the failure cause is not asserted. PR #217 isolates provider retries/timeouts from the separate accumulated-history limit and is pending exact-head CircleCI. Neither candidate may be merged until checks pass.
+- Current main SHA is `64e44b01c39256a669a5fdb3002f4a7b9dafcc48`; its four CircleCI contexts were successful at the last read.
+- Vercel web/API checks fail with `build-rate-limit` on the Hobby team. The latest listed production API deployment is on SHA `8772438405764734bda1e53f64c3ea98f768`; the latest listed web deployment is on SHA `f9a51952822ecbdea4004250930c7cf17c1371fc`. The current main SHA is not confirmed deployed. No deployment, paid plan upgrade, or production mutation was performed.
+- Next: resolve the isolated provider retry CI result, then test the history cap separately; revisit Vercel after the build-rate limit resets or obtain explicit authorization for a paid-plan change.
