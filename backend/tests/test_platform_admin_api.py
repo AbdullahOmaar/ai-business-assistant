@@ -923,3 +923,32 @@ def test_revoking_absent_platform_role_is_idempotent_and_does_not_create_false_a
         ))
     assert grant is None
     assert audit is None
+
+
+
+def test_workspace_status_change_rolls_back_when_audit_commit_fails(
+    platform_admin_environment, monkeypatch
+):
+    business_id = UUID(platform_admin_environment["alpha_id"])
+    client = platform_admin_environment["client"]
+
+    def fail_commit(_session):
+        raise RuntimeError("simulated workspace audit commit failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Session, "commit", fail_commit)
+        response = client.patch(
+            f"/api/v1/platform-admin/businesses/{business_id}/status",
+            json={"is_active": False, "reason": "Audit atomicity regression"},
+        )
+
+    assert response.status_code == 500
+    with Session(platform_admin_environment["engine"]) as session:
+        business = session.get(Business, business_id)
+        assert business is not None
+        assert business.is_active is True
+        event = session.scalar(select(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "platform.business.deactivated",
+        ))
+    assert event is None
