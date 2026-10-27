@@ -111,3 +111,13 @@ def test_firebase_resolver_rejects_token_claims_for_another_project(monkeypatch)
 
     assert error.value.status_code == 401
     assert error.value.detail == "Firebase ID token belongs to another project."
+
+def test_firebase_resolver_fails_closed_when_project_is_not_configured(monkeypatch):
+    monkeypatch.delenv("FIREBASE_PROJECT_ID", raising=False)
+    monkeypatch.setattr(firebase_auth, "_firebase_app", lambda: None)
+
+    with pytest.raises(HTTPException) as error:
+        firebase_auth.firebase_principal_resolver(_request())
+
+    assert error.value.status_code == 503
+    assert error.value.detail == "Firebase Authentication is not configured."
