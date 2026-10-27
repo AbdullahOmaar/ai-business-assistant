@@ -1,3 +1,31 @@
+# Latest verified release checkpoint — 2026-10-27 00:01 UTC
+
+This checkpoint supersedes older entries below where they describe PR #161/#166 as open, unmerged, or not deployed. Historical notes are retained for audit history.
+
+## Ordered task status
+
+1. **TASK-01 — Accounting, authorization, tenant isolation: IN_PROGRESS.** PR #161 and #166 have been merged. The tested backend source tree returned 144 passed, 1 skipped; Python compilation succeeded. The tests include OWNER-only invoice issue/void and STAFF-denial cases, return/payment constraints, and tenant-boundary coverage. This does not yet prove every authenticated workflow against live PostgreSQL or Firebase.
+2. **TASK-02 — CI and container/security gates: BLOCKED.** Current GitHub Actions jobs failed before exposing executable steps or usable logs while the hosted runner allowance is exhausted. Do not treat this as a code test failure or passing CI. Alternative evidence: backend 144 passed/1 skipped; pip-audit found no known vulnerabilities; offline Alembic SQL generation produced 357 lines. Docker/Podman was unavailable in the alternate sandbox, so the container build remains unverified.
+3. **TASK-03 — PR reconciliation: VERIFIED.** PR #161 merged as 0e4627f51a627ee3eba8ab2b6076724ccc9f3c35. PR #166 merged as 5c71c9c2b622b7ec8009e26d959030a570a8db98. No open PR remains for this two-step release slice.
+4. **TASK-04 — Build and product smoke checks: IN_PROGRESS.** The production Angular deployment dpl_fYvQanpoqguzWmqJ4jTShfW5RCmu is READY on source SHA 0e4627f51a627ee3eba8ab2b6076724ccc9f3c35. The production web alias root, manifest, main bundle and polyfills returned HTTP 200. This proves static delivery, not browser startup, Firebase login, installed-PWA update, or authenticated financial workflows. The latest web deployment attempt for the backend-only follow-up SHA 5c71c9c2b622b7ec8009e26d959030a570a8db98 was canceled by the configured ignored-build-step rule; PR #166 changed only backend service code and backend tests, so the relevant frontend source is unchanged from the READY deployment.
+5. **TASK-05 — Production API release: IN_PROGRESS; health/version verified.** API deployment dpl_69UGtvtpdtX8sky3t4VnwVf5btbs is READY on exact release SHA 5c71c9c2b622b7ec8009e26d959030a570a8db98. Production /health, /readyz and /version returned HTTP 200; /version reports version 1.2.0, commit 5c71c9c2b622, environment production. The deployment-specific URL returned the same health/readiness/version results. Overall production readiness remains blocked by CI/container and browser-authenticated integration gates.
+
+## Database evidence and safety
+
+- The Neon production branch was read without SQL data mutations; Alembic revision is 0003_business_workflows.
+- Manual snapshot snap-empty-butterfly-b9oyvwqd was restored to a separate branch. Read-only checks on the restored copy and original verified matching Alembic revision and counts for businesses (2), customers (4), invoices (19), invoice_lines (21), payments (0), payment_allocations (0), sales_returns (0), stock_movements (0), and audit_events (48).
+- The original Neon branch name/default status was restored to main and re-checked. A separate restored drill branch remains for audit. No production migration, row edit, or paid-plan change was performed.
+- Offline migration SQL generation does not substitute for applying migrations against a disposable PostgreSQL instance and running real-PostgreSQL integration tests.
+
+## Next actions, in order
+
+1. Resolve/record the GitHub Actions quota limitation and keep exact-SHA job results clearly marked BLOCKED until executable checks can run; do not bypass branch-protection requirements silently.
+2. Run a real PostgreSQL integration/migration check, container build, dependency checks, and Firebase invalid-token / cross-tenant authorization tests using an authorized alternate runner.
+3. Complete safe browser-level tests for sign-in, workspace isolation, invoice issue/void, payment allocation, sales returns, and installed-PWA startup/update.
+4. Only then mark release readiness VERIFIED. Do not describe the project as fully production-ready while these gates remain open.
+
+---
+
 # Execution checkpoint — 2026-10-27 (production re-check)
 
 ## Five ordered release tasks
