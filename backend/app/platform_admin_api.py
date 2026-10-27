@@ -86,11 +86,13 @@ def _configured_super_admin_subjects() -> set[str]:
 
 
 def _platform_roles_and_permissions(
-    principal: AuthenticatedPrincipal, session: Session
+    principal: AuthenticatedPrincipal, session: Session | None
 ) -> tuple[list[str], frozenset[str], bool]:
     """Resolve grants only from the server DB or the protected bootstrap allowlist."""
     if principal.subject in _configured_super_admin_subjects():
         return ["platform_super_admin"], PLATFORM_ROOT_PERMISSIONS, True
+    if session is None:
+        return [], frozenset(), False
 
     grants = session.scalars(
         select(PlatformRoleGrant.role).where(
@@ -104,6 +106,28 @@ def _platform_roles_and_permissions(
         permissions.update(PLATFORM_ROLE_PERMISSIONS[role])
     return roles, frozenset(permissions), False
 
+
+
+def _platform_authorization_for_request(
+    principal: AuthenticatedPrincipal, request: Request
+) -> tuple[list[str], frozenset[str], bool]:
+    """Resolve bootstrap access without DB startup; delegated roles require the DB."""
+    if principal.subject in _configured_super_admin_subjects():
+        return _platform_roles_and_permissions(principal, None)
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
+        raise HTTPException(status_code=503, detail="Platform permission storage is not configured.")
+    try:
+        with factory() as session:
+            return _platform_roles_and_permissions(principal, session)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _log_security_event(
+            "platform_admin.permission_lookup_failed", request, principal.subject,
+            "error", target_type="authorization", level=logging.ERROR,
+        )
+        raise HTTPException(status_code=503, detail="Platform permissions are temporarily unavailable.") from exc
 
 def _deny_platform_access(principal: AuthenticatedPrincipal, request: Request) -> None:
     _log_security_event(
@@ -192,11 +216,10 @@ class BusinessStatusInput(BaseModel):
 @router.get("/access")
 def platform_admin_access(
     request: Request,
-    session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Return the caller's effective platform role and permission set."""
-    roles, permissions, is_super_admin = _platform_roles_and_permissions(principal, session)
+    roles, permissions, is_super_admin = _platform_authorization_for_request(principal, request)
     if not permissions:
         _deny_platform_access(principal, request)
     return {
@@ -212,11 +235,12 @@ def platform_admin_access(
 @router.get("/system-status")
 def platform_admin_system_status(
     request: Request,
-    session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Expose only safe runtime/readiness metadata to an authorized platform admin."""
-    _require_platform_permission(principal, request, session, "view_system_status")
+    roles, permissions, _ = _platform_authorization_for_request(principal, request)
+    if "view_system_status" not in permissions:
+        _deny_platform_access(principal, request)
 
     checked_at = datetime.now(timezone.utc).isoformat()
     factory = getattr(request.app.state, "session_factory", None)
@@ -809,7 +833,11 @@ def change_platform_user_role(
         from firebase_admin import auth
         firebase_app = get_firebase_admin_app()
         try:
-            auth.get_user(user_uid, app=firebase_app)
+            firebase_user = auth.get_user(user_uid, app=firebase_app)
+            if bool(getattr(firebase_user, "disabled", False)):
+                raise HTTPException(status_code=409, detail="Disabled Firebase accounts cannot be granted platform roles.")
+        except HTTPException:
+            raise
         except Exception as exc:
             if type(exc).__name__ in {"UserNotFoundError", "UserNotFoundException"}:
                 raise HTTPException(status_code=404, detail="Firebase user not found.") from exc
