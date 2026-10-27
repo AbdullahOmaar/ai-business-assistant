@@ -59,10 +59,10 @@ test('every release has concise Arabic and English titles and matching change li
 });
 
 test('v1.3.0 release notes cover invoice payments, opening stock, and the feature guide', () => {
-  const latest = RELEASE_HISTORY[0];
+  const release = RELEASE_HISTORY.find((entry) => entry.version === '1.3.0');
 
-  assert.equal(latest.version, '1.3.0');
-  assert.match(latest.changesEn.join(' '), /invoice/i);
-  assert.match(latest.changesEn.join(' '), /opening quantities/i);
-  assert.match(latest.changesEn.join(' '), /in-app.*guide/i);
+  assert.ok(release, 'v1.3.0 release notes are missing');
+  assert.match(release.changesEn.join(' '), /invoice/i);
+  assert.match(release.changesEn.join(' '), /opening quantities/i);
+  assert.match(release.changesEn.join(' '), /in-app.*guide/i);
 });
