@@ -80,6 +80,7 @@ export type PlatformRole = 'platform_viewer' | 'workspace_operator' | 'user_mana
 export interface PlatformAdminAccess {
   is_platform_admin: boolean;
   is_platform_super_admin: boolean;
+  subject: string;
   roles: string[];
   permissions: string[];
 }
