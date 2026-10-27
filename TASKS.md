@@ -676,3 +676,10 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - **UI-MOB-02 — IN_PROGRESS:** Improve customer and invoice list wrapping and make activity/customer-statement tables horizontally scrollable on mobile without dropping financial/audit columns.
 - **UI-INV-03 — IN_PROGRESS:** Separate invoice creation into a collapsed native disclosure (`details/summary`), independent from the existing-invoice customer filter.
 - **Validation:** Added static regression checks. Hosted GitHub Actions has had runner-dispatch failures; run exact-branch frontend tests/build and preview smoke checks before merging or promoting.
+
+
+## Mobile UI merge follow-up — 2026-10-27
+
+- **Merge gate:** PR #179 conflicts with current `main` after the Platform Admin merge; do not force-merge it. PR #178 is the alternate implementation with regression checks and currently reports mergeable, pending fresh preview validation.
+- **Preview attempt:** Vercel canceled the PR #178 preview before build because its Ignored Build Step did not find `[release-web]` in the commit message. This is a deployment gate, not an application build failure. A follow-up commit marked `[release-web]` is needed to run the preview tests/build.
+- **Status:** IN_PROGRESS. No production promotion until preview build/tests and merge status are verified.
