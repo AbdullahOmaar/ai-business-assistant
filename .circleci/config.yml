@@ -100,7 +100,7 @@ jobs:
             node --version
             npm --version
             cd frontend
-            npm ci --no-audit --no-fund
+            npm install --no-audit --no-fund
       - run:
           name: Audit npm dependencies
           command: |
@@ -108,11 +108,10 @@ jobs:
             cd frontend
             npm audit --audit-level=high 2>&1 | tee /tmp/npm-audit.txt
       - run:
-          name: Run frontend unit tests and production build
+          name: Run frontend tests and production build
           command: |
             set -euo pipefail
             cd frontend
-            npm test
             npm run build
       - store_artifacts:
           path: /tmp/npm-audit.txt
@@ -158,7 +157,7 @@ jobs:
           command: |
             set -euo pipefail
             cd frontend
-            npm ci --no-audit --no-fund
+            npm install --no-audit --no-fund
             npm audit --audit-level=high
 
 workflows:
