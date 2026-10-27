@@ -76,6 +76,31 @@ export interface PlatformAuditEvent {
 }
 export interface PlatformAuditEventPage { items: PlatformAuditEvent[]; total: number; limit: number; offset: number; }
 
+export type PlatformRole = 'platform_viewer' | 'workspace_operator' | 'user_manager';
+export interface PlatformAdminAccess {
+  is_platform_admin: boolean;
+  is_platform_super_admin: boolean;
+  roles: string[];
+  permissions: string[];
+}
+export interface PlatformAdminUser {
+  uid: string; subject: string; display_name: string; email: string;
+  email_verified: boolean; disabled: boolean; created_at: string | null;
+  last_sign_in_at: string | null; is_platform_super_admin: boolean; roles: string[];
+  memberships: Array<{ business_id: string; business_name: string; role: 'owner' | 'staff' }>;
+}
+export interface PlatformAdminUsersPage {
+  items: PlatformAdminUser[]; limit: number; next_page_token: string | null;
+  has_more: boolean; search_mode: 'exact_email_or_uid' | 'cursor_pagination'; limitations: string[];
+}
+export interface PlatformRoleAuditEvent {
+  id: string; actor_subject: string; action: string; target_subject: string;
+  role: PlatformRole; reason: string; created_at: string | null;
+}
+export interface PlatformRoleAuditEventPage {
+  items: PlatformRoleAuditEvent[]; total: number; limit: number; offset: number;
+}
+
 export interface Dashboard {
   period: { start_date: string | null; end_date: string | null; timezone: string };
   invoiced_sales: MoneyTotal[];
@@ -209,8 +234,34 @@ export class ApiService {
   }
 
 
-  platformAdminAccess(): Promise<{ is_platform_admin: boolean }> {
-    return this.request<{ is_platform_admin: boolean }>('/api/v1/platform-admin/access');
+  platformAdminAccess(): Promise<PlatformAdminAccess> {
+    return this.request<PlatformAdminAccess>('/api/v1/platform-admin/access');
+  }
+
+  platformAdminUsers(filters: { q?: string; page_token?: string; limit?: number } = {}): Promise<PlatformAdminUsersPage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return this.request<PlatformAdminUsersPage>(`/api/v1/platform-admin/users?${params.toString()}`);
+  }
+
+  platformAdminChangeUserRole(uid: string, body: { role: PlatformRole; active: boolean; reason: string }): Promise<{
+    changed: boolean; active: boolean; role: PlatformRole; message: string;
+  }> {
+    return this.request(
+      `/api/v1/platform-admin/users/${encodeURIComponent(uid)}/roles`, 'POST', body
+    );
+  }
+
+  platformRoleAuditEvents(filters: { limit?: number; offset?: number } = {}): Promise<PlatformRoleAuditEventPage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    return this.request<PlatformRoleAuditEventPage>(
+      `/api/v1/platform-admin/role-audit-events?${params.toString()}`
+    );
   }
 
   platformAdminOverview(): Promise<PlatformAdminOverview> {
