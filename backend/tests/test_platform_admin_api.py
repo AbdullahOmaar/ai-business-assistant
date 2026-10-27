@@ -541,3 +541,66 @@ def test_delegated_role_change_is_rejected_even_when_user_supplies_root_headers(
     )
     assert response.status_code == 403
 
+
+def test_role_grant_returns_not_found_for_missing_firebase_account_without_persisting(
+    platform_admin_environment, monkeypatch
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    class UserNotFoundError(Exception):
+        pass
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+
+    def missing_user(uid, **kwargs):
+        raise UserNotFoundError("not found")
+
+    monkeypatch.setattr(firebase_admin.auth, "get_user", missing_user)
+    response = platform_admin_environment["client"].post(
+        "/api/v1/platform-admin/users/missing-user/roles",
+        json={"role": "user_manager", "active": True, "reason": "Grant requires existing user"},
+    )
+
+    assert response.status_code == 404
+    with Session(platform_admin_environment["engine"]) as session:
+        grant = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:missing-user",
+            PlatformRoleGrant.role == "user_manager",
+        ))
+        audit_count = session.scalar(select(PlatformAdminAuditEvent.id))
+    assert grant is None
+    assert audit_count is None
+
+
+def test_role_grant_fails_closed_when_firebase_directory_is_unavailable(
+    platform_admin_environment, monkeypatch
+):
+    import firebase_admin.auth
+    import app.platform_admin_api as platform_admin_api
+
+    monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
+    monkeypatch.setattr(platform_admin_api, "get_firebase_admin_app", lambda: object())
+
+    def unavailable(uid, **kwargs):
+        raise RuntimeError("upstream details must not leak")
+
+    monkeypatch.setattr(firebase_admin.auth, "get_user", unavailable)
+    response = platform_admin_environment["client"].post(
+        "/api/v1/platform-admin/users/unverified-user/roles",
+        json={"role": "user_manager", "active": True, "reason": "Grant waits for directory"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Firebase user directory is temporarily unavailable."
+    assert "upstream details" not in response.text
+    with Session(platform_admin_environment["engine"]) as session:
+        grant = session.scalar(select(PlatformRoleGrant).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:unverified-user",
+            PlatformRoleGrant.role == "user_manager",
+        ))
+        audit_count = session.scalar(select(PlatformAdminAuditEvent.id))
+    assert grant is None
+    assert audit_count is None
+
