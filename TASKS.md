@@ -675,3 +675,6 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - PAY-UI-02 — IN_PROGRESS: Payment failures were assigned to the global error banner, while the payment form's local feedback rendered only paymentMessage. Add an accessible alert beside the payment action and a regression test so API errors are visible in context.
 - Safety: Preserve entered values and the idempotency key on failure; do not retry or create any production payment as part of verification.
 - Validation: Code/test update is proposed in PR; hosted CI is blocked by runner dispatch. Run frontend tests/build and smoke-test the payment error UI before declaring verified.
+
+
+- **Validation workaround — IN_PROGRESS:** GitHub Actions jobs for commit `857787ac47026c0bf1dc575f5916c920f26eeb31` fail before creating steps (`steps: []`), so backend/frontend hosted checks have not executed. The first Vercel preview was canceled by the configured Ignore Build Step because the branch commit lacked the project's release marker. Trigger a branch-only preview build with the configured marker, then inspect its actual test/build result; this must remain a preview, not a production promotion.
