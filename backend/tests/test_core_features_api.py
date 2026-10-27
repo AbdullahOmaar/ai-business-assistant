@@ -489,3 +489,31 @@ def test_product_csv_import_rejects_duplicate_sku_batch_before_writing(configure
     )
     assert products.status_code == 200
     assert products.json() == []
+
+
+def test_foreign_business_profile_dashboard_and_mutation_are_denied(configured_client):
+    from app import main as main_module
+
+    owner_workspace = configured_client.post("/api/v1/businesses", json={
+        "name": "Private Owner Workspace", "currency_code": "EGP"
+    })
+    assert owner_workspace.status_code == 201
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
+    foreign_workspace = configured_client.post("/api/v1/businesses", json={
+        "name": "Private Foreign Workspace", "currency_code": "USD"
+    })
+    assert foreign_workspace.status_code == 201
+    foreign_id = foreign_workspace.json()["id"]
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    profile = configured_client.get(f"/api/v1/businesses/{foreign_id}")
+    dashboard = configured_client.get(f"/api/v1/businesses/{foreign_id}/dashboard")
+    mutation = configured_client.patch(
+        f"/api/v1/businesses/{foreign_id}",
+        json={"name": "Attempted Cross-Tenant Update"},
+    )
+
+    assert profile.status_code == 403
+    assert dashboard.status_code == 403
+    assert mutation.status_code == 403
