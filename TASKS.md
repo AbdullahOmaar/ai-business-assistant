@@ -1,3 +1,19 @@
+## Platform Admin — five-task execution — 2026-10-27
+
+Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
+
+| ID | Task | Status | Evidence / acceptance gate |
+| --- | --- | --- | --- |
+| ADM-01 | Harden Firebase User Directory lookups and delegated-role authorization. | IN_PROGRESS | Typed `auth.UserNotFoundError`, fail-closed lookup/grant handling, exact UID/email search, cursor forwarding, and least-privilege regression tests are in the branch. Re-run the exact-head backend suite before marking VERIFIED. |
+| ADM-02 | Preserve Platform Admin access when the signed-in root admin has no workspace. | IN_PROGRESS | Current-main UI is being reconciled with the clear-workspace ordering fix. Exact-head frontend tests/build must pass. |
+| ADM-03 | Prove the signed-in directory/search/role-grant flow in Chromium E2E. | BLOCKED | CircleCI Browser Smoke failed on `50ccb09e3bd4842c30a3ed64406bc2660b74d928` (#343); failure logs were not accessible through the connected tools. Local browser execution is NOT RUN because Chromium download failed with DNS `EAI_AGAIN storage.googleapis.com`. A green exact-head Browser Smoke run is required. |
+| ADM-04 | Reconcile the Admin changes with the latest mainline without losing unrelated main changes. | IN_PROGRESS | Main is `955e2314439a32a0266936da0d03947de61e8ec7`; branch was one commit behind. Rebase-equivalent merge tree must preserve current-main data-integrity UI and task history. |
+| ADM-05 | Run release gates, review permissions/PR state, then merge PR #202. | BLOCKED | PR #202 remains Draft. Latest observed CircleCI on `50ccb09`: backend-container, frontend-quality, backend-accounting passed; frontend-browser-smoke failed. Do not bypass branch protection or merge while the browser check fails / required-check policy is unknown. |
+
+Previous backend snapshot evidence: `184 passed, 5 skipped, 11 warnings`; `compileall`, offline Alembic SQL generation, `pip-audit`, and `npm audit --audit-level=high` passed on earlier snapshots. These historical results are not substitutes for exact-head CI. Live authenticated Firebase E2E and production bootstrap remain NOT RUN; no production configuration, secrets, database data, or deployment were changed.
+
+---
+
 ## Owner data-integrity review UI — 2026-10-27
 
 - Added owner-gated, read-only UI for the existing workspace-authorized data-integrity report, including unlinked issued invoices and payment allocation currency/customer mismatches.

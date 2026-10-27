@@ -761,15 +761,14 @@ def list_platform_users(
                     auth.get_user_by_email(query, app=firebase_app)
                     if "@" in query else auth.get_user(query, app=firebase_app)
                 )
+            except auth.UserNotFoundError:
+                user = None
             except Exception as exc:
-                if type(exc).__name__ in {"UserNotFoundError", "UserNotFoundException"}:
-                    user = None
-                else:
-                    _log_security_event(
-                        "platform_admin.user_directory_failed", request, principal.subject,
-                        "error", target_type="user_directory", level=logging.ERROR,
-                    )
-                    raise HTTPException(status_code=503, detail="Firebase user directory is temporarily unavailable.") from exc
+                _log_security_event(
+                    "platform_admin.user_directory_failed", request, principal.subject,
+                    "error", target_type="user_directory", level=logging.ERROR,
+                )
+                raise HTTPException(status_code=503, detail="Firebase user directory is temporarily unavailable.") from exc
             users = [user] if user is not None else []
         else:
             page = auth.list_users(page_token=page_token or None, max_results=limit, app=firebase_app)
@@ -838,9 +837,9 @@ def change_platform_user_role(
                 raise HTTPException(status_code=409, detail="Disabled Firebase accounts cannot be granted platform roles.")
         except HTTPException:
             raise
+        except auth.UserNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Firebase user not found.") from exc
         except Exception as exc:
-            if type(exc).__name__ in {"UserNotFoundError", "UserNotFoundException"}:
-                raise HTTPException(status_code=404, detail="Firebase user not found.") from exc
             _log_security_event(
                 "platform_admin.user_role_change_failed", request, principal.subject,
                 "error", target_type="user", target_id=user_uid, level=logging.ERROR,

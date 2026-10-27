@@ -959,8 +959,9 @@ export class AppComponent implements OnInit {
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
-        if (this.platformAdminAvailable) this.tab = 'platform-admin';
         this.clearWorkspaceData();
+        // Keep the global control plane accessible to admins without workspace memberships.
+        if (this.platformAdminAvailable) this.tab = 'platform-admin';
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
