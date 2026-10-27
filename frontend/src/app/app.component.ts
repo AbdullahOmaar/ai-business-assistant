@@ -290,10 +290,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'as
               </section>
             }
 
-            @if (tab === 'payments' && business?.role !== 'owner') {
+            @if (tab === 'payments' && business.role !== 'owner') {
               <section class="panel"><p class="error" role="alert">{{ t('تسجيل المدفوعات متاح لمالك مساحة العمل فقط. اطلب من المالك منحك الصلاحية المناسبة.', 'Recording payments is restricted to workspace owners. Ask the owner to grant the appropriate access.') }}</p></section>
             }
-            @if (tab === 'payments' && business?.role === 'owner') {
+            @if (tab === 'payments' && business.role === 'owner') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><span class="count">{{ payments.length }} دفعة</span></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
