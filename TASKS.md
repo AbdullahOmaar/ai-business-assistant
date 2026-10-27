@@ -1067,3 +1067,18 @@ This section records the current automation-testing workstream and supersedes ea
 
 **Next action:** re-check the exact post-merge main statuses; keep production activation blocked until authenticated browser/authorization E2E and release gates are satisfied.
 
+
+
+---
+
+## Master Audit Plan handoff — 2026-10-28
+
+- **Status: PARTIALLY COMPLETE — documentation checkpoint prepared; not merged.**
+- **Canonical plan:** [docs/AUDIT_MASTER_PLAN.md](docs/AUDIT_MASTER_PLAN.md). This is the cross-chat index for the Business, Technical, Security, UI/UX, QA, and Production Readiness audit.
+- **Agent instructions:** `AGENTS.md` now directs future agents to read the plan and reconcile its snapshot against current GitHub evidence.
+- **Branch:** `docs/audit-master-plan-2026-10-28`. Documentation-only branch created from `main`; no application code, migrations, production data, or deployments changed.
+- **Baseline SHA when the plan was published:** `8772438405764734bda6f475e31bd50c22341c86`. Re-check current main before acting.
+- **Priority next actions:** (1) test the suspected STAFF/opening-stock authorization edge, (2) complete an approved isolated backup/restore drill, (3) verify deployed SHA/version and safe authenticated smoke tests, (4) reconcile duplicate/stale PRs, (5) complete visual UX and route-role-tenant coverage.
+- **Evidence limits:** branch protection API returned 403; local worktree state was not observable remotely; authenticated live E2E, visual UX inspection, and an actual restore drill were not run in this audit. See the plan for the full findings register and acceptance criteria.
+- **Checks:** documentation-only change; application tests were **NOT RUN** because no application code changed. Review the documentation diff and run repository-required CI on the PR before merging.
+- **Next action:** open/review the documentation PR, then use `docs/AUDIT_MASTER_PLAN.md` + `TASKS.md` + `AGENTS.md` as the shared handoff for every new session. Do not start application fixes, merge, or deploy until the scope is authorized and required gates are met.
