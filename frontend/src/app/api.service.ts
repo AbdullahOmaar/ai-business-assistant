@@ -45,6 +45,13 @@ export interface PlatformAdminOverview {
   audit_events: { count: number };
   limitations: string[];
 }
+export interface PlatformSystemStatus {
+  status: 'healthy' | 'degraded';
+  checked_at: string;
+  release: { version: string; commit: string; environment: string };
+  dependencies: { database: 'healthy' | 'unavailable' | 'unconfigured'; identity_verifier: 'configured' | 'unconfigured' };
+  limitations: string[];
+}
 export interface PlatformBusiness {
   id: string; name: string; currency_code: string; locale: string; timezone: string;
   contact_email?: string | null; phone?: string | null; is_active: boolean;
@@ -179,6 +186,10 @@ export class ApiService {
 
   platformAdminOverview(): Promise<PlatformAdminOverview> {
     return this.request<PlatformAdminOverview>('/api/v1/platform-admin/overview');
+  }
+
+  platformAdminSystemStatus(): Promise<PlatformSystemStatus> {
+    return this.request<PlatformSystemStatus>('/api/v1/platform-admin/system-status');
   }
 
   platformBusinesses(filters: {
