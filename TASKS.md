@@ -1,3 +1,18 @@
+# Admin execution checkpoint — 2026-10-27 (PostgreSQL validation and fix)
+
+- **Alternative runner:** used the existing Vercel sandbox `sbx_HjgJqAJfL3BCiZQyN8dg1m8wkEAp`; no GitHub Actions job was used to run tests.
+- **Schema drift bug found and fixed:** applying revision `0004_platform_user_roles` to an isolated PostgreSQL 16 Neon validation branch succeeded, but `alembic check` initially detected the migration-created index `ix_platform_admin_audit_events_created_at` was missing from SQLAlchemy model metadata. Added the matching `Index` to `backend/app/models.py`; commit `cabc370728838f8380b80be61851ee1ee509fca4`.
+- **Real PostgreSQL migration:** created isolated Neon branch `admin-validation-20261027` (`br-snowy-snow-b9gqz98k`) from main; verified starting revision `0003_business_workflows`; `alembic upgrade head` completed to `0004_platform_user_roles`; then `alembic check` returned **No new upgrade operations detected** after the model fix. Only the isolated validation branch was migrated; production/default branch was not changed.
+- **Backend regression:** `python3 -m pytest -q --tb=short` — **174 passed, 1 skipped, 11 warnings**; `python3 -m pytest -q tests/test_platform_admin_api.py --tb=short` — **18 passed**; `python3 -m compileall -q app tests` — **PASS** after applying the model fix in the sandbox.
+- **Frontend:** `npm test` — **10 passed, 0 failed**; `npm run build` — **PASS** (Angular bundle generated). Remaining non-blocking warnings: Angular NG8107 optional chaining and Node module type.
+- **Dependency audits:** `npm audit --audit-level=high` — **0 vulnerabilities**; `python3 -m pip_audit -r requirements.txt` — **No known vulnerabilities found**.
+- **Container:** **NOT RUN**; sandbox has no Docker, Podman, or alternate container builder. `npm run lint` remains unavailable because there is no lint script.
+- **CI/review:** PR #190 current head is `cabc370728838f8380b80be61851ee1ee509fca4`; PR remains Draft/open/unmerged with CircleCI status `error`. Available connector did not expose CircleCI failure logs/root cause. Alternative-runner evidence is recorded, but no required status or branch protection was bypassed.
+- **Still open:** authenticated Firebase browser E2E and explicit unauthorized/authorized admin session tests; container image build; root allowlist activation. No production deployment or secret/config change occurred. The temporary Neon validation branch is isolated from production and contains only the migration change; cleanup remains pending because the available tool's destructive-operation guard blocked an attempted downgrade command, which was not retried.
+- **Next:** resolve the CircleCI error from owner-visible pipeline logs/authorized runner, execute container build and authenticated browser authorization flows, then review PR #190 gates before considering merge. Do not activate production admin until a verified UID is configured out-of-band.
+
+---
+
 # Admin execution checkpoint — 2026-10-27 (alternative Vercel sandbox)
 
 - **Runner used:** existing authorized Vercel sandbox session `sbx_HjgJqAJfL3BCiZQyN8dg1m8wkEAp`, project `ai-business-assistant-api`. This is the alternative execution environment; GitHub Actions was not used as the test runner.
