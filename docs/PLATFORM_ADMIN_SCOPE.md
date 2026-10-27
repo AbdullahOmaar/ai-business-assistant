@@ -116,3 +116,10 @@ A fresh non-production frontend preview is requested after the API base normaliz
 - Corrected Admin frontend candidate 9da95e2e1071d933f9f356b965cf68bc1078326c reached Vercel Preview READY. The frontend test run reports 7 passed, 0 failed; Angular application bundle generation completed; deployment completed.
 - API Preview dpl_BSDW4rhdM6c82964NkNCYimfuq7u reached READY and compiled Python bytecode on app-source snapshot b49f8a849023abc1154695a967b2287678840f89. Backend CSV export tests have not run yet.
 - Runtime API smoke remains blocked by Vercel SSO; no authorized test principal/session is available. PostgreSQL write/rollback, real Firebase token validation, and container build remain NOT RUN. No production alias or data was changed.
+
+
+## Audit export validation update — 2026-10-27
+
+- The backend module and export tests were synced from this branch into the persistent isolated backend regression sandbox. `py_compile` passed, the focused Admin API + export suite passed **16 tests**, and the full backend suite passed **160 passed, 1 skipped, 11 warnings**. `pip-audit -r requirements.txt` reported **No known vulnerabilities found**.
+- API Preview deployment dpl_BSDW4rhdM6c82964NkNCYimfuq7u reached READY and compiled the backend app source. A live unauthenticated smoke check could not pass Vercel SSO, so route-level live HTTP behavior remains NOT RUN; regression behavior is covered by the isolated tests.
+- The corrected frontend preview reached READY with **7 passed, 0 failed** and a completed Angular bundle. These are isolated/preview checks, not authenticated browser E2E or a container build. The task remains IN_PROGRESS until those gates are available.
