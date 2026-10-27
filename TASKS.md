@@ -717,3 +717,11 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - PyYAML parse and structural assertions passed on the current config. This is not official CircleCI schema validation and not a hosted pipeline run. No CircleCI status checks exist on the current PR head; no GitHub Actions status entries were returned for the candidate SHA.
 - Remaining activation blocker: owner must authorize/select the private repository in CircleCI. No CircleCI plugin/connector was found in available connected tools. Do not enable paid credits, guess required status contexts, weaken branch protection, or merge based only on local YAML parsing.
 - This PR remains Draft/open/unmerged and contains CI/docs changes only. No Admin Screen source was changed on PR #173; PR #172 remains separate.
+
+
+## Cross-PR regression prevention — 2026-10-27
+- Updated PR #173 to carry the duplicate-SKU inventory protection from PR #170 because both branches edit backend/app/services.py; merging the CI/payment branch without this port could otherwise reintroduce the oversell defect.
+- issue_invoice now aggregates all requested quantities by stock-tracked product, validates every aggregate before adding any sale movements, and retains stable product row locking. Added regression test test_invoice_issue_aggregates_repeated_product_lines_before_stock_check to backend/tests/test_services.py.
+- Aligned backend/pyproject.toml version with release candidate 1.2.1 from PR #170 to avoid stale package metadata after integrating the CI/payment changes.
+- Commits: services 58ae550976c9caa96e8f5065f4482de34da78d3e; regression test c821a1cf66545677551f2d557d36ee8ec3a11235; version metadata d5e00b528aa3da4fd83a9b1ed45886c40fe4d1c5.
+- Tests for these newest edits are NOT RUN in this tool session. Previous independent sandbox results do not verify the current head. PR #173 remains Draft; do not merge until current-head checks pass and GitGuardian review is clear.
