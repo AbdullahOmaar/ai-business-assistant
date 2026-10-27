@@ -992,3 +992,16 @@ This section records the current automation-testing workstream and supersedes ea
 - **Separate outstanding checks:** GitHub Actions check-runs on the same SHA report failures for `backend`, `frontend`, `Audit Python dependencies`, and `Audit JavaScript dependencies`; GitGuardian secret scan succeeded. These are distinct from the four successful CircleCI jobs. Logs could not be retrieved through the available connector (GitHub log download returned 404), so the cause of those failures is not asserted. Do not rerun GitHub Actions while the runner allowance is exhausted.
 - PR #183 remains Draft/open/unmerged. GitHub comparison reports branch `automation-testing-e2e` ahead 18 and behind 0 relative to `main`; changed files remain the four intended paths. CircleCI evidence above is for the exact SHA shown, not for any later commit.
 - **Next gate:** inspect the CircleCI job pages/artifacts and determine whether the separate GitHub Actions checks are required or are stale/unavailable before changing PR readiness. No production deploy or merge performed.
+
+## Platform Admin execution — 2026-10-27
+
+- **Single-branch workflow:** continue in `feat/platform-admin-user-directory-and-roles`; do not create a second Admin feature branch.
+- **ADM-01 — Reconcile with current main:** IN_PROGRESS until the merge commit and post-merge-base checks are verified.
+- **ADM-02 — Global Firebase user directory:** code/tests already exist on the candidate branch; verify exact-email/UID lookup, cursor pagination, no workspace-membership requirement, and safe response fields.
+- **ADM-03 — Delegated roles and audit:** verify server-side bootstrap root allowlist, no self-grant/root assignment, disabled-account rejection, meaningful reason, durable grant/revoke audit, and authorization denial cases.
+- **ADM-04 — Admin UI/mobile navigation:** retain current main navigation and add the Users & Access flow, responsive directory, and bilingual role-management UI.
+- **ADM-05 — Validation:** run focused/full backend tests, frontend unit tests/build, dependency audits, and migration/schema-drift checks against the reconciled source. Live authenticated Firebase browser E2E and container build remain separate gates until run.
+- **ADM-06 — Merge gate:** keep PR #190 Draft until current-head required checks and review gates pass; do not bypass protection.
+- **ADM-07 — Production activation:** NOT AUTHORIZED in this task. Do not set production secrets or guess a bootstrap UID; no production deployment or DB mutation.
+- **Evidence note:** a previous sandbox snapshot failed test collection because its `app/api.py` imported `record_payment` missing from that snapshot's `app/services.py`. This is a stale/inconsistent test-source finding; it is not a passing test and must be rechecked against the reconciled branch.
+

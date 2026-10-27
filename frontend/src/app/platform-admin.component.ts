@@ -2,12 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
-  ApiService, PlatformAdminOverview, PlatformAuditEvent, PlatformBusiness,
-  PlatformBusinessDetails, PlatformMembership, PlatformSystemStatus
+  ApiService, PlatformAdminAccess, PlatformAdminOverview, PlatformAuditEvent, PlatformAdminUser,
+  PlatformAdminUsersPage, PlatformBusiness, PlatformBusinessDetails, PlatformMembership,
+  PlatformRole, PlatformRoleAuditEvent, PlatformSystemStatus
 } from './api.service';
 import { hasMeaningfulPlatformAdminReason } from './platform-admin-helpers';
 
-type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
+type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissions';
 
 @Component({
   selector: 'aba-platform-admin',
@@ -22,11 +23,21 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
           <p>{{ t('إشراف على مساحات العمل والنشاط التشغيلي دون تعديل السجلات المالية.', 'Monitor workspaces and operations without directly mutating financial records.') }}</p>
         </div>
         <div class="identity-actions">
-          <div class="identity"><span class="avatar" aria-hidden="true">{{ initials }}</span><span><strong>{{ t('مدير المنصة', 'Platform administrator') }}</strong><small>{{ userEmail || t('جلسة إدارية موثقة', 'Verified admin session') }}</small></span></div>
+          <div class="identity"><span class="avatar" aria-hidden="true">{{ initials }}</span><span><strong>{{ access?.is_platform_super_admin ? t('مسؤول المنصة الأساسي', 'Platform Super Admin') : t('مسؤول منصة مفوّض', 'Delegated Platform Admin') }}</strong><small>{{ userEmail || t('جلسة إدارية موثقة', 'Verified admin session') }}</small></span></div>
           <button class="quiet-button" type="button" (click)="languageToggleRequested.emit()" [attr.aria-label]="t('تغيير اللغة', 'Change language')">{{ language === 'ar' ? 'English' : 'العربية' }}</button>
           <button class="quiet-button signout" type="button" (click)="signOutRequested.emit()">{{ t('خروج', 'Sign out') }}</button>
         </div>
       </header>
+
+      @if (access; as currentAccess) {
+        <section class="identity-access-summary" [attr.aria-label]="t('هويتك وصلاحياتك الحالية', 'Your current identity and permissions')">
+          <div class="identity-access-top">
+            <div class="identity-access-heading"><strong>{{ t('حسابك الإداري الحالي', 'Your current admin identity') }}</strong><small class="user-uid">{{ currentAccess.subject }}</small></div>
+            <div class="identity-role-pills">@for (role of currentAccess.roles; track role) { <span class="role-pill" [class.accent]="role === 'platform_super_admin'">{{ platformRoleLabel(role) }}</span> }</div>
+          </div>
+          <div class="identity-permissions"><strong>{{ t('مسموح لك بـ', 'Your effective permissions') }}</strong><div class="identity-permission-tags">@for (permission of currentAccess.permissions; track permission) { <span class="permission-token">{{ platformPermissionLabel(permission) }}</span> }</div></div>
+        </section>
+      }
 
       @if (pageError) {
         <div class="notice error" role="alert"><span>{{ pageError }}</span><button type="button" class="text-action" (click)="refreshAll()">{{ t('إعادة المحاولة', 'Retry') }}</button></div>
@@ -39,6 +50,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
         <button type="button" [class.active]="section === 'overview'" [attr.aria-current]="section === 'overview' ? 'page' : null" (click)="setSection('overview')"><span aria-hidden="true">◫</span>{{ t('نظرة عامة', 'Overview') }}</button>
         <button type="button" [class.active]="section === 'businesses'" [attr.aria-current]="section === 'businesses' ? 'page' : null" (click)="setSection('businesses')"><span aria-hidden="true">▦</span>{{ t('مساحات العمل', 'Workspaces') }}<span class="nav-count">{{ overview?.businesses?.total ?? '—' }}</span></button>
         <button type="button" [class.active]="section === 'activity'" [attr.aria-current]="section === 'activity' ? 'page' : null" (click)="setSection('activity')"><span aria-hidden="true">◷</span>{{ t('سجل التدقيق', 'Audit activity') }}</button>
+        @if (canViewUsers) { <button type="button" [class.active]="section === 'users'" [attr.aria-current]="section === 'users' ? 'page' : null" (click)="setSection('users')"><span aria-hidden="true">♙</span>{{ t('المستخدمون والصلاحيات', 'Users & access') }}<span class="nav-count">{{ users.length || '—' }}</span></button> }
         <button type="button" [class.active]="section === 'permissions'" [attr.aria-current]="section === 'permissions' ? 'page' : null" (click)="setSection('permissions')"><span aria-hidden="true">◇</span>{{ t('الصلاحيات', 'Permissions') }}</button>
       </nav>
 
@@ -141,12 +153,16 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
                 </tbody></table></div>
               } @else { <p class="empty-state">{{ t('لا توجد عضويات.', 'No memberships found.') }}</p> }
               <div class="caution"><strong>{{ t('إدارة الوصول إلى مساحة العمل', 'Workspace access control') }}</strong><p>{{ t('تعطيل مساحة العمل يمنع الوصول إلى بياناتها عبر تحقق العضوية. لا يؤدي ذلك إلى حذف الشركة أو سجلاتها.', 'Deactivating a workspace blocks membership-based access to its data. It does not delete the company or its records.') }}</p></div>
-              <form class="status-form" (ngSubmit)="updateBusinessStatus()">
-                <label><span>{{ t('الحالة المطلوبة', 'Desired status') }}</span><select name="desiredStatus" [(ngModel)]="desiredStatus"><option [ngValue]="true">{{ t('تفعيل الوصول', 'Activate access') }}</option><option [ngValue]="false">{{ t('تعطيل الوصول', 'Deactivate access') }}</option></select></label>
-                <label class="reason-field"><span>{{ t('سبب إداري مطلوب', 'Required administrative reason') }}</span><textarea name="statusReason" [(ngModel)]="statusReason" maxlength="500" minlength="3" required rows="2" [placeholder]="t('اكتب سببًا واضحًا لتوثيقه في سجل التدقيق', 'Enter a meaningful reason; it will be recorded in the audit log')"></textarea></label>
-                <button type="submit" class="primary-button" [disabled]="statusSaving || desiredStatus === detail.business.is_active">{{ statusSaving ? t('جارٍ حفظ التغيير…', 'Saving…') : (desiredStatus ? t('تأكيد تفعيل الوصول', 'Confirm activation') : t('تأكيد تعطيل الوصول', 'Confirm deactivation')) }}</button>
-                @if (statusError) { <p class="field-error" role="alert">{{ statusError }}</p> }
-              </form>
+              @if (canManageWorkspaceStatus) {
+                <form class="status-form" (ngSubmit)="updateBusinessStatus()">
+                  <label><span>{{ t('الحالة المطلوبة', 'Desired status') }}</span><select name="desiredStatus" [(ngModel)]="desiredStatus"><option [ngValue]="true">{{ t('تفعيل الوصول', 'Activate access') }}</option><option [ngValue]="false">{{ t('تعطيل الوصول', 'Deactivate access') }}</option></select></label>
+                  <label class="reason-field"><span>{{ t('سبب إداري مطلوب', 'Required administrative reason') }}</span><textarea name="statusReason" [(ngModel)]="statusReason" maxlength="500" minlength="3" required rows="2" [placeholder]="t('اكتب سببًا واضحًا لتوثيقه في سجل التدقيق', 'Enter a meaningful reason; it will be recorded in the audit log')"></textarea></label>
+                  <button type="submit" class="primary-button" [disabled]="statusSaving || desiredStatus === detail.business.is_active">{{ statusSaving ? t('جارٍ حفظ التغيير…', 'Saving…') : (desiredStatus ? t('تأكيد تفعيل الوصول', 'Confirm activation') : t('تأكيد تعطيل الوصول', 'Confirm deactivation')) }}</button>
+                  @if (statusError) { <p class="field-error" role="alert">{{ statusError }}</p> }
+                </form>
+              } @else {
+                <div class="notice" role="note">{{ t('صلاحية قراءة فقط: يمكنك مراجعة حالة مساحة العمل وعضوياتها، لكن تغيير حالتها يحتاج دور مشغّل مساحات العمل.', 'Read-only access: you can inspect workspace status and memberships, but changing status requires the Workspace Operator role.') }}</div>
+              }
             </article>
           }
         </section>
@@ -170,6 +186,93 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
         </section>
       }
 
+
+      @if (section === 'users' && canViewUsers) {
+        <section class="section-content" aria-labelledby="users-title">
+          <div class="section-heading">
+            <div><p class="eyebrow">{{ t('هوية موحدة', 'AUTHORITATIVE IDENTITY DIRECTORY') }}</p><h2 id="users-title">{{ t('المستخدمون والصلاحيات', 'Users & access') }}</h2><p>{{ t('كل حسابات Firebase، حتى المستخدمين الذين لا ينتمون لأي مساحة عمل، مع عرض عضوياتهم وصلاحيات المنصة بشكل منفصل.', 'All Firebase accounts, including users without a workspace, with workspace memberships and platform permissions shown separately.') }}</p></div>
+            <button class="outline-button" type="button" [disabled]="usersLoading" (click)="loadUsers(0, true)">{{ t('تحديث المستخدمين', 'Refresh users') }}</button>
+          </div>
+          <div class="data-note"><span aria-hidden="true">ⓘ</span><div><strong>{{ t('مصدر الهوية والصلاحيات', 'Identity and permissions source') }}</strong><p>{{ t('دليل الحسابات مصدره Firebase Auth. صلاحيات المنصة تُقرأ من الخادم؛ أدوار مالك/موظف تخص مساحة العمل فقط ولا تمنح صلاحية منصة تلقائيًا.', 'Firebase Auth is the identity source. Platform roles are resolved on the server; workspace owner/staff roles never grant platform access automatically.') }}</p><small>{{ t('لا يتم عرض كلمات مرور أو رموز دخول. البحث بالبريد أو UID تطابق دقيق، والتصفح يعرض كل الحسابات على صفحات.', 'Passwords and auth tokens are never displayed. Email/UID search is exact; blank search cursor-paginates all accounts.') }}</small></div></div>
+          <form class="filters" (ngSubmit)="searchUsers()">
+            <label class="search-field"><span>{{ t('البريد الإلكتروني أو UID', 'Email address or UID') }}</span><input name="userQuery" maxlength="254" [(ngModel)]="userQuery" [placeholder]="t('اكتب بريدًا كاملًا أو UID', 'Enter exact email or UID')"></label>
+            <button type="submit" class="primary-button" [disabled]="usersLoading">{{ t('بحث', 'Search') }}</button>
+            @if (userQuery) { <button type="button" class="outline-button" [disabled]="usersLoading" (click)="userQuery=''; searchUsers()">{{ t('عرض الكل', 'Show all') }}</button> }
+          </form>
+          @if (usersLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل الحسابات من Firebase…', 'Loading accounts from Firebase…') }}</div> }
+          @if (usersError) { <div class="notice error" role="alert">{{ usersError }} <button type="button" class="text-action" (click)="loadUsers(userPageIndex)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
+          @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ t('لا توجد حسابات مطابقة', 'No matching accounts') }}</h3><p>{{ t('جرّب بريدًا كاملًا أو UID صحيحًا، أو امسح البحث لعرض القائمة.', 'Try an exact email or UID, or clear search to browse the directory.') }}</p></div> }
+          @if (!usersLoading && users.length) {
+            <div class="table-wrap">
+              <table class="user-directory-table">
+                <thead><tr><th>{{ t('المستخدم', 'User') }}</th><th>{{ t('حالة الحساب', 'Account status') }}</th><th>{{ t('صلاحيات المنصة', 'Platform roles') }}</th><th>{{ t('مساحات العمل', 'Workspace memberships') }}</th><th>{{ t('الإجراء', 'Action') }}</th></tr></thead>
+                <tbody>
+                  @for (user of users; track user.uid) {
+                    <tr [class.selected-row]="selectedAdminUser?.uid === user.uid">
+                      <td class="user-cell"><strong>{{ user.display_name || t('بدون اسم عرض', 'No display name') }}</strong><small>{{ user.email || t('لا يوجد بريد مسجل', 'No email on record') }}</small><small class="user-uid">{{ user.uid }}</small>@if (user.email) { <small>{{ user.email_verified ? t('البريد موثق', 'Email verified') : t('البريد غير موثق', 'Email not verified') }}</small> }</td>
+                      <td><span class="status-pill" [class.runtime-good]="!user.disabled" [class.runtime-bad]="user.disabled">{{ user.disabled ? t('معطّل', 'Disabled') : t('نشط', 'Active') }}</span>@if (user.is_platform_super_admin) { <small class="user-root-label">{{ t('مسؤول الجذر', 'Bootstrap super admin') }}</small> }</td>
+                      <td><div class="user-role-list">@if (user.is_platform_super_admin) { <span class="role-pill accent">{{ t('مسؤول المنصة الأساسي', 'Platform Super Admin') }}</span> } @else if (user.roles.length) { @for (role of user.roles; track role) { <span class="role-pill" [title]="platformRoleDescription(role)">{{ platformRoleLabel(role) }}</span> } } @else { <span class="muted">{{ t('لا توجد صلاحية منصة', 'No platform role') }}</span> }</div></td>
+                      <td><div class="membership-list">@if (user.memberships.length) { @for (membership of user.memberships; track membership.business_id) { <span class="membership-chip"><strong>{{ membership.business_name }}</strong><small>{{ membership.role === 'owner' ? t('مالك مساحة', 'Workspace owner') : t('موظف', 'Staff') }}</small></span> } } @else { <span class="muted">{{ t('لا ينتمي لمساحة عمل', 'No workspace membership') }}</span> }</div></td>
+                      <td><button class="outline-button small-button" type="button" [class.active]="selectedAdminUser?.uid === user.uid" (click)="selectAdminUser(user)">{{ selectedAdminUser?.uid === user.uid ? t('محدد', 'Selected') : t('التفاصيل', 'Details') }}</button></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination"><span>{{ t('صفحة', 'Page') }} {{ userPageIndex + 1 }} · {{ users.length }} {{ t('حساب في الصفحة', 'accounts on this page') }}@if (userSearchMode === 'exact_email_or_uid') { · {{ t('بحث دقيق', 'Exact lookup') }} }</span><div><button type="button" class="outline-button" [disabled]="userPageIndex === 0 || usersLoading" (click)="previousUsersPage()">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="!userNextPageToken || usersLoading" (click)="nextUsersPage()">{{ t('التالي', 'Next') }}</button></div></div>
+          }
+          @if (selectedAdminUser) {
+            <article class="panel user-access-panel" aria-labelledby="selected-user-title">
+              <div class="section-heading"><div><p class="eyebrow">{{ t('هوية المستخدم', 'USER IDENTITY') }}</p><h3 id="selected-user-title">{{ selectedAdminUser.display_name || selectedAdminUser.email || selectedAdminUser.uid }}</h3><p class="user-uid">{{ selectedAdminUser.subject }}</p></div><button class="quiet-button" type="button" (click)="selectedAdminUser = null">{{ t('إغلاق التفاصيل', 'Close details') }}</button></div>
+              <div class="user-facts-grid"><div><small>{{ t('تاريخ إنشاء الحساب', 'Account created') }}</small><strong>{{ formatDate(selectedAdminUser.created_at) }}</strong></div><div><small>{{ t('آخر تسجيل دخول', 'Last sign-in') }}</small><strong>{{ formatDate(selectedAdminUser.last_sign_in_at) }}</strong></div><div><small>{{ t('حالة الحساب', 'Account state') }}</small><strong>{{ selectedAdminUser.disabled ? t('معطّل', 'Disabled') : t('نشط', 'Active') }}</strong></div><div><small>{{ t('نوع الصلاحية', 'Access type') }}</small><strong>{{ selectedAdminUser.is_platform_super_admin ? t('مسؤول جذر بإعداد الخادم', 'Server-configured root admin') : selectedAdminUser.roles.length ? t('دور منصة مفوّض', 'Delegated platform role') : t('مستخدم عادي', 'Regular user') }}</strong></div></div>
+              @if (selectedAdminUser.is_platform_super_admin) {
+                <div class="notice warn" role="note">{{ t('هذه الهوية ضمن قائمة مسؤول الجذر التي تُدار خارج التطبيق. لا يمكن منح هذه الصلاحية أو تعديلها أو إلغاؤها من الواجهة.', 'This identity is in the out-of-band bootstrap super-admin allowlist. Root access cannot be granted, changed, or revoked from this UI.') }}</div>
+              } @else if (selectedAdminUser.subject === access?.subject) {
+                <div class="notice warn" role="note">{{ t('لا يمكن للمسؤول تعديل صلاحيات حسابه بنفسه. استخدم مسؤول جذر آخر لإجراء التغيير.', 'An administrator cannot change their own access. Ask another bootstrap super admin to make the change.') }}</div>
+              } @else if (canManagePlatformRoles) {
+                <div class="role-editor">
+                  <div><h4>{{ t('إسناد صلاحية منصة', 'Assign a platform role') }}</h4><p>{{ t('اختار الدور المحدد والصريح، واكتب سببًا لا يقل عن 3 أحرف. لا يوجد دور يسمح بترقية الذات إلى مسؤول الجذر.', 'Choose an explicit role and enter a reason of at least 3 characters. No role can grant bootstrap root access.') }}</p></div>
+                  <form class="user-role-form" (ngSubmit)="savePlatformRole()">
+                    <label><span>{{ t('الدور المراد منحه', 'Role to grant') }}</span><select name="selectedPlatformRole" [(ngModel)]="selectedPlatformRole"><option value="platform_viewer">{{ t('مشاهد المنصة — قراءة فقط', 'Platform Viewer — read-only') }}</option><option value="workspace_operator">{{ t('مشغّل مساحات العمل — عرض وتفعيل/تعطيل', 'Workspace Operator — view and change workspace status') }}</option><option value="user_manager">{{ t('مدير دليل المستخدمين — عرض الحسابات والعضويات', 'User Manager — view accounts and memberships') }}</option></select></label>
+                    <label class="role-reason"><span>{{ t('سبب التغيير (إلزامي)', 'Reason (required)') }}</span><textarea name="roleReason" [(ngModel)]="roleReason" maxlength="500" rows="2" required [placeholder]="t('اكتب سببًا إداريًا واضحًا', 'Enter a clear administrative reason')"></textarea></label>
+                    <div class="role-submit-actions"><button type="submit" class="primary-button" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason)" (click)="roleChangeActive = true">{{ roleSaving ? t('جارٍ الحفظ…', 'Saving…') : t('منح الصلاحية', 'Grant role') }}</button><button type="submit" class="quiet-button signout" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason) || !selectedAdminUser.roles.includes(selectedPlatformRole)" (click)="roleChangeActive = false">{{ t('إلغاء الصلاحية المحددة', 'Revoke selected role') }}</button></div>
+                  </form>
+                  @if (selectedAdminUser.roles.length) {
+                    <div class="current-role-grants"><strong>{{ t('الصلاحيات المفوّضة الحالية', 'Current delegated roles') }}</strong>
+                      @for (role of selectedAdminUser.roles; track role) {
+                        <div class="grant-row"><div><span class="role-pill">{{ platformRoleLabel(role) }}</span><small>{{ platformRoleDescription(role) }}</small></div><button class="quiet-button" type="button" [disabled]="roleSaving" (click)="selectRoleForRevocation(role)">{{ t('اختيار للإلغاء', 'Select to revoke') }}</button></div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="notice" role="note">{{ t('دورك يسمح بقراءة دليل الحسابات فقط. إسناد أدوار المنصة محصور في مسؤول الجذر.', 'Your role allows directory read access only. Platform role grants are restricted to the bootstrap super admin.') }}</div>
+              }
+              @if (roleError) { <div class="notice error" role="alert">{{ roleError }}</div> }
+              @if (roleMessage) { <div class="notice success" role="status" aria-live="polite">{{ roleMessage }}</div> }
+              <div class="membership-details"><h4>{{ t('عضويات مساحات العمل', 'Workspace memberships') }}</h4>
+                @if (selectedAdminUser.memberships.length) {
+                  @for (membership of selectedAdminUser.memberships; track membership.business_id) {
+                    <div class="membership-detail-row"><div><strong>{{ membership.business_name }}</strong><small>{{ membership.business_id }}</small></div><span class="role-pill">{{ membership.role === 'owner' ? t('مالك المساحة', 'Workspace Owner') : t('موظف', 'Staff') }}</span></div>
+                  }
+                } @else { <p class="muted">{{ t('هذا الحساب لا يملك عضوية في أي مساحة عمل حتى الآن.', 'This account has no workspace memberships.') }}</p> }
+              </div>
+            </article>
+          }
+          <article class="panel access-audit-panel">
+            <div class="section-heading"><div><p class="eyebrow">{{ t('سجل غير قابل للتعديل من الشاشة', 'APPEND-ONLY ACCESS HISTORY') }}</p><h3>{{ t('آخر تغييرات الصلاحيات', 'Recent permission changes') }}</h3><p>{{ t('كل منح وإلغاء محفوظ باسم المنفّذ والهدف والسبب والتوقيت.', 'Every grant and revocation is persisted with actor, target, reason, and timestamp.') }}</p></div><button type="button" class="outline-button" [disabled]="roleAuditLoading" (click)="loadRoleAudit()">{{ t('تحديث السجل', 'Refresh audit') }}</button></div>
+            @if (roleAuditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل السجل…', 'Loading audit history…') }}</div> }
+            @if (roleAuditError) { <div class="notice error" role="alert">{{ roleAuditError }}</div> }
+            @if (!roleAuditLoading && !roleAuditError && !roleAuditEvents.length) { <p class="muted">{{ t('لا توجد تغييرات صلاحيات مسجلة حتى الآن.', 'No platform role changes recorded yet.') }}</p> }
+            @if (roleAuditEvents.length) {
+              <div class="table-wrap"><table><thead><tr><th>{{ t('التوقيت', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('المستخدم المستهدف', 'Target user') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('السبب', 'Reason') }}</th><th>{{ t('المنفّذ', 'Actor') }}</th></tr></thead><tbody>
+                @for (event of roleAuditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td>{{ event.action === 'platform.user_role.granted' ? t('منح صلاحية', 'Role granted') : t('إلغاء صلاحية', 'Role revoked') }}</td><td class="subject">{{ event.target_subject }}</td><td>{{ platformRoleLabel(event.role) }}</td><td class="summary-cell">{{ event.reason }}</td><td class="subject">{{ event.actor_subject }}</td></tr> }
+              </tbody></table></div>
+            }
+          </article>
+        </section>
+      }
+
       @if (section === 'permissions') {
         <section class="section-content" aria-labelledby="permissions-title">
           <div class="section-heading"><div><p class="eyebrow">{{ t('مبدأ أقل صلاحية', 'LEAST PRIVILEGE') }}</p><h2 id="permissions-title">{{ t('نموذج الصلاحيات الفعلي', 'Effective permission model') }}</h2><p>{{ t('عرض توثيقي للصلاحيات المنفذة، وليس محرر أدوار شكليًا.', 'Documentation of enforced permissions, not a cosmetic role editor.') }}</p></div></div>
@@ -179,7 +282,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
             <article class="permission-card"><span class="permission-icon" aria-hidden="true">♧</span><div><span class="role-pill">{{ t('موظف', 'Staff') }}</span><h3>{{ t('صلاحيات محدودة', 'Limited permissions') }}</h3><p>{{ t('لا يستطيع الدخول إلى واجهات منصة الإدارة أو تغيير الأدوار المحجوزة أو تنفيذ الوظائف التي يرفضها الخادم.', 'Cannot access platform administration or execute server-protected owner/platform operations.') }}</p></div></article>
             <article class="permission-card"><span class="permission-icon" aria-hidden="true">⛨</span><div><span class="role-pill muted-role">{{ t('غير مصرح', 'Unauthorized') }}</span><h3>{{ t('الرفض هو الوضع الافتراضي', 'Deny by default') }}</h3><p>{{ t('أي هوية غير موجودة في قائمة السماح تحصل على 403، والطلبات غير المصادق عليها تتوقف عند تحقق الهوية قبل الوصول إلى البيانات.', 'Any identity missing from the explicit allowlist receives 403. Unauthenticated requests are rejected before administrative data is queried.') }}</p></div></article>
           </div>
-          <div class="notice warn" role="note"><strong>{{ t('قيود التنفيذ الحالية', 'Current implementation limits') }}</strong><p>{{ t('لا توجد قاعدة مستخدمين محلية أو آلية دعوة مستخدم إداري جاهزة؛ لذلك لا يتم إنشاء حسابات أو تغيير عضويات/أدوار من هذه الشاشة. قائمة مدير المنصة يجب أن يضبطها مسؤول البنية التحتية خارج الواجهة.', 'No local user directory or safe admin-invitation workflow exists yet; this screen therefore cannot create accounts or mutate memberships/roles. The platform admin allowlist must be configured out-of-band by infrastructure administration.') }}</p></div>
+          <div class="notice warn" role="note"><strong>{{ t('قيود التنفيذ الحالية', 'Current implementation limits') }}</strong><p>{{ t('دليل المستخدمين الشامل يعتمد على Firebase Auth ويشمل الحسابات التي لا تملك مساحة عمل. مسؤول الجذر فقط يستطيع منح أو إلغاء أدوار المنصة المفوضة مع سبب وسجل تدقيق. أدوار مالك/موظف داخل كل مساحة تظل منفصلة، وإدارة قائمة الجذر نفسها تبقى بإعداد خادمي خارج الواجهة.', 'The full user directory is sourced from Firebase Auth and includes accounts without workspaces. Only the bootstrap super admin can grant/revoke delegated platform roles with a reason and audit record. Workspace owner/staff roles remain separate, and the root allowlist stays out-of-band in server configuration.') }}</p></div>
         </section>
       }
       <footer class="admin-footer"><span><span class="live-dot"></span>{{ t('متصل بالخادم عبر جلسة مصادقة موثقة', 'Connected through a verified authenticated session') }}</span><span>{{ t('لا توجد بيانات تجريبية', 'No demo data') }}</span></footer>
@@ -209,7 +312,9 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'permissions';
     .heading-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.audit-filters label:not(.search-field){flex:1 1 185px}.date-cell{white-space:nowrap}.summary-cell{min-width:170px;white-space:normal;overflow-wrap:anywhere;line-height:1.5}.muted{color:var(--muted)}
     .permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.permission-card{display:flex;align-items:flex-start;gap:13px;background:white;border:1px solid var(--line);border-radius:14px;padding:17px;min-width:0}.permission-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;background:#edf4f7;border-radius:11px;color:#2a6270;font-size:16px}.permission-card.platform{grid-column:1/-1;background:linear-gradient(135deg,#ffffff 35%,#f0faf7 100%);border-color:#cce7df}.permission-card>div{min-width:0}.permission-card h3{margin:9px 0 6px}.permission-card p,.permission-card li{font-size:12px;color:#5c6f82;line-height:1.7}.permission-card p{margin:0}.permission-card ul{margin:9px 0 0;padding-inline-start:20px;display:grid;gap:2px}.permission-card li::marker{color:#0f766e}.accent{background:#e0f5ee;color:#0e766e}.notice{border-radius:11px;padding:12px 14px;font-size:12px;line-height:1.6;display:flex;align-items:center;justify-content:space-between;gap:12px;overflow-wrap:anywhere}.notice p{margin:5px 0 0}.notice.error{color:#94372c;border:1px solid #f2d4cf;background:#fff7f6}.notice.success{color:#176644;border:1px solid #c9ead8;background:#f0fcf5}.notice.warn{display:block;color:#7b541b;border:1px solid #efdcae;background:#fff9e9}.loading-block{display:flex;align-items:center;gap:10px;padding:18px 14px;color:#697c8e;font-size:12px;border:1px dashed #dbe5eb;border-radius:12px;background:white}.spinner{width:16px;height:16px;border:2px solid #d7e7e7;border-top-color:#0f766e;border-radius:50%;animation:spin .8s linear infinite;flex:0 0 auto}@keyframes spin{to{transform:rotate(360deg)}}.data-note{display:flex;gap:10px;align-items:flex-start;color:#506e82;background:#eef7fb;border:1px solid #d7eaf2;border-radius:11px;padding:13px}.data-note>span{color:#0d7081;font-size:16px}.data-note strong{font-size:12px}.data-note p{font-size:11px;line-height:1.7;margin:4px 0 7px;color:#597184}.data-note small{font-size:10px;color:#758b9b}.admin-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:14px;color:#758698;font-size:10px}.admin-footer>span{display:flex;align-items:center;gap:7px}.live-dot{background:#21a36c;box-shadow:0 0 0 3px #21a36c20}
     @media(max-width:1050px){.runtime-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid{grid-template-columns:1fr}.table-wrap table{min-width:700px}.status-form{grid-template-columns:1fr 1.5fr}.status-form .primary-button{grid-column:1/-1;justify-self:start}}
-    @media(max-width:760px){.runtime-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-shell{gap:15px}.admin-header{display:grid;gap:14px}.identity-actions{max-width:none;justify-content:flex-start}.identity{flex:1 1 100%}.section-nav{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section-nav button{justify-content:flex-start;padding:10px;min-width:0}.section-heading{align-items:flex-start}.section-heading h2{font-size:19px}.section-heading>.outline-button{max-width:45%;white-space:normal}.filters{align-items:stretch}.filters .search-field,.filters label:not(.search-field){flex:1 1 100%}.filters .primary-button{width:100%}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.permission-grid{grid-template-columns:1fr}.permission-card.platform{grid-column:auto}.pagination{align-items:flex-start;flex-direction:column}.pagination>div{width:100%}.pagination button{flex:1}.table-wrap{margin-inline:-1px}.admin-footer{font-size:10px}}
+    .identity-access-summary{display:grid;gap:10px;padding:13px 14px;background:#f4f8fa;border:1px solid #dce7ec;border-radius:12px;min-width:0}.identity-access-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0}.identity-access-heading{display:grid;gap:5px;min-width:0}.identity-access-heading>strong,.identity-permissions>strong{font-size:11px;color:#294358}.identity-access-heading>small{font-weight:500}.identity-role-pills,.identity-permission-tags{display:flex;flex-wrap:wrap;gap:6px;min-width:0}.identity-permissions{display:grid;gap:7px}.permission-token{display:inline-flex;align-items:center;border:1px solid #d4e3e8;border-radius:7px;padding:5px 8px;background:#fff;color:#345268;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+    .user-cell,.user-role-list,.membership-list{display:grid;gap:5px;min-width:0}.user-cell strong{font-size:12px}.user-cell small,.grant-row small,.membership-chip small{font-size:10px;color:var(--muted);overflow-wrap:anywhere}.user-uid,.subject{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;overflow-wrap:anywhere;word-break:break-word}.user-root-label{display:block;margin-top:5px;font-size:10px;font-weight:800;color:#895c18}.user-directory-table tr.selected-row{background:#eef8f6}.user-role-list{display:flex;gap:5px;flex-wrap:wrap}.membership-list{min-width:160px}.membership-chip{display:grid;gap:2px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fafcfd;min-width:0}.membership-chip strong{font-size:11px;overflow-wrap:anywhere}.user-access-panel,.access-audit-panel{display:grid;gap:15px}.user-access-panel .section-heading h3,.access-audit-panel .section-heading h3{margin:0;font-size:18px}.user-facts-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.user-facts-grid>div{display:grid;gap:6px;min-width:0;background:#f8fafb;border:1px solid var(--line);border-radius:10px;padding:11px}.user-facts-grid small{font-size:10px;color:var(--muted)}.user-facts-grid strong{font-size:11px;overflow-wrap:anywhere}.role-editor{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:14px}.role-editor h4,.membership-details h4{margin:0;font-size:14px}.role-editor p{font-size:12px;color:var(--muted);line-height:1.6;margin:5px 0 0}.user-role-form{display:grid;grid-template-columns:minmax(180px,1fr) minmax(200px,2fr) auto;align-items:end;gap:10px}.user-role-form label{display:grid;gap:6px;min-width:0}.user-role-form label>span{font-size:11px;font-weight:700;color:#42576b}.user-role-form select,.user-role-form textarea{width:100%;min-width:0;max-width:100%;padding:10px;border:1px solid #d8e2e9;border-radius:9px;background:#fff;color:var(--ink);font-size:12px}.current-role-grants{display:grid;gap:9px}.current-role-grants>strong{font-size:12px}.role-submit-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.grant-row,.membership-detail-row{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}.grant-row>div,.membership-detail-row>div{display:grid;gap:5px;min-width:0}.grant-row small{display:block;line-height:1.5}.membership-details{display:grid;gap:9px;border-top:1px solid var(--line);padding-top:14px}.membership-detail-row strong{font-size:12px}.membership-detail-row small{font-size:10px;color:var(--muted);overflow-wrap:anywhere}.user-access-panel .notice{overflow-wrap:anywhere}
+    @media(max-width:760px){.runtime-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-shell{gap:15px}.admin-header{display:grid;gap:14px}.identity-actions{max-width:none;justify-content:flex-start}.identity{flex:1 1 100%}.section-nav{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section-nav button{justify-content:flex-start;padding:10px;min-width:0}.section-heading{align-items:flex-start}.section-heading h2{font-size:19px}.section-heading>.outline-button{max-width:45%;white-space:normal}.filters{align-items:stretch}.filters .search-field,.filters label:not(.search-field){flex:1 1 100%}.filters .primary-button{width:100%}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.permission-grid{grid-template-columns:1fr}.permission-card.platform{grid-column:auto}.user-facts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.identity-access-top{display:grid}.user-role-form{grid-template-columns:1fr}.grant-row,.membership-detail-row{align-items:flex-start}.user-directory-table{min-width:850px}.pagination{align-items:flex-start;flex-direction:column}.pagination>div{width:100%}.pagination button{flex:1}.table-wrap{margin-inline:-1px}.admin-footer{font-size:10px}}
     @media(max-width:480px){.heading h1{font-size:25px}.metric-grid{gap:9px}.metric-card{padding:12px;min-height:140px}.metric-card>strong{font-size:25px}.metric-card>span:not(.metric-icon){font-size:11px}.metric-card small{font-size:10px}.metric-icon{width:29px;height:29px}.panel{padding:12px}.detail-grid{grid-template-columns:1fr 1fr;gap:8px}.detail-grid>div{padding:9px}.status-form{grid-template-columns:1fr}.status-form .primary-button{grid-column:auto;width:100%}.identity small{max-width:160px}.quiet-button{padding:8px 10px}.section-nav button{gap:6px;font-size:11px}.notice{align-items:flex-start}}
     .system-status-panel{margin-bottom:16px}.runtime-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:10px 0 14px}.runtime-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.runtime-grid>div{display:grid;gap:6px;min-width:0;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}.runtime-grid small{font-size:10px;color:var(--muted)}.runtime-grid strong{font-size:12px;overflow-wrap:anywhere}.runtime-grid .runtime-commit{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.runtime-good{color:#18784c}.runtime-bad{color:#a74436}.runtime-note{font-size:10px;line-height:1.5;color:var(--muted);margin:12px 0 0}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
@@ -264,14 +369,64 @@ export class PlatformAdminComponent implements OnInit {
   auditFrom = '';
   auditTo = '';
 
+  access: PlatformAdminAccess | null = null;
+  accessLoading = false;
+  users: PlatformAdminUser[] = [];
+  usersLoading = false;
+  usersError = '';
+  userQuery = '';
+  userSearchMode: PlatformAdminUsersPage['search_mode'] = 'cursor_pagination';
+  userNextPageToken: string | null = null;
+  userPageTokens: Array<string | null> = [null];
+  userPageIndex = 0;
+  selectedAdminUser: PlatformAdminUser | null = null;
+  selectedPlatformRole: PlatformRole = 'platform_viewer';
+  roleReason = '';
+  roleSaving = false;
+  roleChangeActive = true;
+  roleError = '';
+  roleMessage = '';
+  roleAuditEvents: PlatformRoleAuditEvent[] = [];
+  roleAuditLoading = false;
+  roleAuditError = '';
+
+  get canViewUsers(): boolean {
+    return this.access?.permissions.includes('view_users') ?? false;
+  }
+
+  get canManagePlatformRoles(): boolean {
+    return this.access?.is_platform_super_admin === true;
+  }
+
+  get canManageWorkspaceStatus(): boolean {
+    return this.access?.permissions.includes('manage_workspace_status') ?? false;
+  }
+
+  readonly hasMeaningfulPlatformAdminReason = hasMeaningfulPlatformAdminReason;
+
   constructor(private readonly api: ApiService) {}
 
   ngOnInit(): void {
+    void this.refreshAccess();
     void this.refreshOverview();
     void this.refreshSystemStatus();
     void this.loadBusinesses(0);
     void this.loadAudit(0);
   }
+
+  async refreshAccess(): Promise<void> {
+    this.accessLoading = true;
+    try {
+      this.access = await this.api.platformAdminAccess();
+      if (!this.canViewUsers && this.section === 'users') this.section = 'overview';
+    } catch (error) {
+      this.access = null;
+      this.pageError = this.errorText(error);
+    } finally {
+      this.accessLoading = false;
+    }
+  }
+
 
   previousPageOffset(offset: number): number {
     return Math.max(0, offset - this.pageSize);
@@ -356,9 +511,159 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   setSection(section: AdminSection): void {
+    if (section === 'users' && !this.canViewUsers) return;
     this.section = section;
     if (section === 'businesses' && this.businesses.length === 0) void this.loadBusinesses(0);
     if (section === 'activity' && this.auditEvents.length === 0) void this.loadAudit(0);
+    if (section === 'users' && this.users.length === 0) {
+      void this.loadUsers(0, true);
+      void this.loadRoleAudit();
+    }
+  }
+
+
+  async loadUsers(pageIndex = this.userPageIndex, reset = false): Promise<void> {
+    if (!this.canViewUsers) return;
+    if (reset) {
+      this.userPageIndex = 0;
+      this.userPageTokens = [null];
+      pageIndex = 0;
+    }
+    this.usersLoading = true;
+    this.usersError = '';
+    this.roleError = '';
+    const pageToken = this.userPageTokens[pageIndex] || undefined;
+    try {
+      const result = await this.api.platformAdminUsers({
+        q: this.userQuery.trim() || undefined,
+        page_token: pageToken,
+        limit: 25
+      });
+      this.users = result.items;
+      this.userSearchMode = result.search_mode;
+      this.userNextPageToken = result.next_page_token;
+      this.userPageIndex = pageIndex;
+      if (result.next_page_token) this.userPageTokens[pageIndex + 1] = result.next_page_token;
+      if (this.selectedAdminUser) {
+        this.selectedAdminUser = this.users.find(user => user.uid === this.selectedAdminUser?.uid) || null;
+      }
+    } catch (error) {
+      this.users = [];
+      this.userNextPageToken = null;
+      this.usersError = this.errorText(error);
+    } finally {
+      this.usersLoading = false;
+    }
+  }
+
+  searchUsers(): void {
+    this.userPageIndex = 0;
+    this.userPageTokens = [null];
+    this.selectedAdminUser = null;
+    void this.loadUsers(0, true);
+  }
+
+  nextUsersPage(): void {
+    if (!this.userNextPageToken || this.usersLoading || this.userQuery.trim()) return;
+    const nextIndex = this.userPageIndex + 1;
+    this.userPageTokens[nextIndex] = this.userNextPageToken;
+    void this.loadUsers(nextIndex);
+  }
+
+  previousUsersPage(): void {
+    if (this.userPageIndex <= 0 || this.usersLoading) return;
+    void this.loadUsers(this.userPageIndex - 1);
+  }
+
+  selectAdminUser(user: PlatformAdminUser): void {
+    this.selectedAdminUser = user;
+    this.selectedPlatformRole = 'platform_viewer';
+    this.roleChangeActive = true;
+    this.roleReason = '';
+    this.roleError = '';
+    this.roleMessage = '';
+  }
+
+  platformRoleLabel(role: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      platform_super_admin: { ar: 'مسؤول المنصة الأساسي', en: 'Platform Super Admin' },
+      platform_viewer: { ar: 'مشاهد المنصة', en: 'Platform Viewer' },
+      workspace_operator: { ar: 'مشغّل مساحات العمل', en: 'Workspace Operator' },
+      user_manager: { ar: 'مدير دليل المستخدمين', en: 'User Manager' }
+    };
+    return labels[role]?.[this.language === 'ar' ? 'ar' : 'en'] || role;
+  }
+
+  platformPermissionLabel(permission: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      view_overview: { ar: 'قراءة مؤشرات المنصة', en: 'View platform overview' },
+      view_workspaces: { ar: 'عرض مساحات العمل', en: 'View workspaces' },
+      view_audit: { ar: 'قراءة سجل التدقيق', en: 'Read audit history' },
+      view_system_status: { ar: 'عرض حالة النظام', en: 'View system status' },
+      view_users: { ar: 'عرض دليل جميع المستخدمين', en: 'View all users' },
+      manage_workspace_status: { ar: 'تفعيل/تعطيل مساحة بسبب موثق', en: 'Change workspace status with a reason' },
+      manage_platform_roles: { ar: 'منح وإلغاء أدوار المنصة', en: 'Grant and revoke platform roles' }
+    };
+    return labels[permission]?.[this.language === 'ar' ? 'ar' : 'en'] || permission;
+  }
+
+  platformRoleDescription(role: string): string {
+    const descriptions: Record<string, { ar: string; en: string }> = {
+      platform_viewer: { ar: 'قراءة المؤشرات والمساحات وسجل التدقيق وحالة النظام.', en: 'Read platform metrics, workspaces, audit records and system status.' },
+      workspace_operator: { ar: 'صلاحيات القراءة مع تفعيل أو تعطيل مساحة عمل بسبب موثق.', en: 'Read access plus reasoned workspace activation/deactivation.' },
+      user_manager: { ar: 'قراءة جميع حسابات Firebase وعضوياتها؛ لا يمنح أدوار منصة.', en: 'Read all Firebase accounts and memberships; cannot grant platform roles.' }
+    };
+    return descriptions[role]?.[this.language === 'ar' ? 'ar' : 'en'] || this.t('صلاحية الجذر تُدار من إعداد الخادم فقط.', 'Bootstrap root access is managed only in server configuration.');
+  }
+
+  async savePlatformRole(active = this.roleChangeActive): Promise<void> {
+    const user = this.selectedAdminUser;
+    if (!user || !this.canManagePlatformRoles || user.is_platform_super_admin
+        || user.subject === this.access?.subject || !hasMeaningfulPlatformAdminReason(this.roleReason)) return;
+    this.roleSaving = true;
+    this.roleError = '';
+    this.roleMessage = '';
+    try {
+      const result = await this.api.platformAdminChangeUserRole(user.uid, {
+        role: this.selectedPlatformRole,
+        active,
+        reason: this.roleReason.trim()
+      });
+      this.roleMessage = this.t(
+        result.changed ? 'تم حفظ التغيير وتسجيله في سجل التدقيق.' : 'الصلاحية بالفعل بالحالة المطلوبة.',
+        result.message
+      );
+      this.roleReason = '';
+      await Promise.all([this.loadUsers(this.userPageIndex), this.loadRoleAudit()]);
+      this.selectedAdminUser = this.users.find(item => item.uid === user.uid) || null;
+    } catch (error) {
+      this.roleError = this.errorText(error);
+    } finally {
+      this.roleSaving = false;
+    }
+  }
+
+  selectRoleForRevocation(role: string): void {
+    if (role !== 'platform_viewer' && role !== 'workspace_operator' && role !== 'user_manager') return;
+    this.selectedPlatformRole = role;
+    this.roleChangeActive = false;
+    this.roleMessage = this.t('تم اختيار الدور للإلغاء. اكتب السبب ثم اضغط «إلغاء الصلاحية المحددة».', 'Role selected for revocation. Enter a reason, then select “Revoke selected role”.');
+    this.roleError = '';
+  }
+
+  async loadRoleAudit(): Promise<void> {
+    if (!this.canViewUsers) return;
+    this.roleAuditLoading = true;
+    this.roleAuditError = '';
+    try {
+      const result = await this.api.platformRoleAuditEvents({ limit: 20, offset: 0 });
+      this.roleAuditEvents = result.items;
+    } catch (error) {
+      this.roleAuditEvents = [];
+      this.roleAuditError = this.errorText(error);
+    } finally {
+      this.roleAuditLoading = false;
+    }
   }
 
   async loadBusinesses(offset: number): Promise<void> {
