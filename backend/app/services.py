@@ -111,11 +111,15 @@ def create_product(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
     name: str, unit_price: Decimal, sku: str | None = None,
     description: str | None = None, unit: str = "unit",
-    is_stock_tracked: bool = False,
+    is_stock_tracked: bool = False, opening_quantity: Decimal = ZERO,
 ) -> Product:
     _membership(session, principal, business_id)
     if not name.strip() or unit_price < ZERO:
         raise WorkflowError("Product name is required and price cannot be negative")
+    if opening_quantity < ZERO:
+        raise WorkflowError("Opening stock quantity cannot be negative")
+    if opening_quantity > ZERO and not is_stock_tracked:
+        raise WorkflowError("Opening stock requires stock tracking to be enabled")
     product = Product(
         business_id=business_id, name=name.strip(), unit_price=unit_price,
         sku=sku.strip() or None if sku else None, description=description,
@@ -125,6 +129,13 @@ def create_product(
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
            action="product.created", target_type="product", target_id=product.id)
+    if opening_quantity > ZERO:
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=opening_quantity, reason="Initial stock on product creation",
+            reference_type="product_opening", reference_id=product.id,
+        )
     return product
 
 
