@@ -1,3 +1,19 @@
+# Product workflow checkpoint — 2026-10-27
+
+## Scope owned by this workstream
+- Payment UX/business workflow: add a direct **Pay** action to issued invoices, calculate the outstanding balance from server-returned invoice allocations, and prefill customer, invoice, and amount. The existing server-side payment allocation validation remains authoritative.
+- Inventory UX/business workflow: let users enter opening quantity when enabling stock tracking, create the opening movement in the same API transaction as product creation, and show current derived stock quantity. Services/non-stock products cannot receive opening stock.
+- Regression coverage: test opening stock creation and reject opening quantity for non-stock products. Existing payment and invoice transaction rules remain in force.
+
+## Current execution status
+- **IN_PROGRESS** — implementation is on branch `fix/invoice-payment-and-stock-quantity-2026-10-27`.
+- Changed: `backend/app/services.py`, `backend/app/api.py`, `backend/app/extended_api.py`, `backend/tests/test_services.py`, `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`.
+- Tests/build: **NOT RUN yet** for this branch. Must verify the exact PR head before merge.
+- Production: **NOT DEPLOYED**. No production data, schema, secrets, or billing settings changed.
+- Next: inspect diff, run available checks on exact head, fix any failures, then request review through one PR. Deploy only after checks pass and the release quota/markers allow it.
+
+---
+
 # Workflow policy checkpoint — 2026-10-27
 
 ## Engineering process rules (adopted)
