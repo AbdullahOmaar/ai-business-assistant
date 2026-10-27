@@ -1,3 +1,21 @@
+# Automation recovery checkpoint — 2026-10-27 11:05 UTC
+
+## Ordered status for PR #173
+1. **AUTO-01 — Inspect current PR/head and mainline: VERIFIED.** PR #173 is open and Draft; current head `96e0cab174620fcfa3e85a6a475caafe8c34102a`, base `main` at `7269d46cd8eb9a989d929c54ba06a48333663a4d`; GitHub reports mergeable and branch is reconciled (0 commits behind at the last compare). No merge or deployment has been performed.
+2. **AUTO-02 — Retry failed GitHub Actions runs: BLOCKED / infrastructure.** Retried failed jobs for run IDs `40492418944` (container), `40492418502` (dependency audit), and `40492419072` (backend/frontend); GitHub accepted the retry requests, but the run records remain failed with `steps=[]` / `steps=null`. No application command executed and no passing CI result exists. Combined status for current head is empty.
+3. **AUTO-03 — CircleCI workflow definition: CONFIG VALIDATED LOCALLY, HOSTED NOT RUN.** `.circleci/config.yml` defines backend PostgreSQL 16 migrations/schema drift/pytest/security audit, frontend test/build/security audit, non-publishing backend container build, and weekly dependency audits. Previous isolated verification of CircleCI CLI `config validate` and `config process` passed. CircleCI cannot execute the private repository until the owner authorizes it in CircleCI; that account authorization cannot be completed from the repository connector.
+4. **AUTO-04 — Deterministic frontend dependencies: TODO.** `frontend/package-lock.json` is still not committed. A temporary lockfile had been generated in an isolated sandbox, but that sandbox is now stopped and cannot be read; a replacement sandbox creation attempt returned HTTP 400 without actionable diagnostics. Do not fabricate or commit an unverified lockfile. Current workflow still uses `npm install`; do not change to `npm ci` until the lockfile is present and validated.
+5. **AUTO-05 — Actual container build and exact-provider checks: NOT RUN.** No Docker daemon build evidence exists. Isolated test evidence (149 backend tests, 5 frontend tests/build, dependency audits, PostgreSQL 18.6 migrations/schema check) is not a substitute for exact-head CI using Python 3.12 / Node 22.12 / PostgreSQL 16.
+6. **AUTO-06 — Merge and release: BLOCKED.** No current-head CI checks are passing, no hosted CircleCI run exists, no deterministic lockfile is committed, and no container build passed. Keep PR #173 Draft/open; do not bypass gates or merge unverified financial/accounting changes. No production code, credentials, database records, payments, or deployment was changed in this checkpoint.
+
+## Required next actions
+- Repository owner: authorize `AbdullahOmaar/ai-business-assistant` in CircleCI and enable the existing config without granting production secrets or paid overages.
+- Once an active sandbox/runner is available: regenerate and inspect `frontend/package-lock.json`, run `npm ci`, tests, build and audit, commit the lockfile, then update CircleCI frontend install steps to `npm ci`.
+- Execute all three per-change CircleCI jobs on the exact resulting PR head; capture job logs/artifacts and confirm actual Docker image build.
+- After a successful hosted run, establish the authoritative required status contexts and only then merge if the PR head and checks remain unchanged. Verify resulting main SHA and post-merge CI; deployment requires its own authorized release and smoke checks.
+
+---
+
 # Latest verified release checkpoint — 2026-10-27 00:20 UTC
 
 This checkpoint supersedes older release notes below where they describe PR #168 as open, the frontend deploy as canceled, or the deployed frontend as the pre-payment-safety version. Historical records remain for audit.
