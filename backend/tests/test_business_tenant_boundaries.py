@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import AuditEvent, Base
+from app.models import AuditEvent, Base, BusinessMembership, MembershipRole, Product, StockMovement
 from app.security import AuthenticatedPrincipal
 
 
@@ -707,6 +707,108 @@ def test_operational_health_is_owner_only_read_only_and_reports_missing_workers(
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         denied = client.get(f"/api/v1/businesses/{business_id}/operations/health")
         assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_staff_cannot_seed_opening_stock_during_product_creation():
+    """Opening inventory is OWNER-only even when created through the product endpoint."""
+    from sqlalchemy.orm import sessionmaker
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.session_factory = factory
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("opening-stock-owner")
+
+    try:
+        client = TestClient(app)
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Opening Stock Boundary", "currency_code": "EGP"},
+        )
+        assert created.status_code == 201
+        business_id = UUID(created.json()["id"])
+
+        with factory() as session:
+            session.add(BusinessMembership(
+                business_id=business_id,
+                user_subject="opening-stock-staff",
+                role=MembershipRole.STAFF,
+            ))
+            session.commit()
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("opening-stock-staff")
+        regular_product = client.post(
+            f"/api/v1/businesses/{business_id}/products",
+            json={
+                "name": "Staff Product Without Stock",
+                "unit_price": "10.00",
+                "is_stock_tracked": True,
+                "opening_quantity": "0",
+            },
+        )
+        assert regular_product.status_code == 201
+
+        denied = client.post(
+            f"/api/v1/businesses/{business_id}/products",
+            json={
+                "name": "Staff Seeded Stock",
+                "unit_price": "10.00",
+                "is_stock_tracked": True,
+                "opening_quantity": "3.000",
+            },
+        )
+        assert denied.status_code == 403
+
+        with factory() as session:
+            assert session.query(Product).filter_by(
+                business_id=business_id,
+                name="Staff Seeded Stock",
+            ).count() == 0
+            assert session.query(StockMovement).filter_by(
+                business_id=business_id,
+                movement_type="opening",
+            ).count() == 0
+            assert session.query(AuditEvent).filter_by(
+                business_id=business_id,
+                action="product.created",
+            ).count() == 1
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("opening-stock-owner")
+        owner_product = client.post(
+            f"/api/v1/businesses/{business_id}/products",
+            json={
+                "name": "Owner Seeded Stock",
+                "unit_price": "10.00",
+                "is_stock_tracked": True,
+                "opening_quantity": "3.000",
+            },
+        )
+        assert owner_product.status_code == 201
+
+        with factory() as session:
+            movement = session.query(StockMovement).filter_by(
+                business_id=business_id,
+                movement_type="opening",
+            ).one()
+            assert str(movement.quantity_delta) == "3.000"
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
