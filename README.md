@@ -18,6 +18,7 @@ AI-powered business assistant for retail shops and service providers.
 - **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
 - **Tenant, invoice, and AI regression tests:** https://github.com/AbdullahOmaar/ai-business-assistant/pull/51
 - **Production deployment runbook:** [docs/PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md)
+- **In-app feature catalogue and release history policy:** [docs/RELEASE_HISTORY.md](docs/RELEASE_HISTORY.md)
 
 **Deployment caveat:** These are configured production aliases, not proof that every recent source change is deployed or that the full sign-in flow works. On 23 October 2026, the frontend alias and backend `/readyz` endpoint responded with HTTP 200; the frontend HTML still contains a startup fallback until Angular initializes, so browser-level validation remains necessary. Vercel has previously rejected deployment attempts due to the free daily deployment limit. Confirm the latest production deployment commit in Vercel before release.
 
