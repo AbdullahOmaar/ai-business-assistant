@@ -56,16 +56,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
           </form>
           <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
-          @if (error) { <p class="error" role="alert">{{ error }}</p> }
+          @if (error) { <p class="error" role="alert">{{ error }}</p><button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button> }
         </main>
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('التنقل الرئيسي', 'Main navigation')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
-          <div class="workspace-release-meta" [attr.aria-label]="t('إصدار التطبيق ووقت النشر', 'App version and deployment time')">
-            <span class="version-pill">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-            <small>{{ t('آخر نشر (وقت بناء النسخة):', 'Last deployment (build time):') }} {{ buildTimeLabel }}</small>
-          </div>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('التقارير الضريبية', 'Tax summary')" [attr.title]="t('التقارير الضريبية', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
@@ -131,12 +127,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             </section>
           } @else {
             <section class="workspace-bar">
-              <div><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
+              <div class="workspace-current"><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
               <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
+              <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('إصدار التطبيق ووقت النشر', 'App version and deployment time')">
+                <span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+                <small>{{ t('وقت بناء النسخة:', 'Build time:') }} {{ buildTimeLabel }}</small>
+              </div>
             </section>
-            <div class="mobile-version-strip"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span><small class="mobile-deploy-time">{{ t('آخر نشر (وقت بناء النسخة):', 'Last deployment (build time):') }} {{ buildTimeLabel }}</small></div>
 
             @if (tab === 'overview') {
               <section class="hero">
@@ -156,6 +155,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <button class="quick-card" (click)="setTab('customers')"><strong>{{ t('العملاء', 'Customers') }}</strong><span>{{ customers.length }} {{ t('سجلات نشطة · عرض القائمة ←', 'active records · View list →') }}</span></button>
                 <button class="quick-card" (click)="setTab('products')"><strong>{{ t('المنتجات', 'Products') }}</strong><span>{{ products.length }} {{ t('سجلات نشطة · عرض الكتالوج ←', 'active records · View catalog →') }}</span></button>
                 <button class="quick-card" (click)="setTab('invoices')"><strong>{{ t('الفواتير', 'Invoices') }}</strong><span>{{ invoices.length }} {{ t('سجل · إدارة المبيعات ←', 'records · Manage sales →') }}</span></button>
+                <button class="quick-card ai-quick-card" (click)="setTab('assistant')"><strong><span aria-hidden="true">✦ </span>{{ t('اسأل مساعد الأعمال الذكي', 'Ask the AI assistant') }}</strong><span>{{ t('احصل على ملخص مبني على سجلات نشاطك', 'Get an answer grounded in your business records') }}</span></button>
               </section>
             }
 
@@ -163,7 +163,20 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('قائمة الإشعارات', 'Notification queue') }}</h2><p>{{ t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') }}</p></div><span class="count">{{ notifications.length }}</span></div>
                 <form class="stack" (ngSubmit)="createNotification()">
-                  <label>{{ t('النوع', 'Kind') }}<input name="notificationKind" required maxlength="40" [(ngModel)]="notificationKind"></label>
+                  <label>{{ t('نوع الإشعار', 'Notification type') }}<select name="notificationKind" required [(ngModel)]="notificationKind">
+                    <option value="businesses">{{ t('مساحات العمل', 'Businesses') }}</option>
+                    <option value="invoices">{{ t('الفواتير', 'Invoices') }}</option>
+                    <option value="payments">{{ t('المدفوعات', 'Payments') }}</option>
+                    <option value="expenses">{{ t('المصروفات', 'Expenses') }}</option>
+                    <option value="inventory">{{ t('المخزون', 'Inventory') }}</option>
+                    <option value="reminders">{{ t('التذكيرات', 'Reminders') }}</option>
+                    <option value="reports">{{ t('التقارير', 'Reports') }}</option>
+                    <option value="suppliers">{{ t('الموردون', 'Suppliers') }}</option>
+                    <option value="purchases">{{ t('المشتريات', 'Purchases') }}</option>
+                    <option value="recurring">{{ t('الفواتير الدورية', 'Recurring invoices') }}</option>
+                    <option value="assistant">{{ t('المساعد الذكي', 'AI assistant') }}</option>
+                    <option value="system">{{ t('النظام', 'System') }}</option>
+                  </select></label>
                   <label>{{ t('العنوان', 'Title') }}<input name="notificationTitle" required maxlength="160" [(ngModel)]="notificationTitle"></label>
                   <label>{{ t('المحتوى', 'Message') }}<textarea name="notificationBody" required maxlength="1000" rows="3" [(ngModel)]="notificationBody"></textarea></label>
                   <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
@@ -171,7 +184,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 </form>
                 @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
                 @if (notificationsLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الإشعارات…', 'Loading notifications…') }}</p> }
-                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ item.kind }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
+                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
               </section>
             }
 
@@ -255,7 +268,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (reportError) { <div class="error-banner" role="alert">{{ reportError }}</div> }
                 @if (profitLoss) {
                   <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
-                  <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ profitLoss.revenue_basis }}</p>
+                  <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
                   <div class="metric-grid">
                     @for (row of profitLoss.currencies; track row.currency_code) {
                       <article class="metric"><span>{{ t('الإيرادات (فواتير صادرة)', 'Revenue (issued invoices)') }}</span><strong>{{ row.revenue }} {{ row.currency_code }}</strong><small>{{ row.revenue_invoice_count }} {{ t('فاتورة', 'invoices') }}</small></article>
@@ -286,7 +299,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     </div>
                   }
                   @if (agingReport.invoices.length) { <div class="list">@for (invoice of agingReport.invoices; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</strong><small>{{ agingBucketLabel(invoice.aging_bucket) }} · {{ invoice.due_date || t('بدون تاريخ استحقاق', 'No due date') }}@if (invoice.customer_link_missing) { · {{ t('عميل غير مرتبط — يلزم تدقيق يدوي', 'Missing customer link — manual review required') }} }</small></div></article> }</div> }
-                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ limitation }}</p> }</div> }
+                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
                 }
               </section>
             }
@@ -365,7 +378,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             @if (tab === 'invoices') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</h2><p>{{ t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') }}</p></div><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></div>
-                <div class="invoice-toolbar"><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
+                <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
                   <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select></label>
@@ -388,11 +401,11 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
-                </details></div>
+                </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
                 @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
-                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
+                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
                   @if (!filteredInvoices.length) { <p class="empty">{{ (invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.')) }}</p> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
@@ -435,7 +448,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (taxSummaryReport) {
                   <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
                   @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.') }}</p> }
-                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
             }
@@ -444,8 +457,47 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('سجل العمليات', 'Activity log') }}</h2><p>{{ t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.') }}</p></div><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></div>
                 <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
-                  <label>{{ t('نوع العملية', 'Action') }}<input name="auditAction" maxlength="80" [(ngModel)]="auditAction" placeholder="invoice.issued"></label>
-                  <label>{{ t('نوع السجل', 'Target type') }}<input name="auditTarget" maxlength="80" [(ngModel)]="auditTargetType" placeholder="invoice"></label>
+                  <label>{{ t('نوع العملية', 'Action') }}<select name="auditAction" [(ngModel)]="auditAction">
+                    <option value="">{{ t('كل العمليات', 'All actions') }}</option>
+                    <option value="invoice.issued">{{ t('إصدار فاتورة', 'Invoice issued') }}</option>
+                    <option value="invoice.created">{{ t('إنشاء فاتورة', 'Invoice created') }}</option>
+                    <option value="invoice.draft_updated">{{ t('تعديل مسودة فاتورة', 'Invoice draft updated') }}</option>
+                    <option value="invoice.voided">{{ t('إلغاء فاتورة', 'Invoice voided') }}</option>
+                    <option value="payment.recorded">{{ t('تسجيل دفعة', 'Payment recorded') }}</option>
+                    <option value="expense.created">{{ t('تسجيل مصروف', 'Expense recorded') }}</option>
+                    <option value="customer.created">{{ t('إضافة عميل', 'Customer created') }}</option>
+                    <option value="product.created">{{ t('إضافة منتج', 'Product created') }}</option>
+                    <option value="stock.movement_recorded">{{ t('تسجيل حركة مخزون', 'Stock movement recorded') }}</option>
+                    <option value="supplier.created">{{ t('إضافة مورد', 'Supplier created') }}</option>
+                    <option value="customer.updated">{{ t('تعديل بيانات عميل', 'Customer updated') }}</option>
+                    <option value="customer.deactivated">{{ t('تعطيل عميل', 'Customer deactivated') }}</option>
+                    <option value="product.updated">{{ t('تعديل منتج', 'Product updated') }}</option>
+                    <option value="product.deactivated">{{ t('تعطيل منتج', 'Product deactivated') }}</option>
+                    <option value="purchase_order.created">{{ t('إنشاء أمر شراء', 'Purchase order created') }}</option>
+                    <option value="purchase_order.approved">{{ t('اعتماد أمر شراء', 'Purchase order approved') }}</option>
+                    <option value="purchase_order.received">{{ t('استلام أمر شراء', 'Purchase order received') }}</option>
+                    <option value="sales_return.created">{{ t('تسجيل مرتجع بيع', 'Sales return created') }}</option>
+                    <option value="sales_return.approved">{{ t('اعتماد مرتجع بيع', 'Sales return approved') }}</option>
+                    <option value="recurring_invoice_schedule.created">{{ t('إنشاء جدول فاتورة دورية', 'Recurring invoice schedule created') }}</option>
+                    <option value="data_import.completed">{{ t('اكتمال استيراد البيانات', 'Data import completed') }}</option>
+                    <option value="pricing_rule.created">{{ t('إنشاء قاعدة تسعير', 'Pricing rule created') }}</option>
+                  </select></label>
+                  <label>{{ t('نوع السجل', 'Target type') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
+                    <option value="">{{ t('كل السجلات', 'All record types') }}</option>
+                    <option value="invoice">{{ t('فاتورة', 'Invoice') }}</option>
+                    <option value="payment">{{ t('دفعة', 'Payment') }}</option>
+                    <option value="expense">{{ t('مصروف', 'Expense') }}</option>
+                    <option value="customer">{{ t('عميل', 'Customer') }}</option>
+                    <option value="product">{{ t('منتج', 'Product') }}</option>
+                    <option value="business">{{ t('نشاط تجاري', 'Business') }}</option>
+                    <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
+                    <option value="stock_movement">{{ t('حركة مخزون', 'Stock movement') }}</option>
+                    <option value="purchase_order">{{ t('أمر شراء', 'Purchase order') }}</option>
+                    <option value="sales_return">{{ t('مرتجع بيع', 'Sales return') }}</option>
+                    <option value="recurring_invoice_schedule">{{ t('جدول فاتورة دورية', 'Recurring invoice schedule') }}</option>
+                    <option value="import_job">{{ t('عملية استيراد', 'Import job') }}</option>
+                    <option value="pricing_rule">{{ t('قاعدة تسعير', 'Pricing rule') }}</option>
+                  </select></label>
                   <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
                 </form>
@@ -453,7 +505,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (auditLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل السجل…', 'Loading activity…') }}</p> }
                 @if (!auditLoading && !auditEvents.length && !auditError) { <p class="empty">{{ t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.') }}</p> }
                 <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
-                  @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ event.action }}</td><td>{{ event.target_type }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
+                  @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ auditActionLabel(event.action) }}</td><td>{{ auditTargetLabel(event.target_type) }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
                 </tbody></table></div>
                 <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
               </section>
@@ -533,7 +585,17 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <span class="count">{{ expenses.length }} {{ t('مصروفات', 'expenses') }}</span>
                 </div>
                 <form class="inline-form expense-form" (ngSubmit)="createExpense()">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" maxlength="80" [placeholder]="t('التصنيف', 'Category')" required [(ngModel)]="expenseCategory">
+                  <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" required [(ngModel)]="expenseCategory">
+                    <option value="General">{{ t('عام', 'General') }}</option>
+                    <option value="Supplies">{{ t('مستلزمات', 'Supplies') }}</option>
+                    <option value="Rent">{{ t('إيجار', 'Rent') }}</option>
+                    <option value="Utilities">{{ t('مرافق وفواتير', 'Utilities') }}</option>
+                    <option value="Transport">{{ t('نقل ومواصلات', 'Transport') }}</option>
+                    <option value="Marketing">{{ t('تسويق', 'Marketing') }}</option>
+                    <option value="Payroll">{{ t('رواتب', 'Payroll') }}</option>
+                    <option value="Maintenance">{{ t('صيانة', 'Maintenance') }}</option>
+                    <option value="Other">{{ t('أخرى', 'Other') }}</option>
+                  </select></label>
                   <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('وصف المصروف', 'Expense description')" name="expenseDescription" maxlength="500" [placeholder]="t('الوصف', 'Description')" required [(ngModel)]="expenseDescription">
                   <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مبلغ المصروف', 'Expense amount')" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ', 'Amount')" required [(ngModel)]="expenseAmount">
                   <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تاريخ ووقت المصروف', 'Expense date and time')" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
@@ -571,7 +633,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
                 @if (integrityError) { <p class="error" role="alert">{{ integrityError }}</p> }
                 @if (dataIntegrityReport) {
-                  <div class="notice warning-notice"><strong>{{ t('مراجعة يدوية فقط', 'Manual review only') }}</strong><span>{{ dataIntegrityReport.warning }}</span></div>
+                  <div class="notice warning-notice"><strong>{{ t('تحتاج مراجعة بشرية', 'Human review required') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
                   <div class="metric-grid">
                     <article class="metric"><span>{{ t('فواتير صادرة بلا عميل', 'Issued invoices without a customer') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
                     <article class="metric"><span>{{ t('تخصيصات بعملات مختلفة', 'Currency-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
@@ -593,7 +655,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   @if (!chatMessages.length) { <p class="empty">{{ t('ابدأ بسؤال سريع عن نشاطك أو اختَر اقتراحًا بالأسفل.', 'Start with a quick business question or choose a suggestion below.') }}</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span>@if (message.mode === 'local-fallback') { <small class="source-list">{{ t('وضع مجاني محدود · إجابة من سجلات النشاط', 'Free limited mode · grounded in business records') }}</small> }<p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
-                @if (!chatMessages.length) { <div class="assistant-suggestions"><p>{{ t('جرّب تسأل', 'Try asking') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما الفواتير المستحقة التي تحتاج متابعة؟', 'Which outstanding invoices need follow-up?'))"><span class="suggestion-icon">↗</span><strong>{{ t('متابعة التحصيل', 'Receivables follow-up') }}</strong><small>{{ t('اعرف الفواتير المستحقة', 'Find outstanding invoices') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('لخّص أداء النشاط خلال آخر 30 يومًا.', 'Summarize business performance over the last 30 days.'))"><span class="suggestion-icon">✦</span><strong>{{ t('ملخص الأداء', 'Performance summary') }}</strong><small>{{ t('مبيعات ومصروفات', 'Sales and expenses') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما المنتجات التي تحتاج إعادة تخزين؟', 'Which products may need restocking?'))"><span class="suggestion-icon">▦</span><strong>{{ t('المخزون', 'Inventory check') }}</strong><small>{{ t('راجع المنتجات والمخزون', 'Review products and stock') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('اعرض لي نظرة عامة على العملاء والفواتير.', 'Give me an overview of customers and invoices.'))"><span class="suggestion-icon">◎</span><strong>{{ t('نظرة عامة', 'Business overview') }}</strong><small>{{ t('عملاء وفواتير', 'Customers and invoices') }}</small></button></div></div> }
+                <div class="assistant-suggestions"><p>{{ t('جرّب تسأل', 'Try asking') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما الفواتير المستحقة التي تحتاج متابعة؟', 'Which outstanding invoices need follow-up?'))"><span class="suggestion-icon">↗</span><strong>{{ t('متابعة التحصيل', 'Receivables follow-up') }}</strong><small>{{ t('اعرف الفواتير المستحقة', 'Find outstanding invoices') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('لخّص أداء النشاط خلال آخر 30 يومًا.', 'Summarize business performance over the last 30 days.'))"><span class="suggestion-icon">✦</span><strong>{{ t('ملخص الأداء', 'Performance summary') }}</strong><small>{{ t('مبيعات ومصروفات', 'Sales and expenses') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما المنتجات التي تحتاج إعادة تخزين؟', 'Which products may need restocking?'))"><span class="suggestion-icon">▦</span><strong>{{ t('المخزون', 'Inventory check') }}</strong><small>{{ t('راجع المنتجات والمخزون', 'Review products and stock') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('اعرض لي نظرة عامة على العملاء والفواتير.', 'Give me an overview of customers and invoices.'))"><span class="suggestion-icon">◎</span><strong>{{ t('نظرة عامة', 'Business overview') }}</strong><small>{{ t('عملاء وفواتير', 'Customers and invoices') }}</small></button></div></div>
                 @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span>@if (!chatConfigurationMissing) { <button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">{{ t('إعادة المحاولة', 'Retry') }}</button> }</div> }
                 @if (chatSending) { <p class="muted" role="status" aria-live="polite">{{ t('المساعد الذكي يجهّز الإجابة…', 'The AI assistant is preparing an answer…') }}</p> }
                 <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
@@ -731,6 +793,74 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .nav-item .nav-icon{width:26px;height:26px;flex-basis:26px;font-size:16px}
     }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+    /* Consistent, data-sized controls and mobile-first business cards. */
+    .workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);align-items:center;gap:12px}
+    .workspace-current{min-width:0}.workspace-current strong{overflow-wrap:anywhere}
+    .workspace-release-meta-inline{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid #e5eaf1}
+    .workspace-release-meta-inline small{color:#64748b;font-size:11px;overflow-wrap:anywhere;text-align:center}
+    .invoice-toolbar{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+    .invoice-create-disclosure{width:100%;order:0}
+    .customer-invoice-filter{order:1;width:100%;margin:0}
+    .invoice-form{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(100px,.55fr) minmax(100px,.55fr);align-items:end;gap:12px}
+    .invoice-form>input[name="invoiceNumber"]{min-width:0}
+    .invoice-form>.invoice-customer-field{grid-column:1/-1;min-width:0}
+    .invoice-form label:has(input[type="number"]){max-width:150px;min-width:0}
+    .invoice-form input[type="number"]{width:100%;min-width:0}
+    .invoice-lines,.invoice-lines-heading{min-width:0}
+    .expense-form{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,1.5fr) minmax(100px,.65fr) minmax(170px,1fr) minmax(130px,.8fr) minmax(120px,.8fr);align-items:end;gap:10px}
+    .expense-form .expense-category-field{min-width:0}
+    .shell input,.shell select,.shell textarea{min-width:0;max-width:100%;padding:9px 11px;font-size:14px;border-radius:9px}
+    .shell input[type="number"]{font-variant-numeric:tabular-nums}
+    .shell label{min-width:0;gap:6px}
+    .list-row{min-width:0;overflow-wrap:anywhere}
+    .release-guide-panel .release-guide-groups,.release-guide-panel .release-history{gap:12px}
+    .release-guide-panel .release-feature-group>summary,.release-guide-panel .release-version>summary{min-height:48px}
+    .assistant-suggestions{padding:12px;border:1px solid #dbeafe;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#eff6ff)}
+    .assistant-suggestions .suggestion-card{min-height:68px}
+    .auth-retry{margin-top:12px}
+    @media(max-width:900px){
+      .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .expense-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .expense-form input[name="expenseDescription"]{grid-column:1/-1}
+      .expense-form input[name="expenseDate"]{grid-column:1/-1}
+    }
+    @media(max-width:600px){
+      .workspace-bar{grid-template-columns:minmax(0,1fr);padding:12px;gap:10px}
+      .workspace-bar select{width:100%;max-width:none}
+      .workspace-release-meta-inline{gap:6px;padding-top:10px}
+      .invoice-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+      .invoice-form>input[name="invoiceNumber"],.invoice-form>.invoice-customer-field,.invoice-form>.invoice-lines{grid-column:1/-1}
+      .invoice-form label:has(input[type="number"]){max-width:none}
+      .invoice-form label:has(input[type="number"]) input{width:100%}
+      .expense-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .expense-form input[name="expenseDescription"],.expense-form input[name="expenseDate"]{grid-column:1/-1}
+      .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .metric{padding:12px;min-height:105px}
+      .metric strong{font-size:17px}
+      .list-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+      .list-row .grow{min-width:0;width:100%}
+      .list-row>button,.list-row>strong{justify-self:start;max-width:100%}
+      .suggestion-grid{grid-template-columns:minmax(0,1fr)}
+      .notice{align-items:flex-start;flex-wrap:wrap}
+      .notice strong{white-space:normal}
+      .table-wrap table{min-width:560px}
+    }
+
+    @media(max-width:600px){
+      .customer-list-row,.invoice-list-row{grid-template-columns:36px minmax(0,1fr);align-items:start;column-gap:9px;row-gap:7px}
+      .customer-list-row>.avatar,.invoice-list-row>.invoice-mark{grid-column:1;grid-row:1/span 5;justify-self:center}
+      .customer-list-row>.grow,.invoice-list-row>.grow{grid-column:2;grid-row:1;min-width:0}
+      .customer-list-row>button,.invoice-list-row>button,.invoice-list-row>strong,.invoice-list-row>small{grid-column:2;justify-self:start}
+      .customer-list-row>button,.invoice-list-row>button{min-height:34px;padding:6px 10px;font-size:12px}
+    }
+
+    /* Keep release metadata centered on the same row as the current workspace on desktop. */
+    .workspace-bar{grid-template-columns:minmax(0,1fr) auto minmax(180px,260px)}
+    .workspace-release-meta-inline{grid-column:auto;border-top:0;padding:0;justify-content:center;min-width:0}
+    @media(max-width:600px){
+      .workspace-release-meta-inline{grid-column:1;border-top:1px solid #e5eaf1;padding-top:10px}
+    }
   `]
 })
 export class AppComponent implements OnInit {
@@ -1008,7 +1138,7 @@ export class AppComponent implements OnInit {
     finally { this.installPrompt = null; }
   }
 
-  private async initializeApp(): Promise<void> {
+  async initializeApp(): Promise<void> {
     this.initialized = false;
     this.loading = true;
     this.error = '';
@@ -1033,6 +1163,121 @@ export class AppComponent implements OnInit {
       this.loading = false;
       this.initialized = true;
     }
+  }
+
+  notificationKindLabel(kind: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      businesses: { ar: 'مساحات العمل', en: 'Businesses' },
+      invoices: { ar: 'الفواتير', en: 'Invoices' },
+      payments: { ar: 'المدفوعات', en: 'Payments' },
+      expenses: { ar: 'المصروفات', en: 'Expenses' },
+      inventory: { ar: 'المخزون', en: 'Inventory' },
+      reminders: { ar: 'التذكيرات', en: 'Reminders' },
+      reports: { ar: 'التقارير', en: 'Reports' },
+      suppliers: { ar: 'الموردون', en: 'Suppliers' },
+      purchases: { ar: 'المشتريات', en: 'Purchases' },
+      recurring: { ar: 'الفواتير الدورية', en: 'Recurring invoices' },
+      assistant: { ar: 'المساعد الذكي', en: 'AI assistant' },
+      system: { ar: 'النظام', en: 'System' }
+    };
+    return labels[kind]?.[this.language] || kind;
+  }
+
+  auditActionLabel(action: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      'invoice.issued': { ar: 'إصدار فاتورة', en: 'Invoice issued' },
+      'invoice.created': { ar: 'إنشاء فاتورة', en: 'Invoice created' },
+      'invoice.draft_updated': { ar: 'تعديل مسودة فاتورة', en: 'Invoice draft updated' },
+      'invoice.voided': { ar: 'إلغاء فاتورة', en: 'Invoice voided' },
+      'payment.recorded': { ar: 'تسجيل دفعة', en: 'Payment recorded' },
+      'expense.created': { ar: 'تسجيل مصروف', en: 'Expense recorded' },
+      'customer.created': { ar: 'إضافة عميل', en: 'Customer created' },
+      'product.created': { ar: 'إضافة منتج', en: 'Product created' },
+      'stock.movement_recorded': { ar: 'تسجيل حركة مخزون', en: 'Stock movement recorded' },
+      'supplier.created': { ar: 'إضافة مورد', en: 'Supplier created' },
+      'customer.updated': { ar: 'تعديل بيانات عميل', en: 'Customer updated' },
+      'customer.deactivated': { ar: 'تعطيل عميل', en: 'Customer deactivated' },
+      'product.updated': { ar: 'تعديل منتج', en: 'Product updated' },
+      'product.deactivated': { ar: 'تعطيل منتج', en: 'Product deactivated' },
+      'purchase_order.created': { ar: 'إنشاء أمر شراء', en: 'Purchase order created' },
+      'purchase_order.approved': { ar: 'اعتماد أمر شراء', en: 'Purchase order approved' },
+      'purchase_order.received': { ar: 'استلام أمر شراء', en: 'Purchase order received' },
+      'sales_return.created': { ar: 'تسجيل مرتجع بيع', en: 'Sales return created' },
+      'sales_return.approved': { ar: 'اعتماد مرتجع بيع', en: 'Sales return approved' },
+      'recurring_invoice_schedule.created': { ar: 'إنشاء جدول فاتورة دورية', en: 'Recurring invoice schedule created' },
+      'data_import.completed': { ar: 'اكتمال استيراد البيانات', en: 'Data import completed' },
+      'pricing_rule.created': { ar: 'إنشاء قاعدة تسعير', en: 'Pricing rule created' }
+    };
+    return labels[action]?.[this.language] || action;
+  }
+
+  auditTargetLabel(target: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      invoice: { ar: 'فاتورة', en: 'Invoice' },
+      payment: { ar: 'دفعة', en: 'Payment' },
+      expense: { ar: 'مصروف', en: 'Expense' },
+      customer: { ar: 'عميل', en: 'Customer' },
+      product: { ar: 'منتج', en: 'Product' },
+      supplier: { ar: 'مورد', en: 'Supplier' },
+      stock_movement: { ar: 'حركة مخزون', en: 'Stock movement' },
+      purchase_order: { ar: 'أمر شراء', en: 'Purchase order' },
+      sales_return: { ar: 'مرتجع بيع', en: 'Sales return' },
+      recurring_invoice_schedule: { ar: 'جدول فاتورة دورية', en: 'Recurring invoice schedule' },
+      import_job: { ar: 'عملية استيراد', en: 'Import job' },
+      pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
+      business: { ar: 'نشاط تجاري', en: 'Business' }
+    };
+    return labels[target]?.[this.language] || target;
+  }
+
+  revenueBasisLabel(value: string): string {
+    const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
+    if (normalized.includes('gross issued invoice totals before sales returns')) {
+      return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات، شاملًا الضريبة المسجلة', 'Gross issued invoice totals before sales returns; stored tax included');
+    }
+    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') {
+      return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات', 'Gross issued invoice total');
+    }
+    if (normalized === 'issued invoices' || normalized === 'issued invoice total') {
+      return this.t('إجمالي الفواتير الصادرة', 'Issued invoice total');
+    }
+    return value;
+  }
+
+  integrityWarningLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    if (normalized.startsWith('this report identifies records for manual review only.')) {
+      return this.t('هذا التقرير يحدد السجلات التي تحتاج مراجعة بشرية فقط. لا يخمّن روابط العملاء ولا يعدّل الفواتير أو المدفوعات أو التخصيصات.', 'This report identifies records for human review only. It does not guess customer links or modify invoices, payments, or allocations.');
+    }
+    if (normalized === 'manual review only' || normalized === 'report is for manual review only') {
+      return this.t('هذا التقرير للمراجعة البشرية فقط، ولا يغيّر البيانات تلقائيًا.', 'This report is for human review only and does not change data automatically.');
+    }
+    return value;
+  }
+
+  reportLimitationLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    const known: Record<string, { ar: string; en: string }> = {
+      'manual review only': { ar: 'للمراجعة البشرية فقط', en: 'Manual review only' },
+      'report is read-only': { ar: 'التقرير للقراءة فقط', en: 'Report is read-only' },
+      'amounts are separated by currency': { ar: 'تُعرض المبالغ منفصلة حسب العملة', en: 'Amounts are separated by currency' },
+      'uses saved tax totals on issued invoices; it does not recalculate historical taxes.': { ar: 'يعتمد على قيم الضرائب المحفوظة في الفواتير الصادرة ولا يعيد حساب الضرائب التاريخية.', en: 'Uses saved tax totals on issued invoices; it does not recalculate historical taxes.' },
+      'currency totals are kept separate and are not converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are not converted.' },
+      'this is an operational summary, not a jurisdiction-specific tax filing.': { ar: 'هذا ملخص تشغيلي وليس إقرارًا ضريبيًا رسميًا خاصًا بجهة ضريبية.', en: 'This is an operational summary, not a jurisdiction-specific tax filing.' },
+      'revenue is based on issued invoice totals, not cash collected.': { ar: 'يُحسب الإيراد من إجمالي الفواتير الصادرة، وليس من النقد المحصّل.', en: 'Revenue is based on issued invoice totals, not cash collected.' },
+      'invoice totals include stored tax amounts; approved sales returns are not netted from this figure.': { ar: 'تشمل إجماليات الفواتير الضرائب المسجلة، ولا تُخصم المرتجعات المعتمدة من هذا الرقم.', en: 'Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.' },
+      'this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.': { ar: 'تُخصم المصروفات المسجلة فقط، ولا تُحتسب تكلفة البضاعة لأن تكلفة شراء المنتجات غير مرتبطة بالمبيعات بعد.', en: 'This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.' },
+      'tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.': { ar: 'لا يعرض التقرير معالجة الالتزام الضريبي وتوزيع الضريبة على المرتجعات كسجل محاسبي متكامل.', en: 'Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.' },
+      'currency totals are kept separate and are never converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are never converted.' },
+      'only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.': { ar: 'تظهر الفواتير الصادرة ذات الرصيد المتبقي الموجب فقط في فئات الأعمار؛ وتُستبعد المسودات والفواتير الملغاة.', en: 'Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.' },
+      'fully settled invoices are excluded from open receivables aging.': { ar: 'تُستبعد الفواتير المسددة بالكامل من أعمار المديونيات المفتوحة.', en: 'Fully settled invoices are excluded from open receivables aging.' },
+      'overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.': { ar: 'تُستبعد الفواتير ذات التخصيص الزائد من أرصدة المديونيات وتظهر ضمن تحذيرات جودة البيانات.', en: 'Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.' },
+      'invoices without due dates are reported separately and are not assumed current.': { ar: 'تُعرض الفواتير بلا تاريخ استحقاق بشكل منفصل ولا تُعتبر مستحقة حاليًا افتراضيًا.', en: 'Invoices without due dates are reported separately and are not assumed current.' },
+      'legacy invoices without customer links are flagged for review, not auto-corrected.': { ar: 'تُعلَّم الفواتير القديمة التي لا ترتبط بعميل للمراجعة ولا يتم تصحيحها تلقائيًا.', en: 'Legacy invoices without customer links are flagged for review, not auto-corrected.' },
+      'currency-mismatched allocations are listed as warnings and never reduce receivables.': { ar: 'تظهر التخصيصات ذات العملات المختلفة كتحذيرات ولا تقلل المديونيات.', en: 'Currency-mismatched allocations are listed as warnings and never reduce receivables.' },
+      'this is an accounts-receivable aging report, not net profit or a full general ledger.': { ar: 'هذا تقرير لأعمار المديونيات وليس تقرير صافي أرباح أو دفتر أستاذ عام متكامل.', en: 'This is an accounts-receivable aging report, not net profit or a full general ledger.' }
+    };
+    return known[normalized]?.[this.language] || value;
   }
 
   invoiceStatusLabel(status: string): string {
@@ -2254,6 +2499,7 @@ export class AppComponent implements OnInit {
       return englishAuthMessages[code] || authMessages[code];
     }
     if (/AI chat is not configured/i.test(message)) return this.t('المساعد الذكي غير مفعّل على الخادم بعد. يلزم ضبط OPENAI_API_KEY في إعدادات Environment Variables لمشروع ai-business-assistant-api على Vercel ثم إعادة النشر. لم أضف مفتاحًا أو خدمة مدفوعة من دون موافقتك.', 'The AI assistant is not enabled on the backend yet. Set OPENAI_API_KEY in the ai-business-assistant-api Vercel project environment variables, then redeploy. No key or paid service was added without your approval.');
+    if (/timed out/i.test(message)) return this.t('انتهت مهلة التحقق من إعدادات التطبيق أو جلسة الدخول. تحقق من الاتصال ثم اضغط «إعادة المحاولة».', 'App configuration or sign-in verification timed out. Check your connection, then choose Retry.');
     if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
       if (context === 'auth') return this.t('تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وتفعيل تسجيل الدخول بالبريد وكلمة المرور وإضافة نطاق الموقع إلى النطاقات المصرح بها في Firebase.', 'Could not reach Firebase Authentication. Check your internet, enable Email/Password sign-in, and authorize this site domain in Firebase.');

@@ -86,10 +86,60 @@ jobs:
           path: /tmp/alembic-upgrade.sql
           destination: alembic-upgrade.sql
 
-  frontend-quality:
+  frontend-unit-tests:
     docker:
       - image: cimg/node:22.12
     resource_class: medium
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Verify Node runtime and install frontend dependencies
+          command: |
+            set -euo pipefail
+            node --version
+            npm --version
+            cd frontend
+            npm install --no-audit --no-fund
+      - run:
+          name: Run frontend unit and source regression tests
+          command: |
+            set -euo pipefail
+            cd frontend
+            npm test
+
+  frontend-production-build:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: medium
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Verify Node runtime and install frontend dependencies
+          command: |
+            set -euo pipefail
+            node --version
+            npm --version
+            cd frontend
+            npm install --no-audit --no-fund
+      - run:
+          name: Generate build metadata
+          command: |
+            set -euo pipefail
+            cd frontend
+            npm run prebuild
+      - run:
+          name: Compile optimized production frontend
+          command: |
+            set -euo pipefail
+            cd frontend
+            npx ng build
+
+  frontend-dependency-audit:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: small
     working_directory: ~/project
     steps:
       - checkout
@@ -107,12 +157,6 @@ jobs:
             set -o pipefail
             cd frontend
             npm audit --audit-level=high 2>&1 | tee /tmp/npm-audit.txt
-      - run:
-          name: Run frontend tests and production build
-          command: |
-            set -euo pipefail
-            cd frontend
-            npm run build
       - store_artifacts:
           path: /tmp/npm-audit.txt
           destination: npm-audit.txt
@@ -197,13 +241,17 @@ workflows:
   verify-all-changes:
     jobs:
       - backend-accounting
-      - frontend-quality
+      - frontend-unit-tests
+      - frontend-production-build
+      - frontend-dependency-audit
       - frontend-browser-smoke
       - backend-container
       - all-checks-passed:
           requires:
             - backend-accounting
-            - frontend-quality
+            - frontend-unit-tests
+            - frontend-production-build
+            - frontend-dependency-audit
             - frontend-browser-smoke
             - backend-container
 
