@@ -1,50 +1,75 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after #272/#273)
+# Current prioritized work queue — 2026-10-28 (live checkpoint after PR #274 and EMP-PAY-001 kickoff)
 
-> This opening section is the canonical live queue. Historical sections below are retained as history and must not override the live evidence here.
+> This opening section is the canonical live queue. Historical sections below are retained as history and must not override newly observed evidence.
 
 ## Current verified repository state
 
-- **Main SHA:** `805ba5ec8ab7865c49cc8bcfbd6d8f15418ed923` (PR #272 security regression and PR #273 task-ledger refresh merged after #264/#271).
-- **PR inventory at last paginated snapshot:** **234 PR records** — **122 merged**, **109 closed-unmerged**, **3 open** (#261 and #270 are superseded Drafts retained for history; #274 customer CSV import is active with CI running).
-- **Branch inventory:** **242 branches** including the newly created status-refresh branch; this count is a snapshot, and opening this PR will add one PR record.
-- **Closed-unmerged audit:** PR #264 documents evidence-based dispositions for **109/109** closed-unmerged PRs. This does not mean those historical PRs should be merged wholesale.
-- **PR #272** merged at `34fc4188a61c0e48088ec90419979ca418f9c460`. Exact head checks were 7/7 success; adds foreign-business purchase-order approval denial and no-side-effect assertions.
-- **PR #273** merged at `805ba5ec8ab7865c49cc8bcfbd6d8f15418ed923`. Exact-head CircleCI aggregate and substantive contexts passed; refreshes the live reconciliation ledger.
-- **PR #274** remains open, Draft, and mergeable after a fresh head was pushed. Current head `5682e7dc174464ea39ea0f27278e5ed7a0a970a5`: frontend unit tests and dependency audit passed; backend accounting, backend container, production build and browser smoke are still pending. Do not merge until exact-head checks complete and pass.
-- **Branch cleanup:** NOT RUN / BLOCKED. The connected GitHub integration exposes branch listing/creation/update but no branch-delete operation; remote desktop is offline. No branches were deleted. Do not emulate deletion by moving refs.
-- **Production:** no deployment was triggered by #272/#273. Production release 1.3.4 was verified earlier, but current-main post-merge API smoke and deployment state must be rechecked before claiming latest-main production verification.
-- **Remaining gates:** finish #274 exact-head CI and merge only if green; diagnose #261's unresolved backend-accounting failure if it is not fully superseded; keep #270 as superseded Draft; perform merged-branch cleanup only through an authorized delete-capable GitHub UI/CLI/integration; authenticated production workflows and physical mobile/accessibility QA remain NOT RUN; PostgreSQL restore drill remains BLOCKED pending an approved non-production target.
+- **Main SHA:** `84000ed6a1d2459dedca6296008563dab1147bd8`.
+- **PR #274:** merged to `main` at the SHA above. Observed CircleCI contexts for this main SHA were 7/7 successful: backend accounting, frontend unit tests, frontend production build, frontend dependency audit, frontend browser smoke, backend container, and aggregate.
+- **Main commit checks:** the five GitHub Actions check-runs observed for this SHA (build, backend, frontend, JavaScript dependency audit, Python dependency audit) all reported success.
+- **Web/API deployment checks:** both Vercel status contexts for this SHA reported “Deployment has completed”. This is deployment-status evidence only; authenticated production workflows and post-deploy user-journey smoke tests remain **NOT RUN**.
+- **Current open PRs observed:** #261 and #270. Preserve their work; #270 is already documented as superseded. Do not combine them with the employee feature.
+- **EMP-PAY-001:** GitHub issue [#277](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) created. Work branch: `feat/employee-payroll-management`, created from the main SHA above. All employee/payroll files, tests and tracking are being kept on this one branch.
+- **Latest employee branch head at last check:** `6fe63df4454b936fc10d6dab3b169da293db0683`. CircleCI/GitHub checks were still running at the last poll; no latest-head green result is claimed yet.
+- **CI issue found and addressed:** the first frontend test run on earlier head `a2bb03c5ee6893a16ccfc017304e55b31954c902` showed 61 passed / 2 failed because the existing mobile navigation tests expected the old More-menu list. The tests were updated to include the new employee destination. Rerun on the latest head is required before acceptance.
+- **Branch cleanup:** no branches deleted. The connected GitHub integration does not expose an authorized branch-delete operation, and the connected Desktop Commander device is offline. Do not emulate deletion by moving refs.
+- **Production:** this employee feature has **not** been deployed. No production deployment is authorized by this task.
 
 ## Next actions
 
-1. Poll #274 exact-head CircleCI and GitHub checks; fix failures before considering merge.
-2. Requery main SHA, PR/branch inventory and production web/API health after merges.
-3. Delete only branches whose merged PR and current branch head are verified, once a delete-capable authorized route is available. Preserve open-PR branches and any orphan/mismatched branch pending owner review.
+1. Verify latest-head CircleCI and GitHub checks; inspect/fix any remaining backend, migration, Angular build, or browser-smoke failures on the same branch.
+2. Open one focused Draft PR linked to issue #277 and inspect the complete changed-file list/diff.
+3. Update this task ledger with exact-head CI evidence; merge only if the required checks and review policy are satisfied. Keep production deployment out of scope absent separate authorization.
+
+---
 
 ## Employee & payroll feature — EMP-PAY-001 (P1)
 
-**Owner/branch:** Engineering coordinator — `feat/employee-payroll-management` (single work branch for the entire feature).
-**Baseline:** created from main SHA `84000ed6a1d2459dedca6296008563dab1147bd8` after checking the current repository ref, open PRs, branch inventory, source tree, `AGENTS.md`, `README.md`, `.circleci/config.yml`, and the existing task ledger.
-**Goal:** Deliver a business-scoped employee directory and a secure payroll workflow in the existing Angular + FastAPI + PostgreSQL architecture. No production deployment is authorized by this task.
+**GitHub issue:** [#277 — Employee directory and payroll workflow](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277)  
+**Owner/branch:** Engineering coordinator — `feat/employee-payroll-management` (single work branch for the entire feature).  
+**Base:** main SHA `84000ed6a1d2459dedca6296008563dab1147bd8`.  
+**Goal:** Business-scoped employee management and secure monthly payroll using Angular + FastAPI + PostgreSQL. Production deployment is not authorized.
 
-### Repository evidence gathered before implementation
-- No `Employee` or `Payroll` SQLAlchemy model, migration, or dedicated API routes were found in the current source tree.
-- Existing business identities are represented by `BusinessMembership` and the current role model is `OWNER` / `STAFF`; platform-user administration is a separate global feature and must not be reused as the business employee directory.
-- Existing app architecture uses SQLAlchemy/Alembic, FastAPI, Pydantic, Angular 20, and the configured CircleCI workflow. Current source has no employee/payroll endpoint or tests.
-- Financial amounts must remain `Decimal`, scoped by `business_id`, and use the business currency without implicit currency conversion.
+### Baseline evidence
+- Main source initially had no `Employee` / `PayrollRecord` models, migration, or employee/payroll API routes.
+- Workspace user access uses `BusinessMembership` and `OWNER` / `STAFF`; the employee directory is kept separate from login membership and Platform Admin.
+- Existing stack: SQLAlchemy/Alembic, FastAPI/Pydantic, Angular 20, and configured CircleCI workflow.
+- Money uses `Decimal`, values are scoped by `business_id`, and salary uses the business currency. Tax/insurance/statutory rules are not guessed.
 
-### Ordered subtasks and acceptance criteria
-1. **EMP-PAY-001.1 — Discovery and architecture** — **VERIFIED**. Confirmed the source baseline, authorization patterns, data model, migrations, existing tests, frontend API service, CI commands, and absence of employee/payroll domain models/routes.
-2. **EMP-PAY-001.2 — Employee persistence and API** — **IN PROGRESS**. Add a business-scoped employee entity and owner-only list/create/update/deactivate operations; validate identity-like fields, reject duplicates within a business, audit changes, and prove cross-business IDs cannot be accessed.
-3. **EMP-PAY-001.3 — Payroll records and calculation** — **PENDING**. Add period-specific payroll records with exact decimal base pay, allowances, bonuses, deductions, server-calculated non-negative net pay, and unique employee/business/period constraints. Do not invent tax, insurance, or statutory calculations.
-4. **EMP-PAY-001.4 — Payroll lifecycle and accounting** — **PENDING**. Enforce the owner-only payroll workflow and one-time payment posting. Link the paid payroll to a single `Payroll` expense so reporting does not double-post or silently create duplicate expenses; maintain audit evidence and transaction safety.
-5. **EMP-PAY-001.5 — Angular employee/payroll UI** — **PENDING**. Add directory and profile forms, period/payroll creation and review, calculation breakdown, explicit payment state, responsive mobile layout, and Arabic/English labels consistent with current conventions.
-6. **EMP-PAY-001.6 — Tests and security review** — **PENDING**. Cover validation, exact calculations and rounding, duplicate employee/period rejection, tenant isolation, OWNER-positive / STAFF-denied authorization, no side effects on denial/failure, duplicate payment prevention, and existing accounting/report regressions.
-7. **EMP-PAY-001.7 — CI and delivery** — **PENDING**. Run applicable backend pytest, Alembic validation, frontend unit tests/build, dependency audit, browser smoke, and container checks through the configured CircleCI pipeline. Review the final diff, open one focused PR, and merge only when checks pass on its exact head and repository gates permit it. Do not deploy to production without separate explicit authorization.
+### Ordered tasks and current status
+1. **EMP-PAY-001.1 — Discovery and architecture — VERIFIED.** Inspected repository tree, `AGENTS.md`, `README.md`, `TASKS.md`, CircleCI configuration, domain models, auth, API route patterns, Angular API client and UI conventions.
+2. **EMP-PAY-001.2 — Employee persistence and API — IMPLEMENTED / CI PENDING.** Added `Employee`, migration schema, owner-only list/create/update/deactivate endpoints, normalized email/code, uniqueness checks, and audit events.
+3. **EMP-PAY-001.3 — Payroll records and calculation — IMPLEMENTED / CI PENDING.** Added period-specific `PayrollRecord`, exact money columns/constraints, server-side base + allowances + bonuses − deductions calculation, and unique employee/business/period enforcement.
+4. **EMP-PAY-001.4 — Approval and accounting lifecycle — IMPLEMENTED / CI PENDING.** Draft editing, separate-owner approval (creator cannot self-approve), payment only after approval, one linked `Payroll` expense created transactionally, and duplicate payment rejection.
+5. **EMP-PAY-001.5 — Angular employee/payroll UI — IMPLEMENTED / CI PENDING.** Added standalone responsive bilingual `EmployeePayrollComponent`, employee directory/search/edit/deactivate, monthly draft/edit/approve/pay workflows, and mobile More-menu entry for Owners. Workspace changes clear salary-specific UI state.
+6. **EMP-PAY-001.6 — Tests/security review — ADDED / CI PENDING.** Added 7 backend API tests and 4 frontend UI/API/release-guide tests, and updated 2 existing mobile-navigation/expense-navigation expectations after CI proved they still asserted the old More-menu list. The first observed frontend run on an earlier head reported 61 passed / 2 failed; those failures were test expectations for the new navigation item. Latest-head rerun is still required.
+7. **EMP-PAY-001.7 — CI, review, and delivery — IN PROGRESS.** Latest observed branch head `6fe63df4454b936fc10d6dab3b169da293db0683`; latest CI was pending/in progress when checked. Open one focused Draft PR, inspect every changed file, wait for exact-head checks, update this ledger from observed CI, and merge only after checks/review policy allow it. No deployment.
 
-**Security decisions:** Employee/payroll records are business-scoped, not platform-admin records. Initial access is OWNER-only until a distinct employee self-service identity/permission policy is designed and tested. Never trust client-supplied `net_pay`, payment status, business ID ownership, or caller role. Do not delete historical payroll or employees with financial history; deactivate instead.
+### Security and data-integrity decisions
+- Employee/payroll records are business-scoped, not Platform Admin or login membership records.
+- Employee and payroll endpoints require server-side `OWNER` authorization; `STAFF` cannot read salary or mutate payroll.
+- All employee/payroll lookups include the selected `business_id`; composite database constraints prevent cross-business employee/expense links.
+- The client cannot set `net_pay` or payroll/payment state; backend computes totals and validates lifecycle transitions.
+- A payroll record is unique per employee/business/period; duplicate payment is rejected.
+- Payment creates exactly one linked Payroll expense in the same database transaction; audit records are written for employee/payroll state changes.
+- Historical employees are deactivated rather than deleted. No tax, insurance, or statutory calculation is invented.
 
-**Current status:** Discovery verified; implementation not yet validated. Local clone attempt was unavailable because the execution environment could not resolve `github.com`; rely on exact-head CI for authoritative test execution and record any unavailable checks honestly.
+### Changed files so far
+- `TASKS.md`
+- `backend/app/models.py`
+- `backend/app/main.py`
+- `backend/app/employee_payroll_api.py`
+- `backend/migrations/versions/0005_employee_payroll.py`
+- `backend/tests/test_employee_payroll_api.py`
+- `frontend/src/app/api.service.ts`
+- `frontend/src/app/app.component.ts`
+- `frontend/src/app/employee-payroll.component.ts`
+- `frontend/src/app/employee-payroll-ui.spec.ts`
+- `frontend/src/app/expense-ui.spec.ts`
+- `frontend/src/app/mobile-navigation.spec.ts`
+- `frontend/src/app/release-guide.ts`
+
+**Local validation:** **NOT RUN** — the provided execution environment could not resolve `github.com`, and the connected Desktop Commander device is offline. CircleCI/GitHub checks are the authoritative validation path; never label the feature VERIFIED until the exact PR head passes.
 
 ---
 
