@@ -1292,3 +1292,12 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - PR #246 remains Draft at this checkpoint; reviewers may inspect the change. The CircleCI aggregate is not included on this branch's current main base because it is defined in independent PR #238; do not copy unrelated CI configuration into this build fix.
 - Vercel preview deployment for this branch was **NOT FOUND** in the deployment listing, and a production deploy was **NOT RUN**. The historical main production Web build failure is confirmed by logs, but successful production behavior remains unverified until a suitable preview/release build passes.
 - This entry itself changes the candidate SHA. Re-run and verify the four CircleCI contexts on the resulting exact head before treating the candidate as merge-ready. No production data/configuration/aliases changed.
+
+
+## Release 1.3.3 — build-root fix and version alignment — 2026-10-28
+
+- Status: IN_PROGRESS — candidate branch `chore/release-1.3.3-20261028` based on main merge SHA `2c7857c1663856b0e70475c3152b551e9693f814`.
+- Reason: production Web deployment on previous main failed because release-guide.spec.ts assumed a nested `frontend/package.json`; PR #246 fixed that path and was merged after CircleCI 4/4 PASS and Vercel Preview PASS.
+- Version bump candidate: align frontend package, backend package/API version, build-info fallback, PWA service-worker fallback cache, bilingual in-app release history, release-history docs, and cross-file version tests at `1.3.3`.
+- Required validation: exact-head CircleCI frontend-quality (tests/build), frontend-browser-smoke, backend-container, backend-accounting; Vercel preview/build for the candidate; then review/merge and verify production deployment SHA, `/version`, `/health`, `/readyz`, and frontend smoke.
+- This task-ledger entry is written before the final release-branch commit and does not claim the candidate is tested, merged, or deployed. Production checks are pending.
