@@ -153,3 +153,7 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - Local execution: **NOT RUN** (no local repository checkout/runtime available). GitHub Actions checks report failures but log download returned `404 BlobNotFound`; cause remains unverified.
 - No production deployment, identity configuration, or production data mutation was performed.
 - Production readiness remains **NO-GO / NOT VERIFIED** until PostgreSQL concurrency evidence passes, WCAG 2.2 AA keyboard/screen-reader/mobile checks are completed, authenticated Admin smoke is run with authorization, and Web/API deployed SHA parity is established.
+
+
+- Latest observed CI checkpoint before this documentation commit: candidate `70933ee7d378e473b5798e3874af0c5fb98056ed` had CircleCI backend-container **PASS** (1225), frontend-quality **PASS** (1227), backend-accounting **FAIL** (1226), frontend-browser-smoke **PENDING** (1228). PR remains Draft.
+- The backend-accounting run's detailed output is inaccessible through available connectors; a CircleCI page open returned an access error, and GitHub Actions job-log downloads returned `404 BlobNotFound`. Root cause is **UNVERIFIED**. Do not make speculative code changes or merge until the actual failure details are available. The next documentation commit changes the candidate SHA and requires a fresh exact-head check.
