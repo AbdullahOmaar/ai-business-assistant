@@ -36,6 +36,19 @@ test('employee/payroll styles are component-local and responsive instead of rely
   assert.match(component, /@media\(max-width:760px\)/);
 });
 
+test('a successful payroll payment refreshes the workspace expense list and dashboard', () => {
+  assert.match(component, /@Output\(\) payrollPaid = new EventEmitter<void>\(\)/);
+  const payStart = component.indexOf('async payPayroll(');
+  assert.ok(payStart >= 0);
+  assert.match(component.slice(payStart), /this\.payrollPaid\.emit\(\)/);
+  assert.match(app, /\(payrollPaid\)="refreshAfterPayrollPayment\(\)"/);
+  const refreshStart = app.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
+  assert.ok(refreshStart >= 0);
+  const refresh = app.slice(refreshStart, refreshStart + 1200);
+  assert.match(refresh, /this\.api\.expenses\(businessId\)/);
+  assert.match(refresh, /this\.api\.dashboard\(businessId\)/);
+});
+
 test('employee and payroll client methods use business-scoped API paths and never accept a client net-pay value', () => {
   assert.match(api, /employees\(businessId: string\): Promise<EmployeeRecord\[]>/);
   assert.match(api, /createEmployee\(businessId: string/);
