@@ -222,7 +222,23 @@ export class EmployeePayrollComponent implements OnChanges {
   constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['businessId'] && this.businessId) void this.loadEmployeesAndPayroll();
+    if (changes['businessId'] && this.businessId) {
+      // Clear every workspace-scoped salary value before loading the next workspace.
+      this.loadSequence++;
+      this.employees = [];
+      this.payrollRecords = [];
+      this.clearEmployeeForm();
+      this.cancelPayrollEdit();
+      this.employeeSearch = '';
+      this.payrollEmployeeId = '';
+      this.payrollFilterPeriod = '';
+      this.payrollPeriod = this.currentPeriod();
+      this.operationId = '';
+      this.busy = false;
+      this.error = '';
+      this.message = '';
+      void this.loadEmployeesAndPayroll();
+    }
   }
 
   t(arabic: string, english: string): string {
@@ -462,9 +478,14 @@ export class EmployeePayrollComponent implements OnChanges {
       this.message = this.t('تم اعتماد المرتب.', 'Payroll approved.');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
-      if (this.businessId === businessId) this.error = this.errorMessage(error);
+      if (this.businessId === businessId) {
+        const failure = this.errorMessage(error);
+        // A timeout may occur after the transaction committed; reload to reconcile the visible status.
+        await this.loadEmployeesAndPayroll();
+        if (this.businessId === businessId) this.error = failure;
+      }
     } finally {
-      if (this.businessId === businessId) this.operationId = '';
+      if (this.operationId === record.id) this.operationId = '';
     }
   }
 
@@ -479,9 +500,14 @@ export class EmployeePayrollComponent implements OnChanges {
       this.message = this.t('تم تسجيل الصرف وربطه بمصروف رواتب واحد.', 'Payment recorded and linked to one Payroll expense.');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
-      if (this.businessId === businessId) this.error = this.errorMessage(error);
+      if (this.businessId === businessId) {
+        const failure = this.errorMessage(error);
+        // A lost response must not make the UI imply that the payment did not happen.
+        await this.loadEmployeesAndPayroll();
+        if (this.businessId === businessId) this.error = failure;
+      }
     } finally {
-      if (this.businessId === businessId) this.operationId = '';
+      if (this.operationId === record.id) this.operationId = '';
     }
   }
 }
