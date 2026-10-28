@@ -72,12 +72,12 @@ def postgres_membership_client():
         if business_id is not None:
             with factory() as session:
                 session.query(AuditEvent).filter(
-                    AuditEvent.business_id == UUID(business_id)
+                    AuditEvent.business_id == business_id
                 ).delete(synchronize_session=False)
                 session.query(BusinessMembership).filter(
-                    BusinessMembership.business_id == UUID(business_id)
+                    BusinessMembership.business_id == business_id
                 ).delete(synchronize_session=False)
-                session.query(Business).filter(Business.id == UUID(business_id)).delete(
+                session.query(Business).filter(Business.id == business_id).delete(
                     synchronize_session=False
                 )
                 session.commit()
