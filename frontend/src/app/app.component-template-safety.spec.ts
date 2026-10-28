@@ -68,6 +68,12 @@ test('audit actions and record types have Arabic display labels', () => {
   assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
 
+test('workspace header keeps business name, selector, and release time in separate responsive grid cells', () => {
+  assert.match(source, /\.workspace-bar\{display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)/);
+  assert.match(source, /@media\(max-width:760px\)\{\s*\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);align-items:stretch/);
+  assert.match(source, /\.workspace-release-meta-inline \.version-pill\{max-width:100%;white-space:normal;overflow-wrap:anywhere\}/);
+});
+
 test('responsive sizing rules keep numeric invoice fields compact and cards within mobile width', () => {
   assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
