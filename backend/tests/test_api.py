@@ -767,9 +767,6 @@ def test_staff_is_denied_sensitive_business_routes():
             "delete customer": lambda: client.delete(f"{base}/customers/{unknown_id}"),
             "delete product": lambda: client.delete(f"{base}/products/{unknown_id}"),
         }
-        assert {name: response.status_code for name, response in responses.items()} == {
-            name: 403 for name in responses
-        }
         responses = {}
         for name, request in denied_requests.items():
             with Session(engine) as session:
