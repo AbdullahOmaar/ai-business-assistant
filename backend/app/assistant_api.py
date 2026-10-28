@@ -197,7 +197,6 @@ async def chat(
         for row in expense_rows:
             currency = row["currency"]
             expenses_by_currency[currency] = expenses_by_currency.get(currency, Decimal("0")) + Decimal(row["amount"])
-            source_ids.append(row["source_id"])
 
         def money_summary(values: dict[str, Decimal]) -> str:
             return "، ".join(
