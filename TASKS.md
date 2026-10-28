@@ -1289,3 +1289,12 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - Validation in the persistent isolated sandbox, using disposable PostgreSQL 16 and the PR test file: before fix, test body passed but teardown errored; after fix, **1 passed**. This sandbox application snapshot is not a clean checkout of the exact PR SHA, so it is diagnostic evidence, not exact-head release verification.
 - Fix commit: `addc50f1a6e2dfd792b50b608bc52fec85c8010c`. PR #238 CircleCI contexts were pending immediately after this commit; exact-head CI must finish before the blocker can be closed. GitHub Actions logs remain inaccessible and should not be treated as application failures without evidence.
 - PR remains Draft; no merge or production deployment.
+
+
+## ADM-06 exact-head verification refresh — 2026-10-28 01:14 UTC
+
+- PR #238 head at the start of this refresh: `df9af849b9dea593c9091107573341af956e9f73`.
+- CircleCI on that exact head: backend-container PASS (1241), backend-accounting PASS (1242), frontend-quality PASS (1243), frontend-browser-smoke PASS (1244). The PostgreSQL UUID cleanup fix is therefore covered by all four CircleCI contexts on this candidate.
+- GitHub Actions still conclude failure on this head: Backend tests run 680 (`40610971892`), Verify backend container run 818 (`40610971845`), Verify backend and frontend run 1396 (`40610971859`), and Dependency security scan run 1097 (`40610971928`). The connector returns empty job step summaries and log downloads fail with HTTP 404 `BlobNotFound`; root causes remain UNVERIFIED. No Actions rerun was started because the recorded runner allowance is exhausted.
+- PR #238 remains OPEN + DRAFT; no review submissions are recorded. Branch protection/review rules remain UNVERIFIED due prior integration HTTP 403. Local exact-head tests, authenticated Admin production smoke, WCAG 2.2 AA validation, and deployment SHA parity remain NOT RUN / NOT VERIFIED.
+- Decision: do not merge or deploy. Continue only when GitHub Actions failure details and required review/protection gates are accessible. No production data/configuration/deployment changed.
