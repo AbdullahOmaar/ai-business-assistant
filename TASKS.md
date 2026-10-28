@@ -1,19 +1,19 @@
-# Current prioritized work queue — 2026-10-28 (refreshed after verified security/audit merges)
+# Current prioritized work queue — 2026-10-28 (live reconciliation checkpoint)
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (audit complete; production verified)
+## Reconciliation checkpoint — latest verified repository snapshot
 
-- PR #264 documents evidence-based dispositions for **109/109 closed-unmerged PRs**; this does not mean all 109 should be merged.
-- Latest paginated inventory: **237 branches**, **230 PR records** (118 merged, 109 closed-unmerged, 3 open: #270, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; all have source/test-based dispositions in the reconciliation ledger.
-- PR #268 merged at `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after CircleCI 7/7 PASS (Platform Admin mobile keyboard/viewport E2E). Physical-device/screen-reader QA remains NOT RUN.
-- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS (safe PostgreSQL restore runbook). Actual restore remains NOT RUN/BLOCKED pending an approved non-production target.
-- PR #267 merged at `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d` after CircleCI 7/7 plus GitHub build/test/dependency checks. It validates payment allocations before creating Payment rows and adds foreign-tenant no-side-effect regressions.
-- Production verification on main `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`: CircleCI **7/7 PASS**, Vercel Web/API success; `/version`, `/health`, `/readyz`, web root, manifest and service worker returned HTTP 200. Production version is **1.3.4**, commit `9fc9a9a53ef1`; SW cache `aba-shell-v1.3.4-9fc9a9a53ef1`.
-- PR #261 was marked Draft/superseded by merged #267; its old backend-accounting failure root cause remains unverified due inaccessible logs. Do not merge the stale duplicate.
-- PR #270 is an earlier partial audit snapshot, marked superseded by #264 and left Draft/open.
-- PR #264 latest exact-head CircleCI passed 7/7; GitGuardian was still in progress at the last poll. The latest ledger update requires fresh exact-head checks before merge.
-- Remaining independent gates: authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED pending approved non-production target. No production deployment is authorized by this audit PR.
+- **Current main:** `8fc353b4a0ba6e03367b45c15329cedd64d1a528` (PR #264 and PR #271 merged).
+- **Paginated PR inventory:** **231 PR records** = **120 merged**, **109 closed-unmerged**, **2 open** (#270 superseded audit snapshot, #261 foreign-tenant test retained Draft because its backend-accounting failure is unresolved).
+- **Branch inventory:** **238 branches** (237 non-main). **Branch cleanup NOT RUN**: the connected GitHub integration exposes branch reads and creation but no branch-delete operation; the available remote desktop is offline. No branches were deleted.
+- **PR #264** merged at `8fc353b4a0ba6e03367b45c15329cedd64d1a528`: reconciliation ledger documents semantic dispositions for **109/109 closed-unmerged PRs**, plus 11 orphan branches and 10 branch/PR head-SHA mismatches. This is an audit disposition, not a recommendation to merge historical PRs wholesale.
+- **PR #271** merged at `b53f7950c2185679efff900611317c6077f99838`: API regression proves STAFF cannot approve a purchase order without side effects and OWNER approval succeeds with one audit event. Exact-head CircleCI was **7/7 PASS** before merge.
+- **Post-merge validation on current main:** latest CircleCI poll is still **IN PROGRESS** (some contexts pending); Vercel Web is READY on current SHA, API deployment is BUILDING on current SHA. Do not claim latest-main release verification complete until CircleCI finishes and API deployment plus smoke checks are verified.
+- **Previously verified production version:** `1.3.4`, commit `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`; the latest main commits are audit/docs and test-only changes, but fresh post-merge API smoke remains pending.
+- **Open independent gates:** PR #261 backend-accounting failure root cause remains UNVERIFIED because CircleCI logs are inaccessible; authenticated production workflows NOT RUN; physical mobile visual/screen-reader QA NOT RUN; isolated PostgreSQL restore drill BLOCKED pending an approved non-production target.
+- **Next:** verify exact-main CircleCI and current API deployment/smoke; then continue the broader security test matrix and perform safe merged-branch cleanup once a branch-delete-capable GitHub authorization path is available.
+
 ---
 
 ## Current evidence baseline
