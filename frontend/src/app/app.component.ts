@@ -299,7 +299,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     </div>
                   }
                   @if (agingReport.invoices.length) { <div class="list">@for (invoice of agingReport.invoices; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</strong><small>{{ agingBucketLabel(invoice.aging_bucket) }} · {{ invoice.due_date || t('بدون تاريخ استحقاق', 'No due date') }}@if (invoice.customer_link_missing) { · {{ t('عميل غير مرتبط — يلزم تدقيق يدوي', 'Missing customer link — manual review required') }} }</small></div></article> }</div> }
-                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ limitation }}</p> }</div> }
+                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
                 }
               </section>
             }
@@ -1169,8 +1169,11 @@ export class AppComponent implements OnInit {
 
   revenueBasisLabel(value: string): string {
     const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
+    if (normalized.includes('gross issued invoice totals before sales returns')) {
+      return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات، شاملًا الضريبة المسجلة', 'Gross issued invoice totals before sales returns; stored tax included');
+    }
     if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') {
-      return this.t('إجمالي الفواتير الصادرة قبل الخصومات والمرتجعات', 'Gross issued invoice total');
+      return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات', 'Gross issued invoice total');
     }
     if (normalized === 'issued invoices' || normalized === 'issued invoice total') {
       return this.t('إجمالي الفواتير الصادرة', 'Issued invoice total');
@@ -1180,6 +1183,9 @@ export class AppComponent implements OnInit {
 
   integrityWarningLabel(value: string): string {
     const normalized = value.trim().toLowerCase();
+    if (normalized.startsWith('this report identifies records for manual review only.')) {
+      return this.t('هذا التقرير يحدد السجلات التي تحتاج مراجعة بشرية فقط. لا يخمّن روابط العملاء ولا يعدّل الفواتير أو المدفوعات أو التخصيصات.', 'This report identifies records for human review only. It does not guess customer links or modify invoices, payments, or allocations.');
+    }
     if (normalized === 'manual review only' || normalized === 'report is for manual review only') {
       return this.t('هذا التقرير للمراجعة البشرية فقط، ولا يغيّر البيانات تلقائيًا.', 'This report is for human review only and does not change data automatically.');
     }
@@ -1191,7 +1197,22 @@ export class AppComponent implements OnInit {
     const known: Record<string, { ar: string; en: string }> = {
       'manual review only': { ar: 'للمراجعة البشرية فقط', en: 'Manual review only' },
       'report is read-only': { ar: 'التقرير للقراءة فقط', en: 'Report is read-only' },
-      'amounts are separated by currency': { ar: 'تُعرض المبالغ منفصلة حسب العملة', en: 'Amounts are separated by currency' }
+      'amounts are separated by currency': { ar: 'تُعرض المبالغ منفصلة حسب العملة', en: 'Amounts are separated by currency' },
+      'uses saved tax totals on issued invoices; it does not recalculate historical taxes.': { ar: 'يعتمد على قيم الضرائب المحفوظة في الفواتير الصادرة ولا يعيد حساب الضرائب التاريخية.', en: 'Uses saved tax totals on issued invoices; it does not recalculate historical taxes.' },
+      'currency totals are kept separate and are not converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are not converted.' },
+      'this is an operational summary, not a jurisdiction-specific tax filing.': { ar: 'هذا ملخص تشغيلي وليس إقرارًا ضريبيًا رسميًا خاصًا بجهة ضريبية.', en: 'This is an operational summary, not a jurisdiction-specific tax filing.' },
+      'revenue is based on issued invoice totals, not cash collected.': { ar: 'يُحسب الإيراد من إجمالي الفواتير الصادرة، وليس من النقد المحصّل.', en: 'Revenue is based on issued invoice totals, not cash collected.' },
+      'invoice totals include stored tax amounts; approved sales returns are not netted from this figure.': { ar: 'تشمل إجماليات الفواتير الضرائب المسجلة، ولا تُخصم المرتجعات المعتمدة من هذا الرقم.', en: 'Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.' },
+      'this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.': { ar: 'تُخصم المصروفات المسجلة فقط، ولا تُحتسب تكلفة البضاعة لأن تكلفة شراء المنتجات غير مرتبطة بالمبيعات بعد.', en: 'This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.' },
+      'tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.': { ar: 'لا يعرض التقرير معالجة الالتزام الضريبي وتوزيع الضريبة على المرتجعات كسجل محاسبي متكامل.', en: 'Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.' },
+      'currency totals are kept separate and are never converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are never converted.' },
+      'only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.': { ar: 'تظهر الفواتير الصادرة ذات الرصيد المتبقي الموجب فقط في فئات الأعمار؛ وتُستبعد المسودات والفواتير الملغاة.', en: 'Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.' },
+      'fully settled invoices are excluded from open receivables aging.': { ar: 'تُستبعد الفواتير المسددة بالكامل من أعمار المديونيات المفتوحة.', en: 'Fully settled invoices are excluded from open receivables aging.' },
+      'overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.': { ar: 'تُستبعد الفواتير ذات التخصيص الزائد من أرصدة المديونيات وتظهر ضمن تحذيرات جودة البيانات.', en: 'Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.' },
+      'invoices without due dates are reported separately and are not assumed current.': { ar: 'تُعرض الفواتير بلا تاريخ استحقاق بشكل منفصل ولا تُعتبر مستحقة حاليًا افتراضيًا.', en: 'Invoices without due dates are reported separately and are not assumed current.' },
+      'legacy invoices without customer links are flagged for review, not auto-corrected.': { ar: 'تُعلَّم الفواتير القديمة التي لا ترتبط بعميل للمراجعة ولا يتم تصحيحها تلقائيًا.', en: 'Legacy invoices without customer links are flagged for review, not auto-corrected.' },
+      'currency-mismatched allocations are listed as warnings and never reduce receivables.': { ar: 'تظهر التخصيصات ذات العملات المختلفة كتحذيرات ولا تقلل المديونيات.', en: 'Currency-mismatched allocations are listed as warnings and never reduce receivables.' },
+      'this is an accounts-receivable aging report, not net profit or a full general ledger.': { ar: 'هذا تقرير لأعمار المديونيات وليس تقرير صافي أرباح أو دفتر أستاذ عام متكامل.', en: 'This is an accounts-receivable aging report, not net profit or a full general ledger.' }
     };
     return known[normalized]?.[this.language] || value;
   }
