@@ -447,6 +447,11 @@ def approve_payroll(
             raise HTTPException(status_code=404, detail="Payroll record not found")
         if record.status != "draft":
             raise HTTPException(status_code=409, detail="Only draft payroll can be approved.")
+        if record.created_by_subject == principal.subject:
+            raise HTTPException(
+                status_code=409,
+                detail="Payroll must be approved by a different owner than its creator.",
+            )
         record.status = "approved"
         record.approved_by_subject = principal.subject
         record.approved_at = datetime.now(timezone.utc)
