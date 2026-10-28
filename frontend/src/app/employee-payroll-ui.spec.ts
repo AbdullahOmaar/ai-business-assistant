@@ -27,6 +27,15 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
   assert.match(component, /one linked Payroll expense/);
 });
 
+test('employee/payroll styles are component-local and responsive instead of relying on parent encapsulated CSS', () => {
+  assert.match(component, /\.employee-panel\{min-width:0;background:#fff;border:1px solid/);
+  assert.match(component, /\.primary,\.secondary\{/);
+  assert.match(component, /\.section-head\{/);
+  assert.match(component, /\.list-row\{/);
+  assert.match(component, /\.warning-notice\{/);
+  assert.match(component, /@media\(max-width:760px\)/);
+});
+
 test('employee and payroll client methods use business-scoped API paths and never accept a client net-pay value', () => {
   assert.match(api, /employees\(businessId: string\): Promise<EmployeeRecord\[]>/);
   assert.match(api, /createEmployee\(businessId: string/);
