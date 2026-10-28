@@ -202,6 +202,19 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.4',
+    titleAr: 'توحيد بيانات الإصدار وتحديث التطبيق المثبّت',
+    titleEn: 'Release metadata alignment and installed-app updates',
+    changesAr: [
+      'توحيد رقم الإصدار بين الواجهة وواجهة API ودليل الإصدارات.',
+      'تحديث معرّف ذاكرة PWA لضمان اكتشاف غلاف التطبيق الجديد بعد الإصدار.',
+    ],
+    changesEn: [
+      'Aligned frontend, API, and in-app release metadata at version 1.3.4.',
+      'Versioned the PWA shell cache so installed apps can detect the updated app shell.',
+    ],
+  },
+  {
     version: '1.3.3',
     titleAr: 'تحسين موثوقية البناء والإصدار',
     titleEn: 'Build and release reliability',
