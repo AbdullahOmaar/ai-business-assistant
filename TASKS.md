@@ -5,7 +5,7 @@
 ## Reconciliation checkpoint — 2026-10-28 (PR #264 audit complete)
 
 - PR #264 records evidence-based dispositions for **all 109/109 closed-unmerged PRs**. This is a semantic review, not a recommendation to merge them all.
-- Final 11 reviewed: #116, #114, #113, #18, #17, #16, #15, #9, #8, #5, and #1. These are superseded by current data-integrity, statement, audit, business API/domain, inventory, or accepted architecture/governance work; no unique runtime patch was identified for restoration.
+- Final 11 reviewed: #116, #114, #113, #18, #17, #16, #15, #9, #8, #5, and #1. These are superseded by current data-integrity, statement, audit, business API/domain, inventory, or accepted architecture/governance work. Separately, batch 8 found a missing payment-export-specific regression; this PR restores `frontend/src/app/payment-csv-export.spec.ts` for owner-only access, empty-state guard, required ledger fields/allocation count, and use of the shared safe serializer.
 - The earlier batch-3 table repeated #179, already included in batch 1; cumulative counts in the reconciliation document have been corrected to count unique PRs. Final count is **109 reviewed / 0 without disposition**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI six substantive jobs plus aggregate **7/7 PASS**, Vercel Web/API status contexts succeeded.
 - Remaining independent blockers are not closed-PR audit items: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, isolated PostgreSQL restore drill BLOCKED pending an approved non-production target, and reconciliation of historical inventory snapshots.
