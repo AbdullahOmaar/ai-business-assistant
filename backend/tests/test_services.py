@@ -641,3 +641,38 @@ def test_invoice_issue_aggregates_repeated_product_lines_before_stock_check(work
         assert len(movements) == 1
         assert movements[0].quantity_delta == Decimal("3.000")
         assert invoice.status == "draft"
+
+
+def test_staff_can_prepare_drafts_but_cannot_post_financials(workspace):
+    engine, business_id, owner = workspace
+    staff = AuthenticatedPrincipal(subject="staff-123")
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id, user_subject=staff.subject, role=MembershipRole.STAFF,
+        ))
+        session.flush()
+
+        customer = create_customer(
+            session, principal=staff, business_id=business_id, name="Staff customer",
+        )
+        assert customer.name == "Staff customer"
+
+        # STAFF may create ordinary catalog records; this regression targets
+        # the OWNER-only financial posting boundary, not product creation.
+        draft = create_invoice(
+            session, principal=staff, business_id=business_id,
+            customer_id=customer.id, invoice_number="STAFF-DRAFT", currency_code="EGP",
+            lines=[{"description": "Consulting", "quantity": "1", "unit_price": "10.00"}],
+        )
+        assert draft.status == "draft"
+        with pytest.raises(AuthorizationError):
+            issue_invoice(session, principal=staff, business_id=business_id, invoice_id=draft.id)
+
+        issued = issue_invoice(session, principal=owner, business_id=business_id, invoice_id=draft.id)
+        assert issued.status == "issued"
+        with pytest.raises(AuthorizationError):
+            record_payment(
+                session, principal=staff, business_id=business_id,
+                amount=Decimal("10.00"), currency_code="EGP", idempotency_key="staff-payment-1",
+                allocations=[],
+            )
