@@ -1258,3 +1258,14 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 
 ### Next action
 Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to finish, finish semantic branch review, and retry Web/API production deployment after the Vercel quota window. Delete only verified stale branches when an authorized deletion operation is available.
+
+
+## Vercel frontend release-metadata path fix — 2026-10-28
+
+- **Issue:** #245 — https://github.com/AbdullahOmaar/ai-business-assistant/issues/245
+- **Confirmed production failure:** Vercel Web deployment `dpl_2ZjjtcVeHNzrNaR3fY663CCFrKUJ` failed on source SHA `f04c0e194b3afbefb56a979a5688f80d277b3ece`. The frontend suite ran 41 tests, with 1 failure: `1.3.2 release metadata is consistent across frontend and backend` raised `ENOENT: no such file or directory, open '/vercel/frontend/package.json'`. Vercel's build events record `npm run build` exit 1; npm audit found 0 vulnerabilities.
+- **Change:** `frontend/src/app/release-guide.spec.ts` now resolves the frontend project root in both monorepo and frontend-only build layouts. Frontend package/build-info/service-worker/release history assertions always run; backend package/API version parity is additionally checked when a full-repository checkout is present, preserving the stronger CircleCI assertion.
+- **Code commit before ledger update:** `fc023ee13abc7cc7d10d33d264395d8e505b78df`. Branch: `fix/vercel-release-metadata-test-root-20261028`.
+- **Focused validation:** `node --experimental-strip-types --test src/app/release-guide.spec.ts` in the full-repository sandbox layout: **6 passed, 0 failed**. A separate frontend-only layout at `/tmp/aba-frontend-only` (no nested `frontend/` or `backend/` directory) passed **5 passed, 0 failed**; the backend parity test is correctly absent only in that deployment layout.
+- **Limits:** These are focused sandbox tests, not an exact-head CircleCI result or a completed Vercel production build. Full frontend `npm run build`, all four CircleCI jobs, aggregate check, and PR review remain **NOT RUN / PENDING** after the latest commit. No production deployment, alias change, database mutation, or paid-plan change performed.
+- **Next:** run full frontend test/build and exact-head CircleCI on the final PR head; open a focused PR only after those gates are green. Do not deploy production as part of this fix.
