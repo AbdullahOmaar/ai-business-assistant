@@ -606,7 +606,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             }
 
             @if (tab === 'employees' && business?.role === 'owner' && business) {
-              <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language"></aba-employee-payroll>
+              <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
             }
 
             @if (tab === 'expenses') {
@@ -1630,6 +1630,23 @@ export class AppComponent implements OnInit {
       }
     } finally {
       if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
+    }
+  }
+
+  async refreshAfterPayrollPayment(): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const businessId = this.business.id;
+    try {
+      const [expenses, dashboard] = await Promise.all([
+        this.api.expenses(businessId),
+        this.api.dashboard(businessId),
+      ]);
+      if (this.business?.id !== businessId) return;
+      this.expenses = expenses;
+      this.dashboard = dashboard;
+      this.profitLoss = null;
+    } catch (error) {
+      if (this.business?.id === businessId) this.error = this.message(error);
     }
   }
 
