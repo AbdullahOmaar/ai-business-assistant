@@ -318,6 +318,15 @@ def test_audit_events_are_owner_only_paginated_and_workspace_scoped():
         assert filtered.json()["total"] == 1
         assert filtered.json()["items"][0]["target_id"] == "inv-1"
 
+        with app.state.session_factory() as session:
+            session.add(BusinessMembership(
+                business_id=business_id, user_subject="audit-staff", role=MembershipRole.STAFF,
+            ))
+            session.commit()
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("audit-staff")
+        staff_denied = client.get(f"/api/v1/businesses/{business_id}/audit-events")
+        assert staff_denied.status_code == 403
+
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         denied = client.get(f"/api/v1/businesses/{business_id}/audit-events")
         assert denied.status_code == 403
@@ -810,6 +819,90 @@ def test_operational_health_is_owner_only_read_only_and_reports_missing_workers(
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         denied = client.get(f"/api/v1/businesses/{business_id}/operations/health")
         assert denied.status_code == 403
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
+    from datetime import datetime, timezone
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.models import Business, BusinessMembership, Invoice, Payment, PaymentAllocation, MembershipRole
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("aging-owner")
+    try:
+        business_id = uuid4()
+        paid_invoice_id, open_invoice_id, payment_id, allocation_id = (uuid4() for _ in range(4))
+        as_of = datetime(2026, 10, 1, tzinfo=timezone.utc)
+        with app.state.session_factory() as session:
+            session.add(Business(id=business_id, name="Aging workspace", currency_code="EGP"))
+            session.flush()
+            session.add(BusinessMembership(
+                business_id=business_id, user_subject="aging-owner", role=MembershipRole.OWNER
+            ))
+            session.add_all([
+                Invoice(
+                    id=paid_invoice_id, business_id=business_id, customer_id=None,
+                    invoice_number="AGE-31", status="issued", currency_code="EGP",
+                    issue_date=as_of, due_date=datetime(2026, 8, 30, tzinfo=timezone.utc),
+                    subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
+                    discount_total=Decimal("0.00"), total=Decimal("100.00"),
+                ),
+                Invoice(
+                    id=open_invoice_id, business_id=business_id, customer_id=None,
+                    invoice_number="AGE-NODUE", status="issued", currency_code="EGP",
+                    issue_date=as_of, due_date=None, subtotal=Decimal("50.00"),
+                    tax_total=Decimal("0.00"), discount_total=Decimal("0.00"),
+                    total=Decimal("50.00"),
+                ),
+                Payment(
+                    id=payment_id, business_id=business_id, customer_id=None,
+                    amount=Decimal("30.00"), currency_code="EGP",
+                    received_at=as_of, idempotency_key="aging-payment-1",
+                ),
+            ])
+            session.flush()
+            session.add(PaymentAllocation(
+                id=allocation_id, business_id=business_id, payment_id=payment_id,
+                invoice_id=paid_invoice_id, amount=Decimal("30.00"),
+            ))
+            session.commit()
+
+        response = TestClient(app).get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-01"
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["invoice_count"] == 2
+        assert payload["currency_policy"] == (
+            "Payment allocations reduce an invoice only when their currency matches; "
+            "different currencies are never combined."
+        )
+        rows = {item["invoice_number"]: item for item in payload["invoices"]}
+        assert rows["AGE-31"]["outstanding_amount"] == "70.00"
+        assert rows["AGE-31"]["aging_bucket"] == "31_60_days"
+        assert rows["AGE-NODUE"]["aging_bucket"] == "no_due_date"
+        assert rows["AGE-NODUE"]["customer_link_missing"] is True
+        assert payload["by_currency"][0]["total_outstanding"] == "120.00"
+        assert payload["data_quality_warnings"] == []
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
