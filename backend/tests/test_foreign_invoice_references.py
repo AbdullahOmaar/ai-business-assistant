@@ -15,6 +15,8 @@ from app.models import (
     Invoice,
     InvoiceLine,
     MembershipRole,
+    Payment,
+    PaymentAllocation,
     Product,
 )
 from app.security import AuthenticatedPrincipal
@@ -123,6 +125,106 @@ def test_foreign_business_invoice_references_fail_without_writes_or_audit_events
             "Invoice product not found in this business"
         )
         assert invoice_state() == baseline
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_payment_cannot_allocate_to_foreign_invoice_without_side_effects():
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        business = Business(name="Payment tenant", currency_code="EGP")
+        foreign_business = Business(name="Foreign payment tenant", currency_code="EGP")
+        session.add_all([business, foreign_business])
+        session.flush()
+        customer = Customer(business_id=business.id, name="Local customer")
+        foreign_customer = Customer(
+            business_id=foreign_business.id, name="Foreign customer"
+        )
+        session.add_all([customer, foreign_customer])
+        session.flush()
+        foreign_invoice = Invoice(
+            business_id=foreign_business.id,
+            customer_id=foreign_customer.id,
+            invoice_number="FOREIGN-PAYMENT-INV",
+            status="issued",
+            currency_code="EGP",
+            subtotal=Decimal("10.00"),
+            tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"),
+            total=Decimal("10.00"),
+        )
+        session.add(foreign_invoice)
+        session.add(
+            BusinessMembership(
+                business_id=business.id,
+                user_subject="test-subject",
+                role=MembershipRole.OWNER,
+            )
+        )
+        session.commit()
+        business_id = business.id
+        customer_id = customer.id
+        foreign_invoice_id = foreign_invoice.id
+
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+        subject="test-subject"
+    )
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+
+    def payment_state():
+        with Session(engine) as session:
+            return (
+                session.scalar(select(func.count()).select_from(Payment).where(
+                    Payment.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(PaymentAllocation).where(
+                    PaymentAllocation.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )),
+            )
+
+    try:
+        baseline = payment_state()
+        response = client.post(
+            base,
+            json={
+                "amount": "10.00",
+                "currency_code": "EGP",
+                "idempotency_key": "foreign-invoice-allocation",
+                "customer_id": str(customer_id),
+                "allocations": [{
+                    "invoice_id": str(foreign_invoice_id),
+                    "amount": "10.00",
+                }],
+                "method": "cash",
+            },
+        )
+        assert response.status_code == 422, response.text
+        assert response.json()["detail"] == (
+            "Payment can only be allocated to an issued invoice in this business"
+        )
+        assert payment_state() == baseline
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
