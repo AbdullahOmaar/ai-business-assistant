@@ -4,20 +4,20 @@
 
 ## Current verified repository state
 
-- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046` (PR #244 security regression merged; post-merge checks still running).
-- **Paginated GitHub inventory before this work branch:** **236 PR records** — **124 merged**, **111 closed-unmerged**, **1 open Draft PR (#244)**; **244 remote branches**. These are exact observed page totals (100 + 100 + 35 PRs; 100 + 100 + 43 branches) and reflect the inventory after this Draft PR opened.
+- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046` (PR #244 security regression merged; post-merge CircleCI/GitHub checks were still running at last poll).
+- **Paginated GitHub inventory after opening employee PR #278:** **237 PR records** — **125 merged**, **111 closed-unmerged**, **1 open Draft PR (#278)**; **244 remote branches**. Exact observed pages: PRs 100 + 100 + 36; branches 100 + 100 + 44. Refresh after any PR or branch state change.
 - **Closed-unmerged semantic reconciliation:** PR #264 records dispositions for 109 historical closed-unmerged PRs at its snapshot. The live inventory now has 111 closed-unmerged records. The two records beyond PR #264's 109-record snapshot are **#261** (superseded by merged #267) and **#270** (partial snapshot superseded by merged #264); both dispositions are documented in the reconciliation addendum. Current observed disposition coverage: **111/111**.
 - **PR #274:** merged at `84000ed6a1d2459dedca6296008563dab1147bd8`; exact-head CircleCI 7/7 and GitHub checks passed before merge.
-- **Security PR #244 / tracking issue #276 — route × role × tenant matrix:** **IN PROGRESS**. Main has STAFF-denied no-write/no-audit assertions for 16 sensitive requests and foreign-business lifecycle coverage from merged #267/#271/#272. This branch adds non-member denial and no-side-effect checks for customer CSV export, preview, and import. Remaining matrix coverage and authenticated production smoke are not yet complete.
+- **Security PR #244:** merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`; the non-member CSV export/preview/import denial test and its no-side-effect assertions are on main. **Tracking issue #276 remains IN PROGRESS** for the broader route × role × tenant matrix; authenticated production smoke is NOT RUN.
 - **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no branch-delete operation; preserve all remote branches and do not emulate deletion by moving refs.
-- **Production:** deployment and authenticated production workflows for current main SHA `84000ed6a1d2459dedca6296008563dab1147bd8` are **NOT RUN / NOT REVERIFIED** in this pass. No deployment was triggered.
+- **Production:** no production deployment was authorized or performed for the employee feature or PR #244. Main post-merge Vercel/API and CircleCI status must be checked separately; status contexts alone do not prove a production release.
 - **Physical Android/mobile visual and screen-reader QA:** **NOT RUN**. Isolated PostgreSQL restore drill remains **BLOCKED** pending an approved non-production target.
 
 ## Next actions
 
-1. Run exact-head CircleCI and GitHub checks for the non-member CSV security regression; fix any genuine failures without weakening tests.
-2. Keep the closed-unmerged ledger synchronized with new closures; current observed 111/111 records are dispositioned. Refresh counts after any new PR state changes.
-3. Continue PR #244's remaining route × role × tenant coverage; do not merge/deploy until the relevant exact-head gates and required review are satisfied.
+1. Complete exact-head CircleCI/GitHub checks on employee PR #278; inspect and fix real failures on the same feature branch.
+2. Resolve the employee branch's one-commit-behind/diverged state safely and confirm mergeability; do not move refs to fake a rebase.
+3. Continue tracking issue #276's remaining route × role × tenant coverage after the employee PR is stable.
 4. Keep branch deletion separate and blocked until an authorized delete-capable route is available.
 
 
@@ -41,7 +41,7 @@
 4. **EMP-PAY-001.4 — Approval and accounting lifecycle — IMPLEMENTED / CI PENDING.** Draft editing, separate-owner approval (creator cannot self-approve), payment only after approval, one linked `Payroll` expense created transactionally, and duplicate payment rejection.
 5. **EMP-PAY-001.5 — Angular employee/payroll UI — IMPLEMENTED / CI PENDING.** Added standalone responsive bilingual `EmployeePayrollComponent`, employee directory/search/edit/deactivate, monthly draft/edit/approve/pay workflows, and mobile More-menu entry for Owners. Workspace changes clear salary-specific UI state.
 6. **EMP-PAY-001.6 — Tests/security review — ADDED / CI PENDING.** Added 7 backend API tests and 4 frontend UI/API/release-guide tests, and updated 2 existing mobile-navigation/expense-navigation expectations after CI proved they still asserted the old More-menu list. The first observed frontend run on an earlier head reported 61 passed / 2 failed; those failures were test expectations for the new navigation item. Latest-head rerun is still required.
-7. **EMP-PAY-001.7 — CI, review, and delivery — IN PROGRESS.** Latest observed branch head `6fe63df4454b936fc10d6dab3b169da293db0683`; latest CI was pending/in progress when checked. Open one focused Draft PR, inspect every changed file, wait for exact-head checks, update this ledger from observed CI, and merge only after checks/review policy allow it. No deployment.
+7. **EMP-PAY-001.7 — CI, review, and delivery — IN PROGRESS.** Draft PR [#278](https://github.com/AbdullahOmaar/ai-business-assistant/pull/278) is open on the single feature branch. Latest observed head before this ledger refresh was `7b56834c5a7e9c6e617ef171f26f12d75e15d44e`; frontend/build/dependency checks were green on the prior head, while backend accounting, browser smoke and security scan required exact-head recheck. Resolve branch divergence, wait for all required exact-head checks and review, then merge only if allowed. No deployment.
 
 ### Security and data-integrity decisions
 - Employee/payroll records are business-scoped, not Platform Admin or login membership records.
