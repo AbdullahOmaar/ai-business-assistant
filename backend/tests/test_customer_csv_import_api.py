@@ -5,7 +5,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import AuditEvent, Customer
+from app.models import AuditEvent, BusinessMembership, Customer
+from app.security import MembershipRole
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
@@ -156,6 +157,62 @@ def test_owner_customer_csv_preview_is_read_only_then_import_records_audit():
                     AuditEvent.action == "data_import.completed",
                 )
             ) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+
+def test_staff_cannot_preview_or_execute_customer_csv_import():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+            BusinessMembership.user_subject == "test-subject",
+        ))
+        assert membership is not None
+        membership.role = MembershipRole.STAFF
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/imports/customers.csv"
+    csv_text = "name,email\\nStaff customer,staff@example.com\\n"
+    try:
+        with Session(engine) as session:
+            customer_count_before = session.scalar(
+                select(func.count()).select_from(Customer).where(
+                    Customer.business_id == business_id,
+                )
+            )
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                )
+            )
+
+        preview = client.post(
+            f"{base}/preview", content=csv_text,
+            headers={"Content-Type": "text/csv"},
+        )
+        imported = client.post(
+            base, content=csv_text,
+            headers={"Content-Type": "text/csv"},
+        )
+        assert preview.status_code == 403, preview.text
+        assert imported.status_code == 403, imported.text
+
+        with Session(engine) as session:
+            assert session.scalar(
+                select(func.count()).select_from(Customer).where(
+                    Customer.business_id == business_id,
+                )
+            ) == customer_count_before
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                )
+            ) == audit_count_before
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
