@@ -453,10 +453,10 @@ def test_owner_can_export_and_preview_supported_csv_entities():
     engine, business_id, _, _ = _sales_return_fixture()
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}"
-    customer_csv = "name,email\\nOwner CSV customer,owner-csv@example.com\\n"
+    customer_csv = "name,email\nOwner CSV customer,owner-csv@example.com\n"
     product_csv = (
-        "name,sku,description,unit,unit_price,is_stock_tracked\\n"
-        "Owner CSV product,OWNER-CSV-1,security test,unit,12.50,false\\n"
+        "name,sku,description,unit,unit_price,is_stock_tracked\n"
+        "Owner CSV product,OWNER-CSV-1,security test,unit,12.50,false\n"
     )
     headers = {"Content-Type": "text/csv"}
 
