@@ -10,7 +10,7 @@
 - `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF mutation/read requests and expects HTTP 403 for each; the ordinary product-name edit remains allowed.
 - Existing state assertions verify issued invoice lifecycle, product price/stock-tracking fields, sales-return count, stock movement count, recurring schedule count, and notification count remain unchanged after the denied requests.
 - Candidate update on `feat/platform-admin-membership-concurrency-20261028` records the business-scoped `AuditEvent` count before the denied request batch and asserts the count is unchanged afterward.
-- This is source evidence only until CircleCI backend-accounting passes on the exact final PR head. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
+- CircleCI backend-accounting and the aggregate gate passed on exact candidate SHA `595152b6a2e6e60290b44397b919cb24ad82cdcc` (backend-accounting run 1572; aggregate workflow `b7760c99-cdb2-4c4c-a982-b0016c1bc38f`). The broader route inventory still has explicit coverage gaps; this is not a claim of exhaustive authorization testing. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
 
 
 ## Authorization model
