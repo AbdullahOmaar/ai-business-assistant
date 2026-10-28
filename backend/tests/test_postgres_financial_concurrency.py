@@ -40,6 +40,7 @@ from app.services import (
     issue_invoice,
     record_payment,
     record_stock_movement,
+    void_invoice,
 )
 
 
@@ -337,3 +338,136 @@ def test_concurrent_approvals_cannot_overreturn_invoice_line(postgres_engine, pg
         assert sum((item.total for item in approved), Decimal("0")) == Decimal("75.00")
         line = session.get(InvoiceLine, invoice_line_id)
         assert line is not None and line.quantity == Decimal("1.000")
+
+
+def test_concurrent_invoice_void_and_approved_return_never_double_restore(
+    postgres_engine, pg_workspace,
+):
+    business_id = pg_workspace["business_id"]
+    customer_id = pg_workspace["customer_id"]
+    principal = pg_workspace["principal"]
+
+    with Session(postgres_engine) as session:
+        product = create_product(
+            session,
+            principal=principal,
+            business_id=business_id,
+            name="Concurrent returned stock",
+            unit_price=Decimal("10.00"),
+            is_stock_tracked=True,
+        )
+        record_stock_movement(
+            session,
+            principal=principal,
+            business_id=business_id,
+            product_id=product.id,
+            movement_type="opening",
+            quantity_delta=Decimal("10.000"),
+            reason="Opening stock",
+        )
+        invoice = create_invoice(
+            session,
+            principal=principal,
+            business_id=business_id,
+            customer_id=customer_id,
+            invoice_number=f"VOID-RETURN-RACE-{uuid4().hex[:8]}",
+            currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "10"}],
+        )
+        issue_invoice(
+            session,
+            principal=principal,
+            business_id=business_id,
+            invoice_id=invoice.id,
+        )
+        invoice_line = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.business_id == business_id,
+        )).one()
+        sales_return = SalesReturn(
+            business_id=business_id,
+            invoice_id=invoice.id,
+            status="draft",
+            total=Decimal("30.00"),
+        )
+        session.add(sales_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_id,
+            sales_return_id=sales_return.id,
+            invoice_line_id=invoice_line.id,
+            quantity=Decimal("3.000"),
+            amount=Decimal("30.00"),
+        ))
+        session.commit()
+        invoice_id, return_id, product_id = invoice.id, sales_return.id, product.id
+
+    def approve(_index):
+        with Session(postgres_engine) as session:
+            try:
+                result = approve_sales_return(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    sales_return_id=return_id,
+                )
+                session.commit()
+                return ("approved", result.id)
+            except ValueError as exc:
+                session.rollback()
+                return ("rejected", str(exc))
+            except Exception as exc:
+                session.rollback()
+                return ("error", type(exc).__name__, str(exc))
+
+    def void(_index):
+        with Session(postgres_engine) as session:
+            try:
+                result = void_invoice(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    invoice_id=invoice_id,
+                    reason="Concurrent void/return regression",
+                )
+                session.commit()
+                return ("voided", result.id)
+            except ValueError as exc:
+                session.rollback()
+                return ("rejected", str(exc))
+            except Exception as exc:
+                session.rollback()
+                return ("error", type(exc).__name__, str(exc))
+
+    results = _run_two_concurrently(lambda index: approve(index) if index == 0 else void(index))
+    assert sum(result[0] in {"approved", "voided"} for result in results) == 1, results
+    assert sum(result[0] == "rejected" for result in results) == 1, results
+
+    with Session(postgres_engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        sales_return = session.get(SalesReturn, return_id)
+        assert invoice is not None and sales_return is not None
+        movements = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product_id,
+        )).all()
+        balance = sum((item.quantity_delta for item in movements), Decimal("0"))
+        void_movements = [
+            item for item in movements
+            if item.reference_type == "invoice_void" and item.reference_id == invoice_id
+        ]
+        return_movements = [
+            item for item in movements
+            if item.reference_type == "sales_return" and item.reference_id == return_id
+        ]
+        if invoice.status == "issued":
+            assert sales_return.status == "approved"
+            assert balance == Decimal("3.000")
+            assert not void_movements
+            assert sum((item.quantity_delta for item in return_movements), Decimal("0")) == Decimal("3.000")
+        else:
+            assert invoice.status == "void"
+            assert sales_return.status == "draft"
+            assert balance == Decimal("10.000")
+            assert sum((item.quantity_delta for item in void_movements), Decimal("0")) == Decimal("10.000")
+            assert not return_movements

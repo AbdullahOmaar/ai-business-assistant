@@ -164,3 +164,11 @@ If the task is too large, split it into independently reviewable subtasks with e
 - Capture lessons from bugs and failed approaches so future agents do not repeat them; update tests or automation when a lesson can be enforced mechanically.
 - The final report must separate: verified complete, partially complete, not run, blocked, changed files/commit or PR, and the exact next action.
 - Production readiness requires exact-release-SHA checks, merge authorization, confirmed deployment version/SHA, and safe end-to-end smoke tests. Never infer readiness from source code, preview success, or HTTP 200 alone.
+
+
+## Master audit plan and cross-session continuity
+- The canonical audit/planning reference is `docs/AUDIT_MASTER_PLAN.md`. Read it before any new audit, planning, design, or implementation session, together with this file and the latest relevant `TASKS.md` checkpoint.
+- At session start, re-check current `main` SHA, working-tree status when local access exists, relevant Issues/PRs, exact-head CI, and deployment evidence. Treat audit-plan counts/SHA/status as a dated snapshot, not live truth.
+- Keep GitHub as the source of truth for code, PRs, Issues, and CI; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
+- The audit plan is read-only planning until the user explicitly authorizes implementation. Do not infer approval to fix application code, merge PRs, or deploy from the existence of the plan.
+- After each substantial session, update `TASKS.md` with actual evidence, checks run/not run, blockers, branch/commit/PR, and one next action. Update `docs/AUDIT_MASTER_PLAN.md` when findings, priorities, decisions, or acceptance criteria change. Never mark a task VERIFIED without evidence.
