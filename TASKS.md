@@ -11,7 +11,7 @@
 - **PR #249 — repository reconciliation:** **IN PROGRESS (Draft)** on `docs/reconciliation-post-security-merge-20261028`, based on the current main SHA above. This pass compares the 11 current branch names absent from the previous ledger and records dispositions below. No stale branch is merged or deleted.
 - **Employee/payroll PR #278:** open Draft on `feat/employee-payroll-management`, latest observed head `06cf28fbaec088bcebdeb1a48792f14299b4faa0`; 13 files, 1,723 additions, 22 deletions. It contains unique employee/payroll API, migration, tests, and UI; keep it separate from the reconciliation PR. Its exact-head CI was still pending at last inspection. No merge or deployment claimed.
 - **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration exposes no authorized branch-delete operation. Preserve branches; do not emulate deletion by moving refs.
-- **Production:** no deployment was triggered. Authenticated production workflows and physical Android/mobile accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists.
+- **Production:** Vercel automatically produced READY production deployments for web and API from main SHA `c0f9b475f6b86248862f1a58defc2e3223f58046` after the merge; no manual deployment command was issued. Safe smoke checks: web root HTTP 200, `/version` HTTP 200 (`1.3.4`, commit `c0f9b475f6b8`), `/health` HTTP 200 (`ok`), and `/readyz` HTTP 200 (`ready`). Authenticated workflows and physical Android/mobile visual/accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists.
 
 ## Next actions
 
