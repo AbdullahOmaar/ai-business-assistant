@@ -17,6 +17,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.models import (
+    AuditEvent,
     Base,
     Business,
     BusinessMembership,
@@ -465,9 +466,21 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             assert balance == Decimal("3.000")
             assert not void_movements
             assert sum((item.quantity_delta for item in return_movements), Decimal("0")) == Decimal("3.000")
+            expected_audit_action = "sales_return.approved"
         else:
             assert invoice.status == "void"
             assert sales_return.status == "draft"
             assert balance == Decimal("10.000")
             assert sum((item.quantity_delta for item in void_movements), Decimal("0")) == Decimal("10.000")
             assert not return_movements
+            expected_audit_action = "invoice.voided"
+
+        lifecycle_events = session.scalars(select(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.target_id.in_([str(invoice_id), str(return_id)]),
+            AuditEvent.action.in_(["sales_return.approved", "invoice.voided"]),
+        )).all()
+        assert len(lifecycle_events) == 1, (
+            "only the winning lifecycle transition may append an audit event"
+        )
+        assert lifecycle_events[0].action == expected_audit_action
