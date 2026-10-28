@@ -11,7 +11,7 @@
 - `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF requests and expects HTTP 403 for each; the ordinary product-name edit is explicitly allowed before the denied-request baseline.
 - Existing assertions verify invoice lifecycle, product price/stock-tracking values, sales-return, stock-movement, recurring-schedule and notification counts, plus business-scoped audit-event count.
 - Follow-up change on `build/reproducible-frontend-install-20261028` additionally snapshots business-scoped counts for Customer, Invoice, InvoiceLine, Payment, Supplier and PurchaseOrder and asserts they are unchanged after all denied requests. This is intended to prove those denied calls did not create/delete those records; it does not prove every route or every field is covered.
-- Exact-head CircleCI for the follow-up commit is pending at the time of writing. Do not treat the change as verified until backend-accounting and the aggregate gate pass on the final PR head.
+- On exact PR head `0ca1bd89ccd6e8969a658017b9cbcec140e74d9b`, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke and backend-container passed; backend-accounting failed (run 1789), and the aggregate gate is not reported. The connected integration cannot read the private CircleCI job log, so the root cause is unverified. Do not treat the change as verified or merge until the failure is diagnosed and exact-head checks pass.
 - Remaining gaps: full route × role × tenant coverage, including foreign-business IDs and non-member denials for every sensitive operation, remains open under issues #110 and #244. This section does not claim exhaustive authorization coverage or production readiness.
 
 
