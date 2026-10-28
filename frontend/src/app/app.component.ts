@@ -105,7 +105,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
         </aside>
         <main class="main">
           @if (tab === 'platform-admin' && platformAdminAvailable) {
-            <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
+            @defer (when tab === 'platform-admin' && platformAdminAvailable) {
+              <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
+            } @placeholder {
+              <section class="panel narrow" role="status" aria-live="polite">
+                <p class="muted">{{ t('جارٍ تحميل مركز الإدارة…', 'Loading Platform Admin…') }}</p>
+              </section>
+            }
           } @else {
           <header class="topbar">
             <div class="topbar-heading"><div class="workspace-build-card" [attr.aria-label]="t('إصدار التطبيق ووقت البناء', 'App version and build time')"><span class="version-pill">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span><small>{{ t('وقت البناء', 'Build time') }} · {{ buildTimeLabel }}</small></div><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
