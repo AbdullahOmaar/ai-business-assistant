@@ -47,6 +47,8 @@ test('a successful payroll payment refreshes the workspace expense list and dash
   const refresh = app.slice(refreshStart, refreshStart + 1200);
   assert.match(refresh, /this\.api\.expenses\(businessId\)/);
   assert.match(refresh, /this\.api\.dashboard\(businessId\)/);
+  assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
+  assert.match(refresh, /if \(this\.business\?\.id === businessId\) this\.error = this\.message\(error\)/);
 });
 
 test('employee and payroll client methods use business-scoped API paths and never accept a client net-pay value', () => {
