@@ -71,6 +71,9 @@ export class AuthService {
         ? getApp(appName)
         : initializeApp(config.firebase, appName);
       this.auth = getAuth(app);
+    }
+    // Re-create the observer after a timeout/error so the Retry button is effective.
+    if (!this.authReady) {
       this.authReady = new Promise<void>((resolve, reject) => {
         let unsubscribe: () => void = () => {};
         let settled = false;
@@ -101,7 +104,12 @@ export class AuthService {
         );
       });
     }
-    await this.authReady;
+    try {
+      await this.authReady;
+    } catch (error) {
+      this.authReady = undefined;
+      throw error;
+    }
   }
 
   async currentUser(): Promise<User | null> {
