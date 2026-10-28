@@ -17,11 +17,11 @@
 
 ### Refreshed inventory after opening this ledger PR — 2026-10-28
 
-The counts above are the historical baseline. Refreshed GitHub metadata after PR #246 merged (main SHA `2c7857c1663856b0e70475c3152b551e9693f814`) and PR #247 opened is:
+The counts above are the historical baseline. Refreshed GitHub metadata after PR #246 and PR #247 merged (main SHA `f4af64430aa74744693fb6541b27bdd8769c1730`) is:
 
 - Branches: **213 total including main; 212 non-main**.
-- PR records: **207 total** — 96 merged, 106 closed without merge, and **5 open**.
-- Current open PRs: #236, #238, #239, #243, and #247. PR #246 is merged. Refresh counts and main SHA after subsequent merges/closures.
+- PR records: **207 total** — 97 merged, 106 closed without merge, and **4 open**.
+- Current open PRs: #236, #238, #239, and #243. PRs #246 and #247 are merged. Refresh counts and main SHA after subsequent merges/closures.
 
 ## Rules for future agents
 
@@ -37,11 +37,10 @@ The counts above are the historical baseline. Refreshed GitHub metadata after PR
 
 | PR | Title | Head branch | State |
 |---|---|---|---|
-| #238 | test(admin): verify concurrent last-owner membership mutations | `feat/platform-admin-membership-concurrency-20261028` | OPEN · READY FOR REVIEW · current-head CircleCI pending |
+| #238 | test(admin): verify concurrent last-owner membership mutations | `feat/platform-admin-membership-concurrency-20261028` | OPEN · DRAFT · backend-container PASS; 3 checks pending on `595152b6a2e6e60290b44397b919cb24ad82cdcc` |
 | #236 | test(finance): cover concurrent invoice void and sales return | `docs/audit-master-plan-2026-10-28` | OPEN · DRAFT · CircleCI 4/4 PASS on `2cb7c04b5dae10ba53dca404de37280fa95bd4c2` |
 | #239 | docs: add branch consolidation ledger | `docs/branch-consolidation-ledger-2026-10-28` | OPEN · READY FOR REVIEW · checks rerun after this ledger refresh |
 | #243 | fix(ui): consolidate startup resilience and mobile workspace UX | `fix/ui-ux-review-batch-2026-10-28` | OPEN · DRAFT · 5 CircleCI contexts PENDING on `f1542950f2d44fef2623c3eb3732d3ae8c27c775` |
-| #247 | chore(release): align frontend and API version 1.3.3 | `chore/release-1.3.3-20261028` | OPEN · READY FOR REVIEW · 4 CircleCI contexts PENDING on `1dcbb23c54f6c868df9006d53dd0d6a34e7d99cf` |
 
 ## Merged pull requests — already integrated through these PRs
 
@@ -143,6 +142,7 @@ The counts above are the historical baseline. Refreshed GitHub metadata after PR
 | #235 | docs(tasks): record final consolidation evidence and release blockers | `docs/final-consolidation-checkpoint-20261028` | MERGED |
 | #237 | docs: enforce one active branch per contributor | `docs/one-branch-workflow-policy` | MERGED |
 | #246 | fix(build): resolve release metadata test paths for Vercel frontend root | `fix/vercel-release-metadata-test-root-20261028` | MERGED · main SHA `2c7857c1663856b0e70475c3152b551e9693f814` · CircleCI 4/4 PASS + Vercel Preview PASS |
+| #247 | chore(release): align frontend and API version 1.3.3 | `chore/release-1.3.3-20261028` | MERGED · main SHA `f4af64430aa74744693fb6541b27bdd8769c1730` · CircleCI 4/4 PASS; production deployment pending verification |
 
 ## Closed pull requests that were not merged
 
