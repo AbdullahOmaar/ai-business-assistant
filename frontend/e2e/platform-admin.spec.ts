@@ -346,6 +346,8 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     });
   });
 
+  // Run the full signed-in admin journey at a narrow mobile viewport.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Welcome back|مرحبًا بعودتك/ })).toBeVisible({ timeout: 20_000 });
   await page.getByLabel(/Email address|البريد الإلكتروني/).fill('admin@example.test');
@@ -395,5 +397,17 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   systemStatusFailure = true;
   await page.getByRole('button', { name: /Check now|فحص الآن/ }).click();
   await expect(page.getByText('Healthy')).toHaveCount(0);
+
+  // The admin navigation and directory remain keyboard-operable on mobile.
+  const usersAccessTab = page.getByRole('button', { name: /Users & access|المستخدمون والصلاحيات/ });
+  await usersAccessTab.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', { name: /Users & access|المستخدمون والصلاحيات/ })).toBeVisible();
+  await expect(page.getByLabel(/Email address or UID|البريد الإلكتروني أو UID/)).toBeVisible();
+
+  const pageHasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(pageHasHorizontalOverflow).toBe(false);
   expect(uncaughtErrors).toEqual([]);
 });
