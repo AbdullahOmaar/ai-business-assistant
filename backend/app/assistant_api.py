@@ -68,6 +68,23 @@ def _decimal(value) -> str:
     return str(Decimal(str(value or 0)))
 
 
+def _fallback_source_ids(intent: str, invoice_rows: list[dict], expense_rows: list[dict]) -> list[str]:
+    """Return only source records that support the deterministic fallback answer."""
+    if intent == "sales":
+        rows = invoice_rows
+    elif intent == "expenses":
+        rows = expense_rows
+    elif intent == "profit":
+        rows = [*invoice_rows, *expense_rows]
+    else:
+        # Counts come from aggregate queries; general/help answers cite no records.
+        rows = []
+    return list(dict.fromkeys(
+        row["source_id"] for row in rows
+        if isinstance(row.get("source_id"), str) and row["source_id"]
+    ))
+
+
 @router.post("/chat")
 async def chat(
     business_id: UUID,
@@ -177,11 +194,9 @@ async def chat(
         for row in invoice_rows:
             currency = row["currency"]
             sales_by_currency[currency] = sales_by_currency.get(currency, Decimal("0")) + Decimal(row["total"])
-            source_ids.append(row["source_id"])
         for row in expense_rows:
             currency = row["currency"]
             expenses_by_currency[currency] = expenses_by_currency.get(currency, Decimal("0")) + Decimal(row["amount"])
-            source_ids.append(row["source_id"])
 
         def money_summary(values: dict[str, Decimal]) -> str:
             return "، ".join(
@@ -221,9 +236,17 @@ async def chat(
                 "المصروفات، الفرق المبدئي بينهما، أو عدد العملاء والمنتجات والموردين. "
                 "الملخصات المالية تستخدم أحدث 20 فاتورة صادرة و20 مصروفًا فقط."
             )
+        source_intent = (
+            "profit" if profit_intent else
+            "sales" if sales_intent else
+            "expenses" if expense_intent else
+            "count" if count_intent else
+            "general"
+        )
+        source_ids = _fallback_source_ids(source_intent, invoice_rows, expense_rows)
         return {
             "answer": answer,
-            "sources": [source_records[item] for item in dict.fromkeys(source_ids) if item in source_records],
+            "sources": [source_records[item] for item in source_ids if item in source_records],
             "model": "local-fallback",
             "grounding": "business-records",
             "mode": "local-fallback",
