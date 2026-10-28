@@ -148,6 +148,7 @@ The route inventory is broader than current negative integration tests. Add expl
 - Candidate branch: `test/security-csv-owner-positive-20261029`; tracking issue: [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276).
 - Test: `backend/tests/test_customer_csv_import_api.py::test_owner_can_export_and_preview_supported_csv_entities`.
 - Confirms the authorized OWNER can export customers, products, and expenses and can preview valid customer/product imports (HTTP 200, valid preview, no writes during preview).
+- Review found the test omitted `_configure_test_identity(engine)`; fixed on the candidate branch. The test now configures/restores identity and compares business-scoped Customer, Product, Expense, ImportJob, and AuditEvent counts before/after.
 - This complements PR #297's STAFF/non-member denial and no-side-effect checks. It is not considered verified until exact-head CircleCI backend-accounting and aggregate checks pass.
 - Local pytest is NOT RUN in the connector-only session. No production data, authorization policy, or deployment settings changed; issue #276 remains open for remaining routes and authenticated production smoke.
 
