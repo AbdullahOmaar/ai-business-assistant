@@ -700,3 +700,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Remaining closed-unmerged PRs requiring semantic review: **37/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 9 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #42 — corrected payment integrity regressions | Current `backend/tests/test_services.py` contains payment currency mismatch, cross-business allocation, over-allocation and changed idempotency-payload cases. #41 shares the same head SHA. | Duplicate test branch; coverage is present on main; no restore. |
+| #41 — payment integrity regressions | Same head SHA as #42 (`5f878508...`); current payment regression suite covers the named failure cases. | Duplicate of #42; no separate patch to recover. |
+| #40 — bounded assistant requests and route inventory | Current `assistant_api.py` caps history at 8,000 characters and retries transient provider errors once; `test_assistant_resilience.py` and current security route inventory are present. | Superseded by #217/#219 and current security docs; no restore. |
+| #39 — empty stock movements | Current `backend/tests/test_domain_rules.py::test_empty_stock_movements_produce_zero_balance` explicitly verifies the empty-list case. | Test already present on main; no restore. |
+| #38 — Arabic RTL shell and app-wide loading | Current `app.component.ts`, `index.html` and global styles contain RTL initialization and accessible startup/loading feedback. | Superseded by later mobile/UI changes; physical-device startup QA remains NOT RUN. |
+| #36 — responsive mobile navigation/dashboard | Current mobile navigation uses labeled bottom navigation with safe-area layout and a regression for four slots/More. Later #49 and subsequent UI merges supersede the old CSS patch. | Superseded; no restore. |
+| #27 — Firebase Hosting deploy workflow | Current production path is Vercel Web/API; Firebase Hosting workflow is absent by design, so the stale Firebase deploy job would create a second production path and require Firebase secrets. | Do not restore obsolete deployment workflow; no secrets or production config changed. |
+| #25 — CORS, invoice stock validation and sales-return lifecycle | Current main has PUT CORS policy, repeated-SKU stock aggregation, sales-return locking/cumulative amount/quantity checks and regression coverage in current backend tests. | Superseded by later security/financial-safety merges; no stale branch merge. |
+| #23 — initial responsive Angular dashboard shell | Current frontend is a live API-backed, authenticated Angular app with current workspace, invoice, payment, operations and admin screens; the PR's sample-data scaffold is obsolete. | Superseded by the current application; no restore. |
+
+## Audit accounting — after priority batch 9
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–9: **81/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **28/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
