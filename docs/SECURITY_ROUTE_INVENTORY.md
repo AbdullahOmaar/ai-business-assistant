@@ -126,4 +126,4 @@ The route inventory is broader than current negative integration tests. Add expl
 - Follow-up candidate adds a regression for a principal with no membership in the requested business. Customer CSV export, preview, and import must each return HTTP 403 and leave business-scoped Customer, ImportJob, and AuditEvent counts unchanged.
 - PR #244 merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`; its exact-head CircleCI gate passed 7/7 and GitHub Actions checks passed 7/7. Backend test job: 231 passed, 7 skipped, 16 warnings; full test job: 232 passed, 6 skipped, 16 warnings.
 - This targeted regression does **not** close tracking issue #276 or prove the full route × role × tenant matrix. Remaining sensitive workflows and authenticated production smoke remain outstanding.
-- Local pytest/build: NOT RUN in this connector-only session. No production data, permissions, or deployment changed.
+- Local pytest/build: NOT RUN in this connector-only session. No production data or permissions changed. Vercel automatically deployed main after the merge; web root, `/version`, `/health`, and `/readyz` returned HTTP 200. Authenticated production workflows remain NOT RUN.
