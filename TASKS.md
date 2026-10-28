@@ -44,17 +44,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 ## Verification ledger — UI/UX batch, 2026-10-28
 
 - PR #243 remains open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/243. No merge or deployment has occurred.
-- Latest code commit before this ledger refresh: `8652d404a765fa8a73d0f93c8bb7c6cba5f80fa1` on `fix/ui-ux-review-batch-2026-10-28`; it splits CircleCI frontend unit/source regression tests and the Angular production build into separate jobs. This is a diagnostic improvement, not proof that either check passes.
+- The last code/CI-diagnostic change is `8652d404a765fa8a73d0f93c8bb7c6cba5f80fa1`, splitting CircleCI frontend unit/source regression tests and the Angular production build into separate jobs. The ledger refresh commit before this update is `6cdb0e456b12ef83253d5875eb8e3cd0ae201115`.
 - On previous exact head `a8b1bf0ac3ef4bc28a34c22cd24896bdbf4c7a01`, CircleCI reported frontend-quality **FAILURE** (run 1442), frontend-dependency-audit **SUCCESS** (1441), frontend-browser-smoke **SUCCESS** (1443), backend-accounting **SUCCESS** (1444), and backend-container **SUCCESS** (1445).
-- The CircleCI UI/log endpoint is inaccessible through the available integration, and GitHub Actions job-log retrieval returned HTTP 404 `BlobNotFound`. The failing step/root cause is **UNVERIFIED**. Do not claim a cause or bypass the failing gate.
-- Connector-side source assertion review passed **12/12**, but these are not the project's actual `npm test` or Angular production build. Actual local `npm test`, `npx ng build`, visual/mobile accessibility review: **NOT RUN** in this environment.
-- The branch's 22 UI/UX findings have implementation changes recorded above; several responsive/layout items still require visual verification. Therefore, 22/22 VERIFIED COMPLETE is **not established**.
+- On latest polled head `6cdb0e456b12ef83253d5875eb8e3cd0ae201115`, the GitHub Actions checks `frontend`, `backend`, `Audit JavaScript dependencies`, and `Audit Python dependencies` all completed **FAILURE**; GitGuardian secret scan passed. The available integration cannot retrieve their logs (HTTP 404 `BlobNotFound`), and the job-steps endpoint returned no step detail, so the causes remain **UNVERIFIED**.
+- CircleCI status API returned **no statuses** for the latest polled head after the job split; therefore there is no verified exact-head CircleCI result yet. The CircleCI run UI is inaccessible from this integration.
+- Connector-side source assertion review passed **12/12**, but these are not the project's actual `npm test` or Angular production build. Actual local `npm test`, `npx ng build`, and visual/mobile accessibility review: **NOT RUN** in this environment.
+- The 22 UI/UX findings have implementation changes recorded above; several responsive/layout items still require visual verification. Therefore, 22/22 VERIFIED COMPLETE is **not established**.
 - Independent PR reviews: none recorded at latest inspection. Branch-protection/ruleset requirements cannot be verified through the connected integration (GitHub API 403); do not bypass unknown requirements.
-- After the CircleCI job split, the new exact-head statuses had not yet appeared at the latest poll. Wait for `frontend-unit-tests`, `frontend-production-build`, `frontend-dependency-audit`, `frontend-browser-smoke`, `backend-accounting`, and `backend-container` to report on the final SHA; diagnose and fix any failing job, then rerun all checks and review the complete diff.
-- Merge gate: keep Draft until every required check passes on the exact final head and the diff/review requirements are satisfied. No production deployment is authorized by this task.
+- Merge gate: keep Draft until required checks pass on the exact final SHA, the full diff is reviewed, and any review requirements are satisfied. No production deployment is authorized by this task.
 
 ---
- 
+
 ## Platform Admin — five-task execution — 2026-10-27
 
 Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
