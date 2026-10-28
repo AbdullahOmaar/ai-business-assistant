@@ -12,7 +12,7 @@ import pytest
 
 from app.main import app
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, BusinessSetting, Customer, Invoice, InvoiceLine, Notification,
+    AuditEvent, Base, Business, BusinessMembership, BusinessSetting, Customer, Expense, Invoice, InvoiceLine, Notification,
     Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
     MembershipRole, Payment, PaymentAllocation, PricingRule, SalesReturn, SalesReturnLine,
 )
@@ -1186,6 +1186,196 @@ def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
             )
         assert suppliers_after == suppliers_before
         assert audit_after == audit_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_nonmember_cannot_mutate_sensitive_extended_workflows_without_writes_or_audit_events():
+    engine, business_id, invoice_id, invoice_line_id = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Nonmember matrix supplier")
+        product = Product(
+            business_id=business_id,
+            name="Nonmember matrix stock item",
+            unit_price=Decimal("6.00"),
+            is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        # Prepare real, valid records as the OWNER so denied requests exercise
+        # authorization before the sensitive lifecycle operation.
+        order = client.post(
+            f"{base}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id),
+                "order_number": "PO-NONMEMBER-MATRIX-1",
+                "currency_code": "EGP",
+                "lines": [{
+                    "product_id": str(product_id),
+                    "quantity": "2.000",
+                    "unit_cost": "3.00",
+                }],
+            },
+        )
+        assert order.status_code == 201, order.text
+        order_id = UUID(order.json()["id"])
+        with Session(engine) as session:
+            order_line_id = session.scalar(
+                select(PurchaseOrderLine.id).where(
+                    PurchaseOrderLine.purchase_order_id == order_id,
+                    PurchaseOrderLine.business_id == business_id,
+                )
+            )
+        assert order_line_id is not None
+        approved_order = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert approved_order.status_code == 200, approved_order.text
+
+        sales_return = client.post(
+            f"{base}/sales-returns",
+            json={
+                "invoice_id": str(invoice_id),
+                "lines": [{
+                    "invoice_line_id": str(invoice_line_id),
+                    "quantity": "0.250",
+                }],
+            },
+        )
+        assert sales_return.status_code == 201, sales_return.text
+        sales_return_id = sales_return.json()["id"]
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            subject="nonmember-extended-workflows"
+        )
+
+        protected_models = (
+            AuditEvent, BusinessMembership, BusinessSetting, Customer, Expense, Invoice,
+            InvoiceLine, Notification, Payment, PaymentAllocation, PricingRule, Product,
+            PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, SalesReturn,
+            SalesReturnLine, StockMovement, Supplier,
+        )
+
+        def snapshot_business_state(session):
+            return {
+                model.__name__: tuple(sorted(
+                    tuple(
+                        (column.key, repr(getattr(record, column.key)))
+                        for column in model.__table__.columns
+                    )
+                    for record in session.scalars(
+                        select(model).where(model.business_id == business_id)
+                    ).all()
+                ))
+                for model in protected_models
+            }
+
+        with Session(engine) as session:
+            state_before = snapshot_business_state(session)
+            audit_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+
+        denied_requests = {
+            "create purchase order": lambda: client.post(
+                f"{base}/purchase-orders",
+                json={
+                    "supplier_id": str(supplier_id),
+                    "order_number": "PO-NONMEMBER-DENIED",
+                    "currency_code": "EGP",
+                    "lines": [{
+                        "product_id": str(product_id),
+                        "quantity": "1.000",
+                        "unit_cost": "2.00",
+                    }],
+                },
+            ),
+            "approve purchase order": lambda: client.post(
+                f"{base}/purchase-orders/{order_id}/approve"
+            ),
+            "receive purchase order": lambda: client.post(
+                f"{base}/purchase-orders/{order_id}/receive",
+                json={"lines": [{"line_id": str(order_line_id), "quantity": "1.000"}]},
+            ),
+            "create sales return": lambda: client.post(
+                f"{base}/sales-returns",
+                json={
+                    "invoice_id": str(invoice_id),
+                    "lines": [{
+                        "invoice_line_id": str(invoice_line_id),
+                        "quantity": "0.250",
+                    }],
+                },
+            ),
+            "approve sales return": lambda: client.post(
+                f"{base}/sales-returns/{sales_return_id}/approve"
+            ),
+            "create recurring invoice schedule": lambda: client.post(
+                f"{base}/recurring-invoices",
+                json={
+                    "interval_days": 30,
+                    "timezone": "UTC",
+                    "next_run_at": "2027-01-01T00:00:00Z",
+                },
+            ),
+            "create pricing rule": lambda: client.post(
+                f"{base}/pricing-rules",
+                json={"name": "Nonmember rule", "rule_type": "discount", "rate": "5"},
+            ),
+            "create notification": lambda: client.post(
+                f"{base}/notifications",
+                json={
+                    "kind": "test",
+                    "title": "Unauthorized notification",
+                    "body": "A non-member must not schedule this",
+                    "deduplication_key": "nonmember-matrix-notification",
+                },
+            ),
+            "change setting": lambda: client.put(
+                f"{base}/settings/locale", json={"setting_value": "ar"}
+            ),
+            "read audit events": lambda: client.get(f"{base}/audit-events"),
+        }
+
+        for name, request in denied_requests.items():
+            with Session(engine) as session:
+                audit_count_before_request = session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                )
+            response = request()
+            assert response.status_code == 403, (
+                f"{name}: expected 403, got {response.status_code}: {response.text}"
+            )
+            with Session(engine) as session:
+                audit_count_after_request = session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                )
+            assert audit_count_after_request == audit_count_before_request, (
+                f"{name}: denied non-member request must not append an audit event"
+            )
+
+        with Session(engine) as session:
+            assert snapshot_business_state(session) == state_before, (
+                "denied non-member requests must not create, delete, or mutate business-scoped rows"
+            )
+            assert session.get(PurchaseOrder, order_id).status == "approved"
+            assert session.get(SalesReturn, UUID(sales_return_id)).status == "draft"
+            assert session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id
+                )
+            ) == 0
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
