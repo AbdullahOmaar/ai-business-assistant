@@ -1,3 +1,42 @@
+# Current prioritized work queue — 2026-10-28
+
+> This is the canonical execution order for the current work session. The dated entries below it are retained as historical evidence; if a historical status conflicts with this queue or live GitHub/CI data, re-check the live SHA and prefer newer evidence. No task is VERIFIED merely because a plan, source change, or old successful pipeline exists.
+
+## Research baseline
+
+- `main` at inspection: `f04c0e194b3afbefb56a979a5688f80d277b3ece`. Main CircleCI was green 4/4 (backend-container 1303, frontend-quality 1301, backend-accounting 1304, frontend-browser-smoke 1302).
+- Open candidate PR #238: last-owner membership concurrency test; on prior exact head, CircleCI passed 4/4 (1289–1292). Its latest source head changes the test/config and must be rechecked.
+- Open candidate PR #236: invoice-void vs sales-return concurrency test; exact head `96f2e03e4cca34d4be86c57a0490f33147365e77` passed all four CircleCI contexts (1325–1328) at the latest read.
+- Open docs PR #239: branch consolidation ledger; separate documentation scope.
+- GitHub Actions duplicate jobs fail almost immediately with no runner name, executable steps, or accessible logs; exact cause is **UNVERIFIED**. Branch-protection/ruleset API reads return HTTP 403. Do not assume failed Actions checks are optional or change protection settings without an authorized owner.
+- Production release remains blocked: Vercel reports build-rate-limit for Web/API, Web/API source-SHA parity is not current, and no deployment is authorized by this queue.
+
+## Ordered queue
+
+| Order | ID / priority | Outcome and evidence | Acceptance gate | Status |
+|---:|---|---|---|---|
+| 1 | CI-007 / P0 — Issue #240 | Add CircleCI `all-checks-passed` no-op aggregate, dependent on backend-accounting, frontend-quality, frontend-browser-smoke and backend-container. Config change is on the existing PR #238 branch to avoid creating another branch. | CircleCI parses config; all four checks pass; aggregate status appears and passes only after all four. Then repository owner confirms/requires that check in GitHub settings. Do not disable Actions or alter branch protection here. | IN_PROGRESS |
+| 2 | ADM-06 / P0 — PR #238 | PostgreSQL race regression for last-owner demotion vs removal, with a rejected mutation required to fail for the actual last-owner invariant, not arbitrary authorization failure. | Exact final SHA: all four substantive CircleCI checks plus aggregate; review the diff and no production DB usage. | IN_PROGRESS |
+| 3 | FIN-001 / P0 — PR #236 | PostgreSQL race regression for approved return vs invoice void; prevent double stock restoration and inconsistent lifecycle states. | Exact final SHA: four CircleCI checks; verify expected states/stock outcomes; reviewer approval before merge. | IN_PROGRESS |
+| 4 | SEC-001 / P0 — Issue #110 | Audit complete server-side OWNER/STAFF matrix. Owner approval of the conservative matrix is recorded in issue comment #6401325796; confirm every sensitive route and denial/no-write/audit behavior has tests, including cross-workspace attempts. | Route-to-service-to-persistence inventory, positive OWNER + negative STAFF/cross-workspace tests, and backend suite on exact SHA. Do not widen/narrow policy outside the recorded approval. | IN_PROGRESS |
+| 5 | FIN-ROUNDING / P1 — Issue #109 reconciliation | Current source already uses `money(..., ROUND_HALF_UP)` and `calculate_invoice_totals` to round each line before aggregation; historical ledger says old duplicate PR #112 was superseded by matching main source/tests. | Confirm tests and API persistence invariants on exact SHA; only then close/retire the stale issue, never rewrite historical invoices automatically. | SOURCE REVIEWED; VERIFICATION REQUIRED |
+| 6 | BUILD-001 / P1 — Issue #241 | `frontend/package-lock.json` was absent from the repo’s frontend directory; CI uses `npm install`, permitting dependency resolution drift. | Generate/review a real npm lockfile from the approved manifest in an authorized Node/npm environment, change project installs to `npm ci`, and pass frontend tests/build/audit/Playwright. No guessed or hand-fabricated lockfile. | TODO |
+| 7 | OPS-001 / P1 — Issue #106 | Backup scripts and target safety guards exist, but a successful isolated restore has not been evidenced; prior provider note shows a free Neon branch with no snapshot inventory/schedule. | Confirm a zero-cost isolated path and authorization, restore only into a separate non-production target, validate schema/data-integrity and document time/RPO/RTO. No production restore or paid resource without approval. | BLOCKED |
+| 8 | REL-001 / P1 | Web/API production parity is not verified; Vercel statuses report `build-rate-limit` and prior release SHA is stale. | After quota/owner resolution and explicit release authorization: final main SHA, applicable checks, both deployment SHAs/versions, aliases, readiness/health, browser and authenticated safe smoke. No redeploy from this task without release approval. | BLOCKED |
+| 9 | A11Y-001 / P1 | Platform Admin keyboard, screen-reader, mobile and WCAG 2.2 AA evidence is incomplete. | Run a documented keyboard/screen-reader/mobile checklist against an exact preview; fix regressions and validate accessible states. Live authenticated production smoke is separate and currently not authorized. | NOT RUN |
+| 10 | PERF-001 / P2 — Issue #242 | Older Web build recorded 730.87 kB initial bundle against a 700 kB warning budget; this is historical evidence, not the current bundle measurement. | Measure bundle on current source SHA first; if still over budget, reduce initial chunk through evidence-based lazy-loading/unused-code work, preserve startup/auth/PWA/RTL, and rerun tests + Playwright. | TODO |
+
+## Execution rules for this queue
+
+1. Complete order 1 first and prove the aggregate on the new exact head. No merges/deployments are included in CI-gate implementation.
+2. Continue the two existing concurrency PRs in their existing branches; do not create duplicate branches. Keep Draft until exact-head checks and review gates pass.
+3. Work the OWNER/STAFF audit next, preserving the recorded owner-approved matrix. If source/test evidence reveals a material permission ambiguity, record it and stop only that policy change; continue independent tasks.
+4. Finish rounding reconciliation without duplicating already-landed logic.
+5. Only after higher-priority correctness/release blockers, proceed to reproducible frontend installs, backup recovery, accessibility and performance.
+6. Tests not executed in this runtime are explicitly **NOT RUN**. No merge, production data mutation, secret/configuration change, or production deployment is implied by this queue.
+
+---
+
 ## Platform Admin — five-task execution — 2026-10-27
 
 Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
