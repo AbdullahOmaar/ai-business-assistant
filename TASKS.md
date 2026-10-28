@@ -1,27 +1,25 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after PR #274 and EMP-PAY-001 kickoff)
+# Current prioritized work queue — 2026-10-28 (live checkpoint after PR #274)
 
-> This opening section is the canonical live queue. Historical sections below are retained as history and must not override newly observed evidence.
+> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
 ## Current verified repository state
 
-- **Main SHA:** `84000ed6a1d2459dedca6296008563dab1147bd8`.
-- **PR #274:** merged to `main` at the SHA above. Observed CircleCI contexts for this main SHA were 7/7 successful: backend accounting, frontend unit tests, frontend production build, frontend dependency audit, frontend browser smoke, backend container, and aggregate.
-- **Main commit checks:** the five GitHub Actions check-runs observed for this SHA (build, backend, frontend, JavaScript dependency audit, Python dependency audit) all reported success.
-- **Web/API deployment checks:** both Vercel status contexts for this SHA reported “Deployment has completed”. This is deployment-status evidence only; authenticated production workflows and post-deploy user-journey smoke tests remain **NOT RUN**.
-- **Current open PRs observed:** #261 and #270. Preserve their work; #270 is already documented as superseded. Do not combine them with the employee feature.
-- **EMP-PAY-001:** GitHub issue [#277](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) created. Work branch: `feat/employee-payroll-management`, created from the main SHA above. All employee/payroll files, tests and tracking are being kept on this one branch.
-- **Latest employee branch head at last check:** `6fe63df4454b936fc10d6dab3b169da293db0683`. CircleCI/GitHub checks were still running at the last poll; no latest-head green result is claimed yet.
-- **CI issue found and addressed:** the first frontend test run on earlier head `a2bb03c5ee6893a16ccfc017304e55b31954c902` showed 61 passed / 2 failed because the existing mobile navigation tests expected the old More-menu list. The tests were updated to include the new employee destination. Rerun on the latest head is required before acceptance.
-- **Branch cleanup:** no branches deleted. The connected GitHub integration does not expose an authorized branch-delete operation, and the connected Desktop Commander device is offline. Do not emulate deletion by moving refs.
-- **Production:** this employee feature has **not** been deployed. No production deployment is authorized by this task.
+- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046` (PR #244 security regression merged; post-merge checks still running).
+- **Paginated GitHub inventory before this work branch:** **236 PR records** — **124 merged**, **111 closed-unmerged**, **1 open Draft PR (#244)**; **244 remote branches**. These are exact observed page totals (100 + 100 + 35 PRs; 100 + 100 + 43 branches) and reflect the inventory after this Draft PR opened.
+- **Closed-unmerged semantic reconciliation:** PR #264 records dispositions for 109 historical closed-unmerged PRs at its snapshot. The live inventory now has 111 closed-unmerged records. The two records beyond PR #264's 109-record snapshot are **#261** (superseded by merged #267) and **#270** (partial snapshot superseded by merged #264); both dispositions are documented in the reconciliation addendum. Current observed disposition coverage: **111/111**.
+- **PR #274:** merged at `84000ed6a1d2459dedca6296008563dab1147bd8`; exact-head CircleCI 7/7 and GitHub checks passed before merge.
+- **Security PR #244 / tracking issue #276 — route × role × tenant matrix:** **IN PROGRESS**. Main has STAFF-denied no-write/no-audit assertions for 16 sensitive requests and foreign-business lifecycle coverage from merged #267/#271/#272. This branch adds non-member denial and no-side-effect checks for customer CSV export, preview, and import. Remaining matrix coverage and authenticated production smoke are not yet complete.
+- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no branch-delete operation; preserve all remote branches and do not emulate deletion by moving refs.
+- **Production:** deployment and authenticated production workflows for current main SHA `84000ed6a1d2459dedca6296008563dab1147bd8` are **NOT RUN / NOT REVERIFIED** in this pass. No deployment was triggered.
+- **Physical Android/mobile visual and screen-reader QA:** **NOT RUN**. Isolated PostgreSQL restore drill remains **BLOCKED** pending an approved non-production target.
 
 ## Next actions
 
-1. Verify latest-head CircleCI and GitHub checks; inspect/fix any remaining backend, migration, Angular build, or browser-smoke failures on the same branch.
-2. Open one focused Draft PR linked to issue #277 and inspect the complete changed-file list/diff.
-3. Update this task ledger with exact-head CI evidence; merge only if the required checks and review policy are satisfied. Keep production deployment out of scope absent separate authorization.
+1. Run exact-head CircleCI and GitHub checks for the non-member CSV security regression; fix any genuine failures without weakening tests.
+2. Keep the closed-unmerged ledger synchronized with new closures; current observed 111/111 records are dispositioned. Refresh counts after any new PR state changes.
+3. Continue PR #244's remaining route × role × tenant coverage; do not merge/deploy until the relevant exact-head gates and required review are satisfied.
+4. Keep branch deletion separate and blocked until an authorized delete-capable route is available.
 
----
 
 ## Employee & payroll feature — EMP-PAY-001 (P1)
 
