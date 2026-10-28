@@ -291,3 +291,75 @@ def test_customer_email_duplicate_check_is_scoped_to_current_business():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_nonmember_cannot_export_or_import_customers_without_side_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        membership = session.scalar(select(BusinessMembership).where(
+            BusinessMembership.business_id == business_id,
+            BusinessMembership.user_subject == "test-subject",
+        ))
+        assert membership is not None
+        session.delete(membership)
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    csv_base = f"{base}/imports/customers.csv"
+    csv_text = "name,email\nNonmember customer,nonmember@example.com\n"
+    requests = {
+        "export customers": lambda: client.get(f"{base}/exports/customers.csv"),
+        "preview customer CSV": lambda: client.post(
+            f"{csv_base}/preview", content=csv_text,
+            headers={"Content-Type": "text/csv"},
+        ),
+        "execute customer CSV import": lambda: client.post(
+            csv_base, content=csv_text,
+            headers={"Content-Type": "text/csv"},
+        ),
+    }
+    try:
+        for name, request in requests.items():
+            with Session(engine) as session:
+                customers_before = session.scalar(
+                    select(func.count()).select_from(Customer).where(
+                        Customer.business_id == business_id,
+                    )
+                )
+                import_jobs_before = session.scalar(
+                    select(func.count()).select_from(ImportJob).where(
+                        ImportJob.business_id == business_id,
+                    )
+                )
+                audits_before = session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id,
+                    )
+                )
+
+            response = request()
+            assert response.status_code == 403, (
+                f"{name}: expected 403, got {response.status_code}: {response.text}"
+            )
+
+            with Session(engine) as session:
+                assert session.scalar(
+                    select(func.count()).select_from(Customer).where(
+                        Customer.business_id == business_id,
+                    )
+                ) == customers_before, f"{name}: must not create or delete customers"
+                assert session.scalar(
+                    select(func.count()).select_from(ImportJob).where(
+                        ImportJob.business_id == business_id,
+                    )
+                ) == import_jobs_before, f"{name}: must not persist import jobs"
+                assert session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id,
+                    )
+                ) == audits_before, f"{name}: must not append audit events"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
