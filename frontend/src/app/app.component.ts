@@ -492,7 +492,6 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <option value="business">{{ t('نشاط تجاري', 'Business') }}</option>
                     <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
                     <option value="stock_movement">{{ t('حركة مخزون', 'Stock movement') }}</option>
-                    <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
                     <option value="purchase_order">{{ t('أمر شراء', 'Purchase order') }}</option>
                     <option value="sales_return">{{ t('مرتجع بيع', 'Sales return') }}</option>
                     <option value="recurring_invoice_schedule">{{ t('جدول فاتورة دورية', 'Recurring invoice schedule') }}</option>
