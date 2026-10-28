@@ -1490,3 +1490,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Formal audit ledger: 87/109 closed-unmerged PRs reviewed, 22 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
 - Latest main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
 - No production behavior/deployment configuration changed. Continue the remaining semantic review and run exact-head CI before merging this reconciliation PR.
+
+
+## Repository reconciliation checkpoint — batch 10 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #43, #42, #41, #40, #39, #38, #36, #27, #25 and #23.
+- Current main contains assistant provider timeout/retry and bounded conversation history via #217/#219; payment integrity regressions; empty-stock zero-balance coverage; Arabic RTL/startup shell; and responsive mobile navigation. CORS, repeated-SKU stock validation and sales-return lifecycle are already present through later mainline safety PRs.
+- #42/#41 are duplicate heads. #27's Firebase Hosting path is obsolete while Vercel is the active production target. #25's old deployment/runtime config was not copied. #23 is an obsolete disconnected sample shell.
+- Formal audit ledger: 97/109 closed-unmerged PRs reviewed, 12 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Current main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
+- No runtime/deployment configuration changes in this batch. Continue the final 12 PR reviews and exact-head CI for PR #264.
