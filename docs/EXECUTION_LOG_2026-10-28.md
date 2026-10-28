@@ -4,8 +4,8 @@
 
 1. **SEC-FOREIGN-001 — Foreign-tenant invoice references** — IN PROGRESS.
    - Added `backend/tests/test_foreign_invoice_references.py`.
-   - Covers foreign-business customer and product IDs supplied to invoice creation.
-   - Acceptance: each request returns HTTP 422, and business-scoped invoice, invoice-line, and audit-event counts remain unchanged.
+   - Covers foreign-business customer and product IDs supplied to invoice creation, plus payment allocation to a foreign-business invoice.
+   - Acceptance: each request returns HTTP 422, and business-scoped invoice, invoice-line, payment, payment-allocation, and audit-event counts remain unchanged.
    - Local tests: NOT RUN (no online authorized development machine is connected in this session).
    - Required next evidence: exact-PR-head CircleCI results; fix any failure and rerun before marking verified.
 
@@ -37,7 +37,7 @@
 ## Change made in this execution
 
 - Branch: `test/security-foreign-customer-no-side-effects`
-- Commit: `b736860c1b71f9a07a23be5260c2974b28b9f8c9`
+- Commit: `831744ad7f4b0382675483d8f8d4133a163ffd0f`
 - File: `backend/tests/test_foreign_invoice_references.py`
 - Validation: source-level review only. Tests and build are NOT RUN locally; require CI evidence.
 - Merge/deploy: NOT performed.
