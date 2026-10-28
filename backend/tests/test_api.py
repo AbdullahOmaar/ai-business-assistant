@@ -675,6 +675,17 @@ def test_staff_is_denied_sensitive_business_routes():
                     AuditEvent.business_id == business_id
                 )
             )
+            protected_models = (
+                Customer, Invoice, InvoiceLine, Payment, Supplier, PurchaseOrder,
+            )
+            protected_counts_before = {
+                model.__name__: session.scalar(
+                    select(func.count()).select_from(model).where(
+                        model.business_id == business_id
+                    )
+                )
+                for model in protected_models
+            }
 
         responses = {
             "issue existing invoice": client.post(
@@ -770,6 +781,17 @@ def test_staff_is_denied_sensitive_business_routes():
             # A denied request must not append business audit metadata or persistent audit rows.
             assert audit_count_after == audit_count_before, (
                 "denied STAFF mutations must not append audit events"
+            )
+            protected_counts_after = {
+                model.__name__: session.scalar(
+                    select(func.count()).select_from(model).where(
+                        model.business_id == business_id
+                    )
+                )
+                for model in protected_models
+            }
+            assert protected_counts_after == protected_counts_before, (
+                "denied STAFF requests must not create or delete protected business records"
             )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
