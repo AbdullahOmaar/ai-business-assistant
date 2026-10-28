@@ -263,7 +263,7 @@ def test_customer_email_duplicate_check_is_scoped_to_current_business():
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}/imports/customers.csv"
-    csv_text = "name,email\\nLocal customer,shared@example.com\\n"
+    csv_text = "name,email\nLocal customer,shared@example.com\n"
     try:
         preview = client.post(
             f"{base}/preview", content=csv_text,
