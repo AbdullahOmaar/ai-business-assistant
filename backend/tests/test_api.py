@@ -1180,10 +1180,17 @@ def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
         engine.dispose()
 
 
-def test_nonmember_cannot_mutate_sensitive_extended_workflows_without_side_effects():
+def test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_side_effects():
     engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject="staff-subject",
+            role=MembershipRole.STAFF,
+        ))
+        session.commit()
+
     previous_factory, previous_resolver = _configure_test_identity(engine)
-    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="nonmember-subject")
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}"
 
@@ -1256,14 +1263,20 @@ def test_nonmember_cannot_mutate_sensitive_extended_workflows_without_side_effec
     ]
 
     try:
-        for action, request in requests:
-            before = snapshot()
-            response = request()
-            assert response.status_code == 403, (
-                f"{action}: expected 403, got {response.status_code}: {response.text}"
+        for subject in ("nonmember-subject", "staff-subject"):
+            app.state.principal_resolver = (
+                lambda request, subject=subject: AuthenticatedPrincipal(subject=subject)
             )
-            after = snapshot()
-            assert after == before, f"{action} changed protected rows or emitted an audit event"
+            for action, request in requests:
+                before = snapshot()
+                response = request()
+                assert response.status_code == 403, (
+                    f"{subject} {action}: expected 403, got {response.status_code}: {response.text}"
+                )
+                after = snapshot()
+                assert after == before, (
+                    f"{subject} {action} changed protected rows or emitted an audit event"
+                )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
