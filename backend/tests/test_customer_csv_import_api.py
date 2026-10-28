@@ -1,5 +1,8 @@
 """API regression for safe customer CSV duplicate detection."""
 
+import csv
+import io
+
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -12,17 +15,17 @@ from test_api import _configure_test_identity, _restore_test_identity, _sales_re
 
 
 def test_customer_csv_parser_preserves_quoted_commas_and_multiline_fields():
-    csv_text = (
-        "name,email,notes\n"
-        '"Acme, North",contact@example.com,"Line one\nLine two"\n'
-    )
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, lineterminator="\\n")
+    writer.writerow(["name", "email", "notes"])
+    writer.writerow(["Acme, North", "contact@example.com", "Line one\\nLine two"])
 
-    rows = parse_import_csv(csv_text, entity_type="customers")
+    rows = parse_import_csv(output.getvalue(), entity_type="customers")
 
     assert rows == [{
         "name": "Acme, North",
         "email": "contact@example.com",
-        "notes": "Line one\nLine two",
+        "notes": "Line one\\nLine two",
     }]
 
 
