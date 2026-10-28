@@ -163,6 +163,33 @@ export const FEATURE_CATALOG = [
     ],
   },
   {
+    id: 'employees-payroll',
+    titleAr: 'الموظفون والمرتبات',
+    titleEn: 'Employees & payroll',
+    noteAr: 'متاح لمالك مساحة العمل فقط. يُحفظ سجل الموظف منفصلًا عن صلاحيات حساب الدخول، وتُحسب المرتبات على الخادم.',
+    noteEn: 'Available to workspace owners only. Employee profiles are separate from login permissions, and payroll totals are calculated by the server.',
+    features: [
+      {
+        titleAr: 'ملفات الموظفين',
+        titleEn: 'Employee directory',
+        detailAr: 'أضف الموظفين وعدّل بياناتهم وفعّلهم أو أوقفهم دون حذف تاريخهم المالي.',
+        detailEn: 'Create and edit employees and deactivate them without deleting financial history.',
+      },
+      {
+        titleAr: 'حساب المرتب',
+        titleEn: 'Payroll calculation',
+        detailAr: 'يُحسب الصافي من الأساسي والبدلات والمكافآت والخصومات، وتُرفض القيم غير الصالحة والمرتب الصافي غير الموجب.',
+        detailEn: 'Net pay is calculated from base salary, allowances, bonuses, and deductions; invalid values and non-positive totals are rejected.',
+      },
+      {
+        titleAr: 'اعتماد وصرف آمن',
+        titleEn: 'Controlled approval and payment',
+        detailAr: 'يلزم اعتماد مالك مختلف عن منشئ المسودة. الصرف يسجل مصروف رواتب واحدًا ولا يسمح بصرف السجل مرتين.',
+        detailEn: 'A different owner must approve the draft. Payment creates one linked Payroll expense and cannot be repeated.',
+      },
+    ],
+  },
+  {
     id: 'assistant',
     titleAr: 'المساعد الذكي',
     titleEn: 'AI assistant',
