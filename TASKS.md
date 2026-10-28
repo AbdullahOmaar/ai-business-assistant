@@ -1,53 +1,56 @@
 # UI/UX Bug Batch — 2026-10-28
 
-Scope: the single branch `fix/ui-ux-review-batch-2026-10-28`, created from `main` at `f04c0e194b3afbefb56a979a5688f80d277b3ece`. The user-reported list resolves to 22 distinct findings (the earlier spoken count of 21 missed one separate invoice-form layout item). No merge or deployment is authorized until implementation and release gates are verified.
+Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main` at `f04c0e194b3afbefb56a979a5688f80d277b3ece`. The spoken count was 21, but the recorded findings contain 22 distinct items when invoice-list cards and invoice-create form sizing are tracked separately. Do not merge or deploy until the release gates pass.
 
-| ID | Finding | Current status / evidence |
+| ID | Finding | Code status |
 | --- | --- | --- |
-| UI-01 | Splash can remain on “Starting the app”; bound runtime-config, Firebase session, and API request waits plus retry control | CODE CHANGED; exact-head tests/CI pending |
-| UI-02 | Move UI/API version and build time into the current-business card | CODE CHANGED; tests/CI pending |
-| UI-03 | Add a clear interactive AI entry point on Home | CODE CHANGED; tests/CI pending |
-| UI-04 | Show Add Invoice before invoice filters | CODE CHANGED; tests/CI pending |
-| UI-05 | Improve invoice list/detail cards on mobile | Responsive list-card rules added; visual validation pending |
-| UI-06 | Improve customer cards on mobile | Responsive list-card rules added; visual validation pending |
-| UI-07 | Replace unclear free-text General expense category with selectable categories | CODE CHANGED; tests pending |
-| UI-08 | Add selectable notification types | CODE CHANGED; backend accepts free-text kind; tests pending |
-| UI-09 | Keep AI suggestions visible after choosing one | CODE CHANGED; tests pending |
-| UI-10 | Organize the release guide and version history | Responsive spacing and summary styles added; visual validation pending |
-| UI-11 | Reduce the oversized Platform Admin identity/permissions summary | Compact responsive styles added; visual validation pending |
-| UI-12 | Improve Admin metric cards on mobile | Compact mobile metric layout retained/refined; visual validation pending |
-| UI-13 | Remove needless horizontal scrolling from the Admin invoice-status table | Compact fixed-layout table styles added; visual validation pending |
-| UI-14 | Translate common audit actions and record types to Arabic | CODE CHANGED; unknown action labels still fall back to source value |
-| UI-15 | Add action and record-type filters to the audit log | CODE CHANGED; exact backend event vocabulary needs test confirmation |
-| UI-16 | Clarify and improve receivables-aging cards on mobile | Responsive card rules and known backend limitation translations added; visual validation pending |
-| UI-17 | Translate known report-limitations messages | Known backend strings mapped; unknown server-provided strings still need review |
-| UI-18 | Translate “Gross issued invoice total” revenue-basis wording | Actual backend revenue-basis phrase mapped; tests pending |
-| UI-19 | Reduce oversized text fields and dropdown controls across the app | Responsive input/select sizing rules added; visual validation pending |
-| UI-20 | Localize the data-integrity manual-review/report wording | Actual backend warning mapped; tests pending |
-| UI-21 | Improve Arabic localization of the tax report | Actual tax limitation strings mapped; audit all live server-provided text before VERIFIED |
-| UI-22 | Make invoice fields proportionate to their data, especially compact numeric discount/tax fields | Responsive invoice grid and numeric-field sizing added; visual validation pending |
+| UI-01 | Splash stuck on “Starting the app” | Bounded runtime-config, Firebase observer, and API request waits; retry UI added. Needs passing build/browser validation. |
+| UI-02 | Version/build time placement on Home | Moved version and build time into the current-business card; removed duplicate sidebar/mobile strips. |
+| UI-03 | Home should feel more interactive and AI-oriented | Added a Home AI assistant shortcut. Visual validation pending. |
+| UI-04 | Add Invoice should appear before invoice filters | Reordered the create form before the single customer filter. |
+| UI-05 | Invoice cards need clearer mobile layout | Added compact invoice-specific mobile grid rules. Visual validation pending. |
+| UI-06 | Customer cards need clearer mobile layout | Added compact customer-specific mobile grid rules. Visual validation pending. |
+| UI-07 | Expense category “General” is unclear | Replaced free text with Arabic-labeled category options, preserving backend values. |
+| UI-08 | Notification type offers only “businesses” | Added selectable notification kinds and localized list labels; backend accepts a string kind. |
+| UI-09 | AI suggestion buttons disappear after sending | Suggestions now remain visible after chat messages. |
+| UI-10 | Release guide/history needs organization | Added responsive spacing/summary styling. Visual validation pending. |
+| UI-11 | Admin identity/permissions card is oversized | Reduced summary padding, gaps, and permission-token sizing. Visual validation pending. |
+| UI-12 | Admin metrics need better mobile sizing | Added/refined compact responsive metric-card layout. Visual validation pending. |
+| UI-13 | Admin invoice-status table scroll is excessive | Added compact fixed-layout table rules for mobile. Visual validation pending. |
+| UI-14 | Audit action names are English | Added Arabic labels for known business actions; unknown action values still fall back to source text. |
+| UI-15 | Audit filters need more options | Added action and record-type dropdowns for known invoice, payment, expense, product, supplier, stock, purchase, return, import, and recurring events. |
+| UI-16 | Receivables aging is unclear | Added Arabic translations for known aging-report limitations and responsive cards. Visual validation pending. |
+| UI-17 | Report limitations appear in English | Mapped known backend limitations to Arabic; unknown server-provided strings still need review. |
+| UI-18 | P&L revenue basis says “Gross issued invoice total” | Mapped the actual backend revenue-basis wording to an Arabic explanation. |
+| UI-19 | Text fields/dropdowns are too large | Added app-wide scoped input/select/textarea sizing rules. Visual validation pending. |
+| UI-20 | Data-integrity warning/report wording is English | Mapped the actual backend warning to Arabic; tests/build pending. |
+| UI-21 | Tax report contains English | Mapped known backend tax limitation strings; review all live output before VERIFIED. |
+| UI-22 | Invoice fields should match data size | Added responsive invoice grid and compact numeric-field sizing. Visual validation pending. |
 
-## Implementation commits
+## Important implementation commits
 
-- `23f0a951681e8e12af381b9142601df7fe2a5f5f` — bound runtime configuration and Firebase session startup waits.
-- `c8d02a81163840a2e266490266f06e1544ee9088` — moved workspace release metadata, reordered invoice creation/filtering, added expense/notification/audit controls, localized common audit/report labels, and made AI suggestions persistent.
-- `78cb5cfcd00a688932cb522644fe8a0655592553` — added responsive workspace, invoice, expense, record-card, release-guide, and form-control styling.
-- `cc190b652c2a5ab9cf8a189307760d8160c0104e` — compacted Admin identity/permission summary and invoice-status table styles.
-- `758d20537f1170ecb2c89d395a2c4ad804cb5861` — added a Home AI shortcut, notification-kind labels, and Arabic timeout feedback.
-- `550b8322a543098b392bdeacd330fbb1a49d29c6` — mapped actual backend revenue-basis, data-integrity warning, and report-limitation wording.
-- `cbbfd88e12c10dc3dc67f9198ddf3f4937d3e2dd` — made Firebase session observation retryable after timeout/error.
-- `05954d8f69af23d992a08c9f7b95aa5f61d89d51` — bounded stalled backend fetches used during workspace startup.
-- `f0f1f3f45154c9c23221d764bceed3186bb25a43` and `7fe5142f83a24dc4609764fdb64fc9666787e49e` — added static regression tests for startup recovery, UI structure, and report localization.
+- `23f0a951681e8e12af381b9142601df7fe2a5f5f` — bound runtime-config and Firebase session startup waits.
+- `c8d02a81163840a2e266490266f06e1544ee9088` — workspace metadata placement, invoice order, expense/notification/audit controls, report labels, persistent AI suggestions.
+- `78cb5cfcd00a688932cb522644fe8a0655592553` — responsive forms/cards and input sizing.
+- `cc190b652c2a5ab9cf8a189307760d8160c0104e` — compact Admin identity and invoice-status panels.
+- `550b8322a543098b392bdeacd330fbb1a49d29c6` — translations based on actual backend revenue, integrity-warning, tax, and aging strings.
+- `cbbfd88e12c10dc3dc67f9198ddf3f4937d3e2dd` — retryable Firebase session observer.
+- `f165362d88f65c53c1ce23a8b222f2105ac2e2f1` — keep the API timeout active while parsing the response body.
+- `ca3317f11cd60b77ee857cb5b909a868fee8f703` — compact mobile invoice/customer card layout.
+- `95daaa138d77e425811ae56d464f3dd8314a6c87` — expanded audit event vocabulary.
+- `c30217714a399db1e8fca457a331af913c639254` — regression tests for expanded audit options and unique filters.
 
-## Verification ledger
+## Verification ledger — latest inspected implementation head
 
-- Branch base: `main` SHA `f04c0e194b3afbefb56a979a5688f80d277b3ece`.
-- At the last comparison before the latest test commit, the branch was 9 commits ahead and 0 behind; recheck exact head before merge.
-- CircleCI on the latest observed test commit `7fe5142f83a24dc4609764fdb64fc9666787e49e`: backend-accounting, frontend-quality, and frontend-browser-smoke were **PENDING** at the last status read. Check the latest SHA again before making a release decision.
-- Existing GitHub Actions Dependency security scan failed on the observed commits, including `7fe5142f83a24dc4609764fdb64fc9666787e49e`. Both JavaScript and Python audit jobs reported failure, but fetching their logs returned `404 BlobNotFound`; the root cause is **unverified**, not assumed to be a code or dependency vulnerability.
-- Frontend tests/build and browser/mobile visual checks: **NOT RUN locally** in this chat environment; exact-head CI is required.
-- PR/merge/deployment: **NOT RUN**. No PR exists for this branch at the last inspection; keep all changes on this single branch until checks and review gates are satisfied.
-- Next action: inspect exact-head CI results, resolve any reproducible failures, then finish remaining UI/localization checks before creating the PR.
+- Branch head: `c30217714a399db1e8fca457a331af913c639254`.
+- Branch comparison: 26 commits ahead of `main`, 0 behind; merge base remains `f04c0e194b3afbefb56a979a5688f80d277b3ece`.
+- Static source assertions: **11/11 passed** in the connector-side review. This is not a substitute for the project's actual test/build command.
+- CircleCI at the latest inspected head: `frontend-browser-smoke` **SUCCESS** (build 1385); `backend-container` **SUCCESS** (build 1386); `backend-accounting` **PENDING** (build 1387); `frontend-quality` **FAILURE** (build 1388).
+- The CircleCI `frontend-quality` failure blocks release. Its target URL is available, but logs are inaccessible from this environment; no root cause is claimed. The job runs `npm install`, `npm audit --audit-level=high`, then `npm run build`, so the failed step must be identified before changing dependencies or code blindly.
+- Existing GitHub Actions Dependency security scan also fails on this branch. Both audit jobs report failure; attempting to fetch their logs returns `404 BlobNotFound`, so the cause remains unverified.
+- Actual local `npm test` / `npm run build`: **NOT RUN**. Visual/mobile accessibility checks: **NOT RUN**.
+- PR/merge/deployment: **NOT RUN**. No PR for this branch was found. Do not merge while `frontend-quality` is failing or checks are pending.
+- Next action: obtain the failing CircleCI step/logs, fix the evidenced cause, rerun all checks on the exact final SHA, then create the PR and merge only after required gates pass.
 
 ---
 
