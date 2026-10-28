@@ -54,7 +54,7 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
   const chatStart = source.indexOf('<section class="panel chat-panel">', assistantStart);
   const chatEnd = source.indexOf('</section>', chatStart);
   const suggestionsStart = source.indexOf('<aside class="assistant-suggestions"', chatEnd);
-  const workspaceEnd = source.indexOf('</div>\\n            }', suggestionsStart);
+  const workspaceEnd = source.indexOf('</div>\n            }', suggestionsStart);
   assert.ok(assistantStart >= 0 && chatStart > assistantStart);
   assert.ok(chatEnd > chatStart && suggestionsStart > chatEnd,
     'suggestions must be a sibling of the chat panel, not inside it');
