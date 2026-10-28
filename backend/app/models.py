@@ -230,7 +230,7 @@ class Invoice(Base):
     )
     customer_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     invoice_number: Mapped[str] = mapped_column(String(64), nullable=False)
-    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft", server_default="draft")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
     issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
