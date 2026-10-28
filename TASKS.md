@@ -4,7 +4,7 @@
 
 ## Current verified repository state
 
-- **Main SHA at task start:** `1dfe63729f159f06c28d7acab641ceb3345dc5be` — TASKS reconciliation PR #288 merged after payroll refresh PR #287. Payroll code merge SHA `28dd3b418b53f7b9408695982b7378c4c99c7b27` passed CircleCI six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API contexts were **SUCCESS**. No manual production deployment was initiated.
+- **Main SHA at task start:** `51227718405ddd59e222c14aeace83d9f2d4983d` — final post-merge CI ledger checkpoint after PR #287 and TASKS reconciliation. Payroll code merge SHA `28dd3b418b53f7b9408695982b7378c4c99c7b27` passed CircleCI six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API contexts were **SUCCESS**. No manual production deployment was initiated.
 - **PR #287 — payroll post-payment refresh:** **MERGED** at `28dd3b418b53f7b9408695982b7378c4c99c7b27`. A successful payroll payment emits an event; the parent refreshes workspace expenses/dashboard and ignores late responses/errors after switching workspaces. Regression coverage is on main.
 - **Superseded PRs #280, #285, and #286:** **CLOSED WITHOUT MERGE**. Their branches were preserved; no remote branch deletion was performed.
 - **PR #284 — AI source grounding:** merged at `71eeb68eb2c33955d0729c984ff5626c39f28d43`; the no-provider fallback now returns intent-relevant sources with regression tests.
