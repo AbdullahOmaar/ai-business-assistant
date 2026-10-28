@@ -32,8 +32,9 @@ test('workspace version and build time live inside the current-business card', (
 test('invoice creation is presented before invoice filtering', () => {
   const toolbar = source.indexOf('class="invoice-toolbar"');
   const create = source.indexOf('class="invoice-create-disclosure"', toolbar);
-  const filter = source.indexOf('class="customer-invoice-filter"', toolbar);
+  const filter = source.indexOf('customer-invoice-filter', toolbar);
   assert.ok(toolbar >= 0 && create > toolbar && filter > create);
+  assert.equal((source.match(/class="inline-form customer-invoice-filter"/g) || []).length, 1);
 });
 
 test('expense and notification types use selectable, localized options', () => {
@@ -46,7 +47,7 @@ test('expense and notification types use selectable, localized options', () => {
 
 test('AI suggestions remain visible after a message is sent', () => {
   assert.equal(source.includes('@if (!chatMessages.length) { <div class="assistant-suggestions">'), false);
-  assert.match(source, /class="ai-quick-card"/);
+  assert.match(source, /class="quick-card ai-quick-card"/);
 });
 
 test('audit actions and record types have Arabic display labels', () => {
@@ -80,7 +81,7 @@ test('API requests abort when the backend stalls instead of blocking workspace s
 
 test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
   assert.match(source, /gross issued invoice totals before sales returns/);
-  assert.match(source, /This report identifies records for manual review only/);
+  assert.match(source, /this report identifies records for manual review only/);
   assert.match(source, /Legacy invoices without customer links are flagged for review, not auto-corrected\./);
   assert.match(source, /Uses saved tax totals on issued invoices; it does not recalculate historical taxes\./);
 });
