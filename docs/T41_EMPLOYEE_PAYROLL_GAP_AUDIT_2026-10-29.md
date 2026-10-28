@@ -49,3 +49,28 @@
 - Therefore, do not implement payroll expense posting or shared financial-model/migration changes yet. Continue safe discovery/spec/test design only until Master approves the shared contract and permission model.
 - Notion data-source SQL/rows query allowance was exhausted during the second task lookup; the error says retry later or use the offered Business trial option. Direct fetch of the known T37 and T40 pages succeeded, so their displayed statuses above are based on those page records.
 - Next unblock owner: Master — Product & Release, to approve T37 shared financial contracts and confirm the T40 payroll posting integration contract. After approval, Chat 4 implements effective-dated salary history and calculation snapshots on this branch.
+
+## Safe test-design checkpoint (2026-10-29)
+This section is test design only; it does not change runtime behavior or authorize a schema/financial-contract decision.
+
+### Salary history and calculation snapshot cases to implement after T37/T40 approval
+- Effective-date selection: salary beginning on period start; salary ending at the boundary; mid-period salary change; no matching salary record; future-dated salary; inactive/terminated employee.
+- Interval integrity: reject start >= end; reject overlapping periods for the same employee/business; permit adjacent non-overlapping periods; prove business A cannot read or attach business B's salary row.
+- Backfill: every legacy employee gets a deterministic history representation without guessing the real-world start date; migration must preserve current monthly_salary and existing payroll base_salary/net_pay for all existing rows; downgrade behavior must be explicitly reviewed before migration.
+- Snapshot reproducibility: calculation inputs, currency, rounding-policy version and selected salary-history ID are frozen for a payroll run; changing salary later cannot mutate existing approved/paid runs or their payslip snapshot.
+- Financial boundaries: draft/approval/payment transitions follow the Master-approved state contract; duplicate/replayed payment requests produce one payment effect and one expense posting; failed attempt does not mark paid; reversal/correction is auditable and reconciles to the approved expense/reporting contract.
+- Security/no-side-effects: STAFF and non-members cannot read salary/payslip/payment details or mutate payroll; denied requests leave payroll, expense, and audit state unchanged except where the approved audit policy explicitly requires a denial event.
+- Reconciliation: synthetic scenarios reconcile payroll totals to the single linked expense by currency and period; no cross-currency aggregation; invalid/negative inputs and precision boundaries are rejected or rounded only per the approved money contract.
+
+### Decisions that must be recorded by Master before implementation
+1. The authoritative salary effective-date convention and the legacy backfill start date/meaning (do not infer employment start date).
+2. Whether salary periods are half-open [start, end), and how mid-month changes are prorated (default is no proration until explicitly approved).
+3. T40-approved source-event/expense contract for payroll paid, retry, correction and reversal.
+4. Shared idempotency key, transaction boundary, audit metadata and OWNER/STAFF permission contract.
+5. Whether calculation snapshots are immutable JSON, normalized rows, or both, and how snapshot schema versions are retained.
+
+### Current verification checkpoint
+- Source review: 0005_employee_payroll.py confirms revision 0005_employee_payroll follows 0004_platform_user_roles; this single migration alone does not establish full-chain upgrade/downgrade safety.
+- Existing API test file contains employee CRUD, duplicate checks and role-denial coverage, but new cases above are not implemented or executed.
+- Local pytest, migration upgrade/downgrade, frontend tests/build and local security checks: NOT RUN in this connector-only session.
+- No runtime files changed; the shared-contract gate remains active.
