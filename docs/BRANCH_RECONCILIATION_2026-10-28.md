@@ -961,3 +961,13 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - Exact merge-commit CircleCI statuses: frontend unit tests, dependency audit, production build, browser smoke, backend container, backend accounting, and aggregate **7/7 PASS**.
 - Current inferred PR inventory after this state change: **238 total**, **126 merged**, **111 closed-unmerged**, **1 open Draft PR (#249)**, and **245 branches** based on the last paginated inventory before #278 merged. Refresh the full inventory before any cleanup or final reconciliation closeout.
 - This is source/CI verification, not a claim that authenticated production workflows or physical mobile/accessibility QA were run. No production deployment was initiated by this feature task.
+
+
+## Live inventory refresh after stale PR #249 closure and replacement PR #282 (2026-10-28)
+
+- Paginated GitHub API snapshot: **241 PR records** (pages 100 + 100 + 41): **126 merged**, **112 closed-unmerged**, **3 open Draft PRs (#280, #281, #282)**.
+- Remote branch snapshot: **247 unique branches** (pages 100 + 100 + 47). Counts include stale branches; no branch deletion or mass-merge was performed.
+- PR #249 was closed without merge because its branch became conflicted after main advanced. Its documentation changes were preserved on current-main-based PR #282; this adds a documented disposition for #249 and brings the current closed-unmerged semantic audit to **112/112**.
+- PR #282 is based on main SHA `125ad371b86d22f3200eddafa2d139cb019f6195`; it remains Draft pending exact-head checks. Local tests/build: NOT RUN in the connector-only session.
+- The other open Drafts, PR #280 (payroll workspace-finance refresh) and #281 (employee/payroll access denial regressions), are separate workstreams and were not modified by this reconciliation.
+- These counts are a point-in-time snapshot and must be refreshed before final closure. Production deployment and authenticated production workflows were not initiated by this docs-only work.
