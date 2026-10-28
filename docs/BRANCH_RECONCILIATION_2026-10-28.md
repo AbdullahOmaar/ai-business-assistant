@@ -675,3 +675,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Remaining closed-unmerged PRs requiring semantic review: **46/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 8 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #70 — scheduled dependency security scans | Current `.circleci/config.yml` contains a weekly `scheduled-dependency-audit` workflow and explicit `pip-audit` / `npm audit --audit-level=high` steps. | Replaced by CircleCI scheduled audits; no GitHub Actions duplicate needed. |
+| #57 — ten-business roadmap and payment CSV export | Current `app.component.ts::exportPaymentsCsv` implements the payment export; `csv-export.spec.ts` and the shared export helpers cover CSV safety/formula neutralization. | Product behavior is present through later CSV export work; roadmap document itself is not required runtime code. |
+| #56 — workspace search, invoice filters and CSV exports | Current UI has customer/product/invoice search and invoice status filters; shared CSV export code and tests are present. | Superseded by merged workspace-search/export successor #214; no restore. |
+| #54 — authenticated business API route inventory | Current `docs/SECURITY_ROUTE_INVENTORY.md` documents routes and authorization expectations and explicitly distinguishes source inventory from exhaustive negative-test coverage. | Replaced by current security route inventory; no restore. |
+| #49 — Arabic-first navigation and PWA polish | Current main has the Arabic RTL app shell, installable manifest, service worker, mobile navigation and workspace list tools. | Superseded by later mobile/PWA and UI merges; visual/device QA remains separate. |
+| #48 — compact bottom navigation and PWA install | PR #49 was the designated clean successor; current main contains the mobile navigation/PWA behavior and four-slot navigation regression. | Duplicate/superseded; no restore. |
+| #47 — auth connectivity diagnostics and language switch | Current main contains Arabic/English UI, RTL layout, differentiated API/auth errors and retryable assistant error handling through later mobile/auth merges. | Superseded by #48/#49 and later UI changes; no restore. |
+| #46 — RTL and accessibility polish | Current main includes the RTL shell, accessible loading/status/error feedback and navigation semantics. The prior PR's Android QA was not evidence of final-device verification. | Core changes are present/superseded; keyboard/screen-reader and physical-device visual QA remain NOT RUN. |
+| #43 — assistant resilience and tenant route inventory | Current `assistant_api.py` has bounded provider retry/history limits; `test_assistant_resilience.py` covers retry behavior, and the current security route inventory is maintained separately. | Superseded by merged #217/#219 and current security docs; no restore. |
+
+## Audit accounting — after priority batch 8
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–8: **72/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **37/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
