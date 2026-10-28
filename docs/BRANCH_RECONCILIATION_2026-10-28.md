@@ -803,3 +803,53 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Current comparison main SHA at audit time: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
 - No branches deleted, no closed PR reopened, and no stale feature branch merged wholesale.
 - Remaining independent work is tracked separately: PR #261 foreign-tenant test failure diagnosis; live authenticated production workflows; physical mobile visual/accessibility QA; approved non-production PostgreSQL restore drill; branch/PR inventory snapshot reconciliation; and any distinct missing feature confirmed by future evidence.
+
+
+## Live branch/PR inventory refresh — 2026-10-28 (paginated recheck)
+
+This refresh supersedes the older inventory totals above for the current live snapshot; older counts remain historical evidence.
+
+### Exact live counts
+- Branches: **236** (pages 100 + 100 + 36).
+- PR records: **229** (pages 100 + 100 + 29): **115 merged**, **109 closed-unmerged**, **5 open** (#267, #268, #269, #264, #261).
+- Open PR head refs without a corresponding branch: **0**.
+- Non-main branches without a matching PR head ref: **11**.
+- Branch refs whose SHA differs from the matching PR head SHA: **10**.
+- No branch was deleted or force-updated as part of this inventory review.
+
+### Current 11 branches without a PR head
+
+| Branch | Current comparison to main | Evidence-based disposition |
+|---|---:|---|
+| `build/frontend-lockfile-npm-ci-20261028-v2` | 0 ahead / 15 behind | Obsolete lockfile duplicate; #258 owns the current lockfile/`npm ci` implementation. |
+| `feat/first-ten-business-foundation` | 0 ahead / 393 behind | No unique patch relative to main. |
+| `fix/accounting/line-rounding-reconciliation` | 0 ahead / 353 behind | Rounding behavior and regression coverage are present on main. |
+| `fix/backup-restore-target-safety-current-main-20261028` | 0 ahead / 78 behind | Restore-target guard/runbook code is superseded; actual isolated restore drill remains BLOCKED pending an approved non-production target. |
+| `fix/deterministic-frontend-install` | 0 ahead / 180 behind | Superseded by #258 lockfile and reproducible `npm ci` setup. |
+| `fix/invoice-stock-return-safety` | 7 ahead / 391 behind | The branch's two sales-return regression names match current main's `test_sales_return_regressions.py`; current service/operations tests cover cumulative return and repeated-line stock safety. Do not merge stale source wholesale. |
+| `learning/toto-practice` | 2 ahead / 378 behind | The positive/negative half-up `money()` and empty currency-summary tests are present on main. |
+| `security/owner-staff-permission-matrix` | 3 ahead / 362 behind | Older branch lacks newer main regressions; OWNER-only guards and stronger STAFF denial tests are already present. |
+| `test/security-foreign-tenant-no-write-20261028` | 2 ahead / 6 behind | Contains one broad foreign-ID no-write test in `test_api.py`; equivalent/split coverage exists in open #267 and #261. #267's current exact head passed CircleCI 7/7; keep this orphan branch untouched and do not merge it wholesale. |
+| `verify/api-release-dec7` | 1 ahead / 349 behind | Only unique file is stale README documentation; no runtime patch. |
+| `verify/merged-main-dec7` | 0 ahead / 349 behind | No unique patch relative to main. |
+
+### Ten branch/PR SHA mismatches
+
+Each branch head was compared to its matching PR head; the additional commits were inspected for changed paths and compared with current main.
+
+| Branch / PR | Commits ahead of PR head | Disposition of extra patch |
+|---|---:|---|
+| `build/reproducible-frontend-install-20261028` / #251 | 1 | `TASKS.md` only; current lockfile and CI implementation are in #258. |
+| `docs/refresh-release-evidence-20261028` / #253 | 1 | `TASKS.md` only; stale release checkpoint superseded by current release evidence. |
+| `docs/task-ledger-refresh-20261028` / #259 | 2 | Two domain-rule regressions and an audit doc; both regressions are on main and the old ledger snapshot is superseded. |
+| `feat/arabic-rtl-app-loading` / #38 | 3 | Older RTL/startup UI snapshot; current app has RTL shell, accessible loading and later UI fixes. |
+| `feat/assistant-resilience-usage-limits` / #40 | 2 | Assistant retry/history and Firebase token tests are present on main in current resilience/security suites. |
+| `fix/mobile-no-topbar-release` / #49 | 5 | Old stacked mobile/PWA UI; current main has manifest, service worker, navigation and later workspace header fixes. |
+| `fix/mobile-pwa-navigation-clean` / #48 | 1 | Old PWA/navigation patch; current main has the merged successor behavior. |
+| `release/v0.2.0-accounting-and-version` / #105 | 2 | Extra API/domain-rule code/tests are superseded by current financial, timezone, statement and rounding implementation. |
+| `security/platform-admin-hardening-2026-10-28` / #223 | 1 | Current `platform_admin_api.py` is byte-identical to this branch's file; current main has a stronger platform-admin test set, including an extra audit-rollback test. |
+| `test/assistant-safety-guardrails` / #50 | 2 | Branch's older assistant/tenant/lifecycle tests are superseded by stronger current `test_assistant_security.py`, `test_business_tenant_boundaries.py` and `test_invoice_lifecycle_edges.py`. |
+
+### Inventory conclusion
+
+The current inventory now has a disposition for all 11 orphan branches and all 10 branch/PR head mismatches. None contains a confirmed unique runtime change that should be merged wholesale. The one orphan foreign-tenant test is superseded by the currently open security candidates; #267 passes exact-head CircleCI 7/7 but remains Draft pending the repository's security-change merge decision. All branches are preserved.
