@@ -140,3 +140,52 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - Rollback executed: **NOT RUN** (no incident/rollback authorization).
 - Last-known-good deployment identity and schema compatibility: **NOT VERIFIED**.
 - Production Admin authenticated smoke after rollback: **NOT RUN**.
+
+
+## PostgreSQL last-owner concurrency regression — 2026-10-28
+
+- ADM-06 follow-up status: **IN_PROGRESS**; exact final-head CI is pending.
+- Added `backend/tests/test_membership_management_postgres_concurrency.py` to exercise concurrent owner demotion and owner removal against the disposable PostgreSQL service used by CircleCI. Existing SQLite coverage is insufficient evidence for `SELECT ... FOR UPDATE` behavior.
+- The test asserts exactly one concurrent mutation succeeds, the workspace retains one OWNER, and exactly one matching audit event persists. It is gated on `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and a PostgreSQL `TEST_DATABASE_URL`; it does not create schema or access production.
+- Current `main` rechecked at `f04c0e194b3afbefb56a979a5688f80d277b3ece`; its branch-policy changes were reconciled by merge commit `abf1e924821002dacd2a0478c5d4cf13db2ddd22`. The branch now compares 10 commits ahead and 0 behind main.
+- Branch: `feat/platform-admin-membership-concurrency-20261028`; PR #238: https://github.com/AbdullahOmaar/ai-business-assistant/pull/238.
+- Follow-up code review fixed UUID-typed SQLAlchemy filters/cleanup and avoided TestClient lifespan handling in worker threads. CircleCI on prior head `bbdb64d6a6388a5296756f0ad5b375e4191f8c12` passed all four contexts (1197–1200); after mainline sync, CircleCI contexts were pending on merge head `abf1e924821002dacd2a0478c5d4cf13db2ddd22` (runs 1217, 1218, 1220; backend-container also needs checking). The latest head changes with this documentation update; verify all four contexts on that exact head before merge.
+- Local execution: **NOT RUN** (no local repository checkout/runtime available). GitHub Actions checks report failures but log download returned `404 BlobNotFound`; cause remains unverified.
+- No production deployment, identity configuration, or production data mutation was performed.
+- Production readiness remains **NO-GO / NOT VERIFIED** until PostgreSQL concurrency evidence passes, WCAG 2.2 AA keyboard/screen-reader/mobile checks are completed, authenticated Admin smoke is run with authorization, and Web/API deployed SHA parity is established.
+
+
+- Latest observed CI checkpoint before this documentation commit: candidate `70933ee7d378e473b5798e3874af0c5fb98056ed` had CircleCI backend-container **PASS** (1225), frontend-quality **PASS** (1227), backend-accounting **FAIL** (1226), frontend-browser-smoke **PENDING** (1228). PR remains Draft.
+- The backend-accounting run's detailed output is inaccessible through available connectors; a CircleCI page open returned an access error, and GitHub Actions job-log downloads returned `404 BlobNotFound`. Root cause is **UNVERIFIED**. Do not make speculative code changes or merge until the actual failure details are available. The next documentation commit changes the candidate SHA and requires a fresh exact-head check.
+
+
+## ADM-06 backend-accounting teardown defect — 2026-10-28
+
+- Reproduced a deterministic fixture-cleanup error in the PostgreSQL last-owner race test: `business_id` is retained as a UUID object, while three cleanup filters attempted to wrap it with `UUID(...)`, raising `AttributeError` during teardown.
+- Replaced those three wrappers with the already-typed UUID value. The test's `UUID(business_id)` conversion remains where the fixture yields the business ID as a string.
+- Disposable PostgreSQL 16 diagnostic run: before fix, assertions completed but teardown errored; after fix, **1 passed**. The sandbox uses a prior application snapshot, not an exact checkout of the PR SHA. This is targeted defect evidence only; exact-head CircleCI remains the merge gate.
+- Fix commit: `addc50f1a6e2dfd792b50b608bc52fec85c8010c`. Keep PR #238 Draft until all four CircleCI contexts pass on the final head and review/protection requirements are satisfied.
+
+
+## ADM-06 verification refresh — 2026-10-28 01:14 UTC
+
+- Candidate source SHA with completed CircleCI validation: `df9af849b9dea593c9091107573341af956e9f73`. All four CircleCI contexts passed on that SHA: backend-container (1241), backend-accounting (1242), frontend-quality (1243), frontend-browser-smoke (1244).
+- GitHub Actions on the same candidate SHA concluded failure for Backend tests (run 680), Verify backend container (run 818), Verify backend and frontend (run 1396), and Dependency security scan (run 1097). Job-step summaries are empty and log retrieval returns HTTP 404 `BlobNotFound`; causes remain UNVERIFIED. No Actions rerun was attempted because the current task ledger records the runner allowance as exhausted.
+- PR #238 is still open and Draft with no recorded reviews. Branch protection/review requirements remain unverified because the connected integration returned HTTP 403. No merge or deployment is authorized by this evidence.
+- Documentation update commit on the feature branch: `92c91427ad3f3cec17e290df886a91c101a6bb07` (TASKS.md). This docs-only commit creates a new PR head and therefore requires fresh exact-head status verification before any merge decision.
+- Local test execution, production authenticated Admin smoke, full WCAG 2.2 AA validation, and Web/API deployed SHA parity: NOT RUN / NOT VERIFIED. Production remains NO-GO.
+
+
+## CircleCI-first verification — 2026-10-28 01:19 UTC
+
+- CircleCI passed all four contexts on source SHA `efa94afff7c8e9c9642763e2c5f743e77bfab022`: backend-container (1256), backend-accounting (1253), frontend-quality (1254), frontend-browser-smoke (1255). This covers the PostgreSQL last-owner concurrency regression on that exact candidate.
+- CI configuration review confirms CircleCI runs the disposable PostgreSQL backend suite, migration/schema-drift checks and offline SQL generation, Python/npm audits, frontend build (which runs npm tests), backup/restore shell safety tests, backend image build/import check, and Chromium Playwright E2E.
+- GitHub Actions workflows still conclude failure on that source SHA (runs 682, 1099, 1398, 820); job-step summaries are empty and log retrieval returns HTTP 404 `BlobNotFound`. Their causes are UNVERIFIED. Branch protection and required-check settings cannot be read through the current integration (HTTP 403), and no PR review approvals are recorded.
+- PR #238 remains Draft. No merge, deployment, or production data/configuration changes. Local exact-head test execution, production authenticated Admin smoke, WCAG 2.2 AA validation, and Web/API SHA parity remain NOT RUN / NOT VERIFIED.
+- TASKS.md ledger update commit: `04697b0589557e69799ab0f5d94c9615188698bb`. This documentation update creates another new PR head, so the four CircleCI contexts must be checked again on the resulting latest SHA.
+
+## ADM-06 concurrency test assertion review — 2026-10-28
+
+- Tightened `backend/tests/test_membership_management_postgres_concurrency.py`: a losing request must return HTTP 422 with the exact last-owner guard message, not merely any 403/422. This prevents authorization/setup failures from being counted as evidence that the concurrency invariant held.
+- The API guard in `backend/app/core_features_api.py` returns this message for both owner demotion and owner removal when the workspace would otherwise have no OWNER.
+- Exact-head CircleCI is pending after this test-only hardening; do not mark ADM-06 verified until all four contexts pass on the new SHA.

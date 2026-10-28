@@ -1,3 +1,43 @@
+# Current prioritized work queue — 2026-10-28
+
+> This section is the canonical current queue. Dated checkpoints below it are retained as history, not current truth. Prefer current GitHub refs, exact-head CircleCI, and current deployment metadata over older checkpoint claims.
+
+## Research baseline
+- Current implementation head `9750ac616eb3832bcfef31e877f91d94901bdb3a`: CircleCI has started four jobs; previous head `aa94b225a7e10e0abfd4a141ce62ac88d16a37a3` had backend-accounting fail and other three pass. Failure logs are unavailable, so root cause remains unverified; test baseline was corrected to occur after the allowed STAFF product-name edit.
+
+- Current `main`: `f4af64430aa74744693fb6541b27bdd8769c1730`; CircleCI PASS 4/4 and Vercel Web/API contexts success on this SHA. PR #238 candidate is one commit behind main by comparison, but GitHub reports mergeable true.
+- PR #238 `test(admin): verify concurrent last-owner membership mutations`: exact head `595152b6a2e6e60290b44397b919cb24ad82cdcc`; CircleCI PASS 5/5 (backend-accounting 1572, backend-container 1573, frontend-quality 1571, frontend-browser-smoke 1574, aggregate workflow `b7760c99-cdb2-4c4c-a982-b0016c1bc38f`). PR remains Draft pending independent review/merge gate confirmation; no review approvals recorded.
+- PR #236 `test(finance): cover concurrent invoice void and sales return`: head `96f2e03e4cca34d4be86c57a0490f33147365e77`; CircleCI PASS 4/4 (1325–1328); remains Draft with no reviews. It predates the aggregate-gate change and must be refreshed/rechecked after #238 is merged.
+- PR #239 `docs: add branch consolidation ledger` remains a separate documentation change.
+- GitHub Actions duplicate jobs fail almost immediately with no runner identity/step logs; exact cause is **UNVERIFIED**. Branch-protection/ruleset reads return HTTP 403. Do not disable workflows, assume checks optional, or merge around protections.
+- GitHub Issues #240 (aggregate CI gate), #241 (lockfile), #242 (bundle measurement/performance), and #244 (denied-request no-write/no-audit) were added after source review. #244 is a focused subtask of existing #110, not a duplicate replacement.
+- Production release remains **BLOCKED**: Vercel reports `build-rate-limit`, deployed Web/API source-SHA parity isn't verified, and no production deployment authorization exists.
+
+## Ordered queue
+
+| Order | ID / priority | Outcome and evidence | Acceptance gate | Status |
+|---:|---|---|---|---|
+| 1 | CI-007 / P0 — Issue #240 | CircleCI aggregate gate and all four substantive jobs passed on exact PR #238 head `595152b6a2e6e60290b44397b919cb24ad82cdcc`. The earlier backend-accounting failure was addressed by moving the audit baseline after the permitted STAFF edit. Current main advanced to `f4af64430aa74744693fb6541b27bdd8769c1730`; this branch is being synchronized before final verification. | Confirm exact-final-head required status `ci/circleci: verify-all-changes/all-checks-passed`; owner must confirm branch protection because settings API returns 403. | IN_PROGRESS |
+| 2 | ADM-06 / P0 — PR #238 | PostgreSQL concurrency regression covers simultaneous OWNER demotion/removal. Rejected request must return the actual 422 last-owner guard, not an unrelated 403. All four CircleCI jobs plus aggregate passed on prior exact head `595152b6a2e6e60290b44397b919cb24ad82cdcc`; current synchronized head must be rechecked. | Independent review/approval, current required-check configuration, and fresh exact-head CI after the latest ledger refresh; never merge around unknown protections. | IN_PROGRESS |
+| 3 | FIN-001 / P0 — PR #236 | PostgreSQL race test for return approval versus invoice void: only one transition wins; return-wins leaves invoice issued/stock 3, void-wins leaves return draft/stock 10; exact head passed 4/4 CircleCI. | After #238's CI gate is integrated, refresh this candidate against current main, rerun all required jobs and aggregate, review diff, obtain approval. | IN_PROGRESS |
+| 4 | SEC-001 / P0 — Issues #110 and #244 | Added business-scoped `AuditEvent` count baseline/assertion around the 16 denied STAFF requests; moved baseline after the allowed product-name edit. `docs/SECURITY_ROUTE_INVENTORY.md` records evidence/limits. Backend-accounting and aggregate passed on prior exact head `595152b6a2e6e60290b44397b919cb24ad82cdcc`; broader route × role × tenant gaps remain. | Backend-accounting passes on the final head; continue reconciling route-to-test matrix for OWNER, STAFF/non-member, and foreign-tenant IDs. No permission-policy change. | IN_PROGRESS |
+| 5 | FIN-ROUNDING / P1 — Issue #109 | Current main documents line-first rounding with explicit `ROUND_HALF_UP`; tests cover half-cent ties, fractional quantities, discount/tax, invoice create/edit persisted-line invariants. Backend-accounting passed on inspected main SHA. Historical invoice rows are never automatically rewritten. | Keep issue open until the broader queue reaches this step and reconcile issue state with current CI/test evidence; do not duplicate old PR #112, whose logic/tests are already present on main. | IN_PROGRESS |
+| 6 | BUILD-001 / P1 — Issue #241 | Current GitHub `frontend/` listing has no committed `package-lock.json`; CircleCI uses `npm install`. A stale sandbox snapshot produced a lockfile, `npm ci` installed 417 packages and `npm audit` found 0 vulnerabilities, but that lockfile is not in the repository. The same stale snapshot's build then failed TS2367 due an old 1.3.0-era app component; current main uses `APP_BUILD_INFO.version`, so that failure is not evidence against current main. | Add a generated, reviewed lockfile to a real repository branch, switch project installs to `npm ci`, and pass exact-head frontend unit tests/build/audit/Playwright. Do not copy stale source or fabricate lock data. | TODO |
+| 7 | OPS-001 / P1 — Issue #106 | Backup/restore target guards and non-destructive shell safety tests exist; no verified full isolated restore is evidenced. Prior provider note found no snapshot inventory/schedule, and paid resources are not authorized. | Confirm free isolated target/permissions; restore only to separate non-production DB; validate schema/integrity and document RPO/RTO. | BLOCKED |
+| 8 | REL-001 / P1 | Vercel Web/API checks report `build-rate-limit`; deployed source SHAs are not proven to match current main. | After quota/owner resolution and explicit release authorization: exact release SHA, passing gates, both deployment IDs/SHAs/versions, aliases, health/readiness, browser startup and authenticated safe smoke. | BLOCKED |
+| 9 | A11Y-001 / P1 | Platform Admin keyboard, screen-reader, mobile and WCAG 2.2 AA evidence is incomplete. | Run and record the preview accessibility checklist against an exact source SHA; fix findings and rerun. Production authenticated smoke remains separate and unauthorized. | NOT RUN |
+| 10 | PERF-001 / P2 — Issue #242 | Historical Web build measured 730.87 kB initial JS against a 700 kB warning budget; this does not establish the current bundle size. | Measure current exact-SHA bundle first; if still over, reduce the initial chunk with evidence-based splitting/unused-code removal, preserve auth/startup/PWA/RTL, then rerun frontend tests and Playwright. | TODO |
+
+## Execution discipline and latest next actions
+
+1. Keep PR #238 as the only active implementation branch. The exact head `595152b6a2e6e60290b44397b919cb24ad82cdcc` passes four CircleCI jobs plus aggregate. PR #238 is Draft pending independent review and owner confirmation of required-check/branch-protection settings; API read returns 403.
+2. Continue read-only review on #236 and #110 while waiting for PR #238's review gate; don't start a second implementation branch or combine unrelated application features into #238.
+3. After #238 review/merge gates are actually satisfied, verify main's merge SHA/CI, then refresh #236 and re-run its four jobs plus the new aggregate.
+4. Execute #110/#244 role/tenant/no-write/no-audit coverage on its own coherent branch after the above dependency boundary clears.
+5. Tests not executed against an exact current checkout are **NOT RUN**. A green prior SHA is not a green later SHA. No merge, production data mutation, secret/configuration change, or deployment is implied here.
+
+---
+
 ## Platform Admin — five-task execution — 2026-10-27
 
 Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
