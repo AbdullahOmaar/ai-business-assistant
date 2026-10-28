@@ -26,10 +26,21 @@ export class AuthService {
 
   getRuntimeConfig(): Promise<RuntimeConfig> {
     if (!this.configPromise) {
-      this.configPromise = fetch('/runtime-config.json', { cache: 'no-store' }).then(async response => {
-        if (!response.ok) throw new Error('Runtime configuration could not be loaded.');
-        return await response.json() as RuntimeConfig;
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+      this.configPromise = fetch('/runtime-config.json', { cache: 'no-store', signal: controller.signal })
+        .then(async response => {
+          if (!response.ok) throw new Error('Runtime configuration could not be loaded.');
+          return await response.json() as RuntimeConfig;
+        })
+        .catch(error => {
+          this.configPromise = undefined;
+          if ((error as { name?: string } | null)?.name === 'AbortError') {
+            throw new Error('Runtime configuration request timed out. Check your connection and retry.');
+          }
+          throw error;
+        })
+        .finally(() => clearTimeout(timeoutId));
     }
     return this.configPromise;
   }
@@ -62,17 +73,31 @@ export class AuthService {
       this.auth = getAuth(app);
       this.authReady = new Promise<void>((resolve, reject) => {
         let unsubscribe: () => void = () => {};
+        let settled = false;
+        const timeoutId = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          unsubscribe();
+          this.authReady = undefined;
+          reject(new Error('Firebase sign-in session check timed out. Retry when your connection is stable.'));
+        }, 10_000);
+        const finish = (error?: unknown, user?: User | null) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          unsubscribe();
+          if (error) {
+            this.authReady = undefined;
+            reject(error);
+            return;
+          }
+          this.user = user ?? null;
+          resolve();
+        };
         unsubscribe = onAuthStateChanged(
           this.auth!,
-          user => {
-            this.user = user;
-            unsubscribe();
-            resolve();
-          },
-          error => {
-            unsubscribe();
-            reject(error);
-          }
+          user => finish(undefined, user),
+          error => finish(error)
         );
       });
     }
