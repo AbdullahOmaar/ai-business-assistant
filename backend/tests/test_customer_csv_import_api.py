@@ -308,7 +308,7 @@ def test_nonmember_cannot_export_or_import_customers_without_side_effects():
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}"
     csv_base = f"{base}/imports/customers.csv"
-    csv_text = "name,email\\nNonmember customer,nonmember@example.com\\n"
+    csv_text = "name,email\nNonmember customer,nonmember@example.com\n"
     requests = {
         "export customers": lambda: client.get(f"{base}/exports/customers.csv"),
         "preview customer CSV": lambda: client.post(
