@@ -145,6 +145,68 @@ def test_staff_cannot_read_or_change_employees_or_payroll_and_no_rows_are_writte
         assert persisted is not None and persisted.status == "draft"
 
 
+
+def test_nonmember_cannot_access_or_mutate_employee_payroll_without_side_effects(employee_environment):
+    env = employee_environment
+    employee_response = _create_employee(env)
+    assert employee_response.status_code == 201
+    employee_id = employee_response.json()["id"]
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll_response = env["client"].post(
+        f"{base}/employees/{employee_id}/payroll", json={"period": "2026-10"}
+    )
+    assert payroll_response.status_code == 201
+    payroll_id = payroll_response.json()["id"]
+
+    # Use a different OWNER to put the record into the paid-eligible state.
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "approved"
+
+    # This identity has no membership in the business.
+    nonmember = "employee-payroll-test-nonmember"
+    env["subject"]["value"] = nonmember
+    endpoints = [
+        ("get", f"{base}/employees", None),
+        ("post", f"{base}/employees", {
+            "name": "Unauthorized employee", "employee_code": "UNAUTH-1",
+            "email": "unauthorized@example.test", "monthly_salary": "100.00",
+        }),
+        ("patch", f"{base}/employees/{employee_id}", {"monthly_salary": "1.00"}),
+        ("get", f"{base}/payroll", None),
+        ("post", f"{base}/employees/{employee_id}/payroll", {"period": "2026-11"}),
+        ("patch", f"{base}/payroll/{payroll_id}", {"allowances": "1.00"}),
+        ("post", f"{base}/payroll/{payroll_id}/approve", {}),
+        ("post", f"{base}/payroll/{payroll_id}/pay", {}),
+    ]
+    for method, url, body in endpoints:
+        response = (
+            getattr(env["client"], method)(url, json=body)
+            if body is not None
+            else getattr(env["client"], method)(url)
+        )
+        assert response.status_code == 403, (
+            f"{method.upper()} {url}: expected 403 for non-member, "
+            f"got {response.status_code}: {response.text}"
+        )
+
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(Employee)) == 1
+        assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 1
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.target_type == "employee"
+        )) == 1
+        payroll_actions = session.scalars(select(AuditEvent.action).where(
+            AuditEvent.target_type == "payroll"
+        ).order_by(AuditEvent.created_at, AuditEvent.action)).all()
+        assert set(payroll_actions) == {"payroll.created", "payroll.approved"}
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None
+        assert persisted.status == "approved"
+        assert persisted.expense_id is None
+
 def test_employee_ids_cannot_be_used_across_businesses(employee_environment):
     env = employee_environment
     created = _create_employee(env)
