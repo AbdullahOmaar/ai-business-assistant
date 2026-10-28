@@ -345,6 +345,7 @@ class Expense(Base):
     __tablename__ = "expenses"
     __table_args__ = (
         CheckConstraint("amount > 0", name="ck_expense_amount_positive"),
+        UniqueConstraint("id", "business_id", name="uq_expenses_id_business"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -659,3 +660,90 @@ class PlatformAdminAuditEvent(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
+
+
+
+class Employee(Base):
+    """Business-scoped employee profile; intentionally separate from login membership."""
+
+    __tablename__ = "employees"
+    __table_args__ = (
+        UniqueConstraint("id", "business_id", name="uq_employees_id_business"),
+        UniqueConstraint("business_id", "employee_code", name="uq_employees_business_code"),
+        UniqueConstraint("business_id", "email", name="uq_employees_business_email"),
+        CheckConstraint("monthly_salary > 0", name="ck_employees_salary_positive"),
+        Index("ix_employees_business_active_name", "business_id", "is_active", "name"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    employee_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    job_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    monthly_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PayrollRecord(Base):
+    """One immutable-period payroll draft with a server-calculated total and expense link."""
+
+    __tablename__ = "payroll_records"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["employee_id", "business_id"],
+            ["employees.id", "employees.business_id"],
+            name="fk_payroll_employee_business",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["expense_id", "business_id"],
+            ["expenses.id", "expenses.business_id"],
+            name="fk_payroll_expense_business",
+            ondelete="RESTRICT",
+        ),
+        UniqueConstraint("business_id", "employee_id", "period", name="uq_payroll_employee_period"),
+        UniqueConstraint("expense_id", name="uq_payroll_expense"),
+        CheckConstraint("base_salary > 0", name="ck_payroll_base_salary_positive"),
+        CheckConstraint("allowances >= 0", name="ck_payroll_allowances_nonnegative"),
+        CheckConstraint("bonuses >= 0", name="ck_payroll_bonuses_nonnegative"),
+        CheckConstraint("deductions >= 0", name="ck_payroll_deductions_nonnegative"),
+        CheckConstraint("net_pay > 0", name="ck_payroll_net_pay_positive"),
+        CheckConstraint("status IN ('draft', 'approved', 'paid')", name="ck_payroll_status"),
+        Index("ix_payroll_business_period_status", "business_id", "period", "status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    employee_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    period: Mapped[str] = mapped_column(String(7), nullable=False)
+    base_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    allowances: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
+    bonuses: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
+    deductions: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
+    net_pay: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    expense_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    created_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    approved_by_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_by_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )

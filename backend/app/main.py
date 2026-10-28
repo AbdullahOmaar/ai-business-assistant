@@ -14,6 +14,7 @@ from app.extended_api import router as extended_business_router
 from app.database import create_database_engine
 from app.firebase_auth import configure_firebase_auth
 from app.platform_admin_api import router as platform_admin_router
+from app.employee_payroll_api import router as employee_payroll_router
 
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
@@ -56,6 +57,7 @@ app.include_router(core_features_router)
 app.include_router(extended_business_router)
 app.include_router(assistant_router)
 app.include_router(platform_admin_router)
+app.include_router(employee_payroll_router)
 
 
 @app.on_event("startup")
