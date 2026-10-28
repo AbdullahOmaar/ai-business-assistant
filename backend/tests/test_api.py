@@ -12,7 +12,7 @@ import pytest
 
 from app.main import app
 from app.models import (
-    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
+    AuditEvent, Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
     Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
     MembershipRole, Payment, PaymentAllocation, SalesReturn, SalesReturnLine,
 )
@@ -662,6 +662,13 @@ def test_staff_is_denied_sensitive_business_routes():
     unknown_id = str(uuid4())
     base = f"/api/v1/businesses/{business_id}"
     try:
+        with Session(engine) as session:
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+
         ordinary_edit = client.patch(
             f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
         )
@@ -752,6 +759,14 @@ def test_staff_is_denied_sensitive_business_routes():
             assert session.scalar(select(func.count()).select_from(StockMovement)) == 0
             assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 0
             assert session.scalar(select(func.count()).select_from(Notification)) == 0
+            audit_count_after = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            assert audit_count_after == audit_count_before, (
+                "denied STAFF mutations must not append audit events"
+            )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
