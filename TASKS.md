@@ -1421,3 +1421,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Live inventory: **214 branches** (213 non-main); **209 PR records** — 101 merged, 107 closed without merge, 1 open PR (#239).
 - Nine branches have no matching current PR head: `feat/first-ten-business-foundation`, `fix/accounting/line-rounding-reconciliation`, `fix/backup-restore-target-safety-current-main-20261028`, `fix/deterministic-frontend-install`, `fix/invoice-stock-return-safety`, `learning/toto-practice`, `security/owner-staff-permission-matrix`, `verify/api-release-dec7`, `verify/merged-main-dec7`. Review their trees before any deletion.
 - PRs #236, #238, #243, and #248 are merged. PR #239 is the sole open PR at this snapshot. CircleCI 7/7 PASS on main; Vercel Web/API remain blocked by `build-rate-limit`.
+
+## Repository reconciliation / release checkpoint — 2026-10-28 (PR #264 branch)
+
+- Current main SHA verified after release merge: `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+- Release v1.3.4 is deployed: Vercel Web deployment `dpl_8tQwd46MEPxJxCdYKGsqWXKb7kZG` READY and API deployment `dpl_5AtRUQ5EFmr1WNaP2EDvaRz5cziN` READY; both reference the same main SHA. The production aliases are assigned to these deployments.
+- Exact-main CircleCI: frontend unit tests, production build, dependency audit, backend container, backend accounting, browser smoke and aggregate gate all PASS.
+- Issue #249 inventory refreshed with pagination: 233 branches (100 + 100 + 33); 226 PR records (100 + 100 + 26): 114 merged, 109 closed-unmerged, 3 open. No branch deletion or bulk stale merge.
+- Semantic audit ledger now covers 27/109 closed-unmerged PRs across three batches; 82 remain. Batch 3 disposition evidence is in `docs/BRANCH_RECONCILIATION_2026-10-28.md`.
+- Closed-unmerged PRs #195, #194, #189, #187, #181, #176, #173, #164 and #163 were checked against current source/tests and terminal merged successors. Core startup E2E, Firebase lookup failure handling, v1.3.0 feature guide/invoice/stock, repeated-SKU stock guard, mobile UI, payment idempotency and PostgreSQL concurrency tests are present. The old GitHub Actions concurrency/runner-diagnostic changes are not restored because the current CircleCI pipeline is the authoritative green gate and the Actions provider remains blocked before job steps.
+- No new runtime behavior was restored in this batch. Visual/mobile accessibility review, authenticated production workflows, live Firebase failure injection and an isolated PostgreSQL restore drill remain NOT RUN.
+- Next action: continue semantic patch review of the remaining 82 closed-unmerged PRs; only restore a unique intended behavior if current-main source/tests prove it is missing.
