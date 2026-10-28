@@ -172,6 +172,110 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
         engine.dispose()
 
 
+
+def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects():
+    """Resource IDs from another business stay inaccessible even to an owner."""
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
+
+    try:
+        client = TestClient(app)
+        business_a = client.post(
+            "/api/v1/businesses",
+            json={"name": "Tenant A Resource Boundary", "currency_code": "EGP"},
+        )
+        assert business_a.status_code == 201, business_a.text
+        business_a_id = business_a.json()["id"]
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-b-owner")
+        business_b = client.post(
+            "/api/v1/businesses",
+            json={"name": "Tenant B Resource Boundary", "currency_code": "EGP"},
+        )
+        assert business_b.status_code == 201, business_b.text
+        business_b_id = business_b.json()["id"]
+        customer = client.post(
+            f"/api/v1/businesses/{business_b_id}/customers",
+            json={"name": "Tenant B private customer"},
+        )
+        product = client.post(
+            f"/api/v1/businesses/{business_b_id}/products",
+            json={"name": "Tenant B private product", "unit_price": "23.00"},
+        )
+        assert customer.status_code == 201, customer.text
+        assert product.status_code == 201, product.text
+        invoice = client.post(
+            f"/api/v1/businesses/{business_b_id}/invoices",
+            json={
+                "invoice_number": "INV-TENANT-B-READ-GUARD",
+                "currency_code": "EGP",
+                "customer_id": customer.json()["id"],
+                "lines": [{"description": "Private tenant B service", "quantity": "1", "unit_price": "23.00"}],
+            },
+        )
+        assert invoice.status_code == 201, invoice.text
+        customer_id = customer.json()["id"]
+        product_id = product.json()["id"]
+        invoice_id = invoice.json()["id"]
+
+        audit_a_before = client.get(f"/api/v1/businesses/{business_a_id}/audit-events")
+        audit_b_before = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
+        assert audit_a_before.status_code == 200, audit_a_before.text
+        assert audit_b_before.status_code == 200, audit_b_before.text
+
+        # The caller is an OWNER of tenant A. Membership must not make a
+        # foreign tenant-B resource addressable through tenant A's route.
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
+        base_a = f"/api/v1/businesses/{business_a_id}"
+        denied = [
+            ("GET customer", client.get(f"{base_a}/customers/{customer_id}")),
+            ("GET product", client.get(f"{base_a}/products/{product_id}")),
+            ("GET invoice", client.get(f"{base_a}/invoices/{invoice_id}")),
+            ("PATCH customer", client.patch(f"{base_a}/customers/{customer_id}", json={"name": "Tampered customer"})),
+            ("PATCH product", client.patch(f"{base_a}/products/{product_id}", json={"name": "Tampered product"})),
+            ("DELETE customer", client.delete(f"{base_a}/customers/{customer_id}")),
+            ("DELETE product", client.delete(f"{base_a}/products/{product_id}")),
+        ]
+        for label, response in denied:
+            assert response.status_code == 404, (
+                f"{label} should be hidden as not found in tenant A; "
+                f"got {response.status_code}: {response.text}"
+            )
+
+        audit_a_after = client.get(f"/api/v1/businesses/{business_a_id}/audit-events")
+        assert audit_a_after.status_code == 200, audit_a_after.text
+        assert audit_a_after.json()["total"] == audit_a_before.json()["total"]
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-b-owner")
+        audit_b_after = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
+        assert audit_b_after.status_code == 200, audit_b_after.text
+        assert audit_b_after.json()["total"] == audit_b_before.json()["total"]
+        assert client.get(f"/api/v1/businesses/{business_b_id}/customers/{customer_id}").json()["name"] == "Tenant B private customer"
+        assert client.get(f"/api/v1/businesses/{business_b_id}/products/{product_id}").json()["name"] == "Tenant B private product"
+        unchanged_invoice = client.get(f"/api/v1/businesses/{business_b_id}/invoices/{invoice_id}")
+        assert unchanged_invoice.status_code == 200
+        assert unchanged_invoice.json()["status"] == "draft"
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
 def test_invoice_rejects_customer_and_product_ids_from_another_business():
     """Foreign resource IDs must not be usable to construct a tenant's invoice."""
     engine = create_engine(
