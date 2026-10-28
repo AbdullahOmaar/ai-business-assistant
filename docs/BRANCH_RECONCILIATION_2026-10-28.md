@@ -277,3 +277,29 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Closed-unmerged PRs semantically reviewed in the report: **97/109**; **12/109 remain**.
 - Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
 - No runtime behavior or deployment configuration was changed in this batch; no branch was deleted or stale PR reopened.
+
+
+## Closed-unmerged PR audit — batch 11 (final 12 PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #22 `6ea6a82818cfb5380f49b61b2347e8f1e0ce4a01` — responsive Angular shell | Explicitly superseded by #23. Current main is the later API-connected Angular workspace; the old shell is based on an obsolete frontend-only scaffold. | Duplicate/superseded; no restoration. |
+| #21 `ecc857804f02def9132abec0bc41b1de98195f39` — responsive Angular shell | Superseded by #22 then #23; current main contains authenticated workspace navigation and real API-backed screens. | Duplicate/superseded; no restoration. |
+| #20 `f85a459b3920dac07686abab708efeb76b5f1e75` — responsive Angular shell | Superseded by #21 → #22 → #23. Stale component snapshot would revert newer backend/catalog validation and mobile/PWA behavior. | Duplicate/superseded; no restoration. |
+| #19 `d52fe2563a65fccdd6a93a659cceb4bd9e4c37ca` — tenant-scoped workflows and safe CSV tools | Current `backend/app/data_exchange.py` provides allowlist-based CSV parsing and formula-safe export; `extended_api.py` exposes preview/confirm import/export routes; UI supports product CSV preview before import. Current catalog/service/API code covers scoped search, audited deactivation, HALF_UP money and full payment idempotency replay validation; duplicate sales-return lines are rejected. | Core intended behavior is present through later APIs/services/tests. No stale `catalog.py`/CSV helper snapshot restored. Customer/expense bulk-import UI is not part of the currently shipped workflow; do not imply it is complete. |
+| #18 `cf4aaa268af714c4a987314020146a218a3fb8af` — secure business workflow endpoints | Current `firebase_auth.py`, `security.py`, `main.py`, API routers, PostgreSQL models/migrations and tenant-boundary tests implement verified Firebase identity, fail-closed auth, scoped workspace access, CORS and readiness/health. The current app is far beyond the original stacked feature slice. | Superseded by the evolved mainline; no stale full-stack snapshot. |
+| #17 `bde364b03c52d4f5b0f3c764cc2e4bd9180e9733` — domain foundations | Current models/migrations, pure domain rules and transaction-scoped services cover customers, suppliers, invoices, payments, expenses, purchasing, returns, recurring schedules, tax/discount rules, notifications and audit events. Tenant constraints and current regression suites supersede the old broad migration/model snapshot. | Superseded by later migrations/services and tests; no restoration. |
+| #16 `0b6062033aeca2055b1ff4b03faa2dd798837e9f` — inventory schema | Current `StockMovement` model and inventory migration, stock balance derivation, repeated-SKU aggregation and owner-only opening-stock guard/tests are present. | Superseded/present; no duplicate migration. |
+| #15 `d4d7ad4fe0a2b4e21385f63d00af251f4a2d83c0` — PostgreSQL and first-ten foundations | Current `DATABASE_URL` validation, SQLAlchemy/Alembic setup, initial business/membership schema, verified Firebase auth and API-backed Angular workflows are present. Later migration/test changes supersede the initial scaffold. | Superseded by current architecture and migrations; no restoration. |
+| #9 `35dd9741683dd3cdbb699d757867f9ee51da1d90` — FastAPI/PostgreSQL V0 architecture proposal | The actual repository uses Angular + FastAPI + PostgreSQL; the current ADR/README reflect the adopted architecture and the backend is implemented. The PR's text remains a provisional proposal and is not needed as a duplicate architecture decision. | Superseded by current accepted architecture; no restoration. |
+| #8 `84c6360c7aa9f511af75727d293dc36f1ee26c56` — architecture decision matrix | The matrix was a pre-decision document; current ADR and implementation settle the stack. Merging it as an active decision would reintroduce outdated alternatives and ambiguity. | Obsolete decision-stage documentation; do not merge. |
+| #5 `17521abeb3c1ec88f034efc0f41334b24c7331dd` — project governance rules | Current `AGENTS.md`, `TASKS.md`, README and release/security runbooks already encode the adopted inspect-before-change, tests, authorization, no-destructive-actions and deployment-gate requirements. The old branch is a historical snapshot. | Superseded by current governance; no restoration. |
+| #1 `245c16e43b96a441da563ec9cb48deb51a47f48b` — proposed Spring Boot architecture | Conflicts with the accepted Angular + Python/FastAPI + PostgreSQL architecture and the implemented backend. It is a proposal, not an approved migration plan. | Rejected/obsolete architectural alternative; do not merge. |
+
+## Closed-unmerged PR audit — final accounting
+
+- **109/109 closed-unmerged PRs have evidence-based dispositions recorded across batches 1–11.**
+- Dispositions are patch/source/test based, not inferred from titles or closed status. No closed-unmerged PR was reopened, no stale branch was merged wholesale, and no branch was deleted.
+- **This does not yet mean Issue #249 is VERIFIED COMPLETE:** the full remote-branch inventory with each branch SHA and associated PR still needs to be materialized in this report, and the final PR's exact-head CircleCI/security checks must pass before merge.
