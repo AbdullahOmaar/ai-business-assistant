@@ -253,3 +253,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Closed-unmerged PRs semantically reviewed in the report: **87/109**; **22/109 remain**.
 - Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
 - One test-only gap was restored: `frontend/src/app/payment-csv-export.spec.ts` covers the already-shipped payment CSV export contract. No production behavior or deployment configuration changed in this batch.
+
+
+## Closed-unmerged PR audit — batch 10 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #43 `6cba650f628324c924b52d640b0166648181391c` — assistant resilience and route inventory | Bounded provider retry/timeout landed in #217 (merge `8a1ebbfe334980b02795e238be05fad560bd4f28`); history cap landed in #219 (merge `0b915a8de0fc`). Current `assistant_api.py` and `test_assistant_resilience.py` cover transient retries/timeouts, and the current security route inventory documents auth boundaries/gaps. | Superseded by #217/#219 and current docs; no restoration. |
+| #42 `5f87850878f1a4c9cabaa661f1980fef0d23b6d9` — corrected payment integrity tests | Same head SHA as #41; current `test_services.py` covers currency mismatch, over-allocation, cross-business allocation, idempotency-key reuse and cumulative allocations, with later #192/#254 regression updates. | Duplicate head/test candidate; behavior and regression coverage are present. |
+| #41 `5f87850878f1a4c9cabaa661f1980fef0d23b6d9` — payment integrity tests | Duplicate of #42 with identical head SHA. Current payment/domain service tests contain the corrected cases; no separate code patch is required. | Duplicate of #42; no restoration. |
+| #40 `c136e4878707312fa6c7743270978b8d72258c98` — assistant request bounds and route inventory | Same resilience implementation was superseded by #217/#219; current history accumulation is capped, provider calls use bounded timeouts/retry, and resilience tests exist. | Superseded; no restoration. |
+| #39 `eb4f1b4c4eef8e5dcc488d2ab01b9bf36bdf43b7` — empty stock movement test | Current `backend/tests/test_domain_rules.py::test_empty_stock_movements_produce_zero_balance` asserts an empty movement list yields zero balance. | Test already present; no restoration. |
+| #38 `bc023f6c74a76a2c74c82b26e410cdefbd5b95df` — Arabic RTL shell/loading feedback | Current Angular app sets document language/direction, has a setup/configuration screen and retryable error/loading states; current startup/browser smoke covers the setup path. The old component snapshot predates API-connected workspace behavior. | Superseded by current Angular shell/mobile release; do not merge stale component. |
+| #36 `a66a267cfba0eadcb4308fc31dbeab92dd8ab570` — mobile navigation/dashboard UX | Current labeled bottom navigation, workspace card and responsive layouts landed via #55 and subsequent mobile UI commits. | Superseded/present; no restoration. |
+| #27 `23b74604848b61863287aa423f5c7e9483c6bcc0` — Firebase Hosting deployment | The project currently deploys the Web/API through Vercel; both production deployments are READY on current main SHA. A second Firebase Hosting deployment path would create competing release/alias behavior. | Obsolete deployment target; do not add Firebase Hosting workflow/config. |
+| #25 `b088b9857050f230286d93bff4cbb28351db1ea9` — CORS, stock validation and sales-return lifecycle | CORS PUT preflight is covered in current `main.py/test_main.py`; repeated-line stock aggregation is in current `services.py`/tests; return amount/quantity guards are in #161 and current domain/API tests. The old branch also changes runtime deployment configuration and must not be merged wholesale. | Core fixes present via later mainline; do not copy stale runtime config. |
+| #23 `400b0e6816a987eccf5531bd6c8ce062eb1d40c9` — responsive Angular shell | Current main is a real API-connected Angular workspace with auth, tenant-scoped data, responsive navigation and release metadata; the old PR's own README explicitly describes local-only sample data disconnected from the API. | Obsolete scaffold; do not merge a stale frontend shell. |
+
+## Audit accounting — after batch 10
+
+- Closed-unmerged PRs semantically reviewed in the report: **97/109**; **12/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
+- No runtime behavior or deployment configuration was changed in this batch; no branch was deleted or stale PR reopened.
