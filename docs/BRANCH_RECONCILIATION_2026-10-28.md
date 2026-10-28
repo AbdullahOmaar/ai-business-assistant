@@ -181,3 +181,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Closed-unmerged PRs semantically reviewed in the report: **57/109**; **52/109 remain**.
 - Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with all pages checked.
 - No runtime code was changed or restored in this batch; no remote branch was deleted or stale PR reopened.
+
+
+## Closed-unmerged PR audit — batch 7 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #120 `f3918d28300f0b0d03dd2d5852237cc30bc55039` — mobile activity log UI | The owner-only audit-events API/UI and customer statement were integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`) and refined by later UI commits. Current UI has the audit tab; API tests cover owner-only pagination/workspace isolation. | Superseded/present; no restoration. |
+| #119 `210dba28cdd06bbc40da3b3ed730a9f5ac40bfe6` — owner audit log UI | Same #125 terminal merge and later UI refinements; current component exposes read-only activity events and localized action/type filters. | Duplicate/superseded; no restoration. |
+| #118 `0908aeef94f030b3a82c4ccfccb1c37b27f70499` — receivables-aging regression suite | Currency-safe aging implementation/tests are present through #92 (merge `5ca0962dfaa3669c2afbf15a631a1cc78f82f2f8`) and later accounting consolidation #161. Current tests cover currency separation, partial matching-currency allocation, aging and workspace authorization. | Superseded by canonical implementation and later tests; no restoration. |
+| #117 `19141f7e4f54fa4b8f862243f4aa207e39e6871a` — mobile version visibility | Version visibility landed in release #105 (merge `0754a5c2887726f7c6b03f3fdba83f6b104e6272`) and was later refined into the workspace card/mobile row; current release metadata is v1.3.4. | Superseded; no restoration. |
+| #116 `1a894a0b14cbd257bfabaaf30841aeeeaa7d82f0` — read-only accounting integrity report | Report/API/UI were reapplied via #203 (merge `955e2314439a32a0266936da0d03947de61e8ec7`). Current endpoint is owner-only/read-only, with tenant-boundary and UI clearing regressions. | Superseded by #203; no restoration. |
+| #114 `7778a2863ed55336ba03bba05773c398513341c3` — currency-safe customer statement API | Integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`) and refined later. Current statement query is workspace-scoped, paginated, and separates balances by currency; tests cover tenant boundaries and layout. | Superseded/present; no duplicate endpoint. |
+| #113 `1169d77a7d5127f88144b6655950f38d0bea3921` — owner audit events API | Integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`). Current `extended_api.py` exposes audit events; tests cover owner-only pagination/filtering and workspace isolation. | Superseded by #125; no restoration. Request-ID correlation remains a separate unimplemented capability, not something supplied by this stale PR. |
+| #112 `d36b62a07f1c3d38da2b7e057876b0f033b829e9` — HALF_UP financial rounding | Current `backend/app/domain_rules.py::money` uses `ROUND_HALF_UP`; `test_money_rounds_half_up_to_two_decimal_places` and invoice line-rounding tests are present on main. No historical issued invoice rewrite is included. | Behavior/test coverage present; no restoration. |
+| #108 `68243f7a78d8a3fe0cb086be2b2d81c8137355f2` — mobile multi-line invoice drafts | Draft editor and discount/tax preview were integrated in #192 (merge `889d23304e8bcf79175567bbf01c925ee447aa06`) and related mobile release work. Current server remains authoritative for final prices, stock and totals. | Superseded by #192; no restoration. |
+| #104 `d3cbf217f6db400ea4c55ddc690da00248ef269f` — sales-return quantity guard | Consolidated release #105 (merge `0754a5c2887726f7c6b03f3fdba83f6b104e6272`) included the over-allocation fix; later #161 strengthened return amount/quantity validation and regression coverage. | Superseded by #105/#161; no restoration. |
+
+## Audit accounting — after batch 7
+
+- Closed-unmerged PRs semantically reviewed in the report: **67/109**; **42/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
+- No runtime code was changed or restored in this batch; no branch was deleted or stale PR reopened.
