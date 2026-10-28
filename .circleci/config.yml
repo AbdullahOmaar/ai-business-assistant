@@ -86,7 +86,7 @@ jobs:
           path: /tmp/alembic-upgrade.sql
           destination: alembic-upgrade.sql
 
-  frontend-quality:
+  frontend-unit-tests:
     docker:
       - image: cimg/node:22.12
     resource_class: medium
@@ -102,11 +102,39 @@ jobs:
             cd frontend
             npm install --no-audit --no-fund
       - run:
-          name: Run frontend tests and production build
+          name: Run frontend unit and source regression tests
           command: |
             set -euo pipefail
             cd frontend
-            npm run build
+            npm test
+
+  frontend-production-build:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: medium
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Verify Node runtime and install frontend dependencies
+          command: |
+            set -euo pipefail
+            node --version
+            npm --version
+            cd frontend
+            npm install --no-audit --no-fund
+      - run:
+          name: Generate build metadata
+          command: |
+            set -euo pipefail
+            cd frontend
+            npm run prebuild
+      - run:
+          name: Compile optimized production frontend
+          command: |
+            set -euo pipefail
+            cd frontend
+            npx ng build
 
   frontend-dependency-audit:
     docker:
@@ -210,7 +238,8 @@ workflows:
   verify-all-changes:
     jobs:
       - backend-accounting
-      - frontend-quality
+      - frontend-unit-tests
+      - frontend-production-build
       - frontend-dependency-audit
       - frontend-browser-smoke
       - backend-container
