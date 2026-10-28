@@ -552,7 +552,7 @@ This batch follows the supersession chains for the nine PRs called out first in 
 | `verify/merged-main-dec7` | `dec7f26bd2bb33a4c27af4e785abe982e8486676` | NO PR found |
 
 
-## Closed-unmerged PR audit — priority batch 3 (9 additional PRs reviewed)
+## Closed-unmerged PR audit — priority batch 3 (8 unique additional PRs; one duplicate entry)
 
 **Audit comparison target:** current main at `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`. These are dispositions based on each closed PR's recorded diff/body, merged successor PRs, and current-main source/test evidence where noted. They do not mean every historical test or every production workflow is verified.
 
@@ -570,9 +570,9 @@ This batch follows the supersession chains for the nine PRs called out first in 
 
 ## Audit accounting — after priority batch 3
 
-- Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–3: **27/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **82/109**.
+- Table entries reviewed in this batch: **9**; #179 was already covered in batch 1, so **8 unique additional PRs**.
+- Total reviewed across priority batches 1–3: **26/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **83/109**.
 - This count tracks semantic reviews, not PRs that must be merged. No branches were deleted and no closed PR was reopened.
 
 
@@ -595,8 +595,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 4
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–4: **36/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **73/109**.
+- Total reviewed across priority batches 1–4: **35/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **74/109**.
 - Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API contexts succeeded on that SHA.
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
 
@@ -620,8 +620,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 5
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–5: **45/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **64/109**.
+- Total reviewed across priority batches 1–5: **44/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **65/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - PR #150's absent automation tooling is recorded as a deferred decision, not misreported as merged or restored.
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
@@ -646,8 +646,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 6
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–6: **54/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **55/109**.
+- Total reviewed across priority batches 1–6: **53/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **56/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
 
@@ -671,8 +671,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 7
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–7: **63/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **46/109**.
+- Total reviewed across priority batches 1–7: **62/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **47/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
 
@@ -696,8 +696,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 8
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–8: **72/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **37/109**.
+- Total reviewed across priority batches 1–8: **71/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **38/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
 
@@ -721,8 +721,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 9
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–9: **81/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **28/109**.
+- Total reviewed across priority batches 1–9: **80/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **29/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
 
@@ -746,8 +746,8 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 10
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–10: **90/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **19/109**.
+- Total reviewed across priority batches 1–10: **89/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **20/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
 
@@ -771,7 +771,35 @@ This batch follows the supersession chains for the nine PRs called out first in 
 ## Audit accounting — after priority batch 11
 
 - Additional closed-unmerged PRs reviewed in this batch: **9**.
-- Total reviewed across priority batches 1–11: **99/109**.
-- Remaining closed-unmerged PRs requiring semantic review: **10/109**.
+- Total reviewed across priority batches 1–11: **98/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **11/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 12 (final 11 PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`. This final batch closes the remaining unique PR review set. A disposition does not imply that every historical PR should be merged.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #116 — read-only accounting data-integrity report | Current `extended_api.py`, frontend API/component and data-integrity spec implement owner-gated read-only review of unlinked invoices and allocation/customer/currency mismatches. | Superseded by later data-integrity work (#128/#203/#161); no restore or automatic data rewrite. |
+| #114 — currency-safe customer statement API | Current customer statement route/client/UI and responsive layout tests exist; balances remain separated by currency and credit-note limitations are explicit. | Superseded by #130 and later statement UI merges; no restore. |
+| #113 — owner-only activity log API | Current `/audit-events` route, owner-gated activity UI, filters and tests are present. | Superseded by #127 and later audit UI merges; request-ID correlation remains a distinct gap. |
+| #18 — secure business workflow API endpoints | Current main includes Firebase token verification/revocation checks, fail-closed principal resolution, membership-scoped workspace APIs, business workflows, readiness checks and Angular API integration. | Implemented through current production code and later security/feature merges; no stale stack merge. |
+| #17 — domain foundations across planned features | Current models, migrations, domain rules, operations/services and tests cover the core business entities, constraints, Decimal calculations, tenant-scoped authorization and CSV workflows. | Superseded by current domain implementation; no restore. |
+| #16 — inventory schema and stock movements | Current models include Product/StockMovement with business-scoped constraints; service logic aggregates repeated SKU demand and tests cover derived balances/oversell guards. | Superseded by later inventory/security migrations and tests; no restore. |
+| #15 — PostgreSQL and first-ten feature foundations | Current accepted architecture, business/membership schema, database configuration and migration setup are present in main. | Superseded by current application foundation; no restore. |
+| #9 — proposed FastAPI/PostgreSQL architecture | Current accepted `docs/adr/ADR-001-v0-architecture.md` records the Angular + FastAPI + PostgreSQL direction. | Superseded by the accepted ADR; no code change to restore. |
+| #8 — architecture decision matrix | Current accepted ADR and `AGENTS.md` establish the chosen stack and engineering constraints; the older matrix was a proposal, not runtime implementation. | Superseded documentation; no restore. |
+| #5 — project-wide governance rules | Current `AGENTS.md` is the canonical repository engineering/agent policy with execution, security, testing, branch and release gates. The older `docs/PROJECT_GOVERNANCE.md` is not present on main. | Governance intent is represented by current AGENTS.md; no runtime patch is missing. If a separately maintained governance document is desired, that is documentation cleanup rather than a product blocker. |
+| #1 — Spring Boot/Flyway architecture proposal | The accepted ADR explicitly chooses Angular + Python/FastAPI + PostgreSQL; the original Spring Boot proposal was never the selected implementation path. | Superseded conflicting architecture proposal; do not restore. |
+
+## Final audit accounting — all 109 closed-unmerged PRs reviewed
+
+- Unique closed-unmerged PRs semantically reviewed: **109/109**.
+- Remaining closed-unmerged PRs without a semantic disposition: **0/109**.
+- Dispositions found in this audit: superseded/duplicate, already present on main, documentation-only/obsolete, or deferred separate decision. **This does not mean all 109 should be merged.**
+- Current comparison main SHA at audit time: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
+- No branches deleted, no closed PR reopened, and no stale feature branch merged wholesale.
+- Remaining independent work is tracked separately: PR #261 foreign-tenant test failure diagnosis; live authenticated production workflows; physical mobile visual/accessibility QA; approved non-production PostgreSQL restore drill; branch/PR inventory snapshot reconciliation; and any distinct missing feature confirmed by future evidence.
