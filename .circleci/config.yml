@@ -234,6 +234,9 @@ jobs:
           path: frontend/test-results/e2e-junit.xml
           destination: frontend-e2e-junit.xml
 
+  all-checks-passed:
+    type: no-op
+
 workflows:
   verify-all-changes:
     jobs:
@@ -243,6 +246,14 @@ workflows:
       - frontend-dependency-audit
       - frontend-browser-smoke
       - backend-container
+      - all-checks-passed:
+          requires:
+            - backend-accounting
+            - frontend-unit-tests
+            - frontend-production-build
+            - frontend-dependency-audit
+            - frontend-browser-smoke
+            - backend-container
 
   scheduled-dependency-audit:
     triggers:
