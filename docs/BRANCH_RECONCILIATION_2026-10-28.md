@@ -157,3 +157,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Closed-unmerged PRs semantically reviewed in the report: **47/109**; **62/109 remain**.
 - Inventory unchanged after complete pagination: 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
 - No runtime code was changed or restored in this batch. No remote branch was deleted, no PR was reopened, and no stale branch was merged wholesale.
+
+
+## Closed-unmerged PR audit — batch 6 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #178 `29ad79128cd97b7a4899d86bade84c50f0ecd54c` — mobile customers/invoices/activity layout | Reapplied by #182 (merge `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e`). Current component contains the mobile card/layout and audit navigation refinements. | Superseded duplicate; no restoration. |
+| #174 `75af510d79beabb24adcf8d5b259a7fcdc9d4771` — customer statement mobile overflow | Current component includes a touch-scrollable statement table and long-reference wrapping; `frontend/src/app/customer-statement-layout.spec.ts` asserts both behaviors. The current component/layout was subsequently refined in later UI commits. | Behavior present; no restoration. Visual/accessibility review remains NOT RUN. |
+| #165 `4e15f687d6a305af50c467492a0a9fed85f0f663` — run unit tests before Vercel build | Current `frontend/package.json` build command runs `npm test && ng build`; CircleCI separately gates frontend unit tests and production build on the exact SHA. | Superseded by current build/CI gates; no restoration. |
+| #132 `537935b9c1ebd3dc0141fb1a6790f53db41a063e` — suppliers, purchasing, expenses, schedules and notifications | Supplier/purchase-order/schedule APIs landed in #204 (merge `69c76b2623017036730c836173e936aad5a3ba3b`) and UI reapplication in #215 (commit `64e44b01c39256a669a5fdb3002f4a7b9dafcc48`). Current API/UI and `test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scoped` cover the intended operations. | Superseded by corrected API/UI successors; no restoration. |
+| #130 `3e7acd2bb95d804075579b94ae78a95fb2ef7418` — currency-safe customer statement | Current `extended_api.py` has the workspace-scoped statement endpoint; tenant-boundary tests assert currency safety/pagination; current UI exposes the statement and `customer-statement-layout.spec.ts` covers narrow screens. | Present on current main; no duplicate endpoint or stale UI restore. |
+| #129 `7b4c9aeee47516aa95c59d70a351af5026e94993` — mobile invoice draft editor | Reconciled into #192 (merge `889d23304e8bcf79175567bbf01c925ee447aa06`). Current component supports draft save/edit/issue, multi-line entry and decimal preview; server-side calculation remains authoritative. | Superseded by #192; no restoration. |
+| #128 `50693e95706a20a7b96e6da5a4568e93c8288c1a` — owner data-integrity review | Reapplied by #203 (merge `955e2314439a32a0266936da0d03947de61e8ec7`). Current API is read-only and owner-authorized; `test_data_integrity_report_is_owner_only_read_only_detects_currency_and_customer_mismatches` and `data-integrity-ui.spec.ts` cover API/UI behavior. | Superseded by #203; no restoration. |
+| #127 `3a530360bd44aa95e4f3aab4e8522c171b77ea24` — owner activity log API/UI | Current `extended_api.py` exposes workspace-scoped audit events; tenant tests cover owner-only pagination/workspace isolation; current UI provides the audit tab and filter vocabulary. | Present through subsequent current-main feature commits; no stale component snapshot restored. |
+| #123 `8a0e246f6dea8ca5bbccee9792e4a52f6e537a82` — mobile UI/API version visibility | Current `app.component.ts` renders UI/API version metadata in the workspace card and has a mobile-only release metadata row; v1.3.4 build logs confirm generated UI version/cache metadata. | Superseded by later workspace-card UI and v1.3.4 release; no restoration. |
+| #121 `f1b449255a0b552a87edf27a4b6b78b482476d00` — mobile customer statement | Current customer-statement endpoint, typed UI client/panel, pagination, currency separation and narrow-screen scroll tests are present. | Superseded/present; no restoration. |
+
+## Audit accounting — after batch 6
+
+- Closed-unmerged PRs semantically reviewed in the report: **57/109**; **52/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with all pages checked.
+- No runtime code was changed or restored in this batch; no remote branch was deleted or stale PR reopened.
