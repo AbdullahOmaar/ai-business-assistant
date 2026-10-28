@@ -874,3 +874,15 @@ The current inventory now has a disposition for all 11 orphan branches and all 1
 - #267 exact head `048899521cb8a87f7312b16dce1460e575b36252` passed CircleCI **7/7** and GitHub build/test/dependency checks before merge. It validates all invoice allocations before inserting a Payment, preventing rejected cross-business/wrong-customer/currency/over-allocation requests from leaving orphan Payment rows; its foreign-tenant tests assert no protected-record or audit side effects.
 - Post-merge CircleCI/Vercel checks on main and latest exact-head checks on #264 were **PENDING** at this refresh; recheck before any further merge/deployment claims.
 - Current orphan/mismatch counts remain **11 / 10**, with **0 PR heads missing a branch**. No branch deleted, no closed PR reopened, no stale branch merged wholesale.
+
+
+## Post-merge release verification — #267 / main `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`
+
+- Exact main CircleCI status after #267: **7/7 PASS** (frontend unit tests, dependency audit, production build, backend container, browser smoke, backend accounting, aggregate). Vercel Web and API status contexts are **success**.
+- Production `GET /version`: HTTP 200, `{"version":"1.3.4","commit":"9fc9a9a53ef1","environment":"production"}`.
+- Production `GET /health`: HTTP 200, `{"status":"ok"}`.
+- Production `GET /readyz`: HTTP 200, `{"status":"ready"}`.
+- Web root, `/manifest.webmanifest`, and `/sw.js`: HTTP 200. Manifest remains Arabic RTL/standalone; generated service-worker cache is `aba-shell-v1.3.4-9fc9a9a53ef1`.
+- These checks verify the deployment after the payment-validation fix. They do not certify authenticated payment workflows or physical-device accessibility; those remain NOT RUN.
+- PR #261 was marked Draft and its body records #267 as the verified successor. Its historical backend-accounting failure root cause remains unverified because the CircleCI job log was inaccessible; no weakened test was merged.
+- PR #264 latest source/test/doc head had CircleCI **7/7 PASS**; GitGuardian was still in progress at the last pre-refresh poll. A subsequent ledger commit requires fresh exact-head checks.
