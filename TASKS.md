@@ -1521,3 +1521,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All **109/109 closed-unmerged PRs** have evidence-based dispositions in the reconciliation report. No branch was deleted, no PR reopened, and no stale branch merged wholesale.
 - Remaining gate: exact-head CircleCI/security checks for PR #264 must pass before merge. The payment CSV test is a focused regression only; no runtime or deployment config changes are included.
 - Production release v1.3.4 remains READY for Web and API on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; no deployment is requested for this audit PR.
+
+
+## Issue #249 final inventory checkpoint — 2026-10-28
+
+- Full branch table is now materialized in `docs/BRANCH_RECONCILIATION_2026-10-28.md`: 233 branch names, full SHAs and matching PR state/head-match evidence. Snapshot was captured immediately before the inventory refresh commit at branch SHA `7792d8c7e475351a17ab8e44750a3346f014bc49`; the audit branch itself advances as documentation commits land.
+- Pagination evidence: branches 100+100+33+0 = 233; PRs 100+100+26+0 = 226 (114 merged, 109 closed-unmerged, 3 open).
+- 12 branches have no associated PR and 12 branches have a PR head SHA that differs from the live branch SHA; both sets are recorded for owner review, not deletion.
+- All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
+- Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
+- Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
