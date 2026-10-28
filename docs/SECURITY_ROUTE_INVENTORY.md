@@ -4,6 +4,15 @@
 **Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, and `assistant_api.py`.  
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
+
+## Denied-mutation regression evidence — candidate PR #238
+
+- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF mutation/read requests and expects HTTP 403 for each; the ordinary product-name edit remains allowed.
+- Existing state assertions verify issued invoice lifecycle, product price/stock-tracking fields, sales-return count, stock movement count, recurring schedule count, and notification count remain unchanged after the denied requests.
+- Candidate update on `feat/platform-admin-membership-concurrency-20261028` records the business-scoped `AuditEvent` count before the denied request batch and asserts the count is unchanged afterward.
+- This is source evidence only until CircleCI backend-accounting passes on the exact final PR head. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
+
+
 ## Authorization model
 
 - `GET /health` is a public liveness endpoint and does not imply database or authentication readiness.
