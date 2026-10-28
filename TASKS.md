@@ -1298,3 +1298,13 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - GitHub Actions still conclude failure on this head: Backend tests run 680 (`40610971892`), Verify backend container run 818 (`40610971845`), Verify backend and frontend run 1396 (`40610971859`), and Dependency security scan run 1097 (`40610971928`). The connector returns empty job step summaries and log downloads fail with HTTP 404 `BlobNotFound`; root causes remain UNVERIFIED. No Actions rerun was started because the recorded runner allowance is exhausted.
 - PR #238 remains OPEN + DRAFT; no review submissions are recorded. Branch protection/review rules remain UNVERIFIED due prior integration HTTP 403. Local exact-head tests, authenticated Admin production smoke, WCAG 2.2 AA validation, and deployment SHA parity remain NOT RUN / NOT VERIFIED.
 - Decision: do not merge or deploy. Continue only when GitHub Actions failure details and required review/protection gates are accessible. No production data/configuration/deployment changed.
+
+
+## ADM-06 CircleCI-first exact-head verification — 2026-10-28 01:19 UTC
+
+- Current reviewed source head before this ledger update: `efa94afff7c8e9c9642763e2c5f743e77bfab022`.
+- All four CircleCI contexts passed on that exact SHA: backend-container run 1256, backend-accounting run 1253, frontend-quality run 1254, frontend-browser-smoke run 1255. This verifies the concurrency regression within the functioning primary CI pipeline.
+- Inspected `.circleci/config.yml`: disposable PostgreSQL 16 backend suite, Alembic upgrade/current/check and offline SQL generation, Python dependency audit, frontend npm audit + production build (frontend build script runs npm tests), backup/restore shell safety tests, backend container build/import check, and Playwright Chromium E2E are covered.
+- GitHub Actions still shows four failed duplicate workflows on the same source SHA (Backend tests #682, Dependency security scan #1099, Verify backend and frontend #1398, Verify backend container #820). Job step summaries are empty and log downloads return HTTP 404 `BlobNotFound`; failure causes remain UNVERIFIED. Treat CircleCI as the tested CI path, but do not assume Actions checks can be ignored until an authorized owner confirms branch protection / required-check configuration. Protection API is inaccessible (403).
+- PR #238 remains OPEN + DRAFT; no review approvals recorded. No merge/deploy. Local exact-head tests, authenticated Admin production smoke, WCAG 2.2 AA, and Web/API deployed SHA parity remain NOT RUN / NOT VERIFIED.
+- This ledger-only commit changes the PR head; re-check all four CircleCI contexts on the new exact head before any merge decision.
