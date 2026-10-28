@@ -230,7 +230,7 @@ class Invoice(Base):
     )
     customer_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     invoice_number: Mapped[str] = mapped_column(String(64), nullable=False)
-    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft", server_default="draft")
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
     issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -672,6 +672,7 @@ class Employee(Base):
         UniqueConstraint("business_id", "employee_code", name="uq_employees_business_code"),
         UniqueConstraint("business_id", "email", name="uq_employees_business_email"),
         CheckConstraint("monthly_salary > 0", name="ck_employees_salary_positive"),
+        Index("ix_employees_business_active_name", "business_id", "is_active", "name"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -685,7 +686,7 @@ class Employee(Base):
     department: Mapped[str | None] = mapped_column(String(120), nullable=True)
     job_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
     monthly_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -719,6 +720,7 @@ class PayrollRecord(Base):
         CheckConstraint("deductions >= 0", name="ck_payroll_deductions_nonnegative"),
         CheckConstraint("net_pay > 0", name="ck_payroll_net_pay_positive"),
         CheckConstraint("status IN ('draft', 'approved', 'paid')", name="ck_payroll_status"),
+        Index("ix_payroll_business_period_status", "business_id", "period", "status"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -728,9 +730,9 @@ class PayrollRecord(Base):
     employee_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     period: Mapped[str] = mapped_column(String(7), nullable=False)
     base_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
-    allowances: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
-    bonuses: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
-    deductions: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    allowances: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
+    bonuses: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
+    deductions: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
     net_pay: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
     expense_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
