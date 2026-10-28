@@ -303,3 +303,248 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - **109/109 closed-unmerged PRs have evidence-based dispositions recorded across batches 1–11.**
 - Dispositions are patch/source/test based, not inferred from titles or closed status. No closed-unmerged PR was reopened, no stale branch was merged wholesale, and no branch was deleted.
 - **This does not yet mean Issue #249 is VERIFIED COMPLETE:** the full remote-branch inventory with each branch SHA and associated PR still needs to be materialized in this report, and the final PR's exact-head CircleCI/security checks must pass before merge.
+
+
+## Complete remote branch inventory — paginated snapshot (2026-10-28)
+
+- Branch pagination verified: page 1 = 100, page 2 = 100, page 3 = 33, page 4 = 0; total **233 remote branches**.
+- PR pagination verified: page 1 = 100, page 2 = 100, page 3 = 26, page 4 = 0; total **226 PR records** (114 merged, 109 closed-unmerged, 3 open).
+- The table records every branch's full current SHA and all matching same-repository PR numbers/states; `head differs` means the branch has advanced or the PR head is stale relative to that ref.
+- **Branches with no associated PR:** 12. **Branches with at least one associated PR whose head SHA differs:** 12. No branch deletion was performed; no-PR branches are recorded for owner review rather than removed.
+- This inventory is a snapshot, not a claim that every no-PR branch is safe to delete. No branch cleanup is authorized by this task.
+
+| Remote branch | Exact branch SHA | Associated PR(s) in paginated inventory |
+|---|---|---|
+| `architecture-decision-v0` | `61a68c57481387b54ac0dd304e2095771e56561a` | #13 MERGED (head match) |
+| `audit/legacy-customer-linkage-sql` | `6228da73b010b865ced9a5f71287cd9ecd67e0ea` | #90 MERGED (head match) |
+| `audit/production-readiness-2026-10-26` | `554513c64a7f852a7f394d6c1f8f70d581ab812a` | #142 MERGED (head match) |
+| `automation-testing-e2e` | `d125d567d1474ada5601b95c98df22f4d4621e56` | #183 MERGED (head match) |
+| `build/frontend-lockfile-npm-ci-20261028` | `0b82e17883f2a272a719f074425af6500748ad91` | #258 MERGED (head match) |
+| `build/frontend-lockfile-npm-ci-20261028-v2` | `8facda01faa66dcad758be8d31c85fc1df114182` | NO PR found |
+| `build/reproducible-frontend-install-20261028` | `827a0e3d621726d5ef464cc344d4ad1cb0fae1d2` | #251 MERGED (head differs) |
+| `build/reproducible-frontend-install-main-20261028` | `6b06760fd912951bf4a406f6ceef7b577f3fbec3` | #257 CLOSED-UNMERGED (head match) |
+| `chore/add-python-dependency-security-scan` | `2391ec15c482e92c7edd2c8e80f882ab23e5b5af` | #70 CLOSED-UNMERGED (head match) |
+| `chore/backend-container-ci` | `ffe75d86022ac9ad4146913a6d9960f2c265cb00` | #26 MERGED (head match) |
+| `chore/release-1.3.3-20261028` | `1dcbb23c54f6c868df9006d53dd0d6a34e7d99cf` | #247 MERGED (head match) |
+| `chore/release-v1.2.1-2026-10-27` | `ee6fed436fd5f0e48e40b23a58a8e602ce577349` | #184 CLOSED-UNMERGED (head match) |
+| `ci/backup-restore-safety-checks-20261028` | `4ec5ef1c13ec6212fb17cee1bfba458627d15e1b` | #228 MERGED (head match) |
+| `ci/free-local-assistant-fallback-validation` | `8d0b68de7b5054fb6a32f61114ca95b6d78d910d` | #77 MERGED (head match) |
+| `ci/vercel-frontend-test-gate-2026-10-27` | `4e15f687d6a305af50c467492a0a9fed85f0f663` | #165 CLOSED-UNMERGED (head match) |
+| `deploy/firebase-hosting` | `23b74604848b61863287aa423f5c7e9483c6bcc0` | #27 CLOSED-UNMERGED (head match) |
+| `deploy/vercel-fastapi` | `5871f5de06fd658441a4cd6ccc5f046804fab36b` | #28 MERGED (head match) |
+| `design/double-entry-ledger-adr` | `7c7caec8607612382f0978d5a9ddf86598c4684c` | #93 MERGED (head match) |
+| `diagnostic/github-runner-allocation-2026-10-27` | `5e5c40864de79060770bf087e933b89ce6a324ea` | #164 CLOSED-UNMERGED (head match) |
+| `docs/accounting-ledger-review-followups` | `53181402fd4ab061a8c0cdfc387892f577eb74d6` | #139 MERGED (head match) |
+| `docs/adr-fastapi-postgres-v0` | `35dd9741683dd3cdbb699d757867f9ee51da1d90` | #9 CLOSED-UNMERGED (head match) |
+| `docs/architecture-decision-matrix` | `84c6360c7aa9f511af75727d293dc36f1ee26c56` | #8 CLOSED-UNMERGED (head match) |
+| `docs/architecture-proposal-v0` | `245c16e43b96a441da563ec9cb48deb51a47f48b` | #1 CLOSED-UNMERGED (head match) |
+| `docs/audit-master-plan-2026-10-28` | `fe1ada3d0ffdcdf18aa1aecff97991c98d56c9a1` | #212 CLOSED-UNMERGED (head differs); #232 CLOSED-UNMERGED (head differs); #236 MERGED (head match) |
+| `docs/autonomous-execution-rules` | `eb0ed6ac55d7a2a812d3b459721ff805b78d800b` | #152 MERGED (head match) |
+| `docs/backup-restore-drill` | `8bde8c1253880ab6eeed2b3df172ea3b844ac2d6` | #135 MERGED (head match) |
+| `docs/branch-consolidation-ledger-2026-10-28` | `a719348d7874f2a7ebd54574c4959de0c80b4de8` | #239 MERGED (head match) |
+| `docs/branch-consolidation-status-2026-10-28` | `03e23630f134f4845719a6fabb01f5a63adcdd5c` | #218 MERGED (head match) |
+| `docs/branch-consolidation-update-2026-10-28` | `4a387ce01121715217b348d1b4deab9a4aadf285` | #222 CLOSED-UNMERGED (head match) |
+| `docs/current-main-reconciliation-20261028` | `251e51e48a2e88ccd2f4974bd643a2ad8c20fea7` | #255 MERGED (head match) |
+| `docs/final-consolidation-checkpoint-20261028` | `9d89ae302df98b738172bbe0da4aee29d85cb834` | #235 MERGED (head match) |
+| `docs/learning-first-workflow` | `32039dfddb864aa6f2a30f84f1fdf4717eaf3fbc` | #11 MERGED (head match) |
+| `docs/mandatory-project-governance` | `17521abeb3c1ec88f034efc0f41334b24c7331dd` | #5 CLOSED-UNMERGED (head match) |
+| `docs/month-one-team-learning-plan` | `a08c646ca0631cb6f5faea39535f63eb1f2092f5` | #12 MERGED (head match) |
+| `docs/neon-backup-restore-readiness` | `4d464891a85405a59cf7c124600332b8458eab4d` | #107 MERGED (head match) |
+| `docs/one-branch-workflow-policy` | `990abf9cc421969e20a12a0df0b8f5a749bc14a1` | #237 MERGED (head match) |
+| `docs/post-merge-verification-20261028` | `733913ed0cb6772077511ed336df6d0c51fc93ba` | #227 CLOSED-UNMERGED (head match) |
+| `docs/production-release-runbook` | `24a72da2d753a11798095eaeee648833d441bfb2` | #45 MERGED (head match) |
+| `docs/production-status-and-live-links` | `d4ca6887a07092893aa72b4a2c4f5a819b78d1d0` | #52 MERGED (head match) |
+| `docs/receivables-invoice-mobile-release-gates` | `257273c0f160e9e75c9e62efeff25f1c328ac0aa` | #100 MERGED (head match) |
+| `docs/refresh-release-evidence-20261028` | `7746df571d6cfd94f9158dc9c11a1599f08ed973` | #253 MERGED (head differs) |
+| `docs/release-deployment-blocker-checkpoint-20261028` | `02d217cebbd5ad8d4c9cb154870f790de8bbeae2` | #229 MERGED (head match) |
+| `docs/release-ledger-verified-2026-10-27` | `76f0448fc5fd151aa8fb7c11c58ac19c60c60461` | #167 MERGED (head match) |
+| `docs/release-v1.2.1-post-merge-checkpoint-2026-10-27` | `54f5a392839a53d5164397cfd06e3c160aab4226` | #186 MERGED (head match) |
+| `docs/release-web-payment-safety-verified-2026-10-27` | `e80eaa112ac8a433d37e5180656759c2ca19286d` | #169 MERGED (head match) |
+| `docs/security-route-inventory` | `80617fb4fdc23edec0bf02f8ef8e4f922f6dc2c8` | #54 CLOSED-UNMERGED (head match) |
+| `docs/task-ledger-refresh-20261028` | `1a2d7f659cc622e37e8fb9f818e59a8094e7bdec` | #259 MERGED (head differs) |
+| `docs/ui-ux-merge-verification-2026-10-28` | `99d46a67bd8ae070ac229a210cd840805749c754` | #248 MERGED (head match) |
+| `docs/vibe-coding-agent-operating-rules` | `ede7fd5228040117be034de13e87e1cffd53abef` | #171 MERGED (head match) |
+| `docs/workflow-branch-and-deploy-rules-2026-10-27` | `47610becdbb4c6b00caa8d2d84b580abf1424b02` | #188 MERGED (head match) |
+| `feat/admin-membership-mainline-20261028` | `6110f78d5e9592aa39fadffdba8c3d922f449b0d` | #207 MERGED (head match) |
+| `feat/all-feature-domain-foundation` | `bde364b03c52d4f5b0f3c764cc2e4bd9180e9733` | #17 CLOSED-UNMERGED (head match) |
+| `feat/angular-dashboard-shell` | `f85a459b3920dac07686abab708efeb76b5f1e75` | #20 CLOSED-UNMERGED (head match) |
+| `feat/angular-dashboard-shell-current` | `ecc857804f02def9132abec0bc41b1de98195f39` | #21 CLOSED-UNMERGED (head match) |
+| `feat/angular-dashboard-shell-latest` | `6ea6a82818cfb5380f49b61b2347e8f1e0ce4a01` | #22 CLOSED-UNMERGED (head match) |
+| `feat/angular-dashboard-shell-reviewed-base` | `400b0e6816a987eccf5531bd6c8ce062eb1d40c9` | #23 CLOSED-UNMERGED (head match) |
+| `feat/api-workflows-and-angular-shell` | `cf4aaa268af714c4a987314020146a218a3fb8af` | #18 CLOSED-UNMERGED (head match) |
+| `feat/arabic-rtl-accessibility-ready` | `1ede7bba917d2aa6a249ce81048696d6fc70ef4a` | #46 CLOSED-UNMERGED (head match) |
+| `feat/arabic-rtl-app-loading` | `67b207f844a925a6b1b7ca598cc277d13d642bd3` | #38 CLOSED-UNMERGED (head differs) |
+| `feat/assistant-resilience-usage-limits` | `6cba650f628324c924b52d640b0166648181391c` | #40 CLOSED-UNMERGED (head differs) |
+| `feat/assistant-resilience-usage-limits-verified` | `6cba650f628324c924b52d640b0166648181391c` | #43 CLOSED-UNMERGED (head match) |
+| `feat/audit-event-feed` | `b114c88d97a0fdd2584a16c563a9baa35e3ee014` | #71 CLOSED-UNMERGED (head match) |
+| `feat/audit-log-mobile-ui` | `f3918d28300f0b0d03dd2d5852237cc30bc55039` | #120 CLOSED-UNMERGED (head match) |
+| `feat/audit-log-mobile-ui-v2` | `210dba28cdd06bbc40da3b3ed730a9f5ac40bfe6` | #119 CLOSED-UNMERGED (head match) |
+| `feat/audit-log-read-api` | `1169d77a7d5127f88144b6655950f38d0bea3921` | #113 CLOSED-UNMERGED (head match) |
+| `feat/audit-log-v0.2` | `82c2c818fd6963c2f6599bba4b8ad5829a516677` | #125 MERGED (head match) |
+| `feat/audit-ui-mainline` | `3a530360bd44aa95e4f3aab4e8522c171b77ea24` | #127 CLOSED-UNMERGED (head match) |
+| `feat/business-ops-roadmap-and-payment-export` | `093d4ce3f00c617fc39b9a9726f1ff5fd12f0fd4` | #57 CLOSED-UNMERGED (head match) |
+| `feat/customer-search-contact-fields` | `44ccab074f56378c155c8116fc9e888f325434dc` | #198 CLOSED-UNMERGED (head match) |
+| `feat/customer-search-contact-fields-current-main` | `eb2426d58e233593d4883811b9408cbf3a9e5b10` | #200 MERGED (head match) |
+| `feat/customer-search-email-phone` | `180c96a5cadfd94b9b0b067cb1e03f3e709372bc` | #72 CLOSED-UNMERGED (head match) |
+| `feat/customer-statement-api` | `7778a2863ed55336ba03bba05773c398513341c3` | #114 CLOSED-UNMERGED (head match) |
+| `feat/customer-statement-mainline` | `3e7acd2bb95d804075579b94ae78a95fb2ef7418` | #130 CLOSED-UNMERGED (head match) |
+| `feat/customer-statement-mobile-ui` | `f1b449255a0b552a87edf27a4b6b78b482476d00` | #121 CLOSED-UNMERGED (head match) |
+| `feat/customer-statement-timeline` | `0f04e911d9131e2d684212af41ea0d2fbed7fae9` | #74 CLOSED-UNMERGED (head match) |
+| `feat/data-integrity-owner-ui` | `cb085589b934c51e914db64f9aefe9d9def3a709` | #199 CLOSED-UNMERGED (head match) |
+| `feat/data-integrity-owner-ui-clean-main` | `3e086d685b77f269e8d44baf95633e28f1ac6d81` | #203 MERGED (head match) |
+| `feat/data-integrity-owner-ui-current-main` | `f132894cd67486afd04db6926350d1b8c4516eed` | #201 CLOSED-UNMERGED (head match) |
+| `feat/data-integrity-ui` | `50693e95706a20a7b96e6da5a4568e93c8288c1a` | #128 CLOSED-UNMERGED (head match) |
+| `feat/expense-management-ui` | `b7dc82d438daeabe0825a507b660e9ddd48e3b0c` | #35 MERGED (head match) |
+| `feat/first-secure-workflows` | `d52fe2563a65fccdd6a93a659cceb4bd9e4c37ca` | #19 CLOSED-UNMERGED (head match) |
+| `feat/first-ten-business-foundation` | `f76cf7c63881805f79bbbdbfd3fd29aeb44c6362` | NO PR found |
+| `feat/first-ten-features` | `d4d7ad4fe0a2b4e21385f63d00af251f4a2d83c0` | #15 CLOSED-UNMERGED (head match) |
+| `feat/free-local-assistant-fallback` | `8d0b68de7b5054fb6a32f61114ca95b6d78d910d` | #76 CLOSED-UNMERGED (head match) |
+| `feat/integrated-production-auth-chat` | `d9cfe82d39c58e0edf2bbd0faca9967a68b5eff8` | #24 MERGED (head match) |
+| `feat/interactive-demo-next-10-features` | `cb911734ae1ce838e073ec9c6e9247ff05875634` | #59 MERGED (head match) |
+| `feat/invoice-print-preview` | `032347cc852e8b80e0b639d947446c8266b23d7e` | #115 MERGED (head match) |
+| `feat/legacy-linkage-audit` | `1a894a0b14cbd257bfabaaf30841aeeeaa7d82f0` | #116 CLOSED-UNMERGED (head match) |
+| `feat/local-fastapi-starter` | `cf3627b3e48f74cd3032f944d0bf80d64d2ae555` | #10 MERGED (head match) |
+| `feat/mobile-bottom-nav-ux` | `a66a267cfba0eadcb4308fc31dbeab92dd8ab570` | #36 CLOSED-UNMERGED (head match) |
+| `feat/mobile-customers-invoices-audit-ui` | `29ad79128cd97b7a4899d86bade84c50f0ecd54c` | #178 CLOSED-UNMERGED (head match) |
+| `feat/mobile-first-ux-polish` | `9cf1513446c228fb77b6555f1ab3f82445d5e5a0` | #37 MERGED (head match) |
+| `feat/mobile-invoice-drafts-v0.2` | `7b4c9aeee47516aa95c59d70a351af5026e94993` | #129 CLOSED-UNMERGED (head match) |
+| `feat/mobile-nav-accounting-integrity` | `86bfa2510cc7f5be0a3862bb6399495de7189bfe` | #89 MERGED (head match) |
+| `feat/mobile-nav-color-contrast` | `e140e0eed18a1e9237052470633cce74a138d7bf` | #33 MERGED (head match) |
+| `feat/operations-modules-v0.2` | `537935b9c1ebd3dc0141fb1a6790f53db41a063e` | #132 CLOSED-UNMERGED (head match) |
+| `feat/operations-readiness-api-clean-main` | `799ae0b4ffe113eaac453255776710449ad59002` | #204 MERGED (head match) |
+| `feat/operations-readiness-api-current-main` | `846db60528b41fbca68d72ea068315f240a06bd9` | #205 CLOSED-UNMERGED (head match) |
+| `feat/payment-recording-workflow` | `902a24ee9ae3b96f5fa7a7f8e0216ace0f193b3b` | #34 MERGED (head match) |
+| `feat/permanent-engineering-agent-foundation` | `6df082c0a1acc5cc33d99cbe50a726d9d5112005` | #150 CLOSED-UNMERGED (head match) |
+| `feat/platform-admin-membership-concurrency-20261028` | `50205526047275e922d11f77bf1c631da049ee11` | #238 MERGED (head match) |
+| `feat/platform-admin-screen` | `ee91a24cc38089c91fd329e511e1e3aa40e79274` | #172 MERGED (head match) |
+| `feat/platform-admin-user-directory-and-roles` | `217e380ab1d1a3bf02ea8121d3d0743e2c2fe67c` | #190 MERGED (head differs); #193 MERGED (head differs); #194 CLOSED-UNMERGED (head differs); #202 MERGED (head match) |
+| `feat/production-readiness-v0.3` | `01c7c4db4555c4144e2e4e9409618b044267ff32` | #134 CLOSED-UNMERGED (head match) |
+| `feat/receivables-aging-report` | `cb76a9f17d97ea1751703d21b400a18a766a3596` | #162 CLOSED-UNMERGED (head match) |
+| `feat/second-ten-features` | `0b6062033aeca2055b1ff4b03faa2dd798837e9f` | #16 CLOSED-UNMERGED (head match) |
+| `feat/tax-summary-current-main` | `a7066831cbca162b240ea6ad71bea4c664e505a6` | #197 MERGED (head match) |
+| `feat/tax-summary-report` | `2d59bbd2c44c4b59aca17945f09ff0ab0e6a3540` | #133 CLOSED-UNMERGED (head match) |
+| `feat/ui-version-invoices-profit-report` | `f30a69ed2b5ef1fc45a48124563e832b0f477dd0` | #75 MERGED (head match) |
+| `feat/workspace-membership-management` | `cf7e0962832e3f0b3a9764a3cbf4b7e6063144ab` | #73 CLOSED-UNMERGED (head match) |
+| `feat/workspace-search-export` | `2ecb8d4a58a79b142f250ea040fb51f8bd3a3013` | #56 CLOSED-UNMERGED (head match) |
+| `feature/csv-import-preview-mainline` | `ad777fd38e4e54fe8235af716e4d743d8231e8df` | #102 MERGED (head match) |
+| `feature/invoice-payment-assistant-release-fixes` | `1c0151d30788bc3c85e4ef6661a3c924cf8c5098` | #140 CLOSED-UNMERGED (head match) |
+| `feature/mobile-invoice-draft-editor` | `68243f7a78d8a3fe0cb086be2b2d81c8137355f2` | #108 CLOSED-UNMERGED (head match) |
+| `feature/mobile-invoice-draft-editor-rebased` | `104c3a28fb90703e0755e919dc5caec50cc3f69b` | #138 MERGED (head match) |
+| `feature/mobile-multi-line-invoice-editor` | `2af650873f9a7a685aef958a119ed6f51ebd8edb` | #98 CLOSED-UNMERGED (head match) |
+| `feature/receivables-aging-api-client` | `0b2a3e49a12f1208e970e003e315b0d16c5de809` | #96 MERGED (head match) |
+| `feature/receivables-aging-mobile-ui` | `bd5e3cf57a80d131b7d38ea46a8e1dd9c86af232` | #97 MERGED (head match) |
+| `feature/receivables-aging-report` | `c859fd0e74ecf2fed1b0df5c8e755a861342a4ab` | #92 MERGED (head match) |
+| `feature/safe-product-csv-import-api` | `2963c33dc4eacc97510af65c0ba9c375f94db378` | #101 CLOSED-UNMERGED (head match) |
+| `fix/accounting-rounding-half-up` | `d36b62a07f1c3d38da2b7e057876b0f033b829e9` | #112 CLOSED-UNMERGED (head match) |
+| `fix/accounting/line-rounding-reconciliation` | `6365a731da0a4b416d8292174834f02987131152` | NO PR found |
+| `fix/actions-minute-budget` | `f2fb9a1c29178eb9926f9b3be7eeb6f5133af676` | #173 CLOSED-UNMERGED (head match) |
+| `fix/admin-firebase-directory-failure-tests` | `dc01004342304b184e7185a0eaa5a30d5a1eaf24` | #196 MERGED (head match) |
+| `fix/api-schedule-timezone-setting-keys-2026-10-26` | `ae3e14c6fe06a833da55031edc9e8f0b8e8aa344` | #149 CLOSED-UNMERGED (head match) |
+| `fix/api-schedule-timezone-setting-keys-rebased` | `09aaa3983ec3db53f74b0cf0b5a3e55142671676` | #159 CLOSED-UNMERGED (head match) |
+| `fix/api-validate-schedule-timezones-setting-keys-rebased` | `f36d5c988736176c921246b1e5c15f99bca15391` | #160 CLOSED-UNMERGED (head match) |
+| `fix/assistant-ui-buildstamp-mainline` | `4f0dc03a36d50197bf0dbf68992be3aaa957981a` | #141 MERGED (head match) |
+| `fix/auth-network-and-language-switch` | `1f673bab0262b8ddb5aa2b8cb90a5f4f7506091f` | #47 CLOSED-UNMERGED (head match) |
+| `fix/backup-restore-target-safety-20261028` | `4995aa5d3f98561c33a0f7b206fc0fc990e85083` | #230 CLOSED-UNMERGED (head match) |
+| `fix/backup-restore-target-safety-current-main-20261028` | `d1cd99f82148d409452bbf1cf45333f9f5db4772` | NO PR found |
+| `fix/backup-restore-target-safety-main-20261028` | `ef3ec2c6e27824c3156d338fa68e9c57734351ab` | #234 MERGED (head match) |
+| `fix/business-timezone-reporting` | `ffb39e47fe5b4ca163f08cd62653a08dc356ec5e` | #143 CLOSED-UNMERGED (head match) |
+| `fix/business-timezone-reporting-rebased` | `6592ba7f43196081f18c5b00d4dab12693e73efd` | #154 CLOSED-UNMERGED (head match) |
+| `fix/ci-filters-reconciled-main` | `f423b8f633368b3082d029071a0409e7c0bd96f6` | #153 MERGED (head match) |
+| `fix/ci-path-filters-zero-budget` | `9115cbb07e19722126782fb1de863e58a1c8161b` | #151 CLOSED-UNMERGED (head match) |
+| `fix/ci-run-frontend-unit-tests-2026-10-26` | `37dec6d80161517d7a242dae17cdf298371577e2` | #145 MERGED (head match) |
+| `fix/ci-runner-diagnosis-2026-10-27` | `6cfe6ca53a341b0fe249d7703da027217cd6dd11` | #163 CLOSED-UNMERGED (head match) |
+| `fix/cors-put-settings-2026-10-26` | `4e26153973cf8b0ed26377049120e7e19871b04f` | #148 CLOSED-UNMERGED (head match) |
+| `fix/cors-put-settings-rebased` | `668ff64001725e6a37af98a3232083d75dc5b228` | #158 CLOSED-UNMERGED (head match) |
+| `fix/customer-statement-mobile-overflow` | `75af510d79beabb24adcf8d5b259a7fcdc9d4771` | #174 CLOSED-UNMERGED (head match) |
+| `fix/deterministic-frontend-install` | `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e` | NO PR found |
+| `fix/discount-return-cent-allocation` | `aa7925c9c8f55877ff06ec893d9da8c523d41942` | #124 MERGED (head match) |
+| `fix/finance-block-void-after-approved-return-20261028` | `4a448d9aa78b0d2a3fdada6f09d4af92afddc56c` | #233 MERGED (head match) |
+| `fix/frontend-white-screen-runtime-config` | `f4506cc811cd687a484c883464d5de9cb9452b97` | #32 MERGED (head match) |
+| `fix/inventory-and-admin-mobile-nav-v1.2.1` | `ec7697463ccb332251206bd05d254e21c485bcc0` | #187 CLOSED-UNMERGED (head match) |
+| `fix/invoice-payment-and-stock-quantity-2026-10-27` | `3a623bb174033c119223bdc0adabc59922eba86a` | #189 CLOSED-UNMERGED (head match) |
+| `fix/invoice-stock-return-safety` | `c5c77b7b2f0113cd45548873d3b3018634289ad7` | NO PR found |
+| `fix/main-synced-mobile-ui` | `cfa2d3d8eb97f0cb7f747222c4e5a64fdcf795cb` | #182 MERGED (head match) |
+| `fix/mobile-no-topbar-release` | `3549d9c4b9c7076e56cc2caeab6652f2b9fc482e` | #49 CLOSED-UNMERGED (head differs) |
+| `fix/mobile-pwa-navigation-clean` | `28d49fdc08447603d00ab3312ca4da7c740fba5a` | #48 CLOSED-UNMERGED (head differs) |
+| `fix/mobile-release-clean` | `a9859b15998eba02236ea777214e5ff289dc261c` | #55 MERGED (head match) |
+| `fix/mobile-ui-on-latest-main` | `5cc9143fb8c37b7e1e9afbe28bdf34f53da28582` | #180 CLOSED-UNMERGED (head match) |
+| `fix/mobile-ui-rebased-on-main` | `9660b91db7754f68862ef2371c9918e49ff7be19` | #181 CLOSED-UNMERGED (head match) |
+| `fix/mobile-version-badge-v0.2.0` | `9a4ba70ad7d3855e1ce9cf9f4c34adf7a53f6563` | #122 MERGED (head match) |
+| `fix/mobile-version-strip` | `8a0e246f6dea8ca5bbccee9792e4a52f6e537a82` | #123 CLOSED-UNMERGED (head match) |
+| `fix/mobile-version-strip-mainline` | `67ec6563661918caf0466c1872a5f01f66da283a` | #126 MERGED (head match) |
+| `fix/mobile-version-visibility` | `19141f7e4f54fa4b8f862243f4aa207e39e6871a` | #117 CLOSED-UNMERGED (head match) |
+| `fix/opening-stock-owner-guard-main-20261028` | `84377e500d2464bcfc94394b30e9a8e3ad8a5fd3` | #225 MERGED (head match) |
+| `fix/owner-only-invoice-issue-void-2026-10-27` | `21cbbbe173285edeb1a2a2c2663a0e94132fd6ee` | #166 MERGED (head match) |
+| `fix/payment-errors-visible` | `0c843a25ba42cbfcfe37949b67b839d09762bebe` | #177 MERGED (head match) |
+| `fix/payment-ui-safety-main-2026-10-27` | `6edeb62fe37a0e072e248fd976cf0d73aa285971` | #168 MERGED (head match) |
+| `fix/release-v1.2.1-rebased-main-2026-10-27` | `2abf42ba0544c73db6800edab68690c13693db2f` | #185 MERGED (head match) |
+| `fix/return-discount-allocation` | `2cfaa359bb9980e7d90d753d4606f1039e3d4e6a` | #131 MERGED (head match) |
+| `fix/sales-return-amount-guard-2026-10-26` | `f17d3068d0812ff75f4487c7f62982b27eb0b931` | #144 CLOSED-UNMERGED (head match) |
+| `fix/sales-return-amount-guard-rebased` | `a754ac36b0f2e130fd8b0ebabd8ae60f071be00e` | #155 CLOSED-UNMERGED (head match) |
+| `fix/sales-return-overapproval` | `d3cbf217f6db400ea4c55ddc690da00248ef269f` | #104 CLOSED-UNMERGED (head match) |
+| `fix/security-audit-cors-invoice-guards` | `b088b9857050f230286d93bff4cbb28351db1ea9` | #25 CLOSED-UNMERGED (head match) |
+| `fix/security-role-guard-gaps-110` | `73f0c670a26f5c5270b4e39f4a0361e562409324` | #137 MERGED (head match) |
+| `fix/ui-payment-refresh-idempotency-2026-10-26` | `cda4391a35fb5fe9b27bcd7aa0a22aee971eb40a` | #147 CLOSED-UNMERGED (head match) |
+| `fix/ui-report-workspace-races-2026-10-26` | `48c04130c2a02cc76c6e309155ac7de5248dcd16` | #146 CLOSED-UNMERGED (head match) |
+| `fix/ui-report-workspace-races-rebased` | `71b2c55096a306664c14b1308c472b2c812542a0` | #156 CLOSED-UNMERGED (head match) |
+| `fix/ui-ux-review-batch-2026-10-28` | `55cb69422295c3480932993267f84e0212ffc1b7` | #243 MERGED (head match) |
+| `fix/ui-workspace-and-payment-safety-rebased` | `29e442167a0de3bfbde0c20f41d5ba2c4d9c580c` | #157 CLOSED-UNMERGED (head match) |
+| `fix/vercel-fastapi-autodetect` | `d3b4e59060425f3ce9924bcaa556b2d3a3aa06c5` | #31 MERGED (head match) |
+| `fix/vercel-fastapi-path-routing` | `e9f47ec189c8fe5b511841bd86839133ef3203c9` | #30 MERGED (head match) |
+| `fix/vercel-python-project-metadata` | `ed394fd9aad1fa4079893236a422f12f4dc33068` | #29 MERGED (head match) |
+| `fix/vercel-release-metadata-test-root-20261028` | `a6f77a7004edea80684bdca17c6e7096043080f3` | #246 MERGED (head match) |
+| `fix/workspace-header-card-layout` | `269457d84b289559e3a84fad559bb3a7a8a54989` | #265 OPEN (head match) |
+| `fix/workspace-release-metadata-payment-ui` | `62735138480433da99038385380f4aedcf087302` | #175 MERGED (head match) |
+| `fix/workspace-switch-data-isolation` | `29740b4aca0ddde18d478fdfd2833f76e049c004` | #58 CLOSED-UNMERGED (head match) |
+| `integrate/financial-concurrency-main-20261027` | `8c87e5c59244b3dfaffd782c1f4310ebc5431bef` | #191 MERGED (head match) |
+| `integrate/release-v1-3-main-20261027` | `4961abd991da1170e8b1f85cd0a5015caa803de4` | #192 MERGED (head match) |
+| `learning/toto-practice` | `60b89172461625e20cb9afaa2714b6103d5f6cbc` | NO PR found |
+| `main` | `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a` | NO PR found |
+| `perf/lazy-load-platform-admin-20261028` | `5d849ae0e98351867c0cae52bbe88716383b7e0e` | #256 MERGED (head match) |
+| `reconcile/branch-audit-missing-regressions-20261028` | `2b0861235640657190d56f42ba3f63bd89245cb8` | #260 MERGED (head match) |
+| `reconcile/closed-unmerged-pr-batch1-20261028` | `c75cd9ddea467be446e11747894f68ded5551878` | #263 MERGED (head match) |
+| `reconcile/closed-unmerged-pr-batch2-20261028` | `ce71a1d356c6aa58e6b1ad5d879cd56ec9efe716` | #264 OPEN (head match) |
+| `reconcile/verified-missing-regressions-20261028` | `bbeac544fb1ab5538cd990b117e706ee05ddf082` | #262 MERGED (head match) |
+| `reintegrate/assistant-history-cap-main-20261028` | `07d100771c96c4dc3be6a73d0f964de262a41b23` | #219 MERGED (head match) |
+| `reintegrate/assistant-provider-retry-only-20261028` | `106472631180097257f386ba93c80c517fb2ee81` | #217 MERGED (head match) |
+| `reintegrate/assistant-resilience-current-main-20261028` | `cd21cb91810511dc9c5fccc7538ea38dae378b3a` | #216 CLOSED-UNMERGED (head match) |
+| `reintegrate/assistant-resilience-main-20261028` | `a32f2874aacad8e89685eee984213d2518273483` | #211 CLOSED-UNMERGED (head match) |
+| `reintegrate/dedupe-api-routes-main-20261028` | `59a5aeb52fdb63b1c31a5ade9734b08a13031311` | #221 MERGED (head match) |
+| `reintegrate/e2e-mobile-startup-main-20261028` | `9e8846f7dbae3040ed44b1b8aa8c30d4d01d3144` | #208 MERGED (head match) |
+| `reintegrate/initial-stock-owner-guard-main-20261028` | `a02ab8e595c8364bf30ccdeb5c2fc0e873de475d` | #220 MERGED (head match) |
+| `reintegrate/mobile-ui-polish-main-20261028` | `8ce4eb3595313c245d20d58b494b3726429efef0` | #209 CLOSED-UNMERGED (head match) |
+| `reintegrate/mobile-ui-polish-main-v2-20261028` | `c9f9f96b7fffd906409bb9f3fe15f85f473767eb` | #213 MERGED (head match) |
+| `reintegrate/operations-ui-main-20261028` | `cb92198df622a88302a9b02e11aaac744aef7fe8` | #215 MERGED (head match) |
+| `reintegrate/payment-csv-safe-export-main-20261028` | `e526eec8e2051d914c59f669515ca400bee291cf` | #210 MERGED (head match) |
+| `reintegrate/workspace-search-export-main-20261028` | `9f549d74e3f3c36b9780d1449361423fe6a0d099` | #214 MERGED (head match) |
+| `release/v0.2.0-accounting-and-version` | `46df4341c23cd16ba60354509b60a85e43f6b897` | #105 MERGED (head differs) |
+| `release/v1.0.0-ui-version-badge` | `1fa160240262eafaa55a3ea27f40c9292f69c528` | #136 CLOSED-UNMERGED (head match) |
+| `release/v1.3.1-version-bump` | `2bb94947b48eedfe0b16545d41aa2601e86a9c3c` | #206 MERGED (head match) |
+| `release/v1.3.2-security-consolidation-20261028` | `0e2467c5449170d74731e887d251d282cedcbbb5` | #226 MERGED (head match) |
+| `release/version-1.3.4-reconciliation-20261028` | `6543039aecb18dda3d730a173ddc6854f6f57c96` | #266 MERGED (head match) |
+| `release/version-visibility-and-deploy-gates` | `8428b37228cdfeed794f10ae4a4c224d9e55ce44` | #103 CLOSED-UNMERGED (head match) |
+| `security/foreign-tenant-sensitive-lifecycle-20261028` | `28d64c10aa067f83b86041eeb296eb76dcd764ec` | #261 OPEN (head match) |
+| `security/owner-staff-permission-matrix` | `20384a644f3be44a92b63fcca984fd20d14023d3` | NO PR found |
+| `security/platform-admin-audit-atomicity-followup` | `e5bb642e9c8f868ce40901adb3ea58252a615b9b` | #224 MERGED (head match) |
+| `security/platform-admin-hardening-2026-10-28` | `6a18f2dccc5b25b8a8aca94890e417277b5b66ef` | #223 MERGED (head differs) |
+| `task/production-safety-consolidated` | `9c87a23e828e939fdfc97491170d56ce4d3639a7` | #161 MERGED (head match) |
+| `test/assistant-safety-guardrails` | `ae9aefe0367ce7c785b718f093a0ca16a13ebcc0` | #50 CLOSED-UNMERGED (head differs) |
+| `test/e2e-mobile-startup-cycle-2026-10-27` | `063803a63f71316c3142d569921232a66bcf20cb` | #195 CLOSED-UNMERGED (head match) |
+| `test/firebase-invalid-token-regressions` | `2e46133d1303a2d4ee8b71e5b063b6a80518b109` | #91 MERGED (head match) |
+| `test/mvp-regression-guardrails` | `5bac1ea2b6fe80691a85541c2f01be9d5c1a5a7f` | #51 MERGED (head match) |
+| `test/payment-api-owner-flow` | `b64a1fd5ceb48676047f42134210d8855d69707a` | #176 CLOSED-UNMERGED (head match) |
+| `test/payment-integrity-regression` | `5f87850878f1a4c9cabaa661f1980fef0d23b6d9` | #41 CLOSED-UNMERGED (head match) |
+| `test/payment-integrity-regression-fixed` | `5f87850878f1a4c9cabaa661f1980fef0d23b6d9` | #42 CLOSED-UNMERGED (head match) |
+| `test/payment-owner-staff-regressions-main-sync-20261028` | `05175b308a74ef38caf10eaf8d4873a5abfca23b` | #254 MERGED (head match) |
+| `test/receivables-aging-report` | `0908aeef94f030b3a82c4ccfccb1c37b27f70499` | #118 CLOSED-UNMERGED (head match) |
+| `test/reconcile-payment-api-idempotency-20261028` | `5ac0b68ac2439e610dccfa60afc0211f520f4ab7` | #252 CLOSED-UNMERGED (head match) |
+| `test/security-firebase-unconfigured-503-20261028` | `86b41ec35bb8e71d5f3e6677b9b150ee65111c7e` | #231 MERGED (head match) |
+| `test/security-foreign-tenant-no-write-20261028` | `fc2cc42346cad2257cea8655ca955db87c5916c6` | NO PR found |
+| `test/security-nonmember-supplier-no-write-2026-10-28` | `ca7658075304fbe15ddc2726a479e99a0933223f` | #250 MERGED (head match) |
+| `test/stock-empty-movements` | `eb4f1b4c4eef8e5dcc488d2ab01b9bf36bdf43b7` | #39 CLOSED-UNMERGED (head match) |
+| `test/tenant-resource-boundaries` | `ac4b02a4f82fd9e7ae0c428d8c9a93e2722a9f64` | #53 CLOSED-UNMERGED (head match) |
+| `test/tenant-route-negative` | `07922d9bdfd5df4e3adf54e35b62196f311ffdba` | #44 CLOSED-UNMERGED (head match) |
+| `tests/payment-integrity-regressions-rebased-2026-10-27` | `11b579d2639f1971d12d5bcf850d83735f7a1a5e` | #170 CLOSED-UNMERGED (head match) |
+| `ui/mobile-customers-invoices-audit` | `d6706a6144189387fde7ef3f5cbddfd145df2bb7` | #179 CLOSED-UNMERGED (head match) |
+| `verify/api-release-dec7` | `0223b75eb8d49ecf784dc887ad9a9afad2cb6a50` | NO PR found |
+| `verify/merged-main-dec7` | `dec7f26bd2bb33a4c27af4e785abe982e8486676` | NO PR found |
