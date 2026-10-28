@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.data_exchange import parse_import_csv
 from app.models import AuditEvent, Business, BusinessMembership, Customer, Expense, ImportJob, Product
-from app.security import MembershipRole
+from app.security import AuthenticatedPrincipal, MembershipRole
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
