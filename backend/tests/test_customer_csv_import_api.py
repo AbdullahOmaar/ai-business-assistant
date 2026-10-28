@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.data_exchange import parse_import_csv
-from app.models import AuditEvent, Business, BusinessMembership, Customer, ImportJob
+from app.models import AuditEvent, Business, BusinessMembership, Customer, Expense, ImportJob, Product
 from app.security import MembershipRole
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
@@ -363,3 +363,89 @@ def test_nonmember_cannot_export_or_import_customers_without_side_effects():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_nonmember_and_staff_cannot_export_or_import_supported_csv_entities_without_side_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject="staff-subject",
+            role=MembershipRole.STAFF,
+        ))
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    customer_csv = "name,email\nCSV security candidate,csv-security@example.com\n"
+    product_csv = (
+        "name,sku,description,unit,unit_price,is_stock_tracked\n"
+        "CSV security product,SEC-CSV-1,security test,unit,12.50,false\n"
+    )
+    csv_headers = {"Content-Type": "text/csv"}
+    requests = [
+        ("export customers", lambda: client.get(f"{base}/exports/customers.csv")),
+        ("export products", lambda: client.get(f"{base}/exports/products.csv")),
+        ("export expenses", lambda: client.get(f"{base}/exports/expenses.csv")),
+        ("preview customer import", lambda: client.post(
+            f"{base}/imports/customers.csv/preview", content=customer_csv, headers=csv_headers,
+        )),
+        ("execute customer import", lambda: client.post(
+            f"{base}/imports/customers.csv", content=customer_csv, headers=csv_headers,
+        )),
+        ("preview product import", lambda: client.post(
+            f"{base}/imports/products.csv/preview", content=product_csv, headers=csv_headers,
+        )),
+        ("execute product import", lambda: client.post(
+            f"{base}/imports/products.csv", content=product_csv, headers=csv_headers,
+        )),
+    ]
+
+    def snapshot():
+        with Session(engine) as session:
+            return {
+                "customers": session.scalar(
+                    select(func.count()).select_from(Customer).where(
+                        Customer.business_id == business_id,
+                    )
+                ),
+                "products": session.scalar(
+                    select(func.count()).select_from(Product).where(
+                        Product.business_id == business_id,
+                    )
+                ),
+                "expenses": session.scalar(
+                    select(func.count()).select_from(Expense).where(
+                        Expense.business_id == business_id,
+                    )
+                ),
+                "import_jobs": session.scalar(
+                    select(func.count()).select_from(ImportJob).where(
+                        ImportJob.business_id == business_id,
+                    )
+                ),
+                "audit_events": session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id,
+                    )
+                ),
+            }
+
+    try:
+        for subject in ("nonmember-subject", "staff-subject"):
+            app.state.principal_resolver = (
+                lambda request, subject=subject: AuthenticatedPrincipal(subject=subject)
+            )
+            for name, request in requests:
+                before = snapshot()
+                response = request()
+                assert response.status_code == 403, (
+                    f"{subject} {name}: expected 403, got {response.status_code}: {response.text}"
+                )
+                assert snapshot() == before, (
+                    f"{subject} {name}: denied request changed protected rows or audit state"
+                )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
