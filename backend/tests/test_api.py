@@ -1134,6 +1134,7 @@ def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+
 def test_owner_can_record_and_idempotently_replay_payment_via_api():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
