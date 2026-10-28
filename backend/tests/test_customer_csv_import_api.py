@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.data_exchange import parse_import_csv
-from app.models import AuditEvent, BusinessMembership, Customer, ImportJob
+from app.models import AuditEvent, Business, BusinessMembership, Customer, ImportJob
 from app.security import MembershipRole
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
@@ -242,6 +242,52 @@ def test_staff_cannot_preview_or_execute_customer_csv_import():
                     AuditEvent.business_id == business_id,
                 )
             ) == audit_count_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_customer_email_duplicate_check_is_scoped_to_current_business():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        foreign_business = Business(name="Foreign CSV workspace", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        session.add(Customer(
+            business_id=foreign_business.id,
+            name="Foreign customer",
+            email="shared@example.com",
+        ))
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/imports/customers.csv"
+    csv_text = "name,email\\nLocal customer,shared@example.com\\n"
+    try:
+        preview = client.post(
+            f"{base}/preview", content=csv_text,
+            headers={"Content-Type": "text/csv"},
+        )
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["valid"] is True
+        assert preview.json()["errors"] == []
+        assert preview.json()["write_performed"] is False
+
+        imported = client.post(
+            base, content=csv_text, headers={"Content-Type": "text/csv"},
+        )
+        assert imported.status_code == 202, imported.text
+        with Session(engine) as session:
+            local_customer = session.scalar(select(Customer).where(
+                Customer.business_id == business_id,
+                Customer.email == "shared@example.com",
+            ))
+            assert local_customer is not None
+            assert local_customer.name == "Local customer"
+            assert session.scalar(select(func.count()).select_from(Customer).where(
+                Customer.email == "shared@example.com",
+            )) == 2
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
