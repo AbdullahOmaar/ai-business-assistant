@@ -56,7 +56,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
           </form>
           <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
-          @if (error) { <p class="error" role="alert">{{ error }}</p> }
+          @if (error) { <p class="error" role="alert">{{ error }}</p><button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button> }
         </main>
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('التنقل الرئيسي', 'Main navigation')">
@@ -131,12 +131,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             </section>
           } @else {
             <section class="workspace-bar">
-              <div><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
+              <div class="workspace-current"><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
               <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
+              <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('إصدار التطبيق ووقت النشر', 'App version and deployment time')">
+                <span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+                <small>{{ t('وقت بناء النسخة:', 'Build time:') }} {{ buildTimeLabel }}</small>
+              </div>
             </section>
-            <div class="mobile-version-strip"><span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span><small class="mobile-deploy-time">{{ t('آخر نشر (وقت بناء النسخة):', 'Last deployment (build time):') }} {{ buildTimeLabel }}</small></div>
 
             @if (tab === 'overview') {
               <section class="hero">
@@ -163,7 +166,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('قائمة الإشعارات', 'Notification queue') }}</h2><p>{{ t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') }}</p></div><span class="count">{{ notifications.length }}</span></div>
                 <form class="stack" (ngSubmit)="createNotification()">
-                  <label>{{ t('النوع', 'Kind') }}<input name="notificationKind" required maxlength="40" [(ngModel)]="notificationKind"></label>
+                  <label>{{ t('نوع الإشعار', 'Notification type') }}<select name="notificationKind" required [(ngModel)]="notificationKind">
+                    <option value="businesses">{{ t('مساحات العمل', 'Businesses') }}</option>
+                    <option value="invoices">{{ t('الفواتير', 'Invoices') }}</option>
+                    <option value="payments">{{ t('المدفوعات', 'Payments') }}</option>
+                    <option value="expenses">{{ t('المصروفات', 'Expenses') }}</option>
+                    <option value="inventory">{{ t('المخزون', 'Inventory') }}</option>
+                    <option value="reminders">{{ t('التذكيرات', 'Reminders') }}</option>
+                    <option value="reports">{{ t('التقارير', 'Reports') }}</option>
+                    <option value="system">{{ t('النظام', 'System') }}</option>
+                  </select></label>
                   <label>{{ t('العنوان', 'Title') }}<input name="notificationTitle" required maxlength="160" [(ngModel)]="notificationTitle"></label>
                   <label>{{ t('المحتوى', 'Message') }}<textarea name="notificationBody" required maxlength="1000" rows="3" [(ngModel)]="notificationBody"></textarea></label>
                   <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
@@ -255,7 +267,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (reportError) { <div class="error-banner" role="alert">{{ reportError }}</div> }
                 @if (profitLoss) {
                   <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
-                  <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ profitLoss.revenue_basis }}</p>
+                  <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
                   <div class="metric-grid">
                     @for (row of profitLoss.currencies; track row.currency_code) {
                       <article class="metric"><span>{{ t('الإيرادات (فواتير صادرة)', 'Revenue (issued invoices)') }}</span><strong>{{ row.revenue }} {{ row.currency_code }}</strong><small>{{ row.revenue_invoice_count }} {{ t('فاتورة', 'invoices') }}</small></article>
@@ -365,7 +377,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             @if (tab === 'invoices') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</h2><p>{{ t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') }}</p></div><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></div>
-                <div class="invoice-toolbar"><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
+                <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
                   <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select></label>
@@ -388,7 +400,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
-                </details></div>
+                </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
                 @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
@@ -435,7 +447,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (taxSummaryReport) {
                   <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
                   @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.') }}</p> }
-                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
             }
@@ -444,8 +456,25 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('سجل العمليات', 'Activity log') }}</h2><p>{{ t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.') }}</p></div><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></div>
                 <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
-                  <label>{{ t('نوع العملية', 'Action') }}<input name="auditAction" maxlength="80" [(ngModel)]="auditAction" placeholder="invoice.issued"></label>
-                  <label>{{ t('نوع السجل', 'Target type') }}<input name="auditTarget" maxlength="80" [(ngModel)]="auditTargetType" placeholder="invoice"></label>
+                  <label>{{ t('نوع العملية', 'Action') }}<select name="auditAction" [(ngModel)]="auditAction">
+                    <option value="">{{ t('كل العمليات', 'All actions') }}</option>
+                    <option value="invoice.issued">{{ t('إصدار فاتورة', 'Invoice issued') }}</option>
+                    <option value="invoice.created">{{ t('إنشاء فاتورة', 'Invoice created') }}</option>
+                    <option value="invoice.voided">{{ t('إلغاء فاتورة', 'Invoice voided') }}</option>
+                    <option value="payment.recorded">{{ t('تسجيل دفعة', 'Payment recorded') }}</option>
+                    <option value="expense.created">{{ t('تسجيل مصروف', 'Expense recorded') }}</option>
+                    <option value="customer.created">{{ t('إضافة عميل', 'Customer created') }}</option>
+                    <option value="product.created">{{ t('إضافة منتج', 'Product created') }}</option>
+                  </select></label>
+                  <label>{{ t('نوع السجل', 'Target type') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
+                    <option value="">{{ t('كل السجلات', 'All record types') }}</option>
+                    <option value="invoice">{{ t('فاتورة', 'Invoice') }}</option>
+                    <option value="payment">{{ t('دفعة', 'Payment') }}</option>
+                    <option value="expense">{{ t('مصروف', 'Expense') }}</option>
+                    <option value="customer">{{ t('عميل', 'Customer') }}</option>
+                    <option value="product">{{ t('منتج', 'Product') }}</option>
+                    <option value="business">{{ t('نشاط تجاري', 'Business') }}</option>
+                  </select></label>
                   <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
                 </form>
@@ -453,7 +482,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (auditLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل السجل…', 'Loading activity…') }}</p> }
                 @if (!auditLoading && !auditEvents.length && !auditError) { <p class="empty">{{ t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.') }}</p> }
                 <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
-                  @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ event.action }}</td><td>{{ event.target_type }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
+                  @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ auditActionLabel(event.action) }}</td><td>{{ auditTargetLabel(event.target_type) }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
                 </tbody></table></div>
                 <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
               </section>
@@ -533,7 +562,17 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <span class="count">{{ expenses.length }} {{ t('مصروفات', 'expenses') }}</span>
                 </div>
                 <form class="inline-form expense-form" (ngSubmit)="createExpense()">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" maxlength="80" [placeholder]="t('التصنيف', 'Category')" required [(ngModel)]="expenseCategory">
+                  <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" required [(ngModel)]="expenseCategory">
+                    <option value="General">{{ t('عام', 'General') }}</option>
+                    <option value="Supplies">{{ t('مستلزمات', 'Supplies') }}</option>
+                    <option value="Rent">{{ t('إيجار', 'Rent') }}</option>
+                    <option value="Utilities">{{ t('مرافق وفواتير', 'Utilities') }}</option>
+                    <option value="Transport">{{ t('نقل ومواصلات', 'Transport') }}</option>
+                    <option value="Marketing">{{ t('تسويق', 'Marketing') }}</option>
+                    <option value="Payroll">{{ t('رواتب', 'Payroll') }}</option>
+                    <option value="Maintenance">{{ t('صيانة', 'Maintenance') }}</option>
+                    <option value="Other">{{ t('أخرى', 'Other') }}</option>
+                  </select></label>
                   <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('وصف المصروف', 'Expense description')" name="expenseDescription" maxlength="500" [placeholder]="t('الوصف', 'Description')" required [(ngModel)]="expenseDescription">
                   <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مبلغ المصروف', 'Expense amount')" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ', 'Amount')" required [(ngModel)]="expenseAmount">
                   <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تاريخ ووقت المصروف', 'Expense date and time')" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
@@ -571,7 +610,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
                 @if (integrityError) { <p class="error" role="alert">{{ integrityError }}</p> }
                 @if (dataIntegrityReport) {
-                  <div class="notice warning-notice"><strong>{{ t('مراجعة يدوية فقط', 'Manual review only') }}</strong><span>{{ dataIntegrityReport.warning }}</span></div>
+                  <div class="notice warning-notice"><strong>{{ t('تحتاج مراجعة بشرية', 'Human review required') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
                   <div class="metric-grid">
                     <article class="metric"><span>{{ t('فواتير صادرة بلا عميل', 'Issued invoices without a customer') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
                     <article class="metric"><span>{{ t('تخصيصات بعملات مختلفة', 'Currency-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
@@ -593,7 +632,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   @if (!chatMessages.length) { <p class="empty">{{ t('ابدأ بسؤال سريع عن نشاطك أو اختَر اقتراحًا بالأسفل.', 'Start with a quick business question or choose a suggestion below.') }}</p> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span>@if (message.mode === 'local-fallback') { <small class="source-list">{{ t('وضع مجاني محدود · إجابة من سجلات النشاط', 'Free limited mode · grounded in business records') }}</small> }<p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
-                @if (!chatMessages.length) { <div class="assistant-suggestions"><p>{{ t('جرّب تسأل', 'Try asking') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما الفواتير المستحقة التي تحتاج متابعة؟', 'Which outstanding invoices need follow-up?'))"><span class="suggestion-icon">↗</span><strong>{{ t('متابعة التحصيل', 'Receivables follow-up') }}</strong><small>{{ t('اعرف الفواتير المستحقة', 'Find outstanding invoices') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('لخّص أداء النشاط خلال آخر 30 يومًا.', 'Summarize business performance over the last 30 days.'))"><span class="suggestion-icon">✦</span><strong>{{ t('ملخص الأداء', 'Performance summary') }}</strong><small>{{ t('مبيعات ومصروفات', 'Sales and expenses') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما المنتجات التي تحتاج إعادة تخزين؟', 'Which products may need restocking?'))"><span class="suggestion-icon">▦</span><strong>{{ t('المخزون', 'Inventory check') }}</strong><small>{{ t('راجع المنتجات والمخزون', 'Review products and stock') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('اعرض لي نظرة عامة على العملاء والفواتير.', 'Give me an overview of customers and invoices.'))"><span class="suggestion-icon">◎</span><strong>{{ t('نظرة عامة', 'Business overview') }}</strong><small>{{ t('عملاء وفواتير', 'Customers and invoices') }}</small></button></div></div> }
+                <div class="assistant-suggestions"><p>{{ t('جرّب تسأل', 'Try asking') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما الفواتير المستحقة التي تحتاج متابعة؟', 'Which outstanding invoices need follow-up?'))"><span class="suggestion-icon">↗</span><strong>{{ t('متابعة التحصيل', 'Receivables follow-up') }}</strong><small>{{ t('اعرف الفواتير المستحقة', 'Find outstanding invoices') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('لخّص أداء النشاط خلال آخر 30 يومًا.', 'Summarize business performance over the last 30 days.'))"><span class="suggestion-icon">✦</span><strong>{{ t('ملخص الأداء', 'Performance summary') }}</strong><small>{{ t('مبيعات ومصروفات', 'Sales and expenses') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('ما المنتجات التي تحتاج إعادة تخزين؟', 'Which products may need restocking?'))"><span class="suggestion-icon">▦</span><strong>{{ t('المخزون', 'Inventory check') }}</strong><small>{{ t('راجع المنتجات والمخزون', 'Review products and stock') }}</small></button><button type="button" class="suggestion-card" (click)="useAssistantSuggestion(t('اعرض لي نظرة عامة على العملاء والفواتير.', 'Give me an overview of customers and invoices.'))"><span class="suggestion-icon">◎</span><strong>{{ t('نظرة عامة', 'Business overview') }}</strong><small>{{ t('عملاء وفواتير', 'Customers and invoices') }}</small></button></div></div>
                 @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span>@if (!chatConfigurationMissing) { <button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">{{ t('إعادة المحاولة', 'Retry') }}</button> }</div> }
                 @if (chatSending) { <p class="muted" role="status" aria-live="polite">{{ t('المساعد الذكي يجهّز الإجابة…', 'The AI assistant is preparing an answer…') }}</p> }
                 <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
@@ -1008,7 +1047,7 @@ export class AppComponent implements OnInit {
     finally { this.installPrompt = null; }
   }
 
-  private async initializeApp(): Promise<void> {
+  async initializeApp(): Promise<void> {
     this.initialized = false;
     this.loading = true;
     this.error = '';
@@ -1033,6 +1072,60 @@ export class AppComponent implements OnInit {
       this.loading = false;
       this.initialized = true;
     }
+  }
+
+  auditActionLabel(action: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      'invoice.issued': { ar: 'إصدار فاتورة', en: 'Invoice issued' },
+      'invoice.created': { ar: 'إنشاء فاتورة', en: 'Invoice created' },
+      'invoice.voided': { ar: 'إلغاء فاتورة', en: 'Invoice voided' },
+      'payment.recorded': { ar: 'تسجيل دفعة', en: 'Payment recorded' },
+      'expense.created': { ar: 'تسجيل مصروف', en: 'Expense recorded' },
+      'customer.created': { ar: 'إضافة عميل', en: 'Customer created' },
+      'product.created': { ar: 'إضافة منتج', en: 'Product created' }
+    };
+    return labels[action]?.[this.language] || action;
+  }
+
+  auditTargetLabel(target: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      invoice: { ar: 'فاتورة', en: 'Invoice' },
+      payment: { ar: 'دفعة', en: 'Payment' },
+      expense: { ar: 'مصروف', en: 'Expense' },
+      customer: { ar: 'عميل', en: 'Customer' },
+      product: { ar: 'منتج', en: 'Product' },
+      business: { ar: 'نشاط تجاري', en: 'Business' }
+    };
+    return labels[target]?.[this.language] || target;
+  }
+
+  revenueBasisLabel(value: string): string {
+    const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
+    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') {
+      return this.t('إجمالي الفواتير الصادرة قبل الخصومات والمرتجعات', 'Gross issued invoice total');
+    }
+    if (normalized === 'issued invoices' || normalized === 'issued invoice total') {
+      return this.t('إجمالي الفواتير الصادرة', 'Issued invoice total');
+    }
+    return value;
+  }
+
+  integrityWarningLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'manual review only' || normalized === 'report is for manual review only') {
+      return this.t('هذا التقرير للمراجعة البشرية فقط، ولا يغيّر البيانات تلقائيًا.', 'This report is for human review only and does not change data automatically.');
+    }
+    return value;
+  }
+
+  reportLimitationLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    const known: Record<string, { ar: string; en: string }> = {
+      'manual review only': { ar: 'للمراجعة البشرية فقط', en: 'Manual review only' },
+      'report is read-only': { ar: 'التقرير للقراءة فقط', en: 'Report is read-only' },
+      'amounts are separated by currency': { ar: 'تُعرض المبالغ منفصلة حسب العملة', en: 'Amounts are separated by currency' }
+    };
+    return known[normalized]?.[this.language] || value;
   }
 
   invoiceStatusLabel(status: string): string {
