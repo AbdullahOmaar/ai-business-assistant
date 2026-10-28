@@ -8,20 +8,20 @@
 ## Current inventory
 
 - Git branches returned by GitHub before this ledger branch was created: **210 total including main; 209 non-main branches**.
-- Pull requests returned by the GitHub PR listing integration: **203 records**.
+- Pull requests returned by the GitHub PR listing integration at baseline: **203 records**.
 - PRs marked merged: **95**.
-- PRs currently open: **2**.
+- PRs currently open at baseline: **2**.
 - PRs closed without merge: **106**.
 - Branches with no matching PR head in the returned inventory: **11**. These are **not automatically unmerged**; inspect compare results and code before deciding.
 - Squash/rebase merges can leave a source branch “ahead” of main even after the PR merged. **Use PR merged status as integration evidence; never infer unmerged work from ahead/behind counts alone.** A closed PR with merged=false also does not prove its work is absent from main; a replacement PR may have carried the change.
 
 ### Refreshed inventory after opening this ledger PR — 2026-10-28
 
-The counts above are the baseline captured immediately before branch `docs/branch-consolidation-ledger-2026-10-28` and PR #239 were created. Current GitHub metadata after opening this PR:
+The counts above are the original baseline captured before this ledger branch was created. After opening PR #239 and the UI/UX review PR #243, refreshed GitHub metadata is:
 
 - Branches: **211 total including main; 210 non-main**.
-- PR records: **204 total** — 95 merged, 106 closed without merge, and **3 open** (2 Draft, 1 non-Draft).
-- Current open PRs are #236, #238, and this ledger PR #239. Refresh the counts again after any merge/closure.
+- PR records: **205 total** — 95 merged, 106 closed without merge, and **4 open** (2 Draft before #243 was added, plus #239 and #243; #243 is Draft).
+- Current open PRs: #236, #238, #239, and #243. Recheck exact-head CI and refresh counts after any merge/closure.
 
 ## Rules for future agents
 
@@ -39,7 +39,8 @@ The counts above are the baseline captured immediately before branch `docs/branc
 |---|---|---|---|
 | #238 | test(admin): verify concurrent last-owner membership mutations | `feat/platform-admin-membership-concurrency-20261028` | OPEN · DRAFT |
 | #236 | test(finance): cover concurrent invoice void and sales return | `docs/audit-master-plan-2026-10-28` | OPEN · DRAFT |
-| #239 | docs: add branch consolidation ledger | `docs/branch-consolidation-ledger-2026-10-28` | OPEN · READY FOR REVIEW |
+| #239 | docs: add branch consolidation ledger | `docs/branch-consolidation-ledger-2026-10-28` | OPEN · READY FOR REVIEW · CircleCI 4/4 PASS on `0d8317248a795c8e875ac5418163515f6bfb4bc9` |
+| #243 | fix(ui): consolidate startup resilience and mobile workspace UX | `fix/ui-ux-review-batch-2026-10-28` | OPEN · DRAFT · frontend-quality FAIL; 2 checks pending on `e7f94fac534dd5c3d38bdd927fef554025bcb201` |
 
 ## Merged pull requests — already integrated through these PRs
 
@@ -263,7 +264,6 @@ No matching PR head was found for these existing branches. This is a review queu
 - `fix/backup-restore-target-safety-current-main-20261028`
 - `fix/deterministic-frontend-install`
 - `fix/invoice-stock-return-safety`
-- `fix/ui-ux-review-batch-2026-10-28`
 - `learning/toto-practice`
 - `security/owner-staff-permission-matrix`
 - `test/stock-empty-movements`
@@ -272,6 +272,6 @@ No matching PR head was found for these existing branches. This is a review queu
 
 ## Audit limitations
 
-- GitHub branch and PR data was inspected; comparisons against `main` were run for all 209 non-main branches before creating this ledger branch. Compare results alone are not proof of integration because squash/rebase merges and replacement PRs exist.
+- GitHub branch and PR data was inspected; comparisons against all 209 non-main branches were run before creating this ledger branch. Follow-up triage found `fix/ui-ux-review-batch-2026-10-28` 31 commits ahead and 0 behind `main`; it now has Draft PR #243. `fix/invoice-stock-return-safety` has 7 commits ahead and 318 behind with backend lifecycle/test changes; it remains unmerged/unclassified pending careful comparison with merged return/void fixes. `security/owner-staff-permission-matrix` has 3 commits ahead and 289 behind with authorization/service tests; `test/stock-empty-movements` has 1 commit ahead and 305 behind with a domain test; these remain stale candidates requiring exact diff review. Branches that are strictly behind with no file diff are not candidates to merge. Compare results alone are not proof of integration because squash/rebase merges and replacement PRs exist.
 - This document does not authorize branch deletion or production deployment.
 - Before merging any change, inspect the latest exact head SHA, required CircleCI checks, review/protection requirements, and current main SHA.
