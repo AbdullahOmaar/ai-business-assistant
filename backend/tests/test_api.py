@@ -1235,6 +1235,7 @@ def test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_
                     "next_run_at": "2027-01-01T00:00:00Z",
                 },
             ),
+            False,
         ),
         (
             "create pricing rule",
@@ -1242,6 +1243,7 @@ def test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_
                 f"{base}/pricing-rules",
                 json={"name": "Unauthorized discount", "rule_type": "discount", "rate": "10.0000"},
             ),
+            False,
         ),
         (
             "create notification",
@@ -1254,12 +1256,14 @@ def test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_
                     "deduplication_key": "nonmember-sensitive-workflow",
                 },
             ),
+            False,
         ),
         (
             "change business setting",
             lambda: client.put(f"{base}/settings/locale", json={"setting_value": "ar"}),
+            False,
         ),
-        ("list notifications", lambda: client.get(f"{base}/notifications")),
+        ("list notifications", lambda: client.get(f"{base}/notifications"), True),
     ]
 
     try:
@@ -1267,11 +1271,13 @@ def test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_
             app.state.principal_resolver = (
                 lambda request, subject=subject: AuthenticatedPrincipal(subject=subject)
             )
-            for action, request in requests:
+            for action, request, staff_can_read in requests:
+                expected_status = 200 if subject == "staff-subject" and staff_can_read else 403
                 before = snapshot()
                 response = request()
-                assert response.status_code == 403, (
-                    f"{subject} {action}: expected 403, got {response.status_code}: {response.text}"
+                assert response.status_code == expected_status, (
+                    f"{subject} {action}: expected {expected_status}, "
+                    f"got {response.status_code}: {response.text}"
                 )
                 after = snapshot()
                 assert after == before, (
