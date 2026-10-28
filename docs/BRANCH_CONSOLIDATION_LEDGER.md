@@ -15,6 +15,14 @@
 - Branches with no matching PR head in the returned inventory: **11**. These are **not automatically unmerged**; inspect compare results and code before deciding.
 - Squash/rebase merges can leave a source branch “ahead” of main even after the PR merged. **Use PR merged status as integration evidence; never infer unmerged work from ahead/behind counts alone.** A closed PR with merged=false also does not prove its work is absent from main; a replacement PR may have carried the change.
 
+### Refreshed inventory after opening this ledger PR — 2026-10-28
+
+The counts above are the baseline captured immediately before branch `docs/branch-consolidation-ledger-2026-10-28` and PR #239 were created. Current GitHub metadata after opening this PR:
+
+- Branches: **211 total including main; 210 non-main**.
+- PR records: **204 total** — 95 merged, 106 closed without merge, and **3 open** (2 Draft, 1 non-Draft).
+- Current open PRs are #236, #238, and this ledger PR #239. Refresh the counts again after any merge/closure.
+
 ## Rules for future agents
 
 1. Read this ledger before touching an old branch or recreating work.
@@ -31,6 +39,7 @@
 |---|---|---|---|
 | #238 | test(admin): verify concurrent last-owner membership mutations | `feat/platform-admin-membership-concurrency-20261028` | OPEN · DRAFT |
 | #236 | test(finance): cover concurrent invoice void and sales return | `docs/audit-master-plan-2026-10-28` | OPEN · DRAFT |
+| #239 | docs: add branch consolidation ledger | `docs/branch-consolidation-ledger-2026-10-28` | OPEN · READY FOR REVIEW |
 
 ## Merged pull requests — already integrated through these PRs
 
