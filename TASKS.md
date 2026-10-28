@@ -4,10 +4,10 @@
 
 ## Current verified repository state
 
-- **Main SHA:** `28dd3b418b53f7b9408695982b7378c4c99c7b27` — payroll post-payment refresh merged via PR #287. Pre-merge exact-head CircleCI passed all six substantive jobs plus aggregate **7/7 PASS**; GitGuardian Security Checks reported **SUCCESS**.
+- **Main SHA:** `51227718405ddd59e222c14aeace83d9f2d4983d` — documentation-only PR #290 merged after verifying the PR #287 post-merge status. The latest application-code merge remains PR #287 at `28dd3b418b53f7b9408695982b7378c4c99c7b27`; its exact merge-commit CircleCI six substantive contexts + aggregate passed **7/7**, and Vercel Web/API status contexts reported **SUCCESS**. Authenticated production smoke remains NOT RUN.
 - **PR #287 — payroll post-payment refresh:** **MERGED** at `28dd3b418b53f7b9408695982b7378c4c99c7b27`. The payroll component emits a success event only after the payment API succeeds; the parent refreshes workspace expenses and dashboard and ignores late responses/errors after a workspace switch. Regression coverage verifies event wiring, both refresh calls, and workspace guards. Changed files: `frontend/src/app/app.component.ts`, `frontend/src/app/employee-payroll.component.ts`, and `frontend/src/app/employee-payroll-ui.spec.ts`.
 - **Superseded payroll PRs:** #280, #285, and #286 are closed without merge. #285 hit merge conflicts after main advanced; #286 duplicated the payroll refresh with a stale task-ledger snapshot. PR #287 is the sole merged implementation. Remote branches were preserved; no branch deletion was performed.
-- **Post-merge verification:** re-polled exact merge commit `28dd3b418b53f7b9408695982b7378c4c99c7b27`: all six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` are **7/7 PASS**. Vercel Web/API status contexts are **SUCCESS**. These status checks do not replace authenticated production smoke or verification of the deployed runtime SHA.
+- **Post-merge verification:** exact merge commit `28dd3b418b53f7b9408695982b7378c4c99c7b27` has six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` **7/7 PASS**; Vercel Web/API contexts **SUCCESS**. These status checks do not replace authenticated production smoke or verification of the deployed runtime SHA.
 - **GitHub Actions diagnostics:** duplicate workflows on the payroll PR failed with job step data absent and no logs available (404). This matches prior repository observations of jobs failing before acquiring a runner; root cause remains **UNVERIFIED**. CircleCI passed on the exact PR head. Local tests/build: **NOT RUN** in this connector-only session.
 - **PR #284 — AI source grounding:** merged at `71eeb68eb2c33955d0729c984ff5626c39f28d43`. No-provider fallback source metadata is now intent-relevant and regression-tested. Do not track this as an active task.
 - **PR #281 — employee/payroll isolation:** merged at `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d`. Non-member and cross-business employee/payroll tests assert denial and no-write/no-audit side effects.
@@ -18,7 +18,7 @@
 
 ## Next actions
 
-1. Re-poll CircleCI and Vercel contexts for merge SHA `28dd3b418b53f7b9408695982b7378c4c99c7b27`; record the final outcomes without assuming pending checks passed.
+1. The post-merge checks for `28dd3b418b53f7b9408695982b7378c4c99c7b27` are verified 7/7 PASS and Vercel Web/API contexts SUCCESS; do not claim authenticated production smoke or deployed runtime SHA parity without separate evidence.
 2. Verify the exact-head backend/financial CircleCI suite for `security/extended-route-no-side-effects-20261029`; merge its focused PR only if all required checks pass and the diff stays limited to security tests/docs.
 3. Keep production deployment and branch deletion separate; do neither without explicit authorization and verified release/permission gates.
 
