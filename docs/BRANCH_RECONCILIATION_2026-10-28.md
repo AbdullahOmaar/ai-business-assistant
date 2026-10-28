@@ -625,3 +625,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - PR #150's absent automation tooling is recorded as a deferred decision, not misreported as merged or restored.
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 6 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`. This batch checks whether stacked feature work is present in the current consolidated API/UI rather than attempting to merge old stacks.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #133 — currency-separated tax summary report | Current `extended_api.py` exposes the tax-summary route; `api.service.ts` and `app.component.ts` contain the tax-summary client and UI. | Feature present on main; no restore. Tax filing/jurisdiction recalculation remains explicitly out of scope. |
+| #132 — operations screens and supplier/purchasing/expenses/schedules | Current API and UI contain supplier, purchase-order, recurring-invoice, expense, and notification-queue workflows; `test_api.py` covers owner schedule and purchase-order operations. | Superseded by later operations API/UI merges; no stale-stack merge. Automated recurring invoice generation still requires a deployed worker. |
+| #130 — currency-safe customer statement | Current `extended_api.py` has the customer statement route; frontend API/UI contain the statement panel, and `customer-statement-layout.spec.ts` covers narrow-screen scrolling/wrapping. | Present on main; no restore. Credit-note/double-entry accounting remains a separate product gap. |
+| #129 — mobile invoice draft editor with discount/tax preview | Current frontend API/component contain draft, discount and tax-total fields; server-side invoice calculations remain authoritative. | Present in the consolidated invoice workflow; no stale branch merge. Reopening/reissuing financial drafts still requires the relevant regression suite. |
+| #128 — owner data-integrity review UI | Current `extended_api.py`, frontend API/component and tests include the owner-gated read-only data-integrity report and UI. | Present on main through later merged data-integrity work; no restore. Authenticated production review workflow remains NOT RUN. |
+| #127 — owner activity log API/UI | Current `extended_api.py` includes `/audit-events`; frontend component/API include the owner activity feed and filters. | Present on main; no restore. Request-ID correlation remains a separately documented follow-up. |
+| #123 — show UI/API versions on installed mobile app | Current build-info generator produces `builtAt`; the app formats Cairo build time in the workspace header and merged #265 fixed the header-card layout. | Superseded by later build-info/header merges; no restore. Installed-device visual QA remains NOT RUN. |
+| #121 — mobile customer statement view | Same customer-statement API/UI and responsive layout regression coverage as #130; no distinct missing behavior identified. | Duplicate/superseded by #130 and later UI merges; no restore. |
+| #120 — mobile owner activity log UI | Same owner-only audit route and activity-feed UI as #127; no distinct missing behavior identified. | Duplicate/superseded by #127 and later UI merges; no restore. |
+
+## Audit accounting — after priority batch 6
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–6: **54/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **55/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
