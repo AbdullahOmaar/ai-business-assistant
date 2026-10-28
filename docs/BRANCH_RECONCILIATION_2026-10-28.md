@@ -574,3 +574,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Total reviewed across priority batches 1–3: **27/109**.
 - Remaining closed-unmerged PRs requiring semantic review: **82/109**.
 - This count tracks semantic reviews, not PRs that must be merged. No branches were deleted and no closed PR was reopened.
+
+
+## Closed-unmerged PR audit — priority batch 4 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`. Dispositions below are limited to the listed behavior and do not imply exhaustive product or production verification.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #194 — Platform Admin Firebase directory failure paths | Both regression test names and bodies are present in current `backend/tests/test_platform_admin_api.py`; the current file's later platform-role and audit-rollback tests also remain present. The old branch adds no missing test functions relative to main. | Already present on main; no restore. Authenticated production Firebase E2E remains NOT RUN. |
+| #189 — v1.3.0 invoice payment, opening stock, and release guide | Current main includes invoice payment UI/API, stock aggregation regression `test_invoice_issue_aggregates_repeated_product_lines_before_stock_check`, bilingual release guide and release-guide consistency tests through v1.3.4. | Superseded by later product/release merges; no wholesale merge. Live authenticated payment/stock transactions remain a separate validation gate. |
+| #187 — repeated-line inventory safety and four-slot mobile navigation | Current main contains the repeated-SKU stock regression and `mobile-navigation.spec.ts` asserting four slots with Platform Admin under More; package/API metadata is already at 1.3.4. | Superseded by later inventory/security/release merges; no restore. |
+| #181 — mobile header, customer tables and invoice create/filter layout | The workspace header was corrected in merged #265; current `release-payment-ui.spec.ts` asserts version/build metadata in the workspace card, and the mobile UI work was reapplied via merged successors. | Superseded; visual QA at narrow device widths is still NOT RUN. |
+| #178 — earlier mobile customers/invoices/activity UI | Current `release-payment-ui.spec.ts` includes the payment retry and workspace header regressions; current-main layout work includes the merged #182/#213 successors and #265 header fix. | Duplicate/superseded; no restore. |
+| #174 — customer statement horizontal scrolling | Current `customer-statement-layout.spec.ts` has both wide-ledger scroll containment and long-reference wrapping regressions. | Present on main; real mobile-browser interaction remains NOT RUN. |
+| #173 — CircleCI accounting/concurrency automation | Current `.circleci/config.yml` contains the CircleCI pipeline; exact current main SHA passed all six substantive contexts plus aggregate (7/7), including backend accounting and container checks. | Core CI migration is present and verified; do not merge stale workflow history. PostgreSQL live production workflows remain NOT RUN. |
+| #165 — run frontend tests before build | Current CircleCI frontend unit-test and production-build contexts both pass on current main, and the Vercel web status is successful. The current release pipeline already gates frontend tests/build. | Superseded by current CI/release configuration; no restore. |
+| #164 — GitHub-hosted runner diagnostic workflow | The diagnostic workflow is intentionally absent from current main; its PR documents only a pre-step hosted-runner allocation failure. CircleCI now supplies passing frontend/backend/build/audit gates. No product/runtime patch is lost by omitting this one-off diagnostic workflow. | No runtime change to restore; keep GitHub Actions infrastructure issue as an external diagnostic, not a reason to add duplicate CI. |
+
+## Audit accounting — after priority batch 4
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–4: **36/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **73/109**.
+- Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API contexts succeeded on that SHA.
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
