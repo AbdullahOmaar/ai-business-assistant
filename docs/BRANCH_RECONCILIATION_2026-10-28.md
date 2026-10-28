@@ -56,3 +56,176 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - **Not complete:** route × role × tenant authorization coverage under issue #244 remains broader than the merged STAFF denial test.
 - **Not run:** authenticated production workflows, visual/mobile accessibility review, and an isolated PostgreSQL restore drill.
 - Exact-head CircleCI is the acceptance gate for the test additions in this PR. Do not mark these tests verified until the latest PR head and aggregate pass.
+
+
+## Closed-unmerged PR audit — priority batch 2 (9 additional PRs reviewed)
+
+**Audit base main SHA:** `b84966db294c87338385508b35e98f2b2287e13e`  
+**Inventory captured through paginated GitHub REST results:** 230 branches (100 + 100 + 30); 222 closed PRs (100 + 100 + 22), comprising 113 merged and 109 closed-unmerged; one open PR (#261). Total PR records: 223. No branches were deleted or stale PRs reopened.
+
+| Closed-unmerged PR (head SHA) | Successor chain / terminal merged PR | Current-main evidence | Disposition |
+|---|---|---|---|
+| #257 `6b06760fd912951bf4a406f6ceef7b577f3fbec3` — reproducible frontend installs | Superseded by #258, merged at `91592ede7322ad6b2450d27b88e465c2ccec2630`. | `frontend/package-lock.json` exists on main; `.circleci/config.yml` has five `npm ci --no-audit --no-fund` installs and zero matching `npm install --no-audit --no-fund` installs. | Fully superseded; no restoration. |
+| #252 `5ac0b68ac2439e610dccfa60afc0211f520f4ab7` — payment and OWNER/STAFF regressions | Split/superseded by #250 (non-member supplier denial) and #254 (payment replay and OWNER/STAFF service regression); both merged. | Main contains `test_nonmember_cannot_create_supplier_without_writes_or_audit_events`, `test_owner_can_record_and_idempotently_replay_payment_via_api`, and `test_staff_can_prepare_drafts_but_cannot_post_financials`. | All reviewed test behavior is present through terminal successors; no restoration. |
+| #216 `cd21cb91810511dc9c5fccc7538ea38dae378b3a` — assistant resilience/history | Retry behavior merged through #217 at `8a1ebbfe334980b02795e238be05fad560bd4f28`; bounded history merged through #219 at `0b915a8de0fc173ee508b9b64145092e16b0accd`. | Main `backend/app/assistant_api.py` contains `_provider_post` retry handling and the accumulated-history limit; tests are present in `test_assistant_resilience.py` and `test_assistant_security.py`. | Superseded by both terminal successors; no restoration. |
+| #211 `a32f2874aacad8e89685eee984213d2518273483` — assistant resilience/history | Same terminal successors #217 and #219. | Same source and regression-test evidence as #216; both retry and history-limit behavior are on main. | Duplicate/superseded; no restoration. |
+| #209 `8ce4eb3595313c245d20d58b494b3726429efef0` — mobile audit/invoice layout | Superseded by #213, merged at `52ea765da234c1a7421febd232d40676cff42587`. | Current `frontend/src/app/app.component.ts` contains the `audit-table-wrap` layout refinement. Source presence does not prove visual/mobile accessibility acceptance. | Superseded; no restoration. Visual QA remains NOT RUN. |
+| #205 `846db60528b41fbca68d72ea068315f240a06bd9` — operations read APIs | Superseded by #204, merged at `69c76b2623017036730c836173e936aad5a3ba3b`. | Current `extended_api.py` registers router-relative `/suppliers`, `/purchase-orders`, and `/recurring-invoices` routes (avoiding the stale branch's duplicated `/businesses/{business_id}` segment); workspace-scoping regression exists in `test_business_tenant_boundaries.py`. | Superseded by corrected terminal successor; no restoration. |
+| #201 `f132894cd67486afd04db6926350d1b8c4516eed` — owner data-integrity UI | Superseded by #203, merged at `955e2314439a32a0266936da0d03947de61e8ec7`. | Main has the owner-gated integrity tab and API service contract, plus `frontend/src/app/data-integrity-ui.spec.ts` for read-only and workspace-switch clearing behavior. | Superseded; no restoration. |
+| #199 `cb085589b934c51e914db6926350d1b8c4516eed` — owner data-integrity UI | Same terminal successor #203. | Same main UI/service/spec evidence as #201; no unique missing behavior was identified in the reviewed patch. | Duplicate/superseded; no restoration. |
+| #198 `44ccab074f56378c155c8116fc9e888f325434dc` — customer search by contact fields | Superseded by #200, merged at `64ad1e53c3773c29adb2f4d62515ca6fa3ee4935`. | Main customer search uses SQLAlchemy `or_` across name, email and phone while retaining business/active scoping; `test_customer_search_matches_name_email_and_phone` is present. | Superseded; no restoration. |
+
+## Audit accounting — after priority batch 2
+
+- Additional closed-unmerged PRs semantically reviewed in this batch: **9**.
+- Total reviewed with batch 1: **18/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **91/109**.
+- Current branch inventory remains 230 branches; current PR inventory is 223 records (113 merged, 109 closed-unmerged, one open #261).
+- This is a source/successor audit, not a fresh execution of every historical PR's test suite. Current main SHA `b84966db294c87338385508b35e98f2b2287e13e` passed six substantive CircleCI contexts plus the aggregate (7/7). The open foreign-ID security PR #261 remains blocked by its failing `backend-accounting` context; its logs are inaccessible through the connected integration. Vercel Web/API builds remain blocked by `build-rate-limit`.
+
+
+## Closed-unmerged PR audit — batch 3 (9 additional PRs reviewed)
+
+**Current main verification snapshot:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a` (2026-10-28). Release v1.3.4 is merged; Vercel Web and API deployments are both READY for this exact SHA, and the CircleCI aggregate `verify-all-changes/all-checks-passed` is successful. This release deployment was explicitly requested by the repository owner; it is separate from the reconciliation acceptance gate.
+
+| Closed-unmerged PR (head SHA) | Successor / source evidence | Disposition |
+|---|---|---|
+| #195 `063803a63f71316c3142d569921232a66bcf20cb` — mobile startup viewport E2E | Superseded by #208, merged as `8772438405764734bda6f475e31bd50c22341c86`. Current `frontend/e2e/startup.spec.ts` covers the explicit setup screen, fail-closed missing-Firebase configuration, and narrow mobile viewport. Current main's CircleCI browser-smoke gate passes on `1aa8034`. | Superseded/present; no restoration. Authenticated Firebase E2E remains NOT RUN because test identity/secrets are not available. |
+| #194 `a97fbb858ab817a6999cdf3b82114feabededf5c` — Firebase directory failure paths | Test behavior is present in `backend/tests/test_platform_admin_api.py::test_role_grant_returns_not_found_for_missing_firebase_account_without_persisting`; the typed Firebase lookup/least-privilege work landed via #202, merge `53ecc6bac5d4e45a5fab5375d4fe067822d9ffa1`. | Superseded/present; no restoration. Production Admin bootstrap and live Firebase failure injection remain NOT RUN. |
+| #189 `3a623bb174033c119223bdc0adabc59922eba86a` — v1.3.0 invoice/stock/feature guide | Reapplied against current main by #192, merge `889d23304e8bcf79175567bbf01c925ee447aa06`. Current code contains invoice payment allocation, opening stock, bilingual release guide and regression coverage; later release metadata is now v1.3.4. | Superseded by #192 and later release commits; do not merge stale branch. |
+| #187 `ec7697463ccb332251206bd05d254e21c485bcc0` — repeated-line inventory and mobile navigation | Inventory integrity landed via #185, merge `7472026c2e0b02dcdc9ea8db43574c0ff416a66b`; mobile refinements landed via #182, merge `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e`. Current tests include repeated-SKU aggregation and current mobile navigation rules. | Superseded by #185/#182; no restoration. |
+| #181 `9660b91db7754f68862ef2371c9918e49ff7be19` — mobile customers/invoices/activity layout | Current component refinements were reapplied by #182, merge `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e`; current source has the workspace release metadata, invoice disclosure and mobile table wrapping. | Superseded/present; no restoration. Visual/accessibility review is still NOT RUN. |
+| #176 `b64a1fd5ceb48676047f42134210d8855d69707a` — owner payment and idempotent replay regression | The API regression `test_owner_can_record_and_idempotently_replay_payment_via_api` is on main through #254, merge `91c86932c3344fff395058724f5d44ae4ee06dbd`; current service also retains the savepoint/unique-key race recovery. | Superseded/present; no restoration. |
+| #173 `f2fb9a1c29178eb9926f9b3be7eeb6f5133af676` — CircleCI and financial concurrency gates | The PostgreSQL concurrency suite and payment idempotency recovery are present through #191, merge `4538cf4de7f44e1a4e031f770157a780830f9259` and subsequent mainline tests. Current `.circleci/config.yml` has backend-accounting, container, frontend test/build, dependency-audit, browser-smoke and aggregate gates. The branch's GitHub Actions concurrency-group additions are absent; they are not restored because CircleCI is the authoritative green gate and the Actions provider has documented pre-step runner-allocation failures. | Core behavior/CI superseded; defer provider-specific concurrency-only changes. No new CI system added. |
+| #164 `5e5c40864de79060770bf087e933b89ce6a324ea` — GitHub hosted-runner diagnostic workflow | The diagnostic only reproduces the known pre-step `runner_id=0` allocation failure; it adds a new workflow rather than fixing application behavior. CircleCI is now the working required verification route and is green on current main. | Obsolete diagnostic; do not add another GitHub Actions workflow. Runner/account policy issue remains separate and unresolved. |
+| #163 `6cfe6ca53a341b0fe249d7703da027217cd6dd11` — runner-diagnosis documentation | TASKS and the release/CI runbooks already record the provider failure and the successful CircleCI alternative. The branch carries only a historical checkpoint on an older main baseline. | Superseded documentation; do not merge stale TASKS snapshot. |
+
+## Audit accounting — after batch 3
+
+- Closed-unmerged PRs semantically reviewed in this report: **27/109** (9 priority PRs in batch 1, 9 in batch 2, 9 in batch 3).
+- Remaining: **82/109** closed-unmerged PRs still require semantic review and a disposition.
+- Fresh PR pagination: page 1 = 100, page 2 = 100, page 3 = 26, page 4 = 0; **226 PR records** = 114 merged, 109 closed-unmerged, 3 open.
+- Fresh branch pagination: page 1 = 100, page 2 = 100, page 3 = 33, page 4 = 0; **233 remote branches** including main (232 non-main). No remote branches were deleted.
+- Production release v1.3.4: Web `dpl_8tQwd46MEPxJxCdYKGsqWXKb7kZG` and API `dpl_5AtRUQ5EFmr1WNaP2EDvaRz5cziN` are READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; aliases point to those deployments. CircleCI aggregate passes on the same SHA.
+- This is not a claim that all 109 PRs are reconciled. No branch was deleted, no stale PR was reopened, and no stale branch was merged wholesale.
+
+
+## Closed-unmerged PR audit — batch 4 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #162 `cb76a9f17d97ea1751703d21b400a18a766a3596` — receivables aging report | API report is merged through #92 (merge `5ca0962dfaa3669c2afbf15a631a1cc78f82f2f8`), typed frontend client through #96 (merge `4dbc96cda1bd7abc82d972dc37466379a78a0fa6`). Current `backend/app/extended_api.py`, `backend/tests/test_api.py`, and `frontend/src/app/api.service.ts` contain the report/client and currency-safe regressions. | Superseded by #92/#96 and later fixes; no restoration. |
+| #160 `f36d5c988736176c921246b1e5c15f99bca15391` — recurring schedule timezone and setting-key validation | Canonical safety consolidation #161 merged as `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`. Current `backend/app/extended_api.py` validates IANA timezones and normalizes/rejects unsafe setting keys; current API tests cover invalid timezone and secret-like setting keys. | Superseded by #161; no restoration. |
+| #159 `09aaa3983ec3db53f74b0cf0b5a3e55142671676` — schedule timezone and setting-key validation | Same #161 terminal merge; same source/test evidence as #160. | Duplicate/superseded; no restoration. |
+| #158 `668ff64001725e6a37af98a3232083d75dc5b228` — CORS preflight for settings PUT | #161 includes the CORS method policy; current `backend/app/main.py::CORS_ALLOWED_METHODS` includes PUT/PATCH/DELETE/OPTIONS and `backend/tests/test_main.py::test_cors_method_policy_includes_settings_put_route` asserts preflight behavior and exposed request ID. | Superseded/present; no restoration. |
+| #157 `29e442167a0de3bfbde0c20f41d5ba2c4d9c580c` — workspace report invalidation and payment retries | Current `WorkspaceLoadGuard` invalidates pending report requests when workspace state is cleared, with `workspace-load-guard.spec.ts` coverage. Payment idempotency and retry safety are independently present in `backend/app/services.py`, `frontend/src/app/api.service.ts`, and #254's merged API regression. The old UI patch is not a safe wholesale replacement for current component changes. | Behavior is present across current-main commits; no stale component snapshot restored. |
+| #156 `71b2c55096a306664c14b1308c472b2c812542a0` — stale reports crossing workspace switches | Current `WorkspaceLoadGuard.invalidate()` is called by `clearWorkspaceData()` for profit/loss and receivables-aging requests; tests assert cleared-state invalidation. | Superseded/present; no restoration. |
+| #155 `a754ac36b0f2e130fd8b0ebabd8ae60f071be00e` — sales returns cannot exceed invoice-line value | Consolidated safety PR #161 merged as `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`. Current `backend/app/domain_rules.py` contains return amount/quantity validation and discounted return-line reconciliation; current API/operations tests cover cumulative returns and authorization. | Superseded by #161; no restoration. |
+| #154 `6592ba7f43196081f18c5b00d4dab12693e73efd` — business-local financial date boundaries | #161 consolidated the timezone reporting behavior. Current `backend/app/core_features_api.py` resolves validated IANA zones and uses business-local date boundaries; `backend/tests/test_business_timezone_reporting.py` covers local date/DST behavior. | Superseded by #161; no restoration. |
+| #151 `9115cbb07e19722126782fb1de863e58a1c8161b` — GitHub Actions path filters | Clean replacement #153 merged as `e1ccc669058786634bcc3eeb0ff411049d25b4c7`. Current release gating is handled by CircleCI; the remaining Actions provider has pre-step runner allocation failures, and the stale branch filters are not needed to validate current code. | Superseded by #153; no restoration. |
+| #150 `6df082c0a1acc5cc33d99cbe50a726d9d5112005` — permanent engineering agent controller proposal | Branch adds a new GitHub Actions controller workflow, task-ledger scripts, and a proposed persistent agent runtime; the proposal explicitly says the controller is not deployed. Current `AGENTS.md` and `TASKS.md` contain the adopted execution/security/continuity rules, while the repository has no authorized continuously running controller deployment. | Unadopted architecture proposal; do not merge its new workflow/runtime without a separate approved design and operational threat/cost review. |
+
+## Audit accounting — after batch 4
+
+- Closed-unmerged PRs semantically reviewed in the report: **37/109**; **72/109 remain**.
+- PR inventory remains 226 records (114 merged, 109 closed-unmerged, 3 open); branch inventory remains 233 refs (232 non-main), verified by complete pagination.
+- No runtime code was changed or restored in this batch. Current main's CircleCI checks and v1.3.4 Web/API deployment evidence remain as recorded above.
+- Remaining work: continue patch-level review of the other 72 closed-unmerged PRs; identify any unique intended behavior missing from current main and only then decide whether a focused restoration is warranted.
+
+
+## Closed-unmerged PR audit — batch 5 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #149 `ae3e14c6fe06a833da55031edc9e8f0b8e8aa344` — schedule timezone and setting-key validation | The changes were consolidated in #161 (merge `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`). Current `extended_api.py` validates IANA timezone names and rejects normalized secret-like setting keys; API tests cover invalid timezone/setting inputs. | Superseded by #161; no restoration. |
+| #148 `4e26153973cf8b0ed26377049120e7e19871b04f` — CORS settings PUT preflight | CORS policy and regression are present on main: `CORS_ALLOWED_METHODS` includes PUT and the test executes an OPTIONS preflight against the settings route. | Superseded by #161; no restoration. |
+| #147 `cda4391a35fb5fe9b27bcd7aa0a22aee971eb40a` — prevent payment retries after refresh failure | Workspace/report invalidation and payment retry safety landed in #168 (merge `96cefa42b68a94ddc87b10563c3c26bd6784c394`); API idempotency replay regressions were further restored by #254 (merge `91c86932c3344fff395058724f5d44ae4ee06dbd`). | Superseded/present; no stale UI patch restored. |
+| #146 `48c04130c2a02cc76c6e309155ac7de5248dcd16` — stale reports on workspace switch | Same terminal #168; current `WorkspaceLoadGuard` invalidates stale responses, with tests for clearing workspace state and pending requests. | Superseded/present; no restoration. |
+| #144 `f17d3068d0812ff75f4487c7f62982b27eb0b931` — return value guard | Canonical #161 contains cumulative sales-return validation and discounted line reconciliation. Current domain/API/operations tests cover amount, quantity, and authorization invariants. | Superseded by #161; no restoration. |
+| #143 `ffb39e47fe5b4ca163f08cd62653a08dc356ec5e` — business timezone reporting | Canonical #161 contains business-local reporting bounds; `test_business_timezone_reporting.py` covers local-day and DST boundaries, and the UI no longer sends a client-derived UTC period. | Superseded by #161; no restoration. |
+| #140 `1c0151d30788bc3c85e4ef6661a3c924cf8c5098` — assistant suggestions/build timestamp | Reconciled by #141 (merge `dec7f26bd2bb33a4c27af4e785abe982e8486676`). Current UI includes assistant suggestions and generated build/deploy metadata; later version work now reports v1.3.4. | Superseded by #141; no restoration. |
+| #136 `1fa160240262eafaa55a3ea27f40c9292f69c528` — UI v1.0.0 badge | The one-field version bump is obsolete: current package/API metadata and release history are aligned at v1.3.4, and production Web/API are deployed on the same SHA. | Obsolete release candidate; do not roll back or restore an old version. |
+| #134 `01c7c4db4555c4144e2e4e9409618b044267ff32` — accounting/operations consolidation | The broad stale snapshot was split into current-main successors: #141 assistant/build timestamp, #192 invoice/stock/guide release, #197 tax summary, #203 data-integrity UI, and #215 operations UI. Current source includes audit events, customer statement, data integrity, invoice drafts, tax summary and supplier/purchasing/schedule/notification views with associated tests. | Superseded across terminal feature PRs; do not merge the stale component/API snapshot. |
+| #133 `2d59bbd2c44c4b59aca17945f09ff0ab0e6a3540` — currency-separated tax summary | Reapplied as #197, merged `ee15df2780aecc8869cdc7c54e499686733de988`. Current API, frontend service/screen and regression tests contain currency-separated tax totals and date filtering. | Superseded by #197; no restoration. |
+
+## Audit accounting — after batch 5
+
+- Closed-unmerged PRs semantically reviewed in the report: **47/109**; **62/109 remain**.
+- Inventory unchanged after complete pagination: 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- No runtime code was changed or restored in this batch. No remote branch was deleted, no PR was reopened, and no stale branch was merged wholesale.
+
+
+## Closed-unmerged PR audit — batch 6 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #178 `29ad79128cd97b7a4899d86bade84c50f0ecd54c` — mobile customers/invoices/activity layout | Reapplied by #182 (merge `bb6ca65035b7afff3e087c2f9ab0797bfdf0b93e`). Current component contains the mobile card/layout and audit navigation refinements. | Superseded duplicate; no restoration. |
+| #174 `75af510d79beabb24adcf8d5b259a7fcdc9d4771` — customer statement mobile overflow | Current component includes a touch-scrollable statement table and long-reference wrapping; `frontend/src/app/customer-statement-layout.spec.ts` asserts both behaviors. The current component/layout was subsequently refined in later UI commits. | Behavior present; no restoration. Visual/accessibility review remains NOT RUN. |
+| #165 `4e15f687d6a305af50c467492a0a9fed85f0f663` — run unit tests before Vercel build | Current `frontend/package.json` build command runs `npm test && ng build`; CircleCI separately gates frontend unit tests and production build on the exact SHA. | Superseded by current build/CI gates; no restoration. |
+| #132 `537935b9c1ebd3dc0141fb1a6790f53db41a063e` — suppliers, purchasing, expenses, schedules and notifications | Supplier/purchase-order/schedule APIs landed in #204 (merge `69c76b2623017036730c836173e936aad5a3ba3b`) and UI reapplication in #215 (commit `64e44b01c39256a669a5fdb3002f4a7b9dafcc48`). Current API/UI and `test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scoped` cover the intended operations. | Superseded by corrected API/UI successors; no restoration. |
+| #130 `3e7acd2bb95d804075579b94ae78a95fb2ef7418` — currency-safe customer statement | Current `extended_api.py` has the workspace-scoped statement endpoint; tenant-boundary tests assert currency safety/pagination; current UI exposes the statement and `customer-statement-layout.spec.ts` covers narrow screens. | Present on current main; no duplicate endpoint or stale UI restore. |
+| #129 `7b4c9aeee47516aa95c59d70a351af5026e94993` — mobile invoice draft editor | Reconciled into #192 (merge `889d23304e8bcf79175567bbf01c925ee447aa06`). Current component supports draft save/edit/issue, multi-line entry and decimal preview; server-side calculation remains authoritative. | Superseded by #192; no restoration. |
+| #128 `50693e95706a20a7b96e6da5a4568e93c8288c1a` — owner data-integrity review | Reapplied by #203 (merge `955e2314439a32a0266936da0d03947de61e8ec7`). Current API is read-only and owner-authorized; `test_data_integrity_report_is_owner_only_read_only_detects_currency_and_customer_mismatches` and `data-integrity-ui.spec.ts` cover API/UI behavior. | Superseded by #203; no restoration. |
+| #127 `3a530360bd44aa95e4f3aab4e8522c171b77ea24` — owner activity log API/UI | Current `extended_api.py` exposes workspace-scoped audit events; tenant tests cover owner-only pagination/workspace isolation; current UI provides the audit tab and filter vocabulary. | Present through subsequent current-main feature commits; no stale component snapshot restored. |
+| #123 `8a0e246f6dea8ca5bbccee9792e4a52f6e537a82` — mobile UI/API version visibility | Current `app.component.ts` renders UI/API version metadata in the workspace card and has a mobile-only release metadata row; v1.3.4 build logs confirm generated UI version/cache metadata. | Superseded by later workspace-card UI and v1.3.4 release; no restoration. |
+| #121 `f1b449255a0b552a87edf27a4b6b78b482476d00` — mobile customer statement | Current customer-statement endpoint, typed UI client/panel, pagination, currency separation and narrow-screen scroll tests are present. | Superseded/present; no restoration. |
+
+## Audit accounting — after batch 6
+
+- Closed-unmerged PRs semantically reviewed in the report: **57/109**; **52/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with all pages checked.
+- No runtime code was changed or restored in this batch; no remote branch was deleted or stale PR reopened.
+
+
+## Closed-unmerged PR audit — batch 7 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #120 `f3918d28300f0b0d03dd2d5852237cc30bc55039` — mobile activity log UI | The owner-only audit-events API/UI and customer statement were integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`) and refined by later UI commits. Current UI has the audit tab; API tests cover owner-only pagination/workspace isolation. | Superseded/present; no restoration. |
+| #119 `210dba28cdd06bbc40da3b3ed730a9f5ac40bfe6` — owner audit log UI | Same #125 terminal merge and later UI refinements; current component exposes read-only activity events and localized action/type filters. | Duplicate/superseded; no restoration. |
+| #118 `0908aeef94f030b3a82c4ccfccb1c37b27f70499` — receivables-aging regression suite | Currency-safe aging implementation/tests are present through #92 (merge `5ca0962dfaa3669c2afbf15a631a1cc78f82f2f8`) and later accounting consolidation #161. Current tests cover currency separation, partial matching-currency allocation, aging and workspace authorization. | Superseded by canonical implementation and later tests; no restoration. |
+| #117 `19141f7e4f54fa4b8f862243f4aa207e39e6871a` — mobile version visibility | Version visibility landed in release #105 (merge `0754a5c2887726f7c6b03f3fdba83f6b104e6272`) and was later refined into the workspace card/mobile row; current release metadata is v1.3.4. | Superseded; no restoration. |
+| #116 `1a894a0b14cbd257bfabaaf30841aeeeaa7d82f0` — read-only accounting integrity report | Report/API/UI were reapplied via #203 (merge `955e2314439a32a0266936da0d03947de61e8ec7`). Current endpoint is owner-only/read-only, with tenant-boundary and UI clearing regressions. | Superseded by #203; no restoration. |
+| #114 `7778a2863ed55336ba03bba05773c398513341c3` — currency-safe customer statement API | Integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`) and refined later. Current statement query is workspace-scoped, paginated, and separates balances by currency; tests cover tenant boundaries and layout. | Superseded/present; no duplicate endpoint. |
+| #113 `1169d77a7d5127f88144b6655950f38d0bea3921` — owner audit events API | Integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`). Current `extended_api.py` exposes audit events; tests cover owner-only pagination/filtering and workspace isolation. | Superseded by #125; no restoration. Request-ID correlation remains a separate unimplemented capability, not something supplied by this stale PR. |
+| #112 `d36b62a07f1c3d38da2b7e057876b0f033b829e9` — HALF_UP financial rounding | Current `backend/app/domain_rules.py::money` uses `ROUND_HALF_UP`; `test_money_rounds_half_up_to_two_decimal_places` and invoice line-rounding tests are present on main. No historical issued invoice rewrite is included. | Behavior/test coverage present; no restoration. |
+| #108 `68243f7a78d8a3fe0cb086be2b2d81c8137355f2` — mobile multi-line invoice drafts | Draft editor and discount/tax preview were integrated in #192 (merge `889d23304e8bcf79175567bbf01c925ee447aa06`) and related mobile release work. Current server remains authoritative for final prices, stock and totals. | Superseded by #192; no restoration. |
+| #104 `d3cbf217f6db400ea4c55ddc690da00248ef269f` — sales-return quantity guard | Consolidated release #105 (merge `0754a5c2887726f7c6b03f3fdba83f6b104e6272`) included the over-allocation fix; later #161 strengthened return amount/quantity validation and regression coverage. | Superseded by #105/#161; no restoration. |
+
+## Audit accounting — after batch 7
+
+- Closed-unmerged PRs semantically reviewed in the report: **67/109**; **42/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
+- No runtime code was changed or restored in this batch; no branch was deleted or stale PR reopened.
+
+
+## Closed-unmerged PR audit — batch 8 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #103 `8428b37228cdfeed794f10ae4a4c224d9e55ce44` — deployed UI/API versions and build gates | Consolidated release #105 merged as `0754a5c2887726f7c6b03f3fdba83f6b104e6272`; current generated build metadata, mobile version visibility, API version endpoint and v1.3.4 deployment parity supersede the old release branch. | Superseded by #105 and later release commits; no restoration. |
+| #101 `2963c33dc4eacc97510af65c0ba9c375f94db378` — safe CSV import preview | Current API exposes `/imports/products.csv/preview`; the UI has a separate preview step before explicit import confirmation, and current source describes preview as read-only until confirmation. | Behavior present on main; no duplicate import endpoint restored. |
+| #98 `2af650873f9a7a685aef958a119ed6f51ebd8edb` — multi-line mobile invoice drafts | Current draft editor, multi-line rows, discount/tax preview and server-side recalculation were integrated in #192 (merge `889d23304e8bcf79175567bbf01c925ee447aa06`). | Superseded by #192; no restoration. |
+| #76 `8d0b68de7b5054fb6a32f61114ca95b6d78d910d` — local assistant fallback | Same head SHA as merged PR #77; current `assistant_api.py` contains a clearly labeled deterministic local fallback and tests cover authorized workspace scoping. | Duplicate head of merged #77; no restoration. |
+| #74 `0f04e911d9131e2d684212af41ea0d2fbed7fae9` — customer statement timeline | Current currency-separated statement API/UI was integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`) and refined later. Tests cover pagination, tenant scope and mobile scroll/wrapping. | Superseded/present; no duplicate endpoint. |
+| #73 `cf7e0962832e3f0b3a9764a3cbf4b7e6063144ab` — owner-managed workspace memberships | Reapplied by #207, commit `f26fb42917ec`. Current `core_features_api.py` implements owner-only membership role changes/removal, and `test_membership_management_api.py` plus PostgreSQL concurrency tests cover last-owner protections. | Superseded by #207 and subsequent authorization hardening; no restoration. |
+| #72 `180c96a5cadfd94b9b0b067cb1e03f3e709372bc` — customer search by name/email/phone | Current customer query searches name, email and phone while retaining business/active filtering; regression `test_customer_search_matches_name_email_and_phone` is present. | Present through the merged customer-search successor; no restoration. |
+| #71 `b114c88d97a0fdd2584a16c563a9baa35e3ee014` — owner audit event feed | Current audit API/UI was integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`); tenant tests assert owner-only access, pagination and workspace isolation. | Superseded by #125; no restoration. |
+| #70 `2391ec15c482e92c7edd2c8e80f882ab23e5b5af` — scheduled dependency scans | Current `.circleci/config.yml` contains the scheduled dependency-audit workflow plus Python and frontend dependency audit jobs; current-main CircleCI dependency audit passes. | Present through CircleCI; no additional workflow needed. |
+| #58 `29740b4aca0ddde18d478fdfd2833f76e049c004` — stale workspace data isolation | Current `clearWorkspaceData()` clears prior workspace records and invalidates pending report requests through `WorkspaceLoadGuard`; guard regression tests reject stale responses after workspace changes/clear. | Present in current main; no restoration. |
+
+## Audit accounting — after batch 8
+
+- Closed-unmerged PRs semantically reviewed in the report: **77/109**; **32/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
+- No runtime code was changed or restored in this batch; no remote branch was deleted or stale PR reopened.
