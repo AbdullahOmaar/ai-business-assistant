@@ -767,7 +767,7 @@ def test_staff_is_denied_sensitive_business_routes():
                     AuditEvent.business_id == business_id
                 )
             )
-            # Rejected requests must leave the business audit ledger unchanged.
+            # A denied request must not append business audit metadata.
             assert audit_count_after == audit_count_before, (
                 "denied STAFF mutations must not append audit events"
             )
