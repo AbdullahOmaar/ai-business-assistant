@@ -1,25 +1,27 @@
-# Current prioritized work queue — 2026-10-29 (live checkpoint after STAFF invoice-void denial regression)
+# Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
-> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
+> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
 ## Current verified repository state
 
-- **Current main SHA:** `bf0bcdaf08353f15a532e692522730f42d2258e1` — PR #276 merged the STAFF-denied invoice-void no-side-effect regression.
-- **PR #276:** merged at `bf0bcdaf08353f15a532e692522730f42d2258e1`. Exact pre-merge head `c40afd7f0ae18687a04ba909ae320c7692f97dda` passed CircleCI six substantive checks + aggregate **7/7 PASS**, including backend-accounting, and GitGuardian **SUCCESS**. Duplicate GitHub Actions jobs repeatedly failed with no executable steps exposed; log retrieval returned 404 `BlobNotFound`, so root cause remains **UNVERIFIED**. GitHub branch protection API reports `main.protected=false`; do not infer the duplicate failures are passing.
-- **PR #297:** merged at `3c560a0f425c8a97bcbe9384c5eefb580c936025`. It adds STAFF/non-member denial and no-side-effect coverage for CSV export of customers/products/expenses and customer/product preview/import. Exact PR-head CircleCI passed **7/7**. GitHub Actions duplicate workflows failed before steps; reruns were attempted but root cause remains unverified.
-- **Security route matrix:** **IN PROGRESS**. Targeted regressions are merged but do not establish complete route × role × tenant coverage. Remaining OWNER-positive lifecycle cases, financial lifecycle edge cases, authenticated production smoke, and mobile/accessibility QA remain outstanding.
-- **Current candidate:** branch `test/security-owner-invoice-void-audit-20261029`, based on main SHA `bf0bcdaf08353f15a532e692522730f42d2258e1`. Adds OWNER-positive invoice-void success/audit coverage, complementing the merged STAFF-denial no-write/no-audit test. Exact-head CI pending. Local pytest/build: **NOT RUN** in this connector-only session.
-- **PR/branch inventory:** latest observed snapshot before opening the current candidate PR: **256 PR records** — **137 merged**, **120 closed-unmerged**, **2 open** (#298, #299); **255 remote branches** including the current candidate branch. Refresh after the candidate PR opens/closes.
-- **Merge-commit validation:** CircleCI status contexts were not yet reported on merge SHA `bf0bcdaf08353f15a532e692522730f42d2258e1` at the first post-merge poll. GitHub Actions checks failed with no retrievable steps/logs; recheck exact main status after the rerun/CI propagation.
-- **Production/release:** no explicit production deployment was initiated by this workflow. Authenticated production smoke and physical mobile/accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target.
+- **Current main SHA before the CSV OWNER-positive candidate:** `072f2eb0fb91c92b577859c4ba874a5c113c2628`. It includes PR #276's STAFF-denied invoice-void no-side-effect regression (`bf0bcdaf08353f15a532e692522730f42d2258e1`), PR #297's CSV denial/no-side-effect matrix (`3c560a0f425c8a97bcbe9384c5eefb580c936025`), and PR #299's AI suggestions layout improvement (`072f2eb0fb91c92b577859c4ba874a5c113c2628`).
+- **PR #276 — invoice-void STAFF denial:** MERGED at `bf0bcdaf08353f15a532e692522730f42d2258e1`; exact pre-merge CircleCI passed six substantive checks plus aggregate (7/7). It asserts denied requests cause no business-state or audit side effects.
+- **PR #297 — CSV role-denial matrix:** MERGED at `3c560a0f425c8a97bcbe9384c5eefb580c936025`; exact pre-merge CircleCI and later merge-SHA CircleCI passed 7/7. STAFF and non-members are denied CSV exports/imports and protected-state/audit snapshots remain unchanged.
+- **PR #299 — AI assistant suggestions layout:** MERGED at `072f2eb0fb91c92b577859c4ba874a5c113c2628`; exact merge-SHA CircleCI passed 7/7 and Vercel Web/API status contexts succeeded. Quick prompts are outside the chat panel in a compact responsive rail. No manual production deployment was initiated by this workflow.
+- **CSV OWNER-positive candidate:** branch `test/security-csv-owner-positive-current-main-20261029`, based on the current main SHA above. Adds an authenticated OWNER success test for CSV exports of customers/products/expenses and valid, read-only customer/product import previews. It snapshots Customer, Product, Expense, ImportJob, and AuditEvent counts before/after. The fixture now configures/restores OWNER identity and uses actual newline escapes in CSV payloads. Exact-head CircleCI is required before merge. Local pytest/build: **NOT RUN** in this connector-only session.
+- **Previous candidate CI:** the older PR #298 head failed `backend-accounting`. Source inspection found missing OWNER identity setup and double-escaped CSV newline fixtures; both are corrected in the current-main-based replacement. This is not considered verified until the replacement's exact-head checks pass.
+- **Closed-unmerged branch audit:** the reconciliation ledger documents **120/120** dispositions at the last complete snapshot, including the eight subsequent closures #280, #283, #285, #286, #289, #291, #293, and #295. PR #298 was later closed without merge because it diverged from main; its intended work is preserved in current-main-based PR #301 and its disposition is recorded in `docs/BRANCH_RECONCILIATION_2026-10-28.md`. Fresh full pagination has **NOT RUN**, so the current closed-unmerged total is **NOT VERIFIED**. No stale branch was merged wholesale or deleted.
+- **PR/branch inventory:** last complete paginated snapshot at main SHA `c644d8a0dd0540a68653dfa16844e2b51f51e230`: 254 PR records (134 merged, 120 closed-unmerged, 0 open) and 253 branches. Since then #297 and #299 merged, #298 closed without merge as superseded, and replacement PR #301 remains open; a fresh full pagination has **NOT RUN**, so current repository-wide totals are **NOT VERIFIED**.
+- **Security tracking issue #276:** **OPEN / IN PROGRESS**. The targeted regressions do not complete the full route × role × tenant matrix. Authenticated production smoke remains **NOT RUN**; physical Android/mobile visual and screen-reader QA remain **NOT RUN**.
 - **Branch cleanup:** **NOT RUN / BLOCKED** because the connected GitHub integration does not expose an authorized remote-branch delete operation. Preserve remote branches; do not emulate deletion by moving refs.
+- **Production / release:** no manual production deployment was initiated by this work. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target. Do not claim production readiness.
 
 ## Next actions
 
-1. Run exact-head CI for the OWNER-positive invoice-void/audit regression; investigate concrete failures and do not weaken assertions.
-2. Verify CircleCI and GitHub Actions rerun outcomes on current main; retain the GitHub Actions issue as unverified until executable steps/logs are available.
-3. Continue the remaining route × role × tenant security matrix on one dedicated branch with OWNER-positive and STAFF/non-member/foreign-business cases.
-4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly NOT RUN/BLOCKED until actually performed with approved access.
+1. Run and inspect exact-head CircleCI on `test/security-csv-owner-positive-current-main-20261029`; investigate any failure without weakening assertions.
+2. Merge only after all required checks pass, then verify the resulting main SHA and its post-merge checks.
+3. Continue issue #276's remaining route × role × tenant no-write/no-audit coverage on one dedicated branch.
+4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly **NOT RUN / BLOCKED** until performed with approved access.
 
 ## Current evidence baseline
 

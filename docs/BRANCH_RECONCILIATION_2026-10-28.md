@@ -986,3 +986,11 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - **PR #295 — narrower non-member extended workflow test:** closed without merge because broader PR #294 covered the same scope with more complete protected-state snapshots and was merged at `c644d8a0dd0540a68653dfa16844e2b51f51e230`.
 - The prior ledger snapshot documented **112/112** closed-unmerged dispositions. These eight subsequent closures raise the current observed set to **120/120** at the inventory snapshot above. No stale branch was merged wholesale or deleted.
 - PR #294 exact pre-merge CircleCI passed 7/7 and GitGuardian succeeded. Current main SHA `c644d8a0dd0540a68653dfa16844e2b51f51e230` also has CircleCI 7/7 and Vercel Web/API SUCCESS. GitHub Actions pre-step failures remain UNVERIFIED; authenticated production smoke remains NOT RUN.
+
+## CSV OWNER-positive candidate branch disposition — 2026-10-29
+
+- **PR #298** (`test/security-csv-owner-positive-20261029`) was closed without merge after GitHub reported the branch non-mergeable/diverged from current main. It is superseded by current-main-based PR #301; the old branch is preserved and was not deleted.
+- The replacement preserves the intended OWNER-positive CSV export/preview regression, explicit OWNER identity setup/cleanup, protected-state snapshots, CSV newline-fixture correction, and task/security inventory documentation.
+- Historical #298 backend-accounting failed on its earlier head. The connected tools could not retrieve the CircleCI job log, so the exact runtime failure was not directly confirmed. Source inspection found missing OWNER identity setup and double-escaped newlines; both were corrected in #301 and require exact-head CI verification.
+- The prior inventory documented 120/120 closed-unmerged PR dispositions. #298 is an additional closure with a documented supersession disposition; a fresh full paginated inventory has **NOT RUN**, so the current repository-wide total is **NOT VERIFIED**.
+- No stale branch was merged wholesale, no remote branch was deleted, and no deployment was performed.
