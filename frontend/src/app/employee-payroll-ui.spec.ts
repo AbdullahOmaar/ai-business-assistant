@@ -36,7 +36,10 @@ test('employee and payroll client methods use business-scoped API paths and neve
   assert.match(api, /approvePayroll\(businessId: string, payrollId: string\)/);
   assert.match(api, /payPayroll\(businessId: string, payrollId: string\)/);
   assert.match(api, /\/api\/v1\/businesses\/\$\{encodeURIComponent\(businessId\)\}\/employees/);
-  assert.doesNotMatch(api, /net_pay:\s*string/);
+  const createPayrollStart = api.indexOf('createPayroll(');
+  const updatePayrollStart = api.indexOf('updatePayroll(', createPayrollStart);
+  assert.ok(createPayrollStart >= 0 && updatePayrollStart > createPayrollStart);
+  assert.doesNotMatch(api.slice(createPayrollStart, updatePayrollStart), /net_pay/);
 });
 
 test('in-app feature catalogue documents employee/payroll permissions and one-time expense posting', () => {
