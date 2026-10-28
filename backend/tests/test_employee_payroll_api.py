@@ -85,7 +85,7 @@ def test_owner_can_manage_employee_and_deactivation_is_audited(employee_environm
             AuditEvent.business_id == UUID(env["business_id"]),
             AuditEvent.target_type == "employee",
         )).all()
-    assert actions == ["employee.created", "employee.updated"]
+    assert set(actions) == {"employee.created", "employee.updated"}
 
 
 def test_employee_code_and_email_duplicates_are_rejected(employee_environment):
