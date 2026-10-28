@@ -277,6 +277,24 @@ export class ApiService {
   }
 
 
+  previewCustomerCsv(businessId: string, csvText: string): Promise<{
+    entity_type: string; row_count: number; valid: boolean;
+    errors: Array<{ row: number; field: string; code: string; max_length?: number; first_row?: number }>;
+    write_performed: boolean;
+  }> {
+    return this.requestCsv(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/imports/customers.csv/preview`, csvText
+    );
+  }
+
+  importCustomerCsv(businessId: string, csvText: string): Promise<{
+    id: string; entity_type: string; status: string; row_count: number; created_at: string;
+  }> {
+    return this.requestCsv(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/imports/customers.csv`, csvText
+    );
+  }
+
   platformAdminAccess(): Promise<PlatformAdminAccess> {
     return this.request<PlatformAdminAccess>('/api/v1/platform-admin/access');
   }
