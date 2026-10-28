@@ -675,6 +675,7 @@ def test_staff_is_denied_sensitive_business_routes():
                     AuditEvent.business_id == business_id
                 )
             )
+
             protected_models = (
                 Customer, Invoice, InvoiceLine, Payment, Supplier, PurchaseOrder,
             )
@@ -1118,6 +1119,76 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
             f"/api/v1/businesses/{business_id}/reports/receivables-aging?as_of=2026-10-26"
         )
         assert denied.status_code == 403
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="nonmember-subject")
+    client = TestClient(app)
+    try:
+        with Session(engine) as session:
+            suppliers_before = session.scalar(
+                select(func.count()).select_from(Supplier).where(Supplier.business_id == business_id)
+            )
+            audit_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(AuditEvent.business_id == business_id)
+            )
+
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/suppliers",
+            json={"name": "Unauthorized supplier"},
+        )
+        assert response.status_code == 403, response.text
+
+        with Session(engine) as session:
+            suppliers_after = session.scalar(
+                select(func.count()).select_from(Supplier).where(Supplier.business_id == business_id)
+            )
+            audit_after = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(AuditEvent.business_id == business_id)
+            )
+        assert suppliers_after == suppliers_before
+        assert audit_after == audit_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_owner_can_record_and_idempotently_replay_payment_via_api():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "5.00",
+        "currency_code": "EGP",
+        "idempotency_key": "owner-api-payment-replay",
+        "customer_id": str(customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+        "method": "cash",
+        "reference": "API regression",
+    }
+    try:
+        first = client.post(base, json=payload)
+        assert first.status_code == 201, first.text
+        assert first.json()["amount"] == "5.00"
+
+        replay = client.post(base, json=payload)
+        assert replay.status_code == 201, replay.text
+        assert replay.json()["id"] == first.json()["id"]
+
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Payment)) == 1
+            assert session.scalar(select(func.count()).select_from(PaymentAllocation)) == 1
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
