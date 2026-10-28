@@ -1,26 +1,23 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after security PR #244)
+# Current prioritized work queue — 2026-10-28 (live checkpoint after employee/payroll merge)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
 ## Current verified repository state
 
-- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046`. Security PR #244 merged at this exact SHA.
-- **Paginated inventory snapshot:** **238 PR records** — **125 merged**, **111 closed-unmerged**, **2 open Draft PRs (#249 reconciliation and #278 employee/payroll)**; **245 unique remote branches**. Evidence: PR pages 100 + 100 + 38; branch pages 100 + 100 + 45. This snapshot includes the new Draft reconciliation PR #249.
-- **Closed-unmerged semantic dispositions:** **111/111** records dispositioned. PR #264 covers the historical 109; PR #261 is explicitly superseded by merged #267, and PR #270 by merged #264. Do not merge stale branches wholesale.
-- **PR #244 — non-member CSV authorization:** merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`. Exact-head CircleCI: six substantive jobs + aggregate **7/7 PASS**. GitHub Actions: backend, frontend, build, Python/JavaScript dependency audits, test, and GitGuardian **7/7 SUCCESS**. Backend job: **231 passed, 7 skipped, 16 warnings**; full test job: **232 passed, 6 skipped, 16 warnings**. PostgreSQL migration validation and ORM migration-drift checks passed. Local tests: **NOT RUN** in this connector-only session.
-- **PR #249 — repository reconciliation:** **IN PROGRESS (Draft)** on `docs/reconciliation-post-security-merge-20261028`, based on the current main SHA above. This pass compares the 11 current branch names absent from the previous ledger and records dispositions below. No stale branch is merged or deleted.
-- **Employee/payroll PR #278:** open Draft on `feat/employee-payroll-management`, latest observed head `06cf28fbaec088bcebdeb1a48792f14299b4faa0`; 13 files, 1,723 additions, 22 deletions. It contains unique employee/payroll API, migration, tests, and UI; keep it separate from the reconciliation PR. Its exact-head CI was still pending at last inspection. No merge or deployment claimed.
-- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration exposes no authorized branch-delete operation. Preserve branches; do not emulate deletion by moving refs.
-- **Production:** Vercel automatically produced READY production deployments for web and API from main SHA `c0f9b475f6b86248862f1a58defc2e3223f58046` after the merge; no manual deployment command was issued. Safe smoke checks: web root HTTP 200, `/version` HTTP 200 (`1.3.4`, commit `c0f9b475f6b8`), `/health` HTTP 200 (`ok`), and `/readyz` HTTP 200 (`ready`). Authenticated workflows and physical Android/mobile visual/accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists.
+- **Main SHA:** `125ad371b86d22f3200eddafa2d139cb019f6195` — employee/payroll PR #278 merged. CircleCI on this SHA: six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API status contexts SUCCESS. No manual deployment command was issued.
+- **Latest observed PR inventory:** **238 PR records** — **126 merged**, **111 closed-unmerged**, **1 open Draft PR (#249)**; **245 remote branches**. This is derived from the last paginated inventory (238 records, 125 merged, 111 closed-unmerged, 2 open) after #278 moved from open to merged. Refresh before any later inventory-sensitive action.
+- **Closed-unmerged semantic audit:** **111/111 dispositions documented**. PR #264 covers the original 109; #261 is superseded by merged #267 and its cross-business regression is present on main in `backend/tests/test_foreign_business_workflows.py::test_owner_cannot_mutate_foreign_business_financial_and_stock_ids`; #270 is an obsolete partial snapshot superseded by merged #264. No stale PR should be merged wholesale.
+- **PR #278 — Employees & Payroll:** **MERGED** at `125ad371b86d22f3200eddafa2d139cb019f6195`. Its exact merge-commit CircleCI status is **7/7 PASS**, including backend-accounting and aggregate. Employee directory, business-scoped payroll drafts/calculation, separate-owner approval, atomic one-time expense posting, bilingual UI, migrations, and regression tests are on main. Issue [#277](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) is closed. Local pytest/build: **NOT RUN** in this connector-only session; no separate production deployment was initiated by this work.
+- **PR #249 — repository reconciliation:** still **OPEN / Draft**, branch `docs/reconciliation-post-security-merge-20261028`, latest checked head `da2ab5d9cb00cfcb7526af1aea97a6ab0dad5f39`. Exact-head CircleCI six substantive jobs + aggregate **7/7 PASS**. The PR remains unmerged pending owner/review policy; this documentation refresh requires another exact-head CI run.
+- **Security tracking issue #276:** **OPEN / IN PROGRESS**. PR #244's non-member CSV denial/no-side-effect tests and PR #267's cross-tenant lifecycle matrix are merged, but remaining route × role × tenant coverage and authenticated production smoke are not complete. Do not close #276 based on partial coverage.
+- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no authorized branch-delete operation. Preserve remote branches; do not emulate deletion by moving refs.
+- **Production / release gates:** merge-commit status contexts show Vercel Web/API SUCCESS, but authenticated production workflows and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists. Do not claim production readiness.
 
 ## Next actions
 
-1. Complete and review the 11-branch addendum; open the single reconciliation PR linked to #249 and refresh counts after it opens.
-2. Run exact-head CircleCI and GitHub checks for the reconciliation PR; only restore code if a missing, intended behavior is proven.
-3. Continue PR #278's employee/payroll verification on its own branch; do not combine it with reconciliation.
-4. Keep branch deletion and production deployment out of scope until authorized tooling/release gates are available.
-
----
+1. Refresh reconciliation docs and PR #249 metadata so the merged employee/payroll state and closed-PR evidence are accurate; then verify exact-head CircleCI again.
+2. Continue issue #276's remaining route × role × tenant no-write/no-audit tests on one dedicated security branch; keep the work separate from the docs-only reconciliation PR.
+3. Keep branch deletion separate and blocked until an authorized delete-capable route is available; do not deploy or change production settings without explicit authorization.
 
 ## Current evidence baseline
 
