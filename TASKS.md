@@ -14,7 +14,7 @@
 
 ## Next actions
 
-1. Submit this documentation-only reconciliation from `docs/reconcile-current-main-20261029`; confirm the diff changes only `TASKS.md`.
+1. PR #289 is the documentation-only reconciliation from `docs/reconcile-current-main-20261029`; its verified diff contains only `TASKS.md`.
 2. Merge the documentation-only PR only if the diff is conflict-free and the GitHub merge API permits it; no app-code changes should be included.
 3. Continue issue #276's remaining route × role × tenant matrix in a separate focused security change; keep authenticated production smoke and restore drill explicitly NOT RUN/BLOCKED until evidence and an approved target exist.
 
