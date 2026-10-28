@@ -124,5 +124,5 @@ The route inventory is broader than current negative integration tests. Add expl
 
 - Current-main baseline: PR #274 merged at `84000ed6a1d2459dedca6296008563dab1147bd8`; customer CSV preview/import UI and business-scoped duplicate-email handling are present.
 - Follow-up candidate adds a regression for a principal with no membership in the requested business. Customer CSV export, preview, and import must each return HTTP 403 and leave business-scoped Customer, ImportJob, and AuditEvent counts unchanged.
-- This is targeted coverage only; it does not close issue #244 or prove the full route × role × tenant matrix.
+- This is targeted coverage only; it does not close security PR #244 or prove the full route × role × tenant matrix.
 - Exact-head CI: pending until the candidate branch's checks complete. Local pytest/build: NOT RUN in this connector-only session. No production data, permissions, or deployment changed.
