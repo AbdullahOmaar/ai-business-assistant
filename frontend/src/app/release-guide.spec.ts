@@ -88,8 +88,8 @@ test('1.3.3 frontend release metadata is consistent in the configured project ro
   assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\\.3\\.3-[^']+';/);
   assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
   assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /Vercel frontend-root/i);
-  const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.3');
-  assert.ok(previousRelease, 'v1.3.3 release notes are missing');
+  const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.2');
+  assert.ok(previousRelease, 'v1.3.2 release notes are missing');
   assert.match(previousRelease.changesEn.join(' '), /Platform Admin/i);
   assert.match(previousRelease.changesEn.join(' '), /audit/i);
 });
