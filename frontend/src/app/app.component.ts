@@ -854,6 +854,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .customer-list-row>button,.invoice-list-row>button,.invoice-list-row>strong,.invoice-list-row>small{grid-column:2;justify-self:start}
       .customer-list-row>button,.invoice-list-row>button{min-height:34px;padding:6px 10px;font-size:12px}
     }
+
+    /* Keep release metadata centered on the same row as the current workspace on desktop. */
+    .workspace-bar{grid-template-columns:minmax(0,1fr) auto minmax(180px,260px)}
+    .workspace-release-meta-inline{grid-column:auto;border-top:0;padding:0;justify-content:center;min-width:0}
+    @media(max-width:600px){
+      .workspace-release-meta-inline{grid-column:1;border-top:1px solid #e5eaf1;padding-top:10px}
+    }
   `]
 })
 export class AppComponent implements OnInit {
