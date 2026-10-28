@@ -2,15 +2,14 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 5)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 6)
 
-- PR #264 remains open; batch 4 documentation commit was followed by batch 5. Fresh exact-head CircleCI checks are required before merge.
-- Reconciliation ledger now documents **45/109** closed-unmerged PR semantic dispositions across five priority batches; **64/109 remain**. The closed-unmerged count itself does not drop just because a PR was reviewed; only a proven missing patch should be recovered.
-- Batch 5 reviewed #160, #159, #158, #154, #151, #150, #147, #143, and #140. Schedule/settings validation, CORS PUT, business-timezone reporting, payment retry safeguards, and build timestamp behavior are present on main or superseded by merged successors.
-- PR #150's scheduled agent-controller workflow and ledger scripts are absent from main. They are intentionally deferred as a separate architecture decision because they add a scheduled GitHub Actions worker and are not needed to restore current product behavior; no new Actions CI was introduced.
+- PR #264 remains open; the reconciliation branch has added three successive review batches since batch 3. The latest docs commit needs fresh exact-head checks before merge.
+- Reconciliation ledger now documents **54/109** closed-unmerged PR semantic dispositions across six priority batches; **55/109 remain**. This is a reviewed-vs-unreviewed count, not a count of PRs that should be merged.
+- Batch 6 reviewed #133, #132, #130, #129, #128, #127, #123, #121, and #120. Current main contains the tax summary, operations routes/screens, customer statement, invoice drafts, owner data-integrity report, owner activity feed, and build metadata through consolidated later changes.
+- No stale feature branch was merged. Remaining limitations include tax filing/jurisdiction-specific calculations, credit-note/double-entry accounting, deployed recurring-invoice worker, audit request-ID correlation, authenticated production workflows, and mobile visual QA.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API status contexts succeeded on that SHA.
-- Remaining distinct gates: PR #261 foreign-tenant security tests (backend-accounting failure on recorded head, root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 64 closed-unmerged PR reviews.
-- Next: continue the next focused batch; restore only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- Next: review the remaining 55 closed-unmerged PRs in focused batches and recover only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
