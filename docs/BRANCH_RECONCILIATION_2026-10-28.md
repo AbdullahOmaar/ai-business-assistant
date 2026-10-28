@@ -229,3 +229,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Closed-unmerged PRs semantically reviewed in the report: **77/109**; **32/109 remain**.
 - Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
 - No runtime code was changed or restored in this batch; no remote branch was deleted or stale PR reopened.
+
+
+## Closed-unmerged PR audit — batch 9 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #57 `093d4ce3f00c617fc39b9a9726f1ff5fd12f0fd4` — payment CSV export and roadmap | Current owner-only payment panel already has `exportPaymentsCsv()`, exporting received date, amount, currency, method, reference and allocation count through shared `buildCsv` which neutralizes spreadsheet formulas. A focused test for the handler/fields/owner-only button was missing; this reconciliation branch adds `frontend/src/app/payment-csv-export.spec.ts`. The proposed roadmap document is not needed to ship the already-present feature. | Behavior present; restore only the missing focused regression test. No duplicate CSV serializer or roadmap snapshot. |
+| #56 `2ecb8d4a58a79b142f250ea040fb51f8bd3a3013` — record search, invoice filters and CSV export | Current `record-filters.ts` and `app.component.ts` support customer/product/invoice filtering and export of filtered customer/product/invoice rows; `record-filters.spec.ts` and `csv-export.spec.ts` cover filtering/CSV safety. | Behavior present; no restoration. |
+| #54 `80617fb4fdc23edec0bf02f8ef8e4f922f6dc2c8` — authenticated API route inventory | Current `docs/SECURITY_ROUTE_INVENTORY.md` records registered routes, authorization expectations and explicit remaining negative-test gaps. | Superseded by current security route inventory; no stale documentation restore. |
+| #53 `ac4b02a4f82fd9e7ae0c428d8c9a93e2722a9f64` — tenant isolation tests | Current `backend/tests/test_business_tenant_boundaries.py` and `test_core_features_api.py` cover cross-business IDs, denied reads/mutations, no-write guarantees and scoped resources; additional sensitive lifecycle coverage is tracked separately in PR #261. | Core behavior/test coverage present and strengthened by later tests; no duplicate stale test file. Broader route × role matrix remains a separate gap. |
+| #50 `cbcf5d1c9f902951685e697edd603fa31f78980a` — assistant safety regressions | Superseded by merged #51 (merge `5bac1ea2b6fe80691a85541c2f01be9d5c1a5a7f`); current `test_assistant_security.py` and `test_core_features_api.py` cover authorization, input limits and local fallback scoping. | Superseded by #51; no restoration. |
+| #49 `c23c88c91578c01593a4e6ddfc87c5bad850c0f6` — Arabic-first mobile navigation/PWA | Mobile navigation and PWA release work landed through #55 (merge `510a2014bb469c46ff7d64934bafce905f8c3662`) and later UI refinements; current shell has RTL/LTR direction, bottom navigation, More menu, install help and service worker. | Superseded by #55 and later mainline; no restoration. Android/installed-PWA visual QA remains NOT RUN. |
+| #48 `2dc2ee6e93c43d07936fa7eeccc417e8df9b1e76` — compact mobile navigation/PWA | Explicitly superseded by #49; terminal mobile release #55 is merged. | Duplicate/superseded; no restoration. |
+| #47 `1f673bab0262b8ddb5aa2b8cb90a5f4f7506091f` — connectivity diagnostics and language switch | Supersession chain #47 → #48 → #49 → #55; current setup/error UI and language direction switching are present and startup E2E covers the setup screen and RTL/LTR viewport. | Superseded; no restoration. Authenticated live Firebase sign-in E2E remains NOT RUN. |
+| #46 `1ede7bba917d2aa6a249ce81048696d6fc70ef4a` — Arabic RTL/accessibility polish | Current app uses Arabic-first UI, document lang/dir switching, visible keyboard focus and active navigation semantics; current startup/browser smoke tests cover setup and narrow RTL/LTR behavior. | Behavior present in later mainline; no stale UI snapshot. Full visual/accessibility QA remains NOT RUN. |
+| #44 `07922d9bdfd5df4e3adf54e35b62196f311ffdba` — deny foreign workspace reads/mutations | Current tenant-boundary/API tests deny foreign workspace access and mutations, verify no unauthorized write side effects, and preserve owner records. PR #261 extends sensitive lifecycle foreign-ID coverage. | Basic regression present; no duplicate test restoration. Remaining resource/role matrix is tracked separately. |
+
+## Audit accounting — after batch 9
+
+- Closed-unmerged PRs semantically reviewed in the report: **87/109**; **22/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
+- One test-only gap was restored: `frontend/src/app/payment-csv-export.spec.ts` covers the already-shipped payment CSV export contract. No production behavior or deployment configuration changed in this batch.
