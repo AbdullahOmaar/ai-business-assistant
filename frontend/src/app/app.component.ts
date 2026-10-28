@@ -1470,6 +1470,17 @@ export class AppComponent implements OnInit {
     this.taxError = '';
     this.taxLoading = false;
     this.agingReport = null;
+    // Import previews are workspace-scoped; never carry a pending CSV into another business.
+    this.importCsvText = '';
+    this.importFileName = '';
+    this.importPreview = null;
+    this.importMessage = '';
+    this.importLoading = false;
+    this.customerImportCsvText = '';
+    this.customerImportFileName = '';
+    this.customerImportPreview = null;
+    this.customerImportMessage = '';
+    this.customerImportLoading = false;
     this.customers = [];
     this.products = [];
     this.invoices = [];
