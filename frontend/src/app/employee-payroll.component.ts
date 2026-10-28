@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
 
@@ -220,6 +220,7 @@ export class EmployeePayrollComponent implements OnChanges {
   @Input({ required: true }) businessId = '';
   @Input({ required: true }) currencyCode = 'EGP';
   @Input() language: 'ar' | 'en' = 'ar';
+  @Output() payrollPaid = new EventEmitter<void>();
 
   employees: EmployeeRecord[] = [];
   payrollRecords: EmployeePayrollRecord[] = [];
@@ -524,6 +525,7 @@ export class EmployeePayrollComponent implements OnChanges {
       await this.api.payPayroll(businessId, record.id);
       if (this.businessId !== businessId) return;
       this.message = this.t('تم تسجيل الصرف وربطه بمصروف رواتب واحد.', 'Payment recorded and linked to one Payroll expense.');
+      this.payrollPaid.emit();
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) {
