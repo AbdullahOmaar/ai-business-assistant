@@ -678,14 +678,22 @@ def test_staff_is_denied_sensitive_business_routes():
             protected_models = (
                 Customer, Invoice, InvoiceLine, Payment, Supplier, PurchaseOrder,
             )
-            protected_counts_before = {
-                model.__name__: session.scalar(
-                    select(func.count()).select_from(model).where(
-                        model.business_id == business_id
-                    )
-                )
-                for model in protected_models
-            }
+
+            def snapshot_protected_records(session):
+                return {
+                    model.__name__: tuple(sorted(
+                        tuple(
+                            (column.key, repr(getattr(record, column.key)))
+                            for column in model.__table__.columns
+                        )
+                        for record in session.scalars(
+                            select(model).where(model.business_id == business_id)
+                        ).all()
+                    ))
+                    for model in protected_models
+                }
+
+            protected_state_before = snapshot_protected_records(session)
 
         responses = {
             "issue existing invoice": client.post(
@@ -782,16 +790,9 @@ def test_staff_is_denied_sensitive_business_routes():
             assert audit_count_after == audit_count_before, (
                 "denied STAFF mutations must not append audit events"
             )
-            protected_counts_after = {
-                model.__name__: session.scalar(
-                    select(func.count()).select_from(model).where(
-                        model.business_id == business_id
-                    )
-                )
-                for model in protected_models
-            }
-            assert protected_counts_after == protected_counts_before, (
-                "denied STAFF requests must not create or delete protected business records"
+            protected_state_after = snapshot_protected_records(session)
+            assert protected_state_after == protected_state_before, (
+                "denied STAFF requests must not create, delete, or mutate protected business records"
             )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
