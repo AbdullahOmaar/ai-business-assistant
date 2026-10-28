@@ -84,8 +84,8 @@ test('v1.3.0 release notes cover invoice payments, opening stock, and the featur
 test('1.3.3 frontend release metadata is consistent in the configured project root', () => {
   assert.equal(frontendPackage.name, 'ai-business-assistant-frontend');
   assert.equal(frontendPackage.version, '1.3.3');
-  assert.match(buildInfo, /(?:version:\\s*'1\\.3\\.3'|"version":"1\\.3\\.3")/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\\.3\\.3-[^']+';/);
+  assert.match(buildInfo, /(?:version:\s*'1\.3\.3'|"version":"1\.3\.3")/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.3-[^']+';/);
   assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
   assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /Vercel frontend-root/i);
   const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.2');
