@@ -2,16 +2,17 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (semantic audit + live inventory reconciled)
+## Reconciliation checkpoint — 2026-10-28 (semantic audit complete; live inventory refreshed)
 
-- PR #264 records evidence-based dispositions for **109/109 closed-unmerged PRs**; this does not mean all 109 should be merged.
-- Corrected batch accounting: #179 appeared in batch 1 and batch 3; the cumulative count is unique PRs, **109 reviewed / 0 without disposition**.
-- Live inventory snapshot: **236 branches**, **229 PR records** (115 merged, 109 closed-unmerged, 5 open: #267, #268, #269, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads missing a branch**. All 11 orphans and 10 mismatches have current source/test-based dispositions in the reconciliation document; no branch was deleted.
-- The one orphan foreign-tenant test is superseded by the split cross-tenant coverage in #267/#261. PR #267's exact head `048899521cb8a87f7312b16dce1460e575b36252` passed CircleCI **7/7** and GitHub dependency/build/test checks; it remains Draft and is not merged because it changes payment validation/security-sensitive behavior.
-- Current main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI **7/7 PASS** and Vercel Web/API contexts successful.
-- PR #264's latest docs/test head must pass its own exact-head checks before merge. Payment-specific regression `frontend/src/app/payment-csv-export.spec.ts` restores coverage missing on main.
-- Remaining independent gates: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows **NOT RUN**, physical mobile visual/accessibility QA **NOT RUN**, isolated PostgreSQL restore drill **BLOCKED** pending an approved non-production target.
-- Next: verify latest PR #264 checks; then make the security-sensitive merge decision for #267 and continue independent validation. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 documents evidence-based dispositions for **109/109 closed-unmerged PRs**; this is not a recommendation to merge all 109.
+- Live paginated inventory after recent merges and PR #270 creation: **237 branches**, **230 PR records** (117 merged, 109 closed-unmerged, 4 open: #270, #267, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; all are dispositioned in the reconciliation ledger. No branch deleted.
+- PR #268 merged at `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after CircleCI 7/7 PASS; adds mobile keyboard/viewport assertions to Platform Admin E2E. Full screen-reader/WCAG review and physical device QA remain NOT RUN.
+- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS; adds a safe PostgreSQL backup/restore runbook. Actual restore drill remains NOT RUN/BLOCKED pending an approved non-production target.
+- PR #270 is a stale partial audit (20/109 at creation); marked superseded by #264 and left Draft/open. Do not merge it.
+- PR #267 security/payment fix exact head `048899521cb8a87f7312b16dce1460e575b36252` passed CircleCI 7/7 plus GitHub test/build/dependency checks; it remains Draft because it changes payment validation and tenant-security behavior. PR #261's backend-accounting failure root cause remains unverified.
+- Main SHA after #268/#269 merges: `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f`; post-merge CircleCI is pending at this checkpoint. The prior main SHA `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` had CircleCI 7/7 and Vercel Web/API success.
+- PR #264 latest head still requires its exact-head checks before merge. Payment-specific regression `frontend/src/app/payment-csv-export.spec.ts` is restored in the audit PR.
+- Remaining independent gates: PR #261 diagnosis, authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED. No production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
