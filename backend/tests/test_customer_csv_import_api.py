@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import AuditEvent, BusinessMembership, Customer
+from app.models import AuditEvent, BusinessMembership, Customer, ImportJob
 from app.security import MembershipRole
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
@@ -39,6 +39,11 @@ def test_customer_csv_preview_detects_duplicate_emails_without_writes():
             audit_count_before = session.scalar(
                 select(func.count()).select_from(AuditEvent).where(
                     AuditEvent.business_id == business_id,
+                )
+            )
+            import_job_count_before = session.scalar(
+                select(func.count()).select_from(ImportJob).where(
+                    ImportJob.business_id == business_id,
                 )
             )
 
@@ -83,6 +88,11 @@ def test_customer_csv_preview_detects_duplicate_emails_without_writes():
                     AuditEvent.business_id == business_id,
                 )
             ) == audit_count_before
+            assert session.scalar(
+                select(func.count()).select_from(ImportJob).where(
+                    ImportJob.business_id == business_id,
+                )
+            ) == import_job_count_before
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
