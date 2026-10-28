@@ -177,7 +177,7 @@ def test_staff_cannot_preview_or_execute_customer_csv_import():
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}/imports/customers.csv"
-    csv_text = "name,email\\nStaff customer,staff@example.com\\n"
+    csv_text = "name,email\nStaff customer,staff@example.com\n"
     try:
         with Session(engine) as session:
             customer_count_before = session.scalar(
