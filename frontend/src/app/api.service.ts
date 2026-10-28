@@ -156,39 +156,49 @@ export class ApiService {
       throw new Error('The backend URL is not configured in runtime-config.json.');
     }
     const token = await this.auth.idToken();
-    let response: Response;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15_000);
     try {
-      response = await fetch(base + path, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal: controller.signal
-      });
-    } catch (error) {
-      const timedOut = (error as { name?: string } | null)?.name === 'AbortError';
-      const detail = error instanceof Error ? error.message : '';
-      throw new Error(timedOut
-        ? 'API_CONNECTION_FAILED: The request timed out. Check the connection and retry.'
-        : `API_CONNECTION_FAILED: ${detail}`);
+      let response: Response;
+      try {
+        response = await fetch(base + path, {
+          method,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+          signal: controller.signal
+        });
+      } catch (error) {
+        const timedOut = (error as { name?: string } | null)?.name === 'AbortError';
+        const detail = error instanceof Error ? error.message : '';
+        throw new Error(timedOut
+          ? 'API_CONNECTION_FAILED: The request timed out. Check the connection and retry.'
+          : `API_CONNECTION_FAILED: ${detail}`);
+      }
+      if (!response.ok) {
+        let message = `Request failed (${response.status}).`;
+        try {
+          const payload = await response.json();
+          if (typeof payload.detail === 'string') message = payload.detail;
+        } catch { /* response body may be empty or unavailable */ }
+        throw new Error(message);
+      }
+      if (response.status === 204) return undefined as T;
+      try {
+        // Keep the abort timer active while the response body is being read too.
+        return await response.json() as T;
+      } catch (error) {
+        if ((error as { name?: string } | null)?.name === 'AbortError') {
+          throw new Error('API_CONNECTION_FAILED: The response timed out. Check the connection and retry.');
+        }
+        throw error;
+      }
     } finally {
       clearTimeout(timeoutId);
     }
-    if (!response.ok) {
-      let message = `Request failed (${response.status}).`;
-      try {
-        const payload = await response.json();
-        if (typeof payload.detail === 'string') message = payload.detail;
-      } catch { /* response body may be empty */ }
-      throw new Error(message);
-    }
-    if (response.status === 204) return undefined as T;
-    return await response.json() as T;
   }
 
   private async requestBlob(path: string): Promise<Response> {
