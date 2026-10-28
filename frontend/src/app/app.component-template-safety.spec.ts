@@ -49,8 +49,19 @@ test('expense and notification types use selectable, localized options', () => {
   assert.match(source, /notificationKindLabel\(item\.kind\)/);
 });
 
-test('AI suggestions remain visible after a message is sent', () => {
-  assert.equal(source.includes('@if (!chatMessages.length) { <div class="assistant-suggestions">'), false);
+test('AI suggestions live outside the chat panel in a compact responsive prompt rail', () => {
+  const assistantStart = source.indexOf('<div class="assistant-workspace">');
+  const chatStart = source.indexOf('<section class="panel chat-panel">', assistantStart);
+  const chatEnd = source.indexOf('</section>', chatStart);
+  const suggestionsStart = source.indexOf('<aside class="assistant-suggestions"', chatEnd);
+  const workspaceEnd = source.indexOf('</div>\n            }', suggestionsStart);
+  assert.ok(assistantStart >= 0 && chatStart > assistantStart);
+  assert.ok(chatEnd > chatStart && suggestionsStart > chatEnd,
+    'suggestions must be a sibling of the chat panel, not inside it');
+  assert.ok(workspaceEnd > suggestionsStart, 'suggestions must remain inside the assistant layout');
+  assert.ok(source.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
+  assert.ok(source.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
+  assert.ok(source.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
   assert.match(source, /class="quick-card ai-quick-card"/);
 });
 
