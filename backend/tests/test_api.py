@@ -12,8 +12,8 @@ import pytest
 
 from app.main import app
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
-    Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
+    AuditEvent, Base, Business, BusinessMembership, BusinessSetting, Customer, Invoice, InvoiceLine, Notification,
+    Product, PurchaseOrder, PurchaseOrderLine, PricingRule, RecurringInvoiceSchedule, StockMovement, Supplier,
     MembershipRole, Payment, PaymentAllocation, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -1175,6 +1175,95 @@ def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
             )
         assert suppliers_after == suppliers_before
         assert audit_after == audit_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_nonmember_cannot_mutate_sensitive_extended_workflows_without_side_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="nonmember-subject")
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+
+    def snapshot():
+        with Session(engine) as session:
+            return {
+                "pricing_rules": session.scalar(
+                    select(func.count()).select_from(PricingRule).where(
+                        PricingRule.business_id == business_id
+                    )
+                ),
+                "recurring_schedules": session.scalar(
+                    select(func.count()).select_from(RecurringInvoiceSchedule).where(
+                        RecurringInvoiceSchedule.business_id == business_id
+                    )
+                ),
+                "notifications": session.scalar(
+                    select(func.count()).select_from(Notification).where(
+                        Notification.business_id == business_id
+                    )
+                ),
+                "settings": session.scalar(
+                    select(func.count()).select_from(BusinessSetting).where(
+                        BusinessSetting.business_id == business_id
+                    )
+                ),
+                "audit_events": session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                ),
+            }
+
+    requests = [
+        (
+            "create recurring invoice schedule",
+            lambda: client.post(
+                f"{base}/recurring-invoices",
+                json={
+                    "interval_days": 30,
+                    "timezone": "UTC",
+                    "next_run_at": "2027-01-01T00:00:00Z",
+                },
+            ),
+        ),
+        (
+            "create pricing rule",
+            lambda: client.post(
+                f"{base}/pricing-rules",
+                json={"name": "Unauthorized discount", "rule_type": "discount", "rate": "10.0000"},
+            ),
+        ),
+        (
+            "create notification",
+            lambda: client.post(
+                f"{base}/notifications",
+                json={
+                    "kind": "security-test",
+                    "title": "Unauthorized notification",
+                    "body": "This must not persist",
+                    "deduplication_key": "nonmember-sensitive-workflow",
+                },
+            ),
+        ),
+        (
+            "change business setting",
+            lambda: client.put(f"{base}/settings/locale", json={"setting_value": "ar"}),
+        ),
+        ("list notifications", lambda: client.get(f"{base}/notifications")),
+    ]
+
+    try:
+        for action, request in requests:
+            before = snapshot()
+            response = request()
+            assert response.status_code == 403, (
+                f"{action}: expected 403, got {response.status_code}: {response.text}"
+            )
+            after = snapshot()
+            assert after == before, f"{action} changed protected rows or emitted an audit event"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
