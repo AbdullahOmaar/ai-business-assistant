@@ -124,3 +124,43 @@ test('Platform Admin is deferred until the admin tab is selected', () => {
     'the admin component must be inside the deferred block with a loading placeholder');
   assert.match(source, /Loading Platform Admin…/);
 });
+
+
+test('customer CSV import requires preview before confirmation and localizes feedback', () => {
+  const customerPanelStart = source.indexOf('aria-label="CSV customer import"');
+  const customerPanelEnd = source.indexOf('</section>', customerPanelStart);
+  const panel = source.slice(customerPanelStart, customerPanelEnd);
+  assert.ok(customerPanelStart >= 0, 'customer CSV import panel must exist');
+  assert.match(panel, /onCustomerImportFileSelected\(\$event\)/);
+  assert.match(panel, /previewCustomerImport\(\)/);
+  assert.match(panel, /customerImportPreview\?\.valid/);
+  assert.match(panel, /confirmCustomerImport\(\)/);
+  assert.match(source, /async previewCustomerImport\(\): Promise<void>/);
+  assert.match(source, /async confirmCustomerImport\(\): Promise<void>/);
+  assert.match(source, /this\.api\.previewCustomerCsv\(\s*this\.business\.id, this\.customerImportCsvText/);
+  assert.match(source, /this\.api\.importCustomerCsv\(\s*this\.business\.id, this\.customerImportCsvText/);
+  assert.match(source, /customerImportPreview: Awaited<ReturnType<ApiService\['previewCustomerCsv'\]>>/);
+});
+
+test('customer CSV import API methods target customer preview and execution routes', () => {
+  const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+  assert.match(apiSource, /previewCustomerCsv\(businessId: string, csvText: string\)/);
+  assert.match(apiSource, /imports\/customers\.csv\/preview/);
+  assert.match(apiSource, /importCustomerCsv\(businessId: string, csvText: string\)/);
+  assert.match(apiSource, /imports\/customers\.csv/);
+});
+
+
+test('workspace switch clears pending product and customer CSV imports', () => {
+  const start = source.indexOf('private clearWorkspaceData(): void');
+  const end = source.indexOf('\n  }', start);
+  const reset = source.slice(start, end);
+  assert.ok(start >= 0 && end > start, 'workspace reset method must exist');
+  for (const field of [
+    'importCsvText', 'importFileName', 'importPreview', 'importMessage',
+    'customerImportCsvText', 'customerImportFileName', 'customerImportPreview',
+    'customerImportMessage'
+  ]) {
+    assert.match(reset, new RegExp('this\\.' + field + '\\s*='));
+  }
+});
