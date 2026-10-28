@@ -2,17 +2,17 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (semantic audit complete; live inventory refreshed)
+## Reconciliation checkpoint — 2026-10-28 (closed-PR audit complete; security fix merged)
 
-- PR #264 documents evidence-based dispositions for **109/109 closed-unmerged PRs**; this is not a recommendation to merge all 109.
-- Live paginated inventory after recent merges and PR #270 creation: **237 branches**, **230 PR records** (117 merged, 109 closed-unmerged, 4 open: #270, #267, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; all are dispositioned in the reconciliation ledger. No branch deleted.
-- PR #268 merged at `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after CircleCI 7/7 PASS; adds mobile keyboard/viewport assertions to Platform Admin E2E. Full screen-reader/WCAG review and physical device QA remain NOT RUN.
-- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS; adds a safe PostgreSQL backup/restore runbook. Actual restore drill remains NOT RUN/BLOCKED pending an approved non-production target.
-- PR #270 is a stale partial audit (20/109 at creation); marked superseded by #264 and left Draft/open. Do not merge it.
-- PR #267 security/payment fix exact head `048899521cb8a87f7312b16dce1460e575b36252` passed CircleCI 7/7 plus GitHub test/build/dependency checks; it remains Draft because it changes payment validation and tenant-security behavior. PR #261's backend-accounting failure root cause remains unverified.
-- Main SHA after #268/#269 merges: `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f`; post-merge CircleCI is pending at this checkpoint. The prior main SHA `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` had CircleCI 7/7 and Vercel Web/API success.
-- PR #264 latest head still requires its exact-head checks before merge. Payment-specific regression `frontend/src/app/payment-csv-export.spec.ts` is restored in the audit PR.
-- Remaining independent gates: PR #261 diagnosis, authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED. No production deployment is authorized by this audit PR.
+- PR #264 records dispositions for **109/109 closed-unmerged PRs**; this is not a recommendation to merge all 109.
+- Latest live inventory: **237 branches**, **230 PR records** (118 merged, 109 closed-unmerged, 3 open: #270, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; each is dispositioned in the reconciliation ledger.
+- PR #268 merged at `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after CircleCI 7/7 PASS (Platform Admin mobile keyboard/viewport E2E). Physical-device/screen-reader QA remains NOT RUN.
+- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS (safe PostgreSQL restore runbook). Actual restore remains NOT RUN/BLOCKED pending approved non-production target.
+- PR #267 merged at `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d` after CircleCI 7/7 and GitHub build/test/dependency checks. It fixes payment allocation validation ordering before Payment insertion and adds foreign-tenant no-side-effect regressions.
+- PR #270 is an earlier partial audit snapshot, marked superseded by #264 and left Draft/open. Do not merge.
+- Latest main SHA: `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`; post-merge CircleCI/Vercel checks were pending at the last poll. PR #264 latest exact-head checks are pending and must pass before merge.
+- Remaining independent gates: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED.
+- No branch deleted, no closed PR reopened, no stale feature branch merged wholesale. No production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
