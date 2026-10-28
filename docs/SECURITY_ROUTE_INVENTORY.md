@@ -5,13 +5,14 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — candidate PR #238
+## Denied-mutation regression evidence — current main and follow-up
 
-- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF mutation/read requests and expects HTTP 403 for each; the ordinary product-name edit remains allowed.
-- Existing state assertions verify issued invoice lifecycle, product price/stock-tracking fields, sales-return count, stock movement count, recurring schedule count, and notification count remain unchanged after the denied requests.
-- Candidate update on `feat/platform-admin-membership-concurrency-20261028` records the business-scoped `AuditEvent` count before the denied request batch and asserts the count is unchanged afterward.
-- CircleCI backend-accounting and the aggregate gate passed on exact candidate SHA `595152b6a2e6e60290b44397b919cb24ad82cdcc` (backend-accounting run 1572; aggregate workflow `b7760c99-cdb2-4c4c-a982-b0016c1bc38f`). The broader route inventory still has explicit coverage gaps; this is not a claim of exhaustive authorization testing. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
-- The candidate was subsequently synchronized with main v1.3.3 at merge commit `6d973aab2225f9173c066a4863ab6d407bc19c9f`; final-head checks are pending, so the prior pass is not final merge evidence.
+- Current main SHA at the start of this follow-up: `7634100b640c71ec98e96e04eb199c15420589ae`.
+- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF requests and expects HTTP 403 for each; the ordinary product-name edit is explicitly allowed before the denied-request baseline.
+- Existing assertions verify invoice lifecycle, product price/stock-tracking values, sales-return, stock-movement, recurring-schedule and notification counts, plus business-scoped audit-event count.
+- Follow-up change on `build/reproducible-frontend-install-20261028` additionally snapshots business-scoped counts for Customer, Invoice, InvoiceLine, Payment, Supplier and PurchaseOrder and asserts they are unchanged after all denied requests. This is intended to prove those denied calls did not create/delete those records; it does not prove every route or every field is covered.
+- Exact-head CircleCI for the follow-up commit is pending at the time of writing. Do not treat the change as verified until backend-accounting and the aggregate gate pass on the final PR head.
+- Remaining gaps: full route × role × tenant coverage, including foreign-business IDs and non-member denials for every sensitive operation, remains open under issues #110 and #244. This section does not claim exhaustive authorization coverage or production readiness.
 
 
 ## Authorization model
