@@ -130,3 +130,12 @@ The route inventory is broader than current negative integration tests. Add expl
 - PR #244 merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`; its exact-head CircleCI gate passed 7/7 and GitHub Actions checks passed 7/7. Backend test job: 231 passed, 7 skipped, 16 warnings; full test job: 232 passed, 6 skipped, 16 warnings.
 - This targeted regression does **not** close tracking issue #276 or prove the full route × role × tenant matrix. Remaining sensitive workflows and authenticated production smoke remain outstanding.
 - Local pytest/build: NOT RUN in this connector-only session. No production data or permissions changed. Vercel automatically deployed main after the merge; web root, `/version`, `/health`, and `/readyz` returned HTTP 200. Authenticated production workflows remain NOT RUN.
+
+## Candidate regression — non-member extended workflow denials (2026-10-29)
+
+- Branch: `test/security-nonmember-extended-workflows-20261029`; tracking issue: [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276).
+- Candidate test: `backend/tests/test_api.py::test_nonmember_cannot_mutate_sensitive_extended_workflows_without_side_effects`.
+- Each non-member request to create a recurring invoice schedule, create a pricing rule, create a notification, update a business setting, or list notifications must return HTTP 403.
+- The test snapshots business-scoped `PricingRule`, `RecurringInvoiceSchedule`, `Notification`, `BusinessSetting`, and `AuditEvent` counts before and after each request; every denied request must leave the snapshot unchanged.
+- **Status: IMPLEMENTED, NOT YET VERIFIED.** Exact-head backend-accounting and aggregate CI must pass before marking this regression verified. Local pytest is NOT RUN in this connector-only session.
+- This focused batch does not complete issue #276's remaining route × role × tenant matrix or authenticated production smoke.
