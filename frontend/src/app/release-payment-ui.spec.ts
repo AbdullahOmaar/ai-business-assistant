@@ -4,12 +4,12 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
-test('workspace navigation shows UI/API versions and the build/deploy timestamp', () => {
-  assert.match(source, /class="workspace-release-meta"/);
+test('workspace navigation shows UI/API versions and build time in the workspace card', () => {
+  assert.match(source, /class="workspace-release-meta workspace-release-meta-inline"/);
   assert.match(source, /UI v\{\{ appVersion \}\} · API \{\{ apiVersionLabel \}\}/);
-  assert.match(source, /Last deployment \(build time\):/);
-  assert.match(source, /\{\{ buildTimeLabel \}\}/);
-  assert.match(source, /class="mobile-deploy-time"/);
+  assert.match(source, /t\('وقت بناء النسخة:', 'Build time:'\).*buildTimeLabel/);
+  assert.equal(source.includes('class="mobile-version-strip"'), false);
+  assert.equal(source.includes('class="mobile-deploy-time"'), false);
 });
 
 test('payment controls are only exposed to workspace owners', () => {
