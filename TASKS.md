@@ -43,14 +43,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 ## Verification ledger — latest inspected implementation head
 
-- Implementation head: `0ffdb206a35ef9a36ada34bfa9df117a696a600f`.
-- Branch comparison: 29 commits ahead of `main`, 0 behind; merge base remains `f04c0e194b3afbefb56a979a5688f80d277b3ece`.
+- Latest documented head before this ledger refresh: `565c592ded8bb6c6e6d3a4076d5311b751513f7a`; PR #243 is open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/243.
+- PR #243 reports 33 commits and 7 changed files; base SHA is `f04c0e194b3afbefb56a979a5688f80d277b3ece`. Do not rely on older ahead counts; recheck the branch comparison before merge.
 - Connector-side static regression assertions: **12/12 passed** after rechecking the current app/auth/API/test sources. These are source assertions only, not the project's actual test/build command.
-- CircleCI on implementation head `0ffdb206a35ef9a36ada34bfa9df117a696a600f`: `frontend-quality` **FAILURE** (build 1409); `frontend-browser-smoke`, `backend-accounting`, and `backend-container` all **SUCCESS** (builds 1408, 1406, 1407 respectively).
+- On prior implementation head `0ffdb206a35ef9a36ada34bfa9df117a696a600f`, `frontend-quality` **FAILURE** while `frontend-browser-smoke`, `backend-accounting`, and `backend-container` **SUCCESS**. On the current PR head `565c592ded8bb6c6e6d3a4076d5311b751513f7a`, CircleCI reported `frontend-quality`, `frontend-browser-smoke`, `backend-accounting`, `backend-container`, and the new `frontend-dependency-audit` as **PENDING** at the latest status check.
 - The frontend-quality job first failed at commit `c8d02a81163840a2e266490266f06e1544ee9088` and remained failed on `0ffdb206a35ef9a36ada34bfa9df117a696a600f`. The failing step/log is inaccessible from this environment; no root cause is claimed. To isolate it safely, `.circleci/config.yml` now separates `frontend-dependency-audit` from `frontend-quality` so the next exact-head run independently reports npm audit versus test/build results. The split is committed as `3349eb6bfab39762bdfa4dbe5d2b89080c9877ec`; exact-head validation is pending.
 - GitHub Actions Dependency security scan also failed on `0ffdb206a35ef9a36ada34bfa9df117a696a600f`; both Python and JavaScript audit jobs failed. Log retrieval returns `404 BlobNotFound`, so cause remains unverified.
 - Actual local `npm test` / `npm run build`: **NOT RUN**. Visual/mobile accessibility checks: **NOT RUN**.
-- PR/merge/deployment: **NOT RUN**. No PR for this branch was found. Do not merge while `frontend-quality` is failing or checks are pending.
+- PR #243 exists and remains **Draft**. Merge/deployment: **NOT RUN**. Keep Draft until exact-head CircleCI checks pass and the full diff is reviewed.
 - Next action: obtain the failing CircleCI step/logs, fix the evidenced cause, rerun all checks on the exact final SHA, then create the PR and merge only after required gates pass.
 
 ---
