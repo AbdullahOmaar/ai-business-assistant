@@ -47,6 +47,14 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 - **Release gate before trigger:** Confirm exact merged main SHA, required CI/security/build checks, release markers ([release-web] and/or [release-api] for affected projects), and Ignore Build Step behavior. If a gate or quota blocks deployment, stop repeated retries, record the exact error, continue independent work, and retry only after the cause is resolved or the quota window resets.
 - **Post-deploy proof:** Confirm deployment is READY on the intended SHA and production alias, then check /health, /readyz, /version for API releases and run safe, relevant frontend/API smoke checks. Mark a release VERIFIED only with observed evidence. Critical security or production incidents can be expedited but must still be validated and documented.
 
+## CI provider and required status
+
+- The repository's tested alternate CI path is CircleCI. The workflow `verify-all-changes` runs `backend-accounting` (disposable PostgreSQL migrations/schema check, backend/financial tests, offline migration SQL, Python dependency audit), `frontend-quality` (frontend test/build and npm audit), `frontend-browser-smoke` (Playwright Chromium), and `backend-container` (backup/restore safety checks and container build/import).
+- The aggregate `all-checks-passed` job has a GitHub status context observed as `ci/circleci: verify-all-changes/all-checks-passed`. It is a no-op aggregation job and requires all four underlying jobs; it must not replace them.
+- Before relying on this aggregate as a merge gate, the repository owner must independently confirm/configure the exact required status in GitHub's branch protection/rules. The connected integration has returned HTTP 403 when reading these settings, so their current values are **UNVERIFIED**.
+- GitHub Actions jobs have reported fast failures with no executable step logs accessible; the root cause and whether those contexts are required remain **UNVERIFIED**. Do not disable those workflows or merge around any required status until an owner confirms the repository rules. Keep CI configuration and branch-protection changes separate from production deployment.
+- Re-run and verify all applicable statuses on the exact final candidate SHA; a previous commit's green status is not sufficient.
+
 ## Release gates
 
 1. Verify CI passes on the exact release candidate SHA, including backend tests, frontend build/audit, and backend container verification.

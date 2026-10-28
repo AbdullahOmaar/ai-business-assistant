@@ -12,7 +12,7 @@ import pytest
 
 from app.main import app
 from app.models import (
-    Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
+    AuditEvent, Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
     Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
     MembershipRole, Payment, PaymentAllocation, SalesReturn, SalesReturnLine,
 )
@@ -666,6 +666,16 @@ def test_staff_is_denied_sensitive_business_routes():
             f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
         )
         assert ordinary_edit.status_code == 200, ordinary_edit.text
+
+        # The permitted edit above may legitimately emit an audit event; take
+        # the baseline only after it so this assertion isolates denied requests.
+        with Session(engine) as session:
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+
         responses = {
             "issue existing invoice": client.post(
                 f"{base}/invoices/{invoice_id}/issue"
@@ -752,6 +762,15 @@ def test_staff_is_denied_sensitive_business_routes():
             assert session.scalar(select(func.count()).select_from(StockMovement)) == 0
             assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 0
             assert session.scalar(select(func.count()).select_from(Notification)) == 0
+            audit_count_after = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            # A denied request must not append business audit metadata.
+            assert audit_count_after == audit_count_before, (
+                "denied STAFF mutations must not append audit events"
+            )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
