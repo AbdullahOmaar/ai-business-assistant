@@ -5,14 +5,13 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — current main and follow-up
+## Denied-mutation regression evidence — candidate PR #238
 
-- Current main SHA at the start of this follow-up: `7634100b640c71ec98e96e04eb199c15420589ae`.
-- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF requests and expects HTTP 403 for each; the ordinary product-name edit is explicitly allowed before the denied-request baseline.
-- Existing assertions verify invoice lifecycle, product price/stock-tracking values, sales-return, stock-movement, recurring-schedule and notification counts, plus business-scoped audit-event count.
-- Follow-up change on `build/reproducible-frontend-install-20261028` additionally snapshots business-scoped counts for Customer, Invoice, InvoiceLine, Payment, Supplier and PurchaseOrder and asserts they are unchanged after all denied requests. This is intended to prove those denied calls did not create/delete those records; it does not prove every route or every field is covered.
-- On exact PR head `0ca1bd89ccd6e8969a658017b9cbcec140e74d9b`, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke and backend-container passed; backend-accounting failed (run 1789), and the aggregate gate is not reported. The connected integration cannot read the private CircleCI job log, so the root cause is unverified. Do not treat the change as verified or merge until the failure is diagnosed and exact-head checks pass.
-- Remaining gaps: full route × role × tenant coverage, including foreign-business IDs and non-member denials for every sensitive operation, remains open under issues #110 and #244. This section does not claim exhaustive authorization coverage or production readiness.
+- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF mutation/read requests and expects HTTP 403 for each; the ordinary product-name edit remains allowed.
+- Existing state assertions verify issued invoice lifecycle, product price/stock-tracking fields, sales-return count, stock movement count, recurring schedule count, and notification count remain unchanged after the denied requests.
+- Candidate update on `feat/platform-admin-membership-concurrency-20261028` records the business-scoped `AuditEvent` count before the denied request batch and asserts the count is unchanged afterward.
+- CircleCI backend-accounting and the aggregate gate passed on exact candidate SHA `595152b6a2e6e60290b44397b919cb24ad82cdcc` (backend-accounting run 1572; aggregate workflow `b7760c99-cdb2-4c4c-a982-b0016c1bc38f`). The broader route inventory still has explicit coverage gaps; this is not a claim of exhaustive authorization testing. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
+- The candidate was subsequently synchronized with main v1.3.3 at merge commit `6d973aab2225f9173c066a4863ab6d407bc19c9f`; final-head checks are pending, so the prior pass is not final merge evidence.
 
 
 ## Authorization model
@@ -113,3 +112,18 @@ The route inventory is broader than current negative integration tests. Add expl
 - **Invoice void after sales return:** `void_invoice` now rejects an issued invoice when an approved sales return exists, preventing a second restoration of the original sold quantity. The fix and SQLite regression test are present on main at commit `6fde1b7191314a8225285f44154fa8963c89ae65`.
 - **Concurrent lifecycle coverage:** PR #236 adds a PostgreSQL race test between return approval and invoice voiding and asserts exactly one matching lifecycle audit event commits. Supplemental disposable PostgreSQL 18.6 validation on a layered sandbox snapshot passed **5/5 repeated race runs** and **217 tests, 11 warnings, 0 skipped**. This is not a clean exact-head checkout; exact-head CircleCI remains the merge gate. PR #236 candidate `51c63b79fb36340940a6f9d01ed0e828ee3c4640` passed CircleCI 5/5, but current main advanced to `7d9f270662b7a838ee1eae4748c2df4634c19448`; revalidation is required.
 - **Remaining coverage:** complete route × role × tenant negative tests and broader payment/allocation/return/stock lifecycle review. This document records source and test evidence; it does not claim exhaustive authorization coverage or production readiness. PR #236 candidate must pass the current aggregate gate after sync.
+
+## Added regression — non-member supplier creation (2026-10-28)
+
+- `backend/tests/test_api.py::test_nonmember_cannot_create_supplier_without_writes_or_audit_events` uses an isolated SQLite database and a principal with no workspace membership.
+- The supplier-create request must return HTTP 403; the test snapshots the business-scoped supplier row count and `AuditEvent` count before the request and verifies neither changes after denial.
+- The test was added on branch `test/security-nonmember-supplier-no-write-2026-10-28`; exact-head CircleCI validation is pending. Do not mark this regression verified until the backend-accounting and aggregate checks pass on the exact PR head.
+- Scope is intentionally narrow: it closes one explicit non-member/no-side-effect gap and does not claim complete route × role × tenant coverage.
+
+
+## Denied STAFF mutation record-count regression — follow-up PR #251
+
+- On main baseline `91c86932c3344fff395058724f5d44ae4ee06dbd`, the existing 16-request STAFF denial regression asserts HTTP 403, unchanged sensitive state, and unchanged business-scoped audit-event count.
+- PR #251 adds before/after counts for business-scoped Customer, Invoice, InvoiceLine, Payment, Supplier, and PurchaseOrder rows, guarding against denied requests creating or deleting those records.
+- The previous exact PR head `8d8c3b05fde12a89bb3be19f3b8368e244aa5f31` had all 7 CircleCI contexts passing. This follow-up synchronizes source and documentation to the latest main before the next exact-head validation.
+- This is targeted regression evidence, not exhaustive route × role × tenant coverage. Keep the remaining gaps below open.
