@@ -1432,3 +1432,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Closed-unmerged PRs #195, #194, #189, #187, #181, #176, #173, #164 and #163 were checked against current source/tests and terminal merged successors. Core startup E2E, Firebase lookup failure handling, v1.3.0 feature guide/invoice/stock, repeated-SKU stock guard, mobile UI, payment idempotency and PostgreSQL concurrency tests are present. The old GitHub Actions concurrency/runner-diagnostic changes are not restored because the current CircleCI pipeline is the authoritative green gate and the Actions provider remains blocked before job steps.
 - No new runtime behavior was restored in this batch. Visual/mobile accessibility review, authenticated production workflows, live Firebase failure injection and an isolated PostgreSQL restore drill remain NOT RUN.
 - Next action: continue semantic patch review of the remaining 82 closed-unmerged PRs; only restore a unique intended behavior if current-main source/tests prove it is missing.
+
+
+## Repository reconciliation checkpoint — batch 4 (2026-10-28)
+
+- Added evidence-based dispositions for closed-unmerged PRs #162, #160, #159, #158, #157, #156, #155, #154, #151, and #150 to `docs/BRANCH_RECONCILIATION_2026-10-28.md`.
+- Verified current main contains the receivables-aging API/client and currency-safe tests; timezone validation and business-local reporting; CORS PUT preflight policy/test; workspace request invalidation; sales-return amount/quantity guards; and payment idempotency/replay safety.
+- Supersession evidence: #162 -> #92/#96; #150 is an unadopted controller proposal; #151 -> #153; #154/#155/#158/#159/#160 -> #161. #156/#157 behavior is already present across current-main source/tests, so stale UI snapshots were not restored.
+- Formal audit ledger: 37/109 closed-unmerged PRs reviewed, 72 remain. Inventory: 233 remote branches (100+100+33+0); 226 PR records (100+100+26+0), 114 merged, 109 closed-unmerged, 3 open.
+- Latest main SHA remains `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; release v1.3.4 Web/API are READY on that SHA and CircleCI aggregate passed.
+- No source/runtime changes in this batch. Next: continue semantic patch review; restore only a unique, intended behavior proven missing on current main.
