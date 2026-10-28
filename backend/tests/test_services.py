@@ -643,6 +643,53 @@ def test_invoice_issue_aggregates_repeated_product_lines_before_stock_check(work
         assert invoice.status == "draft"
 
 
+def test_staff_can_create_product_but_cannot_post_stock_movement(workspace):
+    engine, business_id, owner = workspace
+    staff = AuthenticatedPrincipal(subject="staff-stock-123")
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id, user_subject=staff.subject, role=MembershipRole.STAFF,
+        ))
+        session.flush()
+
+        # The approved role matrix allows ordinary catalog creation for STAFF.
+        product = create_product(
+            session, principal=staff, business_id=business_id,
+            name="Staff catalog item", unit_price=Decimal("12.00"),
+            is_stock_tracked=True,
+        )
+        assert product.name == "Staff catalog item"
+        movements_before = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+        )).all()
+        audit_before = session.scalars(select(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+        )).all()
+
+        with pytest.raises(AuthorizationError):
+            record_stock_movement(
+                session, principal=staff, business_id=business_id,
+                product_id=product.id, movement_type="opening",
+                quantity_delta=Decimal("1.000"), reason="STAFF stock-posting attempt",
+            )
+
+        movements_after = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+        )).all()
+        audit_after = session.scalars(select(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+        )).all()
+        assert [item.id for item in movements_after] == [item.id for item in movements_before]
+        assert [item.id for item in audit_after] == [item.id for item in audit_before]
+
+        owner_movement = record_stock_movement(
+            session, principal=owner, business_id=business_id,
+            product_id=product.id, movement_type="opening",
+            quantity_delta=Decimal("1.000"), reason="Owner opening stock",
+        )
+        assert owner_movement.quantity_delta == Decimal("1.000")
+
+
 def test_staff_can_prepare_drafts_but_cannot_post_financials(workspace):
     engine, business_id, owner = workspace
     staff = AuthenticatedPrincipal(subject="staff-123")
