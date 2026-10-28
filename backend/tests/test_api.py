@@ -662,6 +662,13 @@ def test_staff_is_denied_sensitive_business_routes():
     unknown_id = str(uuid4())
     base = f"/api/v1/businesses/{business_id}"
     try:
+        ordinary_edit = client.patch(
+            f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
+        )
+        assert ordinary_edit.status_code == 200, ordinary_edit.text
+
+        # The permitted edit above may legitimately emit an audit event; take
+        # the baseline only after it so this assertion isolates denied requests.
         with Session(engine) as session:
             audit_count_before = session.scalar(
                 select(func.count()).select_from(AuditEvent).where(
@@ -669,10 +676,6 @@ def test_staff_is_denied_sensitive_business_routes():
                 )
             )
 
-        ordinary_edit = client.patch(
-            f"{base}/products/{product_id}", json={"name": "Staff updated product name"}
-        )
-        assert ordinary_edit.status_code == 200, ordinary_edit.text
         responses = {
             "issue existing invoice": client.post(
                 f"{base}/invoices/{invoice_id}/issue"
