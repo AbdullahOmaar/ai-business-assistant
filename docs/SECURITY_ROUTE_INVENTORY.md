@@ -5,13 +5,15 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — PR #251 candidate
+## Denied-mutation regression evidence — merged successors and remaining scope
 
-- Current main at sync: `8facda01faa66dcad758be8d31c85fc1df114182`. It retains the 16-request STAFF denial regression, permitted ordinary product-name edit, and business-scoped audit-event count invariant.
-- Candidate extension snapshots every persisted column for each business-scoped `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` row before the denied-request batch, then compares full row snapshots afterward. Each of the 16 denied requests is now executed sequentially with its own before/after business-scoped `AuditEvent` count and an explicit HTTP 403 assertion, preventing a passing batch total from masking which individual request emitted an audit event.
-- Previous exact candidate `aec8493a535410ca58dc0b138fda164751809adb` had five CircleCI contexts PASS and backend-accounting FAIL (run 2003). Private job logs were inaccessible. Supplemental diagnostic on a non-exact sandbox snapshot: focused denial test **1 passed**; full backend suite **221 passed, 11 warnings**; `alembic check` reported no new upgrade operations; offline migration SQL generated; `pip-audit` found no known vulnerabilities. These results are not exact-head verification and do not override the CircleCI failure.
-- Fresh exact-head CI must pass after this synchronization. No application permission policy was changed.
-- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244.
+- **PR #251** is merged. Its STAFF-denial regression checks 16 sensitive requests individually for HTTP 403, verifies business-scoped audit-event counts remain unchanged, and compares protected-row snapshots for Customer, Invoice, InvoiceLine, Payment, Supplier, and PurchaseOrder.
+- **PR #267** is merged at `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`. Its cross-tenant suite covers foreign customer/product references during invoice creation, payment allocation to another business's invoice, foreign invoice issue, stock movement, purchase-order create/receive, and sales-return create/approval. Denied operations assert no protected-record, stock, payment, or audit side effects. The same PR fixed payment allocation ordering so a rejected request cannot leave an orphan Payment row.
+- **PR #261** is closed without merge and superseded by #267. Review of its patch found the broad test `test_owner_cannot_mutate_foreign_business_financial_and_stock_ids`; that behavior is present on main as `backend/tests/test_foreign_business_workflows.py::test_owner_cannot_mutate_foreign_business_financial_and_stock_ids`. No unique missing regression was identified from this PR.
+- **PR #270** is closed without merge and superseded by #264. It is a partial historical audit snapshot, not application behavior; its findings are represented in the current reconciliation ledger. Do not restore its partial document.
+- **PR #244** is merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`. Its exact-head CircleCI gate passed 7/7 and GitHub Actions checks passed 7/7. Backend test job: 231 passed, 7 skipped, 16 warnings; full test job: 232 passed, 6 skipped, 16 warnings. It adds non-member denial and no-side-effect coverage for customer CSV export, preview, and import.
+- **Current follow-up:** issue [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276) remains OPEN. The merged tests are targeted coverage, not proof that every sensitive route × role × tenant combination is complete. Remaining workflow edges, OWNER-positive cases, authenticated production smoke, and physical mobile/accessibility QA must remain explicitly tracked.
+- Local pytest/build: **NOT RUN** in this connector-only session. No production data, authorization policy, or permissions were changed by this documentation update.
 
 ## Authorization model
 
