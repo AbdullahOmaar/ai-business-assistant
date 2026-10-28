@@ -104,3 +104,17 @@ test('report labels translate the actual backend revenue-basis and integrity-war
   assert.match(source, /Legacy invoices without customer links are flagged for review, not auto-corrected\./);
   assert.match(source, /Uses saved tax totals on issued invoices; it does not recalculate historical taxes\./);
 });
+
+
+test('Platform Admin is deferred until the admin tab is selected', () => {
+  const deferStart = source.indexOf("@defer (when tab === 'platform-admin' && platformAdminAvailable)");
+  const adminComponent = source.indexOf('<aba-platform-admin', deferStart);
+  const placeholder = source.indexOf('@placeholder', deferStart);
+  const componentReferences = source.match(/<aba-platform-admin\b/g) ?? [];
+  assert.equal(componentReferences.length, 1,
+    'Platform Admin should only appear in the deferred block');
+  assert.ok(deferStart >= 0, 'Platform Admin must use a deferred block');
+  assert.ok(adminComponent > deferStart && placeholder > adminComponent,
+    'the admin component must be inside the deferred block with a loading placeholder');
+  assert.match(source, /Loading Platform Admin…/);
+});
