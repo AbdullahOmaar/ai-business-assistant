@@ -43,15 +43,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 ## Verification ledger — UI/UX batch, 2026-10-28
 
-- PR #243 remains open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/243. No merge or deployment has occurred.
-- The last code/CI-diagnostic change is `8652d404a765fa8a73d0f93c8bb7c6cba5f80fa1`, splitting CircleCI frontend unit/source regression tests and the Angular production build into separate jobs. The ledger refresh commit before this update is `6cdb0e456b12ef83253d5875eb8e3cd0ae201115`.
-- On previous exact head `a8b1bf0ac3ef4bc28a34c22cd24896bdbf4c7a01`, CircleCI reported frontend-quality **FAILURE** (run 1442), frontend-dependency-audit **SUCCESS** (1441), frontend-browser-smoke **SUCCESS** (1443), backend-accounting **SUCCESS** (1444), and backend-container **SUCCESS** (1445).
-- On latest polled head `6cdb0e456b12ef83253d5875eb8e3cd0ae201115`, the GitHub Actions checks `frontend`, `backend`, `Audit JavaScript dependencies`, and `Audit Python dependencies` all completed **FAILURE**; GitGuardian secret scan passed. The available integration cannot retrieve their logs (HTTP 404 `BlobNotFound`), and the job-steps endpoint returned no step detail, so the causes remain **UNVERIFIED**.
-- CircleCI status API returned **no statuses** for the latest polled head after the job split; therefore there is no verified exact-head CircleCI result yet. The CircleCI run UI is inaccessible from this integration.
-- Connector-side source assertion review passed **12/12**, but these are not the project's actual `npm test` or Angular production build. Actual local `npm test`, `npx ng build`, and visual/mobile accessibility review: **NOT RUN** in this environment.
-- The 22 UI/UX findings have implementation changes recorded above; several responsive/layout items still require visual verification. Therefore, 22/22 VERIFIED COMPLETE is **not established**.
-- Independent PR reviews: none recorded at latest inspection. Branch-protection/ruleset requirements cannot be verified through the connected integration (GitHub API 403); do not bypass unknown requirements.
-- Merge gate: keep Draft until required checks pass on the exact final SHA, the full diff is reviewed, and any review requirements are satisfied. No production deployment is authorized by this task.
+- PR #243 remains open as Draft at this ledger update: https://github.com/AbdullahOmaar/ai-business-assistant/pull/243. No merge to main or production deployment has occurred.
+- Latest main release commit `f4af64430aa74744693fb6541b27bdd8769c1730` (version 1.3.3 metadata alignment) was merged into this feature branch by two-parent commit `6a5ddd640439edbd9b3c98260114a2377ba1e46f`. Branch comparison at this check: 40 commits ahead, 0 behind.
+- Fixed the frontend test that still expected the old sidebar/mobile release metadata. `frontend/src/app/release-payment-ui.spec.ts` now asserts the current inline workspace-card layout and absence of duplicate mobile metadata. Fix commit: `9c71ba1629e2e56bf2627ce173781ec707838168`.
+- CircleCI on exact head `6a5ddd640439edbd9b3c98260114a2377ba1e46f`: **6/6 PASS** — frontend-unit-tests (1643), frontend-production-build (1642), frontend-dependency-audit (1640), frontend-browser-smoke (1639), backend-accounting (1641), backend-container (1638).
+- The pre-fix frontend unit-test failure was caused by stale expectations in `release-payment-ui.spec.ts`: it expected the old exact `workspace-release-meta` class, “Last deployment (build time)” wording, and a `mobile-deploy-time` element. The implementation now intentionally places version/build metadata inside the workspace card; the test was updated to verify that design. The current CircleCI unit-test job passed after this change.
+- Existing GitHub Actions workflows still report failure, but their job metadata shows `runner_id: 0`, an empty `steps` array, and completion within about 3 seconds; no job commands actually ran. Retrying the failed workflow jobs produced the same infrastructure pattern. The log download endpoint returns HTTP 404 `BlobNotFound`. Treat these as **GitHub Actions runner/log infrastructure failures**, not evidence that the test commands failed. CircleCI is the available successful verification path.
+- GitHub branch-protection/ruleset requirements remain unreadable through the connected integration (403), and no independent review submission was recorded. Do not bypass required checks or review rules; attempt the normal GitHub merge API only after making the PR ready, and honor any rejection.
+- Actual CircleCI `npm test`, Angular production build, dependency audit, browser smoke, backend accounting, and backend container checks passed on the inspected head. Visual/mobile accessibility review is still **NOT RUN**; therefore, 22/22 UI/UX findings are not yet fully verified.
+- No production deployment was performed or authorized by this task.
 
 ---
 
