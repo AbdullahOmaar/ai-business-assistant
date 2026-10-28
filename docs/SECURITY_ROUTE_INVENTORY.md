@@ -118,3 +118,11 @@ The route inventory is broader than current negative integration tests. Add expl
 - The supplier-create request must return HTTP 403; the test snapshots the business-scoped supplier row count and `AuditEvent` count before the request and verifies neither changes after denial.
 - The test was added on branch `test/security-nonmember-supplier-no-write-2026-10-28`; exact-head CircleCI validation is pending. Do not mark this regression verified until the backend-accounting and aggregate checks pass on the exact PR head.
 - Scope is intentionally narrow: it closes one explicit non-member/no-side-effect gap and does not claim complete route × role × tenant coverage.
+
+
+## Non-member CSV export/import denial regression — 2026-10-28
+
+- Current-main baseline: PR #274 merged at `84000ed6a1d2459dedca6296008563dab1147bd8`; customer CSV preview/import UI and business-scoped duplicate-email handling are present.
+- Follow-up candidate adds a regression for a principal with no membership in the requested business. Customer CSV export, preview, and import must each return HTTP 403 and leave business-scoped Customer, ImportJob, and AuditEvent counts unchanged.
+- This is targeted coverage only; it does not close issue #244 or prove the full route × role × tenant matrix.
+- Exact-head CI: pending until the candidate branch's checks complete. Local pytest/build: NOT RUN in this connector-only session. No production data, permissions, or deployment changed.
