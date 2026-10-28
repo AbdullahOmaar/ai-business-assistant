@@ -319,6 +319,27 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
+                <section class="csv-import-panel" aria-label="CSV customer import">
+                  <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
+                  <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
+                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
+                  @if (customerImportFileName) { <small>{{ customerImportFileName }}</small> }
+                  <div class="csv-import-actions">
+                    <button class="secondary" type="button" (click)="previewCustomerImport()" [disabled]="customerImportLoading || !customerImportCsvText">{{ customerImportLoading ? t('جارٍ المعالجة…', 'Working…') : t('معاينة الملف', 'Preview file') }}</button>
+                    @if (customerImportPreview?.valid) { <button class="primary" type="button" (click)="confirmCustomerImport()" [disabled]="customerImportLoading">{{ t('استيراد', 'Import') }} {{ customerImportPreview?.row_count }} {{ t('صف', 'rows') }}</button> }
+                  </div>
+                  @if (customerImportPreview) {
+                    <p role="status">{{ customerImportPreview.valid ? t('الملف صالح. لم يتم حفظ بيانات بعد.', 'File is valid. No data has been saved yet.') : t('الملف يحتوي على أخطاء؛ أصلحها ثم أعد المعاينة.', 'The file has errors. Fix them and preview again.') }} · {{ customerImportPreview.row_count }} {{ t('صف', 'rows') }}</p>
+                    @if (customerImportPreview.errors.length) {
+                      <ul class="csv-import-errors">
+                        @for (item of customerImportPreview.errors; track $index) {
+                          <li>{{ t('صف', 'Row') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.max_length) { ({{ t('الحد الأقصى', 'max') }} {{ item.max_length }}) }</li>
+                        }
+                      </ul>
+                    }
+                  }
+                  @if (customerImportMessage) { <p role="status">{{ customerImportMessage }}</p> }
+                </section>
                 <div class="list-tools"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (customer of filteredCustomers; track customer.id) { <article class="list-row customer-list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
@@ -996,6 +1017,11 @@ export class AppComponent implements OnInit {
   importLoading = false;
   importPreview: Awaited<ReturnType<ApiService['previewProductCsv']>> | null = null;
   importMessage = '';
+  customerImportCsvText = '';
+  customerImportFileName = '';
+  customerImportLoading = false;
+  customerImportPreview: Awaited<ReturnType<ApiService['previewCustomerCsv']>> | null = null;
+  customerImportMessage = '';
   invoiceCustomerId = '';
   invoiceProductId = '';
   invoiceQuantity = '1';
@@ -1974,6 +2000,79 @@ export class AppComponent implements OnInit {
       this.error = this.message(error);
     } finally {
       this.importLoading = false;
+    }
+  }
+
+  async onCustomerImportFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.customerImportPreview = null;
+    this.customerImportMessage = '';
+    this.customerImportCsvText = '';
+    this.customerImportFileName = '';
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
+      this.error = this.t('اختَر ملف CSV فقط.', 'Choose a CSV file only.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.error = this.t('حجم الملف يتجاوز 5 ميجابايت.', 'The file exceeds 5 MiB.');
+      input.value = '';
+      return;
+    }
+    try {
+      this.customerImportCsvText = await file.text();
+      this.customerImportFileName = file.name;
+      this.error = '';
+    } catch {
+      this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
+      input.value = '';
+    }
+  }
+
+  async previewCustomerImport(): Promise<void> {
+    if (!this.business || !this.customerImportCsvText || this.customerImportLoading) return;
+    this.customerImportLoading = true;
+    this.customerImportPreview = null;
+    this.customerImportMessage = '';
+    this.error = '';
+    try {
+      this.customerImportPreview = await this.api.previewCustomerCsv(
+        this.business.id, this.customerImportCsvText
+      );
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.customerImportLoading = false;
+    }
+  }
+
+  async confirmCustomerImport(): Promise<void> {
+    if (!this.business || !this.customerImportCsvText ||
+        !this.customerImportPreview?.valid || this.customerImportLoading) return;
+    this.customerImportLoading = true;
+    this.customerImportMessage = '';
+    this.error = '';
+    try {
+      const result = await this.api.importCustomerCsv(
+        this.business.id, this.customerImportCsvText
+      );
+      this.customers = await this.api.customers(this.business.id);
+      if (!this.invoiceCustomerId && this.customers.length) {
+        this.invoiceCustomerId = this.customers[0].id;
+      }
+      this.customerImportMessage = this.t(
+        `تم استيراد ${result.row_count} صف بنجاح.`,
+        `Successfully imported ${result.row_count} rows.`
+      );
+      this.customerImportPreview = null;
+      this.customerImportCsvText = '';
+      this.customerImportFileName = '';
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.customerImportLoading = false;
     }
   }
 
