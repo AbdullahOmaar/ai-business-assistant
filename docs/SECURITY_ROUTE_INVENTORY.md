@@ -5,13 +5,13 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — PR #251 candidate
+## Denied-mutation regression evidence — PR #251 (merged)
 
-- Current main at sync: `8facda01faa66dcad758be8d31c85fc1df114182`. It retains the 16-request STAFF denial regression, permitted ordinary product-name edit, and business-scoped audit-event count invariant.
-- Candidate extension snapshots every persisted column for each business-scoped `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` row before the denied-request batch, then compares full row snapshots afterward. Each of the 16 denied requests is now executed sequentially with its own before/after business-scoped `AuditEvent` count and an explicit HTTP 403 assertion, preventing a passing batch total from masking which individual request emitted an audit event.
-- Previous exact candidate `aec8493a535410ca58dc0b138fda164751809adb` had five CircleCI contexts PASS and backend-accounting FAIL (run 2003). Private job logs were inaccessible. Supplemental diagnostic on a non-exact sandbox snapshot: focused denial test **1 passed**; full backend suite **221 passed, 11 warnings**; `alembic check` reported no new upgrade operations; offline migration SQL generated; `pip-audit` found no known vulnerabilities. These results are not exact-head verification and do not override the CircleCI failure.
-- Fresh exact-head CI must pass after this synchronization. No application permission policy was changed.
-- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244.
+- Merged at main SHA `a62502c981fad9a63c05813ed81f86956802f83a`; exact PR-head CircleCI passed all six substantive jobs plus the aggregate (7/7) before merge.
+- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` executes 16 denied STAFF requests sequentially. Each request must return HTTP 403 and leave the business-scoped `AuditEvent` count unchanged. The test also compares persisted fields for business-scoped `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` rows before and after the denied batch.
+- This is a STAFF negative/no-side-effect regression, not proof of exhaustive OWNER-positive, non-member, foreign-business-ID, or route × role × tenant coverage.
+- Main SHA `d9f942bf9959fe4829d975c1685c232a95890dc3` later passed CircleCI 7/7. Vercel deployment contexts are a separate build-rate-limit issue; no permission policy was changed by PR #251.
+- Proposed PR #261 adds foreign-ID tests for invoice issue, payment allocation, stock movement, purchase-order creation/receiving, and sales-return creation/approval. These tests are **NOT VERIFIED** until the exact current PR head and aggregate pass.
 
 ## Authorization model
 
@@ -112,9 +112,17 @@ The route inventory is broader than current negative integration tests. Add expl
 - **Concurrent lifecycle coverage:** PR #236 adds a PostgreSQL race test between return approval and invoice voiding and asserts exactly one matching lifecycle audit event commits. Supplemental disposable PostgreSQL 18.6 validation on a layered sandbox snapshot passed **5/5 repeated race runs** and **217 tests, 11 warnings, 0 skipped**. This is not a clean exact-head checkout; exact-head CircleCI remains the merge gate. PR #236 candidate `51c63b79fb36340940a6f9d01ed0e828ee3c4640` passed CircleCI 5/5, but current main advanced to `7d9f270662b7a838ee1eae4748c2df4634c19448`; revalidation is required.
 - **Remaining coverage:** complete route × role × tenant negative tests and broader payment/allocation/return/stock lifecycle review. This document records source and test evidence; it does not claim exhaustive authorization coverage or production readiness. PR #236 candidate must pass the current aggregate gate after sync.
 
-## Added regression — non-member supplier creation (2026-10-28)
+## Non-member supplier creation regression — present on main
 
 - `backend/tests/test_api.py::test_nonmember_cannot_create_supplier_without_writes_or_audit_events` uses an isolated SQLite database and a principal with no workspace membership.
 - The supplier-create request must return HTTP 403; the test snapshots the business-scoped supplier row count and `AuditEvent` count before the request and verifies neither changes after denial.
-- The test was added on branch `test/security-nonmember-supplier-no-write-2026-10-28`; exact-head CircleCI validation is pending. Do not mark this regression verified until the backend-accounting and aggregate checks pass on the exact PR head.
+- The test is present on main SHA `d9f942bf9959fe4829d975c1685c232a95890dc3`; exact-main CircleCI passed 7/7 at the last verified poll.
 - Scope is intentionally narrow: it closes one explicit non-member/no-side-effect gap and does not claim complete route × role × tenant coverage.
+
+
+## Foreign-business sensitive lifecycle regression — PR #261 candidate
+
+- Candidate test: `backend/tests/test_api.py::test_owner_cannot_mutate_foreign_business_financial_and_stock_ids`.
+- It creates two isolated workspaces and attempts seven cross-business operations as an authenticated OWNER: issue a foreign invoice, allocate payment to a foreign invoice, create stock movement for a foreign product, create a purchase order with foreign supplier/product IDs, receive a foreign purchase order, create a return for a foreign invoice, and approve a foreign sales return.
+- Each attempt expects HTTP 422 and snapshots audit-event counts plus purchase-order, sales-return, payment, allocation, stock-movement and lifecycle state before/after. Exact-head CI has not yet reported; treat this as proposed coverage, not verified protection.
+- The broader authorization matrix remains open until OWNER-positive, STAFF/non-member, and foreign-business-ID cases are covered for every sensitive route.
