@@ -1222,6 +1222,15 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
         local_invoice = session.get(Invoice, local_invoice_id)
         assert local_invoice is not None and local_invoice.customer_id is not None
         local_customer_id = local_invoice.customer_id
+        local_supplier = Supplier(business_id=business_id, name="Local supplier")
+        local_product = Product(
+            business_id=business_id, name="Local stock item",
+            unit_price=Decimal("4.00"), is_stock_tracked=True,
+        )
+        session.add_all([local_supplier, local_product])
+        session.flush()
+        local_supplier_id = local_supplier.id
+        local_product_id = local_product.id
 
         foreign_business = Business(name="Foreign workspace", currency_code="EGP")
         session.add(foreign_business)
@@ -1268,7 +1277,6 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
         ))
         session.commit()
         foreign_business_id = foreign_business.id
-        foreign_customer_id = foreign_customer.id
         foreign_supplier_id = foreign_supplier.id
         foreign_product_id = foreign_product.id
         foreign_invoice_id = foreign_invoice.id
@@ -1330,8 +1338,15 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
                     session.scalar(select(func.count()).select_from(AuditEvent).where(
                         AuditEvent.business_id.in_(business_ids)
                     )),
+                    session.scalar(select(func.count()).select_from(Customer)),
+                    session.scalar(select(func.count()).select_from(Supplier)),
+                    session.scalar(select(func.count()).select_from(Product)),
+                    session.scalar(select(func.count()).select_from(Invoice)),
+                    session.scalar(select(func.count()).select_from(InvoiceLine)),
                     session.scalar(select(func.count()).select_from(PurchaseOrder)),
+                    session.scalar(select(func.count()).select_from(PurchaseOrderLine)),
                     session.scalar(select(func.count()).select_from(SalesReturn)),
+                    session.scalar(select(func.count()).select_from(SalesReturnLine)),
                     session.scalar(select(func.count()).select_from(Payment)),
                     session.scalar(select(func.count()).select_from(PaymentAllocation)),
                     session.scalar(select(func.count()).select_from(StockMovement)),
@@ -1365,11 +1380,24 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
                     "quantity_delta": "1.000",
                 },
             )),
-            ("create purchase order with foreign IDs", lambda: client.post(
+            ("create purchase order with foreign supplier ID", lambda: client.post(
                 f"{local_base}/purchase-orders",
                 json={
                     "supplier_id": str(foreign_supplier_id),
-                    "order_number": "PO-CROSS-BUSINESS-ATTEMPT",
+                    "order_number": "PO-CROSS-BUSINESS-SUPPLIER-ATTEMPT",
+                    "currency_code": "EGP",
+                    "lines": [{
+                        "product_id": str(local_product_id),
+                        "quantity": "1.000",
+                        "unit_cost": "3.00",
+                    }],
+                },
+            )),
+            ("create purchase order with foreign product ID", lambda: client.post(
+                f"{local_base}/purchase-orders",
+                json={
+                    "supplier_id": str(local_supplier_id),
+                    "order_number": "PO-CROSS-BUSINESS-PRODUCT-ATTEMPT",
                     "currency_code": "EGP",
                     "lines": [{
                         "product_id": str(foreign_product_id),
