@@ -51,6 +51,13 @@ test('employee and payroll client methods use business-scoped API paths and neve
   assert.doesNotMatch(api.slice(createPayrollStart, updatePayrollStart), /net_pay/);
 });
 
+test('payroll period validation accepts a real YYYY-MM pattern instead of a literal backslash', () => {
+  assert.ok(
+    component.includes("if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(this.payrollPeriod))"),
+    'Payroll period validation must match digits for the year',
+  );
+});
+
 test('in-app feature catalogue documents employee/payroll permissions and one-time expense posting', () => {
   assert.match(guide, /id: 'employees-payroll'/);
   assert.match(guide, /متاح لمالك مساحة العمل فقط/);
