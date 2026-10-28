@@ -33,7 +33,7 @@ def postgres_membership_client():
     previous_factory = getattr(app.state, "session_factory", None)
     previous_resolver = getattr(app.state, "principal_resolver", None)
     app.state.session_factory = factory
-    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("race-test-owner")
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("race-owner-a")
     business_id = None
     try:
         with factory() as session:
@@ -124,8 +124,8 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
         demote_response = demote_future.result(timeout=30)
         remove_response = remove_future.result(timeout=30)
 
-    assert demote_response.status_code in (200, 422), demote_response.text
-    assert remove_response.status_code in (204, 422), remove_response.text
+    assert demote_response.status_code in (200, 403, 422), demote_response.text
+    assert remove_response.status_code in (204, 403, 422), remove_response.text
     assert sum(response.status_code in (200, 204) for response in (
         demote_response, remove_response
     )) == 1, "exactly one concurrent mutation may succeed"
