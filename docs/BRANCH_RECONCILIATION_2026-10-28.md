@@ -971,3 +971,18 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - PR #282 is based on main SHA `125ad371b86d22f3200eddafa2d139cb019f6195`; head `8445df6f67283e8d9bc42aad033b3a978b29d534` passed CircleCI 7/7 and GitGuardian SUCCESS; the latest documentation refresh requires fresh exact-head CI before review/merge. Local tests/build: NOT RUN in the connector-only session.
 - The other open Drafts, PR #280 (payroll workspace-finance refresh) and #281 (employee/payroll access denial regressions), are separate workstreams and were not modified by this reconciliation.
 - These counts are a point-in-time snapshot and must be refreshed before final closure. Production deployment and authenticated production workflows were not initiated by this docs-only work.
+
+
+## Current inventory and recent closed-unmerged dispositions — 2026-10-29
+
+- Latest complete paginated inventory at main SHA `c644d8a0dd0540a68653dfa16844e2b51f51e230`, before this documentation branch was created: **254 PR records** — **134 merged**, **120 closed-unmerged**, **0 open**; **253 remote branches**. Pages: 100 + 100 + 54 PRs, and 100 + 100 + 53 branches. Refresh counts after this PR changes state.
+- **PR #280 — payroll workspace refresh (old branch):** closed without merge; its divergent history and stale task checkpoint are superseded by merged PR #287.
+- **PR #283 — reconciliation closeout snapshot:** closed without merge; duplicate/partial evidence is superseded by merged PR #282. No unique runtime change was lost.
+- **PR #285 — payroll refresh replacement attempt:** closed without merge after a stale `TASKS.md` update conflicted with main. Its intended code/test changes were preserved in merged PR #287.
+- **PR #286 — payroll refresh duplicate:** closed without merge; it repeated the same three code/test changes with a stale task checkpoint. PR #287 is canonical.
+- **PR #289 — task reconciliation duplicate:** closed without merge; its documentation-only checkpoint was superseded by merged PR #288.
+- **PR #291 — non-member extended workflow test branch:** closed without merge after PR #292 changed the same test/task files. Its intended denial/no-side-effect coverage was preserved in merged PR #294.
+- **PR #293 — deferred task/ledger checkpoint:** closed without merge so security PRs could land first. Its useful recent-closure findings are preserved by this current ledger update.
+- **PR #295 — narrower non-member extended workflow test:** closed without merge because broader PR #294 covered the same scope with more complete protected-state snapshots and was merged at `c644d8a0dd0540a68653dfa16844e2b51f51e230`.
+- The prior ledger snapshot documented **112/112** closed-unmerged dispositions. These eight subsequent closures raise the current observed set to **120/120** at the inventory snapshot above. No stale branch was merged wholesale or deleted.
+- PR #294 exact pre-merge CircleCI passed 7/7 and GitGuardian succeeded. Current main SHA `c644d8a0dd0540a68653dfa16844e2b51f51e230` also has CircleCI 7/7 and Vercel Web/API SUCCESS. GitHub Actions pre-step failures remain UNVERIFIED; authenticated production smoke remains NOT RUN.
