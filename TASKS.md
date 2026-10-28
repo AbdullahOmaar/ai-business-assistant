@@ -2,15 +2,15 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 7)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 8)
 
-- PR #264 remains open; the latest reconciliation ledger covers seven focused batches. Fresh exact-head checks are required before merge.
-- Reconciliation ledger now documents **63/109** closed-unmerged PR semantic dispositions; **46/109 remain**. The 109 historical closed-unmerged PR count is not a count of required merges.
-- Batch 7 reviewed #112, #108, #103, #101, #98, #76, #74, #73, and #72. Rounding, invoice drafts, release metadata, safe CSV preview, local assistant fallback, customer statements, workspace membership management and customer search are present on main or superseded by verified merged successors.
-- Notable verified successor: #73 membership administration was integrated by merged PR #207, including owner-only role changes/removal, last-owner protection, locking and audit events.
-- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
-- Remaining gates: PR #261 foreign-tenant test failure (root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 46 closed-unmerged PR reviews.
-- Next: continue the next focused batch; restore only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 remains open; eight priority batches are now documented. The latest docs commit requires fresh exact-head checks before merge.
+- Reconciliation ledger now documents **72/109** closed-unmerged PR semantic dispositions; **37/109 remain**. This is not a target to merge all 109 historical PRs.
+- Batch 8 reviewed #70, #57, #56, #54, #49, #48, #47, #46, and #43. Weekly dependency audits run in CircleCI; payment CSV export, workspace search/filter/export, route inventory, mobile/PWA behavior and assistant retry/history safeguards are present or superseded by merged successors.
+- Visual/mobile accessibility and physical-device QA remain NOT RUN; source presence and static tests are not substitutes for real device evidence.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API status contexts succeeded on that SHA.
+- Remaining gates: PR #261 foreign-tenant tests (backend-accounting failure on recorded head, root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 37 closed-unmerged PR reviews.
+- Next: continue the next focused batch and recover only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
