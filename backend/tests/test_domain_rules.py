@@ -4,6 +4,7 @@ import pytest
 
 from app.domain_rules import (
     calculate_invoice_totals,
+    money,
     derive_stock_balance,
     summarize_money_by_currency,
     validate_payment_allocation,
@@ -156,3 +157,12 @@ def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
 
 def test_empty_stock_movements_produce_zero_balance() -> None:
     assert derive_stock_balance([]) == D("0.000")
+
+
+def test_money_rounds_half_up_to_two_decimal_places() -> None:
+    assert money(D("1.005")) == D("1.01")
+    assert money(D("-1.005")) == D("-1.01")
+
+
+def test_report_totals_are_empty_when_no_amounts_are_provided() -> None:
+    assert summarize_money_by_currency([]) == {}
