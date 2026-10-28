@@ -725,3 +725,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Remaining closed-unmerged PRs requiring semantic review: **28/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 10 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #195 — mobile startup viewport E2E | Current `frontend/e2e/startup.spec.ts` and `frontend/playwright.config.ts` are present; the CircleCI browser-smoke context passes on current main. | Test source is present; current CI smoke is verified, but a real physical Android device run remains NOT RUN. |
+| #163 — GitHub Actions runner diagnosis notes | Current task ledger records the pre-step runner-allocation failure and CircleCI as the successful validation route. PR #163 is documentation-only. | Superseded by current task ledger; no runtime change to restore. |
+| #162 — receivables aging report | Current `extended_api.py` exposes the report; `test_api.py` covers business scoping, currency-safe balances and OWNER authorization. | Feature present through consolidated #161/#118 work; no restore. |
+| #157 — report workspace isolation and payment retry safety | Current `WorkspaceLoadGuard` plus its spec invalidate stale workspace responses; `release-payment-ui.spec.ts` covers idempotency-key preservation and visible refresh/API errors. | Core code/tests present on main; no stale branch merge. Live-path authenticated payment E2E remains NOT RUN. |
+| #156 — stale report response guard | Same current `WorkspaceLoadGuard` implementation and regression suite as #157, which also includes payment safeguards. | Duplicate/superseded by #157; no restore. |
+| #155 — sales-return line amount ceiling | Current `domain_rules.py` has discounted-return amount validation; `operations.py` and `test_operations.py` cover return approval and cumulative amount/quantity safety. | Superseded by consolidated #161/current financial-safety code; no restore. |
+| #149 — schedule timezone/settings validation | Same current validators and API tests as #160; current `extended_api.py` validates before persistence. | Duplicate/superseded by #160; no restore. |
+| #148 — CORS PUT preflight | Current `CORS_ALLOWED_METHODS` includes PUT and `test_main.py` asserts the policy. | Duplicate/superseded by #158; no restore. |
+| #136 — UI version badge v1.0.0 | Current package/build metadata is aligned at v1.3.4; build-info and workspace header display current version/build details. | Obsolete release metadata; superseded by later releases, no restore. |
+
+## Audit accounting — after priority batch 10
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–10: **90/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **19/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
