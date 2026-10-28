@@ -2,14 +2,15 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 6)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 7)
 
-- PR #264 remains open; the reconciliation branch has added three successive review batches since batch 3. The latest docs commit needs fresh exact-head checks before merge.
-- Reconciliation ledger now documents **54/109** closed-unmerged PR semantic dispositions across six priority batches; **55/109 remain**. This is a reviewed-vs-unreviewed count, not a count of PRs that should be merged.
-- Batch 6 reviewed #133, #132, #130, #129, #128, #127, #123, #121, and #120. Current main contains the tax summary, operations routes/screens, customer statement, invoice drafts, owner data-integrity report, owner activity feed, and build metadata through consolidated later changes.
-- No stale feature branch was merged. Remaining limitations include tax filing/jurisdiction-specific calculations, credit-note/double-entry accounting, deployed recurring-invoice worker, audit request-ID correlation, authenticated production workflows, and mobile visual QA.
-- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API status contexts succeeded on that SHA.
-- Next: review the remaining 55 closed-unmerged PRs in focused batches and recover only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 remains open; the latest reconciliation ledger covers seven focused batches. Fresh exact-head checks are required before merge.
+- Reconciliation ledger now documents **63/109** closed-unmerged PR semantic dispositions; **46/109 remain**. The 109 historical closed-unmerged PR count is not a count of required merges.
+- Batch 7 reviewed #112, #108, #103, #101, #98, #76, #74, #73, and #72. Rounding, invoice drafts, release metadata, safe CSV preview, local assistant fallback, customer statements, workspace membership management and customer search are present on main or superseded by verified merged successors.
+- Notable verified successor: #73 membership administration was integrated by merged PR #207, including owner-only role changes/removal, last-owner protection, locking and audit events.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
+- Remaining gates: PR #261 foreign-tenant test failure (root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 46 closed-unmerged PR reviews.
+- Next: continue the next focused batch; restore only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
