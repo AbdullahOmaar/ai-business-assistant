@@ -452,7 +452,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   async savePayroll(): Promise<void> {
     if (!this.businessId || !this.payrollEmployeeId) return;
-    if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(this.payrollPeriod)) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(this.payrollPeriod)) {
       this.error = this.t('اختَر شهرًا صالحًا للمرتب.', 'Select a valid payroll month.');
       return;
     }
