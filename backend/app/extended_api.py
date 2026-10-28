@@ -839,7 +839,22 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                           rows: list[dict[str, str]]) -> list[dict]:
     errors: list[dict] = []
     first_sku_row: dict[str, int] = {}
+    first_customer_email_row: dict[str, int] = {}
     existing_skus: set[str] = set()
+    existing_customer_emails: set[str] = set()
+    if entity_type == "customers":
+        emails = [
+            row.get("email", "").strip().casefold()
+            for row in rows if row.get("email", "").strip()
+        ]
+        if emails:
+            existing_customer_emails = {
+                value.strip().casefold()
+                for value in session.scalars(select(Customer.email).where(
+                    Customer.business_id == business_id, Customer.email.is_not(None),
+                    func.lower(Customer.email).in_(emails),
+                )).all() if value
+            }
     if entity_type == "products":
         skus = [row.get("sku", "").strip().casefold() for row in rows if row.get("sku", "").strip()]
         if skus:
@@ -855,6 +870,16 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                     errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
             if not row.get("name", "").strip():
                 errors.append({"row": index, "field": "name", "code": "required"})
+            email = row.get("email", "").strip()
+            key = email.casefold()
+            if key:
+                if key in first_customer_email_row:
+                    errors.append({"row": index, "field": "email", "code": "duplicate_in_file",
+                                   "first_row": first_customer_email_row[key]})
+                else:
+                    first_customer_email_row[key] = index
+                if key in existing_customer_emails:
+                    errors.append({"row": index, "field": "email", "code": "already_exists"})
         elif entity_type == "products":
             limits = {"sku": 80, "name": 160, "description": 1000, "unit": 32}
             for field, limit in limits.items():
