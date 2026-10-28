@@ -12,9 +12,9 @@ import pytest
 
 from app.main import app
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine, Notification,
+    AuditEvent, Base, Business, BusinessMembership, BusinessSetting, Customer, Invoice, InvoiceLine, Notification,
     Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
-    MembershipRole, Payment, PaymentAllocation, SalesReturn, SalesReturnLine,
+    MembershipRole, Payment, PaymentAllocation, PricingRule, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -676,7 +676,9 @@ def test_staff_is_denied_sensitive_business_routes():
                 )
             )
             protected_models = (
-                Customer, Invoice, InvoiceLine, Payment, Supplier, PurchaseOrder,
+                BusinessSetting, Customer, Invoice, InvoiceLine, Notification, Payment,
+                PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine,
+                RecurringInvoiceSchedule, SalesReturn, SalesReturnLine, StockMovement, Supplier,
             )
 
             def snapshot_protected_records(session):
@@ -869,6 +871,13 @@ def test_owner_can_change_product_price_and_create_schedules_and_notifications()
         assert safe_setting.status_code == 200, safe_setting.text
         assert safe_setting.json()["setting_key"] == "locale"
 
+        pricing_rule = client.post(
+            f"{base}/pricing-rules",
+            json={"name": "Owner discount", "rule_type": "discount", "rate": "5"},
+        )
+        assert pricing_rule.status_code == 201, pricing_rule.text
+        assert pricing_rule.json()["name"] == "Owner discount"
+
         notification = client.post(
             f"{base}/notifications",
             json={"kind": "test", "title": "Owner approved",
@@ -880,6 +889,8 @@ def test_owner_can_change_product_price_and_create_schedules_and_notifications()
         with Session(engine) as session:
             assert session.get(Product, product_id).unit_price == Decimal("8.50")
             assert session.scalar(select(func.count()).select_from(RecurringInvoiceSchedule)) == 1
+            assert session.scalar(select(func.count()).select_from(PricingRule)) == 1
+            assert session.scalar(select(func.count()).select_from(BusinessSetting)) == 1
             assert session.scalar(select(func.count()).select_from(Notification)) == 1
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
