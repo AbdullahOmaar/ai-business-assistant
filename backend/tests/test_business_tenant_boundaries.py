@@ -194,6 +194,8 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         )
         assert business_a.status_code == 201, business_a.text
         business_a_id = business_a.json()["id"]
+        audit_a_before = client.get(f"/api/v1/businesses/{business_a_id}/audit-events")
+        assert audit_a_before.status_code == 200, audit_a_before.text
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-b-owner")
         business_b = client.post(
@@ -226,9 +228,7 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         product_id = product.json()["id"]
         invoice_id = invoice.json()["id"]
 
-        audit_a_before = client.get(f"/api/v1/businesses/{business_a_id}/audit-events")
         audit_b_before = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
-        assert audit_a_before.status_code == 200, audit_a_before.text
         assert audit_b_before.status_code == 200, audit_b_before.text
 
         # The caller is an OWNER of tenant A. Membership must not make a
@@ -258,8 +258,12 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         audit_b_after = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
         assert audit_b_after.status_code == 200, audit_b_after.text
         assert audit_b_after.json()["total"] == audit_b_before.json()["total"]
-        assert client.get(f"/api/v1/businesses/{business_b_id}/customers/{customer_id}").json()["name"] == "Tenant B private customer"
-        assert client.get(f"/api/v1/businesses/{business_b_id}/products/{product_id}").json()["name"] == "Tenant B private product"
+        owner_customer = client.get(f"/api/v1/businesses/{business_b_id}/customers/{customer_id}")
+        owner_product = client.get(f"/api/v1/businesses/{business_b_id}/products/{product_id}")
+        assert owner_customer.status_code == 200
+        assert owner_customer.json()["name"] == "Tenant B private customer"
+        assert owner_product.status_code == 200
+        assert owner_product.json()["name"] == "Tenant B private product"
         unchanged_invoice = client.get(f"/api/v1/businesses/{business_b_id}/invoices/{invoice_id}")
         assert unchanged_invoice.status_code == 200
         assert unchanged_invoice.json()["status"] == "draft"
@@ -275,6 +279,7 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
 
 def test_invoice_rejects_customer_and_product_ids_from_another_business():
     """Foreign resource IDs must not be usable to construct a tenant's invoice."""
