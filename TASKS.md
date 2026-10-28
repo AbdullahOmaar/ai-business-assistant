@@ -1258,3 +1258,15 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 
 ### Next action
 Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to finish, finish semantic branch review, and retry Web/API production deployment after the Vercel quota window. Delete only verified stale branches when an authorized deletion operation is available.
+
+
+## Platform Admin — PostgreSQL last-owner concurrency regression — 2026-10-28
+
+- Task: ADM-06 follow-up; status **IN_PROGRESS** pending exact-head CI.
+- Evidence: current `main` at start of this work was `39ca1ae2d5463c0fa7ae61125613e97d8dd19178`. Existing membership endpoint tests use SQLite, which does not prove PostgreSQL row-lock behavior.
+- Change: added `backend/tests/test_membership_management_postgres_concurrency.py` on branch `feat/platform-admin-membership-concurrency-20261028`. It races owner demotion against owner removal using the disposable PostgreSQL service, then asserts exactly one mutation succeeds, one OWNER remains, and one matching audit event commits.
+- Safety: test skips unless `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and `TEST_DATABASE_URL` is PostgreSQL. It creates and cleans up a uniquely named test workspace only; no production DB or deployment was used.
+- Exact candidate head at checkpoint: `06108d8f1ba49e270195d5724465bb80e355aef4`; PR #238 is Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/238.
+- Local execution: **NOT RUN** (no local checkout/runtime available in this session). Exact-head CircleCI contexts were pending at last read; do not mark VERIFIED until the final PR head passes all required contexts.
+- Remaining ADM release gates: full keyboard/screen-reader/mobile WCAG 2.2 AA validation, authenticated production Admin smoke, Web/API deployed SHA parity, and explicit release authorization remain unverified/blocked. No production deployment performed.
+- Next: inspect final-head CircleCI, fix and rerun any failure, then update this record with the observed results before merge.
