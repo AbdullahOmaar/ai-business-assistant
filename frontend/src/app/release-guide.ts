@@ -202,6 +202,19 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.3',
+    titleAr: 'تحسين موثوقية البناء والإصدار',
+    titleEn: 'Build and release reliability',
+    changesAr: [
+      'إصلاح اختبار بيانات الإصدار ليعمل مع بناء الواجهة من جذر Vercel أو من الريبو الكامل.',
+      'الحفاظ على التحقق من تطابق إصدار الواجهة وواجهة API في بيئة الاختبارات الكاملة.',
+    ],
+    changesEn: [
+      'Fixed release-metadata tests for both Vercel frontend-root and full-repository builds.',
+      'Preserved frontend/API version-parity checks in full-repository validation.',
+    ],
+  },
+  {
     version: '1.3.2',
     titleAr: 'تقوية الصلاحيات وسلامة العمليات',
     titleEn: 'Authorization and workflow integrity hardening',
