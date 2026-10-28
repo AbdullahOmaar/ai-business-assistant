@@ -469,6 +469,18 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <option value="product.created">{{ t('إضافة منتج', 'Product created') }}</option>
                     <option value="stock.movement_recorded">{{ t('تسجيل حركة مخزون', 'Stock movement recorded') }}</option>
                     <option value="supplier.created">{{ t('إضافة مورد', 'Supplier created') }}</option>
+                    <option value="customer.updated">{{ t('تعديل بيانات عميل', 'Customer updated') }}</option>
+                    <option value="customer.deactivated">{{ t('تعطيل عميل', 'Customer deactivated') }}</option>
+                    <option value="product.updated">{{ t('تعديل منتج', 'Product updated') }}</option>
+                    <option value="product.deactivated">{{ t('تعطيل منتج', 'Product deactivated') }}</option>
+                    <option value="purchase_order.created">{{ t('إنشاء أمر شراء', 'Purchase order created') }}</option>
+                    <option value="purchase_order.approved">{{ t('اعتماد أمر شراء', 'Purchase order approved') }}</option>
+                    <option value="purchase_order.received">{{ t('استلام أمر شراء', 'Purchase order received') }}</option>
+                    <option value="sales_return.created">{{ t('تسجيل مرتجع بيع', 'Sales return created') }}</option>
+                    <option value="sales_return.approved">{{ t('اعتماد مرتجع بيع', 'Sales return approved') }}</option>
+                    <option value="recurring_invoice_schedule.created">{{ t('إنشاء جدول فاتورة دورية', 'Recurring invoice schedule created') }}</option>
+                    <option value="data_import.completed">{{ t('اكتمال استيراد البيانات', 'Data import completed') }}</option>
+                    <option value="pricing_rule.created">{{ t('إنشاء قاعدة تسعير', 'Pricing rule created') }}</option>
                   </select></label>
                   <label>{{ t('نوع السجل', 'Target type') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
                     <option value="">{{ t('كل السجلات', 'All record types') }}</option>
@@ -480,6 +492,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <option value="business">{{ t('نشاط تجاري', 'Business') }}</option>
                     <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
                     <option value="stock_movement">{{ t('حركة مخزون', 'Stock movement') }}</option>
+                    <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
+                    <option value="purchase_order">{{ t('أمر شراء', 'Purchase order') }}</option>
+                    <option value="sales_return">{{ t('مرتجع بيع', 'Sales return') }}</option>
+                    <option value="recurring_invoice_schedule">{{ t('جدول فاتورة دورية', 'Recurring invoice schedule') }}</option>
+                    <option value="import_job">{{ t('عملية استيراد', 'Import job') }}</option>
+                    <option value="pricing_rule">{{ t('قاعدة تسعير', 'Pricing rule') }}</option>
                   </select></label>
                   <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
@@ -1170,7 +1188,19 @@ export class AppComponent implements OnInit {
       'customer.created': { ar: 'إضافة عميل', en: 'Customer created' },
       'product.created': { ar: 'إضافة منتج', en: 'Product created' },
       'stock.movement_recorded': { ar: 'تسجيل حركة مخزون', en: 'Stock movement recorded' },
-      'supplier.created': { ar: 'إضافة مورد', en: 'Supplier created' }
+      'supplier.created': { ar: 'إضافة مورد', en: 'Supplier created' },
+      'customer.updated': { ar: 'تعديل بيانات عميل', en: 'Customer updated' },
+      'customer.deactivated': { ar: 'تعطيل عميل', en: 'Customer deactivated' },
+      'product.updated': { ar: 'تعديل منتج', en: 'Product updated' },
+      'product.deactivated': { ar: 'تعطيل منتج', en: 'Product deactivated' },
+      'purchase_order.created': { ar: 'إنشاء أمر شراء', en: 'Purchase order created' },
+      'purchase_order.approved': { ar: 'اعتماد أمر شراء', en: 'Purchase order approved' },
+      'purchase_order.received': { ar: 'استلام أمر شراء', en: 'Purchase order received' },
+      'sales_return.created': { ar: 'تسجيل مرتجع بيع', en: 'Sales return created' },
+      'sales_return.approved': { ar: 'اعتماد مرتجع بيع', en: 'Sales return approved' },
+      'recurring_invoice_schedule.created': { ar: 'إنشاء جدول فاتورة دورية', en: 'Recurring invoice schedule created' },
+      'data_import.completed': { ar: 'اكتمال استيراد البيانات', en: 'Data import completed' },
+      'pricing_rule.created': { ar: 'إنشاء قاعدة تسعير', en: 'Pricing rule created' }
     };
     return labels[action]?.[this.language] || action;
   }
@@ -1184,6 +1214,11 @@ export class AppComponent implements OnInit {
       product: { ar: 'منتج', en: 'Product' },
       supplier: { ar: 'مورد', en: 'Supplier' },
       stock_movement: { ar: 'حركة مخزون', en: 'Stock movement' },
+      purchase_order: { ar: 'أمر شراء', en: 'Purchase order' },
+      sales_return: { ar: 'مرتجع بيع', en: 'Sales return' },
+      recurring_invoice_schedule: { ar: 'جدول فاتورة دورية', en: 'Recurring invoice schedule' },
+      import_job: { ar: 'عملية استيراد', en: 'Import job' },
+      pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
       business: { ar: 'نشاط تجاري', en: 'Business' }
     };
     return labels[target]?.[this.language] || target;
