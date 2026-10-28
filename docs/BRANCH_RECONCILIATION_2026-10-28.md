@@ -938,3 +938,26 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - Existing ledger coverage remains **111/111 closed-unmerged PRs dispositioned**: 109 in the original #264 audit plus #261 (superseded by #267) and #270 (superseded by #264).
 - These dispositions are not permission to delete branches or merge stale history. The connected integration does not expose an authorized branch-delete operation.
 - PR #244 is merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`; exact-head CircleCI was 7/7 PASS and GitHub Actions checks were 7/7 SUCCESS. Vercel automatically produced READY production web/API deployments for this SHA. Safe smoke checks returned HTTP 200 for web root, `/version` (version `1.3.4`, commit `c0f9b475f6b8`), `/health` (`ok`), and `/readyz` (`ready`). No manual deployment command was issued; authenticated workflows and visual/mobile QA remain NOT RUN.
+
+
+## Closed-unmerged follow-up after employee/payroll merge — 2026-10-28
+
+### PR #261 — security regression coverage
+
+- **Disposition:** closed without merge; superseded by merged PR #267.
+- **Patch review:** the broad test `test_owner_cannot_mutate_foreign_business_financial_and_stock_ids` exercises cross-business invoice issue, payment allocation, stock movement, purchase-order create/receive, and sales-return create/approval while asserting denied attempts do not change protected records or audit counts.
+- **Current-main evidence:** the test is present in `backend/tests/test_foreign_business_workflows.py` with the same test name; related narrower tests are in `backend/tests/test_foreign_invoice_references.py`. The behavior is therefore retained on main; do not re-open or merge the stale PR branch.
+- **CI note:** #261's old `backend-accounting` failure belongs to historical head `28d64c10aa067f83b86041eeb296eb76dcd764ec`; the exact private job logs were inaccessible and its root cause was not verified. Do not treat that historical failure as evidence against the merged successor.
+
+### PR #270 — partial reconciliation report
+
+- **Disposition:** closed without merge; superseded by merged PR #264.
+- Its 20/109 snapshot is stale and has no unique runtime behavior. The canonical reconciliation ledger covers the historical 109/109 set; the later #261 and #270 closures are also dispositioned here, bringing the observed closed-unmerged coverage to **111/111**.
+- Do not restore the partial snapshot or merge its stale branch.
+
+### Employee/payroll delivery update
+
+- PR #278 is now **MERGED** at `125ad371b86d22f3200eddafa2d139cb019f6195`; issue #277 is closed.
+- Exact merge-commit CircleCI statuses: frontend unit tests, dependency audit, production build, browser smoke, backend container, backend accounting, and aggregate **7/7 PASS**.
+- Current inferred PR inventory after this state change: **238 total**, **126 merged**, **111 closed-unmerged**, **1 open Draft PR (#249)**, and **245 branches** based on the last paginated inventory before #278 merged. Refresh the full inventory before any cleanup or final reconciliation closeout.
+- This is source/CI verification, not a claim that authenticated production workflows or physical mobile/accessibility QA were run. No production deployment was initiated by this feature task.
