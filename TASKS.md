@@ -1511,3 +1511,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Inventory counts reverified: 233 remote branches (100+100+33+0); 226 PR records (100+100+26+0): 114 merged, 109 closed-unmerged, 3 open.
 - **Still pending:** materialize all branch names + SHA + associated PR numbers/states into the reconciliation report; exact-head CircleCI/security checks on PR #264 must pass before merge. This issue is not VERIFIED COMPLETE until both are done.
 - Release v1.3.4 remains deployed Web/API READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; CircleCI aggregate passed on that SHA.
+
+
+## Complete branch inventory verified — 2026-10-28
+
+- Materialized all remote branch refs into `docs/BRANCH_RECONCILIATION_2026-10-28.md` with full branch name, exact SHA, matching PR numbers/states, and whether each PR head SHA matches the current branch.
+- Branch pages: 100 + 100 + 33 + 0 = **233 branches**. PR pages: 100 + 100 + 26 + 0 = **226 PR records** (114 merged, 109 closed-unmerged, 3 open).
+- **12 branches have no associated PR** in the complete paginated inventory; **12 branches have at least one associated PR whose head SHA differs** from the current branch ref. These are recorded for review, not deletion.
+- All **109/109 closed-unmerged PRs** have evidence-based dispositions in the reconciliation report. No branch was deleted, no PR reopened, and no stale branch merged wholesale.
+- Remaining gate: exact-head CircleCI/security checks for PR #264 must pass before merge. The payment CSV test is a focused regression only; no runtime or deployment config changes are included.
+- Production release v1.3.4 remains READY for Web and API on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; no deployment is requested for this audit PR.
