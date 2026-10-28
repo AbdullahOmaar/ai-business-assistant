@@ -1442,3 +1442,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Formal audit ledger: 37/109 closed-unmerged PRs reviewed, 72 remain. Inventory: 233 remote branches (100+100+33+0); 226 PR records (100+100+26+0), 114 merged, 109 closed-unmerged, 3 open.
 - Latest main SHA remains `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; release v1.3.4 Web/API are READY on that SHA and CircleCI aggregate passed.
 - No source/runtime changes in this batch. Next: continue semantic patch review; restore only a unique, intended behavior proven missing on current main.
+
+
+## Repository reconciliation checkpoint — batch 5 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #149, #148, #147, #146, #144, #143, #140, #136, #134, and #133.
+- Terminal successors/source evidence: #143/#144/#148/#149 -> #161; #146/#147 -> #168 plus later #254 payment regression; #140 -> #141; #134's feature set is now split across #141/#192/#197/#203/#215; #133 -> #197. The v1.0.0 badge branch #136 is obsolete after current v1.3.4 release.
+- Current main contains business-timezone reporting, return amount/quantity guards, CORS PUT preflight, workspace request invalidation, payment idempotency/retry safety, assistant suggestions/build metadata, tax summary, and operations/data-integrity UI. No stale snapshot was merged.
+- Formal audit ledger: 47/109 closed-unmerged PRs reviewed, 62 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Current main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API deployments READY on that SHA and CircleCI aggregate PASS.
+- No source/runtime changes in this batch; continue semantic review of remaining closed-unmerged PRs.
