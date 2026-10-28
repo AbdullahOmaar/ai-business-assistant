@@ -971,3 +971,15 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - PR #282 is based on main SHA `125ad371b86d22f3200eddafa2d139cb019f6195`; head `8445df6f67283e8d9bc42aad033b3a978b29d534` passed CircleCI 7/7 and GitGuardian SUCCESS; the latest documentation refresh requires fresh exact-head CI before review/merge. Local tests/build: NOT RUN in the connector-only session.
 - The other open Drafts, PR #280 (payroll workspace-finance refresh) and #281 (employee/payroll access denial regressions), are separate workstreams and were not modified by this reconciliation.
 - These counts are a point-in-time snapshot and must be refreshed before final closure. Production deployment and authenticated production workflows were not initiated by this docs-only work.
+
+
+## Current inventory and recent closed-unmerged dispositions — 2026-10-29
+
+- Latest complete paginated inventory at main SHA `51227718405ddd59e222c14aeace83d9f2d4983d`, before the current documentation PR opened: **249 PR records** — **132 merged**, **117 closed-unmerged**, **0 open**; **250 remote branches**. Pages: 100 + 100 + 49 PRs, and 100 + 100 + 50 branches. Refresh counts after this PR changes state.
+- **PR #280 — payroll workspace refresh (old branch):** closed without merge; its 44-commit divergent history and stale `TASKS.md` state are superseded by the clean current-main-based implementation merged through #287.
+- **PR #283 — reconciliation closeout snapshot:** closed without merge; duplicate/partial evidence is superseded by merged PR #282. No unique runtime change was lost.
+- **PR #285 — payroll refresh replacement attempt:** closed without merge after the live `TASKS.md` update conflicted with main. Its intended code/test changes were preserved in the clean PR #287, merged at `28dd3b418b53f7b9408695982b7378c4c99c7b27`.
+- **PR #286 — payroll refresh duplicate:** closed without merge; same three code/test changes and a stale task checkpoint were superseded by #287. Do not merge or restore the duplicate branch.
+- **PR #289 — current-main task reconciliation duplicate:** closed without merge; its documentation-only checkpoint duplicated merged PR #288 (merge SHA `1dfe63729f159f06c28d7acab641ceb3345dc5be`). No unique change was required.
+- These five recent dispositions supplement the prior historical ledger, updating the observed closed-unmerged disposition count from 112 to **117/117**. The prior full historical set remains unchanged; no stale branch was merged wholesale or deleted.
+- PR #287 exact pre-merge CircleCI passed 7/7 and GitGuardian succeeded. Its merge SHA later passed CircleCI 7/7 and Vercel Web/API reported SUCCESS; the newer docs-only main SHA has a fresh run still pending at last poll. Authenticated production smoke remains NOT RUN.
