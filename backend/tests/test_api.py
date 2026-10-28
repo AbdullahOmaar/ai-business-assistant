@@ -675,12 +675,31 @@ def test_staff_is_denied_sensitive_business_routes():
                     AuditEvent.business_id == business_id
                 )
             )
+            protected_models = (
+                Customer, Invoice, InvoiceLine, Payment, Supplier, PurchaseOrder,
+            )
 
-        responses = {
-            "issue existing invoice": client.post(
+            def snapshot_protected_records(session):
+                return {
+                    model.__name__: tuple(sorted(
+                        tuple(
+                            (column.key, repr(getattr(record, column.key)))
+                            for column in model.__table__.columns
+                        )
+                        for record in session.scalars(
+                            select(model).where(model.business_id == business_id)
+                        ).all()
+                    ))
+                    for model in protected_models
+                }
+
+            protected_state_before = snapshot_protected_records(session)
+
+        denied_requests = {
+            "issue existing invoice": lambda: client.post(
                 f"{base}/invoices/{invoice_id}/issue"
             ),
-            "create and issue invoice": client.post(
+            "create and issue invoice": lambda: client.post(
                 f"{base}/invoices/issue",
                 json={
                     "invoice_number": "STAFF-ISSUE-1",
@@ -688,7 +707,7 @@ def test_staff_is_denied_sensitive_business_routes():
                     "lines": [{"quantity": "1.000", "unit_price": "10.00"}],
                 },
             ),
-            "record payment": client.post(
+            "record payment": lambda: client.post(
                 f"{base}/payments",
                 json={
                     "amount": "10.00",
@@ -698,7 +717,7 @@ def test_staff_is_denied_sensitive_business_routes():
                     "allocations": [],
                 },
             ),
-            "change stock": client.post(
+            "change stock": lambda: client.post(
                 f"{base}/stock-movements",
                 json={
                     "product_id": unknown_id,
@@ -706,51 +725,73 @@ def test_staff_is_denied_sensitive_business_routes():
                     "quantity_delta": "1.000",
                 },
             ),
-            "change pricing": client.post(
+            "change pricing": lambda: client.post(
                 f"{base}/pricing-rules",
                 json={"name": "Staff rule", "rule_type": "discount", "rate": "5"},
             ),
-            "change product price": client.patch(
+            "change product price": lambda: client.patch(
                 f"{base}/products/{product_id}", json={"unit_price": "99.99"}
             ),
-            "change stock tracking": client.patch(
+            "change stock tracking": lambda: client.patch(
                 f"{base}/products/{product_id}", json={"is_stock_tracked": True}
             ),
-            "create recurring invoice schedule": client.post(
+            "create recurring invoice schedule": lambda: client.post(
                 f"{base}/recurring-invoices",
                 json={"interval_days": 30, "timezone": "UTC",
                       "next_run_at": "2027-01-01T00:00:00Z"},
             ),
-            "create notification": client.post(
+            "create notification": lambda: client.post(
                 f"{base}/notifications",
                 json={"kind": "test", "title": "Sensitive action",
                       "body": "Staff should not schedule notifications",
                       "deduplication_key": "staff-notification-test"},
             ),
-            "receive purchase order": client.post(
+            "receive purchase order": lambda: client.post(
                 f"{base}/purchase-orders/{unknown_id}/receive",
                 json={"lines": [{"line_id": unknown_id, "quantity": "1.000"}]},
             ),
-            "change settings": client.put(
+            "change settings": lambda: client.put(
                 f"{base}/settings/locale", json={"setting_value": "ar"}
             ),
-            "export customers": client.get(f"{base}/exports/customers.csv"),
-            "preview CSV import": client.post(
+            "export customers": lambda: client.get(f"{base}/exports/customers.csv"),
+            "preview CSV import": lambda: client.post(
                 f"{base}/imports/customers.csv/preview",
                 content="name\\nAlice\\n",
                 headers={"Content-Type": "text/csv"},
             ),
-            "execute CSV import": client.post(
+            "execute CSV import": lambda: client.post(
                 f"{base}/imports/customers.csv",
                 content="name\\nAlice\\n",
                 headers={"Content-Type": "text/csv"},
             ),
-            "delete customer": client.delete(f"{base}/customers/{unknown_id}"),
-            "delete product": client.delete(f"{base}/products/{unknown_id}"),
+            "delete customer": lambda: client.delete(f"{base}/customers/{unknown_id}"),
+            "delete product": lambda: client.delete(f"{base}/products/{unknown_id}"),
         }
-        assert {name: response.status_code for name, response in responses.items()} == {
-            name: 403 for name in responses
-        }
+        responses = {}
+        for name, request in denied_requests.items():
+            with Session(engine) as session:
+                audit_count_before_request = session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                )
+
+            response = request()
+            responses[name] = response
+            assert response.status_code == 403, (
+                f"{name}: expected 403, got {response.status_code}: {response.text}"
+            )
+
+            with Session(engine) as session:
+                audit_count_after_request = session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                )
+            assert audit_count_after_request == audit_count_before_request, (
+                f"{name}: denied STAFF request must not append an audit event"
+            )
+
         with Session(engine) as session:
             invoice = session.get(Invoice, invoice_id)
             assert invoice.status == "issued"
@@ -770,6 +811,10 @@ def test_staff_is_denied_sensitive_business_routes():
             # A denied request must not append business audit metadata or persistent audit rows.
             assert audit_count_after == audit_count_before, (
                 "denied STAFF mutations must not append audit events"
+            )
+            protected_state_after = snapshot_protected_records(session)
+            assert protected_state_after == protected_state_before, (
+                "denied STAFF requests must not create, delete, or mutate protected business records"
             )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
