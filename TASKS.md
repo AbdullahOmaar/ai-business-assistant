@@ -2,15 +2,14 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 8)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 9)
 
-- PR #264 remains open; eight priority batches are now documented. The latest docs commit requires fresh exact-head checks before merge.
-- Reconciliation ledger now documents **72/109** closed-unmerged PR semantic dispositions; **37/109 remain**. This is not a target to merge all 109 historical PRs.
-- Batch 8 reviewed #70, #57, #56, #54, #49, #48, #47, #46, and #43. Weekly dependency audits run in CircleCI; payment CSV export, workspace search/filter/export, route inventory, mobile/PWA behavior and assistant retry/history safeguards are present or superseded by merged successors.
-- Visual/mobile accessibility and physical-device QA remain NOT RUN; source presence and static tests are not substitutes for real device evidence.
-- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API status contexts succeeded on that SHA.
-- Remaining gates: PR #261 foreign-tenant tests (backend-accounting failure on recorded head, root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 37 closed-unmerged PR reviews.
-- Next: continue the next focused batch and recover only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 remains open; nine review batches are now documented. Fresh exact-head checks are required after the latest ledger update.
+- Reconciliation ledger now documents **81/109** closed-unmerged PR semantic dispositions; **28/109 remain**. The 109 count is historical PR state, not a mandatory merge target.
+- Batch 9 reviewed #42, #41, #40, #39, #38, #36, #27, #25, and #23. Payment regressions, empty-stock regression, assistant resilience, RTL/loading, responsive navigation, CORS, stock and sales-return safety are present or superseded by current merges. The old Firebase Hosting deploy path is intentionally not restored because production is on Vercel.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
+- Remaining gates: PR #261 foreign-tenant tests (backend-accounting failure on recorded head, root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 28 closed-unmerged PR reviews.
+- Next: finish the remaining closed-unmerged PR audit, reconcile live inventory snapshots, and recover only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
