@@ -1,6 +1,7 @@
 """API-level least-privilege regression for purchase-order approval."""
 
 from decimal import Decimal
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
@@ -53,7 +54,7 @@ def test_staff_cannot_approve_purchase_order_and_owner_can():
         )
         assert created.status_code == 201, created.text
         assert created.json()["status"] == "draft"
-        order_id = created.json()["id"]
+        order_id = UUID(created.json()["id"])
 
         with Session(engine) as session:
             membership = session.scalar(select(BusinessMembership).where(
