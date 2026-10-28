@@ -886,3 +886,25 @@ The current inventory now has a disposition for all 11 orphan branches and all 1
 - These checks verify the deployment after the payment-validation fix. They do not certify authenticated payment workflows or physical-device accessibility; those remain NOT RUN.
 - PR #261 was marked Draft and its body records #267 as the verified successor. Its historical backend-accounting failure root cause remains unverified because the CircleCI job log was inaccessible; no weakened test was merged.
 - PR #264 latest source/test/doc head had CircleCI **7/7 PASS**; GitGuardian was still in progress at the last pre-refresh poll. A subsequent ledger commit requires fresh exact-head checks.
+
+
+## Live inventory reconciliation addendum — 2026-10-28 after PR #274
+
+**Verified current main:** `84000ed6a1d2459dedca6296008563dab1147bd8`.
+
+### Fresh paginated inventory
+
+After opening security PR #244, GitHub pagination returned **236 PR records** (100 + 100 + 36): **124 merged**, **111 closed-unmerged**, and **1 open Draft PR (#244)**. Branch pagination returned **244 unique remote branches** (100 + 100 + 44). These are a timestamped snapshot; re-query after additional PR or branch state changes.
+
+### Two closed-unmerged records beyond PR #264's historical 109-record snapshot
+
+- **PR #261 — superseded by merged PR #267.** PR #261 was explicitly closed with a supersession note; merged PR #267 provides the foreign-business lifecycle no-side-effect tests and fixes payment-allocation validation ordering before Payment persistence. Current main includes merge commit `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`. Do not merge #261's stale branch.
+- **PR #270 — superseded by merged PR #264.** Its only changed file was the partial documentation snapshot `docs/closed-unmerged-pr-reconciliation-2026-10-28.md`; its PR body identifies #264 as the authoritative comprehensive ledger. Merged PR #264 is at `8fc353b4a0ba6e03367b45c15329cedd64d1a528` and documents the semantic disposition set plus branch inventory. Do not merge #270's stale snapshot.
+
+Together with PR #264's original **109/109** dispositions, these two closures bring the current observed closed-unmerged inventory to **111/111 dispositioned**. This is a semantic disposition, not a recommendation to merge historical PRs. No branches were deleted or mass-merged.
+
+### Verification boundaries
+
+- PR #274 exact-head CircleCI: six substantive jobs + aggregate **7/7 PASS**; GitHub backend/frontend/build/dependency/security checks observed SUCCESS.
+- Current security PR #244 exact-head CI is running; merge status remains Draft/unmerged pending exact-head checks and review.
+- Production deployment, authenticated production workflows, and physical mobile/accessibility QA were not performed by this reconciliation.
