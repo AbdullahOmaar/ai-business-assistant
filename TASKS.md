@@ -36,6 +36,12 @@ These are execution assignments on existing Notion tasks, not new duplicate task
 
 **Shared controls:** Isolate changes by branch and coordinate shared files. Keep Notion task pages and this ledger aligned. Record exact SHAs and test/CI links; use VERIFIED COMPLETE / PARTIALLY COMPLETE / NOT RUN / BLOCKED accurately. No branch deletion, merge, or production deployment is authorized by these assignments.
 
+
+## Notion-first inter-agent communication — @n
+
+The canonical communication contract lives in the Notion [Agent Prompt Registry](https://app.notion.com/p/407bbf2bc2c58160be0cefe4f6374d05), section **Mandatory Notion-to-Notion Agent Communication Protocol — @n**. Master and specialist chats must read and reply on existing task-page discussions; the user is not a relay. Each operational comment must identify sender/receiver, canonical task, checkpoint, exact status, evidence, next action/owner, and conflicts/dependencies. A specialist's acknowledgement is not assumed until posted by that chat. Notion is not a guaranteed push channel: resumed chats must poll/read comments; never claim a separate chat was notified or woke up automatically. Notion task pages remain canonical for assignments/status, while GitHub remains canonical for code/CI/release evidence. No merge/deploy authorization is implied.
+
+
 ## Current evidence baseline
 
 - **Last fully verified main SHA:** `b84966db294c87338385508b35e98f2b2287e13e`; all six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` passed **7/7** on this exact SHA. Vercel Web/API contexts still fail with `build-rate-limit`; no deployment was performed.
