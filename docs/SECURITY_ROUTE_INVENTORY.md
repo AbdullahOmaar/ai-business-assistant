@@ -135,7 +135,7 @@ The route inventory is broader than current negative integration tests. Add expl
 
 - Branch: `test/security-nonmember-extended-workflows-20261029`; tracking issue: [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276).
 - Candidate test: `backend/tests/test_api.py::test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_side_effects`.
-- Each non-member and STAFF request to create a recurring invoice schedule, create a pricing rule, create a notification, update a business setting, or list notifications must return HTTP 403.
-- The test snapshots business-scoped `PricingRule`, `RecurringInvoiceSchedule`, `Notification`, `BusinessSetting`, and `AuditEvent` counts before and after each request for both principals; every denied request must leave the snapshot unchanged.
+- Each non-member request to create a recurring invoice schedule, create a pricing rule, create a notification, update a business setting, or list notifications must return HTTP 403. STAFF must receive 403 for the four owner-only mutations; listing notifications is membership-scoped and remains allowed (HTTP 200) for STAFF.
+- The test snapshots business-scoped `PricingRule`, `RecurringInvoiceSchedule`, `Notification`, `BusinessSetting`, and `AuditEvent` counts before and after each request for both principals; every denied request must leave the snapshot unchanged, and the allowed STAFF read must not mutate state.
 - **Status: IMPLEMENTED, NOT YET VERIFIED.** Exact-head backend-accounting and aggregate CI must pass before marking this regression verified. Local pytest is NOT RUN in this connector-only session.
 - This focused batch does not complete issue #276's remaining route × role × tenant matrix or authenticated production smoke.
