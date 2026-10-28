@@ -68,3 +68,19 @@ test('financial and integrity report basis labels are localized', () => {
   assert.match(source, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
   assert.match(source, /reportLimitationLabel\(limitation\)/);
 });
+
+const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+
+test('API requests abort when the backend stalls instead of blocking workspace startup indefinitely', () => {
+  assert.match(apiSource, /new AbortController\(\)/);
+  assert.match(apiSource, /15_000/);
+  assert.match(apiSource, /signal: controller\.signal/);
+  assert.match(apiSource, /The request timed out/);
+});
+
+test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
+  assert.match(source, /gross issued invoice totals before sales returns/);
+  assert.match(source, /This report identifies records for manual review only/);
+  assert.match(source, /Legacy invoices without customer links are flagged for review, not auto-corrected\./);
+  assert.match(source, /Uses saved tax totals on issued invoices; it does not recalculate historical taxes\./);
+});
