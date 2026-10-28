@@ -13,8 +13,8 @@ from test_api import _configure_test_identity, _restore_test_identity, _sales_re
 
 def test_customer_csv_parser_preserves_quoted_commas_and_multiline_fields():
     csv_text = (
-        "name,email,notes\\n"
-        '"Acme, North",contact@example.com,"Line one\\nLine two"\\n'
+        "name,email,notes\n"
+        '"Acme, North",contact@example.com,"Line one\nLine two"\n'
     )
 
     rows = parse_import_csv(csv_text, entity_type="customers")
@@ -22,7 +22,7 @@ def test_customer_csv_parser_preserves_quoted_commas_and_multiline_fields():
     assert rows == [{
         "name": "Acme, North",
         "email": "contact@example.com",
-        "notes": "Line one\\nLine two",
+        "notes": "Line one\nLine two",
     }]
 
 
