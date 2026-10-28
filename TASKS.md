@@ -7,16 +7,15 @@
 - **Main SHA:** `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d` — PR #281 merged. On the exact pre-merge head `d787c36652236251ac3c1a56ba3c82ff91db2f2e`, CircleCI six substantive checks + aggregate passed **7/7**. Post-merge status at last poll: 6 CircleCI contexts success, `backend-accounting` pending; Vercel Web and API contexts success.
 - **PR #284 — AI source grounding:** MERGED at `71eeb68eb2c33955d0729c984ff5626c39f28d43`. The deterministic no-provider fallback now returns only intent-relevant sources, with regression tests. Its exact PR head passed CircleCI 7/7. Production authenticated smoke was NOT RUN.
 - **PR #281 — employee/payroll isolation regressions:** MERGED at `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d`. Tests cover non-member employee/payroll denials with no writes/audit side effects and cross-business payroll/employee IDs with 404 and unchanged state. Issue [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276) remains OPEN for broader route × role × tenant coverage and authenticated production smoke.
-- **Payroll post-payment refresh — active branch:** `fix/payroll-refresh-after-payment-main-20261029`, currently being reconstructed directly from current `main` to avoid stale/divergent PR history. It emits a success event after payment, refreshes workspace expenses/dashboard, ignores stale responses after workspace switching, and adds a regression test. CI has NOT RUN on this reconstructed branch yet.
+- **PR #286 — payroll post-payment refresh:** OPEN / Draft at `https://github.com/AbdullahOmaar/ai-business-assistant/pull/286`, branch `fix/payroll-refresh-after-payment-main-20261029`. It emits a success event after payment, refreshes workspace expenses/dashboard, ignores stale responses after workspace switching, and adds a regression test. This TASKS update creates a new exact head; all checks must be re-verified before merge.
 - **Superseded PRs #280 and #285:** neither should be merged; both carry stale/divergent history or conflict after PR #281 changed `TASKS.md`. Preserve their branches until the replacement PR is opened and verified, then close both without merge.
 - **GitHub Actions diagnostics:** earlier runs on the previous payroll-refresh head failed before steps were reported; step data was absent and log retrieval returned 404 `BlobNotFound`. Root cause remains **UNVERIFIED**. The current main's Vercel Web/API contexts are success; latest CircleCI `backend-accounting` was pending at last poll. Confirm required-check policy and re-check new runs before merge.
 - **Production / release gates:** authenticated production smoke and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists. No deployment was initiated by this work.
 
 ## Next actions
 
-1. Open a single replacement PR from the current-main branch after confirming its three code/test changes and the live TASKS update.
-2. Verify all six substantive CircleCI jobs plus aggregate on the exact PR head; diagnose GitHub Actions no-step failures or confirm from repository policy that they are non-blocking.
-3. Merge only after the exact-head merge gates are satisfied; then close superseded PRs #280 and #285 without merge and preserve their branches.
+1. Verify all six substantive CircleCI jobs plus aggregate on the exact head of PR #286; diagnose GitHub Actions no-step failures or confirm from repository policy that they are non-blocking.
+2. Merge PR #286 only after exact-head merge gates are satisfied; PRs #280 and #285 are closed without merge and their branches are preserved.
 4. Keep issue #276 open until the remaining route × role × tenant matrix and authenticated production smoke have evidence.
 
 ## Current evidence baseline
