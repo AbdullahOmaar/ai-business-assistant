@@ -108,14 +108,23 @@ def test_staff_cannot_read_or_change_employees_or_payroll_and_no_rows_are_writte
     created = _create_employee(env)
     assert created.status_code == 201
     employee_id = created.json()["id"]
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee_id}/payroll", json={"period": "2026-11"}
+    )
+    assert payroll.status_code == 201
+    payroll_id = payroll.json()["id"]
     env["subject"]["value"] = STAFF
 
     endpoints = [
-        ("get", f"/api/v1/businesses/{env['business_id']}/employees", None),
-        ("post", f"/api/v1/businesses/{env['business_id']}/employees", {"name":"Unauthorized","monthly_salary":"1.00"}),
-        ("patch", f"/api/v1/businesses/{env['business_id']}/employees/{employee_id}", {"name":"Unauthorized"}),
-        ("get", f"/api/v1/businesses/{env['business_id']}/payroll", None),
-        ("post", f"/api/v1/businesses/{env['business_id']}/employees/{employee_id}/payroll", {"period":"2026-10"}),
+        ("get", f"{base}/employees", None),
+        ("post", f"{base}/employees", {"name":"Unauthorized","monthly_salary":"1.00"}),
+        ("patch", f"{base}/employees/{employee_id}", {"name":"Unauthorized"}),
+        ("get", f"{base}/payroll", None),
+        ("post", f"{base}/employees/{employee_id}/payroll", {"period":"2026-12"}),
+        ("patch", f"{base}/payroll/{payroll_id}", {"allowances":"1.00"}),
+        ("post", f"{base}/payroll/{payroll_id}/approve", {}),
+        ("post", f"{base}/payroll/{payroll_id}/pay", {}),
     ]
     for method, url, body in endpoints:
         response = getattr(env["client"], method)(url, json=body) if body is not None else getattr(env["client"], method)(url)
@@ -123,10 +132,17 @@ def test_staff_cannot_read_or_change_employees_or_payroll_and_no_rows_are_writte
 
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(Employee)) == 1
-        assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
+        assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 1
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
         assert session.scalar(select(func.count()).select_from(AuditEvent).where(
             AuditEvent.target_type == "employee"
         )) == 1
+        payroll_actions = session.scalars(select(AuditEvent.action).where(
+            AuditEvent.target_type == "payroll"
+        )).all()
+        assert payroll_actions == ["payroll.created"]
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None and persisted.status == "draft"
 
 
 def test_employee_ids_cannot_be_used_across_businesses(employee_environment):
