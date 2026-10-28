@@ -92,7 +92,7 @@ def test_owner_customer_csv_preview_is_read_only_then_import_records_audit():
     engine, business_id, _, _ = _sales_return_fixture()
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
-    csv_text = "name,email,phone\\nImported customer,imported@example.com,01000000000\\n"
+    csv_text = "name,email,phone\nImported customer,imported@example.com,01000000000\n"
     base = f"/api/v1/businesses/{business_id}/imports/customers.csv"
     try:
         with Session(engine) as session:
