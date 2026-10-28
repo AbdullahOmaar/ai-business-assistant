@@ -770,6 +770,59 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .nav-item .nav-icon{width:26px;height:26px;flex-basis:26px;font-size:16px}
     }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+    /* Consistent, data-sized controls and mobile-first business cards. */
+    .workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);align-items:center;gap:12px}
+    .workspace-current{min-width:0}.workspace-current strong{overflow-wrap:anywhere}
+    .workspace-release-meta-inline{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid #e5eaf1}
+    .workspace-release-meta-inline small{color:#64748b;font-size:11px;overflow-wrap:anywhere;text-align:center}
+    .invoice-toolbar{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+    .invoice-create-disclosure{width:100%;order:0}
+    .customer-invoice-filter{order:1;width:100%;margin:0}
+    .invoice-form{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(100px,.55fr) minmax(100px,.55fr);align-items:end;gap:12px}
+    .invoice-form>input[name="invoiceNumber"]{min-width:0}
+    .invoice-form>.invoice-customer-field{grid-column:1/-1;min-width:0}
+    .invoice-form label:has(input[type="number"]){max-width:150px;min-width:0}
+    .invoice-form input[type="number"]{width:100%;min-width:0}
+    .invoice-lines,.invoice-lines-heading{min-width:0}
+    .expense-form{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,1.5fr) minmax(100px,.65fr) minmax(170px,1fr) minmax(130px,.8fr) minmax(120px,.8fr);align-items:end;gap:10px}
+    .expense-form .expense-category-field{min-width:0}
+    .shell input,.shell select,.shell textarea{min-width:0;max-width:100%;padding:9px 11px;font-size:14px;border-radius:9px}
+    .shell input[type="number"]{font-variant-numeric:tabular-nums}
+    .shell label{min-width:0;gap:6px}
+    .list-row{min-width:0;overflow-wrap:anywhere}
+    .release-guide-panel .release-guide-groups,.release-guide-panel .release-history{gap:12px}
+    .release-guide-panel .release-feature-group>summary,.release-guide-panel .release-version>summary{min-height:48px}
+    .assistant-suggestions{padding:12px;border:1px solid #dbeafe;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#eff6ff)}
+    .assistant-suggestions .suggestion-card{min-height:68px}
+    .auth-retry{margin-top:12px}
+    @media(max-width:900px){
+      .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .expense-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .expense-form input[name="expenseDescription"]{grid-column:1/-1}
+      .expense-form input[name="expenseDate"]{grid-column:1/-1}
+    }
+    @media(max-width:600px){
+      .workspace-bar{grid-template-columns:minmax(0,1fr);padding:12px;gap:10px}
+      .workspace-bar select{width:100%;max-width:none}
+      .workspace-release-meta-inline{gap:6px;padding-top:10px}
+      .invoice-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+      .invoice-form>input[name="invoiceNumber"],.invoice-form>.invoice-customer-field,.invoice-form>.invoice-lines{grid-column:1/-1}
+      .invoice-form label:has(input[type="number"]){max-width:none}
+      .invoice-form label:has(input[type="number"]) input{width:100%}
+      .expense-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .expense-form input[name="expenseDescription"],.expense-form input[name="expenseDate"]{grid-column:1/-1}
+      .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .metric{padding:12px;min-height:105px}
+      .metric strong{font-size:17px}
+      .list-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+      .list-row .grow{min-width:0;width:100%}
+      .list-row>button,.list-row>strong{justify-self:start;max-width:100%}
+      .suggestion-grid{grid-template-columns:minmax(0,1fr)}
+      .notice{align-items:flex-start;flex-wrap:wrap}
+      .notice strong{white-space:normal}
+      .table-wrap table{min-width:560px}
+    }
   `]
 })
 export class AppComponent implements OnInit {
