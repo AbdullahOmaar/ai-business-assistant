@@ -5,14 +5,13 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — candidate PR #238
+## Denied-mutation regression evidence — PR #251 candidate
 
-- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF mutation/read requests and expects HTTP 403 for each; the ordinary product-name edit remains allowed.
-- Existing state assertions verify issued invoice lifecycle, product price/stock-tracking fields, sales-return count, stock movement count, recurring schedule count, and notification count remain unchanged after the denied requests.
-- Candidate update on `feat/platform-admin-membership-concurrency-20261028` records the business-scoped `AuditEvent` count before the denied request batch and asserts the count is unchanged afterward.
-- CircleCI backend-accounting and the aggregate gate passed on exact candidate SHA `595152b6a2e6e60290b44397b919cb24ad82cdcc` (backend-accounting run 1572; aggregate workflow `b7760c99-cdb2-4c4c-a982-b0016c1bc38f`). The broader route inventory still has explicit coverage gaps; this is not a claim of exhaustive authorization testing. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
-- The candidate was subsequently synchronized with main v1.3.3 at merge commit `6d973aab2225f9173c066a4863ab6d407bc19c9f`; final-head checks are pending, so the prior pass is not final merge evidence.
-
+- Current main at sync: `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`. It retains the 16-request STAFF denial regression, allowed ordinary product-name edit, and business-scoped audit-event count invariant.
+- Candidate extension snapshots business-scoped counts for `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` before the denied-request batch and asserts all six counts remain unchanged afterward.
+- The previous pre-sync head `76a6d823f47f55f375a3419b668273f719b7b044` had checks pending at inspection. Earlier head `8d8c3b05fde12a89bb3be19f3b8368e244aa5f31` passed seven CircleCI contexts, but that result does not validate the current synchronized candidate.
+- Exact-head CI must pass after this sync. No application permission policy was changed.
+- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244. This test does not claim exhaustive authorization coverage.
 
 ## Authorization model
 
@@ -119,11 +118,3 @@ The route inventory is broader than current negative integration tests. Add expl
 - The supplier-create request must return HTTP 403; the test snapshots the business-scoped supplier row count and `AuditEvent` count before the request and verifies neither changes after denial.
 - The test was added on branch `test/security-nonmember-supplier-no-write-2026-10-28`; exact-head CircleCI validation is pending. Do not mark this regression verified until the backend-accounting and aggregate checks pass on the exact PR head.
 - Scope is intentionally narrow: it closes one explicit non-member/no-side-effect gap and does not claim complete route × role × tenant coverage.
-
-
-## Denied STAFF mutation record-count regression — follow-up PR #251
-
-- On main baseline `91c86932c3344fff395058724f5d44ae4ee06dbd`, the existing 16-request STAFF denial regression asserts HTTP 403, unchanged sensitive state, and unchanged business-scoped audit-event count.
-- PR #251 adds before/after counts for business-scoped Customer, Invoice, InvoiceLine, Payment, Supplier, and PurchaseOrder rows, guarding against denied requests creating or deleting those records.
-- The previous exact PR head `8d8c3b05fde12a89bb3be19f3b8368e244aa5f31` had all 7 CircleCI contexts passing. This follow-up synchronizes source and documentation to the latest main before the next exact-head validation.
-- This is targeted regression evidence, not exhaustive route × role × tenant coverage. Keep the remaining gaps below open.

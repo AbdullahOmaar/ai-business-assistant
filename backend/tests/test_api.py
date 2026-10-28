@@ -675,7 +675,6 @@ def test_staff_is_denied_sensitive_business_routes():
                     AuditEvent.business_id == business_id
                 )
             )
-
             protected_models = (
                 Customer, Invoice, InvoiceLine, Payment, Supplier, PurchaseOrder,
             )
