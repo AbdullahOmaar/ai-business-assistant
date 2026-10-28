@@ -18,6 +18,14 @@
 - **PR #294 — non-member extended workflow matrix:** OPEN / Draft on branch `security/nonmember-extended-route-matrix-current-main-20261029`. It prepares valid owner-created purchase-order and draft sales-return records, then asserts non-member 403 denials for purchase-order create/approve/receive, sales-return create/approve, recurring schedule, pricing rule, notification, settings, and audit-event routes. It snapshots business-scoped rows and verifies audit counts remain unchanged. Previous code/test head `1f8a7ebbca222b6b731727dce46ff839baedfb23` passed CircleCI 7/7; this documentation update creates a new head, so exact-head CI must pass again before merge.
 - Local pytest/build: **NOT RUN** in this connector-only session. No production data, authorization policy, or permissions were changed by this documentation update.
 
+
+## STAFF invoice-void denial no-side-effect regression — 2026-10-29
+
+- Current-main baseline: PR #297 merged at `3c560a0f425c8a97bcbe9384c5eefb580c936025`; the CSV entity × role denial matrix is present.
+- Candidate branch strengthens `backend/tests/test_api.py::test_staff_cannot_void_invoice` to assert that a STAFF request to void an issued invoice returns HTTP 403 and leaves invoice status/financial fields, business-scoped AuditEvent count, StockMovement count, and SalesReturn count unchanged.
+- This is targeted regression coverage for a high-impact financial lifecycle action. It does not claim exhaustive route × role × tenant coverage.
+- Exact-head CI: pending until the candidate PR opens and all required checks complete. Local pytest/build: NOT RUN in this connector-only session. No production data, authorization policy, or deployment was changed.
+
 ## Authorization model
 
 - `GET /health` is a public liveness endpoint and does not imply database or authentication readiness.
