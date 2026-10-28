@@ -469,8 +469,35 @@ def _set_test_membership_role(engine, role):
         session.commit()
 
 
-def test_staff_cannot_void_invoice():
+def test_staff_cannot_void_invoice_without_writes_or_audit_events():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None
+        invoice_before = (
+            invoice.status,
+            invoice.subtotal,
+            invoice.tax_total,
+            invoice.discount_total,
+            invoice.total,
+            invoice.currency_code,
+        )
+        audit_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+        stock_movements_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+        returns_before = session.scalar(
+            select(func.count()).select_from(SalesReturn).where(
+                SalesReturn.business_id == business_id
+            )
+        )
+
     previous_factory, previous_resolver = _configure_test_identity(engine)
     _set_test_membership_role(engine, MembershipRole.STAFF)
     try:
@@ -478,10 +505,33 @@ def test_staff_cannot_void_invoice():
             f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/void",
             json={"reason": "staff must not void posted invoices"},
         )
-        assert response.status_code == 403
+        assert response.status_code == 403, response.text
         with Session(engine) as session:
             invoice = session.get(Invoice, invoice_id)
-            assert invoice.status == "issued"
+            assert invoice is not None
+            assert (
+                invoice.status,
+                invoice.subtotal,
+                invoice.tax_total,
+                invoice.discount_total,
+                invoice.total,
+                invoice.currency_code,
+            ) == invoice_before
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            ) == audit_before
+            assert session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id
+                )
+            ) == stock_movements_before
+            assert session.scalar(
+                select(func.count()).select_from(SalesReturn).where(
+                    SalesReturn.business_id == business_id
+                )
+            ) == returns_before
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
