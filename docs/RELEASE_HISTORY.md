@@ -24,6 +24,7 @@
 
 The app page lists these release lines based on the repository's versioned release history:
 
+- **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
 - **1.3.0** — release candidate: invoice payment shortcut and remaining balance, opening stock/current quantity for stock-tracked items, and this feature guide.
 - **1.2.1** — accounting and workflow improvements: stock validation and consistent invoice rounding, payment retry feedback, owner-only invoice issue/void, and clearer UI/API version information.
 - **1.2.0** — core workspace, customer/product, invoicing, payments, currency-separated reporting, stock movement, and CSV product import workflows.
