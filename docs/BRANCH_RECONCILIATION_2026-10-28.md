@@ -650,3 +650,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Remaining closed-unmerged PRs requiring semantic review: **55/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 7 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`. Older stacks were compared to current source and merged successor PRs; no branch history was merged wholesale.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #112 — line-level HALF_UP rounding policy | Current `domain_rules.py`/service invoice calculations use shared money rounding; main includes rounding regression coverage and the two restored `money()`/empty-summary tests from PR #260. | Superseded by current accounting/return-safety implementation; no restore. Historical issued invoices are not rewritten. |
+| #108 — multi-line invoice drafts with totals preview | Current frontend invoice workflow and API client include draft editing, multiple lines, discount/tax totals and explicit issue action; backend remains authoritative for totals. | Superseded by later invoice editor merges; no stale stack merge. |
+| #103 — deployed UI/API versions and Vercel build gates | Current API exposes `/version`; current build metadata includes version, commit and generated build time, and CircleCI gates frontend tests/build. | Superseded by consolidated release work (#105 and later 1.3.4); no restore. |
+| #101 — safe CSV import preview | Current `extended_api.py` imports the bounded `parse_import_csv` validator and exposes the import preview route; shared CSV validation runs before writes. | Present on main; no restore. Broader production import acceptance remains separate. |
+| #98 — multi-line invoice draft editor | Current UI/API support multi-line draft creation/editing and server-authoritative invoice issue; later #108/#129 consolidate the feature. | Superseded by later invoice editor merges; no restore. |
+| #76 — deterministic local assistant fallback without OpenAI key | Current `assistant_api.py` includes a no-key deterministic report-intent path using authenticated business-scoped records and explicit source/data limits. | Superseded by duplicate/successor implementation (#77); present on main. |
+| #74 — customer statement timeline | Current customer statement endpoint/UI combines issued invoices and payment allocations with currency-separated balances and workspace authorization; responsive statement layout is tested. | Superseded by consolidated statement work (#114/#130); no restore. Credit-note accounting remains explicitly unsupported. |
+| #73 — owner-managed workspace membership administration | Merged successor #207 integrates owner-only membership listing/role changes/removal, last-owner protection, locking and audit events. | Superseded by #207; no restore from the stale branch. Invitations remain unimplemented. |
+| #72 — customer search by name/email/phone | Current `extended_api.py` filters active customers with `or_` across name/email/phone; regression `test_customer_search_matches_name_email_and_phone` is present via successor #200. | Superseded by #200; no restore. |
+
+## Audit accounting — after priority batch 7
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–7: **63/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **46/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
