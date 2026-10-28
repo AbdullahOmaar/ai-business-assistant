@@ -1,72 +1,25 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after employee/payroll merge)
+# Current prioritized work queue — 2026-10-29 (live checkpoint)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
 ## Current verified repository state
 
-- **Main SHA:** `125ad371b86d22f3200eddafa2d139cb019f6195`. Employee/payroll PR **#278** was merged at this commit. The merged PR head `eee3955b14858daf8648428fd09e6c520401ef14` had CircleCI **7/7 PASS** and GitHub Actions **7/7 SUCCESS**, including PostgreSQL migration validation, backend pytest, frontend tests/build, dependency audits and GitGuardian.
-- **Core feature status:** Issue [#277](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) is closed after merge of [PR #278](https://github.com/AbdullahOmaar/ai-business-assistant/pull/278). Backend employee/payroll APIs, migration, authorization/accounting tests and bilingual responsive Angular UI are on main.
-- **Post-merge bug:** manual review found that a successful payroll payment can leave the parent workspace’s expense list and dashboard totals stale until refreshed. Tracked as [issue #279](https://github.com/AbdullahOmaar/ai-business-assistant/issues/279).
-- **Follow-up PR #280:** [Refresh workspace finances after payroll payment](https://github.com/AbdullahOmaar/ai-business-assistant/pull/280), open Draft, same branch `feat/employee-payroll-management`. It changes exactly three files: `frontend/src/app/app.component.ts`, `frontend/src/app/employee-payroll.component.ts`, and `frontend/src/app/employee-payroll-ui.spec.ts`. The branch is synced with main by non-force merge commit `76ca4128de1d216fc897a94282aa5441d6fb64b8`; comparison to main shows no unrelated changed files.
-- **Follow-up exact-head CircleCI:** head `76ca4128de1d216fc897a94282aa5441d6fb64b8` — six substantive jobs plus aggregate **7/7 PASS**: backend accounting/migrations, frontend unit tests, production build, dependency audit, browser smoke and backend container.
-- **Follow-up GitHub Actions:** **NOT RUN / BLOCKED BY RUNNER INFRASTRUCTURE** on that same head. Backend/frontend and Python/JavaScript audit jobs terminate within seconds with `runner_name=""` and `steps=[]`; downloads of their job logs return 404 `BlobNotFound`. Retrying the failed jobs produced the same empty-step result. No application-level test failure is evidenced by these empty jobs; do not mark GitHub Actions as passed.
-- **Code-review automation:** Codex review for #278 could not complete because the service reported review-usage limits. GitHub exposed no inline review comments or threads. Manual code review found the post-payment stale UI bug; #280 adds a child-to-parent event, guarded workspace refresh, and regression coverage.
-- **Other open PRs last observed:** #249 (repository reconciliation) and #280 (payroll UI refresh follow-up). Refresh counts before any broad branch/PR cleanup.
-- **Branch cleanup:** **NOT RUN / BLOCKED** — available GitHub integration has no authorized branch-delete operation. Do not emulate deletion by moving refs.
-- **Production:** no manual production deployment was initiated for this work. Main has Vercel Web/API “Deployment has completed” status contexts, but authenticated production workflows, real payroll user journey, and physical-device visual/accessibility QA are **NOT RUN**. This is not a production-readiness claim.
+- **Main SHA:** `58c277571e15d3139fde31f17b431ca0d6438637` — current-main reconciliation PR #282 merged. Exact merge-commit CircleCI: six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API contexts SUCCESS. No manual production deployment was initiated.
+- **Latest derived PR inventory:** last complete snapshot was **241 PR records** (126 merged, 112 closed-unmerged, 3 open Drafts #280/#281/#282). After #282 merged, the derived state is **241 total, 127 merged, 112 closed-unmerged, 2 open PRs (#280 and #281)**, pending a fresh paginated inventory. Last branch snapshot: **247 branches**, also pending refresh.
+- **Closed-unmerged audit:** the last verified ledger documented **112/112 dispositions**. PR #261 is superseded by merged #267; #270 is superseded by #264; #249 was closed without merge and its useful documentation evidence was recovered by merged #282. Do not merge stale branches wholesale.
+- **PR #278 — Employees & Payroll:** merged at `125ad371b86d22f3200eddafa2d139cb019f6195`; CircleCI 7/7 PASS. Employee directory, server-calculated payroll drafts, separate-owner approval, one-time linked expense posting, bilingual UI, migrations, and regression tests are on main.
+- **PR #280 — Payroll workspace refresh:** OPEN / Draft, existing feature branch `feat/employee-payroll-management`. Latest head before this TASKS refresh: `22e114146fb5979bb1bb50ef1e33128b314171d2`. The change emits an event after payment succeeds and refreshes expenses/dashboard; added regression assertions for ignoring late refresh results after switching workspaces. Previous head `a1bc96328aca44b7e6550f898b4112673e1deef4` passed CircleCI **7/7**, but latest test commit has only the dependency-audit check reported pending so far. PR is currently reported non-mergeable because it diverged from main by the reconciliation merge; this branch's stale TASKS content is being refreshed from current main to reduce content conflicts. GitHub Actions duplicate jobs failed and log downloads returned 404, so root cause is **UNVERIFIED**. Keep Draft until exact-head checks, mergeability, and review policy are confirmed.
+- **PR #281 — payroll non-member security regression:** OPEN / Draft on `security/employee-payroll-nonmember-isolation-20261028`. Head `d787c36652236251ac3c1a56ba3c82ff91db2f2e`; CircleCI six substantive jobs + aggregate **7/7 PASS**. Duplicate GitHub Actions jobs fail before actionable logs; root cause remains **UNVERIFIED**. The test denies non-member employee/payroll reads and mutations with HTTP 403 and checks employee/payroll/expense/audit state remains unchanged. Keep issue #276 open for broader role × route × tenant coverage.
+- **PR #282 — reconciliation:** MERGED at `58c277571e15d3139fde31f17b431ca0d6438637`; it recovered useful audit evidence from stale PR #249 onto current main. Its merge-commit CircleCI 7/7 and Vercel status contexts are green.
+- **Branch cleanup:** **NOT RUN / BLOCKED**; the connected GitHub integration has no authorized remote branch-delete operation. Do not emulate deletion by moving refs.
+- **Production / release gates:** authenticated production smoke, physical Android/mobile visual and screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target. Do not claim production readiness or deploy without explicit authorization.
 
 ## Next actions
 
-1. Keep PR #280 Draft until the GitHub Actions runner/logging issue is understood or corrected; CircleCI is green on the exact current head.
-2. Obtain a fresh runnable GitHub Actions result for backend/frontend/dependency jobs, then recheck all required CI and review gates on the exact PR head before merge.
-3. Merge #280 only after required gates pass; do not deploy to production without separate explicit authorization.
-4. Continue the broader route × role × tenant authorization matrix tracked in issue #276. Keep branch cleanup separate and blocked until an authorized delete-capable route is available.
-
----
-
-## Employee & payroll feature — EMP-PAY-001 (P1)
-
-**GitHub issue:** [#277 — Employee directory and payroll workflow](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) — closed after merge.  
-**Merged PR:** [#278](https://github.com/AbdullahOmaar/ai-business-assistant/pull/278) — merged to main at `125ad371b86d22f3200eddafa2d139cb019f6195`.  
-**Feature branch retained for follow-up:** `feat/employee-payroll-management`.  
-**Goal:** Business-scoped employee management and secure monthly payroll using Angular + FastAPI + PostgreSQL.
-
-### Shipped implementation
-- Employee and payroll persistence via `Employee`, `PayrollRecord`, and Alembic migration `0005_employee_payroll`.
-- Owner-only employee list/create/update/deactivate endpoints and payroll draft/list/edit/approve/pay endpoints, business-scoped database constraints, input validation, normalized employee code/email and audit events.
-- Server-owned `Decimal` net-pay calculation: base salary + allowances + bonuses − deductions. No tax, insurance or statutory rules were assumed.
-- Approval requires a different Owner than the draft creator. Payment requires approval and creates one linked Payroll expense transactionally; duplicate payment is rejected.
-- Responsive Arabic/English standalone Angular component with employee search, edit/deactivate, monthly payroll draft/edit/approve/pay, local component styling and Owner-only navigation.
-- Regression coverage for authorization, cross-business access, duplicate employee/period, payroll calculation, forged client totals, self-approval, early/duplicate payment and mobile navigation.
-- **Exact merged-head CI evidence:** merged source head `eee3955b14858daf8648428fd09e6c520401ef14` had CircleCI **7/7 PASS** and GitHub Actions **7/7 SUCCESS**, including migration validation, backend tests, frontend tests/build, dependency audits and GitGuardian.
-
-### Follow-up — EMP-PAY-002 (post-payment workspace refresh)
-
-**Issue:** [#279](https://github.com/AbdullahOmaar/ai-business-assistant/issues/279) — open.  
-**PR:** [#280](https://github.com/AbdullahOmaar/ai-business-assistant/pull/280) — open Draft on the same branch.  
-**Current code head:** `76ca4128de1d216fc897a94282aa5441d6fb64b8`.  
-**Changed files only:** `frontend/src/app/app.component.ts`, `frontend/src/app/employee-payroll.component.ts`, `frontend/src/app/employee-payroll-ui.spec.ts`.
-
-1. Emit a `payrollPaid` event after the payment endpoint succeeds — **IMPLEMENTED**.
-2. Refresh the selected workspace’s expense list and dashboard; ignore results if the active business changes — **IMPLEMENTED**.
-3. Add frontend regression coverage for the event and parent refresh — **IMPLEMENTED**.
-4. Verify exact-head CI — CircleCI **7/7 PASS**; GitHub Actions **BLOCKED / NOT RUN** because all four affected jobs returned no runner/steps and their logs were unavailable (404). Retried failures did not change that result.
-5. Resolve runnable GitHub Actions validation and applicable review gate, then merge — **IN PROGRESS**. No production deployment is authorized.
-
-### Security and data-integrity decisions
-- Employee/payroll rows are business-scoped and separate from login membership and Platform Admin.
-- Endpoints require server-side Owner authorization; Staff cannot read salary or mutate payroll.
-- The client cannot submit authoritative `net_pay` or payment state.
-- Employee/period uniqueness and composite business constraints prevent duplicates and cross-business links.
-- Paid records are linked to exactly one expense; payment state changes and employee/payroll operations are audited.
-- Historical employees are deactivated instead of deleting financial history.
-
-### Local validation and delivery caveats
-- Local tests: **NOT RUN** — no local repository runtime was available in this connector session.
-- Core feature: **VERIFIED COMPLETE** at the merged PR #278 head based on CircleCI and GitHub Actions evidence.
-- Post-payment refresh follow-up: **PARTIALLY COMPLETE** — code and regression test committed; CircleCI green, but GitHub Actions runner failure must be resolved before merge.
-- Production smoke, authenticated payroll user journey, physical Android visual QA and screen-reader QA: **NOT RUN**.
-- No claim of production readiness is made.
+1. Resolve PR #280's divergence from current main using the existing branch, refresh exact-head CI, and check whether GitHub reports it mergeable.
+2. Poll PR #281 exact-head checks/review policy; keep it Draft while duplicate GitHub Actions failures remain unexplained.
+3. Refresh the paginated PR/branch inventory and continue the remaining route × role × tenant security matrix under issue #276.
+4. Keep branch deletion and production deployment blocked until authorized tooling/release gates are available.
 
 ## Current evidence baseline
 
