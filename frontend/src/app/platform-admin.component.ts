@@ -318,6 +318,30 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
     @media(max-width:480px){.heading h1{font-size:25px}.metric-grid{gap:9px}.metric-card{padding:12px;min-height:140px}.metric-card>strong{font-size:25px}.metric-card>span:not(.metric-icon){font-size:11px}.metric-card small{font-size:10px}.metric-icon{width:29px;height:29px}.panel{padding:12px}.detail-grid{grid-template-columns:1fr 1fr;gap:8px}.detail-grid>div{padding:9px}.status-form{grid-template-columns:1fr}.status-form .primary-button{grid-column:auto;width:100%}.identity small{max-width:160px}.quiet-button{padding:8px 10px}.section-nav button{gap:6px;font-size:11px}.notice{align-items:flex-start}}
     .system-status-panel{margin-bottom:16px}.runtime-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:10px 0 14px}.runtime-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.runtime-grid>div{display:grid;gap:6px;min-width:0;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}.runtime-grid small{font-size:10px;color:var(--muted)}.runtime-grid strong{font-size:12px;overflow-wrap:anywhere}.runtime-grid .runtime-commit{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.runtime-good{color:#18784c}.runtime-bad{color:#a74436}.runtime-note{font-size:10px;line-height:1.5;color:var(--muted);margin:12px 0 0}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+    /* Compact admin identity summary and avoid needless horizontal scrolling. */
+    .identity-access-summary{gap:7px;padding:9px 11px}
+    .identity-access-top{gap:8px}
+    .identity-access-heading{gap:3px}
+    .identity-access-heading>strong,.identity-permissions>strong{font-size:10px}
+    .identity-role-pills,.identity-permission-tags{gap:4px}
+    .permission-token{padding:3px 6px;font-size:9px}
+    .identity-permissions{gap:5px}
+    .compact-table{overflow-x:hidden}
+    .compact-table table{width:100%;min-width:0;table-layout:fixed}
+    .compact-table th,.compact-table td{padding:8px 9px;overflow-wrap:anywhere;white-space:normal}
+    .admin-header{gap:16px;padding-bottom:14px}
+    @media(max-width:760px){
+      .identity-access-summary{padding:8px}
+      .identity-access-top{gap:7px}
+      .identity-access-heading .user-uid{overflow-wrap:anywhere}
+      .compact-table table{min-width:0}
+      .compact-table th,.compact-table td{padding:7px 5px;font-size:10px}
+      .compact-table th:nth-child(1),.compact-table td:nth-child(1){width:19%}
+      .compact-table th:nth-child(2),.compact-table td:nth-child(2){width:33%}
+      .compact-table th:nth-child(3),.compact-table td:nth-child(3){width:16%}
+      .compact-table th:nth-child(4),.compact-table td:nth-child(4){width:32%}
+    }
   `]
 })
 export class PlatformAdminComponent implements OnInit {
