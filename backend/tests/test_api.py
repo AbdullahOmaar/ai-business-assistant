@@ -537,6 +537,48 @@ def test_staff_cannot_void_invoice_without_writes_or_audit_events():
         engine.dispose()
 
 
+def test_owner_can_void_unpaid_issued_invoice_and_records_audit_event():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/void"
+    try:
+        with Session(engine) as session:
+            audit_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+
+        response = client.post(
+            base,
+            json={"reason": "owner-approved correction"},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "void"
+
+        with Session(engine) as session:
+            invoice = session.get(Invoice, invoice_id)
+            assert invoice is not None and invoice.status == "void"
+            audit_after = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            assert audit_after == audit_before + 1
+            void_events = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "invoice.voided",
+                )
+            ).all()
+            assert len(void_events) == 1
+            assert str(void_events[0].target_id) == str(invoice_id)
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_owner_can_approve_draft_purchase_order():
     engine, business_id, _, _ = _sales_return_fixture()
     with Session(engine) as session:
