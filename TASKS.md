@@ -2,6 +2,14 @@
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
+## Owner-positive CSV authorization regression — current candidate checkpoint (2026-10-29)
+
+- Branch: `test/security-csv-owner-positive-20261029`; PR #298 remains Draft.
+- Review found the OWNER-positive export/preview test had omitted `_configure_test_identity(engine)`, so it could exercise the fixture without the intended authenticated OWNER context. The test now configures and restores identity in `finally`.
+- The test now snapshots business-scoped Customer, Product, Expense, ImportJob, and AuditEvent counts and asserts that OWNER exports/previews leave all counts unchanged.
+- Exact-head CI must be rechecked after this fix. Local pytest/build: NOT RUN in this connector-only session. No production data, role policy, or deployment settings changed.
+- Issue #276 remains open; this is focused positive-path coverage, not completion of the route × role × tenant matrix.
+
 ## Current verified repository state
 
 - **Current main SHA:** `c644d8a0dd0540a68653dfa16844e2b51f51e230` — PR #294's non-member extended-workflow denial/no-side-effect tests are merged.
