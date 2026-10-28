@@ -102,17 +102,33 @@ jobs:
             cd frontend
             npm install --no-audit --no-fund
       - run:
-          name: Audit npm dependencies
-          command: |
-            set -o pipefail
-            cd frontend
-            npm audit --audit-level=high 2>&1 | tee /tmp/npm-audit.txt
-      - run:
           name: Run frontend tests and production build
           command: |
             set -euo pipefail
             cd frontend
             npm run build
+
+  frontend-dependency-audit:
+    docker:
+      - image: cimg/node:22.12
+    resource_class: small
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Verify Node runtime and install frontend dependencies
+          command: |
+            set -euo pipefail
+            node --version
+            npm --version
+            cd frontend
+            npm install --no-audit --no-fund
+      - run:
+          name: Audit npm dependencies
+          command: |
+            set -o pipefail
+            cd frontend
+            npm audit --audit-level=high 2>&1 | tee /tmp/npm-audit.txt
       - store_artifacts:
           path: /tmp/npm-audit.txt
           destination: npm-audit.txt
@@ -195,6 +211,7 @@ workflows:
     jobs:
       - backend-accounting
       - frontend-quality
+      - frontend-dependency-audit
       - frontend-browser-smoke
       - backend-container
 
