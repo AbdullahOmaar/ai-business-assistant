@@ -20,6 +20,17 @@ export interface InvoiceDetail extends Invoice {
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
+export interface EmployeeRecord {
+  id: string; business_id: string; employee_code: string | null; name: string; email: string | null;
+  phone: string | null; department: string | null; job_title: string | null; monthly_salary: string;
+  is_active: boolean; created_at: string | null; updated_at: string | null;
+}
+export interface EmployeePayrollRecord {
+  id: string; business_id: string; employee_id: string; employee_name: string; period: string;
+  base_salary: string; allowances: string; bonuses: string; deductions: string; net_pay: string;
+  status: 'draft' | 'approved' | 'paid'; expense_id: string | null; approved_by_subject: string | null;
+  approved_at: string | null; paid_by_subject: string | null; paid_at: string | null; created_at: string | null;
+}
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
 export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; approved_return_total: string; approved_return_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
 export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; revenue_basis: string; currencies: ProfitLossRow[]; limitations: string[]; }
@@ -430,6 +441,58 @@ export class ApiService {
 
   expenses(businessId: string): Promise<Expense[]> {
     return this.request<Expense[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/expenses?limit=100&offset=0`);
+  }
+  employees(businessId: string): Promise<EmployeeRecord[]> {
+    return this.request<EmployeeRecord[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees?limit=200&offset=0`
+    );
+  }
+  createEmployee(businessId: string, body: {
+    name: string; monthly_salary: string; employee_code?: string; email?: string;
+    phone?: string; department?: string; job_title?: string;
+  }): Promise<EmployeeRecord> {
+    return this.request<EmployeeRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees`, 'POST', body
+    );
+  }
+  updateEmployee(businessId: string, employeeId: string, body: {
+    name?: string; monthly_salary?: string; employee_code?: string | null; email?: string | null;
+    phone?: string | null; department?: string | null; job_title?: string | null; is_active?: boolean;
+  }): Promise<EmployeeRecord> {
+    return this.request<EmployeeRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}`, 'PATCH', body
+    );
+  }
+  payroll(businessId: string, period?: string): Promise<EmployeePayrollRecord[]> {
+    const params = new URLSearchParams({ limit: '200', offset: '0' });
+    if (period) params.set('period', period);
+    return this.request<EmployeePayrollRecord[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll?${params.toString()}`
+    );
+  }
+  createPayroll(businessId: string, employeeId: string, body: {
+    period: string; allowances?: string; bonuses?: string; deductions?: string;
+  }): Promise<EmployeePayrollRecord> {
+    return this.request<EmployeePayrollRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}/payroll`, 'POST', body
+    );
+  }
+  updatePayroll(businessId: string, payrollId: string, body: {
+    allowances?: string; bonuses?: string; deductions?: string;
+  }): Promise<EmployeePayrollRecord> {
+    return this.request<EmployeePayrollRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}`, 'PATCH', body
+    );
+  }
+  approvePayroll(businessId: string, payrollId: string): Promise<EmployeePayrollRecord> {
+    return this.request<EmployeePayrollRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/approve`, 'POST', {}
+    );
+  }
+  payPayroll(businessId: string, payrollId: string): Promise<EmployeePayrollRecord> {
+    return this.request<EmployeePayrollRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/pay`, 'POST', {}
+    );
   }
   createExpense(businessId: string, body: {
     category: string; description: string; amount: string; currency_code: string;
