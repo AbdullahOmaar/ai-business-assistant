@@ -2081,15 +2081,15 @@ export class AppComponent implements OnInit {
       required: 'حقل مطلوب', too_long: 'النص أطول من المسموح',
       invalid_decimal: 'سعر غير صالح (حتى منزلتين عشريتين)',
       invalid_boolean: 'قيمة متابعة المخزون غير صحيحة',
-      duplicate_in_file: 'كود منتج مكرر داخل الملف',
-      already_exists: 'كود المنتج موجود بالفعل'
+      duplicate_in_file: 'قيمة مكررة داخل الملف',
+      already_exists: 'البريد الإلكتروني أو الرمز موجود بالفعل'
     };
     const en: Record<string, string> = {
       required: 'Required field', too_long: 'Text exceeds the allowed length',
       invalid_decimal: 'Invalid price (up to 2 decimal places)',
       invalid_boolean: 'Invalid stock tracking value',
-      duplicate_in_file: 'Duplicate SKU in this file',
-      already_exists: 'SKU already exists'
+      duplicate_in_file: 'Duplicate email or SKU in this file',
+      already_exists: 'Email or SKU already exists'
     };
     return (this.language === 'ar' ? ar : en)[code] || code;
   }
