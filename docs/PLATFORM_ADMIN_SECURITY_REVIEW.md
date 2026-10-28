@@ -165,3 +165,12 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - Replaced those three wrappers with the already-typed UUID value. The test's `UUID(business_id)` conversion remains where the fixture yields the business ID as a string.
 - Disposable PostgreSQL 16 diagnostic run: before fix, assertions completed but teardown errored; after fix, **1 passed**. The sandbox uses a prior application snapshot, not an exact checkout of the PR SHA. This is targeted defect evidence only; exact-head CircleCI remains the merge gate.
 - Fix commit: `addc50f1a6e2dfd792b50b608bc52fec85c8010c`. Keep PR #238 Draft until all four CircleCI contexts pass on the final head and review/protection requirements are satisfied.
+
+
+## ADM-06 verification refresh — 2026-10-28 01:14 UTC
+
+- Candidate source SHA with completed CircleCI validation: `df9af849b9dea593c9091107573341af956e9f73`. All four CircleCI contexts passed on that SHA: backend-container (1241), backend-accounting (1242), frontend-quality (1243), frontend-browser-smoke (1244).
+- GitHub Actions on the same candidate SHA concluded failure for Backend tests (run 680), Verify backend container (run 818), Verify backend and frontend (run 1396), and Dependency security scan (run 1097). Job-step summaries are empty and log retrieval returns HTTP 404 `BlobNotFound`; causes remain UNVERIFIED. No Actions rerun was attempted because the current task ledger records the runner allowance as exhausted.
+- PR #238 is still open and Draft with no recorded reviews. Branch protection/review requirements remain unverified because the connected integration returned HTTP 403. No merge or deployment is authorized by this evidence.
+- Documentation update commit on the feature branch: `92c91427ad3f3cec17e290df886a91c101a6bb07` (TASKS.md). This docs-only commit creates a new PR head and therefore requires fresh exact-head status verification before any merge decision.
+- Local test execution, production authenticated Admin smoke, full WCAG 2.2 AA validation, and Web/API deployed SHA parity: NOT RUN / NOT VERIFIED. Production remains NO-GO.
