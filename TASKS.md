@@ -1258,3 +1258,49 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 
 ### Next action
 Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to finish, finish semantic branch review, and retry Web/API production deployment after the Vercel quota window. Delete only verified stale branches when an authorized deletion operation is available.
+
+
+## Vercel frontend release-metadata path fix — 2026-10-28
+
+- **Issue:** #245 — https://github.com/AbdullahOmaar/ai-business-assistant/issues/245
+- **Confirmed production failure:** Vercel Web deployment `dpl_2ZjjtcVeHNzrNaR3fY663CCFrKUJ` failed on source SHA `f04c0e194b3afbefb56a979a5688f80d277b3ece`. The frontend suite ran 41 tests, with 1 failure: `1.3.2 release metadata is consistent across frontend and backend` raised `ENOENT: no such file or directory, open '/vercel/frontend/package.json'`. Vercel's build events record `npm run build` exit 1; npm audit found 0 vulnerabilities.
+- **Change:** `frontend/src/app/release-guide.spec.ts` now resolves the frontend project root in both monorepo and frontend-only build layouts. Frontend package/build-info/service-worker/release history assertions always run; backend package/API version parity is additionally checked when a full-repository checkout is present, preserving the stronger CircleCI assertion.
+- **Code commit before ledger update:** `fc023ee13abc7cc7d10d33d264395d8e505b78df`. Branch: `fix/vercel-release-metadata-test-root-20261028`.
+- **Focused validation:** `node --experimental-strip-types --test src/app/release-guide.spec.ts` in the full-repository sandbox layout: **6 passed, 0 failed**. A separate frontend-only layout at `/tmp/aba-frontend-only` (no nested `frontend/` or `backend/` directory) passed **5 passed, 0 failed**; the backend parity test is correctly absent only in that deployment layout.
+- **Limits:** These are focused sandbox tests, not an exact-head CircleCI result or a completed Vercel production build. Full frontend `npm run build`, all four CircleCI jobs, aggregate check, and PR review remain **NOT RUN / PENDING** after the latest commit. No production deployment, alias change, database mutation, or paid-plan change performed.
+- **Next:** run full frontend test/build and exact-head CircleCI on the final PR head; open a focused PR only after those gates are green. Do not deploy production as part of this fix.
+
+
+### Vercel root-fix verification refresh — 2026-10-28
+
+- Current implementation candidate before this ledger-only commit: `fc023ee13abc7cc7d10d33d264395d8e505b78df`; task ledger was added in `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`.
+- Focused test execution was repeated in two distinct layouts: full repository, **6 passed / 0 failed**; frontend-only root with no nested `frontend/` or `backend/` folders, **5 passed / 0 failed**.
+- PR #246 is open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/246.
+- Exact PR head at last status read: `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`. CircleCI `frontend-quality` PASS (1464; includes frontend unit tests/build), `backend-container` PASS (1466), and `frontend-browser-smoke` PASS (1465). `backend-accounting` was PENDING (1467); re-check after this ledger-only commit.
+- This branch is based on main before PR #238 introduced the aggregate job, so its current CircleCI config does not define `all-checks-passed`. Keep this build fix independent; require all four existing jobs on its exact head, then re-check the aggregate after it exists on main rather than mixing unrelated CI configuration into this fix.
+- Vercel's production failure is confirmed by deployment events; a preview build for this branch was **NOT FOUND** in the latest deployment listing. Production deploy, alias promotion and data mutation remain NOT RUN. The next gate is exact-head CircleCI 4/4; open PR review remains required.
+
+
+### Exact-head CircleCI completion — 2026-10-28
+
+- Candidate SHA `b1ff0d68d22149b5fe5c013ba102e2ca149f882c`: all four CircleCI contexts passed:
+  - frontend-quality: PASS, run 1471
+  - frontend-browser-smoke: PASS, run 1468
+  - backend-container: PASS, run 1470
+  - backend-accounting: PASS, run 1469
+- Focused release-metadata spec passed **6/6** in the full-repository sandbox layout and **5/5** in an isolated frontend-only layout.
+- PR #246 remains Draft at this checkpoint; reviewers may inspect the change. The CircleCI aggregate is not included on this branch's current main base because it is defined in independent PR #238; do not copy unrelated CI configuration into this build fix.
+- Vercel preview deployment for this branch was **NOT FOUND** in the deployment listing, and a production deploy was **NOT RUN**. The historical main production Web build failure is confirmed by logs, but successful production behavior remains unverified until a suitable preview/release build passes.
+- This entry itself changes the candidate SHA. Re-run and verify the four CircleCI contexts on the resulting exact head before treating the candidate as merge-ready. No production data/configuration/aliases changed.
+
+
+## Release 1.3.3 — build-root fix and version alignment — 2026-10-28
+
+- Status: VERIFIED COMPLETE — merged and deployed.
+- Root cause fix: PR #246 merged as `2c7857c1663856b0e70475c3152b551e9693f814`; frontend release-metadata test now supports both the full monorepo and Vercel's frontend-only root.
+- Version release: PR #247 merged to main at `f4af64430aa74744693fb6541b27bdd8769c1730`; frontend package, backend package/API, build-info fallback, PWA service-worker cache fallback, bilingual release notes, and cross-file assertions aligned at `1.3.3`.
+- Exact pre-merge PR #247 CircleCI: frontend-quality PASS (1562), frontend-browser-smoke PASS (1563), backend-accounting PASS (1564), backend-container PASS (1561).
+- Exact post-merge main CircleCI on `f4af64430aa74744693fb6541b27bdd8769c1730`: frontend-quality PASS (1586), frontend-browser-smoke PASS (1587), backend-accounting PASS (1589), backend-container PASS (1588).
+- Production deployments: Web `dpl_5ydmoqwHBWBNdCLDCGAkFYx5yA9G` READY and API `dpl_DTyh1zESM8fC3fmTcjuVQPoY1SAW` READY, both source SHA `f4af64430aa74744693fb6541b27bdd8769c1730`.
+- Live smoke evidence: frontend alias HTTP 200 and Arabic app title; `/version` HTTP 200 returns version `1.3.3`, commit `f4af64430aa`, environment `production`; `/health` HTTP 200; `/readyz` HTTP 200 with `{"status":"ready"}`.
+- Limit: HTTP/CI smoke does not replace a manual authenticated end-to-end sign-in/workspace journey on a physical mobile device; that remains NOT RUN.
