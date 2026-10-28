@@ -156,3 +156,7 @@ def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
 
 def test_empty_stock_movements_produce_zero_balance() -> None:
     assert derive_stock_balance([]) == D("0.000")
+
+
+def test_report_totals_are_empty_when_no_amounts_are_provided() -> None:
+    assert summarize_money_by_currency([]) == {}
