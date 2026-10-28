@@ -227,6 +227,11 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         customer_id = customer.json()["id"]
         product_id = product.json()["id"]
         invoice_id = invoice.json()["id"]
+        issued_invoice = client.post(
+            f"/api/v1/businesses/{business_b_id}/invoices/{invoice_id}/issue",
+            json={},
+        )
+        assert issued_invoice.status_code == 200, issued_invoice.text
 
         audit_b_before = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
         assert audit_b_before.status_code == 200, audit_b_before.text
@@ -241,12 +246,37 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
             ("GET invoice", client.get(f"{base_a}/invoices/{invoice_id}")),
             ("PATCH customer", client.patch(f"{base_a}/customers/{customer_id}", json={"name": "Tampered customer"})),
             ("PATCH product", client.patch(f"{base_a}/products/{product_id}", json={"name": "Tampered product"})),
+            ("PATCH invoice", client.patch(
+                f"{base_a}/invoices/{invoice_id}",
+                json={
+                    "invoice_number": "INV-FOREIGN-TAMPER",
+                    "currency_code": "EGP",
+                    "customer_id": customer_id,
+                    "lines": [{"description": "Tampered line", "quantity": "1", "unit_price": "1.00"}],
+                },
+            )),
+            ("VOID invoice", client.post(
+                f"{base_a}/invoices/{invoice_id}/void",
+                json={"reason": "Cross-tenant void attempt"},
+            )),
             ("DELETE customer", client.delete(f"{base_a}/customers/{customer_id}")),
             ("DELETE product", client.delete(f"{base_a}/products/{product_id}")),
         ]
+        expected_statuses = {
+            "GET customer": 404,
+            "GET product": 404,
+            "GET invoice": 404,
+            "PATCH customer": 404,
+            "PATCH product": 404,
+            "PATCH invoice": 422,
+            "VOID invoice": 422,
+            "DELETE customer": 404,
+            "DELETE product": 404,
+        }
         for label, response in denied:
-            assert response.status_code == 404, (
-                f"{label} should be hidden as not found in tenant A; "
+            expected_status = expected_statuses[label]
+            assert response.status_code == expected_status, (
+                f"{label} expected HTTP {expected_status}; "
                 f"got {response.status_code}: {response.text}"
             )
 
@@ -266,7 +296,8 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         assert owner_product.json()["name"] == "Tenant B private product"
         unchanged_invoice = client.get(f"/api/v1/businesses/{business_b_id}/invoices/{invoice_id}")
         assert unchanged_invoice.status_code == 200
-        assert unchanged_invoice.json()["status"] == "draft"
+        assert unchanged_invoice.json()["status"] == "issued"
+        assert unchanged_invoice.json()["invoice_number"] == "INV-TENANT-B-READ-GUARD"
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
