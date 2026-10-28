@@ -31,3 +31,10 @@ The app page lists these release lines based on the repository's versioned relea
 - **1.0.0** — mobile multi-line invoice drafts and totals preview.
 
 Only the version embedded in the deployed build identifies what users have actually received. A version listed on a candidate branch is not proof that it has been deployed to production.
+
+
+## 1.3.4 — Release metadata alignment
+
+- Aligned the frontend package, lockfile root metadata, backend package, and FastAPI `/version` metadata at `1.3.4`.
+- Updated the local build-info fallback, service-worker cache fallback, bilingual in-app release history, and release consistency regression tests.
+- Production status: NOT DEPLOYED until exact-main CircleCI and release gates pass and the deployment SHA/version is verified.
