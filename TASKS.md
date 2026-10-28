@@ -1,30 +1,25 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after employee/payroll merge)
+# Current prioritized work queue — 2026-10-29 (live checkpoint after payroll refresh merge)
 
-> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
-
-## AI assistant source-grounding reliability — 2026-10-29
-
-- **Status: IN_PROGRESS** on branch `fix/ai-assistant-source-grounding-20261029`; intended delivery is one focused PR/merge after exact-head validation.
-- **Finding:** the no-provider-key fallback returned all recent invoice and expense source records for every answer intent, including count/general answers and expense-only or sales-only questions. This overstates evidence relevance even though the records are tenant-scoped.
-- **Acceptance:** source metadata must match the answer intent (sales → invoices; expenses → expenses; preliminary difference → both; counts/general → no invoice/expense citations); regression tests cover each case; backend CI passes on the final PR head; no provider key, production data, paid service, or deployment changes.
-- **Scope guard:** keep the assistant read-only; no AI-triggered financial mutations or cross-tenant data access.
+> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Do not infer repository-wide PR/branch totals from stale snapshots.
 
 ## Current verified repository state
 
-- **Main SHA:** `58c277571e15d3139fde31f17b431ca0d6438637` — employee/payroll PR #278 merged. CircleCI on this SHA: six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API status contexts SUCCESS. No manual deployment command was issued.
-- **Last paginated GitHub inventory snapshot:** 241 PR records — 126 merged, 112 closed-unmerged, and 3 open Drafts (#280, #281, #282), with 247 branches. This snapshot predates PR #282 merging and PR #283 opening/closing; refresh the paginated inventory before final closeout rather than extrapolating totals.
-- **Closed-unmerged semantic audit:** **112/112 dispositions documented** in the current ledger: the original 109 from PR #264, #261 (superseded by merged #267), #270 (superseded by #264), and #249 (closed without merge; documentation work transferred to current-main-based PR #282). No stale PR should be merged wholesale.
-- **PR #278 — Employees & Payroll:** **MERGED** at `125ad371b86d22f3200eddafa2d139cb019f6195`. Its exact merge-commit CircleCI status is **7/7 PASS**, including backend-accounting and aggregate. Employee directory, business-scoped payroll drafts/calculation, separate-owner approval, atomic one-time expense posting, bilingual UI, migrations, and regression tests are on main. Issue [#277](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) is closed. Local pytest/build: **NOT RUN** in this connector-only session; no separate production deployment was initiated by this work.
-- **PR #282 — repository reconciliation:** MERGED at main commit `58c277571e15d3139fde31f17b431ca0d6438637`; its documentation updates are now on main. PR #249 was closed without merge as stale/diverged; its useful reconciliation findings were recovered by #282.
-- **Security tracking issue #276:** **OPEN / IN PROGRESS**. PR #244's non-member CSV denial/no-side-effect tests and PR #267's cross-tenant lifecycle matrix are merged. PR #281 adds two regressions: non-members must receive 403 for employee/payroll list/create/update/approve/pay with no employee/payroll/expense/audit changes; cross-business payroll update/approve/pay and payroll creation with a foreign employee ID must return 404 with both businesses' state unchanged. Code/test head `dd0e9168f635e5aea9b4ef8551c269bd1f7d70ad` passed exact-head CircleCI **7/7**, including backend-accounting and aggregate. Duplicate GitHub Actions workflows were rerun and failed within seconds before executable steps; job steps are absent and log endpoints return 404, so root cause remains UNVERIFIED. This documentation update requires fresh exact-head checks. Broader route × role × tenant coverage and authenticated production smoke remain incomplete.
-- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no authorized branch-delete operation. Preserve remote branches; do not emulate deletion by moving refs.
-- **Production / release gates:** merge-commit status contexts show Vercel Web/API SUCCESS, but authenticated production workflows and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists. Do not claim production readiness.
+- **Main SHA:** `28dd3b418b53f7b9408695982b7378c4c99c7b27` — payroll post-payment refresh merged via PR #287. Pre-merge exact-head CircleCI passed all six substantive jobs plus aggregate **7/7 PASS**; GitGuardian Security Checks reported **SUCCESS**.
+- **PR #287 — payroll post-payment refresh:** **MERGED** at `28dd3b418b53f7b9408695982b7378c4c99c7b27`. The payroll component emits a success event only after the payment API succeeds; the parent refreshes workspace expenses and dashboard and ignores late responses/errors after a workspace switch. Regression coverage verifies event wiring, both refresh calls, and workspace guards. Changed files: `frontend/src/app/app.component.ts`, `frontend/src/app/employee-payroll.component.ts`, and `frontend/src/app/employee-payroll-ui.spec.ts`.
+- **Superseded payroll PRs:** #280, #285, and #286 are closed without merge. #285 hit merge conflicts after main advanced; #286 duplicated the payroll refresh with a stale task-ledger snapshot. PR #287 is the sole merged implementation. Remote branches were preserved; no branch deletion was performed.
+- **Post-merge verification:** exact merge-commit CI was still running at the last poll: frontend-unit-tests **SUCCESS**, frontend-production-build, frontend-dependency-audit, backend-container, backend-accounting, and frontend-browser-smoke **PENDING**. Vercel Web context **SUCCESS**; Vercel API context **PENDING**. Re-poll before declaring post-merge verification complete.
+- **GitHub Actions diagnostics:** duplicate workflows on the payroll PR failed with job step data absent and no logs available (404). This matches prior repository observations of jobs failing before acquiring a runner; root cause remains **UNVERIFIED**. CircleCI passed on the exact PR head. Local tests/build: **NOT RUN** in this connector-only session.
+- **PR #284 — AI source grounding:** merged at `71eeb68eb2c33955d0729c984ff5626c39f28d43`. No-provider fallback source metadata is now intent-relevant and regression-tested. Do not track this as an active task.
+- **PR #281 — employee/payroll isolation:** merged at `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d`. Non-member and cross-business employee/payroll tests assert denial and no-write/no-audit side effects.
+- **Security tracking issue #276:** **OPEN / IN PROGRESS** for remaining route × role × tenant denial/no-side-effect coverage (including suppliers, purchase orders/receiving, sales returns, recurring invoices, settings/pricing, notifications, CSV and invoice/payment/stock lifecycle edges). Authenticated production smoke remains **NOT RUN**; do not close the issue based on targeted tests alone.
+- **Branch cleanup:** **NOT RUN / BLOCKED** because the connected GitHub integration does not expose an authorized remote-branch delete operation. Preserve remote branches; do not emulate deletion by moving refs.
+- **Production / release:** no manual production deployment was initiated by the payroll refresh work. Authenticated production workflows and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target.
 
 ## Next actions
 
-1. Verify PR #281's synchronized exact-head CircleCI and GitHub checks; fix any real test failures without weakening security assertions.
-2. Continue issue #276's remaining route × role × tenant no-write/no-audit tests on the same dedicated security branch.
-3. Keep branch deletion separate and blocked until an authorized delete-capable route is available; do not deploy or change production settings without explicit authorization.
+1. Re-poll CircleCI and Vercel contexts for merge SHA `28dd3b418b53f7b9408695982b7378c4c99c7b27`; record the final outcomes without assuming pending checks passed.
+2. Continue issue #276's remaining route × role × tenant no-write/no-audit tests on one dedicated security branch, with deterministic isolated databases.
+3. Keep production deployment and branch deletion separate; do neither without explicit authorization and verified release/permission gates.
 
 ## Current evidence baseline
 
