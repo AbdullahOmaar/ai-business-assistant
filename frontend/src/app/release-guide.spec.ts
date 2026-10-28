@@ -81,25 +81,28 @@ test('v1.3.0 release notes cover invoice payments, opening stock, and the featur
 });
 
 
-test('1.3.3 frontend release metadata is consistent in the configured project root', () => {
+test('1.3.4 frontend release metadata is consistent in the configured project root', () => {
   assert.equal(frontendPackage.name, 'ai-business-assistant-frontend');
-  assert.equal(frontendPackage.version, '1.3.3');
+  assert.equal(frontendPackage.version, '1.3.4');
   assert.match(buildInfo, /(?:version:\s*'1\.3\.3'|"version":"1\.3\.3")/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.3-[^']+';/);
+  assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.4-[^']+';/);
   assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
-  assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /Vercel frontend-root/i);
-  const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.2');
-  assert.ok(previousRelease, 'v1.3.2 release notes are missing');
-  assert.match(previousRelease.changesEn.join(' '), /Platform Admin/i);
-  assert.match(previousRelease.changesEn.join(' '), /audit/i);
+  assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /version 1\.3\.4/i);
+  const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.3');
+  assert.ok(previousRelease, 'v1.3.3 release notes are missing');
+  assert.match(previousRelease.changesEn.join(' '), /Vercel frontend-root/i);
+  const olderRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.2');
+  assert.ok(olderRelease, 'v1.3.2 release notes are missing');
+  assert.match(olderRelease.changesEn.join(' '), /Platform Admin/i);
+  assert.match(olderRelease.changesEn.join(' '), /audit/i);
 });
 
 if (hasBackendPackage) {
-  test('1.3.3 release metadata is consistent across frontend and backend in a full repository checkout', () => {
+  test('1.3.4 release metadata is consistent across frontend and backend in a full repository checkout', () => {
     const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
     const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
 
-    assert.match(backendPackage, /^version = "1.3.3"$/m);
-    assert.match(backendApp, /version="1.3.3"/);
+    assert.match(backendPackage, /^version = "1.3.4"$/m);
+    assert.match(backendApp, /version="1.3.4"/);
   });
 }
