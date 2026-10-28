@@ -3,7 +3,7 @@
 > This section is the canonical current queue. Dated checkpoints below it are retained as history, not current truth. Prefer current GitHub refs, exact-head CircleCI, and current deployment metadata over older checkpoint claims.
 
 ## Research baseline
-- Latest candidate head after the audit-test commit: `fe18bdd33027b1499abbc514c319a39c31363966`; CircleCI backend-accounting/frontend-quality/browser-smoke were pending at last poll. A subsequent docs commit changed the head again, so only final exact-head statuses count.
+- Current implementation head `9750ac616eb3832bcfef31e877f91d94901bdb3a`: CircleCI has started four jobs; previous head `aa94b225a7e10e0abfd4a141ce62ac88d16a37a3` had backend-accounting fail and other three pass. Failure logs are unavailable, so root cause remains unverified; test baseline was corrected to occur after the allowed STAFF product-name edit.
 
 - Current `main` at last inspection: `f04c0e194b3afbefb56a979a5688f80d277b3ece`; CircleCI PASS 4/4 (backend-container 1303, frontend-quality 1301, backend-accounting 1304, frontend-browser-smoke 1302).
 - PR #238 `test(admin): verify concurrent last-owner membership mutations`: head `20a66c94a4e816026bef57ba8528db89c3e5d914`; CircleCI PASS 4/4 (1410–1413) plus aggregate `ci/circleci: verify-all-changes/all-checks-passed` PASS (workflow 39d6ac4d-4a47-47b8-acf4-33b29c317630). PR is now Ready for Review, not Draft; no review approvals recorded.
@@ -17,10 +17,10 @@
 
 | Order | ID / priority | Outcome and evidence | Acceptance gate | Status |
 |---:|---|---|---|---|
-| 1 | CI-007 / P0 — Issue #240 | CircleCI aggregate gate is implemented and passed on exact PR #238 head `8898248e9b3b3e839908dc3279d0ad7201e30405`, requiring all four existing jobs. Subsequent security-test/docs commits changed the head; fresh CircleCI is pending on `fe18bdd33027b1499abbc514c319a39c31363966` and will rerun again after docs. | Confirm exact-final-head required status `ci/circleci: verify-all-changes/all-checks-passed`; owner must confirm branch protection because settings API returns 403. | IN_PROGRESS |
+| 1 | CI-007 / P0 — Issue #240 | CircleCI aggregate gate passed on exact PR #238 head `8898248e9b3b3e839908dc3279d0ad7201e30405`; latest head `9750ac616eb3832bcfef31e877f91d94901bdb3a` is pending, following an earlier backend-accounting failure on the prior head. | Confirm exact-final-head required status `ci/circleci: verify-all-changes/all-checks-passed`; owner must confirm branch protection because settings API returns 403. | IN_PROGRESS |
 | 2 | ADM-06 / P0 — PR #238 | PostgreSQL concurrency regression covers simultaneous OWNER demotion/removal. Rejected request must return the actual 422 last-owner guard, not an unrelated 403; checks and aggregate passed on observed exact head. | Independent review/approval, current required-check configuration, and fresh exact-head CI after the latest ledger refresh; never merge around unknown protections. | IN_PROGRESS |
 | 3 | FIN-001 / P0 — PR #236 | PostgreSQL race test for return approval versus invoice void: only one transition wins; return-wins leaves invoice issued/stock 3, void-wins leaves return draft/stock 10; exact head passed 4/4 CircleCI. | After #238's CI gate is integrated, refresh this candidate against current main, rerun all required jobs and aggregate, review diff, obtain approval. | IN_PROGRESS |
-| 4 | SEC-001 / P0 — Issues #110 and #244 | Added business-scoped `AuditEvent` count baseline/assertion around the 16 denied STAFF requests in `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes`; documented evidence/limits in `docs/SECURITY_ROUTE_INVENTORY.md`. This is a regression candidate, not verified until exact-head backend CI passes. | Backend-accounting passes on the final head; continue reconciling route-to-test matrix for OWNER, STAFF/non-member, and foreign-tenant IDs. No permission-policy change. | IN_PROGRESS |
+| 4 | SEC-001 / P0 — Issues #110 and #244 | Added business-scoped `AuditEvent` count baseline/assertion around the 16 denied STAFF requests; moved the baseline after the allowed product-name edit to avoid counting that allowed operation. `docs/SECURITY_ROUTE_INVENTORY.md` records evidence/limits; exact-head backend verification is pending. | Backend-accounting passes on the final head; continue reconciling route-to-test matrix for OWNER, STAFF/non-member, and foreign-tenant IDs. No permission-policy change. | IN_PROGRESS |
 | 5 | FIN-ROUNDING / P1 — Issue #109 | Current main documents line-first rounding with explicit `ROUND_HALF_UP`; tests cover half-cent ties, fractional quantities, discount/tax, invoice create/edit persisted-line invariants. Backend-accounting passed on inspected main SHA. Historical invoice rows are never automatically rewritten. | Keep issue open until the broader queue reaches this step and reconcile issue state with current CI/test evidence; do not duplicate old PR #112, whose logic/tests are already present on main. | IN_PROGRESS |
 | 6 | BUILD-001 / P1 — Issue #241 | Current GitHub `frontend/` listing has no committed `package-lock.json`; CircleCI uses `npm install`. A stale sandbox snapshot produced a lockfile, `npm ci` installed 417 packages and `npm audit` found 0 vulnerabilities, but that lockfile is not in the repository. The same stale snapshot's build then failed TS2367 due an old 1.3.0-era app component; current main uses `APP_BUILD_INFO.version`, so that failure is not evidence against current main. | Add a generated, reviewed lockfile to a real repository branch, switch project installs to `npm ci`, and pass exact-head frontend unit tests/build/audit/Playwright. Do not copy stale source or fabricate lock data. | TODO |
 | 7 | OPS-001 / P1 — Issue #106 | Backup/restore target guards and non-destructive shell safety tests exist; no verified full isolated restore is evidenced. Prior provider note found no snapshot inventory/schedule, and paid resources are not authorized. | Confirm free isolated target/permissions; restore only to separate non-production DB; validate schema/integrity and document RPO/RTO. | BLOCKED |
@@ -1300,58 +1300,35 @@ Scope: ADM-01 through ADM-16; execution is in progress on `security/platform-adm
 Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to finish, finish semantic branch review, and retry Web/API production deployment after the Vercel quota window. Delete only verified stale branches when an authorized deletion operation is available.
 
 
-## Platform Admin — PostgreSQL last-owner concurrency regression — 2026-10-28
+## Vercel frontend release-metadata path fix — 2026-10-28
 
-- Task: ADM-06 follow-up; status **IN_PROGRESS** pending exact-head CI.
-- Evidence: current `main` at start of this work was `39ca1ae2d5463c0fa7ae61125613e97d8dd19178`. Existing membership endpoint tests use SQLite, which does not prove PostgreSQL row-lock behavior.
-- Change: added `backend/tests/test_membership_management_postgres_concurrency.py` on branch `feat/platform-admin-membership-concurrency-20261028`. It races owner demotion against owner removal using the disposable PostgreSQL service, then asserts exactly one mutation succeeds, one OWNER remains, and one matching audit event commits.
-- Safety: test skips unless `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and `TEST_DATABASE_URL` is PostgreSQL. It creates and cleans up a uniquely named test workspace only; no production DB or deployment was used.
-- Current `main` rechecked at `f04c0e194b3afbefb56a979a5688f80d277b3ece`. Reconciled its branch-policy changes into this branch via merge commit `abf1e924821002dacd2a0478c5d4cf13db2ddd22`; compare now reports 10 commits ahead and 0 behind.
-- Code review fixed UUID-typed SQLAlchemy filters/cleanup and avoided TestClient lifespan handling in worker threads. PR #238 remains Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/238.
-- CircleCI on prior candidate `bbdb64d6a6388a5296756f0ad5b375e4191f8c12`: all four contexts passed (runs 1197–1200). After mainline sync, the merge commit's CircleCI contexts were pending (runs 1217, 1218, 1220; backend-container must also be rechecked). The final head will change with this ledger update; check all four contexts on the exact latest head before merge.
-- Local execution: **NOT RUN** (no local checkout/runtime available in this session). GitHub Actions checks also report failures with annotations, but log download returned `404 BlobNotFound`; root cause is not yet verified.
-- Remaining ADM release gates: full keyboard/screen-reader/mobile WCAG 2.2 AA validation, authenticated production Admin smoke, Web/API deployed SHA parity, and explicit release authorization remain unverified/blocked. No production deployment performed.
-- Next: inspect final-head CircleCI, fix and rerun any failure, then update this record with the observed results before merge.
+- **Issue:** #245 — https://github.com/AbdullahOmaar/ai-business-assistant/issues/245
+- **Confirmed production failure:** Vercel Web deployment `dpl_2ZjjtcVeHNzrNaR3fY663CCFrKUJ` failed on source SHA `f04c0e194b3afbefb56a979a5688f80d277b3ece`. The frontend suite ran 41 tests, with 1 failure: `1.3.2 release metadata is consistent across frontend and backend` raised `ENOENT: no such file or directory, open '/vercel/frontend/package.json'`. Vercel's build events record `npm run build` exit 1; npm audit found 0 vulnerabilities.
+- **Change:** `frontend/src/app/release-guide.spec.ts` now resolves the frontend project root in both monorepo and frontend-only build layouts. Frontend package/build-info/service-worker/release history assertions always run; backend package/API version parity is additionally checked when a full-repository checkout is present, preserving the stronger CircleCI assertion.
+- **Code commit before ledger update:** `fc023ee13abc7cc7d10d33d264395d8e505b78df`. Branch: `fix/vercel-release-metadata-test-root-20261028`.
+- **Focused validation:** `node --experimental-strip-types --test src/app/release-guide.spec.ts` in the full-repository sandbox layout: **6 passed, 0 failed**. A separate frontend-only layout at `/tmp/aba-frontend-only` (no nested `frontend/` or `backend/` directory) passed **5 passed, 0 failed**; the backend parity test is correctly absent only in that deployment layout.
+- **Limits:** These are focused sandbox tests, not an exact-head CircleCI result or a completed Vercel production build. Full frontend `npm run build`, all four CircleCI jobs, aggregate check, and PR review remain **NOT RUN / PENDING** after the latest commit. No production deployment, alias change, database mutation, or paid-plan change performed.
+- **Next:** run full frontend test/build and exact-head CircleCI on the final PR head; open a focused PR only after those gates are green. Do not deploy production as part of this fix.
 
 
-### Latest ADM-06 CI blocker — 2026-10-28
+### Vercel root-fix verification refresh — 2026-10-28
 
-- On candidate `70933ee7d378e473b5798e3874af0c5fb98056ed`: CircleCI backend-container PASS (1225), frontend-quality PASS (1227), backend-accounting FAIL (1226), frontend-browser-smoke PENDING (1228). PR #238 remains Draft.
-- Exact failure root cause: **UNVERIFIED**. CircleCI detail page could not be accessed through the available web route; GitHub Actions job logs returned `404 BlobNotFound`, and the connected Desktop Commander device is offline. No speculative code patch or merge was made.
-- The documentation commit that records this blocker changes the PR head again. Re-check all four CircleCI contexts on the newest SHA; keep ADM-06 **BLOCKED** until the backend-accounting failure is diagnosed and all required checks pass.
-- Local tests, merge, production deployment, authenticated Admin smoke, and accessibility verification: **NOT RUN**.
-
-
-### ADM-06 PostgreSQL CI failure root cause and fix — 2026-10-28
-
-- Reproduced a teardown error in `backend/tests/test_membership_management_postgres_concurrency.py`: the fixture retains `business_id` as a SQLAlchemy UUID object, but cleanup called `UUID(business_id)`, raising `AttributeError: 'UUID' object has no attribute 'replace'` after the concurrency assertions.
-- Fixed the three cleanup predicates to use the already-typed UUID directly. Kept `UUID(business_id)` in the test body where the fixture intentionally yields a string.
-- Validation in the persistent isolated sandbox, using disposable PostgreSQL 16 and the PR test file: before fix, test body passed but teardown errored; after fix, **1 passed**. This sandbox application snapshot is not a clean checkout of the exact PR SHA, so it is diagnostic evidence, not exact-head release verification.
-- Fix commit: `addc50f1a6e2dfd792b50b608bc52fec85c8010c`. PR #238 CircleCI contexts were pending immediately after this commit; exact-head CI must finish before the blocker can be closed. GitHub Actions logs remain inaccessible and should not be treated as application failures without evidence.
-- PR remains Draft; no merge or production deployment.
+- Current implementation candidate before this ledger-only commit: `fc023ee13abc7cc7d10d33d264395d8e505b78df`; task ledger was added in `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`.
+- Focused test execution was repeated in two distinct layouts: full repository, **6 passed / 0 failed**; frontend-only root with no nested `frontend/` or `backend/` folders, **5 passed / 0 failed**.
+- PR #246 is open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/246.
+- Exact PR head at last status read: `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`. CircleCI `frontend-quality` PASS (1464; includes frontend unit tests/build), `backend-container` PASS (1466), and `frontend-browser-smoke` PASS (1465). `backend-accounting` was PENDING (1467); re-check after this ledger-only commit.
+- This branch is based on main before PR #238 introduced the aggregate job, so its current CircleCI config does not define `all-checks-passed`. Keep this build fix independent; require all four existing jobs on its exact head, then re-check the aggregate after it exists on main rather than mixing unrelated CI configuration into this fix.
+- Vercel's production failure is confirmed by deployment events; a preview build for this branch was **NOT FOUND** in the latest deployment listing. Production deploy, alias promotion and data mutation remain NOT RUN. The next gate is exact-head CircleCI 4/4; open PR review remains required.
 
 
-## ADM-06 exact-head verification refresh — 2026-10-28 01:14 UTC
+### Exact-head CircleCI completion — 2026-10-28
 
-- PR #238 head at the start of this refresh: `df9af849b9dea593c9091107573341af956e9f73`.
-- CircleCI on that exact head: backend-container PASS (1241), backend-accounting PASS (1242), frontend-quality PASS (1243), frontend-browser-smoke PASS (1244). The PostgreSQL UUID cleanup fix is therefore covered by all four CircleCI contexts on this candidate.
-- GitHub Actions still conclude failure on this head: Backend tests run 680 (`40610971892`), Verify backend container run 818 (`40610971845`), Verify backend and frontend run 1396 (`40610971859`), and Dependency security scan run 1097 (`40610971928`). The connector returns empty job step summaries and log downloads fail with HTTP 404 `BlobNotFound`; root causes remain UNVERIFIED. No Actions rerun was started because the recorded runner allowance is exhausted.
-- PR #238 remains OPEN + DRAFT; no review submissions are recorded. Branch protection/review rules remain UNVERIFIED due prior integration HTTP 403. Local exact-head tests, authenticated Admin production smoke, WCAG 2.2 AA validation, and deployment SHA parity remain NOT RUN / NOT VERIFIED.
-- Decision: do not merge or deploy. Continue only when GitHub Actions failure details and required review/protection gates are accessible. No production data/configuration/deployment changed.
-
-
-## ADM-06 CircleCI-first exact-head verification — 2026-10-28 01:19 UTC
-
-- Current reviewed source head before this ledger update: `efa94afff7c8e9c9642763e2c5f743e77bfab022`.
-- All four CircleCI contexts passed on that exact SHA: backend-container run 1256, backend-accounting run 1253, frontend-quality run 1254, frontend-browser-smoke run 1255. This verifies the concurrency regression within the functioning primary CI pipeline.
-- Inspected `.circleci/config.yml`: disposable PostgreSQL 16 backend suite, Alembic upgrade/current/check and offline SQL generation, Python dependency audit, frontend npm audit + production build (frontend build script runs npm tests), backup/restore shell safety tests, backend container build/import check, and Playwright Chromium E2E are covered.
-- GitHub Actions still shows four failed duplicate workflows on the same source SHA (Backend tests #682, Dependency security scan #1099, Verify backend and frontend #1398, Verify backend container #820). Job step summaries are empty and log downloads return HTTP 404 `BlobNotFound`; failure causes remain UNVERIFIED. Treat CircleCI as the tested CI path, but do not assume Actions checks can be ignored until an authorized owner confirms branch protection / required-check configuration. Protection API is inaccessible (403).
-- PR #238 remains OPEN + DRAFT; no review approvals recorded. No merge/deploy. Local exact-head tests, authenticated Admin production smoke, WCAG 2.2 AA, and Web/API deployed SHA parity remain NOT RUN / NOT VERIFIED.
-- This ledger-only commit changes the PR head; re-check all four CircleCI contexts on the new exact head before any merge decision.
-
-### ADM-06 concurrency assertion hardening — 2026-10-28
-
-- Review found the PostgreSQL last-owner race test accepted HTTP 403 as a losing outcome, which could let an authorization/setup failure masquerade as correct concurrency behavior.
-- Tightened the test to allow only the expected successful status plus HTTP 422, and assert the rejected operation's exact last-owner guard message. This proves the loser reached the business invariant rather than merely failing for another reason.
-- Current source behavior in `backend/app/core_features_api.py` returns HTTP 422 with `A workspace must retain at least one owner` for both demotion and removal when only one owner remains.
-- Candidate fix is on the existing PR #238 branch; exact-head CircleCI is required before treating this regression as verified. No production data or deployment changed.
+- Candidate SHA `b1ff0d68d22149b5fe5c013ba102e2ca149f882c`: all four CircleCI contexts passed:
+  - frontend-quality: PASS, run 1471
+  - frontend-browser-smoke: PASS, run 1468
+  - backend-container: PASS, run 1470
+  - backend-accounting: PASS, run 1469
+- Focused release-metadata spec passed **6/6** in the full-repository sandbox layout and **5/5** in an isolated frontend-only layout.
+- PR #246 remains Draft at this checkpoint; reviewers may inspect the change. The CircleCI aggregate is not included on this branch's current main base because it is defined in independent PR #238; do not copy unrelated CI configuration into this build fix.
+- Vercel preview deployment for this branch was **NOT FOUND** in the deployment listing, and a production deploy was **NOT RUN**. The historical main production Web build failure is confirmed by logs, but successful production behavior remains unverified until a suitable preview/release build passes.
+- This entry itself changes the candidate SHA. Re-run and verify the four CircleCI contexts on the resulting exact head before treating the candidate as merge-ready. No production data/configuration/aliases changed.
