@@ -59,9 +59,9 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
   assert.ok(chatEnd > chatStart && suggestionsStart > chatEnd,
     'suggestions must be a sibling of the chat panel, not inside it');
   assert.ok(workspaceEnd > suggestionsStart, 'suggestions must remain inside the assistant layout');
-  assert.match(source, /\.assistant-workspace\\{display:grid;grid-template-columns:minmax\\(0,1fr\\) 228px/);
-  assert.match(source, /\.suggestion-grid\\{display:grid;grid-template-columns:minmax\\(0,1fr\\)/);
-  assert.match(source, /@media\\(max-width:900px\\)\\{\.assistant-workspace\\{grid-template-columns:minmax\\(0,1fr\\)\\}/);
+  assert.ok(source.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
+  assert.ok(source.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
+  assert.ok(source.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
   assert.match(source, /class="quick-card ai-quick-card"/);
 });
 
