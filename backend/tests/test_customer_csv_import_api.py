@@ -454,10 +454,10 @@ def test_owner_can_export_and_preview_supported_csv_entities():
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     base = f"/api/v1/businesses/{business_id}"
-    customer_csv = "name,email\\nOwner CSV customer,owner-csv@example.com\\n"
+    customer_csv = "name,email\nOwner CSV customer,owner-csv@example.com\n"
     product_csv = (
-        "name,sku,description,unit,unit_price,is_stock_tracked\\n"
-        "Owner CSV product,OWNER-CSV-1,security test,unit,12.50,false\\n"
+        "name,sku,description,unit,unit_price,is_stock_tracked\n"
+        "Owner CSV product,OWNER-CSV-1,security test,unit,12.50,false\n"
     )
     headers = {"Content-Type": "text/csv"}
     tracked_models = (Customer, Product, Expense, ImportJob, AuditEvent)
