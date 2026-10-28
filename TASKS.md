@@ -41,20 +41,20 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - `09baba95ac929ff92acb2cb26cd04bdf93daf1bd` — align release metadata beside the current workspace.
 - `0ffdb206a35ef9a36ada34bfa9df117a696a600f` — regression assertion for centered workspace metadata.
 
-## Verification ledger — latest inspected implementation head
+## Verification ledger — UI/UX batch, 2026-10-28
 
-- Latest documented head before this ledger refresh: `565c592ded8bb6c6e6d3a4076d5311b751513f7a`; PR #243 is open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/243.
-- PR #243 reports 33 commits and 7 changed files; base SHA is `f04c0e194b3afbefb56a979a5688f80d277b3ece`. Do not rely on older ahead counts; recheck the branch comparison before merge.
-- Connector-side static regression assertions: **12/12 passed** after rechecking the current app/auth/API/test sources. These are source assertions only, not the project's actual test/build command.
-- On prior implementation head `0ffdb206a35ef9a36ada34bfa9df117a696a600f`, `frontend-quality` **FAILURE** while `frontend-browser-smoke`, `backend-accounting`, and `backend-container` **SUCCESS**. On the current PR head `565c592ded8bb6c6e6d3a4076d5311b751513f7a`, CircleCI reported `frontend-quality`, `frontend-browser-smoke`, `backend-accounting`, `backend-container`, and the new `frontend-dependency-audit` as **PENDING** at the latest status check.
-- The frontend-quality job first failed at commit `c8d02a81163840a2e266490266f06e1544ee9088` and remained failed on `0ffdb206a35ef9a36ada34bfa9df117a696a600f`. The failing step/log is inaccessible from this environment; no root cause is claimed. To isolate it safely, `.circleci/config.yml` now separates `frontend-dependency-audit` from `frontend-quality` so the next exact-head run independently reports npm audit versus test/build results. The split is committed as `3349eb6bfab39762bdfa4dbe5d2b89080c9877ec`; exact-head validation is pending.
-- GitHub Actions Dependency security scan also failed on `0ffdb206a35ef9a36ada34bfa9df117a696a600f`; both Python and JavaScript audit jobs failed. Log retrieval returns `404 BlobNotFound`, so cause remains unverified.
-- Actual local `npm test` / `npm run build`: **NOT RUN**. Visual/mobile accessibility checks: **NOT RUN**.
-- PR #243 exists and remains **Draft**. Merge/deployment: **NOT RUN**. Keep Draft until exact-head CircleCI checks pass and the full diff is reviewed.
-- Next action: obtain the failing CircleCI step/logs, fix the evidenced cause, rerun all checks on the exact final SHA, then create the PR and merge only after required gates pass.
+- PR #243 remains open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/243. No merge or deployment has occurred.
+- Latest code commit before this ledger refresh: `8652d404a765fa8a73d0f93c8bb7c6cba5f80fa1` on `fix/ui-ux-review-batch-2026-10-28`; it splits CircleCI frontend unit/source regression tests and the Angular production build into separate jobs. This is a diagnostic improvement, not proof that either check passes.
+- On previous exact head `a8b1bf0ac3ef4bc28a34c22cd24896bdbf4c7a01`, CircleCI reported frontend-quality **FAILURE** (run 1442), frontend-dependency-audit **SUCCESS** (1441), frontend-browser-smoke **SUCCESS** (1443), backend-accounting **SUCCESS** (1444), and backend-container **SUCCESS** (1445).
+- The CircleCI UI/log endpoint is inaccessible through the available integration, and GitHub Actions job-log retrieval returned HTTP 404 `BlobNotFound`. The failing step/root cause is **UNVERIFIED**. Do not claim a cause or bypass the failing gate.
+- Connector-side source assertion review passed **12/12**, but these are not the project's actual `npm test` or Angular production build. Actual local `npm test`, `npx ng build`, visual/mobile accessibility review: **NOT RUN** in this environment.
+- The branch's 22 UI/UX findings have implementation changes recorded above; several responsive/layout items still require visual verification. Therefore, 22/22 VERIFIED COMPLETE is **not established**.
+- Independent PR reviews: none recorded at latest inspection. Branch-protection/ruleset requirements cannot be verified through the connected integration (GitHub API 403); do not bypass unknown requirements.
+- After the CircleCI job split, the new exact-head statuses had not yet appeared at the latest poll. Wait for `frontend-unit-tests`, `frontend-production-build`, `frontend-dependency-audit`, `frontend-browser-smoke`, `backend-accounting`, and `backend-container` to report on the final SHA; diagnose and fix any failing job, then rerun all checks and review the complete diff.
+- Merge gate: keep Draft until every required check passes on the exact final head and the diff/review requirements are satisfied. No production deployment is authorized by this task.
 
 ---
-
+ 
 ## Platform Admin — five-task execution — 2026-10-27
 
 Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
