@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
+from app.assistant_api import _fallback_source_ids
 from app.models import Base
 from app.security import AuthenticatedPrincipal
 
@@ -209,3 +210,32 @@ def test_assistant_provider_timeout_returns_safe_error(monkeypatch, assistant_cl
     assert response.status_code == 504
     assert response.json()["detail"] == "The AI request timed out. Please try again."
     assert "private provider diagnostic" not in response.text
+
+
+def test_local_fallback_sources_match_the_answer_intent():
+    invoices = [
+        {"source_id": "invoice-1"},
+        {"source_id": "invoice-2"},
+    ]
+    expenses = [
+        {"source_id": "expense-1"},
+        {"source_id": "expense-2"},
+    ]
+
+    assert _fallback_source_ids("sales", invoices, expenses) == ["invoice-1", "invoice-2"]
+    assert _fallback_source_ids("expenses", invoices, expenses) == ["expense-1", "expense-2"]
+    assert _fallback_source_ids("profit", invoices, expenses) == [
+        "invoice-1", "invoice-2", "expense-1", "expense-2"
+    ]
+    assert _fallback_source_ids("count", invoices, expenses) == []
+    assert _fallback_source_ids("general", invoices, expenses) == []
+
+
+def test_local_fallback_sources_ignore_missing_or_duplicate_source_ids():
+    invoices = [
+        {"source_id": "invoice-1"},
+        {"source_id": "invoice-1"},
+        {"source_id": None},
+        {},
+    ]
+    assert _fallback_source_ids("sales", invoices, []) == ["invoice-1"]
