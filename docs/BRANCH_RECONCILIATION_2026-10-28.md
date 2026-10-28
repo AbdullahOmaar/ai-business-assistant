@@ -133,3 +133,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - PR inventory remains 226 records (114 merged, 109 closed-unmerged, 3 open); branch inventory remains 233 refs (232 non-main), verified by complete pagination.
 - No runtime code was changed or restored in this batch. Current main's CircleCI checks and v1.3.4 Web/API deployment evidence remain as recorded above.
 - Remaining work: continue patch-level review of the other 72 closed-unmerged PRs; identify any unique intended behavior missing from current main and only then decide whether a focused restoration is warranted.
+
+
+## Closed-unmerged PR audit — batch 5 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #149 `ae3e14c6fe06a833da55031edc9e8f0b8e8aa344` — schedule timezone and setting-key validation | The changes were consolidated in #161 (merge `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`). Current `extended_api.py` validates IANA timezone names and rejects normalized secret-like setting keys; API tests cover invalid timezone/setting inputs. | Superseded by #161; no restoration. |
+| #148 `4e26153973cf8b0ed26377049120e7e19871b04f` — CORS settings PUT preflight | CORS policy and regression are present on main: `CORS_ALLOWED_METHODS` includes PUT and the test executes an OPTIONS preflight against the settings route. | Superseded by #161; no restoration. |
+| #147 `cda4391a35fb5fe9b27bcd7aa0a22aee971eb40a` — prevent payment retries after refresh failure | Workspace/report invalidation and payment retry safety landed in #168 (merge `96cefa42b68a94ddc87b10563c3c26bd6784c394`); API idempotency replay regressions were further restored by #254 (merge `91c86932c3344fff395058724f5d44ae4ee06dbd`). | Superseded/present; no stale UI patch restored. |
+| #146 `48c04130c2a02cc76c6e309155ac7de5248dcd16` — stale reports on workspace switch | Same terminal #168; current `WorkspaceLoadGuard` invalidates stale responses, with tests for clearing workspace state and pending requests. | Superseded/present; no restoration. |
+| #144 `f17d3068d0812ff75f4487c7f62982b27eb0b931` — return value guard | Canonical #161 contains cumulative sales-return validation and discounted line reconciliation. Current domain/API/operations tests cover amount, quantity, and authorization invariants. | Superseded by #161; no restoration. |
+| #143 `ffb39e47fe5b4ca163f08cd62653a08dc356ec5e` — business timezone reporting | Canonical #161 contains business-local reporting bounds; `test_business_timezone_reporting.py` covers local-day and DST boundaries, and the UI no longer sends a client-derived UTC period. | Superseded by #161; no restoration. |
+| #140 `1c0151d30788bc3c85e4ef6661a3c924cf8c5098` — assistant suggestions/build timestamp | Reconciled by #141 (merge `dec7f26bd2bb33a4c27af4e785abe982e8486676`). Current UI includes assistant suggestions and generated build/deploy metadata; later version work now reports v1.3.4. | Superseded by #141; no restoration. |
+| #136 `1fa160240262eafaa55a3ea27f40c9292f69c528` — UI v1.0.0 badge | The one-field version bump is obsolete: current package/API metadata and release history are aligned at v1.3.4, and production Web/API are deployed on the same SHA. | Obsolete release candidate; do not roll back or restore an old version. |
+| #134 `01c7c4db4555c4144e2e4e9409618b044267ff32` — accounting/operations consolidation | The broad stale snapshot was split into current-main successors: #141 assistant/build timestamp, #192 invoice/stock/guide release, #197 tax summary, #203 data-integrity UI, and #215 operations UI. Current source includes audit events, customer statement, data integrity, invoice drafts, tax summary and supplier/purchasing/schedule/notification views with associated tests. | Superseded across terminal feature PRs; do not merge the stale component/API snapshot. |
+| #133 `2d59bbd2c44c4b59aca17945f09ff0ab0e6a3540` — currency-separated tax summary | Reapplied as #197, merged `ee15df2780aecc8869cdc7c54e499686733de988`. Current API, frontend service/screen and regression tests contain currency-separated tax totals and date filtering. | Superseded by #197; no restoration. |
+
+## Audit accounting — after batch 5
+
+- Closed-unmerged PRs semantically reviewed in the report: **47/109**; **62/109 remain**.
+- Inventory unchanged after complete pagination: 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- No runtime code was changed or restored in this batch. No remote branch was deleted, no PR was reopened, and no stale branch was merged wholesale.
