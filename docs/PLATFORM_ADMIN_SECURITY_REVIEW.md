@@ -140,3 +140,14 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - Rollback executed: **NOT RUN** (no incident/rollback authorization).
 - Last-known-good deployment identity and schema compatibility: **NOT VERIFIED**.
 - Production Admin authenticated smoke after rollback: **NOT RUN**.
+
+
+## PostgreSQL last-owner concurrency regression — 2026-10-28
+
+- ADM-06 follow-up status: **IN_PROGRESS**; exact final-head CI is pending.
+- Added `backend/tests/test_membership_management_postgres_concurrency.py` to exercise concurrent owner demotion and owner removal against the disposable PostgreSQL service used by CircleCI. Existing SQLite coverage is insufficient evidence for `SELECT ... FOR UPDATE` behavior.
+- The test asserts exactly one concurrent mutation succeeds, the workspace retains one OWNER, and exactly one matching audit event persists. It is gated on `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and a PostgreSQL `TEST_DATABASE_URL`; it does not create schema or access production.
+- Branch: `feat/platform-admin-membership-concurrency-20261028`; PR #238: https://github.com/AbdullahOmaar/ai-business-assistant/pull/238.
+- Local execution: **NOT RUN** (no local repository checkout/runtime available). CircleCI must be checked against the latest PR head after all documentation commits; no test result is claimed here.
+- No production deployment, identity configuration, or production data mutation was performed.
+- Production readiness remains **NO-GO / NOT VERIFIED** until PostgreSQL concurrency evidence passes, WCAG 2.2 AA keyboard/screen-reader/mobile checks are completed, authenticated Admin smoke is run with authorization, and Web/API deployed SHA parity is established.
