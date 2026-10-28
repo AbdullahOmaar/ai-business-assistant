@@ -150,7 +150,7 @@ def record_stock_movement(
     reason: str | None = None, reference_type: str | None = None,
     reference_id: UUID | None = None,
 ) -> StockMovement:
-    _membership(session, principal, business_id)
+    _membership(session, principal, business_id, owner_only=True)
     allowed = {"opening", "receipt", "sale", "return", "adjustment"}
     if movement_type not in allowed:
         raise WorkflowError("Unsupported stock movement type")
