@@ -189,12 +189,16 @@ def test_nonmember_cannot_access_or_mutate_employee_payroll_without_side_effects
                 session.scalar(select(func.count()).select_from(PayrollRecord)),
                 session.scalar(select(func.count()).select_from(Expense)),
                 session.scalar(select(func.count()).select_from(AuditEvent).where(
-                    AuditEvent.target_type == "employee"
+                    AuditEvent.business_id == UUID(env["business_id"])
                 )),
-                tuple(session.scalars(select(AuditEvent.action).where(
+                tuple(sorted(session.scalars(select(AuditEvent.action).where(
                     AuditEvent.target_type == "payroll"
-                ).order_by(AuditEvent.created_at, AuditEvent.action)).all()),
+                )).all())),
                 persisted.status,
+                persisted.allowances,
+                persisted.bonuses,
+                persisted.deductions,
+                persisted.net_pay,
                 persisted.expense_id,
             )
 
