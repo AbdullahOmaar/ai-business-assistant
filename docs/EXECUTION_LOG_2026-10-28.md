@@ -2,21 +2,21 @@
 
 ## Ordered task queue
 
-1. **SEC-FOREIGN-001 — Foreign-tenant invoice references** — CI VERIFIED on tested SHA `f5adb00c5f577ea1757bc01c5c09e293c3201fee`; docs-only refresh must be rechecked on its new SHA.
-   - Added `backend/tests/test_foreign_invoice_references.py`.
-   - Covers foreign-business customer and product IDs supplied to invoice creation, plus payment allocation to a foreign-business invoice and receiving a foreign-business purchase order.
+1. **SEC-FOREIGN-001 — Foreign-tenant sensitive workflows** — CI VERIFIED on tested SHA `0468c40659768d2be2d1f9984d1a59acaffe0dd8`; this documentation refresh requires another exact-head check.
+   - Added `backend/tests/test_foreign_invoice_references.py` and `backend/tests/test_foreign_business_workflows.py`.
+   - Covers foreign-business customer/product IDs during invoice creation, foreign invoice payment allocation, foreign purchase-order receiving, foreign invoice issue, foreign product stock movement, purchase-order creation with foreign supplier/product IDs, and foreign sales-return creation/approval.
    - Acceptance: each request returns HTTP 422, and business-scoped invoice, invoice-line, payment, payment-allocation, stock-movement, and audit-event counts remain unchanged; foreign purchase-order received quantity must remain unchanged.
    - First CI run exposed a real persistence-order defect: foreign payment allocation left a Payment row in the SQLite-backed test despite HTTP 422. `backend/app/services.py` now validates every allocation before inserting Payment.
-   - Verification on tested SHA `f5adb00c5f577ea1757bc01c5c09e293c3201fee`: CircleCI **7/7 PASS**; GitHub Actions backend test job **223 passed, 6 skipped, 13 warnings** in 10.50s; backend container, combined backend/frontend workflow, and dependency audit jobs passed. Existing deprecation warnings remain.
+   - Verification on tested SHA `0468c40659768d2be2d1f9984d1a59acaffe0dd8`: CircleCI **7/7 PASS**; GitHub Actions backend tests **224 passed, 6 skipped, 16 warnings** in 7.78s; backend container, combined backend/frontend workflow, and dependency audit jobs passed. Existing deprecation warnings remain.
    - Local tests: NOT RUN (no online authorized development machine is connected in this session).
 
-2. **SEC-ROUTE-002 — Complete role × route × tenant denial matrix** — NOT STARTED.
+2. **SEC-ROUTE-002 — Complete role × route × tenant denial matrix** — IN PROGRESS; sensitive foreign-ID coverage expanded in the PR, remaining route/role gaps still need inventory reconciliation.
    - Reconcile issue #244 with `docs/SECURITY_ROUTE_INVENTORY.md`.
    - Add only proven missing cases; preserve no-write/no-audit assertions.
 
-3. **CI-ACCOUNTING-001 — Diagnose PR #261 backend-accounting failure** — BLOCKED pending accessible exact job output.
+3. **CI-ACCOUNTING-001 — Diagnose PR #261 backend-accounting failure** — PARTIALLY DIAGNOSED; original exact logs remain inaccessible.
    - Existing task ledger records five substantive checks passing and `backend-accounting` failing on head `28d64c10aa067f83b86041eeb296eb76dcd764ec`.
-   - Need the exact CircleCI failure output; do not guess at root cause.
+   - The same foreign-invoice payment scenario was reproduced in the new regression and fixed by validating allocations before inserting Payment. PR #261's own exact-head rerun is still required; do not mark that old head verified.
 
 4. **ADM-E2E-001 — Platform Admin exact-head Browser Smoke** — PENDING.
    - Local Admin E2E and frontend checks were previously recorded as passing, but exact-head CI was pending.
@@ -38,9 +38,9 @@
 ## Change made in this execution
 
 - Branch: `test/security-foreign-customer-no-side-effects`
-- Latest implementation commit: `a3e5525269251a5895a185dbaf0617e4f485ff75`
-- Files: `backend/tests/test_foreign_invoice_references.py`, `backend/app/services.py`
-- Validation: source-level review only. Tests and build are NOT RUN locally; require CI evidence.
+- Tested implementation SHA: `0468c40659768d2be2d1f9984d1a59acaffe0dd8`
+- Files: `backend/tests/test_foreign_invoice_references.py`, `backend/tests/test_foreign_business_workflows.py`, `backend/app/services.py`
+- Validation: CircleCI 7/7 PASS and GitHub Actions backend suite 224 passed, 6 skipped, 16 warnings on tested SHA above. Local tests/build remain NOT RUN; current docs-only commit needs a fresh exact-head check.
 - Merge/deploy: NOT performed.
 
 
@@ -53,3 +53,4 @@
 10. **ADM-MEM-001 — Owner-managed membership feature** — NOT READY TO MERGE.
    - Branch `feat/admin-membership-mainline-20261028` is 97 commits behind `main` and only 1 commit ahead; it must be reconciled with current main before use.
    - Existing `feat/platform-admin-user-directory-and-roles` branch is 98 commits behind main with 0 commits ahead. Do not merge either stale branch wholesale.
+
