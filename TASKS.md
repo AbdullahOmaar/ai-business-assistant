@@ -1279,3 +1279,16 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - Exact PR head at last status read: `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`. CircleCI `frontend-quality` PASS (1464; includes frontend unit tests/build), `backend-container` PASS (1466), and `frontend-browser-smoke` PASS (1465). `backend-accounting` was PENDING (1467); re-check after this ledger-only commit.
 - This branch is based on main before PR #238 introduced the aggregate job, so its current CircleCI config does not define `all-checks-passed`. Keep this build fix independent; require all four existing jobs on its exact head, then re-check the aggregate after it exists on main rather than mixing unrelated CI configuration into this fix.
 - Vercel's production failure is confirmed by deployment events; a preview build for this branch was **NOT FOUND** in the latest deployment listing. Production deploy, alias promotion and data mutation remain NOT RUN. The next gate is exact-head CircleCI 4/4; open PR review remains required.
+
+
+### Exact-head CircleCI completion — 2026-10-28
+
+- Candidate SHA `b1ff0d68d22149b5fe5c013ba102e2ca149f882c`: all four CircleCI contexts passed:
+  - frontend-quality: PASS, run 1471
+  - frontend-browser-smoke: PASS, run 1468
+  - backend-container: PASS, run 1470
+  - backend-accounting: PASS, run 1469
+- Focused release-metadata spec passed **6/6** in the full-repository sandbox layout and **5/5** in an isolated frontend-only layout.
+- PR #246 remains Draft at this checkpoint; reviewers may inspect the change. The CircleCI aggregate is not included on this branch's current main base because it is defined in independent PR #238; do not copy unrelated CI configuration into this build fix.
+- Vercel preview deployment for this branch was **NOT FOUND** in the deployment listing, and a production deploy was **NOT RUN**. The historical main production Web build failure is confirmed by logs, but successful production behavior remains unverified until a suitable preview/release build passes.
+- This entry itself changes the candidate SHA. Re-run and verify the four CircleCI contexts on the resulting exact head before treating the candidate as merge-ready. No production data/configuration/aliases changed.
