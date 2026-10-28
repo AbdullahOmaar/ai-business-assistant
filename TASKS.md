@@ -2,6 +2,13 @@
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
+## AI assistant source-grounding reliability — 2026-10-29
+
+- **Status: IN_PROGRESS** on branch `fix/ai-assistant-source-grounding-20261029`; intended delivery is one focused PR/merge after exact-head validation.
+- **Finding:** the no-provider-key fallback returned all recent invoice and expense source records for every answer intent, including count/general answers and expense-only or sales-only questions. This overstates evidence relevance even though the records are tenant-scoped.
+- **Acceptance:** source metadata must match the answer intent (sales → invoices; expenses → expenses; preliminary difference → both; counts/general → no invoice/expense citations); regression tests cover each case; backend CI passes on the final PR head; no provider key, production data, paid service, or deployment changes.
+- **Scope guard:** keep the assistant read-only; no AI-triggered financial mutations or cross-tenant data access.
+
 ## Current verified repository state
 
 - **Main SHA:** `125ad371b86d22f3200eddafa2d139cb019f6195` — employee/payroll PR #278 merged. CircleCI on this SHA: six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API status contexts SUCCESS. No manual deployment command was issued.
