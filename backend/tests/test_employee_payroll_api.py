@@ -180,7 +180,26 @@ def test_nonmember_cannot_access_or_mutate_employee_payroll_without_side_effects
         ("post", f"{base}/payroll/{payroll_id}/approve", {}),
         ("post", f"{base}/payroll/{payroll_id}/pay", {}),
     ]
+    def snapshot():
+        with app.state.session_factory() as session:
+            persisted = session.get(PayrollRecord, UUID(payroll_id))
+            assert persisted is not None
+            return (
+                session.scalar(select(func.count()).select_from(Employee)),
+                session.scalar(select(func.count()).select_from(PayrollRecord)),
+                session.scalar(select(func.count()).select_from(Expense)),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.target_type == "employee"
+                )),
+                tuple(session.scalars(select(AuditEvent.action).where(
+                    AuditEvent.target_type == "payroll"
+                ).order_by(AuditEvent.created_at, AuditEvent.action)).all()),
+                persisted.status,
+                persisted.expense_id,
+            )
+
     for method, url, body in endpoints:
+        before = snapshot()
         response = (
             getattr(env["client"], method)(url, json=body)
             if body is not None
@@ -189,6 +208,10 @@ def test_nonmember_cannot_access_or_mutate_employee_payroll_without_side_effects
         assert response.status_code == 403, (
             f"{method.upper()} {url}: expected 403 for non-member, "
             f"got {response.status_code}: {response.text}"
+        )
+        assert snapshot() == before, (
+            f"{method.upper()} {url}: denied non-member request changed payroll, "
+            "employee, expense, or audit state"
         )
 
     with app.state.session_factory() as session:
