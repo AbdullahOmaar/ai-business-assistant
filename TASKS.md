@@ -45,10 +45,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Implementation head: `0ffdb206a35ef9a36ada34bfa9df117a696a600f`.
 - Branch comparison: 29 commits ahead of `main`, 0 behind; merge base remains `f04c0e194b3afbefb56a979a5688f80d277b3ece`.
-- Connector-side static regression assertions: **11/11 passed**. This is not the project's actual test/build command.
-- CircleCI on that implementation head: `frontend-quality` **FAILURE** (build 1409); `frontend-browser-smoke`, `backend-accounting`, and `backend-container` were **PENDING** at the last status read.
-- The frontend-quality job first failed at commit `c8d02a81163840a2e266490266f06e1544ee9088`. The failing step/log is inaccessible from this environment; no root cause is claimed. The job runs `npm install`, `npm audit --audit-level=high`, then `npm run build`, so identify the failed step before changing code/dependencies blindly.
-- Existing GitHub Actions Dependency security scan also fails on this branch. Both audit jobs report failure; log retrieval returns `404 BlobNotFound`, so cause remains unverified.
+- Connector-side static regression assertions: **12/12 passed** after rechecking the current app/auth/API/test sources. These are source assertions only, not the project's actual test/build command.
+- CircleCI on implementation head `0ffdb206a35ef9a36ada34bfa9df117a696a600f`: `frontend-quality` **FAILURE** (build 1409); `frontend-browser-smoke`, `backend-accounting`, and `backend-container` all **SUCCESS** (builds 1408, 1406, 1407 respectively).
+- The frontend-quality job first failed at commit `c8d02a81163840a2e266490266f06e1544ee9088` and remained failed on `0ffdb206a35ef9a36ada34bfa9df117a696a600f`. The failing step/log is inaccessible from this environment; no root cause is claimed. The job runs `npm install`, `npm audit --audit-level=high`, then `npm run build`, so identify the failed step before changing code/dependencies blindly.
+- GitHub Actions Dependency security scan also failed on `0ffdb206a35ef9a36ada34bfa9df117a696a600f`; both Python and JavaScript audit jobs failed. Log retrieval returns `404 BlobNotFound`, so cause remains unverified.
 - Actual local `npm test` / `npm run build`: **NOT RUN**. Visual/mobile accessibility checks: **NOT RUN**.
 - PR/merge/deployment: **NOT RUN**. No PR for this branch was found. Do not merge while `frontend-quality` is failing or checks are pending.
 - Next action: obtain the failing CircleCI step/logs, fix the evidenced cause, rerun all checks on the exact final SHA, then create the PR and merge only after required gates pass.
