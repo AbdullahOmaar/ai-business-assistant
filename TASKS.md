@@ -1269,3 +1269,13 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - **Focused validation:** `node --experimental-strip-types --test src/app/release-guide.spec.ts` in the full-repository sandbox layout: **6 passed, 0 failed**. A separate frontend-only layout at `/tmp/aba-frontend-only` (no nested `frontend/` or `backend/` directory) passed **5 passed, 0 failed**; the backend parity test is correctly absent only in that deployment layout.
 - **Limits:** These are focused sandbox tests, not an exact-head CircleCI result or a completed Vercel production build. Full frontend `npm run build`, all four CircleCI jobs, aggregate check, and PR review remain **NOT RUN / PENDING** after the latest commit. No production deployment, alias change, database mutation, or paid-plan change performed.
 - **Next:** run full frontend test/build and exact-head CircleCI on the final PR head; open a focused PR only after those gates are green. Do not deploy production as part of this fix.
+
+
+### Vercel root-fix verification refresh — 2026-10-28
+
+- Current implementation candidate before this ledger-only commit: `fc023ee13abc7cc7d10d33d264395d8e505b78df`; task ledger was added in `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`.
+- Focused test execution was repeated in two distinct layouts: full repository, **6 passed / 0 failed**; frontend-only root with no nested `frontend/` or `backend/` folders, **5 passed / 0 failed**.
+- PR #246 is open as Draft: https://github.com/AbdullahOmaar/ai-business-assistant/pull/246.
+- Exact PR head at last status read: `6f6b37ed772c7777de6c9aecab4c1fce6e1fa17a`. CircleCI `frontend-quality` PASS (1464; includes frontend unit tests/build), `backend-container` PASS (1466), and `frontend-browser-smoke` PASS (1465). `backend-accounting` was PENDING (1467); re-check after this ledger-only commit.
+- This branch is based on main before PR #238 introduced the aggregate job, so its current CircleCI config does not define `all-checks-passed`. Keep this build fix independent; require all four existing jobs on its exact head, then re-check the aggregate after it exists on main rather than mixing unrelated CI configuration into this fix.
+- Vercel's production failure is confirmed by deployment events; a preview build for this branch was **NOT FOUND** in the latest deployment listing. Production deploy, alias promotion and data mutation remain NOT RUN. The next gate is exact-head CircleCI 4/4; open PR review remains required.
