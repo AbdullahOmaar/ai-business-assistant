@@ -750,3 +750,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Remaining closed-unmerged PRs requiring semantic review: **19/109**.
 - Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 11 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #134 — accounting/operations readiness consolidation | Current main includes the audit log, customer statement, data-integrity report, invoice draft editor, suppliers/purchasing, expenses, schedules and tax summary modules through later merged feature PRs. | Superseded by later consolidated merges; no stale-stack merge. |
+| #119 — owner-only mobile audit log UI | Current owner-only `/audit-events` API and activity feed are present in `extended_api.py`, API client and app component; the current security route inventory tracks remaining request-ID correlation gap. | Superseded by #127/#113 successor work; no restore. |
+| #117 — keep app version visible on mobile | Current version/build metadata is shown in the workspace header card; merged #265 fixes the header layout and release-guide tests cover version metadata. | Superseded by later version/header merges; no restore. |
+| #71 — workspace-scoped audit event feed | Current `/audit-events` route authorizes workspace membership and returns safe metadata; the owner-only UI and filters are present. | Superseded by #113/#127; no restore. Request-ID correlation remains a separate gap. |
+| #50 — assistant authorization/input guardrails | Superseded by test-only #51; current `assistant_api.py` enforces authenticated workspace access, bounded input/history and safe provider error handling, with current assistant resilience/security tests. | Superseded by #51 and later resilience/security work; no restore. |
+| #22 — early Angular dashboard shell | The current frontend is the live authenticated, API-backed app; #22's own description says it was superseded by #23 to avoid reverting backend changes. | Obsolete scaffold duplicate; no restore. |
+| #21 — early Angular dashboard shell | Superseded by #22/#23; current frontend already contains the mature application rather than the sample-data shell. | Obsolete scaffold duplicate; no restore. |
+| #20 — early Angular dashboard shell | Superseded by #21/#22/#23; no distinct runtime behavior remains necessary. | Obsolete scaffold duplicate; no restore. |
+| #19 — tenant-scoped workflows and safe CSV tools | Current main includes bounded CSV import parsing/preview, formula-safe CSV exports, customer/product search, audited deactivation, shared money rounding and payment idempotency checks. | Superseded by current API/security/export merges; no restore. Full workflow E2E remains separate. |
+
+## Audit accounting — after priority batch 11
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–11: **99/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **10/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
