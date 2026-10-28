@@ -205,3 +205,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Closed-unmerged PRs semantically reviewed in the report: **67/109**; **42/109 remain**.
 - Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
 - No runtime code was changed or restored in this batch; no branch was deleted or stale PR reopened.
+
+
+## Closed-unmerged PR audit — batch 8 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #103 `8428b37228cdfeed794f10ae4a4c224d9e55ce44` — deployed UI/API versions and build gates | Consolidated release #105 merged as `0754a5c2887726f7c6b03f3fdba83f6b104e6272`; current generated build metadata, mobile version visibility, API version endpoint and v1.3.4 deployment parity supersede the old release branch. | Superseded by #105 and later release commits; no restoration. |
+| #101 `2963c33dc4eacc97510af65c0ba9c375f94db378` — safe CSV import preview | Current API exposes `/imports/products.csv/preview`; the UI has a separate preview step before explicit import confirmation, and current source describes preview as read-only until confirmation. | Behavior present on main; no duplicate import endpoint restored. |
+| #98 `2af650873f9a7a685aef958a119ed6f51ebd8edb` — multi-line mobile invoice drafts | Current draft editor, multi-line rows, discount/tax preview and server-side recalculation were integrated in #192 (merge `889d23304e8bcf79175567bbf01c925ee447aa06`). | Superseded by #192; no restoration. |
+| #76 `8d0b68de7b5054fb6a32f61114ca95b6d78d910d` — local assistant fallback | Same head SHA as merged PR #77; current `assistant_api.py` contains a clearly labeled deterministic local fallback and tests cover authorized workspace scoping. | Duplicate head of merged #77; no restoration. |
+| #74 `0f04e911d9131e2d684212af41ea0d2fbed7fae9` — customer statement timeline | Current currency-separated statement API/UI was integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`) and refined later. Tests cover pagination, tenant scope and mobile scroll/wrapping. | Superseded/present; no duplicate endpoint. |
+| #73 `cf7e0962832e3f0b3a9764a3cbf4b7e6063144ab` — owner-managed workspace memberships | Reapplied by #207, commit `f26fb42917ec`. Current `core_features_api.py` implements owner-only membership role changes/removal, and `test_membership_management_api.py` plus PostgreSQL concurrency tests cover last-owner protections. | Superseded by #207 and subsequent authorization hardening; no restoration. |
+| #72 `180c96a5cadfd94b9b0b067cb1e03f3e709372bc` — customer search by name/email/phone | Current customer query searches name, email and phone while retaining business/active filtering; regression `test_customer_search_matches_name_email_and_phone` is present. | Present through the merged customer-search successor; no restoration. |
+| #71 `b114c88d97a0fdd2584a16c563a9baa35e3ee014` — owner audit event feed | Current audit API/UI was integrated by #125 (merge `af4ba084cedcec7339498579ef5563ce7748bf7c`); tenant tests assert owner-only access, pagination and workspace isolation. | Superseded by #125; no restoration. |
+| #70 `2391ec15c482e92c7edd2c8e80f882ab23e5b5af` — scheduled dependency scans | Current `.circleci/config.yml` contains the scheduled dependency-audit workflow plus Python and frontend dependency audit jobs; current-main CircleCI dependency audit passes. | Present through CircleCI; no additional workflow needed. |
+| #58 `29740b4aca0ddde18d478fdfd2833f76e049c004` — stale workspace data isolation | Current `clearWorkspaceData()` clears prior workspace records and invalidates pending report requests through `WorkspaceLoadGuard`; guard regression tests reject stale responses after workspace changes/clear. | Present in current main; no restoration. |
+
+## Audit accounting — after batch 8
+
+- Closed-unmerged PRs semantically reviewed in the report: **77/109**; **32/109 remain**.
+- Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open), with complete pagination.
+- No runtime code was changed or restored in this batch; no remote branch was deleted or stale PR reopened.
