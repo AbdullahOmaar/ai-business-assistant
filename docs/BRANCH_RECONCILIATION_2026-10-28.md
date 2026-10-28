@@ -864,3 +864,13 @@ The current inventory now has a disposition for all 11 orphan branches and all 1
 - #269 (safe PostgreSQL restore runbook) merged as `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after exact-head CircleCI 7/7 PASS. The runbook is documentation only; the actual restore drill remains NOT RUN.
 - #270 is an older partial audit snapshot (20/109 at creation); it has been explicitly marked superseded by #264 and remains Draft/open to preserve history. Do not merge it.
 - Current main moved to `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f`; post-merge CircleCI is pending at this inventory refresh. The prior main SHA `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` had CircleCI 7/7 and Vercel Web/API success contexts.
+
+
+## Latest live inventory refresh — after security/payment fix #267 merged
+
+- Branch pages: 100 + 100 + 37 = **237 branches**.
+- PR pages: 100 + 100 + 30 = **230 PR records**: **118 merged**, **109 closed-unmerged**, **3 open** (#270, #264, #261).
+- Main SHA is now `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`, the merge commit for #267.
+- #267 exact head `048899521cb8a87f7312b16dce1460e575b36252` passed CircleCI **7/7** and GitHub build/test/dependency checks before merge. It validates all invoice allocations before inserting a Payment, preventing rejected cross-business/wrong-customer/currency/over-allocation requests from leaving orphan Payment rows; its foreign-tenant tests assert no protected-record or audit side effects.
+- Post-merge CircleCI/Vercel checks on main and latest exact-head checks on #264 were **PENDING** at this refresh; recheck before any further merge/deployment claims.
+- Current orphan/mismatch counts remain **11 / 10**, with **0 PR heads missing a branch**. No branch deleted, no closed PR reopened, no stale branch merged wholesale.
