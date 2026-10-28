@@ -142,7 +142,7 @@ The counts above are the historical baseline. Refreshed GitHub metadata after PR
 | #235 | docs(tasks): record final consolidation evidence and release blockers | `docs/final-consolidation-checkpoint-20261028` | MERGED |
 | #237 | docs: enforce one active branch per contributor | `docs/one-branch-workflow-policy` | MERGED |
 | #246 | fix(build): resolve release metadata test paths for Vercel frontend root | `fix/vercel-release-metadata-test-root-20261028` | MERGED · main SHA `2c7857c1663856b0e70475c3152b551e9693f814` · CircleCI 4/4 PASS + Vercel Preview PASS |
-| #247 | chore(release): align frontend and API version 1.3.3 | `chore/release-1.3.3-20261028` | MERGED · main SHA `f4af64430aa74744693fb6541b27bdd8769c1730` · CircleCI 4/4 PASS; production deployment pending verification |
+| #247 | chore(release): align frontend and API version 1.3.3 | `chore/release-1.3.3-20261028` | MERGED · main SHA `f4af64430aa74744693fb6541b27bdd8769c1730` · CircleCI 4/4 PASS · Web/API production READY · /version 1.3.3 · /health and /readyz HTTP 200 |
 
 ## Closed pull requests that were not merged
 
