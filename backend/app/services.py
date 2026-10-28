@@ -571,6 +571,33 @@ def record_payment(
             requested_map=requested_map,
         )
 
+    # Validate every allocation before persisting the payment. This keeps rejected
+    # cross-business, wrong-customer, currency, and over-allocation requests from
+    # leaving a payment row behind, including on SQLite test connections.
+    validated_allocations = []
+    allocated_total = ZERO
+    for invoice_id, allocation_amount in requested:
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == invoice_id, Invoice.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Payment can only be allocated to an issued invoice in this business")
+        if invoice.currency_code != currency:
+            raise WorkflowError("Payment and invoice currencies must match")
+        if invoice.customer_id != customer_id:
+            raise WorkflowError("Payment customer must match the allocated invoice customer")
+        already_allocated = session.scalar(select(func.coalesce(
+            func.sum(PaymentAllocation.amount), 0
+        )).where(PaymentAllocation.invoice_id == invoice.id,
+                 PaymentAllocation.business_id == business_id))
+        validate_payment_allocation(
+            payment_amount=amount, already_allocated=allocated_total,
+            requested_allocation=allocation_amount,
+            invoice_outstanding=max(ZERO, invoice.total - Decimal(str(already_allocated or 0))),
+        )
+        allocated_total += allocation_amount
+        validated_allocations.append((invoice.id, allocation_amount))
+
     payment = Payment(
         business_id=business_id, customer_id=customer_id, amount=amount,
         currency_code=currency, idempotency_key=idempotency_key.strip(),
@@ -601,30 +628,10 @@ def record_payment(
             reference=reference,
             requested_map=requested_map,
         )
-    allocated_total = ZERO
-    for invoice_id, allocation_amount in requested:
-        invoice = session.scalars(select(Invoice).where(
-            Invoice.id == invoice_id, Invoice.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if invoice is None or invoice.status != "issued":
-            raise WorkflowError("Payment can only be allocated to an issued invoice in this business")
-        if invoice.currency_code != currency:
-            raise WorkflowError("Payment and invoice currencies must match")
-        if invoice.customer_id != customer_id:
-            raise WorkflowError("Payment customer must match the allocated invoice customer")
-        already_allocated = session.scalar(select(func.coalesce(
-            func.sum(PaymentAllocation.amount), 0
-        )).where(PaymentAllocation.invoice_id == invoice.id,
-                 PaymentAllocation.business_id == business_id))
-        validate_payment_allocation(
-            payment_amount=amount, already_allocated=allocated_total,
-            requested_allocation=allocation_amount,
-            invoice_outstanding=max(ZERO, invoice.total - Decimal(str(already_allocated or 0))),
-        )
-        allocated_total += allocation_amount
+    for invoice_id, allocation_amount in validated_allocations:
         session.add(PaymentAllocation(
             business_id=business_id, payment_id=payment.id,
-            invoice_id=invoice.id, amount=allocation_amount,
+            invoice_id=invoice_id, amount=allocation_amount,
         ))
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
