@@ -1,30 +1,24 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after employee/payroll merge)
+# Current prioritized work queue — 2026-10-29 (live checkpoint after PR #281 merge)
 
-> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
-
-## AI assistant source-grounding reliability — 2026-10-29
-
-- **Status: IN_PROGRESS** on branch `fix/ai-assistant-source-grounding-20261029`; intended delivery is one focused PR/merge after exact-head validation.
-- **Finding:** the no-provider-key fallback returned all recent invoice and expense source records for every answer intent, including count/general answers and expense-only or sales-only questions. This overstates evidence relevance even though the records are tenant-scoped.
-- **Acceptance:** source metadata must match the answer intent (sales → invoices; expenses → expenses; preliminary difference → both; counts/general → no invoice/expense citations); regression tests cover each case; backend CI passes on the final PR head; no provider key, production data, paid service, or deployment changes.
-- **Scope guard:** keep the assistant read-only; no AI-triggered financial mutations or cross-tenant data access.
+> This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals have not been freshly paginated in this checkpoint; do not infer totals from prior snapshots.
 
 ## Current verified repository state
 
-- **Main SHA:** `125ad371b86d22f3200eddafa2d139cb019f6195` — employee/payroll PR #278 merged. CircleCI on this SHA: six substantive jobs + aggregate **7/7 PASS**; Vercel Web/API status contexts SUCCESS. No manual deployment command was issued.
-- **Latest paginated GitHub inventory after closing stale PR #249 and opening PR #282:** **241 PR records** — **126 merged**, **112 closed-unmerged**, **3 open Draft PRs (#280, #281, #282)**; **247 unique remote branches**. Exact pages: PRs 100 + 100 + 41; branches 100 + 100 + 47. This is a point-in-time snapshot; refresh before final closeout.
-- **Closed-unmerged semantic audit:** **112/112 dispositions documented** in the current ledger: the original 109 from PR #264, #261 (superseded by merged #267), #270 (superseded by #264), and #249 (closed without merge; documentation work transferred to current-main-based PR #282). No stale PR should be merged wholesale.
-- **PR #278 — Employees & Payroll:** **MERGED** at `125ad371b86d22f3200eddafa2d139cb019f6195`. Its exact merge-commit CircleCI status is **7/7 PASS**, including backend-accounting and aggregate. Employee directory, business-scoped payroll drafts/calculation, separate-owner approval, atomic one-time expense posting, bilingual UI, migrations, and regression tests are on main. Issue [#277](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277) is closed. Local pytest/build: **NOT RUN** in this connector-only session; no separate production deployment was initiated by this work.
-- **PR #282 — repository reconciliation:** OPEN / Draft, branch `docs/reconciliation-current-main-20261028`, based on current main SHA `125ad371b86d22f3200eddafa2d139cb019f6195`. Exact-head CI on head `8445df6f67283e8d9bc42aad033b3a978b29d534` passed CircleCI 7/7 and GitGuardian SUCCESS; this documentation refresh creates a new head, so keep Draft until fresh exact-head checks pass. Stale PR #249 is closed without merge and its documentation work is preserved here.
-- **Security tracking issue #276:** **OPEN / IN PROGRESS**. PR #244's non-member CSV denial/no-side-effect tests and PR #267's cross-tenant lifecycle matrix are merged, but remaining route × role × tenant coverage and authenticated production smoke are not complete. Do not close #276 based on partial coverage.
-- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no authorized branch-delete operation. Preserve remote branches; do not emulate deletion by moving refs.
-- **Production / release gates:** merge-commit status contexts show Vercel Web/API SUCCESS, but authenticated production workflows and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists. Do not claim production readiness.
+- **Main SHA:** `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d` — PR #281 merged. On the exact pre-merge head `d787c36652236251ac3c1a56ba3c82ff91db2f2e`, CircleCI six substantive checks + aggregate passed **7/7**. Post-merge status at last poll: 6 CircleCI contexts success, `backend-accounting` pending; Vercel Web and API contexts success.
+- **PR #284 — AI source grounding:** MERGED at `71eeb68eb2c33955d0729c984ff5626c39f28d43`. The deterministic no-provider fallback now returns only intent-relevant sources, with regression tests. Its exact PR head passed CircleCI 7/7. Production authenticated smoke was NOT RUN.
+- **PR #281 — employee/payroll isolation regressions:** MERGED at `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d`. Tests cover non-member employee/payroll denials with no writes/audit side effects and cross-business payroll/employee IDs with 404 and unchanged state. Issue [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276) remains OPEN for broader route × role × tenant coverage and authenticated production smoke.
+- **PR #285 — payroll post-payment refresh:** OPEN / Draft, branch `fix/payroll-refresh-after-payment-20261029`, exact head `3f06dbe6967d5ff2111a821ade03fed1b49580e6`. It emits a success event after payment, refreshes workspace expenses/dashboard, ignores stale results after workspace switching, and adds a regression test. CircleCI six substantive checks + aggregate passed **7/7** on that exact head. This TASKS update will create a new head and requires fresh exact-head checks before merge.
+- **GitHub Actions diagnostics:** on PR #285's current head, the dependency-security workflow failed with job step data absent; the verify workflow was queued at last poll. Earlier attempts to retrieve job logs returned 404 `BlobNotFound`. Root cause is **UNVERIFIED**; do not misclassify it as an application test failure. Confirm the required-check policy and re-check new runs before merging.
+- **PR #280:** superseded by current-main-based PR #285 due to its divergent 44-commit history and stale TASKS snapshot. Keep the old branch; close PR #280 without merge only after #285 is merged and verified.
+- **Observed open PRs at this checkpoint:** #280 (superseded; do not merge) and #285 (active). A fresh full paginated PR/branch inventory has NOT RUN.
+- **Production / release gates:** Vercel Web/API contexts reported SUCCESS on merge SHA `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d`, but authenticated production smoke and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists. No deployment was initiated by this work.
 
 ## Next actions
 
-1. Verify PR #282's exact-head CircleCI and GitHub checks, then review the live reconciliation ledger for any count or evidence drift.
-2. Continue issue #276's remaining route × role × tenant no-write/no-audit tests on one dedicated security branch; keep the work separate from the docs-only reconciliation PR.
-3. Keep branch deletion separate and blocked until an authorized delete-capable route is available; do not deploy or change production settings without explicit authorization.
+1. Verify all required CircleCI and GitHub checks on PR #285's updated exact head; diagnose the no-step GitHub Actions failures or confirm from repository policy that they are non-blocking.
+2. Review the final three-file payroll-refresh diff and merge PR #285 only after the exact-head merge gates are satisfied.
+3. Close superseded PR #280 without merge after verifying PR #285 is merged; preserve remote branches because branch deletion is not authorized by the connected integration.
+4. Keep issue #276 open until the remaining route × role × tenant matrix and authenticated production smoke have evidence.
 
 ## Current evidence baseline
 
