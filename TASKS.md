@@ -1390,13 +1390,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 ## Verification ledger — UI/UX batch, 2026-10-28
 
-- PR #243 is ready for review and remains open; no merge to main or production deployment has occurred.
-- Latest main head at sync: `158369fc11186ed75eb7cca0d0b7cdeb5c18b0cd`. It was merged into the feature branch by two-parent commit `e0f8badbcbe3d8ba89a5c745f252e695d33d14c5`. The branch compares **42 commits ahead, 0 behind** main.
-- Fix commit `9c71ba1629e2e56bf2627ce173781ec707838168` updates `frontend/src/app/release-payment-ui.spec.ts` to assert the current workspace-card version/build metadata and no duplicate mobile metadata, rather than removed legacy elements.
-- On exact head `e0f8badbcbe3d8ba89a5c745f252e695d33d14c5`, CircleCI **7/7 PASS**: frontend-unit-tests (1655), frontend-production-build (1658), frontend-dependency-audit (1659), frontend-browser-smoke (1656), backend-accounting (1660), backend-container (1657), and aggregate `verify-all-changes/all-checks-passed`.
-- The aggregate CircleCI gate now requires all six substantive jobs, including the split frontend tests/build and dependency audit. Main's Platform Admin concurrency regression and related security/documentation changes were preserved when syncing main.
-- Existing GitHub Actions workflows still fail immediately with `runner_id: 0`, an empty `steps` array, and completion within about 3 seconds; retries reproduced the same infrastructure pattern. Their log endpoint returns HTTP 404 `BlobNotFound`. No GitHub Actions job commands ran. CircleCI is the alternative verification path and passed all jobs above.
-- Actual tests/build/audit/browser smoke/backend accounting/container checks passed on the inspected head. Visual/mobile accessibility review remains **NOT RUN**, so 22/22 UI/UX findings are not yet fully visually verified.
-- Branch protection/ruleset settings cannot be read through the connected integration (403); no independent review submission was recorded at the last review check. Do not bypass protections; honor any GitHub merge rejection.
-- No production deployment was performed or authorized by this task.
+- PR #243 was merged on 2026-10-28. Verified merge commit and current main head at the post-merge check: `7d9f270662b7a838ee1eae4748c2df4634c19448`.
+- Pre-merge exact head `55cb69422295c3480932993267f84e0212ffc1b7` passed CircleCI **7/7**: frontend-unit-tests (1672), frontend-production-build (1674), frontend-dependency-audit (1677), frontend-browser-smoke (1673), backend-accounting (1675), backend-container (1676), and aggregate `verify-all-changes/all-checks-passed`.
+- Fix commit `9c71ba1629e2e56bf2627ce173781ec707838168` updated `frontend/src/app/release-payment-ui.spec.ts` to validate the current workspace-card version/build metadata and absence of duplicate mobile metadata, replacing stale assertions for removed UI.
+- The feature branch was synchronized with main v1.3.3 and the Platform Admin concurrency/security tests. The CircleCI aggregate gate now requires all six substantive jobs.
+- Existing GitHub Actions workflows fail almost immediately with `runner_id: 0`, an empty `steps` array, and completion within about 3 seconds; retries reproduced the same infrastructure pattern. The log endpoint returns HTTP 404 `BlobNotFound`. No GitHub Actions commands ran. CircleCI provided the successful verification route.
+- Post-merge CircleCI checks on main SHA `7d9f270662b7a838ee1eae4748c2df4634c19448` were **PENDING** at the latest poll. Vercel Web and API status contexts returned **FAILURE** with `build-rate-limit`; no production deployment was performed or attempted. Treat release/deployment as blocked until the Vercel quota/plan limit is resolved through an authorized route.
+- Visual/mobile accessibility review remains **NOT RUN**. The 22 UI/UX findings have code changes, but 22/22 fully visually verified is not claimed.
+- Branch protection/ruleset settings could not be read through the connected integration (403). The PR merge succeeded through GitHub's normal merge API after the CircleCI aggregate passed; no protection was intentionally bypassed.
 
