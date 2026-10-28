@@ -894,7 +894,7 @@ The current inventory now has a disposition for all 11 orphan branches and all 1
 
 ### Fresh paginated inventory
 
-After opening security PR #244, GitHub pagination returned **236 PR records** (100 + 100 + 36): **124 merged**, **111 closed-unmerged**, and **1 open Draft PR (#244)**. Branch pagination returned **244 unique remote branches** (100 + 100 + 44). These are a timestamped snapshot; re-query after additional PR or branch state changes.
+After opening security PR #244 (tracked by issue #276), GitHub pagination returned **236 PR records** (100 + 100 + 36): **124 merged**, **111 closed-unmerged**, and **1 open Draft PR (#244)**. Branch pagination returned **244 unique remote branches** (100 + 100 + 44). These are a timestamped snapshot; re-query after additional PR or branch state changes.
 
 ### Two closed-unmerged records beyond PR #264's historical 109-record snapshot
 
