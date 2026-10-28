@@ -12,8 +12,9 @@
 
 ## Current verified repository state
 
-- **Current main SHA:** `c644d8a0dd0540a68653dfa16844e2b51f51e230` — PR #294's non-member extended-workflow denial/no-side-effect tests are merged.
+- **Current main SHA before PR #298 merge:** `072f2eb0fb91c92b577859c4ba874a5c113c2628`. This includes PR #276's STAFF-denied invoice-void no-side-effect regression (`bf0bcdaf08353f15a532e692522730f42d2258e1`), PR #297's CSV denial/no-side-effect matrix (`3c560a0f425c8a97bcbe9384c5eefb580c936025`), and the later UI suggestions layout fix. Do not treat this pre-merge SHA as post-merge validation.
 - **PR #294 — extended workflow security matrix:** **MERGED** at `c644d8a0dd0540a68653dfa16844e2b51f51e230`. Exact pre-merge head `6dff9a0378a1710dcb2cdba81418269280393d0c` passed CircleCI six substantive checks + aggregate **7/7 PASS** and GitGuardian **SUCCESS**. It covers non-member attempts to mutate purchase orders/receiving, sales returns, recurring schedules, pricing rules, notifications, settings, and audit-event routes, with business-scoped protected-state and audit snapshots.
+- **PR #297 — CSV role-denial matrix:** **MERGED** at `3c560a0f425c8a97bcbe9384c5eefb580c936025`; it asserts STAFF/non-member export/import denials and no protected-row/audit side effects. Exact pre-merge CircleCI passed 7/7; merge-SHA CircleCI later passed 7/7.
 - **PR #292 — STAFF denial snapshot expansion:** **MERGED** at `9d478c63e94011eb919ee518d83726f51a59f1f8`. It expands protected-row snapshots and adds an OWNER-positive pricing-rule assertion. Its exact-head CircleCI passed 7/7.
 - **PR #287 — payroll post-payment refresh:** **MERGED** at `28dd3b418b53f7b9408695982b7378c4c99c7b27`. Payroll success emits an event; parent refreshes expenses/dashboard and ignores stale responses after workspace switching. Exact pre-merge CircleCI passed 7/7 and GitGuardian succeeded; the merge SHA later passed CircleCI 7/7 and Vercel Web/API status checks.
 - **PR #284 — AI source grounding:** **MERGED** at `71eeb68eb2c33955d0729c984ff5626c39f28d43`; deterministic no-provider fallback now returns intent-relevant sources with regression tests.
