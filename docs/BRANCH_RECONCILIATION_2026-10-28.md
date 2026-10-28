@@ -550,3 +550,27 @@ This batch follows the supersession chains for the nine PRs called out first in 
 | `ui/mobile-customers-invoices-audit` | `d6706a6144189387fde7ef3f5cbddfd145df2bb7` | #179 CLOSED-UNMERGED (head match) |
 | `verify/api-release-dec7` | `0223b75eb8d49ecf784dc887ad9a9afad2cb6a50` | NO PR found |
 | `verify/merged-main-dec7` | `dec7f26bd2bb33a4c27af4e785abe982e8486676` | NO PR found |
+
+
+## Closed-unmerged PR audit — priority batch 3 (9 additional PRs reviewed)
+
+**Audit comparison target:** current main at `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`. These are dispositions based on each closed PR's recorded diff/body, merged successor PRs, and current-main source/test evidence where noted. They do not mean every historical test or every production workflow is verified.
+
+| Closed-unmerged PR | Current-main / successor evidence | Disposition |
+|---|---|---|
+| #176 — OWNER payment API and idempotent replay test | PR #254 merged the replay and OWNER/STAFF regression on main; current task ledger records the test as restored and exact-head CircleCI 7/7 passed. | Superseded by #254; no stale branch merge. |
+| #118 — receivables aging report regression | Canonical receivables-aging work was consolidated into PR #161, which is merged. Its body records partial-payment, cross-business, currency, missing-customer/due-date, settled/overallocated, bucket-total and non-member denial cases. | Superseded by #161; broader authenticated production workflows remain separate gates. |
+| #58 — stale workspace data after workspace switch | Current main imports and uses `WorkspaceLoadGuard`; `workspace-load-guard.spec.ts` covers request generation, workspace mismatch, and invalidation after state clears. | Core regression is present; no restore from stale branch. Physical-device smoke remains separate. |
+| #53 — tenant isolation across business resources | Later security work #251/#262 is merged, including STAFF denial/no-write/no-audit tests and OWNER service guards. Issue #244 remains open for broader route × role × tenant coverage, so this old test set is not proof of exhaustive coverage. | Partially superseded; retain issue #244 as the gap tracker, do not merge stale history. |
+| #44 — foreign workspace read/mutation denial | The workspace denial case is subsumed by later tenant-boundary/security work; the current security ledger explicitly retains broader cross-tenant and role-matrix coverage as unfinished. | Superseded for the reviewed workspace case; no wholesale merge. |
+| #104 — sales-return quantity over-approval | Consolidated safety PR #161 is merged and includes sales-return duplicate-line aggregation, discounted return ceilings, cumulative quantity/amount checks and owner-only approval/receiving checks. | Superseded by #161; no restore. |
+| #144 — sales-return line amount ceiling | The clean rebased #155 was itself consolidated into #161; #161 is merged and carries discounted return ceilings and cumulative amount checks. | Superseded by #161; no restore. |
+| #146 — stale reports across workspace switches | #146 → #156 → #157 consolidation chain; #157 was closed after the core guard behavior was verified on main. Current main uses `WorkspaceLoadGuard` and the spec tests invalidation. | Core guard is present; no stale branch merge. Payment retry safeguards require their own live-path validation. |
+| #179 — mobile customers/invoices/activity UI | Superseded by #182, merged on current main; #182 reapplies mobile refinements, workspace header version metadata and invoice create/filter layout. | Superseded by #182; visual QA still needs separate evidence. |
+
+## Audit accounting — after priority batch 3
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–3: **27/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **82/109**.
+- This count tracks semantic reviews, not PRs that must be merged. No branches were deleted and no closed PR was reopened.
