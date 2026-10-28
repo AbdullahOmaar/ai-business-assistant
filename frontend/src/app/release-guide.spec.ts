@@ -1,9 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide.ts';
+
+const testDirectory = dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = resolve(testDirectory, '../../..');
+const frontendRoot = existsSync(resolve(repositoryRoot, 'frontend/package.json'))
+  ? resolve(repositoryRoot, 'frontend')
+  : resolve(testDirectory, '../..');
+const hasBackendPackage = existsSync(resolve(repositoryRoot, 'backend/pyproject.toml'));
+const frontendPackage = JSON.parse(readFileSync(resolve(frontendRoot, 'package.json'), 'utf8'));
+const buildInfo = readFileSync(resolve(frontendRoot, 'src/app/build-info.ts'), 'utf8');
+const serviceWorker = readFileSync(resolve(frontendRoot, 'public/sw.js'), 'utf8');
 
 test('feature catalogue has unique sections and bilingual user-facing content', () => {
   const ids = FEATURE_CATALOG.map((section) => section.id);
@@ -71,20 +81,22 @@ test('v1.3.0 release notes cover invoice payments, opening stock, and the featur
 });
 
 
-test('1.3.2 release metadata is consistent across frontend and backend', () => {
-  const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-  const frontendPackage = JSON.parse(readFileSync(resolve(repositoryRoot, 'frontend/package.json'), 'utf8'));
-  const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
-  const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
-  const buildInfo = readFileSync(resolve(repositoryRoot, 'frontend/src/app/build-info.ts'), 'utf8');
-  const serviceWorker = readFileSync(resolve(repositoryRoot, 'frontend/public/sw.js'), 'utf8');
-
+test('1.3.2 frontend release metadata is consistent in the configured project root', () => {
+  assert.equal(frontendPackage.name, 'ai-business-assistant-frontend');
   assert.equal(frontendPackage.version, '1.3.2');
-  assert.match(backendPackage, /^version = "1.3.2"$/m);
-  assert.match(backendApp, /version="1.3.2"/);
   assert.match(buildInfo, /(?:version:\s*'1\.3\.2'|"version":"1\.3\.2")/);
   assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.2-[^']+';/);
   assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
   assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /Platform Admin/i);
   assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /audit/i);
 });
+
+if (hasBackendPackage) {
+  test('1.3.2 release metadata is consistent across frontend and backend in a full repository checkout', () => {
+    const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
+    const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
+
+    assert.match(backendPackage, /^version = "1.3.2"$/m);
+    assert.match(backendApp, /version="1.3.2"/);
+  });
+}
