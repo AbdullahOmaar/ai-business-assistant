@@ -7,7 +7,7 @@ or connects to a production database.
 from concurrent.futures import ThreadPoolExecutor
 import os
 from threading import Barrier
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -97,7 +97,8 @@ def postgres_membership_client():
 def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
     postgres_membership_client,
 ):
-    client, business_id, owner_ids, factory = postgres_membership_client
+    _client, business_id, owner_ids, factory = postgres_membership_client
+    business_uuid = UUID(business_id)
     start = Barrier(2)
 
     def demote_owner_a():
@@ -132,7 +133,7 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
     with factory() as session:
         remaining_owners = session.scalar(
             select(func.count()).select_from(BusinessMembership).where(
-                BusinessMembership.business_id == business_id,
+                BusinessMembership.business_id == business_uuid,
                 BusinessMembership.role == MembershipRole.OWNER,
             )
         )
@@ -143,7 +144,7 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
         )
         audit_count = session.scalar(
             select(func.count()).select_from(AuditEvent).where(
-                AuditEvent.business_id == business_id,
+                AuditEvent.business_id == business_uuid,
                 AuditEvent.action.in_([
                     "membership.role_changed", "membership.removed"
                 ]),
