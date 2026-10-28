@@ -2,17 +2,18 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (closed-PR audit complete; security fix merged)
+## Reconciliation checkpoint — 2026-10-28 (audit complete; production verified)
 
-- PR #264 records dispositions for **109/109 closed-unmerged PRs**; this is not a recommendation to merge all 109.
-- Latest live inventory: **237 branches**, **230 PR records** (118 merged, 109 closed-unmerged, 3 open: #270, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; each is dispositioned in the reconciliation ledger.
+- PR #264 documents evidence-based dispositions for **109/109 closed-unmerged PRs**; this does not mean all 109 should be merged.
+- Latest paginated inventory: **237 branches**, **230 PR records** (118 merged, 109 closed-unmerged, 3 open: #270, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; all have source/test-based dispositions in the reconciliation ledger.
 - PR #268 merged at `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after CircleCI 7/7 PASS (Platform Admin mobile keyboard/viewport E2E). Physical-device/screen-reader QA remains NOT RUN.
-- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS (safe PostgreSQL restore runbook). Actual restore remains NOT RUN/BLOCKED pending approved non-production target.
-- PR #267 merged at `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d` after CircleCI 7/7 and GitHub build/test/dependency checks. It fixes payment allocation validation ordering before Payment insertion and adds foreign-tenant no-side-effect regressions.
-- PR #270 is an earlier partial audit snapshot, marked superseded by #264 and left Draft/open. Do not merge.
-- Latest main SHA: `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`; post-merge CircleCI/Vercel checks were pending at the last poll. PR #264 latest exact-head checks are pending and must pass before merge.
-- Remaining independent gates: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED.
-- No branch deleted, no closed PR reopened, no stale feature branch merged wholesale. No production deployment is authorized by this audit PR.
+- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS (safe PostgreSQL restore runbook). Actual restore remains NOT RUN/BLOCKED pending an approved non-production target.
+- PR #267 merged at `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d` after CircleCI 7/7 plus GitHub build/test/dependency checks. It validates payment allocations before creating Payment rows and adds foreign-tenant no-side-effect regressions.
+- Production verification on main `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`: CircleCI **7/7 PASS**, Vercel Web/API success; `/version`, `/health`, `/readyz`, web root, manifest and service worker returned HTTP 200. Production version is **1.3.4**, commit `9fc9a9a53ef1`; SW cache `aba-shell-v1.3.4-9fc9a9a53ef1`.
+- PR #261 was marked Draft/superseded by merged #267; its old backend-accounting failure root cause remains unverified due inaccessible logs. Do not merge the stale duplicate.
+- PR #270 is an earlier partial audit snapshot, marked superseded by #264 and left Draft/open.
+- PR #264 latest exact-head CircleCI passed 7/7; GitGuardian was still in progress at the last poll. The latest ledger update requires fresh exact-head checks before merge.
+- Remaining independent gates: authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED pending approved non-production target. No production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
