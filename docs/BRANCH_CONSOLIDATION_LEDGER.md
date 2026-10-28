@@ -7,7 +7,7 @@
 
 ## Current inventory
 
-- Git branches returned by GitHub before this ledger branch was created: **210 total including main; 209 non-main branches**.
+- Git branches returned by GitHub before this ledger branch was created: **210 total including main; 209 non-main branches** (historical baseline).
 - Pull requests returned by the GitHub PR listing integration at baseline: **203 records**.
 - PRs marked merged: **95**.
 - PRs currently open at baseline: **2**.
@@ -17,11 +17,11 @@
 
 ### Refreshed inventory after opening this ledger PR — 2026-10-28
 
-The counts above are the original baseline captured before this ledger branch was created. After opening PR #239 and the UI/UX review PR #243, refreshed GitHub metadata is:
+The counts above are the historical baseline. Refreshed GitHub metadata after PR #246 merged (main SHA `2c7857c1663856b0e70475c3152b551e9693f814`) and PR #247 opened is:
 
-- Branches: **211 total including main; 210 non-main**.
-- PR records: **205 total** — 95 merged, 106 closed without merge, and **4 open** (2 Draft before #243 was added, plus #239 and #243; #243 is Draft).
-- Current open PRs: #236, #238, #239, and #243. Recheck exact-head CI and refresh counts after any merge/closure.
+- Branches: **213 total including main; 212 non-main**.
+- PR records: **207 total** — 96 merged, 106 closed without merge, and **5 open**.
+- Current open PRs: #236, #238, #239, #243, and #247. PR #246 is merged. Refresh counts and main SHA after subsequent merges/closures.
 
 ## Rules for future agents
 
@@ -37,10 +37,11 @@ The counts above are the original baseline captured before this ledger branch wa
 
 | PR | Title | Head branch | State |
 |---|---|---|---|
-| #238 | test(admin): verify concurrent last-owner membership mutations | `feat/platform-admin-membership-concurrency-20261028` | OPEN · DRAFT |
-| #236 | test(finance): cover concurrent invoice void and sales return | `docs/audit-master-plan-2026-10-28` | OPEN · DRAFT |
-| #239 | docs: add branch consolidation ledger | `docs/branch-consolidation-ledger-2026-10-28` | OPEN · READY FOR REVIEW · CircleCI 4/4 PASS on `0d8317248a795c8e875ac5418163515f6bfb4bc9` |
-| #243 | fix(ui): consolidate startup resilience and mobile workspace UX | `fix/ui-ux-review-batch-2026-10-28` | OPEN · DRAFT · frontend-quality FAIL; 2 checks pending on `e7f94fac534dd5c3d38bdd927fef554025bcb201` |
+| #238 | test(admin): verify concurrent last-owner membership mutations | `feat/platform-admin-membership-concurrency-20261028` | OPEN · READY FOR REVIEW · current-head CircleCI pending |
+| #236 | test(finance): cover concurrent invoice void and sales return | `docs/audit-master-plan-2026-10-28` | OPEN · DRAFT · CircleCI 4/4 PASS on `2cb7c04b5dae10ba53dca404de37280fa95bd4c2` |
+| #239 | docs: add branch consolidation ledger | `docs/branch-consolidation-ledger-2026-10-28` | OPEN · READY FOR REVIEW · checks rerun after this ledger refresh |
+| #243 | fix(ui): consolidate startup resilience and mobile workspace UX | `fix/ui-ux-review-batch-2026-10-28` | OPEN · DRAFT · 5 CircleCI contexts PENDING on `f1542950f2d44fef2623c3eb3732d3ae8c27c775` |
+| #247 | chore(release): align frontend and API version 1.3.3 | `chore/release-1.3.3-20261028` | OPEN · READY FOR REVIEW · 4 CircleCI contexts PENDING on `1dcbb23c54f6c868df9006d53dd0d6a34e7d99cf` |
 
 ## Merged pull requests — already integrated through these PRs
 
@@ -141,6 +142,7 @@ The counts above are the original baseline captured before this ledger branch wa
 | #234 | fix(backup): validate isolated restore target catalogs | `fix/backup-restore-target-safety-main-20261028` | MERGED |
 | #235 | docs(tasks): record final consolidation evidence and release blockers | `docs/final-consolidation-checkpoint-20261028` | MERGED |
 | #237 | docs: enforce one active branch per contributor | `docs/one-branch-workflow-policy` | MERGED |
+| #246 | fix(build): resolve release metadata test paths for Vercel frontend root | `fix/vercel-release-metadata-test-root-20261028` | MERGED · main SHA `2c7857c1663856b0e70475c3152b551e9693f814` · CircleCI 4/4 PASS + Vercel Preview PASS |
 
 ## Closed pull requests that were not merged
 
@@ -272,6 +274,6 @@ No matching PR head was found for these existing branches. This is a review queu
 
 ## Audit limitations
 
-- GitHub branch and PR data was inspected; comparisons against all 209 non-main branches were run before creating this ledger branch. Follow-up triage found `fix/ui-ux-review-batch-2026-10-28` 31 commits ahead and 0 behind `main`; it now has Draft PR #243. `fix/invoice-stock-return-safety` has 7 commits ahead and 318 behind with backend lifecycle/test changes; it remains unmerged/unclassified pending careful comparison with merged return/void fixes. `security/owner-staff-permission-matrix` has 3 commits ahead and 289 behind with authorization/service tests; `test/stock-empty-movements` has 1 commit ahead and 305 behind with a domain test; these remain stale candidates requiring exact diff review. Branches that are strictly behind with no file diff are not candidates to merge. Compare results alone are not proof of integration because squash/rebase merges and replacement PRs exist.
+- GitHub branch and PR data was inspected; comparisons against all 209 non-main branches were run before creating this ledger branch. Follow-up triage found `fix/ui-ux-review-batch-2026-10-28` 38 commits ahead and 0 behind current `main`; it now has Draft PR #243, with five exact-head CircleCI contexts pending. `fix/invoice-stock-return-safety` has 7 commits ahead and 318 behind with backend lifecycle/test changes; it remains unmerged/unclassified pending careful comparison with merged return/void fixes. `security/owner-staff-permission-matrix` has 3 commits ahead and 289 behind with authorization/service tests; `test/stock-empty-movements` has 1 commit ahead and 305 behind with a domain test; these remain stale candidates requiring exact diff review. Branches that are strictly behind with no file diff are not candidates to merge. Compare results alone are not proof of integration because squash/rebase merges and replacement PRs exist.
 - This document does not authorize branch deletion or production deployment.
 - Before merging any change, inspect the latest exact head SHA, required CircleCI checks, review/protection requirements, and current main SHA.
