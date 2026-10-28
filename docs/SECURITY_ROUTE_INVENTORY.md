@@ -5,13 +5,15 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — PR #251 candidate
+## Denied-mutation regression evidence — merged successors and current gaps
 
-- Current main at sync: `8facda01faa66dcad758be8d31c85fc1df114182`. It retains the 16-request STAFF denial regression, permitted ordinary product-name edit, and business-scoped audit-event count invariant.
-- Candidate extension snapshots every persisted column for each business-scoped `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` row before the denied-request batch, then compares full row snapshots afterward. Each of the 16 denied requests is now executed sequentially with its own before/after business-scoped `AuditEvent` count and an explicit HTTP 403 assertion, preventing a passing batch total from masking which individual request emitted an audit event.
-- Previous exact candidate `aec8493a535410ca58dc0b138fda164751809adb` had five CircleCI contexts PASS and backend-accounting FAIL (run 2003). Private job logs were inaccessible. Supplemental diagnostic on a non-exact sandbox snapshot: focused denial test **1 passed**; full backend suite **221 passed, 11 warnings**; `alembic check` reported no new upgrade operations; offline migration SQL generated; `pip-audit` found no known vulnerabilities. These results are not exact-head verification and do not override the CircleCI failure.
-- Fresh exact-head CI must pass after this synchronization. No application permission policy was changed.
-- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244.
+- **PR #251** is merged. Its STAFF-denial regression checks 16 sensitive requests individually for HTTP 403, verifies business-scoped audit-event counts remain unchanged, and compares protected-row snapshots for Customer, Invoice, InvoiceLine, Payment, Supplier, and PurchaseOrder.
+- **PR #267** is merged. Its cross-tenant suite covers foreign customer/product references during invoice creation, payment allocation to another business's invoice, foreign invoice issue, stock movement, purchase-order create/receive, and sales-return create/approval. Denied operations assert no protected-record, stock, payment, or audit side effects. It also fixes payment allocation ordering to avoid orphan Payment rows after rejected requests.
+- **PR #261** is closed without merge and superseded by #267. Its broad `test_owner_cannot_mutate_foreign_business_financial_and_stock_ids` regression is present on main in `backend/tests/test_foreign_business_workflows.py`; no unique missing behavior was identified from that patch.
+- **PR #270** is closed without merge and superseded by #264. It is an obsolete partial documentation snapshot, not runtime behavior.
+- **PR #244** is merged. Its exact-head CircleCI and GitHub Actions gates both passed 7/7; backend tests reported 231 passed / 7 skipped and full tests 232 passed / 6 skipped (16 warnings each). It adds non-member denial/no-side-effect coverage for customer CSV export, preview, and import.
+- **Current focused follow-up:** issue [#276](https://github.com/AbdullahOmaar/ai-business-assistant/issues/276) remains OPEN. This branch adds a regression for non-members attempting employee/payroll reads and mutations. It expects 403 for each request and snapshots employee/payroll/expense/audit state before and after every denied attempt. **Exact-head CI is pending; this test is not yet verified.**
+- Existing tests cover STAFF denial for employee/payroll and cross-business employee IDs. Authenticated production smoke and physical mobile/accessibility QA remain **NOT RUN**. Local pytest/build: **NOT RUN** in this connector-only session. No production data or permissions changed.
 
 ## Authorization model
 
