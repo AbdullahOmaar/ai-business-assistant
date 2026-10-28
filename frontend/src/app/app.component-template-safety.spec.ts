@@ -60,7 +60,11 @@ test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
   assert.match(source, /value="invoice\.draft_updated"/);
   assert.match(source, /value="stock\.movement_recorded"/);
+  assert.match(source, /value="purchase_order\.approved"/);
+  assert.match(source, /value="sales_return\.approved"/);
+  assert.match(source, /value="recurring_invoice_schedule\.created"/);
   assert.match(source, /'supplier\.created': \{ ar: 'إضافة مورد'/);
+  assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
 
 test('responsive sizing rules keep numeric invoice fields compact and cards within mobile width', () => {
