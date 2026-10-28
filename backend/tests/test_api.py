@@ -1191,6 +1191,113 @@ def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
         engine.dispose()
 
 
+def test_nonmember_and_staff_cannot_mutate_sensitive_extended_workflows_without_side_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject="staff-subject",
+            role=MembershipRole.STAFF,
+        ))
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+
+    def snapshot():
+        with Session(engine) as session:
+            return {
+                "pricing_rules": session.scalar(
+                    select(func.count()).select_from(PricingRule).where(
+                        PricingRule.business_id == business_id
+                    )
+                ),
+                "recurring_schedules": session.scalar(
+                    select(func.count()).select_from(RecurringInvoiceSchedule).where(
+                        RecurringInvoiceSchedule.business_id == business_id
+                    )
+                ),
+                "notifications": session.scalar(
+                    select(func.count()).select_from(Notification).where(
+                        Notification.business_id == business_id
+                    )
+                ),
+                "settings": session.scalar(
+                    select(func.count()).select_from(BusinessSetting).where(
+                        BusinessSetting.business_id == business_id
+                    )
+                ),
+                "audit_events": session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                ),
+            }
+
+    requests = [
+        (
+            "create recurring invoice schedule",
+            lambda: client.post(
+                f"{base}/recurring-invoices",
+                json={
+                    "interval_days": 30,
+                    "timezone": "UTC",
+                    "next_run_at": "2027-01-01T00:00:00Z",
+                },
+            ),
+            False,
+        ),
+        (
+            "create pricing rule",
+            lambda: client.post(
+                f"{base}/pricing-rules",
+                json={"name": "Unauthorized discount", "rule_type": "discount", "rate": "10.0000"},
+            ),
+            False,
+        ),
+        (
+            "create notification",
+            lambda: client.post(
+                f"{base}/notifications",
+                json={
+                    "kind": "security-test",
+                    "title": "Unauthorized notification",
+                    "body": "This must not persist",
+                    "deduplication_key": "nonmember-sensitive-workflow",
+                },
+            ),
+            False,
+        ),
+        (
+            "change business setting",
+            lambda: client.put(f"{base}/settings/locale", json={"setting_value": "ar"}),
+            False,
+        ),
+        ("list notifications", lambda: client.get(f"{base}/notifications"), True),
+    ]
+
+    try:
+        for subject in ("nonmember-subject", "staff-subject"):
+            app.state.principal_resolver = (
+                lambda request, subject=subject: AuthenticatedPrincipal(subject=subject)
+            )
+            for action, request, staff_can_read in requests:
+                expected_status = 200 if subject == "staff-subject" and staff_can_read else 403
+                before = snapshot()
+                response = request()
+                assert response.status_code == expected_status, (
+                    f"{subject} {action}: expected {expected_status}, "
+                    f"got {response.status_code}: {response.text}"
+                )
+                after = snapshot()
+                assert after == before, (
+                    f"{subject} {action} changed protected rows or emitted an audit event"
+                )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
 def test_owner_can_record_and_idempotently_replay_payment_via_api():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
