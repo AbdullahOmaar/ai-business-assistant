@@ -2,15 +2,16 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit complete)
+## Reconciliation checkpoint — 2026-10-28 (semantic audit + live inventory reconciled)
 
-- PR #264 records evidence-based dispositions for **all 109/109 closed-unmerged PRs**. This is a semantic review, not a recommendation to merge them all.
-- Final 11 reviewed: #116, #114, #113, #18, #17, #16, #15, #9, #8, #5, and #1. These are superseded by current data-integrity, statement, audit, business API/domain, inventory, or accepted architecture/governance work. Separately, batch 8 found a missing payment-export-specific regression; this PR restores `frontend/src/app/payment-csv-export.spec.ts` for owner-only access, empty-state guard, required ledger fields/allocation count, and use of the shared safe serializer.
-- The earlier batch-3 table repeated #179, already included in batch 1; cumulative counts in the reconciliation document have been corrected to count unique PRs. Final count is **109 reviewed / 0 without disposition**.
-- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI six substantive jobs plus aggregate **7/7 PASS**, Vercel Web/API status contexts succeeded.
-- Remaining independent blockers are not closed-PR audit items: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, isolated PostgreSQL restore drill BLOCKED pending an approved non-production target, and reconciliation of historical inventory snapshots.
-- No stale branch was merged wholesale, no branch was deleted, and no closed PR was reopened. Do not treat 109 reviewed as 109 required merges.
-- Next: reconcile the live PR/branch inventory and investigate PR #261's failing accounting job without weakening security assertions. No production deployment is authorized by this audit PR.
+- PR #264 records evidence-based dispositions for **109/109 closed-unmerged PRs**; this does not mean all 109 should be merged.
+- Corrected batch accounting: #179 appeared in batch 1 and batch 3; the cumulative count is unique PRs, **109 reviewed / 0 without disposition**.
+- Live inventory snapshot: **236 branches**, **229 PR records** (115 merged, 109 closed-unmerged, 5 open: #267, #268, #269, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads missing a branch**. All 11 orphans and 10 mismatches have current source/test-based dispositions in the reconciliation document; no branch was deleted.
+- The one orphan foreign-tenant test is superseded by the split cross-tenant coverage in #267/#261. PR #267's exact head `048899521cb8a87f7312b16dce1460e575b36252` passed CircleCI **7/7** and GitHub dependency/build/test checks; it remains Draft and is not merged because it changes payment validation/security-sensitive behavior.
+- Current main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI **7/7 PASS** and Vercel Web/API contexts successful.
+- PR #264's latest docs/test head must pass its own exact-head checks before merge. Payment-specific regression `frontend/src/app/payment-csv-export.spec.ts` restores coverage missing on main.
+- Remaining independent gates: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows **NOT RUN**, physical mobile visual/accessibility QA **NOT RUN**, isolated PostgreSQL restore drill **BLOCKED** pending an approved non-production target.
+- Next: verify latest PR #264 checks; then make the security-sensitive merge decision for #267 and continue independent validation. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
