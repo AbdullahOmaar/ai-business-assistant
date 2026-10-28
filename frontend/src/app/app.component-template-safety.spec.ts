@@ -43,6 +43,8 @@ test('expense and notification types use selectable, localized options', () => {
   assert.match(source, /name="notificationKind" required \[\(ngModel\)\]="notificationKind"/);
   assert.match(source, /<option value="inventory">/);
   assert.match(source, /<option value="reminders">/);
+  assert.match(source, /<option value="suppliers">/);
+  assert.match(source, /notificationKindLabel\(item\.kind\)/);
 });
 
 test('AI suggestions remain visible after a message is sent', () => {
@@ -55,6 +57,9 @@ test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /auditTargetLabel\(event\.target_type\)/);
   assert.match(source, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
   assert.match(source, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
+  assert.match(source, /value="invoice\.draft_updated"/);
+  assert.match(source, /value="stock\.movement_recorded"/);
+  assert.match(source, /'supplier\.created': \{ ar: 'إضافة مورد'/);
 });
 
 test('responsive sizing rules keep numeric invoice fields compact and cards within mobile width', () => {
