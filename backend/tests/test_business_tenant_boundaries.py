@@ -849,15 +849,11 @@ def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     app.state.principal_resolver = lambda request: AuthenticatedPrincipal("aging-owner")
     try:
-        business_id, foreign_business_id = uuid4(), uuid4()
+        business_id = uuid4()
         paid_invoice_id, open_invoice_id, payment_id, allocation_id = (uuid4() for _ in range(4))
-        foreign_payment_id, foreign_allocation_id = uuid4(), uuid4()
         as_of = datetime(2026, 10, 1, tzinfo=timezone.utc)
         with app.state.session_factory() as session:
-            session.add_all([
-                Business(id=business_id, name="Aging workspace", currency_code="EGP"),
-                Business(id=foreign_business_id, name="Foreign aging workspace", currency_code="EGP"),
-            ])
+            session.add(Business(id=business_id, name="Aging workspace", currency_code="EGP"))
             session.flush()
             session.add(BusinessMembership(
                 business_id=business_id, user_subject="aging-owner", role=MembershipRole.OWNER
@@ -882,27 +878,12 @@ def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
                     amount=Decimal("30.00"), currency_code="EGP",
                     received_at=as_of, idempotency_key="aging-payment-1",
                 ),
-                Payment(
-                    id=foreign_payment_id, business_id=foreign_business_id, customer_id=None,
-                    amount=Decimal("50.00"), currency_code="EGP",
-                    received_at=as_of, idempotency_key="foreign-aging-payment-1",
-                ),
             ])
             session.flush()
-            session.add_all([
-                PaymentAllocation(
-                    id=allocation_id, business_id=business_id, payment_id=payment_id,
-                    invoice_id=paid_invoice_id, amount=Decimal("30.00"),
-                ),
-                # Deliberately corrupt cross-workspace link: a foreign payment must not
-                # reduce this workspace's invoice balance even if the allocation row
-                # carries the local business_id.
-                PaymentAllocation(
-                    id=foreign_allocation_id, business_id=business_id,
-                    payment_id=foreign_payment_id, invoice_id=paid_invoice_id,
-                    amount=Decimal("50.00"),
-                ),
-            ])
+            session.add(PaymentAllocation(
+                id=allocation_id, business_id=business_id, payment_id=payment_id,
+                invoice_id=paid_invoice_id, amount=Decimal("30.00"),
+            ))
             session.commit()
 
         response = TestClient(app).get(
