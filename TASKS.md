@@ -2,14 +2,15 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 11)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit complete)
 
-- PR #264 remains open; 11 semantic-review batches are documented. The latest docs update needs fresh exact-head checks before merge.
-- Reconciliation ledger now documents **99/109** closed-unmerged PR semantic dispositions; **10/109 remain**.
-- Batch 11 reviewed #134, #119, #117, #71, #50, #22, #21, #20, and #19. Accounting/operations readiness, audit feed, mobile version display, assistant guardrails, early Angular shells and safe CSV workflows are present or superseded by merged successors.
-- Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
-- Remaining distinct gates include PR #261 foreign-tenant test failure (root cause unverified), authenticated production workflows, physical mobile visual QA, and the final 10 closed-unmerged PR reviews.
-- Next: audit the final 10 PRs, reconcile live inventory snapshots, and record any unique missing changes as evidence-based blockers or restore candidates. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 records evidence-based dispositions for **all 109/109 closed-unmerged PRs**. This is a semantic review, not a recommendation to merge them all.
+- Final 11 reviewed: #116, #114, #113, #18, #17, #16, #15, #9, #8, #5, and #1. These are superseded by current data-integrity, statement, audit, business API/domain, inventory, or accepted architecture/governance work; no unique runtime patch was identified for restoration.
+- The earlier batch-3 table repeated #179, already included in batch 1; cumulative counts in the reconciliation document have been corrected to count unique PRs. Final count is **109 reviewed / 0 without disposition**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI six substantive jobs plus aggregate **7/7 PASS**, Vercel Web/API status contexts succeeded.
+- Remaining independent blockers are not closed-PR audit items: PR #261 backend-accounting failure (root cause unverified), authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, isolated PostgreSQL restore drill BLOCKED pending an approved non-production target, and reconciliation of historical inventory snapshots.
+- No stale branch was merged wholesale, no branch was deleted, and no closed PR was reopened. Do not treat 109 reviewed as 109 required merges.
+- Next: reconcile the live PR/branch inventory and investigate PR #261's failing accounting job without weakening security assertions. No production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
