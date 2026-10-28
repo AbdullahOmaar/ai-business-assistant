@@ -166,3 +166,12 @@ The route inventory is broader than current negative integration tests. Add expl
 - Review found the test omitted `_configure_test_identity(engine)`; fixed on the candidate branch. The test now configures/restores identity and compares business-scoped Customer, Product, Expense, ImportJob, and AuditEvent counts before/after.
 - This complements PR #297's STAFF/non-member denial and no-side-effect checks. It is not considered verified until exact-head CircleCI backend-accounting and aggregate checks pass.
 - Local pytest is NOT RUN in the connector-only session. No production data, authorization policy, or deployment settings changed; issue #276 remains open for remaining routes and authenticated production smoke.
+
+
+## Foreign resource-ID access regression — 2026-10-29
+
+- Added `backend/tests/test_business_tenant_boundaries.py::test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects`.
+- A tenant-A OWNER attempts GET/PATCH/DELETE against tenant-B customer/product IDs and GET against a tenant-B invoice through tenant-A routes. Each request must return 404.
+- The test snapshots both tenants' audit-event totals and confirms no audit writes occur; tenant B's customer/product data and invoice draft state remain unchanged and readable by tenant B's OWNER.
+- This closes a direct foreign-resource read/update/delete test gap for customer/product/invoice routes. It does not complete the entire route × role × tenant matrix; other routes and authenticated production smoke remain outstanding.
+- Exact-head CI and test execution are pending on the dedicated branch. Local pytest/build were not run in this connector session.
