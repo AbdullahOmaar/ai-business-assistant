@@ -1471,3 +1471,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Formal audit ledger: 67/109 closed-unmerged PRs reviewed, 42 remain. Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
 - Latest main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on the same SHA.
 - No source/runtime changes in this batch. Continue semantic review of remaining PRs; no stale branch cleanup or bulk merges.
+
+
+## Repository reconciliation checkpoint — batch 8 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #103, #101, #98, #76, #74, #73, #72, #71, #70 and #58.
+- Verified current-main behavior for v1.3.4 release metadata, safe CSV preview-before-confirmation, mobile invoice drafts, deterministic authorized local assistant fallback, customer statement/audit event APIs, owner-managed workspace membership role changes with last-owner concurrency tests, tenant-scoped customer search, scheduled CircleCI dependency audits, and workspace-switch request invalidation.
+- Formal audit ledger: 77/109 closed-unmerged PRs reviewed, 32 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
+- No source/runtime changes in this batch. Continue semantic review of the remaining 32 PRs.
