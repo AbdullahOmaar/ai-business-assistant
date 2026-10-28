@@ -853,3 +853,14 @@ Each branch head was compared to its matching PR head; the additional commits we
 ### Inventory conclusion
 
 The current inventory now has a disposition for all 11 orphan branches and all 10 branch/PR head mismatches. None contains a confirmed unique runtime change that should be merged wholesale. The one orphan foreign-tenant test is superseded by the currently open security candidates; #267 passes exact-head CircleCI 7/7 but remains Draft pending the repository's security-change merge decision. All branches are preserved.
+
+
+## Latest live inventory refresh — after #268/#269 merge and #270 opened
+
+- Branch pages: 100 + 100 + 37 = **237 branches**.
+- PR pages: 100 + 100 + 30 = **230 PR records**: **117 merged**, **109 closed-unmerged**, **4 open** (#270, #267, #264, #261).
+- The 11 orphan branches, 10 branch/PR SHA mismatches, and zero PR heads without a corresponding branch are unchanged from the preceding inventory analysis.
+- #268 (Platform Admin mobile keyboard E2E) merged as `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after exact-head CircleCI 7/7 PASS.
+- #269 (safe PostgreSQL restore runbook) merged as `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after exact-head CircleCI 7/7 PASS. The runbook is documentation only; the actual restore drill remains NOT RUN.
+- #270 is an older partial audit snapshot (20/109 at creation); it has been explicitly marked superseded by #264 and remains Draft/open to preserve history. Do not merge it.
+- Current main moved to `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f`; post-merge CircleCI is pending at this inventory refresh. The prior main SHA `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` had CircleCI 7/7 and Vercel Web/API success contexts.
