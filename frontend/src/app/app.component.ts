@@ -159,6 +159,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <button class="quick-card" (click)="setTab('customers')"><strong>{{ t('العملاء', 'Customers') }}</strong><span>{{ customers.length }} {{ t('سجلات نشطة · عرض القائمة ←', 'active records · View list →') }}</span></button>
                 <button class="quick-card" (click)="setTab('products')"><strong>{{ t('المنتجات', 'Products') }}</strong><span>{{ products.length }} {{ t('سجلات نشطة · عرض الكتالوج ←', 'active records · View catalog →') }}</span></button>
                 <button class="quick-card" (click)="setTab('invoices')"><strong>{{ t('الفواتير', 'Invoices') }}</strong><span>{{ invoices.length }} {{ t('سجل · إدارة المبيعات ←', 'records · Manage sales →') }}</span></button>
+                <button class="quick-card ai-quick-card" (click)="setTab('assistant')"><strong><span aria-hidden="true">✦ </span>{{ t('اسأل مساعد الأعمال الذكي', 'Ask the AI assistant') }}</strong><span>{{ t('احصل على ملخص مبني على سجلات نشاطك', 'Get an answer grounded in your business records') }}</span></button>
               </section>
             }
 
@@ -183,7 +184,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 </form>
                 @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
                 @if (notificationsLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الإشعارات…', 'Loading notifications…') }}</p> }
-                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ item.kind }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
+                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
               </section>
             }
 
@@ -1125,6 +1126,20 @@ export class AppComponent implements OnInit {
       this.loading = false;
       this.initialized = true;
     }
+  }
+
+  notificationKindLabel(kind: string): string {
+    const labels: Record<string, { ar: string; en: string }> = {
+      businesses: { ar: 'مساحات العمل', en: 'Businesses' },
+      invoices: { ar: 'الفواتير', en: 'Invoices' },
+      payments: { ar: 'المدفوعات', en: 'Payments' },
+      expenses: { ar: 'المصروفات', en: 'Expenses' },
+      inventory: { ar: 'المخزون', en: 'Inventory' },
+      reminders: { ar: 'التذكيرات', en: 'Reminders' },
+      reports: { ar: 'التقارير', en: 'Reports' },
+      system: { ar: 'النظام', en: 'System' }
+    };
+    return labels[kind]?.[this.language] || kind;
   }
 
   auditActionLabel(action: string): string {
@@ -2400,6 +2415,7 @@ export class AppComponent implements OnInit {
       return englishAuthMessages[code] || authMessages[code];
     }
     if (/AI chat is not configured/i.test(message)) return this.t('المساعد الذكي غير مفعّل على الخادم بعد. يلزم ضبط OPENAI_API_KEY في إعدادات Environment Variables لمشروع ai-business-assistant-api على Vercel ثم إعادة النشر. لم أضف مفتاحًا أو خدمة مدفوعة من دون موافقتك.', 'The AI assistant is not enabled on the backend yet. Set OPENAI_API_KEY in the ai-business-assistant-api Vercel project environment variables, then redeploy. No key or paid service was added without your approval.');
+    if (/timed out/i.test(message)) return this.t('انتهت مهلة التحقق من إعدادات التطبيق أو جلسة الدخول. تحقق من الاتصال ثم اضغط «إعادة المحاولة».', 'App configuration or sign-in verification timed out. Check your connection, then choose Retry.');
     if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
       if (context === 'auth') return this.t('تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وتفعيل تسجيل الدخول بالبريد وكلمة المرور وإضافة نطاق الموقع إلى النطاقات المصرح بها في Firebase.', 'Could not reach Firebase Authentication. Check your internet, enable Email/Password sign-in, and authorize this site domain in Firebase.');
