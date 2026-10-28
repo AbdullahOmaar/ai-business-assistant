@@ -2,14 +2,14 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 3)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 4)
 
-- PR #264 remains open; latest verified head before this documentation update was `15abb57cf0de09c4432e46565d9054d07059e0e1`, with CircleCI 7/7 and JavaScript/Python dependency audit checks passing. This documentation update requires fresh exact-head checks before merge.
-- Reconciliation ledger now documents **27/109** closed-unmerged PR semantic dispositions across three priority batches; **82/109 remain**. These are not 109 mandatory merges.
-- Batch 3 covered #176, #118, #58, #53, #44, #104, #144, #146, and #179. Superseded work was mapped to merged successors where evidence supported it; broader tenant security, authenticated production workflows, and mobile visual QA remain distinct incomplete gates.
-- Current main baseline for the release is `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; version 1.3.4 production smoke evidence is documented in the previous release checkpoint.
-- Next: review the remaining 82 closed-unmerged PRs in focused batches, reconcile the branch/PR inventory snapshots, and recover only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
-
+- PR #264 remains open; batch 3 exact-head CircleCI was 7/7 PASS plus JavaScript/Python dependency audit and GitGuardian secret scan. The new batch 4 docs commit requires fresh exact-head checks before merge.
+- Reconciliation ledger now documents **36/109** closed-unmerged PR semantic dispositions across four priority batches; **73/109 remain**. These are not 109 mandatory merges.
+- Batch 4 reviewed #194, #189, #187, #181, #178, #174, #173, #165, and #164. Tests/source for Admin Firebase failure paths, inventory stock aggregation, mobile navigation/layout, release guide, and CircleCI are already on main or superseded by merged successors. The one-off GitHub runner diagnostic has no runtime patch and is superseded as a CI route by passing CircleCI.
+- Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI six substantive jobs plus aggregate **7/7 PASS**, with Vercel Web/API status contexts successful.
+- Remaining gates include the open foreign-tenant security PR #261 (backend-accounting fails on its recorded head), authenticated production workflows, mobile visual QA, and the remaining 73 closed-unmerged PR reviews.
+- Next: continue focused batches and reconcile branch/PR inventory snapshots. Restore only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
