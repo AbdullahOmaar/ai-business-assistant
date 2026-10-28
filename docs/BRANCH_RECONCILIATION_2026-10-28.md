@@ -108,3 +108,28 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Fresh branch pagination: page 1 = 100, page 2 = 100, page 3 = 33, page 4 = 0; **233 remote branches** including main (232 non-main). No remote branches were deleted.
 - Production release v1.3.4: Web `dpl_8tQwd46MEPxJxCdYKGsqWXKb7kZG` and API `dpl_5AtRUQ5EFmr1WNaP2EDvaRz5cziN` are READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; aliases point to those deployments. CircleCI aggregate passes on the same SHA.
 - This is not a claim that all 109 PRs are reconciled. No branch was deleted, no stale PR was reopened, and no stale branch was merged wholesale.
+
+
+## Closed-unmerged PR audit — batch 4 (10 additional PRs reviewed)
+
+**Source comparison SHA:** `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+| Closed-unmerged PR (head SHA) | Successor / current-main evidence | Disposition |
+|---|---|---|
+| #162 `cb76a9f17d97ea1751703d21b400a18a766a3596` — receivables aging report | API report is merged through #92 (merge `5ca0962dfaa3669c2afbf15a631a1cc78f82f2f8`), typed frontend client through #96 (merge `4dbc96cda1bd7abc82d972dc37466379a78a0fa6`). Current `backend/app/extended_api.py`, `backend/tests/test_api.py`, and `frontend/src/app/api.service.ts` contain the report/client and currency-safe regressions. | Superseded by #92/#96 and later fixes; no restoration. |
+| #160 `f36d5c988736176c921246b1e5c15f99bca15391` — recurring schedule timezone and setting-key validation | Canonical safety consolidation #161 merged as `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`. Current `backend/app/extended_api.py` validates IANA timezones and normalizes/rejects unsafe setting keys; current API tests cover invalid timezone and secret-like setting keys. | Superseded by #161; no restoration. |
+| #159 `09aaa3983ec3db53f74b0cf0b5a3e55142671676` — schedule timezone and setting-key validation | Same #161 terminal merge; same source/test evidence as #160. | Duplicate/superseded; no restoration. |
+| #158 `668ff64001725e6a37af98a3232083d75dc5b228` — CORS preflight for settings PUT | #161 includes the CORS method policy; current `backend/app/main.py::CORS_ALLOWED_METHODS` includes PUT/PATCH/DELETE/OPTIONS and `backend/tests/test_main.py::test_cors_method_policy_includes_settings_put_route` asserts preflight behavior and exposed request ID. | Superseded/present; no restoration. |
+| #157 `29e442167a0de3bfbde0c20f41d5ba2c4d9c580c` — workspace report invalidation and payment retries | Current `WorkspaceLoadGuard` invalidates pending report requests when workspace state is cleared, with `workspace-load-guard.spec.ts` coverage. Payment idempotency and retry safety are independently present in `backend/app/services.py`, `frontend/src/app/api.service.ts`, and #254's merged API regression. The old UI patch is not a safe wholesale replacement for current component changes. | Behavior is present across current-main commits; no stale component snapshot restored. |
+| #156 `71b2c55096a306664c14b1308c472b2c812542a0` — stale reports crossing workspace switches | Current `WorkspaceLoadGuard.invalidate()` is called by `clearWorkspaceData()` for profit/loss and receivables-aging requests; tests assert cleared-state invalidation. | Superseded/present; no restoration. |
+| #155 `a754ac36b0f2e130fd8b0ebabd8ae60f071be00e` — sales returns cannot exceed invoice-line value | Consolidated safety PR #161 merged as `0e4627f51a627ee3eba8ab2b6076724ccc9f3c35`. Current `backend/app/domain_rules.py` contains return amount/quantity validation and discounted return-line reconciliation; current API/operations tests cover cumulative returns and authorization. | Superseded by #161; no restoration. |
+| #154 `6592ba7f43196081f18c5b00d4dab12693e73efd` — business-local financial date boundaries | #161 consolidated the timezone reporting behavior. Current `backend/app/core_features_api.py` resolves validated IANA zones and uses business-local date boundaries; `backend/tests/test_business_timezone_reporting.py` covers local date/DST behavior. | Superseded by #161; no restoration. |
+| #151 `9115cbb07e19722126782fb1de863e58a1c8161b` — GitHub Actions path filters | Clean replacement #153 merged as `e1ccc669058786634bcc3eeb0ff411049d25b4c7`. Current release gating is handled by CircleCI; the remaining Actions provider has pre-step runner allocation failures, and the stale branch filters are not needed to validate current code. | Superseded by #153; no restoration. |
+| #150 `6df082c0a1acc5cc33d99cbe50a726d9d5112005` — permanent engineering agent controller proposal | Branch adds a new GitHub Actions controller workflow, task-ledger scripts, and a proposed persistent agent runtime; the proposal explicitly says the controller is not deployed. Current `AGENTS.md` and `TASKS.md` contain the adopted execution/security/continuity rules, while the repository has no authorized continuously running controller deployment. | Unadopted architecture proposal; do not merge its new workflow/runtime without a separate approved design and operational threat/cost review. |
+
+## Audit accounting — after batch 4
+
+- Closed-unmerged PRs semantically reviewed in the report: **37/109**; **72/109 remain**.
+- PR inventory remains 226 records (114 merged, 109 closed-unmerged, 3 open); branch inventory remains 233 refs (232 non-main), verified by complete pagination.
+- No runtime code was changed or restored in this batch. Current main's CircleCI checks and v1.3.4 Web/API deployment evidence remain as recorded above.
+- Remaining work: continue patch-level review of the other 72 closed-unmerged PRs; identify any unique intended behavior missing from current main and only then decide whether a focused restoration is warranted.
