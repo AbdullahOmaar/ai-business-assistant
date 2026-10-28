@@ -174,3 +174,12 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - PR #238 is still open and Draft with no recorded reviews. Branch protection/review requirements remain unverified because the connected integration returned HTTP 403. No merge or deployment is authorized by this evidence.
 - Documentation update commit on the feature branch: `92c91427ad3f3cec17e290df886a91c101a6bb07` (TASKS.md). This docs-only commit creates a new PR head and therefore requires fresh exact-head status verification before any merge decision.
 - Local test execution, production authenticated Admin smoke, full WCAG 2.2 AA validation, and Web/API deployed SHA parity: NOT RUN / NOT VERIFIED. Production remains NO-GO.
+
+
+## CircleCI-first verification — 2026-10-28 01:19 UTC
+
+- CircleCI passed all four contexts on source SHA `efa94afff7c8e9c9642763e2c5f743e77bfab022`: backend-container (1256), backend-accounting (1253), frontend-quality (1254), frontend-browser-smoke (1255). This covers the PostgreSQL last-owner concurrency regression on that exact candidate.
+- CI configuration review confirms CircleCI runs the disposable PostgreSQL backend suite, migration/schema-drift checks and offline SQL generation, Python/npm audits, frontend build (which runs npm tests), backup/restore shell safety tests, backend image build/import check, and Chromium Playwright E2E.
+- GitHub Actions workflows still conclude failure on that source SHA (runs 682, 1099, 1398, 820); job-step summaries are empty and log retrieval returns HTTP 404 `BlobNotFound`. Their causes are UNVERIFIED. Branch protection and required-check settings cannot be read through the current integration (HTTP 403), and no PR review approvals are recorded.
+- PR #238 remains Draft. No merge, deployment, or production data/configuration changes. Local exact-head test execution, production authenticated Admin smoke, WCAG 2.2 AA validation, and Web/API SHA parity remain NOT RUN / NOT VERIFIED.
+- TASKS.md ledger update commit: `04697b0589557e69799ab0f5d94c9615188698bb`. This documentation update creates another new PR head, so the four CircleCI contexts must be checked again on the resulting latest SHA.
