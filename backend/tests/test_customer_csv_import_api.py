@@ -85,3 +85,77 @@ def test_customer_csv_preview_detects_duplicate_emails_without_writes():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+
+def test_owner_customer_csv_preview_is_read_only_then_import_records_audit():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    csv_text = "name,email,phone\\nImported customer,imported@example.com,01000000000\\n"
+    base = f"/api/v1/businesses/{business_id}/imports/customers.csv"
+    try:
+        with Session(engine) as session:
+            before_customers = session.scalar(
+                select(func.count()).select_from(Customer).where(
+                    Customer.business_id == business_id,
+                )
+            )
+            before_audits = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                )
+            )
+
+        preview = client.post(
+            f"{base}/preview", content=csv_text,
+            headers={"Content-Type": "text/csv"},
+        )
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["valid"] is True
+        assert preview.json()["row_count"] == 1
+        assert preview.json()["write_performed"] is False
+
+        with Session(engine) as session:
+            assert session.scalar(
+                select(func.count()).select_from(Customer).where(
+                    Customer.business_id == business_id,
+                )
+            ) == before_customers
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                )
+            ) == before_audits
+
+        imported = client.post(
+            base, content=csv_text, headers={"Content-Type": "text/csv"},
+        )
+        assert imported.status_code == 202, imported.text
+        result = imported.json()
+        assert result["entity_type"] == "customers"
+        assert result["status"] == "completed"
+        assert result["row_count"] == 1
+
+        with Session(engine) as session:
+            customer = session.scalar(select(Customer).where(
+                Customer.business_id == business_id,
+                Customer.email == "imported@example.com",
+            ))
+            assert customer is not None
+            assert customer.name == "Imported customer"
+            assert customer.phone == "01000000000"
+            assert session.scalar(
+                select(func.count()).select_from(Customer).where(
+                    Customer.business_id == business_id,
+                )
+            ) == before_customers + 1
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "data_import.completed",
+                )
+            ) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
