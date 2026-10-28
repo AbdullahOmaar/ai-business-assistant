@@ -175,6 +175,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <option value="inventory">{{ t('المخزون', 'Inventory') }}</option>
                     <option value="reminders">{{ t('التذكيرات', 'Reminders') }}</option>
                     <option value="reports">{{ t('التقارير', 'Reports') }}</option>
+                    <option value="suppliers">{{ t('الموردون', 'Suppliers') }}</option>
+                    <option value="purchases">{{ t('المشتريات', 'Purchases') }}</option>
+                    <option value="recurring">{{ t('الفواتير الدورية', 'Recurring invoices') }}</option>
+                    <option value="assistant">{{ t('المساعد الذكي', 'AI assistant') }}</option>
                     <option value="system">{{ t('النظام', 'System') }}</option>
                   </select></label>
                   <label>{{ t('العنوان', 'Title') }}<input name="notificationTitle" required maxlength="160" [(ngModel)]="notificationTitle"></label>
@@ -461,11 +465,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <option value="">{{ t('كل العمليات', 'All actions') }}</option>
                     <option value="invoice.issued">{{ t('إصدار فاتورة', 'Invoice issued') }}</option>
                     <option value="invoice.created">{{ t('إنشاء فاتورة', 'Invoice created') }}</option>
+                    <option value="invoice.draft_updated">{{ t('تعديل مسودة فاتورة', 'Invoice draft updated') }}</option>
                     <option value="invoice.voided">{{ t('إلغاء فاتورة', 'Invoice voided') }}</option>
                     <option value="payment.recorded">{{ t('تسجيل دفعة', 'Payment recorded') }}</option>
                     <option value="expense.created">{{ t('تسجيل مصروف', 'Expense recorded') }}</option>
                     <option value="customer.created">{{ t('إضافة عميل', 'Customer created') }}</option>
                     <option value="product.created">{{ t('إضافة منتج', 'Product created') }}</option>
+                    <option value="stock.movement_recorded">{{ t('تسجيل حركة مخزون', 'Stock movement recorded') }}</option>
+                    <option value="supplier.created">{{ t('إضافة مورد', 'Supplier created') }}</option>
                   </select></label>
                   <label>{{ t('نوع السجل', 'Target type') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
                     <option value="">{{ t('كل السجلات', 'All record types') }}</option>
@@ -475,6 +482,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <option value="customer">{{ t('عميل', 'Customer') }}</option>
                     <option value="product">{{ t('منتج', 'Product') }}</option>
                     <option value="business">{{ t('نشاط تجاري', 'Business') }}</option>
+                    <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
+                    <option value="stock_movement">{{ t('حركة مخزون', 'Stock movement') }}</option>
                   </select></label>
                   <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
@@ -1137,6 +1146,10 @@ export class AppComponent implements OnInit {
       inventory: { ar: 'المخزون', en: 'Inventory' },
       reminders: { ar: 'التذكيرات', en: 'Reminders' },
       reports: { ar: 'التقارير', en: 'Reports' },
+      suppliers: { ar: 'الموردون', en: 'Suppliers' },
+      purchases: { ar: 'المشتريات', en: 'Purchases' },
+      recurring: { ar: 'الفواتير الدورية', en: 'Recurring invoices' },
+      assistant: { ar: 'المساعد الذكي', en: 'AI assistant' },
       system: { ar: 'النظام', en: 'System' }
     };
     return labels[kind]?.[this.language] || kind;
@@ -1146,11 +1159,14 @@ export class AppComponent implements OnInit {
     const labels: Record<string, { ar: string; en: string }> = {
       'invoice.issued': { ar: 'إصدار فاتورة', en: 'Invoice issued' },
       'invoice.created': { ar: 'إنشاء فاتورة', en: 'Invoice created' },
+      'invoice.draft_updated': { ar: 'تعديل مسودة فاتورة', en: 'Invoice draft updated' },
       'invoice.voided': { ar: 'إلغاء فاتورة', en: 'Invoice voided' },
       'payment.recorded': { ar: 'تسجيل دفعة', en: 'Payment recorded' },
       'expense.created': { ar: 'تسجيل مصروف', en: 'Expense recorded' },
       'customer.created': { ar: 'إضافة عميل', en: 'Customer created' },
-      'product.created': { ar: 'إضافة منتج', en: 'Product created' }
+      'product.created': { ar: 'إضافة منتج', en: 'Product created' },
+      'stock.movement_recorded': { ar: 'تسجيل حركة مخزون', en: 'Stock movement recorded' },
+      'supplier.created': { ar: 'إضافة مورد', en: 'Supplier created' }
     };
     return labels[action]?.[this.language] || action;
   }
@@ -1162,6 +1178,8 @@ export class AppComponent implements OnInit {
       expense: { ar: 'مصروف', en: 'Expense' },
       customer: { ar: 'عميل', en: 'Customer' },
       product: { ar: 'منتج', en: 'Product' },
+      supplier: { ar: 'مورد', en: 'Supplier' },
+      stock_movement: { ar: 'حركة مخزون', en: 'Stock movement' },
       business: { ar: 'نشاط تجاري', en: 'Business' }
     };
     return labels[target]?.[this.language] || target;
