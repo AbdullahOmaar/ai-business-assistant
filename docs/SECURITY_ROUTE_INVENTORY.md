@@ -7,11 +7,11 @@
 
 ## Denied-mutation regression evidence — PR #251 candidate
 
-- Current main at sync: `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`. It retains the 16-request STAFF denial regression, allowed ordinary product-name edit, and business-scoped audit-event count invariant.
+- Current main at sync: `8facda01faa66dcad758be8d31c85fc1df114182`. It retains the 16-request STAFF denial regression, permitted ordinary product-name edit, and business-scoped audit-event count invariant.
 - Candidate extension snapshots business-scoped counts for `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` before the denied-request batch and asserts all six counts remain unchanged afterward.
-- The previous pre-sync head `76a6d823f47f55f375a3419b668273f719b7b044` had checks pending at inspection. Earlier head `8d8c3b05fde12a89bb3be19f3b8368e244aa5f31` passed seven CircleCI contexts, but that result does not validate the current synchronized candidate.
-- Exact-head CI must pass after this sync. No application permission policy was changed.
-- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244. This test does not claim exhaustive authorization coverage.
+- Previous exact candidate `aec8493a535410ca58dc0b138fda164751809adb` had five CircleCI contexts PASS and backend-accounting FAIL (run 2003). Private job logs were inaccessible. Supplemental diagnostic on a non-exact sandbox snapshot: focused denial test **1 passed**; full backend suite **221 passed, 11 warnings**; `alembic check` reported no new upgrade operations; offline migration SQL generated; `pip-audit` found no known vulnerabilities. These results are not exact-head verification and do not override the CircleCI failure.
+- Fresh exact-head CI must pass after this synchronization. No application permission policy was changed.
+- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244.
 
 ## Authorization model
 

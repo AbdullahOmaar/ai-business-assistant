@@ -1,41 +1,43 @@
 # Current prioritized work queue — 2026-10-28 (refreshed after PR #253 merge)
 
-> This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the evidence below.
+> This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
 ## Current evidence baseline
 
-- **Current main:** `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`. PR #253 is merged; its docs-only commit is now on main.
-- **Exact-main CI:** all six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` are PASS (7/7) on `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`. Both Vercel commit contexts are success.
-- **Production deployment:** Vercel Web and API are both READY on exact main SHA `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`; both deployment records report `githubCommitRef=main`, exact SHA parity, and valid production aliases. Safe HTTP smoke on prior code-identical SHA `91c86932c3344fff395058724f5d44ae4ee06dbd` returned Web 200 and API `/health`, `/readyz`, `/version` 200; the latest merge changed documentation only. Authenticated production workflows remain NOT RUN.
-- **PR #251 / Issue #244:** current synchronized candidate `30146a29d4de9489872b7a9efd27b8c7c88f410b` adds no-write record-count invariants for Customer, Invoice, InvoiceLine, Payment, Supplier and PurchaseOrder. Fresh exact-head CircleCI was triggered after the latest ledger update; the six substantive contexts were pending at the first query. Do not treat older-SHA results as final or merge before exact-head checks pass.
-- **GitHub Actions duplicate runs:** latest backend/dependency/workflow/container runs failed with no executable steps; step-list response was empty and log download returned 404 `BlobNotFound`. Root cause remains UNVERIFIED; do not treat it as a code-test result. CircleCI is the verified substantive CI path.
-- **Repository protections:** GitHub branch API reports `main.protected=false`; required review/check enforcement is therefore not active through branch protection. Do not claim independent approval. Owner action is needed to configure required checks and review rules.
-- **Issue #241 / BUILD-001:** no committed `frontend/package-lock.json`; CI uses `npm install`. Deterministic installs remain TODO.
-- **OPS-001:** full isolated PostgreSQL restore drill remains BLOCKED pending an approved non-production target. No production database restore was attempted.
-- **A11Y-001 / PERF-001:** authenticated Admin accessibility evidence is incomplete; bundle size must be measured on an exact current SHA before deciding whether optimization is needed.
-- **PR-001:** repository-wide branch/closed-unmerged-PR reconciliation remains in progress. Refresh counts before claiming totals; preserve unique work and never bulk-delete branches.
+- **Current main:** `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`. PR #254 payment/OWNER-STAFF regression tests and PR #253 current CI/deployment evidence ledger are verified merged.
+- **Exact-main CI:** all six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` PASS (7/7) on `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`; both Vercel commit contexts succeed.
+- **Production:** Web and API deployments are both `READY` on exact main SHA `7e6e5847141d8f83c4045e2c927dca9a6e9e2448`. Safe smoke: Web root HTTP 200 and Arabic RTL HTML; API `/health`, `/readyz`, and `/version` HTTP 200. `/version` reports `1.3.3` and commit prefix `7e6e5847141d`. Authenticated production workflows remain **NOT RUN**.
+- **GitHub Actions duplicate run:** workflow run `40629143615` failed in frontend/backend jobs with empty step lists. Log retrieval through the connected integration returned 404; root cause remains **UNVERIFIED**. CircleCI is green; do not classify this as a code-test failure without executable logs.
+- **PR #251 / Issue #244:** one of two open PRs; current head `aec8493a535410ca58dc0b138fda164751809adb` adds STAFF denied-route no-write/no-audit record-count assertions for Customer, Invoice, InvoiceLine, Payment, Supplier, and PurchaseOrder. Latest exact-head CircleCI has five contexts PASS and `backend-accounting` FAIL (run 2003); its private job log is inaccessible through the connected reader, so root cause is UNVERIFIED. Do not merge until the failure is diagnosed and exact-head 7/7 passes. Full route × role × tenant coverage remains incomplete. PR #255 is the second open PR and carries this documentation/inventory refresh.
+- **Repository protections:** a current branch-protection read returned 403 (integration permission unavailable); protection state is **NOT VERIFIED**. Do not bypass review or required checks.
+- **BUILD-001 / Issue #241:** `frontend/package-lock.json` is not committed and CI uses `npm install`; deterministic dependency resolution remains TODO.
+- **OPS-001:** isolated PostgreSQL restore drill remains blocked pending an approved non-production target. No production database restore was attempted.
+- **A11Y-001 / PERF-001:** authenticated Admin accessibility evidence is incomplete; current exact-SHA bundle size must be measured before deciding whether optimization is required.
+- **PR-001 / Issue #249:** paginated inventory refreshed 2026-10-28: **220 branches** (219 non-main) and **215 PR records** (**105 merged, 108 closed-unmerged, 2 open: #251 and #255**). Nine non-main branches have no matching PR head: `feat/first-ten-business-foundation`, `fix/accounting/line-rounding-reconciliation`, `fix/backup-restore-target-safety-current-main-20261028`, `fix/deterministic-frontend-install`, `fix/invoice-stock-return-safety`, `learning/toto-practice`, `security/owner-staff-permission-matrix`, `verify/api-release-dec7`, and `verify/merged-main-dec7`. Patch-level audit of all 108 closed-unmerged PRs is not complete; no branches were deleted and no stale PRs were bulk-merged.
 
 ## Ordered queue
 
 | Order | ID / priority | Outcome and evidence | Acceptance gate | Status |
 |---:|---|---|---|---|
-| 1 | SEC-001 / P0 — PR #251, Issue #244 | Denied-STAFF route batch now asserts no record-count changes for six additional business-scoped models plus existing audit/lifecycle/stock invariants. Candidate is synchronized with main; fresh exact-head checks are pending. | Complete all exact-head CircleCI contexts, review the focused diff, then merge through the PR path. Continue broader OWNER-positive, STAFF/non-member, foreign-tenant, no-write/no-audit matrix. | IN_PROGRESS |
-| 2 | CI-007 / P0 — Issue #240 | CircleCI aggregate gate passes on current main; GitHub Actions duplicate jobs fail before executable steps with inaccessible logs. | Repository owner configures and verifies required aggregate `ci/circleci: verify-all-changes/all-checks-passed`, underlying checks and review rules. No bypass. | IN_PROGRESS |
-| 3 | PR-001 / P1 — Issue #249 | PR #253 ledger refresh merged; complete branch/closed-unmerged-PR semantic reconciliation is not yet current. | Refresh every page, compare unique patches/commits to main, follow successor chains, and record evidence for each disposition. No branch deletion or bulk merges. | IN_PROGRESS |
-| 4 | BUILD-001 / P1 — Issue #241 | No committed frontend lockfile; CI still uses `npm install`. | Generate and review lockfile from exact current manifest, switch appropriate CI installs to `npm ci`, and pass exact-head tests/build/audit/browser smoke. | TODO |
-| 5 | OPS-001 / P1 — Issue #106 | Backup/restore safety guards exist, but full isolated restore is not evidenced and no approved target is available. | Obtain approved free/non-production target, restore only there, validate schema/data integrity and document RPO/RTO. | BLOCKED |
-| 6 | A11Y-001 / P1 | Platform Admin keyboard, screen-reader, mobile and WCAG 2.2 AA evidence is incomplete. | Run accessibility checks on exact current SHA, fix findings, rerun; production authenticated smoke remains separate. | NOT RUN |
-| 7 | PERF-001 / P2 — Issue #242 | Historical bundle-size measurements are stale. | Measure current exact-SHA bundle; optimize only if still over budget and preserve auth/startup/PWA/RTL behavior. | TODO |
-| 8 | REL-001 / P0 | Current main has CircleCI 7/7, both Vercel contexts success, and Web/API production deployments READY on the exact main SHA. | Preserve deployment SHA parity; run authenticated production workflows only in a safe approved test context. | VERIFIED for deployment + safe unauthenticated smoke |
+| 1 | REL-001 / P0 | Main `7e6e5847141d8f83c4045e2c927dca9a6e9e2448` has CircleCI 7/7 PASS, both Vercel contexts success, both production deployments READY on exact SHA, and safe Web/API smoke HTTP 200. | Preserve SHA parity; run authenticated production workflows only in an approved safe test context. | VERIFIED for deployment + safe smoke |
+| 2 | FIN-SEC-001 / P0 — PR #254 | Merged at `91c86932c3344fff395058724f5d44ae4ee06dbd`; payment replay test asserts stable payment ID and one persisted payment/allocation; OWNER/STAFF service regression asserts OWNER-only invoice issue/payment posting. | Keep regression tests and exact-main CI green. | VERIFIED MERGED |
+| 3 | SEC-001 / P0 — PR #251 / Issue #244 | STAFF denied-route no-write/no-audit record-count regression remains Draft; latest head changed after prior green run. | Inspect latest diff, synchronize safely to main, run exact-head CI, obtain review, retain OWNER-positive/STAFF/nonmember/foreign-ID/no-write/no-audit coverage. | IN_PROGRESS |
+| 4 | CI-007 / P0 — Issue #240 | CircleCI aggregate gate passes on current main; duplicate GitHub Actions run failed before executable steps; current branch-protection settings are not readable (403). | Repository owner verifies required-check/review rules; document actual settings and re-check. No bypass. | IN_PROGRESS |
+| 5 | PR-001 / P1 — Issue #249 | Inventory counts verified. Five orphan branches are fully behind main (no ahead commits); four orphan branches have unique commits requiring patch review. Branch comparison: `fix/invoice-stock-return-safety` 7 ahead/372 behind; `security/owner-staff-permission-matrix` 3 ahead/343 behind; `learning/toto-practice` 2 ahead/359 behind; `verify/api-release-dec7` 1 ahead/330 behind. | Audit every closed-unmerged PR and all unique branch commits; trace successor merges and tests; restore only proven missing intended behavior in one reviewable PR. | IN_PROGRESS |
+| 6 | BUILD-001 / P1 — Issue #241 | No committed frontend lockfile; CI uses `npm install`. | Generate from exact current manifest in a controlled Node/npm environment; review lockfile; use `npm ci` where appropriate; pass exact-head tests/build/audit/browser smoke. | TODO |
+| 7 | OPS-001 / P1 — Issue #106 | Full isolated PostgreSQL restore drill not evidenced; no approved restore target available. | Use an approved free/non-production target only; validate integrity and document RPO/RTO. No production DB operation. | BLOCKED |
+| 8 | A11Y-001 / P1 | Platform Admin keyboard, screen-reader, mobile and WCAG 2.2 AA evidence remains incomplete. | Run accessibility checks on exact current SHA, fix findings, rerun. | NOT RUN |
+| 9 | PERF-001 / P2 — Issue #242 | Historical bundle measurement is stale and does not describe current main. | Measure current exact-SHA bundle first; optimize only if over budget while preserving auth/startup/PWA/RTL. | TODO |
 
 ## Execution discipline and next actions
 
-1. Finish PR #251 exact-head checks; investigate any CircleCI failure from its actual job output and fix on the same branch.
-2. Review the security test diff and merge only after all checks pass and review requirements are satisfied.
-3. Configure branch-protection/review rules as a repository-owner action; no settings were changed here.
-4. Resume lockfile work only after the current security branch is merged, preserving one active work branch per task.
-5. Do not perform production financial mutations, production DB restores, paid quota upgrades, or branch deletion without explicit authorization.
-6. Checks not run against an exact current checkout remain NOT RUN; historical green checks do not validate newer commits.
+1. Preserve exact current-main CI and deployment SHA parity; do not trigger redundant production deployments.
+2. Revalidate PR #251 at its latest head and resolve its stale/dirty branch safely before considering merge; no review is recorded.
+3. Continue the 108 closed-unmerged PR semantic audit. Use commit ancestry and patch/test evidence, not branch names or claimed successors. No branch deletion or bulk merge.
+4. Finish lockfile, isolated restore drill, accessibility and performance tasks in priority order; keep blocked/not-run states truthful.
+5. Record exact SHA and actual test output for every gate. No authenticated production mutation, production DB restore, paid upgrade, or protection bypass is authorized by this queue.
+
+---
 
 
 ## Platform Admin — five-task execution — 2026-10-27
