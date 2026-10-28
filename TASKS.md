@@ -1,24 +1,24 @@
-# Current prioritized work queue — 2026-10-28 (live checkpoint after PR #274)
+# Current prioritized work queue — 2026-10-28 (live checkpoint after security PR #244)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
 ## Current verified repository state
 
-- **Main SHA:** `84000ed6a1d2459dedca6296008563dab1147bd8`. PR #274 (customer CSV preview/import UI plus duplicate-email and tenant-isolation regressions) merged at this SHA.
-- **Paginated GitHub inventory before this work branch:** **236 PR records** — **124 merged**, **111 closed-unmerged**, **1 open Draft PR (#244)**; **244 remote branches**. These are exact observed page totals (100 + 100 + 35 PRs; 100 + 100 + 43 branches) and reflect the inventory after this Draft PR opened.
-- **Closed-unmerged semantic reconciliation:** PR #264 records dispositions for 109 historical closed-unmerged PRs at its snapshot. The live inventory now has 111 closed-unmerged records. The two records beyond PR #264's 109-record snapshot are **#261** (superseded by merged #267) and **#270** (partial snapshot superseded by merged #264); both dispositions are documented in the reconciliation addendum. Current observed disposition coverage: **111/111**.
-- **PR #274:** merged; merge commit `84000ed6a1d2459dedca6296008563dab1147bd8`. Exact-head CircleCI contexts: six substantive jobs + aggregate **7/7 PASS**. GitHub backend/frontend/build/dependency/security checks observed **SUCCESS**. No production deployment was performed as part of this merge.
-- **Security PR #244 / tracking issue #276 — route × role × tenant matrix:** **IN PROGRESS**. Main has STAFF-denied no-write/no-audit assertions for 16 sensitive requests and foreign-business lifecycle coverage from merged #267/#271/#272. This branch adds non-member denial and no-side-effect checks for customer CSV export, preview, and import. Remaining matrix coverage and authenticated production smoke are not yet complete.
-- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no branch-delete operation; preserve all remote branches and do not emulate deletion by moving refs.
-- **Production:** deployment and authenticated production workflows for current main SHA `84000ed6a1d2459dedca6296008563dab1147bd8` are **NOT RUN / NOT REVERIFIED** in this pass. No deployment was triggered.
-- **Physical Android/mobile visual and screen-reader QA:** **NOT RUN**. Isolated PostgreSQL restore drill remains **BLOCKED** pending an approved non-production target.
+- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046`. Security PR #244 merged at this exact SHA.
+- **Paginated inventory snapshot:** **237 PR records** — **125 merged**, **111 closed-unmerged**, **1 open Draft PR (#278)**; **245 unique remote branches**. Evidence: PR pages 100 + 100 + 37; branch pages 100 + 100 + 45. This snapshot is before issue #249 is converted into a reconciliation PR.
+- **Closed-unmerged semantic dispositions:** **111/111** records dispositioned. PR #264 covers the historical 109; PR #261 is explicitly superseded by merged #267, and PR #270 by merged #264. Do not merge stale branches wholesale.
+- **PR #244 — non-member CSV authorization:** merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`. Exact-head CircleCI: six substantive jobs + aggregate **7/7 PASS**. GitHub Actions: backend, frontend, build, Python/JavaScript dependency audits, test, and GitGuardian **7/7 SUCCESS**. Backend job: **231 passed, 7 skipped, 16 warnings**; full test job: **232 passed, 6 skipped, 16 warnings**. PostgreSQL migration validation and ORM migration-drift checks passed. Local tests: **NOT RUN** in this connector-only session.
+- **Issue #249 — repository reconciliation:** **IN PROGRESS** on `docs/reconciliation-post-security-merge-20261028`, based on the current main SHA above. This pass compares the 11 current branch names absent from the previous ledger and records dispositions below. No stale branch is merged or deleted.
+- **Employee/payroll PR #278:** open Draft on `feat/employee-payroll-management`, latest observed head `06cf28fbaec088bcebdeb1a48792f14299b4faa0`; 13 files, 1,723 additions, 22 deletions. It contains unique employee/payroll API, migration, tests, and UI; keep it separate from the reconciliation PR. Its exact-head CI was still pending at last inspection. No merge or deployment claimed.
+- **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration exposes no authorized branch-delete operation. Preserve branches; do not emulate deletion by moving refs.
+- **Production:** no deployment was triggered. Authenticated production workflows and physical Android/mobile accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** until an approved isolated non-production target exists.
 
 ## Next actions
 
-1. Run exact-head CircleCI and GitHub checks for the non-member CSV security regression; fix any genuine failures without weakening tests.
-2. Keep the closed-unmerged ledger synchronized with new closures; current observed 111/111 records are dispositioned. Refresh counts after any new PR state changes.
-3. Continue PR #244's remaining route × role × tenant coverage; do not merge/deploy until the relevant exact-head gates and required review are satisfied.
-4. Keep branch deletion separate and blocked until an authorized delete-capable route is available.
+1. Complete and review the 11-branch addendum; open the single reconciliation PR linked to #249 and refresh counts after it opens.
+2. Run exact-head CircleCI and GitHub checks for the reconciliation PR; only restore code if a missing, intended behavior is proven.
+3. Continue PR #278's employee/payroll verification on its own branch; do not combine it with reconciliation.
+4. Keep branch deletion and production deployment out of scope until authorized tooling/release gates are available.
 
 ---
 
