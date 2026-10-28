@@ -5,14 +5,13 @@
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
-## Denied-mutation regression evidence — candidate PR #238
+## Denied-mutation regression evidence — PR #251 candidate
 
-- `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes` exercises 16 sensitive STAFF mutation/read requests and expects HTTP 403 for each; the ordinary product-name edit remains allowed.
-- Existing state assertions verify issued invoice lifecycle, product price/stock-tracking fields, sales-return count, stock movement count, recurring schedule count, and notification count remain unchanged after the denied requests.
-- Candidate update on `feat/platform-admin-membership-concurrency-20261028` records the business-scoped `AuditEvent` count before the denied request batch and asserts the count is unchanged afterward.
-- CircleCI backend-accounting and the aggregate gate passed on exact candidate SHA `595152b6a2e6e60290b44397b919cb24ad82cdcc` (backend-accounting run 1572; aggregate workflow `b7760c99-cdb2-4c4c-a982-b0016c1bc38f`). The broader route inventory still has explicit coverage gaps; this is not a claim of exhaustive authorization testing. The test does not by itself prove every route in this inventory has complete OWNER/STAFF/non-member/foreign-ID coverage; route-specific gaps must remain explicit rather than inferred away.
-- The candidate was subsequently synchronized with main v1.3.3 at merge commit `6d973aab2225f9173c066a4863ab6d407bc19c9f`; final-head checks are pending, so the prior pass is not final merge evidence.
-
+- Current main at sync: `8facda01faa66dcad758be8d31c85fc1df114182`. It retains the 16-request STAFF denial regression, permitted ordinary product-name edit, and business-scoped audit-event count invariant.
+- Candidate extension snapshots every persisted column for each business-scoped `Customer`, `Invoice`, `InvoiceLine`, `Payment`, `Supplier`, and `PurchaseOrder` row before the denied-request batch, then compares full row snapshots afterward. Each of the 16 denied requests is now executed sequentially with its own before/after business-scoped `AuditEvent` count and an explicit HTTP 403 assertion, preventing a passing batch total from masking which individual request emitted an audit event.
+- Previous exact candidate `aec8493a535410ca58dc0b138fda164751809adb` had five CircleCI contexts PASS and backend-accounting FAIL (run 2003). Private job logs were inaccessible. Supplemental diagnostic on a non-exact sandbox snapshot: focused denial test **1 passed**; full backend suite **221 passed, 11 warnings**; `alembic check` reported no new upgrade operations; offline migration SQL generated; `pip-audit` found no known vulnerabilities. These results are not exact-head verification and do not override the CircleCI failure.
+- Fresh exact-head CI must pass after this synchronization. No application permission policy was changed.
+- Remaining gaps: exhaustive route × role × tenant coverage, including OWNER-positive, STAFF/non-member, foreign-business IDs, and field-level no-write/no-audit checks, remains open under issues #110 and #244.
 
 ## Authorization model
 
