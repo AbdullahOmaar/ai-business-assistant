@@ -152,5 +152,6 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
         )
 
     assert remaining_owners == 1
-    assert remaining_members == 1
+    expected_members = 2 if demote_response.status_code == 200 else 1
+    assert remaining_members == expected_members
     assert audit_count == 1, "the successful mutation and its audit event must commit together"
