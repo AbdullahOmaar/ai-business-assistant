@@ -28,6 +28,7 @@ test('workspace version and build time live inside the current-business card', (
   assert.ok(workspace.includes('buildTimeLabel'));
   assert.equal(source.includes('class="mobile-version-strip"'), false);
   assert.equal(source.includes('class="workspace-release-meta" [attr.aria-label]'), false);
+  assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)\}/);
 });
 
 test('invoice creation is presented before invoice filtering', () => {
