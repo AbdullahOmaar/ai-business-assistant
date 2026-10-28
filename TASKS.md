@@ -2,22 +2,36 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
+## Reconciliation checkpoint — 2026-10-28 (audit complete; production verified)
+
+- PR #264 documents evidence-based dispositions for **109/109 closed-unmerged PRs**; this does not mean all 109 should be merged.
+- Latest paginated inventory: **237 branches**, **230 PR records** (118 merged, 109 closed-unmerged, 3 open: #270, #264, #261). **11 orphan branches**, **10 branch/PR SHA mismatches**, **0 PR heads without a branch**; all have source/test-based dispositions in the reconciliation ledger.
+- PR #268 merged at `f1d684677ce18868cb85f6a7bdcd173b95a7e174` after CircleCI 7/7 PASS (Platform Admin mobile keyboard/viewport E2E). Physical-device/screen-reader QA remains NOT RUN.
+- PR #269 merged at `4b03060d1728a36a8dcb69cae2ef6b3baf532a7f` after CircleCI 7/7 PASS (safe PostgreSQL restore runbook). Actual restore remains NOT RUN/BLOCKED pending an approved non-production target.
+- PR #267 merged at `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d` after CircleCI 7/7 plus GitHub build/test/dependency checks. It validates payment allocations before creating Payment rows and adds foreign-tenant no-side-effect regressions.
+- Production verification on main `9fc9a9a53ef1df744ddd2137e09ff4ec5bc2310d`: CircleCI **7/7 PASS**, Vercel Web/API success; `/version`, `/health`, `/readyz`, web root, manifest and service worker returned HTTP 200. Production version is **1.3.4**, commit `9fc9a9a53ef1`; SW cache `aba-shell-v1.3.4-9fc9a9a53ef1`.
+- PR #261 was marked Draft/superseded by merged #267; its old backend-accounting failure root cause remains unverified due inaccessible logs. Do not merge the stale duplicate.
+- PR #270 is an earlier partial audit snapshot, marked superseded by #264 and left Draft/open.
+- PR #264 latest exact-head CircleCI passed 7/7; GitGuardian was still in progress at the last poll. The latest ledger update requires fresh exact-head checks before merge.
+- Remaining independent gates: authenticated production workflows NOT RUN, physical mobile visual/accessibility QA NOT RUN, and isolated PostgreSQL restore drill BLOCKED pending approved non-production target. No production deployment is authorized by this audit PR.
+---
+
 ## Current evidence baseline
 
-- **Last fully verified main SHA:** `cd26226c16174377a18e38ca55837570c81f1139`; CircleCI passed 7/7 on this SHA. PR #262 merged the OWNER-only service guard/receivables regressions at `cb4c8a4d297b8a526b4de6e69e7909cbd4acbce3`; PR #263 merged nine audit dispositions at `f36e2ea05c07f9b27f21d0927bf8c5934d1c9a86`. This ledger-only refresh will require a fresh exact-main check.
-- **Exact-main CircleCI:** all six substantive contexts plus aggregate **7/7 PASS** on `cd26226c16174377a18e38ca55837570c81f1139`. Current Vercel Web/API contexts fail with `build-rate-limit`; the ledger-only refresh below triggers a new main SHA and requires revalidation.
+- **Last fully verified main SHA:** `b84966db294c87338385508b35e98f2b2287e13e`; all six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` passed **7/7** on this exact SHA. Vercel Web/API contexts still fail with `build-rate-limit`; no deployment was performed.
+- **Exact-main CircleCI:** all six substantive contexts plus aggregate **7/7 PASS** on `b84966db294c87338385508b35e98f2b2287e13e`. Current Vercel Web/API contexts fail with `build-rate-limit`.
 - **Production:** latest READY Web deployment remains on SHA `ecb518cf4b67b27cb82ec32c26fe6deae8bcc72a`; isolated initial bundle is 656.24 kB. API remains READY on older SHA `7e6e5847141d8f83c4045e2c927dca9a6e9e2448` (health/readiness/version returned HTTP 200 on that SHA). PR #262's backend guard is **merged but NOT DEPLOYED**. Current-main Vercel Web/API contexts fail with `build-rate-limit`; a preview attempt was rejected with HTTP 402 `api-deployments-free-per-day` (`retryAfter=86400`). No deployment was created and no paid plan was changed. Authenticated production workflows remain **NOT RUN**.
 - **GitHub Actions duplicate run:** workflow run `40629143615` failed before executable steps (empty step lists); log retrieval returned 404. Root cause remains **UNVERIFIED**. CircleCI is green; do not misclassify this as an application-test failure.
 - **PR #251 / Issue #244:** merged at `a62502c981fad9a63c05813ed81f86956802f83a` after exact PR-head CircleCI 7/7 PASS. The STAFF denial test asserts each of 16 denied requests returns 403 and leaves the business-scoped audit-event count unchanged, and compares all columns for business-scoped Customer, Invoice, InvoiceLine, Payment, Supplier, and PurchaseOrder records. Issue #244 remains open for broader OWNER-positive, STAFF/non-member, foreign-business ID, and full route × role × tenant no-write/no-audit coverage.
 - **PR #256 / Issue #242:** **MERGED** at main SHA `ecb518cf4b67b27cb82ec32c26fe6deae8bcc72a`. Isolated initial bundle measurement is **656.24 kB**, down from 770.18 kB and 43.76 kB below the 700 kB budget. Web production deployment is READY on this SHA; API deployment remains separately blocked by `build-rate-limit`.
 - **PR #261 / Issue #244:** head `28d64c10aa067f83b86041eeb296eb76dcd764ec`; five substantive CircleCI jobs PASS, but `backend-accounting` FAILS. Root cause is not verified; keep open until exact failure is diagnosed and all six jobs plus aggregate pass.
 - **PR #262 / Issue #110:** **MERGED** at `cb4c8a4d297b8a526b4de6e69e7909cbd4acbce3`; exact PR head `bbeac544fb1ab5538cd990b117e706ee05ddf082` passed all six substantive CircleCI jobs plus aggregate **7/7 PASS**. It adds the service-level OWNER-only stock guard, STAFF no-write/no-audit regression, STAFF audit-log denial, and receivables-aging regression. API deployment remains blocked by the Vercel quota; this code is not yet live.
-- **PR #263 / Issue #249:** **MERGED** at `f36e2ea05c07f9b27f21d0927bf8c5934d1c9a86`; nine of 109 closed-unmerged PRs have evidence-based successor dispositions documented. **100/109 remain** for semantic review; no stale branch was merged wholesale.
+- **PR #263 / Issue #249:** **MERGED** at `f36e2ea05c07f9b27f21d0927bf8c5934d1c9a86`; nine of 109 closed-unmerged PRs have evidence-based successor dispositions documented. **91/109 remain** for semantic review; no stale branch was merged wholesale.
 - **BUILD-001 / Issue #241:** PR #258 merged at `91592ede7322ad6b2450d27b88e465c2ccec2630`. `frontend/package-lock.json` is lockfile v3 with 506 package entries; JSON parse and exact root dependency/devDependency spec parity were checked before merge. Five CircleCI project dependency installs use `npm ci --no-audit --no-fund`; explicit npm audit steps remain. Exact-main CircleCI passed 7/7.
 - **Repository protections:** GitHub branch API reports `main.protected=false`; required review/check enforcement is not active via branch protection. Do not bypass safeguards; repository owner should configure required checks and review policy.
 - **OPS-001:** isolated PostgreSQL restore drill remains blocked pending an approved non-production target. No production restore was attempted.
 - **A11Y-001 / PERF-001:** authenticated Admin keyboard/screen-reader/mobile accessibility evidence remains incomplete. Performance acceptance is now measured: 656.24 kB initial / 122.13 kB lazy Platform Admin chunk versus 770.18 kB baseline. Web is deployed on current main; API remains on older SHA due Vercel `build-rate-limit`.
-- **PR-001 / Issue #249:** current inventory snapshot: **230 branches** and **223 PR records** (**113 merged, 109 closed-unmerged, 1 open: #261**). Ten orphan branches have evidence-based dispositions; PR #260 restored two missing accounting regressions; PR #262 restored the service-level OWNER guard and receivables-aging regression; PR #263 documented nine closed-PR dispositions. The semantic audit of all 109 closed-unmerged PRs remains **INCOMPLETE** (100 still to review); no branches were deleted or stale branches bulk-merged.
+- **PR-001 / Issue #249:** current inventory snapshot: **230 branches** and **223 PR records** (**113 merged, 109 closed-unmerged, 1 open: #261**). Ten orphan branches have evidence-based dispositions; PR #260 restored two missing accounting regressions; PR #262 restored the service-level OWNER guard and receivables-aging regression; PR #263 documented the first nine closed-PR dispositions; the second nine-PR audit batch is recorded in `docs/BRANCH_RECONCILIATION_2026-10-28.md` on the current reconciliation branch. The semantic audit of all 109 closed-unmerged PRs remains **INCOMPLETE** (91 still to review); no branches were deleted or stale branches bulk-merged.
 
 ## Ordered queue
 
@@ -1396,6 +1410,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - `09baba95ac929ff92acb2cb26cd04bdf93daf1bd` — align release metadata beside the current workspace.
 - `0ffdb206a35ef9a36ada34bfa9df117a696a600f` — regression assertion for centered workspace metadata.
 
+
+- **PR-001 / Issue #249 — batch 2 candidate:** nine additional closed-unmerged PRs (#257, #252, #216, #211, #209, #205, #201, #199, #198) were traced to merged terminal successors and verified present on the audit base; no stale changes were restored. Inventory pagination confirms 230 branches, 222 closed PRs (113 merged / 109 unmerged), and one open PR (#261). Exact-head CI is pending for this documentation-only reconciliation branch; do not mark it merged until the checks pass.
+
 ## Verification ledger — UI/UX batch, 2026-10-28
 
 - PR #243 was merged on 2026-10-28. Verified merge commit and current main head at the post-merge check: `7d9f270662b7a838ee1eae4748c2df4634c19448`.
@@ -1418,3 +1435,113 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Live inventory: **214 branches** (213 non-main); **209 PR records** — 101 merged, 107 closed without merge, 1 open PR (#239).
 - Nine branches have no matching current PR head: `feat/first-ten-business-foundation`, `fix/accounting/line-rounding-reconciliation`, `fix/backup-restore-target-safety-current-main-20261028`, `fix/deterministic-frontend-install`, `fix/invoice-stock-return-safety`, `learning/toto-practice`, `security/owner-staff-permission-matrix`, `verify/api-release-dec7`, `verify/merged-main-dec7`. Review their trees before any deletion.
 - PRs #236, #238, #243, and #248 are merged. PR #239 is the sole open PR at this snapshot. CircleCI 7/7 PASS on main; Vercel Web/API remain blocked by `build-rate-limit`.
+
+## Repository reconciliation / release checkpoint — 2026-10-28 (PR #264 branch)
+
+- Current main SHA verified after release merge: `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+- Release v1.3.4 is deployed: Vercel Web deployment `dpl_8tQwd46MEPxJxCdYKGsqWXKb7kZG` READY and API deployment `dpl_5AtRUQ5EFmr1WNaP2EDvaRz5cziN` READY; both reference the same main SHA. The production aliases are assigned to these deployments.
+- Exact-main CircleCI: frontend unit tests, production build, dependency audit, backend container, backend accounting, browser smoke and aggregate gate all PASS.
+- Issue #249 inventory refreshed with pagination: 233 branches (100 + 100 + 33); 226 PR records (100 + 100 + 26): 114 merged, 109 closed-unmerged, 3 open. No branch deletion or bulk stale merge.
+- Semantic audit ledger now covers 27/109 closed-unmerged PRs across three batches; 82 remain. Batch 3 disposition evidence is in `docs/BRANCH_RECONCILIATION_2026-10-28.md`.
+- Closed-unmerged PRs #195, #194, #189, #187, #181, #176, #173, #164 and #163 were checked against current source/tests and terminal merged successors. Core startup E2E, Firebase lookup failure handling, v1.3.0 feature guide/invoice/stock, repeated-SKU stock guard, mobile UI, payment idempotency and PostgreSQL concurrency tests are present. The old GitHub Actions concurrency/runner-diagnostic changes are not restored because the current CircleCI pipeline is the authoritative green gate and the Actions provider remains blocked before job steps.
+- No new runtime behavior was restored in this batch. Visual/mobile accessibility review, authenticated production workflows, live Firebase failure injection and an isolated PostgreSQL restore drill remain NOT RUN.
+- Next action: continue semantic patch review of the remaining 82 closed-unmerged PRs; only restore a unique intended behavior if current-main source/tests prove it is missing.
+
+
+## Repository reconciliation checkpoint — batch 4 (2026-10-28)
+
+- Added evidence-based dispositions for closed-unmerged PRs #162, #160, #159, #158, #157, #156, #155, #154, #151, and #150 to `docs/BRANCH_RECONCILIATION_2026-10-28.md`.
+- Verified current main contains the receivables-aging API/client and currency-safe tests; timezone validation and business-local reporting; CORS PUT preflight policy/test; workspace request invalidation; sales-return amount/quantity guards; and payment idempotency/replay safety.
+- Supersession evidence: #162 -> #92/#96; #150 is an unadopted controller proposal; #151 -> #153; #154/#155/#158/#159/#160 -> #161. #156/#157 behavior is already present across current-main source/tests, so stale UI snapshots were not restored.
+- Formal audit ledger: 37/109 closed-unmerged PRs reviewed, 72 remain. Inventory: 233 remote branches (100+100+33+0); 226 PR records (100+100+26+0), 114 merged, 109 closed-unmerged, 3 open.
+- Latest main SHA remains `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; release v1.3.4 Web/API are READY on that SHA and CircleCI aggregate passed.
+- No source/runtime changes in this batch. Next: continue semantic patch review; restore only a unique, intended behavior proven missing on current main.
+
+
+## Repository reconciliation checkpoint — batch 5 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #149, #148, #147, #146, #144, #143, #140, #136, #134, and #133.
+- Terminal successors/source evidence: #143/#144/#148/#149 -> #161; #146/#147 -> #168 plus later #254 payment regression; #140 -> #141; #134's feature set is now split across #141/#192/#197/#203/#215; #133 -> #197. The v1.0.0 badge branch #136 is obsolete after current v1.3.4 release.
+- Current main contains business-timezone reporting, return amount/quantity guards, CORS PUT preflight, workspace request invalidation, payment idempotency/retry safety, assistant suggestions/build metadata, tax summary, and operations/data-integrity UI. No stale snapshot was merged.
+- Formal audit ledger: 47/109 closed-unmerged PRs reviewed, 62 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Current main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API deployments READY on that SHA and CircleCI aggregate PASS.
+- No source/runtime changes in this batch; continue semantic review of remaining closed-unmerged PRs.
+
+
+## Repository reconciliation checkpoint — batch 6 (2026-10-28)
+
+- Added evidence-based dispositions for closed-unmerged PRs #178, #174, #165, #132, #130, #129, #128, #127, #123 and #121.
+- Current-main evidence confirms the customer statement API/UI and mobile scroll tests; invoice draft editor and release guide; owner-only data-integrity report; owner activity log; supplier/purchasing/recurring-schedule/notification UI and APIs; and the test-before-build frontend gate are already present through terminal successors/current commits.
+- No stale UI snapshots or duplicate APIs were restored.
+- Formal audit ledger: 57/109 closed-unmerged PRs reviewed, 52 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API deployments READY on that SHA and CircleCI aggregate PASS.
+- No source/runtime changes in this batch. Continue the remaining semantic audit before declaring issue #249 complete.
+
+
+## Repository reconciliation checkpoint — batch 7 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #120, #119, #118, #117, #116, #114, #113, #112, #108 and #104.
+- Current-main evidence: owner activity log and customer statement integrated via #125; currency-safe receivables aging via #92 plus later accounting tests; data-integrity UI via #203; mobile version display via #105 and later release metadata; HALF_UP rounding and invoice draft editor are present; sales-return quantity/amount checks were consolidated in #105/#161.
+- Formal audit ledger: 67/109 closed-unmerged PRs reviewed, 42 remain. Inventory remains 233 remote branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Latest main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on the same SHA.
+- No source/runtime changes in this batch. Continue semantic review of remaining PRs; no stale branch cleanup or bulk merges.
+
+
+## Repository reconciliation checkpoint — batch 8 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #103, #101, #98, #76, #74, #73, #72, #71, #70 and #58.
+- Verified current-main behavior for v1.3.4 release metadata, safe CSV preview-before-confirmation, mobile invoice drafts, deterministic authorized local assistant fallback, customer statement/audit event APIs, owner-managed workspace membership role changes with last-owner concurrency tests, tenant-scoped customer search, scheduled CircleCI dependency audits, and workspace-switch request invalidation.
+- Formal audit ledger: 77/109 closed-unmerged PRs reviewed, 32 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
+- No source/runtime changes in this batch. Continue semantic review of the remaining 32 PRs.
+
+
+## Repository reconciliation checkpoint — batch 9 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #57, #56, #54, #53, #50, #49, #48, #47, #46 and #44.
+- Current main already contains payment CSV export, generic spreadsheet-safe CSV serialization, customer/product/invoice search/filter/export, the security route inventory, tenant-isolation regressions, assistant safety tests, Arabic-first mobile/PWA behavior and foreign-workspace denial tests.
+- Added one missing focused regression only: `frontend/src/app/payment-csv-export.spec.ts` asserts owner-only/empty-state controls, exported ledger columns, allocation count, dated filename and use of the shared formula-safe CSV helper.
+- Formal audit ledger: 87/109 closed-unmerged PRs reviewed, 22 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Latest main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
+- No production behavior/deployment configuration changed. Continue the remaining semantic review and run exact-head CI before merging this reconciliation PR.
+
+
+## Repository reconciliation checkpoint — batch 10 (2026-10-28)
+
+- Added dispositions for closed-unmerged PRs #43, #42, #41, #40, #39, #38, #36, #27, #25 and #23.
+- Current main contains assistant provider timeout/retry and bounded conversation history via #217/#219; payment integrity regressions; empty-stock zero-balance coverage; Arabic RTL/startup shell; and responsive mobile navigation. CORS, repeated-SKU stock validation and sales-return lifecycle are already present through later mainline safety PRs.
+- #42/#41 are duplicate heads. #27's Firebase Hosting path is obsolete while Vercel is the active production target. #25's old deployment/runtime config was not copied. #23 is an obsolete disconnected sample shell.
+- Formal audit ledger: 97/109 closed-unmerged PRs reviewed, 12 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
+- Current main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
+- No runtime/deployment configuration changes in this batch. Continue the final 12 PR reviews and exact-head CI for PR #264.
+
+
+## Closed-unmerged PR reconciliation — PR audit complete, branch inventory pending (2026-10-28)
+
+- Added final dispositions for #22, #21, #20, #19, #18, #17, #16, #15, #9, #8, #5 and #1.
+- Formal PR audit ledger: **109/109 closed-unmerged PRs reviewed** against source, tests, linked successors and current-main behavior. No stale PR was reopened or merged wholesale.
+- Current main already contains the evolved PostgreSQL/FastAPI/Angular architecture, secure Firebase identity, tenant-scoped APIs, models/migrations/domain rules, safe CSV parser/export helpers, inventory integrity, payment replay validation, sales-return guards, and current mobile/PWA UI. Old shells and conflicting architecture proposals were not restored.
+- One focused test-only gap identified in batch 9 is included in this PR: `frontend/src/app/payment-csv-export.spec.ts`.
+- Inventory counts reverified: 233 remote branches (100+100+33+0); 226 PR records (100+100+26+0): 114 merged, 109 closed-unmerged, 3 open.
+- **Still pending:** materialize all branch names + SHA + associated PR numbers/states into the reconciliation report; exact-head CircleCI/security checks on PR #264 must pass before merge. This issue is not VERIFIED COMPLETE until both are done.
+- Release v1.3.4 remains deployed Web/API READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; CircleCI aggregate passed on that SHA.
+
+
+## Complete branch inventory verified — 2026-10-28
+
+- Materialized all remote branch refs into `docs/BRANCH_RECONCILIATION_2026-10-28.md` with full branch name, exact SHA, matching PR numbers/states, and whether each PR head SHA matches the current branch.
+- Branch pages: 100 + 100 + 33 + 0 = **233 branches**. PR pages: 100 + 100 + 26 + 0 = **226 PR records** (114 merged, 109 closed-unmerged, 3 open).
+- **12 branches have no associated PR** in the complete paginated inventory; **12 branches have at least one associated PR whose head SHA differs** from the current branch ref. These are recorded for review, not deletion.
+- All **109/109 closed-unmerged PRs** have evidence-based dispositions in the reconciliation report. No branch was deleted, no PR reopened, and no stale branch merged wholesale.
+- Remaining gate: exact-head CircleCI/security checks for PR #264 must pass before merge. The payment CSV test is a focused regression only; no runtime or deployment config changes are included.
+- Production release v1.3.4 remains READY for Web and API on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; no deployment is requested for this audit PR.
+
+
+## Issue #249 final inventory checkpoint — 2026-10-28
+
+- Full branch table is now materialized in `docs/BRANCH_RECONCILIATION_2026-10-28.md`: 233 branch names, full SHAs and matching PR state/head-match evidence. Snapshot was captured immediately before the inventory refresh commit at branch SHA `7792d8c7e475351a17ab8e44750a3346f014bc49`; the audit branch itself advances as documentation commits land.
+- Pagination evidence: branches 100+100+33+0 = 233; PRs 100+100+26+0 = 226 (114 merged, 109 closed-unmerged, 3 open).
+- 12 branches have no associated PR and 12 branches have a PR head SHA that differs from the live branch SHA; both sets are recorded for owner review, not deletion.
+- All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
+- Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
+- Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
