@@ -19,7 +19,7 @@ test('expense view is reachable from mobile More and has bilingual labels', () =
   assert.match(ui, /@if \(tab === 'expenses'\)/);
   assert.match(ui, /t\('تسجيل مصروف', 'Record an expense'\)/);
   assert.match(ui, /t\('حفظ المصروف', 'Save expense'\)/);
-  assert.match(ui, /\['products','payments','expenses','assistant'/);
+  assert.match(ui, /\['products','payments','expenses','employees','assistant'/);
 });
 
 test('workspace load and clear paths include expense records', () => {
