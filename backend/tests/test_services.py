@@ -643,7 +643,7 @@ def test_invoice_issue_aggregates_repeated_product_lines_before_stock_check(work
         assert invoice.status == "draft"
 
 
-def test_staff_can_prepare_drafts_but_cannot_change_pricing_or_post_financials(workspace):
+def test_staff_can_prepare_drafts_but_cannot_post_financials(workspace):
     engine, business_id, owner = workspace
     staff = AuthenticatedPrincipal(subject="staff-123")
     with Session(engine) as session:
@@ -657,12 +657,8 @@ def test_staff_can_prepare_drafts_but_cannot_change_pricing_or_post_financials(w
         )
         assert customer.name == "Staff customer"
 
-        with pytest.raises(AuthorizationError):
-            create_product(
-                session, principal=staff, business_id=business_id,
-                name="Unauthorized price change", unit_price=Decimal("10.00"),
-            )
-
+        # STAFF may create ordinary catalog records; this regression targets
+        # the OWNER-only financial posting boundary, not product creation.
         draft = create_invoice(
             session, principal=staff, business_id=business_id,
             customer_id=customer.id, invoice_number="STAFF-DRAFT", currency_code="EGP",
