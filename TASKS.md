@@ -21,6 +21,31 @@
 2. Requery main SHA, PR/branch inventory and production web/API health after merges.
 3. Delete only branches whose merged PR and current branch head are verified, once a delete-capable authorized route is available. Preserve open-PR branches and any orphan/mismatched branch pending owner review.
 
+## Employee & payroll feature — EMP-PAY-001 (P1)
+
+**Owner/branch:** Engineering coordinator — `feat/employee-payroll-management` (single work branch for the entire feature).
+**Baseline:** created from main SHA `84000ed6a1d2459dedca6296008563dab1147bd8` after checking the current repository ref, open PRs, branch inventory, source tree, `AGENTS.md`, `README.md`, `.circleci/config.yml`, and the existing task ledger.
+**Goal:** Deliver a business-scoped employee directory and a secure payroll workflow in the existing Angular + FastAPI + PostgreSQL architecture. No production deployment is authorized by this task.
+
+### Repository evidence gathered before implementation
+- No `Employee` or `Payroll` SQLAlchemy model, migration, or dedicated API routes were found in the current source tree.
+- Existing business identities are represented by `BusinessMembership` and the current role model is `OWNER` / `STAFF`; platform-user administration is a separate global feature and must not be reused as the business employee directory.
+- Existing app architecture uses SQLAlchemy/Alembic, FastAPI, Pydantic, Angular 20, and the configured CircleCI workflow. Current source has no employee/payroll endpoint or tests.
+- Financial amounts must remain `Decimal`, scoped by `business_id`, and use the business currency without implicit currency conversion.
+
+### Ordered subtasks and acceptance criteria
+1. **EMP-PAY-001.1 — Discovery and architecture** — **VERIFIED**. Confirmed the source baseline, authorization patterns, data model, migrations, existing tests, frontend API service, CI commands, and absence of employee/payroll domain models/routes.
+2. **EMP-PAY-001.2 — Employee persistence and API** — **IN PROGRESS**. Add a business-scoped employee entity and owner-only list/create/update/deactivate operations; validate identity-like fields, reject duplicates within a business, audit changes, and prove cross-business IDs cannot be accessed.
+3. **EMP-PAY-001.3 — Payroll records and calculation** — **PENDING**. Add period-specific payroll records with exact decimal base pay, allowances, bonuses, deductions, server-calculated non-negative net pay, and unique employee/business/period constraints. Do not invent tax, insurance, or statutory calculations.
+4. **EMP-PAY-001.4 — Payroll lifecycle and accounting** — **PENDING**. Enforce the owner-only payroll workflow and one-time payment posting. Link the paid payroll to a single `Payroll` expense so reporting does not double-post or silently create duplicate expenses; maintain audit evidence and transaction safety.
+5. **EMP-PAY-001.5 — Angular employee/payroll UI** — **PENDING**. Add directory and profile forms, period/payroll creation and review, calculation breakdown, explicit payment state, responsive mobile layout, and Arabic/English labels consistent with current conventions.
+6. **EMP-PAY-001.6 — Tests and security review** — **PENDING**. Cover validation, exact calculations and rounding, duplicate employee/period rejection, tenant isolation, OWNER-positive / STAFF-denied authorization, no side effects on denial/failure, duplicate payment prevention, and existing accounting/report regressions.
+7. **EMP-PAY-001.7 — CI and delivery** — **PENDING**. Run applicable backend pytest, Alembic validation, frontend unit tests/build, dependency audit, browser smoke, and container checks through the configured CircleCI pipeline. Review the final diff, open one focused PR, and merge only when checks pass on its exact head and repository gates permit it. Do not deploy to production without separate explicit authorization.
+
+**Security decisions:** Employee/payroll records are business-scoped, not platform-admin records. Initial access is OWNER-only until a distinct employee self-service identity/permission policy is designed and tested. Never trust client-supplied `net_pay`, payment status, business ID ownership, or caller role. Do not delete historical payroll or employees with financial history; deactivate instead.
+
+**Current status:** Discovery verified; implementation not yet validated. Local clone attempt was unavailable because the execution environment could not resolve `github.com`; rely on exact-head CI for authoritative test execution and record any unavailable checks honestly.
+
 ---
 
 ## Current evidence baseline
