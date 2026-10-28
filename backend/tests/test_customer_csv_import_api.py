@@ -5,9 +5,25 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.main import app
+from app.data_exchange import parse_import_csv
 from app.models import AuditEvent, BusinessMembership, Customer, ImportJob
 from app.security import MembershipRole
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
+
+
+def test_customer_csv_parser_preserves_quoted_commas_and_multiline_fields():
+    csv_text = (
+        "name,email,notes\\n"
+        '"Acme, North",contact@example.com,"Line one\\nLine two"\\n'
+    )
+
+    rows = parse_import_csv(csv_text, entity_type="customers")
+
+    assert rows == [{
+        "name": "Acme, North",
+        "email": "contact@example.com",
+        "notes": "Line one\\nLine two",
+    }]
 
 
 def test_customer_csv_preview_detects_duplicate_emails_without_writes():
