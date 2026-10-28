@@ -16,16 +16,16 @@ from test_api import _configure_test_identity, _restore_test_identity, _sales_re
 
 def test_customer_csv_parser_preserves_quoted_commas_and_multiline_fields():
     output = io.StringIO(newline="")
-    writer = csv.writer(output, lineterminator="\\n")
+    writer = csv.writer(output, lineterminator="\n")
     writer.writerow(["name", "email", "notes"])
-    writer.writerow(["Acme, North", "contact@example.com", "Line one\\nLine two"])
+    writer.writerow(["Acme, North", "contact@example.com", "Line one\nLine two"])
 
     rows = parse_import_csv(output.getvalue(), entity_type="customers")
 
     assert rows == [{
         "name": "Acme, North",
         "email": "contact@example.com",
-        "notes": "Line one\\nLine two",
+        "notes": "Line one\nLine two",
     }]
 
 
