@@ -2,14 +2,15 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 4)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 5)
 
-- PR #264 remains open; batch 3 exact-head CircleCI was 7/7 PASS plus JavaScript/Python dependency audit and GitGuardian secret scan. The new batch 4 docs commit requires fresh exact-head checks before merge.
-- Reconciliation ledger now documents **36/109** closed-unmerged PR semantic dispositions across four priority batches; **73/109 remain**. These are not 109 mandatory merges.
-- Batch 4 reviewed #194, #189, #187, #181, #178, #174, #173, #165, and #164. Tests/source for Admin Firebase failure paths, inventory stock aggregation, mobile navigation/layout, release guide, and CircleCI are already on main or superseded by merged successors. The one-off GitHub runner diagnostic has no runtime patch and is superseded as a CI route by passing CircleCI.
-- Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI six substantive jobs plus aggregate **7/7 PASS**, with Vercel Web/API status contexts successful.
-- Remaining gates include the open foreign-tenant security PR #261 (backend-accounting fails on its recorded head), authenticated production workflows, mobile visual QA, and the remaining 73 closed-unmerged PR reviews.
-- Next: continue focused batches and reconcile branch/PR inventory snapshots. Restore only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 remains open; batch 4 documentation commit was followed by batch 5. Fresh exact-head CircleCI checks are required before merge.
+- Reconciliation ledger now documents **45/109** closed-unmerged PR semantic dispositions across five priority batches; **64/109 remain**. The closed-unmerged count itself does not drop just because a PR was reviewed; only a proven missing patch should be recovered.
+- Batch 5 reviewed #160, #159, #158, #154, #151, #150, #147, #143, and #140. Schedule/settings validation, CORS PUT, business-timezone reporting, payment retry safeguards, and build timestamp behavior are present on main or superseded by merged successors.
+- PR #150's scheduled agent-controller workflow and ledger scripts are absent from main. They are intentionally deferred as a separate architecture decision because they add a scheduled GitHub Actions worker and are not needed to restore current product behavior; no new Actions CI was introduced.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API status contexts succeeded on that SHA.
+- Remaining distinct gates: PR #261 foreign-tenant security tests (backend-accounting failure on recorded head, root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 64 closed-unmerged PR reviews.
+- Next: continue the next focused batch; restore only unique changes proven absent from main. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
