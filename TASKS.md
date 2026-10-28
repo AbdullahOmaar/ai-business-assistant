@@ -1280,3 +1280,12 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - Exact failure root cause: **UNVERIFIED**. CircleCI detail page could not be accessed through the available web route; GitHub Actions job logs returned `404 BlobNotFound`, and the connected Desktop Commander device is offline. No speculative code patch or merge was made.
 - The documentation commit that records this blocker changes the PR head again. Re-check all four CircleCI contexts on the newest SHA; keep ADM-06 **BLOCKED** until the backend-accounting failure is diagnosed and all required checks pass.
 - Local tests, merge, production deployment, authenticated Admin smoke, and accessibility verification: **NOT RUN**.
+
+
+### ADM-06 PostgreSQL CI failure root cause and fix — 2026-10-28
+
+- Reproduced a teardown error in `backend/tests/test_membership_management_postgres_concurrency.py`: the fixture retains `business_id` as a SQLAlchemy UUID object, but cleanup called `UUID(business_id)`, raising `AttributeError: 'UUID' object has no attribute 'replace'` after the concurrency assertions.
+- Fixed the three cleanup predicates to use the already-typed UUID directly. Kept `UUID(business_id)` in the test body where the fixture intentionally yields a string.
+- Validation in the persistent isolated sandbox, using disposable PostgreSQL 16 and the PR test file: before fix, test body passed but teardown errored; after fix, **1 passed**. This sandbox application snapshot is not a clean checkout of the exact PR SHA, so it is diagnostic evidence, not exact-head release verification.
+- Fix commit: `addc50f1a6e2dfd792b50b608bc52fec85c8010c`. PR #238 CircleCI contexts were pending immediately after this commit; exact-head CI must finish before the blocker can be closed. GitHub Actions logs remain inaccessible and should not be treated as application failures without evidence.
+- PR remains Draft; no merge or production deployment.

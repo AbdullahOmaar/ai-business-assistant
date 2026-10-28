@@ -157,3 +157,11 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 
 - Latest observed CI checkpoint before this documentation commit: candidate `70933ee7d378e473b5798e3874af0c5fb98056ed` had CircleCI backend-container **PASS** (1225), frontend-quality **PASS** (1227), backend-accounting **FAIL** (1226), frontend-browser-smoke **PENDING** (1228). PR remains Draft.
 - The backend-accounting run's detailed output is inaccessible through available connectors; a CircleCI page open returned an access error, and GitHub Actions job-log downloads returned `404 BlobNotFound`. Root cause is **UNVERIFIED**. Do not make speculative code changes or merge until the actual failure details are available. The next documentation commit changes the candidate SHA and requires a fresh exact-head check.
+
+
+## ADM-06 backend-accounting teardown defect — 2026-10-28
+
+- Reproduced a deterministic fixture-cleanup error in the PostgreSQL last-owner race test: `business_id` is retained as a UUID object, while three cleanup filters attempted to wrap it with `UUID(...)`, raising `AttributeError` during teardown.
+- Replaced those three wrappers with the already-typed UUID value. The test's `UUID(business_id)` conversion remains where the fixture yields the business ID as a string.
+- Disposable PostgreSQL 16 diagnostic run: before fix, assertions completed but teardown errored; after fix, **1 passed**. The sandbox uses a prior application snapshot, not an exact checkout of the PR SHA. This is targeted defect evidence only; exact-head CircleCI remains the merge gate.
+- Fix commit: `addc50f1a6e2dfd792b50b608bc52fec85c8010c`. Keep PR #238 Draft until all four CircleCI contexts pass on the final head and review/protection requirements are satisfied.
