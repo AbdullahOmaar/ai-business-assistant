@@ -908,3 +908,56 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - PR #274 exact-head CircleCI: six substantive jobs + aggregate **7/7 PASS**; GitHub backend/frontend/build/dependency/security checks observed SUCCESS.
 - Current security PR #244 exact-head CI is running; merge status remains Draft/unmerged pending exact-head checks and review.
 - Production deployment, authenticated production workflows, and physical mobile/accessibility QA were not performed by this reconciliation.
+
+
+## Latest branch reconciliation refresh — after security PR #244 merged and PR #249 opened (2026-10-28)
+
+**Verified main:** `c0f9b475f6b86248862f1a58defc2e3223f58046`.  
+**Current inventory after opening PR #249:** 238 PR records (125 merged, 111 closed-unmerged, 2 open Draft PRs: #249 and #278); 245 unique branches. Pages returned 100 + 100 + 38 PRs and 100 + 100 + 45 branches. The branch count includes the reconciliation and employee/payroll branches. No remote branches were deleted.
+
+### Branches absent from the previous ledger — evidence-based disposition
+
+| Branch | Observed comparison/evidence | Disposition |
+|---|---|---|
+| `docs/continue-closed-pr-audit-20261028` | Adds only the partial `docs/closed-unmerged-pr-reconciliation-2026-10-28.md` snapshot (20/109 at creation). Current authoritative ledger from merged PR #264 covers the full historical 109/109 set, plus the two later closures below. | **Superseded** by #264; do not restore partial snapshot. |
+| `docs/live-status-after-security-merges-20261028` | One TASKS.md-only checkpoint based on an older main SHA; current TASKS.md contains later security merges, PR #244 results, and current inventory. | **Obsolete documentation**; current live queue supersedes it. |
+| `docs/ops-postgres-restore-runbook` | `docs/operations/postgresql-backup-restore-runbook.md` blob SHA `a40ac5da399ad93a0811f3bf63fb4d880b741bcc` is identical on the branch and current main. Runbook explicitly states the restore drill is NOT RUN. | **Present** on main; no code/doc restoration needed. Do not imply a restore was executed. |
+| `docs/reconciliation-live-counts-20261028` | TASKS.md-only count refresh based on an older main; current live inventory and this addendum supersede it. | **Obsolete documentation**; do not replace current counts with stale values. |
+| `feat/customer-csv-import-preview-20261028` | Its customer CSV UI/API/duplicate detection work was merged via PR #274; current main has the feature plus the subsequent non-member no-side-effect regression merged by PR #244. | **Superseded/present**; do not merge stale branch history. |
+| `feat/employee-payroll-management` | 29 commits ahead / 1 behind current main at the observed comparison. Unique files include `backend/app/employee_payroll_api.py`, `backend/migrations/versions/0005_employee_payroll.py`, `backend/tests/test_employee_payroll_api.py`, and `frontend/src/app/employee-payroll.component.ts`. Current PR #278 is the dedicated Draft PR linked to issue #277; latest observed head `06cf28fbaec088bcebdeb1a48792f14299b4faa0`. | **Active, distinct intended feature**. Preserve and verify in PR #278; explicitly exclude from this reconciliation PR. Exact-head checks were pending at last inspection. |
+| `test/admin-mobile-accessibility-smoke` | `frontend/e2e/platform-admin.spec.ts` blob SHA `a53eefcf0b48d5326a2bca0792be6d3e3aef03cd` is identical on branch and main; the accompanying execution note also exists on main. | **Present/superseded**; no duplicate E2E patch to restore. Physical-device/screen-reader QA remains NOT RUN. |
+| `test/security-foreign-customer-no-side-effects` | `backend/app/services.py` and both `test_foreign_business_workflows.py` / `test_foreign_invoice_references.py` blobs are identical on branch and main. | **Present** on main; no restoration needed. |
+| `test/security-foreign-po-approval-20261028` | `backend/tests/test_foreign_purchase_order_approval_api.py` blob SHA `0b9e72ea411a31338fc1f7df3c0eb81440c39ea6` is identical on branch and main. | **Present** on main; no restoration needed. |
+| `test/security-nonmember-csv-no-side-effects-20261028` | `backend/tests/test_customer_csv_import_api.py` blob SHA `81bcfe5f6a9a7f64f96dbb3e32d264895374d509` is identical on branch and main after PR #244 merged. | **Present** on main; no restoration needed. |
+| `test/security-purchase-order-approval-matrix-20261028` | Adds a non-member purchase-order approval test already present in current main's `backend/tests/test_foreign_purchase_order_approval_api.py::test_non_member_cannot_approve_foreign_business_purchase_order`. Its approval note is also present on main. | **Duplicate/superseded**; do not add a second copy of the same regression. |
+
+### Reconciliation outcome and limits
+
+- The 11 branch names absent from the previous ledger are now individually dispositioned: 10 are already present, superseded, or obsolete; 1 is active employee/payroll work kept separate in PR #278.
+- No additional code patch from these 11 branches is proven both missing from main and appropriate to merge through this reconciliation PR.
+- Existing ledger coverage remains **111/111 closed-unmerged PRs dispositioned**: 109 in the original #264 audit plus #261 (superseded by #267) and #270 (superseded by #264).
+- These dispositions are not permission to delete branches or merge stale history. The connected integration does not expose an authorized branch-delete operation.
+- PR #244 is merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`; exact-head CircleCI was 7/7 PASS and GitHub Actions checks were 7/7 SUCCESS. Vercel automatically produced READY production web/API deployments for this SHA. Safe smoke checks returned HTTP 200 for web root, `/version` (version `1.3.4`, commit `c0f9b475f6b8`), `/health` (`ok`), and `/readyz` (`ready`). No manual deployment command was issued; authenticated workflows and visual/mobile QA remain NOT RUN.
+
+
+## Closed-unmerged follow-up after employee/payroll merge — 2026-10-28
+
+### PR #261 — security regression coverage
+
+- **Disposition:** closed without merge; superseded by merged PR #267.
+- **Patch review:** the broad test `test_owner_cannot_mutate_foreign_business_financial_and_stock_ids` exercises cross-business invoice issue, payment allocation, stock movement, purchase-order create/receive, and sales-return create/approval while asserting denied attempts do not change protected records or audit counts.
+- **Current-main evidence:** the test is present in `backend/tests/test_foreign_business_workflows.py` with the same test name; related narrower tests are in `backend/tests/test_foreign_invoice_references.py`. The behavior is therefore retained on main; do not re-open or merge the stale PR branch.
+- **CI note:** #261's old `backend-accounting` failure belongs to historical head `28d64c10aa067f83b86041eeb296eb76dcd764ec`; the exact private job logs were inaccessible and its root cause was not verified. Do not treat that historical failure as evidence against the merged successor.
+
+### PR #270 — partial reconciliation report
+
+- **Disposition:** closed without merge; superseded by merged PR #264.
+- Its 20/109 snapshot is stale and has no unique runtime behavior. The canonical reconciliation ledger covers the historical 109/109 set; the later #261 and #270 closures are also dispositioned here, bringing the observed closed-unmerged coverage to **111/111**.
+- Do not restore the partial snapshot or merge its stale branch.
+
+### Employee/payroll delivery update
+
+- PR #278 is now **MERGED** at `125ad371b86d22f3200eddafa2d139cb019f6195`; issue #277 is closed.
+- Exact merge-commit CircleCI statuses: frontend unit tests, dependency audit, production build, browser smoke, backend container, backend accounting, and aggregate **7/7 PASS**.
+- Current inferred PR inventory after this state change: **238 total**, **126 merged**, **111 closed-unmerged**, **1 open Draft PR (#249)**, and **245 branches** based on the last paginated inventory before #278 merged. Refresh the full inventory before any cleanup or final reconciliation closeout.
+- This is source/CI verification, not a claim that authenticated production workflows or physical mobile/accessibility QA were run. No production deployment was initiated by this feature task.
