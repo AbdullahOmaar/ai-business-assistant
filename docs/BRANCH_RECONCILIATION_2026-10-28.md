@@ -910,10 +910,10 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - Production deployment, authenticated production workflows, and physical mobile/accessibility QA were not performed by this reconciliation.
 
 
-## Latest branch reconciliation refresh — after security PR #244 merged (2026-10-28)
+## Latest branch reconciliation refresh — after security PR #244 merged and PR #249 opened (2026-10-28)
 
 **Verified main:** `c0f9b475f6b86248862f1a58defc2e3223f58046`.  
-**Inventory snapshot before opening the #249 reconciliation PR:** 237 PR records (125 merged, 111 closed-unmerged, 1 open Draft PR #278); 245 unique branches. Pages returned 100 + 100 + 37 PRs and 100 + 100 + 45 branches. The branch count includes the new reconciliation work branch. No remote branches were deleted.
+**Current inventory after opening PR #249:** 238 PR records (125 merged, 111 closed-unmerged, 2 open Draft PRs: #249 and #278); 245 unique branches. Pages returned 100 + 100 + 38 PRs and 100 + 100 + 45 branches. The branch count includes the reconciliation and employee/payroll branches. No remote branches were deleted.
 
 ### Branches absent from the previous ledger — evidence-based disposition
 
