@@ -318,6 +318,15 @@ def test_audit_events_are_owner_only_paginated_and_workspace_scoped():
         assert filtered.json()["total"] == 1
         assert filtered.json()["items"][0]["target_id"] == "inv-1"
 
+        with app.state.session_factory() as session:
+            session.add(BusinessMembership(
+                business_id=business_id, user_subject="audit-staff", role=MembershipRole.STAFF,
+            ))
+            session.commit()
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("audit-staff")
+        staff_denied = client.get(f"/api/v1/businesses/{business_id}/audit-events")
+        assert staff_denied.status_code == 403
+
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         denied = client.get(f"/api/v1/businesses/{business_id}/audit-events")
         assert denied.status_code == 403
