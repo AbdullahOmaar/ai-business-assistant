@@ -157,6 +157,8 @@ export class ApiService {
     }
     const token = await this.auth.idToken();
     let response: Response;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
     try {
       response = await fetch(base + path, {
         method,
@@ -165,11 +167,17 @@ export class ApiService {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: body === undefined ? undefined : JSON.stringify(body)
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal
       });
     } catch (error) {
+      const timedOut = (error as { name?: string } | null)?.name === 'AbortError';
       const detail = error instanceof Error ? error.message : '';
-      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
+      throw new Error(timedOut
+        ? 'API_CONNECTION_FAILED: The request timed out. Check the connection and retry.'
+        : `API_CONNECTION_FAILED: ${detail}`);
+    } finally {
+      clearTimeout(timeoutId);
     }
     if (!response.ok) {
       let message = `Request failed (${response.status}).`;
