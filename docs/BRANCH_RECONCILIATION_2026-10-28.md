@@ -599,3 +599,29 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - Remaining closed-unmerged PRs requiring semantic review: **73/109**.
 - Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API contexts succeeded on that SHA.
 - No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
+
+
+## Closed-unmerged PR audit — priority batch 5 (9 additional PRs reviewed)
+
+**Comparison target:** current main `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`. Each disposition is limited to the behavior and test evidence named below.
+
+| Closed-unmerged PR | Current-main source/test evidence | Disposition |
+|---|---|---|
+| #160 — recurring schedule timezone and setting-key validation | Current `backend/app/extended_api.py` defines and uses `_validated_schedule_timezone` and `_validated_setting_key` before persistence. | Present on main; no restore. |
+| #159 — duplicate schedule timezone and setting-key validation | Same current-main validators and schedule/settings route usage as #160; no separate behavior is missing. | Duplicate of #160's now-merged behavior; no restore. |
+| #158 — CORS preflight for settings PUT | Current `backend/app/main.py` includes PUT in `CORS_ALLOWED_METHODS`; `backend/tests/test_main.py::test_cors_method_policy_includes_settings_put_route` covers it. | Present with regression coverage; no restore. |
+| #154 — business-timezone financial reporting | Current `backend/app/core_features_api.py` uses IANA timezone resolution; `backend/tests/test_business_timezone_reporting.py` covers local day boundaries, 30-day defaults, invalid timezone names and DST transitions. | Present on main; no restore. |
+| #151 — reduce duplicate CI runs / dependency scans | CircleCI is the current CI route and main passes its six substantive contexts plus aggregate; dependency audits remain explicit in CircleCI. The old workflow-trigger edits are superseded by the current pipeline. | Superseded by current CI configuration; no restore. |
+| #150 — permanent engineering-agent controller proposal | Its unique scheduled GitHub Actions workflow, ledger scripts and agent docs are absent from main. This is a separate automation product, not a runtime bug fix; it would add a scheduled Actions worker despite the repository's current CircleCI-first/no-new-Actions-CI constraint. | Not adopted in this reconciliation; keep as a separate product/architecture decision, not silently merged. |
+| #147 — prevent payment retries during refresh failure | Current `frontend/src/app/release-payment-ui.spec.ts` asserts idempotency-key preservation after uncertain results and visible API errors; current app code includes the payment retry safety path. | Present on main; no restore. |
+| #143 — duplicate business-timezone report filters | Same consolidated source/tests as #154: `core_features_api.py` and `test_business_timezone_reporting.py`. | Duplicate/superseded by #154; no restore. |
+| #140 — assistant suggestions and build timestamp | Current `frontend/scripts/write-build-info.mjs` generates build metadata; `build-info.ts` contains `builtAt`; current app formats build time for Cairo and the merged #265 header card. | Superseded by later build-info/UI merges; no restore. |
+
+## Audit accounting — after priority batch 5
+
+- Additional closed-unmerged PRs reviewed in this batch: **9**.
+- Total reviewed across priority batches 1–5: **45/109**.
+- Remaining closed-unmerged PRs requiring semantic review: **64/109**.
+- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48` (CircleCI 7/7 and Vercel Web/API statuses successful).
+- PR #150's absent automation tooling is recorded as a deferred decision, not misreported as merged or restored.
+- No branch deleted, no stale PR reopened, and no stale feature branch merged wholesale.
