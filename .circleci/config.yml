@@ -100,7 +100,7 @@ jobs:
             node --version
             npm --version
             cd frontend
-            npm install --no-audit --no-fund
+            npm ci --no-audit --no-fund
       - run:
           name: Run frontend unit and source regression tests
           command: |
@@ -122,7 +122,7 @@ jobs:
             node --version
             npm --version
             cd frontend
-            npm install --no-audit --no-fund
+            npm ci --no-audit --no-fund
       - run:
           name: Generate build metadata
           command: |
@@ -150,7 +150,7 @@ jobs:
             node --version
             npm --version
             cd frontend
-            npm install --no-audit --no-fund
+            npm ci --no-audit --no-fund
       - run:
           name: Audit npm dependencies
           command: |
@@ -208,7 +208,7 @@ jobs:
           command: |
             set -euo pipefail
             cd frontend
-            npm install --no-audit --no-fund
+            npm ci --no-audit --no-fund
             npm audit --audit-level=high
 
 
@@ -224,7 +224,7 @@ jobs:
           command: |
             set -euo pipefail
             cd frontend
-            npm install --no-audit --no-fund
+            npm ci --no-audit --no-fund
             npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
             npx playwright --version
             npx playwright test
