@@ -12,13 +12,14 @@
 - **PR #284 — AI source grounding:** merged at `71eeb68eb2c33955d0729c984ff5626c39f28d43`. No-provider fallback source metadata is now intent-relevant and regression-tested. Do not track this as an active task.
 - **PR #281 — employee/payroll isolation:** merged at `a10954f6b09147bc6fd32b52c9d82b80fe13fc8d`. Non-member and cross-business employee/payroll tests assert denial and no-write/no-audit side effects.
 - **Security tracking issue #276:** **OPEN / IN PROGRESS** for remaining route × role × tenant denial/no-side-effect coverage (including suppliers, purchase orders/receiving, sales returns, recurring invoices, settings/pricing, notifications, CSV and invoice/payment/stock lifecycle edges). Authenticated production smoke remains **NOT RUN**; do not close the issue based on targeted tests alone.
+- **Issue #276 active candidate — `security/extended-route-no-side-effects-20261029`:** expanded the STAFF denial regression snapshot to include BusinessSetting, Notification, PaymentAllocation, PricingRule, Product, PurchaseOrderLine, RecurringInvoiceSchedule, SalesReturn/SalesReturnLine, and StockMovement alongside the existing protected models; added an OWNER-positive pricing-rule assertion. This candidate is **IN PROGRESS** until exact-head CI passes; no production permissions/data changed.
 - **Branch cleanup:** **NOT RUN / BLOCKED** because the connected GitHub integration does not expose an authorized remote-branch delete operation. Preserve remote branches; do not emulate deletion by moving refs.
 - **Production / release:** no manual production deployment was initiated by the payroll refresh work. Authenticated production workflows and physical Android/mobile visual/screen-reader QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target.
 
 ## Next actions
 
 1. Re-poll CircleCI and Vercel contexts for merge SHA `28dd3b418b53f7b9408695982b7378c4c99c7b27`; record the final outcomes without assuming pending checks passed.
-2. Continue issue #276's remaining route × role × tenant no-write/no-audit tests on one dedicated security branch, with deterministic isolated databases.
+2. Verify the exact-head backend/financial CircleCI suite for `security/extended-route-no-side-effects-20261029`; merge its focused PR only if all required checks pass and the diff stays limited to security tests/docs.
 3. Keep production deployment and branch deletion separate; do neither without explicit authorization and verified release/permission gates.
 
 ## Current evidence baseline
