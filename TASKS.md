@@ -4,22 +4,22 @@
 
 ## Current verified repository state
 
-- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046`. PR #274 (customer CSV preview/import UI plus duplicate-email and tenant-isolation regressions) merged at this SHA.
-- **Paginated GitHub inventory before this work branch:** **236 PR records** — **124 merged**, **111 closed-unmerged**, **1 open Draft PR (#244)**; **244 remote branches**. These are exact observed page totals (100 + 100 + 35 PRs; 100 + 100 + 43 branches) and reflect the inventory after this Draft PR opened.
+- **Main SHA:** `c0f9b475f6b86248862f1a58defc2e3223f58046`. PR #274 and security PR #244 are merged. Main CircleCI was 7/7 PASS, GitHub build/backend/frontend/dependency checks 5/5 SUCCESS, and Vercel Web/API status contexts SUCCESS; authenticated production smoke remains NOT RUN.
+- **Paginated GitHub inventory after opening employee PR #278:** **237 PR records** — **125 merged**, **111 closed-unmerged**, **1 open Draft PR (#278)**; **244 remote branches**. Exact observed pages: PRs 100 + 100 + 36; branches 100 + 100 + 44. Refresh after state changes.
 - **Closed-unmerged semantic reconciliation:** PR #264 records dispositions for 109 historical closed-unmerged PRs at its snapshot. The live inventory now has 111 closed-unmerged records. The two records beyond PR #264's 109-record snapshot are **#261** (superseded by merged #267) and **#270** (partial snapshot superseded by merged #264); both dispositions are documented in the reconciliation addendum. Current observed disposition coverage: **111/111**.
 - **PR #274:** merged; merge commit `84000ed6a1d2459dedca6296008563dab1147bd8`. Exact-head CircleCI contexts: six substantive jobs + aggregate **7/7 PASS**. GitHub backend/frontend/build/dependency/security checks observed **SUCCESS**. No production deployment was performed as part of this merge.
-- **Employee/payroll PR #278:** open Draft on `feat/employee-payroll-management`. Latest `main` history is synced and the task-ledger overlap is resolved. Code review found and fixed a double-escaped payroll period regex; added a regression assertion. CI must be evaluated against the current head shown by PR #278; every new commit triggers fresh checks. Keep unmerged until all required checks pass.
+- **Employee/payroll PR #278:** open Draft on `feat/employee-payroll-management`; latest pre-ledger-refresh head `9dc71746bca12b2abe5aab5181be743084f85489`. The branch is synced with main and GitHub reports it mergeable. The prior verified head `df2d16fbfe0d92383fd11c878cdf6d90c1828ad0` passed CircleCI 7/7 and GitHub Actions 7/7; this task update triggers fresh exact-head checks.
 - **Current open PRs observed:** #249 (repository reconciliation) and #278 (employee/payroll). PRs #261 and #270 are closed-unmerged with documented supersession dispositions.
-- **Security PR #244 / tracking issue #276 — route × role × tenant matrix:** **IN PROGRESS**. Main has STAFF-denied no-write/no-audit assertions for 16 sensitive requests and foreign-business lifecycle coverage from merged #267/#271/#272. This branch adds non-member denial and no-side-effect checks for customer CSV export, preview, and import. Remaining matrix coverage and authenticated production smoke are not yet complete.
+- **Security PR #244:** merged at `c0f9b475f6b86248862f1a58defc2e3223f58046`; the non-member customer CSV export/preview/import denial and no-side-effect tests are on main. **Tracking issue #276 remains IN PROGRESS** for broader route × role × tenant coverage; authenticated production smoke is NOT RUN.
 - **Branch cleanup:** **NOT RUN / BLOCKED**. The connected GitHub integration has no branch-delete operation; preserve all remote branches and do not emulate deletion by moving refs.
-- **Production:** deployment and authenticated production workflows for current main SHA `84000ed6a1d2459dedca6296008563dab1147bd8` are **NOT RUN / NOT REVERIFIED** in this pass. No deployment was triggered.
+- **Production:** no production deployment was explicitly initiated as part of the employee/security workflow. Vercel Web/API status contexts on main reported SUCCESS, but authenticated production workflows and end-user smoke are NOT RUN; this is not a production-readiness claim.
 - **Physical Android/mobile visual and screen-reader QA:** **NOT RUN**. Isolated PostgreSQL restore drill remains **BLOCKED** pending an approved non-production target.
 
 ## Next actions
 
-1. Run exact-head CircleCI and GitHub checks for the non-member CSV security regression; fix any genuine failures without weakening tests.
-2. Keep the closed-unmerged ledger synchronized with new closures; current observed 111/111 records are dispositioned. Refresh counts after any new PR state changes.
-3. Continue PR #244's remaining route × role × tenant coverage; do not merge/deploy until the relevant exact-head gates and required review are satisfied.
+1. Complete exact-head CircleCI/GitHub checks after this ledger refresh; inspect and fix real failures on the same employee branch.
+2. Mark PR #278 ready and merge only after all required exact-head checks and applicable review policy pass; no production deployment.
+3. Continue issue #276's broader route × role × tenant coverage after the employee PR is stable.
 4. Keep branch deletion separate and blocked until an authorized delete-capable route is available.
 
 
@@ -29,7 +29,7 @@
 
 **GitHub issue:** [#277 — Employee directory and payroll workflow](https://github.com/AbdullahOmaar/ai-business-assistant/issues/277)  
 **Owner/branch:** Engineering coordinator — `feat/employee-payroll-management` (single work branch for the entire feature).  
-**Base:** main SHA `c0f9b475f6b86248862f1a58defc2e3223f58046`.  
+**Base:** main SHA `c0f9b475f6b86248862f1a58defc2e3223f58046` (branch synced with current main).
 **Goal:** Business-scoped employee management and secure monthly payroll using Angular + FastAPI + PostgreSQL. Production deployment is not authorized.
 
 ### Baseline evidence
@@ -45,7 +45,7 @@
 4. **EMP-PAY-001.4 — Approval and accounting lifecycle — IMPLEMENTED / CI PENDING.** Draft editing, separate-owner approval (creator cannot self-approve), payment only after approval, one linked `Payroll` expense created transactionally, and duplicate payment rejection.
 5. **EMP-PAY-001.5 — Angular employee/payroll UI — IMPLEMENTED / CI PENDING.** Added standalone responsive bilingual `EmployeePayrollComponent`, employee directory/search/edit/deactivate, monthly draft/edit/approve/pay workflows, and mobile More-menu entry for Owners. Workspace changes clear salary-specific UI state.
 6. **EMP-PAY-001.6 — Tests/security review — ADDED / CI PENDING.** Added 7 backend API tests and 5 frontend UI/API/release-guide tests, and updated 2 existing mobile-navigation/expense-navigation expectations after CI proved they still asserted the old More-menu list. The first observed frontend run on an earlier head reported 61 passed / 2 failed; those failures were test expectations for the new navigation item. Latest-head rerun is still required.
-7. **EMP-PAY-001.7 — CI, review, and delivery — IN PROGRESS.** Draft PR [#278](https://github.com/AbdullahOmaar/ai-business-assistant/pull/278) is open on the single feature branch. The branch includes latest `main` (`c0f9b475f6b86248862f1a58defc2e3223f58046`) and preserves the newer security inventory. The latest task-ledger commit will trigger fresh CircleCI checks; validate all required jobs and aggregate status on the exact current PR head before merging. No deployment.
+7. **EMP-PAY-001.7 — CI, review, and delivery — IN PROGRESS.** Draft PR [#278](https://github.com/AbdullahOmaar/ai-business-assistant/pull/278) is open on the single feature branch. Pre-refresh head `9dc71746bca12b2abe5aab5181be743084f85489` had checks running; the prior head `df2d16fbfe0d92383fd11c878cdf6d90c1828ad0` passed CircleCI 7/7 and GitHub Actions 7/7. Verify all required checks again on the resulting ledger-update head before merge. No deployment.
 
 ### Security and data-integrity decisions
 - Employee/payroll records are business-scoped, not Platform Admin or login membership records.
@@ -71,7 +71,7 @@
 - `frontend/src/app/mobile-navigation.spec.ts`
 - `frontend/src/app/release-guide.ts`
 
-**Local validation:** **NOT RUN** — the connected execution environment could not run repository commands. After the regex fix and merge-sync, the latest ledger commit triggers a fresh exact-head CircleCI run. Do not infer a pass from earlier commits; update status only after observing the current PR head's results. Do not label the feature VERIFIED until every required exact-head check passes.
+**Local validation:** NOT RUN — no local repository runtime was available. Prior exact-head CircleCI and GitHub Actions checks passed 7/7; this task-ledger update triggers a fresh run. Do not label VERIFIED until every required check passes on the resulting exact PR head.
 
 ---
 
