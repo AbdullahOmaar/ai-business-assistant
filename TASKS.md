@@ -1500,3 +1500,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Formal audit ledger: 97/109 closed-unmerged PRs reviewed, 12 remain. Inventory remains 233 branches and 226 PR records (114 merged, 109 closed-unmerged, 3 open).
 - Current main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; v1.3.4 Web/API READY and CircleCI aggregate PASS on that SHA.
 - No runtime/deployment configuration changes in this batch. Continue the final 12 PR reviews and exact-head CI for PR #264.
+
+
+## Closed-unmerged PR reconciliation — PR audit complete, branch inventory pending (2026-10-28)
+
+- Added final dispositions for #22, #21, #20, #19, #18, #17, #16, #15, #9, #8, #5 and #1.
+- Formal PR audit ledger: **109/109 closed-unmerged PRs reviewed** against source, tests, linked successors and current-main behavior. No stale PR was reopened or merged wholesale.
+- Current main already contains the evolved PostgreSQL/FastAPI/Angular architecture, secure Firebase identity, tenant-scoped APIs, models/migrations/domain rules, safe CSV parser/export helpers, inventory integrity, payment replay validation, sales-return guards, and current mobile/PWA UI. Old shells and conflicting architecture proposals were not restored.
+- One focused test-only gap identified in batch 9 is included in this PR: `frontend/src/app/payment-csv-export.spec.ts`.
+- Inventory counts reverified: 233 remote branches (100+100+33+0); 226 PR records (100+100+26+0): 114 merged, 109 closed-unmerged, 3 open.
+- **Still pending:** materialize all branch names + SHA + associated PR numbers/states into the reconciliation report; exact-head CircleCI/security checks on PR #264 must pass before merge. This issue is not VERIFIED COMPLETE until both are done.
+- Release v1.3.4 remains deployed Web/API READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`; CircleCI aggregate passed on that SHA.
