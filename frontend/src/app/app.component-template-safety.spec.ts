@@ -149,3 +149,18 @@ test('customer CSV import API methods target customer preview and execution rout
   assert.match(apiSource, /importCustomerCsv\(businessId: string, csvText: string\)/);
   assert.match(apiSource, /imports\/customers\.csv/);
 });
+
+
+test('workspace switch clears pending product and customer CSV imports', () => {
+  const start = source.indexOf('private clearWorkspaceData(): void');
+  const end = source.indexOf('\n  }', start);
+  const reset = source.slice(start, end);
+  assert.ok(start >= 0 && end > start, 'workspace reset method must exist');
+  for (const field of [
+    'importCsvText', 'importFileName', 'importPreview', 'importMessage',
+    'customerImportCsvText', 'customerImportFileName', 'customerImportPreview',
+    'customerImportMessage'
+  ]) {
+    assert.match(reset, new RegExp('this\\.' + field + '\\s*='));
+  }
+});
