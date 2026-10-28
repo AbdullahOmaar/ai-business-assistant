@@ -1,3 +1,51 @@
+# UI/UX Bug Batch — 2026-10-28
+
+Scope: the single branch `fix/ui-ux-review-batch-2026-10-28`, based on `main` at `f04c0e194b3afbefb56a979a5688f80d277b3ece`. The user-reported list resolves to 22 distinct findings (the earlier spoken count of 21 missed one separate invoice-form layout item). No merge or deployment is authorized by this task until implementation and release gates are verified.
+
+| ID | Finding | Current status / evidence |
+| --- | --- | --- |
+| UI-01 | Splash can remain on “Starting the app”; bounded runtime-config and Firebase session waits plus retry control | CODE CHANGED; tests/CI pending |
+| UI-02 | Move UI/API version and build time into the current-business card | CODE CHANGED; tests/CI pending |
+| UI-03 | Add a clear interactive AI entry point on Home | CODE CHANGED; tests/CI pending |
+| UI-04 | Show Add Invoice before invoice filters | CODE CHANGED; tests/CI pending |
+| UI-05 | Improve invoice list/detail cards on mobile | Responsive list-card rules added; visual validation pending |
+| UI-06 | Improve customer cards on mobile | Responsive list-card rules added; visual validation pending |
+| UI-07 | Replace unclear free-text General expense category with selectable categories | CODE CHANGED; API compatibility and tests pending |
+| UI-08 | Add selectable notification types | CODE CHANGED; confirm backend accepts all choices before VERIFIED |
+| UI-09 | Keep AI suggestions visible after choosing one | CODE CHANGED; tests/CI pending |
+| UI-10 | Organize the release guide and version history | Responsive spacing and summary styles added; visual validation pending |
+| UI-11 | Reduce the oversized Platform Admin identity/permissions summary | Compact responsive styles added; visual validation pending |
+| UI-12 | Improve Admin metric cards on mobile | Compact mobile metric layout retained/refined; visual validation pending |
+| UI-13 | Remove needless horizontal scrolling from the Admin invoice-status table | Compact fixed-layout table styles added; visual validation pending |
+| UI-14 | Translate common audit actions and record types to Arabic | CODE CHANGED; unknown action labels still fall back to source value |
+| UI-15 | Add action and record-type filters to the audit log | CODE CHANGED; verify action values against backend event vocabulary |
+| UI-16 | Clarify and improve receivables-aging cards on mobile | Existing Arabic labels plus responsive card rules; visual validation pending |
+| UI-17 | Translate known report-limitations messages | Partial mapping added; unknown server-provided strings still need review |
+| UI-18 | Translate “Gross issued invoice total” revenue-basis wording | Known English variants mapped; API vocabulary confirmation pending |
+| UI-19 | Reduce oversized text fields and dropdown controls across the app | Responsive input/select sizing rules added; visual validation pending |
+| UI-20 | Localize the data-integrity manual-review/report wording | UI wording changed; dynamic server warning requires validation against real responses |
+| UI-21 | Improve Arabic localization of the tax report | Known limitation strings mapped; audit all live server-provided text before VERIFIED |
+| UI-22 | Make invoice fields proportionate to their data, especially compact numeric discount/tax fields | Responsive invoice grid and numeric-field sizing added; visual validation pending |
+
+## Implementation commits
+
+- `23f0a951681e8e12af381b9142601df7fe2a5f5f` — bound runtime configuration and Firebase session startup waits; reset failed configuration fetches to permit retry.
+- `c8d02a81163840a2e266490266f06e1544ee9088` — moved workspace release metadata, reordered invoice creation/filtering, added expense/notification/audit controls, localized common audit/report labels, and made AI suggestions persistent.
+- `78cb5cfcd00a688932cb522644fe8a0655592553` — added responsive workspace, invoice, expense, record-card, release-guide, and form-control styling.
+- `cc190b652c2a5ab9cf8a189307760d8160c0104e` — compacted Admin identity/permission summary and invoice-status table styles.
+- `758d20537f1170ecb2c89d395a2c4ad804cb5861` — added a Home AI shortcut, notification-kind labels, and Arabic timeout feedback.
+- `f0f1f3f45154c9c23221d764bceed3186bb25a43` — added static regression tests for startup recovery and UI structure.
+
+## Verification ledger
+
+- Branch comparison against `main` before edits: identical, 0 commits ahead / 0 behind.
+- Frontend tests/build: NOT RUN in this chat environment yet. Regression tests are committed; exact-head CircleCI is required.
+- Browser/mobile visual checks and accessibility checks: NOT RUN.
+- PR/merge/deployment: NOT RUN. Keep all changes on the single branch until tests and review gates are satisfied.
+- Next action: inspect the resulting diff and run exact-head frontend tests/build/CI; fix any failures before marking tasks VERIFIED.
+
+---
+
 ## Platform Admin — five-task execution — 2026-10-27
 
 Scope: keep all Admin work on `feat/platform-admin-user-directory-and-roles`; merge only after exact-head checks pass.
