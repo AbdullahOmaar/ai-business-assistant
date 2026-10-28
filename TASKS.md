@@ -1272,3 +1272,11 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - Local execution: **NOT RUN** (no local checkout/runtime available in this session). GitHub Actions checks also report failures with annotations, but log download returned `404 BlobNotFound`; root cause is not yet verified.
 - Remaining ADM release gates: full keyboard/screen-reader/mobile WCAG 2.2 AA validation, authenticated production Admin smoke, Web/API deployed SHA parity, and explicit release authorization remain unverified/blocked. No production deployment performed.
 - Next: inspect final-head CircleCI, fix and rerun any failure, then update this record with the observed results before merge.
+
+
+### Latest ADM-06 CI blocker — 2026-10-28
+
+- On candidate `70933ee7d378e473b5798e3874af0c5fb98056ed`: CircleCI backend-container PASS (1225), frontend-quality PASS (1227), backend-accounting FAIL (1226), frontend-browser-smoke PENDING (1228). PR #238 remains Draft.
+- Exact failure root cause: **UNVERIFIED**. CircleCI detail page could not be accessed through the available web route; GitHub Actions job logs returned `404 BlobNotFound`, and the connected Desktop Commander device is offline. No speculative code patch or merge was made.
+- The documentation commit that records this blocker changes the PR head again. Re-check all four CircleCI contexts on the newest SHA; keep ADM-06 **BLOCKED** until the backend-accounting failure is diagnosed and all required checks pass.
+- Local tests, merge, production deployment, authenticated Admin smoke, and accessibility verification: **NOT RUN**.
