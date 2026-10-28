@@ -26,6 +26,14 @@
 - This is targeted regression coverage for a high-impact financial lifecycle action. It does not claim exhaustive route × role × tenant coverage.
 - Exact-head CI: pending until the candidate PR opens and all required checks complete. Local pytest/build: NOT RUN in this connector-only session. No production data, authorization policy, or deployment was changed.
 
+
+## OWNER-positive invoice-void audit regression — 2026-10-29
+
+- Candidate branch: `test/security-owner-invoice-void-audit-20261029`; main baseline `bf0bcdaf08353f15a532e692522730f42d2258e1`.
+- Adds `backend/tests/test_api.py::test_owner_can_void_unpaid_issued_invoice_and_records_audit_event`: an OWNER voids an unpaid issued invoice, receives HTTP 200 and status `void`, and exactly one business-scoped `invoice.voided` AuditEvent targets that invoice.
+- This complements the merged STAFF denial test that asserts 403 and unchanged invoice financial fields, stock movements, sales returns, and audit count.
+- Exact-head CI: pending until the candidate PR checks finish. Local pytest/build: NOT RUN in this connector-only session. No production data, authorization policy, or deployment changed.
+
 ## Authorization model
 
 - `GET /health` is a public liveness endpoint and does not imply database or authentication readiness.

@@ -1,22 +1,24 @@
-# Current prioritized work queue — 2026-10-29 (live checkpoint after PR #297)
+# Current prioritized work queue — 2026-10-29 (live checkpoint after STAFF invoice-void denial regression)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence.
 
 ## Current verified repository state
 
-- **Current main SHA:** `3c560a0f425c8a97bcbe9384c5eefb580c936025` — PR #297 (CSV export/import role matrix) is merged.
-- **PR #297 — CSV entity × role denial matrix:** merged at `3c560a0f425c8a97bcbe9384c5eefb580c936025`. The exact PR head `88ef22970e51c6632e12e7b89dbfeea6749e8d5f` passed all six substantive CircleCI checks plus aggregate **7/7 PASS**. The merge commit's CircleCI six substantive contexts + aggregate also passed **7/7**, and Vercel Web/API status contexts are SUCCESS. GitHub Actions duplicate workflows failed with no retrievable job steps/logs (404 `BlobNotFound`); failed jobs were re-run, so current rerun outcomes remain to be checked. Do not treat those failures as application test failures or as passing.
-- **Security tracking issue #276:** **OPEN / IN PROGRESS**. The CSV role matrix covers STAFF/non-member denial for customer/product/expense exports and customer/product preview/import, asserting 403 and unchanged business-scoped Customer, Product, Expense, ImportJob, and AuditEvent counts. It does not complete the full route × role × tenant matrix.
-- **Current focused candidate:** branch `test/security-staff-invoice-void-no-audit-20261029`, based on main SHA `3c560a0f425c8a97bcbe9384c5eefb580c936025`. It strengthens `test_staff_cannot_void_invoice` to assert denied STAFF invoice void returns 403 and leaves invoice lifecycle/amount fields, stock movement count, sales-return count, and business-scoped audit count unchanged. Exact-head CI pending. Local pytest/build: **NOT RUN** in this connector-only session.
-- **PR/branch inventory:** latest complete pull-request snapshot after PR #297 merge: **256 PR records** — **136 merged**, **120 closed-unmerged**, **0 open** before opening the current candidate PR. Remote branches: **254** including the current security branch. Refresh counts after the candidate PR opens/closes.
-- **Production/release:** no explicit production deployment was initiated by this workflow. Vercel Web/API contexts on the PR #297 merge commit are SUCCESS, but this is not authenticated production workflow verification. Authenticated production smoke and physical mobile/accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target.
+- **Current main SHA:** `bf0bcdaf08353f15a532e692522730f42d2258e1` — PR #276 merged the STAFF-denied invoice-void no-side-effect regression.
+- **PR #276:** merged at `bf0bcdaf08353f15a532e692522730f42d2258e1`. Exact pre-merge head `c40afd7f0ae18687a04ba909ae320c7692f97dda` passed CircleCI six substantive checks + aggregate **7/7 PASS**, including backend-accounting, and GitGuardian **SUCCESS**. Duplicate GitHub Actions jobs repeatedly failed with no executable steps exposed; log retrieval returned 404 `BlobNotFound`, so root cause remains **UNVERIFIED**. GitHub branch protection API reports `main.protected=false`; do not infer the duplicate failures are passing.
+- **PR #297:** merged at `3c560a0f425c8a97bcbe9384c5eefb580c936025`. It adds STAFF/non-member denial and no-side-effect coverage for CSV export of customers/products/expenses and customer/product preview/import. Exact PR-head CircleCI passed **7/7**. GitHub Actions duplicate workflows failed before steps; reruns were attempted but root cause remains unverified.
+- **Security route matrix:** **IN PROGRESS**. Targeted regressions are merged but do not establish complete route × role × tenant coverage. Remaining OWNER-positive lifecycle cases, financial lifecycle edge cases, authenticated production smoke, and mobile/accessibility QA remain outstanding.
+- **Current candidate:** branch `test/security-owner-invoice-void-audit-20261029`, based on main SHA `bf0bcdaf08353f15a532e692522730f42d2258e1`. Adds OWNER-positive invoice-void success/audit coverage, complementing the merged STAFF-denial no-write/no-audit test. Exact-head CI pending. Local pytest/build: **NOT RUN** in this connector-only session.
+- **PR/branch inventory:** latest observed snapshot before opening the current candidate PR: **256 PR records** — **137 merged**, **120 closed-unmerged**, **2 open** (#298, #299); **255 remote branches** including the current candidate branch. Refresh after the candidate PR opens/closes.
+- **Merge-commit validation:** CircleCI status contexts were not yet reported on merge SHA `bf0bcdaf08353f15a532e692522730f42d2258e1` at the first post-merge poll. GitHub Actions checks failed with no retrievable steps/logs; recheck exact main status after the rerun/CI propagation.
+- **Production/release:** no explicit production deployment was initiated by this workflow. Authenticated production smoke and physical mobile/accessibility QA remain **NOT RUN**. PostgreSQL restore drill remains **BLOCKED** pending an approved isolated non-production target.
 - **Branch cleanup:** **NOT RUN / BLOCKED** because the connected GitHub integration does not expose an authorized remote-branch delete operation. Preserve remote branches; do not emulate deletion by moving refs.
 
 ## Next actions
 
-1. Verify the retried GitHub Actions jobs on the PR #297 merge commit and investigate if failures persist; logs/steps were unavailable on the prior attempt.
-2. Run exact-head CircleCI and GitHub checks for the STAFF invoice-void no-side-effect regression; fix concrete failures, never weaken the assertions.
-3. Continue issue #276's remaining route × role × tenant matrix on one dedicated branch, with deterministic isolated databases and OWNER-positive cases.
+1. Run exact-head CI for the OWNER-positive invoice-void/audit regression; investigate concrete failures and do not weaken assertions.
+2. Verify CircleCI and GitHub Actions rerun outcomes on current main; retain the GitHub Actions issue as unverified until executable steps/logs are available.
+3. Continue the remaining route × role × tenant security matrix on one dedicated branch with OWNER-positive and STAFF/non-member/foreign-business cases.
 4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly NOT RUN/BLOCKED until actually performed with approved access.
 
 ## Current evidence baseline
