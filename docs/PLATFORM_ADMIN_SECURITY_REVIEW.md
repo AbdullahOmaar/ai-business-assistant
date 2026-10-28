@@ -183,3 +183,9 @@ This runbook is a checklist, not evidence that rollback has been tested. It deli
 - GitHub Actions workflows still conclude failure on that source SHA (runs 682, 1099, 1398, 820); job-step summaries are empty and log retrieval returns HTTP 404 `BlobNotFound`. Their causes are UNVERIFIED. Branch protection and required-check settings cannot be read through the current integration (HTTP 403), and no PR review approvals are recorded.
 - PR #238 remains Draft. No merge, deployment, or production data/configuration changes. Local exact-head test execution, production authenticated Admin smoke, WCAG 2.2 AA validation, and Web/API SHA parity remain NOT RUN / NOT VERIFIED.
 - TASKS.md ledger update commit: `04697b0589557e69799ab0f5d94c9615188698bb`. This documentation update creates another new PR head, so the four CircleCI contexts must be checked again on the resulting latest SHA.
+
+## ADM-06 concurrency test assertion review — 2026-10-28
+
+- Tightened `backend/tests/test_membership_management_postgres_concurrency.py`: a losing request must return HTTP 422 with the exact last-owner guard message, not merely any 403/422. This prevents authorization/setup failures from being counted as evidence that the concurrency invariant held.
+- The API guard in `backend/app/core_features_api.py` returns this message for both owner demotion and owner removal when the workspace would otherwise have no OWNER.
+- Exact-head CircleCI is pending after this test-only hardening; do not mark ADM-06 verified until all four contexts pass on the new SHA.

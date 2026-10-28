@@ -1308,3 +1308,10 @@ Wait for post-merge CircleCI on `0346fa32de69ad83b2d58dcbd9caadbd6580bb60` to fi
 - GitHub Actions still shows four failed duplicate workflows on the same source SHA (Backend tests #682, Dependency security scan #1099, Verify backend and frontend #1398, Verify backend container #820). Job step summaries are empty and log downloads return HTTP 404 `BlobNotFound`; failure causes remain UNVERIFIED. Treat CircleCI as the tested CI path, but do not assume Actions checks can be ignored until an authorized owner confirms branch protection / required-check configuration. Protection API is inaccessible (403).
 - PR #238 remains OPEN + DRAFT; no review approvals recorded. No merge/deploy. Local exact-head tests, authenticated Admin production smoke, WCAG 2.2 AA, and Web/API deployed SHA parity remain NOT RUN / NOT VERIFIED.
 - This ledger-only commit changes the PR head; re-check all four CircleCI contexts on the new exact head before any merge decision.
+
+### ADM-06 concurrency assertion hardening — 2026-10-28
+
+- Review found the PostgreSQL last-owner race test accepted HTTP 403 as a losing outcome, which could let an authorization/setup failure masquerade as correct concurrency behavior.
+- Tightened the test to allow only the expected successful status plus HTTP 422, and assert the rejected operation's exact last-owner guard message. This proves the loser reached the business invariant rather than merely failing for another reason.
+- Current source behavior in `backend/app/core_features_api.py` returns HTTP 422 with `A workspace must retain at least one owner` for both demotion and removal when only one owner remains.
+- Candidate fix is on the existing PR #238 branch; exact-head CircleCI is required before treating this regression as verified. No production data or deployment changed.

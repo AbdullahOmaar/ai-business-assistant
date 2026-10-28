@@ -124,11 +124,19 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
         demote_response = demote_future.result(timeout=30)
         remove_response = remove_future.result(timeout=30)
 
-    assert demote_response.status_code in (200, 403, 422), demote_response.text
-    assert remove_response.status_code in (204, 403, 422), remove_response.text
+    assert demote_response.status_code in (200, 422), demote_response.text
+    assert remove_response.status_code in (204, 422), remove_response.text
     assert sum(response.status_code in (200, 204) for response in (
         demote_response, remove_response
     )) == 1, "exactly one concurrent mutation may succeed"
+
+    rejected_response = (
+        remove_response if demote_response.status_code == 200 else demote_response
+    )
+    assert rejected_response.status_code == 422
+    assert rejected_response.json()["detail"] == (
+        "A workspace must retain at least one owner"
+    ), "the losing mutation must be rejected specifically by the last-owner guard"
 
     with factory() as session:
         remaining_owners = session.scalar(
