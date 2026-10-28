@@ -234,6 +234,72 @@ def test_nonmember_cannot_access_or_mutate_employee_payroll_without_side_effects
         assert persisted.status == "approved"
         assert persisted.expense_id is None
 
+
+def test_payroll_records_and_employee_ids_cannot_cross_business_boundaries(employee_environment):
+    env = employee_environment
+    created = _create_employee(env)
+    assert created.status_code == 201
+    employee_id = created.json()["id"]
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee_id}/payroll", json={"period": "2026-10"}
+    )
+    assert payroll.status_code == 201
+    payroll_id = payroll.json()["id"]
+
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    env["subject"]["value"] = OWNER
+
+    second = env["client"].post(
+        "/api/v1/businesses", json={"name": "Payroll isolation target", "currency_code": "USD"}
+    )
+    assert second.status_code == 201
+    second_id = second.json()["id"]
+    foreign_base = f"/api/v1/businesses/{second_id}"
+
+    def snapshot():
+        with app.state.session_factory() as session:
+            record = session.get(PayrollRecord, UUID(payroll_id))
+            assert record is not None
+            return (
+                session.scalar(select(func.count()).select_from(Employee)),
+                session.scalar(select(func.count()).select_from(PayrollRecord)),
+                session.scalar(select(func.count()).select_from(Expense)),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id.in_([UUID(env["business_id"]), UUID(second_id)])
+                )),
+                tuple(sorted(session.scalars(select(AuditEvent.action).where(
+                    AuditEvent.business_id == UUID(env["business_id"]),
+                    AuditEvent.target_type == "payroll",
+                )).all())),
+                record.status,
+                record.allowances,
+                record.bonuses,
+                record.deductions,
+                record.net_pay,
+                record.expense_id,
+            )
+
+    attempts = [
+        ("patch", f"{foreign_base}/payroll/{payroll_id}", {"allowances": "999.00"}),
+        ("post", f"{foreign_base}/payroll/{payroll_id}/approve", {}),
+        ("post", f"{foreign_base}/payroll/{payroll_id}/pay", {}),
+        ("post", f"{foreign_base}/employees/{employee_id}/payroll", {"period": "2026-11"}),
+    ]
+    for method, url, payload in attempts:
+        before = snapshot()
+        response = getattr(env["client"], method)(url, json=payload)
+        assert response.status_code == 404, (
+            f"{method.upper()} {url}: expected 404 for foreign business record, "
+            f"got {response.status_code}: {response.text}"
+        )
+        assert snapshot() == before, (
+            f"{method.upper()} {url}: foreign business request changed payroll, "
+            "employee, expense, or audit state"
+        )
+
 def test_employee_ids_cannot_be_used_across_businesses(employee_environment):
     env = employee_environment
     created = _create_employee(env)
