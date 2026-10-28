@@ -7,12 +7,12 @@
 
 ## Current inventory
 
-- Git branches returned by GitHub: **211 total including main; 210 non-main branches**.
+- Git branches returned by GitHub before this ledger branch was created: **210 total including main; 209 non-main branches**.
 - Pull requests returned by the GitHub PR listing integration: **203 records**.
 - PRs marked merged: **95**.
 - PRs currently open: **2**.
 - PRs closed without merge: **106**.
-- Branches with no matching PR head in the returned inventory: **12**. These are **not automatically unmerged**; inspect compare results and code before deciding.
+- Branches with no matching PR head in the returned inventory: **11**. These are **not automatically unmerged**; inspect compare results and code before deciding.
 - Squash/rebase merges can leave a source branch “ahead” of main even after the PR merged. **Use PR merged status as integration evidence; never infer unmerged work from ahead/behind counts alone.** A closed PR with merged=false also does not prove its work is absent from main; a replacement PR may have carried the change.
 
 ## Rules for future agents
@@ -249,7 +249,6 @@ These PRs are **not merged by their own PR**. Some changes may have been re-inte
 
 No matching PR head was found for these existing branches. This is a review queue, not a claim that all contain unique unmerged work.
 
-- `docs/branch-consolidation-ledger-2026-10-28`
 - `feat/first-ten-business-foundation`
 - `fix/accounting/line-rounding-reconciliation`
 - `fix/backup-restore-target-safety-current-main-20261028`
@@ -264,6 +263,6 @@ No matching PR head was found for these existing branches. This is a review queu
 
 ## Audit limitations
 
-- GitHub branch and PR data was inspected; comparisons against `main` were run for all 210 non-main branches. Compare results alone are not proof of integration because squash/rebase merges and replacement PRs exist.
+- GitHub branch and PR data was inspected; comparisons against `main` were run for all 209 non-main branches before creating this ledger branch. Compare results alone are not proof of integration because squash/rebase merges and replacement PRs exist.
 - This document does not authorize branch deletion or production deployment.
 - Before merging any change, inspect the latest exact head SHA, required CircleCI checks, review/protection requirements, and current main SHA.
