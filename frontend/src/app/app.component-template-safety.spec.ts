@@ -67,6 +67,9 @@ test('responsive sizing rules keep numeric invoice fields compact and cards with
   assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
   assert.match(source, /\.list-row\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(source, /class="list-row invoice-list-row"/);
+  assert.match(source, /class="list-row customer-list-row"/);
+  assert.match(source, /\.customer-list-row,\.invoice-list-row\{grid-template-columns:36px minmax\(0,1fr\)/);
 });
 
 test('financial and integrity report basis labels are localized', () => {
