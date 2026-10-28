@@ -12,6 +12,7 @@ from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, 
 from app.security import AuthenticatedPrincipal
 
 OWNER = "employee-payroll-test-owner"
+APPROVER = "employee-payroll-test-approver"
 STAFF = "employee-payroll-test-staff"
 
 
@@ -35,9 +36,14 @@ def employee_environment(monkeypatch):
         assert created.status_code == 201
         business_id = created.json()["id"]
         with app.state.session_factory() as session:
-            session.add(BusinessMembership(
-                business_id=UUID(business_id), user_subject=STAFF, role=MembershipRole.STAFF
-            ))
+            session.add_all([
+                BusinessMembership(
+                    business_id=UUID(business_id), user_subject=STAFF, role=MembershipRole.STAFF
+                ),
+                BusinessMembership(
+                    business_id=UUID(business_id), user_subject=APPROVER, role=MembershipRole.OWNER
+                ),
+            ])
             session.commit()
         yield {"client": client, "business_id": business_id, "subject": current_subject, "engine": engine}
     finally:
@@ -162,8 +168,14 @@ def test_payroll_math_approval_and_payment_create_one_linked_expense(employee_en
     })
     assert duplicate_period.status_code == 409
 
+    self_approval = env["client"].post(f"{base}/payroll/{payroll['id']}/approve", json={})
+    assert self_approval.status_code == 409
+    assert "different owner" in self_approval.json()["detail"]
+
+    env["subject"]["value"] = APPROVER
     approved = env["client"].post(f"{base}/payroll/{payroll['id']}/approve", json={})
     assert approved.status_code == 200
+    env["subject"]["value"] = OWNER
     assert approved.json()["status"] == "approved"
     paid = env["client"].post(f"{base}/payroll/{payroll['id']}/pay", json={})
     assert paid.status_code == 200
