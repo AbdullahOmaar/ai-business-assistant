@@ -1548,3 +1548,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+## Employee payroll post-payment refresh — EMP-PAY-002 (2026-10-29)
+
+- Issue: [#279](https://github.com/AbdullahOmaar/ai-business-assistant/issues/279); follow-up PR: [#280](https://github.com/AbdullahOmaar/ai-business-assistant/pull/280).
+- Keep all work on the existing branch `feat/employee-payroll-management`; the core employee/payroll feature is already merged in PR #278.
+- Implemented: after the payroll payment API succeeds, emit `payrollPaid`; refresh the selected workspace's expense list and dashboard; discard late results after switching workspaces; add a frontend regression assertion.
+- Files in scope: `frontend/src/app/app.component.ts`, `frontend/src/app/employee-payroll.component.ts`, and `frontend/src/app/employee-payroll-ui.spec.ts`.
+- The previous branch checkpoint had a stale `TASKS.md` snapshot that removed newer current-main reconciliation history. This entry is based on current `main` and preserves that history while recording the follow-up.
+- Validation: latest exact-head CircleCI checks are pending; GitHub Actions duplicate workflow failures previously had empty runner/step data and log downloads returned 404, so the cause remains UNVERIFIED. Local tests are NOT RUN in this connector-only session.
+- Acceptance: exact-head CircleCI substantive jobs plus aggregate pass, applicable GitHub checks/review gates are resolved, PR is mergeable, and the final diff contains only the intended follow-up. No production deployment is authorized.
