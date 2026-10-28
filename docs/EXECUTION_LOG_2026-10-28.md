@@ -6,6 +6,7 @@
    - Added `backend/tests/test_foreign_invoice_references.py`.
    - Covers foreign-business customer and product IDs supplied to invoice creation, plus payment allocation to a foreign-business invoice.
    - Acceptance: each request returns HTTP 422, and business-scoped invoice, invoice-line, payment, payment-allocation, and audit-event counts remain unchanged.
+   - First CI run exposed a real persistence-order defect: foreign payment allocation left a Payment row in the SQLite-backed test despite HTTP 422. `backend/app/services.py` now validates every allocation before inserting Payment; exact-head rerun is required.
    - Local tests: NOT RUN (no online authorized development machine is connected in this session).
    - Required next evidence: exact-PR-head CircleCI results; fix any failure and rerun before marking verified.
 
@@ -37,7 +38,7 @@
 ## Change made in this execution
 
 - Branch: `test/security-foreign-customer-no-side-effects`
-- Commit: `831744ad7f4b0382675483d8f8d4133a163ffd0f`
-- File: `backend/tests/test_foreign_invoice_references.py`
+- Latest implementation commit: `1b3ef9a70a25c555206b6fb4dbe13ebeff65679a`
+- Files: `backend/tests/test_foreign_invoice_references.py`, `backend/app/services.py`
 - Validation: source-level review only. Tests and build are NOT RUN locally; require CI evidence.
 - Merge/deploy: NOT performed.
