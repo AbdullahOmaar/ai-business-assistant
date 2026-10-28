@@ -2,15 +2,14 @@
 
 > This opening section is the canonical live queue. Historical dated checkpoints below are retained as history and must not override the live evidence here.
 
-## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 10)
+## Reconciliation checkpoint — 2026-10-28 (PR #264 audit batch 11)
 
-- PR #264 remains open; ten audit batches are now documented. The latest ledger update requires fresh exact-head checks before merge.
-- Reconciliation ledger now documents **90/109** closed-unmerged PR semantic dispositions; **19/109 remain**. Closed-unmerged is a historical state, not a mandatory merge list.
-- Batch 10 reviewed #195, #163, #162, #157, #156, #155, #149, #148, and #136. Mobile startup Playwright source, receivables aging, workspace stale-response guards, payment retry safeguards, return-amount controls, timezone/settings validation, CORS PUT and current release metadata are present or superseded by verified mainline changes.
-- Physical Android/mobile visual QA and authenticated live payment workflows remain NOT RUN; passing source-level tests do not certify those flows.
-- Comparison main SHA: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API status contexts succeeded on that SHA.
-- Remaining gates: PR #261 foreign-tenant tests (backend-accounting failure on recorded head, root cause unverified), authenticated production workflows, mobile visual QA, and the remaining 19 closed-unmerged PR reviews.
-- Next: finish the remaining closed-unmerged PR review batches and reconcile live inventory counts. Restore only unique changes proven absent from main; no branch deletion, mass merge, or production deployment is authorized by this audit PR.
+- PR #264 remains open; 11 semantic-review batches are documented. The latest docs update needs fresh exact-head checks before merge.
+- Reconciliation ledger now documents **99/109** closed-unmerged PR semantic dispositions; **10/109 remain**.
+- Batch 11 reviewed #134, #119, #117, #71, #50, #22, #21, #20, and #19. Accounting/operations readiness, audit feed, mobile version display, assistant guardrails, early Angular shells and safe CSV workflows are present or superseded by merged successors.
+- Current main SHA at comparison: `6a72213ce6df51e1b8e2d829474dbc7c8b4d3b48`; CircleCI 7/7 and Vercel Web/API statuses succeeded on that SHA.
+- Remaining distinct gates include PR #261 foreign-tenant test failure (root cause unverified), authenticated production workflows, physical mobile visual QA, and the final 10 closed-unmerged PR reviews.
+- Next: audit the final 10 PRs, reconcile live inventory snapshots, and record any unique missing changes as evidence-based blockers or restore candidates. No branch deletion, mass merge, or production deployment is authorized by this audit PR.
 ---
 
 ## Current evidence baseline
