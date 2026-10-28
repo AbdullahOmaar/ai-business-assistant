@@ -305,13 +305,15 @@ This batch follows the supersession chains for the nine PRs called out first in 
 - **This does not yet mean Issue #249 is VERIFIED COMPLETE:** the full remote-branch inventory with each branch SHA and associated PR still needs to be materialized in this report, and the final PR's exact-head CircleCI/security checks must pass before merge.
 
 
+
 ## Complete remote branch inventory — paginated snapshot (2026-10-28)
 
-- Branch pagination verified: page 1 = 100, page 2 = 100, page 3 = 33, page 4 = 0; total **233 remote branches**.
-- PR pagination verified: page 1 = 100, page 2 = 100, page 3 = 26, page 4 = 0; total **226 PR records** (114 merged, 109 closed-unmerged, 3 open).
+- Snapshot captured from the live refs immediately before this inventory refresh commit. The reconciliation branch itself will advance as the report is updated; all other rows reflect the live branch refs at capture time.
+- Branch pagination: page 1 = 100, page 2 = 100, page 3 = 33, page 4 = 0; total **233 remote branches**.
+- PR pagination: page 1 = 100, page 2 = 100, page 3 = 26, page 4 = 0; total **226 PR records** (114 merged, 109 closed-unmerged, 3 open).
 - The table records every branch's full current SHA and all matching same-repository PR numbers/states; `head differs` means the branch has advanced or the PR head is stale relative to that ref.
 - **Branches with no associated PR:** 12. **Branches with at least one associated PR whose head SHA differs:** 12. No branch deletion was performed; no-PR branches are recorded for owner review rather than removed.
-- This inventory is a snapshot, not a claim that every no-PR branch is safe to delete. No branch cleanup is authorized by this task.
+- This is a point-in-time inventory, not authorization to delete branches or a claim that every no-PR branch is safe to remove.
 
 | Remote branch | Exact branch SHA | Associated PR(s) in paginated inventory |
 |---|---|---|
@@ -503,7 +505,7 @@ This batch follows the supersession chains for the nine PRs called out first in 
 | `perf/lazy-load-platform-admin-20261028` | `5d849ae0e98351867c0cae52bbe88716383b7e0e` | #256 MERGED (head match) |
 | `reconcile/branch-audit-missing-regressions-20261028` | `2b0861235640657190d56f42ba3f63bd89245cb8` | #260 MERGED (head match) |
 | `reconcile/closed-unmerged-pr-batch1-20261028` | `c75cd9ddea467be446e11747894f68ded5551878` | #263 MERGED (head match) |
-| `reconcile/closed-unmerged-pr-batch2-20261028` | `ce71a1d356c6aa58e6b1ad5d879cd56ec9efe716` | #264 OPEN (head match) |
+| `reconcile/closed-unmerged-pr-batch2-20261028` | `7792d8c7e475351a17ab8e44750a3346f014bc49` | #264 OPEN (head match) |
 | `reconcile/verified-missing-regressions-20261028` | `bbeac544fb1ab5538cd990b117e706ee05ddf082` | #262 MERGED (head match) |
 | `reintegrate/assistant-history-cap-main-20261028` | `07d100771c96c4dc3be6a73d0f964de262a41b23` | #219 MERGED (head match) |
 | `reintegrate/assistant-provider-retry-only-20261028` | `106472631180097257f386ba93c80c517fb2ee81` | #217 MERGED (head match) |
