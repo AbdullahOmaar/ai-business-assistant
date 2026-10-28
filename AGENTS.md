@@ -51,9 +51,14 @@ Stop and ask for human input only when necessary for a material product decision
 
 ## Git and change safety
 
-### Branch and deployment cadence (mandatory)
-- Do not create a branch for every tiny task, edit, or subtask. Group related changes toward one user-visible outcome into a single coherent work item and one short-lived branch/PR. Keep working on that branch while the scope remains coherent; split only when changes are independently releasable, need different review/permissions, or create a meaningful safety/conflict boundary.
-- Before creating a branch, inspect existing branches and open PRs and reuse/update the appropriate in-progress branch when safe. Avoid duplicate branches/PRs and close superseded work only after confirming it is redundant.
+### Branch discipline (mandatory for every human and AI contributor)
+- **One active work branch per contributor/agent at a time.** Before creating one, inspect the current branch/worktree, remote branches, and open PRs. Reuse the contributor's existing active branch or update the matching in-progress PR when the scope is the same; never create a second branch just to start another small task.
+- **No branch-per-task or branch-per-commit.** Batch related bug fixes, tests, documentation, and small follow-ups into the same coherent work item and branch. Finish the work, run the required checks, update the task ledger, and merge that branch through the normal approved PR process before starting another branch.
+- **Create a new branch only for a genuinely new, substantial feature or a clearly independent change boundary**—for example, independently releasable work, a different security/review/permission boundary, or a change that would create material conflicts if combined. A new chat, agent, tiny fix, test, refactor, or documentation edit is not by itself a reason to create a branch.
+- If a contributor's branch already has an open PR, continue on that branch while its scope remains coherent. Do not create duplicate branches/PRs or stack feature branches unless a real dependency requires it and the coordinator records why.
+- Keep PRs focused on one coherent outcome; do not bundle unrelated features merely to avoid a branch. If the scope materially changes, finish/merge or safely close the current work before starting a separate branch.
+- Merge only after required checks pass on the exact PR head, reviews/approvals and repository rules are satisfied, and the diff has been reviewed. Never bypass branch protections. After merge, verify the merge commit and main CI before beginning the next branch.
+- Branch discipline does not authorize direct pushes to protected main, unsafe merges, deleting branches with unique work, or bypassing release/security approvals.
 - Do not deploy after every commit, fix, or small task. Validate locally/CI and use previews when useful; deploy to production only for a meaningful, approved release—normally a new important feature, a deliberate feature bundle, or a critical production fix.
 - Batch related changes and tests, merge the approved release candidate, then trigger at most one production deployment per affected Vercel project for that release. Do not trigger the unaffected project. Do not retry deployment attempts repeatedly when quota, configuration, or build gates block them; diagnose first and wait for the platform limit to reset if needed.
 - Before a production deployment, verify exact candidate SHA, applicable tests/build/security gates, required release markers such as [release-web]/[release-api], and project ignore-build configuration. After deployment, verify deployment state, alias, deployed SHA/version, health/readiness, and safe smoke checks. A merge or HTTP 200 alone is not proof of release success.
@@ -159,6 +164,7 @@ If the task is too large, split it into independently reviewable subtasks with e
 - Capture lessons from bugs and failed approaches so future agents do not repeat them; update tests or automation when a lesson can be enforced mechanically.
 - The final report must separate: verified complete, partially complete, not run, blocked, changed files/commit or PR, and the exact next action.
 - Production readiness requires exact-release-SHA checks, merge authorization, confirmed deployment version/SHA, and safe end-to-end smoke tests. Never infer readiness from source code, preview success, or HTTP 200 alone.
+
 
 ## Master audit plan and cross-session continuity
 - The canonical audit/planning reference is `docs/AUDIT_MASTER_PLAN.md`. Read it before any new audit, planning, design, or implementation session, together with this file and the latest relevant `TASKS.md` checkpoint.

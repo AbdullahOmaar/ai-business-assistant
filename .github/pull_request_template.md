@@ -14,6 +14,12 @@
 - [ ] Tests were added or updated for new behavior and important regressions.
 - [ ] Documentation and TASKS.md were updated where appropriate.
 
+## Branch discipline
+- [ ] I checked existing branches and PRs before creating this branch.
+- [ ] This is my only active work branch; related small fixes/tests/docs are batched here.
+- [ ] A new branch was created only for a genuinely new substantial feature or an independent review/release boundary.
+- [ ] I did not bundle unrelated work, duplicate an existing PR, or bypass required checks/reviews.
+
 ## Verification evidence
 - [ ] Commands/checks actually run are listed below.
 - [ ] Failures were fixed and affected checks rerun, or remaining failures are explained.
