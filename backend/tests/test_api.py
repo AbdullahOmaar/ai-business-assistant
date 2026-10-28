@@ -1101,6 +1101,39 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         engine.dispose()
 
 
+def test_nonmember_cannot_create_supplier_without_writes_or_audit_events():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject="nonmember-subject")
+    client = TestClient(app)
+    try:
+        with Session(engine) as session:
+            suppliers_before = session.scalar(
+                select(func.count()).select_from(Supplier).where(Supplier.business_id == business_id)
+            )
+            audit_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(AuditEvent.business_id == business_id)
+            )
+
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/suppliers",
+            json={"name": "Unauthorized supplier"},
+        )
+        assert response.status_code == 403, response.text
+
+        with Session(engine) as session:
+            suppliers_after = session.scalar(
+                select(func.count()).select_from(Supplier).where(Supplier.business_id == business_id)
+            )
+            audit_after = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(AuditEvent.business_id == business_id)
+            )
+        assert suppliers_after == suppliers_before
+        assert audit_after == audit_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
 def test_owner_can_record_and_idempotently_replay_payment_via_api():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
