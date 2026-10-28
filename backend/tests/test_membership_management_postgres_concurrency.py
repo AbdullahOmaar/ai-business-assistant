@@ -72,12 +72,12 @@ def postgres_membership_client():
         if business_id is not None:
             with factory() as session:
                 session.query(AuditEvent).filter(
-                    AuditEvent.business_id == business_id
+                    AuditEvent.business_id == UUID(business_id)
                 ).delete(synchronize_session=False)
                 session.query(BusinessMembership).filter(
-                    BusinessMembership.business_id == business_id
+                    BusinessMembership.business_id == UUID(business_id)
                 ).delete(synchronize_session=False)
-                session.query(Business).filter(Business.id == business_id).delete(
+                session.query(Business).filter(Business.id == UUID(business_id)).delete(
                     synchronize_session=False
                 )
                 session.commit()
@@ -102,18 +102,18 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
     start = Barrier(2)
 
     def demote_owner_a():
-        with TestClient(app) as thread_client:
-            start.wait(timeout=10)
-            return thread_client.patch(
+        thread_client = TestClient(app)
+        start.wait(timeout=10)
+        return thread_client.patch(
                 f"/api/v1/businesses/{business_id}/memberships/"
                 f"{owner_ids['race-owner-a']}",
                 json={"role": "staff"},
             )
 
     def remove_owner_b():
-        with TestClient(app) as thread_client:
-            start.wait(timeout=10)
-            return thread_client.delete(
+        thread_client = TestClient(app)
+        start.wait(timeout=10)
+        return thread_client.delete(
                 f"/api/v1/businesses/{business_id}/memberships/"
                 f"{owner_ids['race-owner-b']}"
             )
@@ -139,7 +139,7 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
         )
         remaining_members = session.scalar(
             select(func.count()).select_from(BusinessMembership).where(
-                BusinessMembership.business_id == business_id
+                BusinessMembership.business_id == business_uuid
             )
         )
         audit_count = session.scalar(
