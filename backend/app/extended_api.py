@@ -367,26 +367,79 @@ def report_tax_summary(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     if start_date and end_date and start_date > end_date:
         raise HTTPException(status_code=422, detail="start_date must not be after end_date")
-    statement = select(
+    invoice_statement = select(
         Invoice.currency_code,
         func.coalesce(func.sum(Invoice.tax_total), 0),
         func.count(Invoice.id),
     ).where(Invoice.business_id == business_id, Invoice.status == "issued")
     if start_date:
-        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
+        invoice_statement = invoice_statement.where(
+            Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
+        )
     if end_date:
-        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
-    rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
+        invoice_statement = invoice_statement.where(
+            Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
+        )
+    invoice_rows = session.execute(
+        invoice_statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)
+    ).all()
+
+    credit_statement = select(
+        CreditNote.currency_code,
+        func.coalesce(func.sum(CreditNote.tax_total), 0),
+        func.count(CreditNote.id),
+    ).where(CreditNote.business_id == business_id)
+    if start_date:
+        credit_statement = credit_statement.where(
+            CreditNote.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc)
+        )
+    if end_date:
+        credit_statement = credit_statement.where(
+            CreditNote.created_at < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
+        )
+    credit_rows = session.execute(
+        credit_statement.group_by(CreditNote.currency_code).order_by(CreditNote.currency_code)
+    ).all()
+
+    totals_by_currency: dict[str, dict[str, Decimal | int]] = {}
+    for currency, total, count in invoice_rows:
+        totals_by_currency[currency] = {
+            "invoice_tax_total": money(Decimal(str(total))),
+            "credit_note_tax_reversed": ZERO,
+            "invoice_count": count,
+            "credit_note_count": 0,
+        }
+    for currency, total, count in credit_rows:
+        row = totals_by_currency.setdefault(currency, {
+            "invoice_tax_total": ZERO,
+            "credit_note_tax_reversed": ZERO,
+            "invoice_count": 0,
+            "credit_note_count": 0,
+        })
+        row["credit_note_tax_reversed"] = money(Decimal(str(row["credit_note_tax_reversed"])) + Decimal(str(total)))
+        row["credit_note_count"] = int(row["credit_note_count"]) + count
+
+    currencies = []
+    for currency in sorted(totals_by_currency):
+        row = totals_by_currency[currency]
+        invoice_tax = Decimal(str(row["invoice_tax_total"]))
+        reversed_tax = Decimal(str(row["credit_note_tax_reversed"]))
+        currencies.append({
+            "currency_code": currency,
+            "invoice_tax_total": str(invoice_tax),
+            "credit_note_tax_reversed": str(reversed_tax),
+            "tax_total": str(money(invoice_tax - reversed_tax)),
+            "invoice_count": int(row["invoice_count"]),
+            "credit_note_count": int(row["credit_note_count"]),
+        })
     return {
         "period": {"start_date": start_date.isoformat() if start_date else None,
                    "end_date": end_date.isoformat() if end_date else None},
-        "source": "issued_invoice_tax_snapshots",
-        "currencies": [
-            {"currency_code": currency, "tax_total": str(money(Decimal(str(total)))), "invoice_count": count}
-            for currency, total, count in rows
-        ],
+        "source": "issued_invoice_tax_snapshots_minus_issued_credit_note_tax_snapshots",
+        "currencies": currencies,
         "limitations": [
-            "Uses saved tax totals on issued invoices; it does not recalculate historical taxes.",
+            "Uses persisted tax totals from issued invoices and issued credit notes; it does not recalculate historical taxes.",
+            "Credit-note tax reversals are dated by credit-note issuance time, not original invoice issue time.",
             "Currency totals are kept separate and are not converted.",
             "This is an operational summary, not a jurisdiction-specific tax filing.",
         ],
