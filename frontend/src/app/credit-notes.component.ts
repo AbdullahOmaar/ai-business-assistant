@@ -148,7 +148,9 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
     .return-line { grid-template-columns: minmax(0, 1fr) minmax(90px, 140px); align-items: center; border: 1px solid var(--border, #dfe5ec); border-radius: 10px; padding: .65rem; }
     .return-line small { display: block; color: var(--muted, #5b6474); }
     .records { display: grid; gap: .6rem; } .record { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; border: 1px solid var(--border, #dfe5ec); border-radius: 12px; padding: .8rem; }
-    .record-main { display: grid; gap: .2rem; flex: 1 1 190px; min-width: 0; } small { color: var(--muted, #5b6474); overflow-wrap: anywhere; }
+    .record-main { display: grid; gap: .2rem; flex: 1 1 190px; min-width: 0; }
+    .credit-balance { display: grid; gap: .2rem; } .apply-form { display: grid; flex: 1 1 100%; gap: .65rem; border-top: 1px solid var(--border, #dfe5ec); padding-top: .8rem; }
+    small { color: var(--muted, #5b6474); overflow-wrap: anywhere; }
     .amount { white-space: nowrap; } .issued { color: var(--success, #176b45); font-size: .88rem; font-weight: 600; overflow-wrap: anywhere; }
     button { border: 1px solid var(--border, #cbd5e1); border-radius: 9px; padding: .6rem .8rem; background: var(--surface, #f8fafc); color: inherit; cursor: pointer; }
     button.primary { background: var(--primary, #174ea6); color: white; border-color: transparent; } button:disabled { opacity: .6; cursor: not-allowed; }
@@ -172,6 +174,11 @@ export class CreditNotesComponent implements OnChanges {
   private notesPaginationSequence = 0;
   notesHasMore = false;
   loadingMoreNotes = false;
+  applicationNoteId: string | null = null;
+  applicationInvoiceId = '';
+  applicationAmount = '';
+  applicationIdempotencyKey = '';
+  applyingCredit = false;
   invoiceDetail: InvoiceDetail | null = null;
   returnLines: ReturnDraftLine[] = [];
   selectedInvoiceId = '';
@@ -210,6 +217,11 @@ export class CreditNotesComponent implements OnChanges {
       this.selectedCustomerId = '';
       this.notesHasMore = false;
       this.loadingMoreNotes = false;
+      this.applicationNoteId = null;
+      this.applicationInvoiceId = '';
+      this.applicationAmount = '';
+      this.applicationIdempotencyKey = '';
+      this.applyingCredit = false;
       this.selectedInvoiceId = '';
       this.invoiceDetail = null;
       this.returnLines = [];
@@ -264,6 +276,95 @@ export class CreditNotesComponent implements OnChanges {
     this.notesHasMore = false;
     this.notesPaginationSequence++;
     void this.refresh();
+  }
+
+  remainingCredit(note: CreditNote): string {
+    return note.remaining_credit ?? note.total;
+  }
+
+  eligibleInvoicesFor(note: CreditNote): Invoice[] {
+    return this.invoices.filter(invoice =>
+      invoice.status === 'issued' &&
+      invoice.customer_id === note.customer_id &&
+      invoice.currency_code.trim().toUpperCase() === note.currency_code.trim().toUpperCase() &&
+      (invoice.outstanding_amount === undefined || Number(invoice.outstanding_amount) > 0)
+    );
+  }
+
+  applicationAmountMax(note: CreditNote): number {
+    const invoice = this.eligibleInvoicesFor(note).find(item => item.id === this.applicationInvoiceId);
+    const remainingCredit = Number(this.remainingCredit(note));
+    const outstanding = invoice?.outstanding_amount === undefined ? remainingCredit : Number(invoice.outstanding_amount);
+    return Math.max(0, Math.min(remainingCredit, outstanding));
+  }
+
+  beginApplyCredit(note: CreditNote): void {
+    if (this.role !== 'owner' || this.applyingCredit) return;
+    if (this.applicationNoteId === note.id) {
+      this.applicationNoteId = null;
+      this.applicationInvoiceId = '';
+      this.applicationAmount = '';
+      this.applicationIdempotencyKey = '';
+      return;
+    }
+    this.applicationNoteId = note.id;
+    this.applicationInvoiceId = this.eligibleInvoicesFor(note)[0]?.id || '';
+    this.applicationAmount = '';
+    this.applicationIdempotencyKey = '';
+    this.error = '';
+    this.message = '';
+  }
+
+  onApplicationDraftChanged(): void {
+    if (!this.applyingCredit) this.applicationIdempotencyKey = '';
+  }
+
+  async applyCredit(note: CreditNote): Promise<void> {
+    if (this.role !== 'owner' || this.applicationNoteId !== note.id || this.applyingCredit || !this.businessId) return;
+    const amount = Number(this.applicationAmount);
+    const max = this.applicationAmountMax(note);
+    if (!this.eligibleInvoicesFor(note).some(invoice => invoice.id === this.applicationInvoiceId) ||
+        !Number.isFinite(amount) || amount <= 0 || amount > max) {
+      this.error = this.language === 'ar'
+        ? 'المبلغ يجب أن يكون موجبًا وألا يتجاوز الرصيد الدائن أو المديونية المتاحة.'
+        : 'Amount must be positive and cannot exceed remaining credit or the outstanding receivable.';
+      return;
+    }
+    const requestedBusinessId = this.businessId;
+    const requestedNoteId = note.id;
+    const requestedInvoiceId = this.applicationInvoiceId;
+    const requestedAmount = amount.toFixed(2);
+    this.applyingCredit = true;
+    this.error = '';
+    this.message = '';
+    if (!this.applicationIdempotencyKey) this.applicationIdempotencyKey = crypto.randomUUID();
+    const idempotencyKey = this.applicationIdempotencyKey;
+    try {
+      await this.api.applyCreditNote(requestedBusinessId, {
+        credit_note_id: requestedNoteId,
+        invoice_id: requestedInvoiceId,
+        amount: requestedAmount,
+        idempotency_key: idempotencyKey,
+      });
+      if (requestedBusinessId !== this.businessId || this.applicationNoteId !== requestedNoteId) return;
+      this.applicationNoteId = null;
+      this.applicationInvoiceId = '';
+      this.applicationAmount = '';
+      this.applicationIdempotencyKey = '';
+      await this.refresh();
+      this.message = this.language === 'ar'
+        ? 'تم تطبيق الرصيد على المديونية. لم يتم تسجيل رد نقدي ولم يتغير إجمالي الفاتورة الأصلية.'
+        : 'Credit applied to the receivable. No cash refund was recorded and the original invoice total was unchanged.';
+    } catch {
+      if (requestedBusinessId === this.businessId && this.applicationNoteId === requestedNoteId) {
+        // Keep the same key/body available for a safe retry if the server committed but the response was lost.
+        this.error = this.language === 'ar'
+          ? 'تعذر تأكيد تطبيق الرصيد. أعد المحاولة دون تغيير الفاتورة أو المبلغ لتكرار الطلب بأمان.'
+          : 'Could not confirm the credit application. Retry without changing invoice or amount to safely replay the request.';
+      }
+    } finally {
+      if (requestedBusinessId === this.businessId) this.applyingCredit = false;
+    }
   }
 
   async loadMoreCreditNotes(): Promise<void> {
