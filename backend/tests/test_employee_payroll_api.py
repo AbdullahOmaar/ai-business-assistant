@@ -532,6 +532,9 @@ def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(
 
     invalid_update_payloads = [
         {"allowances": "1.001"},
+        {"allowances": "-0.01"},
+        {"bonuses": "-0.01"},
+        {"deductions": "-0.01"},
         {"deductions": "1000000000000.00"},
         {"net_pay": "1.00"},
     ]
