@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.extended_api import approve_sales_return, issue_credit_note_for_return, list_sales_returns, list_credit_notes
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, CreditNote, Invoice,
+    AuditEvent, Base, Business, BusinessMembership, CreditApplication, CreditNote, Invoice,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -310,3 +310,163 @@ def test_staff_can_read_scoped_returns_and_status_filter_is_applied(credit_note_
         assert drafts["items"] == []
         assert approved["limit"] == 50
         assert approved["offset"] == 0
+
+
+def test_credit_application_is_idempotent_audited_and_preserves_invoice_total(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        original_total = session.get(Invoice, invoice.id).total
+        body = CreditApplicationInput(
+            credit_note_id=note["id"], invoice_id=str(invoice.id),
+            amount=Decimal("10.00"), idempotency_key="apply-credit-001",
+        )
+        first = apply_credit_note(
+            business_id=business_id, body=body, session=session, principal=principal,
+        )
+        replay = apply_credit_note(
+            business_id=business_id, body=body, session=session, principal=principal,
+        )
+        assert first["id"] == replay["id"]
+        assert Decimal(first["amount"]) == Decimal("10.00")
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 1
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "credit_note.applied",
+        )) == 1
+        assert session.get(Invoice, invoice.id).total == original_total
+
+
+def test_credit_application_rejects_exceeding_remaining_credit_without_side_effects(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        apply_credit_note(
+            business_id=business_id,
+            body=CreditApplicationInput(
+                credit_note_id=note["id"], invoice_id=str(invoice.id),
+                amount=Decimal("10.00"), idempotency_key="apply-credit-002",
+            ),
+            session=session, principal=principal,
+        )
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=note["id"], invoice_id=str(invoice.id),
+                    amount=Decimal("0.01"), idempotency_key="apply-credit-003",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 1
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "credit_note.applied",
+        )) == 1
+
+
+def test_credit_application_rejects_different_customer_invoice(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        _, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        other_customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Other receivable customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Other invoice item", unit_price=Decimal("10.00"), is_stock_tracked=False,
+        )
+        other_invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=other_customer.id, invoice_number=f"INV-OTHER-{uuid4().hex[:8]}",
+            currency_code="EGP",
+            lines=[{"product_id": str(product.id), "quantity": "1"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=other_invoice.id,
+        )
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=note["id"], invoice_id=str(other_invoice.id),
+                    amount=Decimal("1.00"), idempotency_key="apply-credit-004",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 0
+
+
+def test_staff_cannot_apply_credit_note(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    staff = AuthenticatedPrincipal(subject="credit-staff")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, owner)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=owner,
+        )
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=note["id"], invoice_id=str(invoice.id),
+                    amount=Decimal("1.00"), idempotency_key="apply-credit-005",
+                ),
+                session=session, principal=staff,
+            )
+        assert error.value.status_code == 403
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 0
+
+
+def test_credit_application_list_is_business_scoped(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        apply_credit_note(
+            business_id=business_id,
+            body=CreditApplicationInput(
+                credit_note_id=note["id"], invoice_id=str(invoice.id),
+                amount=Decimal("5.00"), idempotency_key="apply-credit-006",
+            ),
+            session=session, principal=principal,
+        )
+        page = list_credit_applications(
+            business_id=business_id, credit_note_id=UUID(note["id"]),
+            invoice_id=invoice.id, limit=50, offset=0,
+            session=session, principal=principal,
+        )
+        assert len(page["items"]) == 1
+        assert page["items"][0]["credit_note_id"] == note["id"]
+        assert page["items"][0]["invoice_id"] == str(invoice.id)
