@@ -1592,3 +1592,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added acceptance scenario T39-22 in `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
 - Per instruction, tests/build/CI were not run during this work. Syntax/runtime correctness and behavior remain unverified.
 - PR #306 stays Draft/Open; no merge/deploy. The T37/T38/T40 approval gate still blocks supplier financial records, returns/reversals, idempotency policy and costing/COGS.
+
+
+## T39 supplier directory and PO lifecycle feature work — 2026-10-29
+
+- **Implemented on the existing PR #306 branch; validation intentionally deferred per user instruction.**
+- `backend/app/extended_api.py`: added `PATCH /suppliers/{supplier_id}` with partial-update semantics (omitted fields remain unchanged, explicit null/empty optional contact values clear fields, blank names and empty patches rejected); supplier contact updates are business-scoped and audited.
+- Supplier deactivate/reactivate is OWNER-only; `GET /suppliers?include_inactive=true` is OWNER-only so inactive suppliers can be reviewed/reactivated. Standard supplier listing and purchase-order creation continue to exclude inactive suppliers; historical purchase orders are not deleted.
+- Added `POST /purchase-orders/{order_id}/cancel`: OWNER-only, business-scoped and row-locked; only draft/approved orders with no received quantities can be cancelled. Received/partially received orders cannot be cancelled by this endpoint, avoiding implicit stock reversal. Successful cancellation is audited.
+- `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`: added T39-22 for cancellation and documented supplier lifecycle/cancellation behavior; T39-21 already covers supplier profile updates and activation.
+- **Tests/build/security/CI: NOT RUN** in this feature-only pass as requested. Do not interpret implementation as verified. Keep PR #306 Draft until validation is authorized/available and exact-head release checks pass. T37/T38 financial contracts remain a gate for bills, payments, supplier returns, valuation and COGS.
