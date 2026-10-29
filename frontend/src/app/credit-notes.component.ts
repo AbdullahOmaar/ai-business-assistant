@@ -193,6 +193,8 @@ export class CreditNotesComponent implements OnChanges {
       this.message = '';
     } catch {
       if (requestId === this.refreshSequence && requestedBusinessId === this.businessId) {
+        // Never show a previous customer's result as if it matched the newly selected filter.
+        this.notes = [];
         this.error = this.language === 'ar' ? 'تعذر تحميل الفواتير والمرتجعات. تحقق من الصلاحيات والاتصال ثم أعد المحاولة.' : 'Could not load invoices and returns. Check access and connectivity, then retry.';
       }
     } finally {
