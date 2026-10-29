@@ -21,9 +21,8 @@ backend-tests:
   variables:
     POSTGRES_DB: ai_business_assistant_test
     POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
-    DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/ai_business_assistant_test
-    TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/ai_business_assistant_test
+    DATABASE_URL: postgresql+psycopg://postgres@postgres:5432/ai_business_assistant_test
+    TEST_DATABASE_URL: postgresql+psycopg://postgres@postgres:5432/ai_business_assistant_test
     CI_ALLOW_DATABASE_SCHEMA_TESTS: "true"
     POSTGRES_HOST_AUTH_METHOD: trust
   before_script:
@@ -35,7 +34,7 @@ backend-tests:
       deadline = time.monotonic() + 90
       while True:
           try:
-              with psycopg.connect("postgresql://postgres:postgres@postgres:5432/ai_business_assistant_test", connect_timeout=3):
+              with psycopg.connect("postgresql://postgres@postgres:5432/ai_business_assistant_test", connect_timeout=3):
                   print("Disposable PostgreSQL is ready.")
               break
           except psycopg.OperationalError:
