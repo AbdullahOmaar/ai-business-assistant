@@ -409,7 +409,11 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' |
             }
 
             @if (tab === 'credit-notes' && business) {
-              <aba-credit-notes [businessId]="business.id" [role]="business.role || 'staff'" [language]="language"></aba-credit-notes>
+              @defer (on immediate) {
+                <aba-credit-notes [businessId]="business.id" [role]="business.role || 'staff'" [language]="language"></aba-credit-notes>
+              } @placeholder {
+                <section class="panel" role="status">{{ t('جارٍ تحميل قسم المرتجعات والإشعارات الدائنة…', 'Loading returns and credit notes…') }}</section>
+              }
             }
 
             @if (tab === 'invoices') {
