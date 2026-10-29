@@ -184,6 +184,7 @@ export class CreditNotesComponent implements OnChanges {
   applyingNoteId: string | null = null;
   applicationInvoiceByNote: Record<string, string> = {};
   applicationAmountByNote: Record<string, string> = {};
+  private applicationIdempotencyKeys: Record<string, string> = {};
   message = '';
   error = '';
   private refreshSequence = 0;
@@ -466,15 +467,19 @@ export class CreditNotesComponent implements OnChanges {
     this.applyingNoteId = note.id;
     this.error = '';
     this.message = '';
+    const requestKey = `${note.id}|${invoiceId}|${amount}`;
+    const idempotencyKey = this.applicationIdempotencyKeys[requestKey]
+      ?? (globalThis.crypto?.randomUUID?.()
+        ?? `credit-${note.id}-${invoiceId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
+    this.applicationIdempotencyKeys[requestKey] = idempotencyKey;
     try {
-      const idempotencyKey = globalThis.crypto?.randomUUID?.()
-        ?? `credit-${note.id}-${invoiceId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       await this.api.applyCreditNote(this.businessId, {
         credit_note_id: note.id,
         invoice_id: invoiceId,
         amount,
         idempotency_key: idempotencyKey,
       });
+      delete this.applicationIdempotencyKeys[requestKey];
       await this.refresh();
       this.applicationAmountByNote[note.id] = '';
       this.message = this.language === 'ar'
