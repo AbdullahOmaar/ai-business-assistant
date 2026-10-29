@@ -658,6 +658,43 @@ class CreditNote(Base):
     )
 
 
+class CashRefund(Base):
+    """Immutable cash-out record against a credit note; separate from receivable credits."""
+
+    __tablename__ = "cash_refunds"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["credit_note_id", "business_id"],
+            ["credit_notes.id", "credit_notes.business_id"],
+            name="fk_cash_refunds_note_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["payment_id", "business_id"],
+            ["payments.id", "payments.business_id"],
+            name="fk_cash_refunds_payment_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("id", "business_id", name="uq_cash_refunds_id_business"),
+        UniqueConstraint("business_id", "idempotency_key", name="uq_cash_refund_idempotency"),
+        CheckConstraint("amount > 0", name="ck_cash_refund_amount_positive"),
+        CheckConstraint("method IN ('cash', 'bank', 'card', 'other')", name="ck_cash_refund_method"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    credit_note_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    payment_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    method: Mapped[str] = mapped_column(String(24), nullable=False)
+    reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    refunded_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class PlatformRoleGrant(Base):
     """A delegated platform role assigned by a bootstrap super administrator.
 
