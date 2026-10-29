@@ -59,6 +59,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-29 | Member reads PO receipt history for own and foreign-business order IDs | Own order returns paginated receipt ledger rows with product labels and stable ordering; foreign order returns not-found without exposing ledger rows | Tenant-scoped read-model invariant |
 | T39-30 | Member reads PO summary across multiple currencies and statuses | Counts and totals are grouped by status AND currency; no cross-currency aggregate is returned; tenant scope is enforced | Financial display integrity invariant |
 | T39-31 | Member reads PO activity timeline for own and foreign-business order IDs | Timeline returns only that PO's tenant-scoped audit events in stable chronological order; foreign order returns not-found | Audit visibility and tenant isolation invariant |
+| T39-32 | Create or edit a PO using an order number already used by another PO in the same business; reuse a number used only by another business | Same-business duplicate is rejected with a clear validation error before writes; cross-business identical numbers remain isolated; database uniqueness remains the concurrency backstop | Tenant-scoped identifier integrity |
 
 ## Execution plan after contract approval
 
