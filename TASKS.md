@@ -1697,3 +1697,9 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - `frontend/src/app/app.component.ts` adds status/supplier controls plus Filter/Clear actions. Load, create and receipt refresh paths preserve active filters; workspace reset clears them.
 - Acceptance scenario T39-23 now includes UI-to-API behavior. Frontend build/tests and backend tests remain **NOT RUN** per instruction; source inspection only.
 
+## T39 supplier activation UI — 2026-10-29
+
+- `frontend/src/app/api.service.ts`: supplier listing now supports the optional owner-only `include_inactive` parameter; added `updateSupplier` for PATCH.
+- `frontend/src/app/app.component.ts`: OWNER-only Show/Hide inactive and Deactivate/Reactivate controls, visible active/inactive status, and refresh after mutation. Backend authorization remains authoritative; inactive suppliers are excluded by default.
+- Acceptance scenario T39-21 updated. Tests/build/security/migration/CI remain **NOT RUN** per user instruction.
+
