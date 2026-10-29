@@ -577,22 +577,6 @@ export class ApiService {
     const query = params.toString();
     return this.request<CreditNotePage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes${query ? '?' + query : ''}`);
   }
-  creditApplications(businessId: string, filters: { credit_note_id?: string; invoice_id?: string; limit?: number; offset?: number } = {}): Promise<CreditApplicationPage> {
-    const params = new URLSearchParams();
-    if (filters.credit_note_id) params.set('credit_note_id', filters.credit_note_id);
-    if (filters.invoice_id) params.set('invoice_id', filters.invoice_id);
-    if (filters.limit !== undefined) params.set('limit', String(filters.limit));
-    if (filters.offset !== undefined) params.set('offset', String(filters.offset));
-    const query = params.toString();
-    return this.request<CreditApplicationPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications${query ? '?' + query : ''}`);
-  }
-
-  applyCreditNote(businessId: string, input: { credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string }): Promise<CreditApplication> {
-    return this.request<CreditApplication>(
-      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications`, 'POST', input
-    );
-  }
-
   issueCreditNoteForReturn(businessId: string, returnId: string): Promise<CreditNote> {
     return this.request<CreditNote>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/credit-note`, 'POST', {}
