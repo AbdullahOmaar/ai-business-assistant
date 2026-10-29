@@ -1570,3 +1570,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Task 4 — Tenant authorization: reviewed membership guards on expenses, tax summary, receivables aging, dashboard, and profit/loss. Added regression cases for non-member access to date-filtered expenses and tax summary; existing profit/loss and aging access coverage remains part of the project suite.
 - Task 5 — Regression evidence and handoff: authored seven new tests in `backend/tests/test_financial_report_date_boundaries.py` for local-day boundaries, currency separation, reversed ranges, stable pagination, tax summary, non-member denial, and unfiltered compatibility; the existing reconciliation test covers reversed custom P/L range. Added `docs/FINANCIAL_REPORTS_METRIC_MAP.md` documenting source records, date basis, currency treatment, limits, authorization and unresolved T37 decisions. **Tests/build/security are NOT RUN** per owner instruction. These changes are not runtime-verified until checks can run on the exact final SHA.
 - Release status: no merge or deployment. Exact-head GitHub status rechecked on SHA `a90c2a0ac0219d6303725e1616051df6d6969add` and all six CircleCI contexts report FAILURE (backend-accounting, backend-container, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke, frontend-unit-tests). Logs are unavailable; root cause remains NOT VERIFIED. Do not merge while required checks are failing or review/release gates are incomplete.
+
+
+## T40 — Five-task continuation batch (2026-10-30)
+
+- Execution branch: `task/t40-fin-report-003-current-main-20261029`; existing PR #304 reused. No new branch/PR, merge, or deployment.
+- Task 1 — Expense query completeness: added regression coverage for independently supplied `start_date` and `end_date`, verifying inclusive business-local date behavior.
+- Task 2 — Timezone fail-closed behavior: added regression coverage that both filtered expenses and filtered tax-summary requests return HTTP 422 when stored business timezone metadata is invalid.
+- Task 3 — Tenant data isolation: added a same-principal/two-business regression proving a date-filtered expense query cannot return another business's rows.
+- Task 4 — Tax-summary filter completeness: added one-sided lower/upper date-bound coverage and currency/date assertions for the tax summary endpoint.
+- Task 5 — Receivables report compatibility: added regression coverage proving an explicitly supplied `as_of` date is preserved rather than replaced by the business-local default.
+- New tests appended to `backend/tests/test_financial_report_date_boundaries.py`; commit: `9dafb76e27887d767b5f02ac70ece413e814d395`.
+- Validation: tests, build, and security scans **NOT RUN**; these are authored regression cases, not verified behavior. No financial formulas, schemas, posting rules, or T37 shared contracts changed.
+- Release: PR #304 remains open/Draft and unmerged. No deployment. Exact-head CI must be rechecked after this commit; prior failures do not establish this new head's status.
