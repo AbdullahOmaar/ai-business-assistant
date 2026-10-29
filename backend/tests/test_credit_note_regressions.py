@@ -1193,3 +1193,106 @@ def test_pricing_rule_rejects_naive_or_reversed_effective_dates(credit_note_work
         assert session.scalar(select(func.count()).select_from(PricingRule).where(
             PricingRule.business_id == business_id,
         )) == 0
+
+
+def test_bank_reconciliation_prevents_reusing_a_payment_for_two_statement_rows(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        account = create_bank_account(
+            business_id=business_id,
+            body=BankAccountInput(account_key="duplicate-target", display_name="Duplicate target", currency_code="EGP"),
+            session=session, principal=owner,
+        )
+        imported = import_bank_statement(
+            business_id=business_id, account_id=UUID(account["id"]),
+            body=BankStatementImportInput(csv_content=(
+                "transaction_id,transaction_date,description,amount,currency_code\\n"
+                "BANK-A,2026-10-28,Receipt A,50.00,EGP\\n"
+                "BANK-B,2026-10-28,Receipt B,50.00,EGP\\n"
+            )), session=session, principal=owner,
+        )
+        payment = Payment(
+            business_id=business_id, customer_id=None, amount=Decimal("50.00"),
+            currency_code="EGP", method="cash", reference="ONE-PAYMENT",
+            idempotency_key="bank-one-payment",
+        )
+        session.add(payment)
+        session.flush()
+        match_bank_statement_row(
+            business_id=business_id,
+            body=BankReconciliationMatchInput(
+                statement_row_id=UUID(imported["items"][0]["id"]), payment_id=payment.id,
+            ), session=session, principal=owner,
+        )
+        with pytest.raises(HTTPException) as duplicate:
+            match_bank_statement_row(
+                business_id=business_id,
+                body=BankReconciliationMatchInput(
+                    statement_row_id=UUID(imported["items"][1]["id"]), payment_id=payment.id,
+                ), session=session, principal=owner,
+            )
+        assert duplicate.value.status_code == 409
+        assert session.get(BankStatementRow, UUID(imported["items"][1]["id"])).status == "unmatched"
+        assert session.scalar(select(func.count()).select_from(BankReconciliationMatch).where(
+            BankReconciliationMatch.business_id == business_id,
+            BankReconciliationMatch.payment_id == payment.id,
+        )) == 1
+
+
+def test_bank_reconciliation_rejects_cross_business_account_and_wrong_direction(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        other = Business(name="Other Bank Workspace", currency_code="USD")
+        session.add(other)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=other.id, user_subject=owner.subject, role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        foreign_account = create_bank_account(
+            business_id=other.id,
+            body=BankAccountInput(account_key="foreign", display_name="Foreign", currency_code="USD"),
+            session=session, principal=owner,
+        )
+        with pytest.raises(HTTPException) as cross_business:
+            import_bank_statement(
+                business_id=business_id, account_id=UUID(foreign_account["id"]),
+                body=BankStatementImportInput(csv_content=(
+                    "transaction_id,transaction_date,description,amount,currency_code\\n"
+                    "FOREIGN-1,2026-10-28,Foreign receipt,10.00,USD\\n"
+                )), session=session, principal=owner,
+            )
+        assert cross_business.value.status_code == 422
+
+        account = create_bank_account(
+            business_id=business_id,
+            body=BankAccountInput(account_key="direction", display_name="Direction", currency_code="EGP"),
+            session=session, principal=owner,
+        )
+        imported = import_bank_statement(
+            business_id=business_id, account_id=UUID(account["id"]),
+            body=BankStatementImportInput(csv_content=(
+                "transaction_id,transaction_date,description,amount,currency_code\\n"
+                "BANK-OUT,2026-10-28,Outgoing,-10.00,EGP\\n"
+            )), session=session, principal=owner,
+        )
+        payment = Payment(
+            business_id=business_id, customer_id=None, amount=Decimal("10.00"),
+            currency_code="EGP", method="cash", reference="Wrong direction",
+            idempotency_key="bank-wrong-direction",
+        )
+        session.add(payment)
+        session.flush()
+        with pytest.raises(HTTPException) as wrong_direction:
+            match_bank_statement_row(
+                business_id=business_id,
+                body=BankReconciliationMatchInput(
+                    statement_row_id=UUID(imported["items"][0]["id"]), payment_id=payment.id,
+                ), session=session, principal=owner,
+            )
+        assert wrong_direction.value.status_code == 422
+        assert session.scalar(select(func.count()).select_from(BankReconciliationMatch).where(
+            BankReconciliationMatch.business_id == business_id,
+        )) == 0
