@@ -19,6 +19,21 @@
 - **Next:** restore authorized CircleCI credits or use an already approved runner, then rerun all six checks on the exact current HEAD. Do not weaken assertions or merge while required checks fail. Continue only policy-independent tests; salary-history/backfill/snapshot and payment lifecycle changes remain blocked by T37/T40 approval.
 
 
+## T41 — Five additional integrity workstreams (2026-10-30)
+
+Requested: five substantial feature-specific tasks on the existing branch/PR #308 only; no merge or deployment.
+
+1. **Payment expense-insert failure recovery:** inject an Expense insert failure and assert payroll remains approved/unpaid, no expense persists, and no paid audit event is emitted.
+2. **Paid payroll immutability:** reject edits and replayed pay requests after payment; preserve the original payroll amounts, one linked expense, and exactly one paid audit event.
+3. **Salary snapshot consistency:** changing Employee.monthly_salary affects only subsequently created payroll records; an existing payroll's base_salary/net_pay remain unchanged.
+4. **Payroll listing tenant isolation:** prove a business can list only its own payroll records, even when another business has a payroll row.
+5. **Employee invalid-update atomicity:** empty, whitespace-only name, null salary, and null active-status updates return 422 without profile or audit changes.
+
+- **Implementation:** five test-only regressions appended to `backend/tests/test_employee_payroll_api.py` in commit `1daf5f9f73de2ecd1bbe5674bda5a4c23f28d355`. No runtime/schema/financial-policy changes.
+- **Verification:** tests committed but NOT RUN on the current HEAD. The prior focused 16-pass run predates these tests; it is not evidence for this batch. Exact-head CircleCI, full backend suite, PostgreSQL concurrency, migration, frontend, and security checks remain NOT RUN / BLOCKED as applicable.
+- **Delivery:** continue using PR #308 and branch `feat/t41-salary-history-effective-dates`; preserve Draft/Open/Unmerged. No merge or deployment.
+- **Dependencies:** T37/T40 approvals still gate effective-dated salary history/backfill/snapshots and shared payment lifecycle changes. Expense failure injection uses the existing SQLite test fixture and does not establish PostgreSQL concurrency behavior.
+
 ## T41 — Five-workstream execution batch (2026-10-30)
 
 Requested execution scope: five substantial workstreams on the existing branch and PR #308 only. No merge or deployment.
