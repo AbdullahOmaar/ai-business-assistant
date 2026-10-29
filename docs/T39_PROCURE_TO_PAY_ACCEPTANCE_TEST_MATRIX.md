@@ -62,6 +62,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-32 | Create or edit a PO using an order number already used by another PO in the same business; reuse a number used only by another business | Same-business duplicate is rejected with a clear validation error before writes; cross-business identical numbers remain isolated; database uniqueness remains the concurrency backstop | Tenant-scoped identifier integrity |
 | T39-33 | API regression for duplicate PO number on create and draft edit | Same-business duplicate create/edit returns validation error with order/line/audit snapshots unchanged; another business may use the same number | Contract-independent API regression; execution pending |
 | T39-33 | OWNER exports purchase orders as CSV; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells are escaped | Data portability and spreadsheet injection safety |
+| T39-34 | OWNER exports supplier directory as CSV including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
 
 ## Execution plan after contract approval
 
@@ -140,3 +141,10 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - The API regression checks same-business duplicate creation is rejected without changing purchase-order or audit counts; identical numbers are accepted in a second business; and draft editing to another same-business order's number is rejected without changing the original order number, line count, or audit count.
 - Existing `UniqueConstraint("business_id", "order_number")` remains the database concurrency backstop; the route preflight supplies a clear validation response but is not a substitute for that constraint.
 - The test was authored but **NOT RUN** per owner instruction. No passing test claim is made.
+
+
+## Supplier directory CSV export (2026-10-29)
+
+- Added `suppliers` to the existing owner-only `GET /exports/{entity_type}.csv` entity allowlist. The export includes supplier ID, name, email, phone, address, active state and creation timestamp.
+- It uses the same tenant-filtered generic export query and CSV formula-injection escaping as the existing customer/product/expense exports. No data mutation or migration is involved.
+- Validation intentionally not run during this feature-only pass due to the usage-limit blocker.
