@@ -119,7 +119,11 @@ test('report labels translate the actual backend revenue-basis and integrity-war
   assert.match(source, /gross issued invoice totals before sales returns/);
   assert.match(source, /this report identifies records for manual review only/);
   assert.match(source, /Legacy invoices without customer links are flagged for review, not auto-corrected\./);
-  assert.match(source, /Uses saved tax totals on issued invoices; it does not recalculate historical taxes\./);
+  assert.match(source, /Uses persisted tax totals from issued invoices and issued credit notes; it does not recalculate historical taxes\./);
+  assert.match(source, /Credit-note tax reversals are dated by credit-note issuance time, not original invoice issue time\./);
+  assert.match(source, /Tax on issued invoices/);
+  assert.match(source, /Tax reversed by credit notes/);
+  assert.match(source, /Net tax after credit notes/);
 });
 
 
