@@ -1415,6 +1415,8 @@ export class AppComponent implements OnInit {
     this.supplierEmail = '';
     this.supplierPhone = '';
     this.supplierAddress = '';
+    this.supplierSearch = '';
+    this.csvExporting = false;
     this.purchaseQuantity = '1';
     this.purchaseUnitCost = '0';
     this.recurringIntervalDays = '30';
