@@ -31,7 +31,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   );
   assert.match(
     source,
-    /\['products','payments','expenses','employees','assistant','reports','audit','platform-admin'\]\.includes\(tab\)/,
+    /\['products','payments','expenses','employees','assistant','reports','audit','platform-admin','credit-notes'\]\.includes\(tab\)/,
     'More must stay active when a hidden destination is open',
   );
 });
