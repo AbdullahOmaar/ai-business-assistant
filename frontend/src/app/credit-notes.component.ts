@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CreditNote, Invoice, InvoiceDetail, SalesReturn } from './api.service';
+import { ApiService, CreditNote, Customer, Invoice, InvoiceDetail, SalesReturn } from './api.service';
 
 type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQuantity: string; quantity: string };
 
@@ -81,11 +81,19 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
       </div>
 
       <h3>{{ language === 'ar' ? 'الإشعارات الدائنة الصادرة' : 'Issued credit notes' }}</h3>
-      @if (!loading && !notes.length) { <p class="empty">{{ language === 'ar' ? 'لا توجد إشعارات دائنة بعد.' : 'No credit notes have been issued yet.' }}</p> }
+      <label class="customer-filter">{{ language === 'ar' ? 'تصفية حسب العميل' : 'Filter by customer' }}
+        <select name="creditNoteCustomer" [(ngModel)]="selectedCustomerId" (ngModelChange)="onCustomerFilterChanged()" [disabled]="loading">
+          <option value="">{{ language === 'ar' ? 'كل العملاء' : 'All customers' }}</option>
+          @for (customer of customers; track customer.id) {
+            <option [value]="customer.id">{{ customer.name }}</option>
+          }
+        </select>
+      </label>
+      @if (!loading && !notes.length) { <p class="empty">{{ language === 'ar' ? 'لا توجد إشعارات دائنة لهذا الاختيار.' : 'No credit notes match this filter.' }}</p> }
       <div class="records">
         @for (note of notes; track note.id) {
           <article class="record">
-            <div class="record-main"><strong>{{ note.credit_note_number }}</strong><small>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(note.sales_return_id) }}</small><small>{{ language === 'ar' ? 'العميل' : 'Customer' }} · {{ shortId(note.customer_id) }}</small></div>
+            <div class="record-main"><strong>{{ note.credit_note_number }}</strong><small>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(note.sales_return_id) }}</small><small>{{ language === 'ar' ? 'العميل' : 'Customer' }} · {{ customerName(note.customer_id) }}</small></div>
             <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong><span class="issued">{{ language === 'ar' ? 'صادر' : 'Issued' }}</span>
           </article>
         }
@@ -100,6 +108,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
     h2 { margin: 0 0 .4rem; font-size: 1.2rem; } h3 { margin: 1.2rem 0 .6rem; font-size: 1rem; }
     p, .muted, .footnote { color: var(--muted, #5b6474); line-height: 1.5; } .footnote { font-size: .85rem; margin-top: 1rem; }
     .return-form { display: grid; gap: .8rem; margin: .6rem 0 1.2rem; }
+    .customer-filter { display: grid; gap: .35rem; max-width: 420px; margin: .6rem 0; }
     label { display: grid; gap: .35rem; font-size: .92rem; }
     input, select { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; border: 1px solid var(--border, #cbd5e1); border-radius: 9px; background: var(--surface, #fff); color: inherit; }
     .return-lines { display: grid; gap: .5rem; }
@@ -120,8 +129,10 @@ export class CreditNotesComponent implements OnChanges {
   @Input() language: 'ar' | 'en' = 'ar';
 
   invoices: Invoice[] = [];
+  customers: Customer[] = [];
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
+  selectedCustomerId = '';
   invoiceDetail: InvoiceDetail | null = null;
   returnLines: ReturnDraftLine[] = [];
   selectedInvoiceId = '';
@@ -144,8 +155,10 @@ export class CreditNotesComponent implements OnChanges {
       this.refreshSequence++;
       this.invoiceDetailSequence++;
       this.invoices = [];
+      this.customers = [];
       this.returns = [];
       this.notes = [];
+      this.selectedCustomerId = '';
       this.selectedInvoiceId = '';
       this.invoiceDetail = null;
       this.returnLines = [];
@@ -162,16 +175,21 @@ export class CreditNotesComponent implements OnChanges {
     this.loading = true;
     this.error = '';
     try {
-      const [returnsPage, notesPage, invoices] = await Promise.all([
+      const [returnsPage, notesPage, invoices, customers] = await Promise.all([
         this.api.salesReturns(requestedBusinessId, { limit: 100, offset: 0 }),
-        this.api.creditNotes(requestedBusinessId, { limit: 100, offset: 0 }),
+        this.api.creditNotes(requestedBusinessId, {
+          limit: 100, offset: 0,
+          customer_id: this.selectedCustomerId || undefined,
+        }),
         this.api.invoices(requestedBusinessId),
+        this.api.customers(requestedBusinessId),
       ]);
       // Ignore responses for an older refresh or a workspace the user has left.
       if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId) return;
       this.returns = returnsPage.items;
       this.notes = notesPage.items;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
+      this.customers = customers;
       this.message = '';
     } catch {
       if (requestId === this.refreshSequence && requestedBusinessId === this.businessId) {
@@ -180,6 +198,14 @@ export class CreditNotesComponent implements OnChanges {
     } finally {
       if (requestId === this.refreshSequence) this.loading = false;
     }
+  }
+
+  onCustomerFilterChanged(): void {
+    void this.refresh();
+  }
+
+  customerName(customerId: string): string {
+    return this.customers.find(customer => customer.id === customerId)?.name || this.shortId(customerId);
   }
 
   async onInvoiceSelected(invoiceId: string): Promise<void> {
