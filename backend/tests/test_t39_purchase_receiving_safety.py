@@ -16,7 +16,7 @@ from app.models import (
     StockMovement,
     Supplier,
 )
-from app.operations import receive_purchase_order
+from app.operations import WorkflowError, receive_purchase_order
 from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import create_product
 
@@ -158,6 +158,66 @@ def test_staff_receipt_denial_has_no_business_side_effects(purchasing_workspace)
         persisted_line = session.get(PurchaseOrderLine, line.id)
         assert persisted_order.status == "approved"
         assert persisted_line.received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
+
+
+
+def test_invalid_later_line_does_not_partially_receive_earlier_lines(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, first_line, product = _approved_order(session, business_id, principal)
+        invalid_line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=product.id,
+            quantity=Decimal("5"),
+            unit_cost=Decimal("10"),
+            received_quantity=Decimal("0"),
+        )
+        order.total = Decimal("150")
+        session.add(invalid_line)
+        session.commit()
+
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+
+        # The first line is valid, but the second would over-receive. The entire
+        # request must be validated before the first stock/audit write is staged.
+        with pytest.raises(WorkflowError, match="Received quantity must be positive"):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={
+                    first_line.id: Decimal("2"),
+                    invalid_line.id: Decimal("6"),
+                },
+            )
+
+        session.refresh(order)
+        session.refresh(first_line)
+        session.refresh(invalid_line)
+        assert order.status == "approved"
+        assert first_line.received_quantity == Decimal("0.000")
+        assert invalid_line.received_quantity == Decimal("0.000")
         assert session.scalar(
             select(func.count()).select_from(StockMovement).where(
                 StockMovement.business_id == business_id
