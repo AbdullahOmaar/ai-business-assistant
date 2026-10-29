@@ -436,6 +436,8 @@ class PricingRule(Base):
     __table_args__ = (
         CheckConstraint("rule_type IN ('tax', 'discount')", name="ck_pricing_rule_type"),
         CheckConstraint("rate >= 0 AND rate <= 100", name="ck_pricing_rule_rate_range"),
+        CheckConstraint("effective_until IS NULL OR effective_until > effective_from",
+                        name="ck_pricing_rule_effective_range"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -446,6 +448,10 @@ class PricingRule(Base):
     rule_type: Mapped[str] = mapped_column(String(16), nullable=False)
     rate: Mapped[Decimal] = mapped_column(Numeric(7, 4), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    effective_from: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
