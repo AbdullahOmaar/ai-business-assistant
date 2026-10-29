@@ -730,6 +730,14 @@ def test_cash_refund_is_idempotent_audited_and_reduces_remaining_credit(credit_n
         listed = next(item for item in notes_page["items"] if item["id"] == note["id"])
         assert Decimal(listed["refunded_total"]) == Decimal("4.00")
         assert Decimal(listed["remaining_credit"]) == Decimal("6.00")
+        statement = customer_statement(
+            business_id=business_id, customer_id=invoice.customer_id,
+            session=session, principal=principal,
+        )
+        refund_events = [event for event in statement["items"] if event["event_type"] == "cash_refund"]
+        assert len(refund_events) == 1
+        assert Decimal(refund_events[0]["refund_amount"]) == Decimal("4.00")
+        assert refund_events[0]["affects_balance"] is False
 
 
 def test_cash_refund_cannot_exceed_credit_remaining_after_applications(credit_note_workspace):
@@ -850,4 +858,33 @@ def test_staff_cannot_create_cash_refund(credit_note_workspace):
         assert error.value.status_code == 403
         assert session.scalar(select(func.count()).select_from(CashRefund).where(
             CashRefund.business_id == business_id,
+        )) == 0
+
+
+def test_cash_refund_is_rejected_while_original_invoice_has_open_receivable(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        _, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        with pytest.raises(HTTPException) as error:
+            create_cash_refund(
+                business_id=business_id, credit_note_id=UUID(note["id"]),
+                body=CashRefundInput(
+                    amount=Decimal("1.00"), method="cash",
+                    idempotency_key="refund-open-receivable-denied",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert "fully settled" in str(error.value.detail).lower()
+        assert session.scalar(select(func.count()).select_from(CashRefund).where(
+            CashRefund.business_id == business_id,
+        )) == 0
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "cash_refund.created",
         )) == 0
