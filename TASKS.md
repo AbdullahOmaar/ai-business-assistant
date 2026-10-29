@@ -1572,3 +1572,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - On the follow-up commit, all six substantive CircleCI contexts again report FAILURE. GitHub Actions backend test run reports a completed failed job with `steps: null` and no logs URL; diagnosis still lacks executable-step evidence. Exact root cause remains NOT VERIFIED.
 - Local pytest/build/security/migration checks remain NOT RUN. PR #306 remains Draft/Open; no merge or deployment.
 - Next action: recover usable CI job diagnostics or execute the focused backend test suite in an authorized runtime; do not infer test results from runner-startup failures.
+
+
+## T39 supplier directory feature work — 2026-10-29
+
+- **Status: PARTIALLY COMPLETE.** Continued on the existing Draft PR #306 branch; no test execution performed per current instruction (rate-limit issue).
+- Added tenant-scoped `GET /suppliers/{supplier_id}` and `PATCH /suppliers/{supplier_id}` endpoints in `backend/app/extended_api.py`. Patch supports name/contact edits and explicit activation/deactivation; optional contact values can be cleared with null/blank input, while blank names and empty patches are rejected.
+- Updates lock the supplier row, keep `business_id` scoping in the query, and append a `supplier.updated` audit event without recording contact values in the audit summary. Deactivated suppliers remain available for historical reads; existing purchase-order creation already requires an active supplier.
+- Added acceptance scenario T39-21 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md` for tenant isolation, validation, audit, deactivation, and historical order behavior.
+- **Validation: NOT RUN** by request; no claim that syntax, tests, or CI passed. The existing CI failures remain unresolved and separate from this feature work.
+- **Delivery:** PR #306 remains the existing Draft candidate; no duplicate PR, merge, migration, or deployment. T37/T38/T40 contract gate remains in place for supplier bills/payments, returns/reversals, and costing/financial posting.
+- **Next feature tasks:** add a purchase-order detail/read model with supplier/product labels and receipt progress, then implement receipt idempotency only after the shared contract is approved.
