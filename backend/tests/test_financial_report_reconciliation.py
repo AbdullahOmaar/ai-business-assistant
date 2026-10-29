@@ -273,3 +273,84 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
         assert any("does not claim net profit" in item for item in data["limitations"])
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+def test_non_member_cannot_read_profit_loss_report():
+    """Financial reports must enforce the same business membership boundary as dashboard."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Private Financial Report Shop", "currency_code": "EGP"},
+        )
+        assert created.status_code == 201, created.text
+        business_id = created.json()["id"]
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-financial-user")
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/profit-loss",
+            params={"period": "all"},
+        )
+        assert response.status_code == 403, response.text
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+def test_dashboard_date_filter_uses_half_open_utc_interval():
+    """Include the exact start, include pre-end, and exclude the exact next-day boundary."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Half Open UTC Report Shop", "currency_code": "EGP", "timezone": "UTC"},
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+
+        with Session(engine) as session:
+            session.add_all([
+                Invoice(
+                    business_id=business_id,
+                    invoice_number="UTC-START-INCLUSIVE",
+                    status="issued",
+                    currency_code="EGP",
+                    issue_date=datetime(2026, 1, 15, 0, 0, tzinfo=timezone.utc),
+                    subtotal=Decimal("10.00"), discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"), total=Decimal("10.00"),
+                ),
+                Invoice(
+                    business_id=business_id,
+                    invoice_number="UTC-END-EXCLUSIVE",
+                    status="issued",
+                    currency_code="EGP",
+                    issue_date=datetime(2026, 1, 15, 23, 59, 59, 999999, tzinfo=timezone.utc),
+                    subtotal=Decimal("20.00"), discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"), total=Decimal("20.00"),
+                ),
+                Invoice(
+                    business_id=business_id,
+                    invoice_number="UTC-NEXT-DAY-EXCLUDED",
+                    status="issued",
+                    currency_code="EGP",
+                    issue_date=datetime(2026, 1, 16, 0, 0, tzinfo=timezone.utc),
+                    subtotal=Decimal("900.00"), discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"), total=Decimal("900.00"),
+                ),
+            ])
+            session.commit()
+
+        dashboard = client.get(
+            f"/api/v1/businesses/{business_id}/dashboard",
+            params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
+        )
+        assert dashboard.status_code == 200, dashboard.text
+        payload = dashboard.json()
+        assert payload["invoiced_sales"] == [
+            {"currency_code": "EGP", "count": 2, "total": "30.00"}
+        ]
+        assert payload["outstanding_balances"] == [
+            {"currency_code": "EGP", "total": "30.00"}
+        ]
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
+
