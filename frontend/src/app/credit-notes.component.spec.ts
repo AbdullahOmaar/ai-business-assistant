@@ -63,3 +63,11 @@ test('stale invoice-detail responses cannot replace the latest invoice selection
   assert.match(component, /requestedBusinessId !== this\.businessId \|\| invoiceId !== this\.selectedInvoiceId/);
   assert.match(component, /if \(requestId === this\.invoiceDetailSequence\) this\.detailLoading = false/);
 });
+
+test('credit-note list supports customer filtering and displays customer names', () => {
+  assert.match(component, /selectedCustomerId = ''/);
+  assert.match(component, /customer_id: this\.selectedCustomerId \|\| undefined/);
+  assert.match(component, /this\.api\.customers\(requestedBusinessId\)/);
+  assert.match(component, /customerName\(note\.customer_id\)/);
+  assert.match(component, /onCustomerFilterChanged\(\): void/);
+});
