@@ -96,6 +96,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
             <div class="record-main"><strong>{{ note.credit_note_number }}</strong><small>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(note.sales_return_id) }}</small><small>{{ language === 'ar' ? 'العميل' : 'Customer' }} · {{ customerName(note.customer_id) }}</small></div>
             <div class="record-main credit-balance">
               <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong>
+              <small>{{ language === 'ar' ? 'الضريبة ضمن الإشعار' : 'Included tax' }}: {{ note.tax_total ?? '0.00' }} {{ note.currency_code }}</small>
               <small>{{ language === 'ar' ? 'المستخدم من الإشعار' : 'Applied' }}: {{ note.applied_total ?? '0.00' }} {{ note.currency_code }}</small>
               <small>{{ language === 'ar' ? 'المردود نقدًا' : 'Cash refunded' }}: {{ note.refunded_total ?? '0.00' }} {{ note.currency_code }}</small>
               <small>{{ language === 'ar' ? 'الرصيد المتبقي' : 'Remaining credit' }}: {{ remainingCredit(note) }} {{ note.currency_code }}</small>
