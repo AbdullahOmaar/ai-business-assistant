@@ -633,7 +633,16 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             InvoiceLine.invoice_id == invoice.id,
             InvoiceLine.business_id == business_id,
         ).order_by(InvoiceLine.id)).all()
+        if invoice.tax_total > ZERO and (
+            invoice.tax_rate is None
+            or any(line.taxable_amount is None or line.tax_amount is None for line in discount_allocation_lines)
+        ):
+            raise WorkflowError(
+                "This historical tax invoice lacks persisted line-level tax snapshots; its return cannot be approved safely"
+            )
         invoice_lines = {}
+        previously_returned_quantities: dict[UUID, Decimal] = {}
+        previously_returned_taxes: dict[UUID, Decimal] = {}
         for invoice_line_id, requested in sorted(
             requested_by_line.items(), key=lambda item: str(item[0])
         ):
@@ -653,6 +662,15 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             ))
             if Decimal(str(previously_returned_quantity or 0)) + requested["quantity"] > invoice_line.quantity:
                 raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
+            previously_returned_quantities[invoice_line_id] = Decimal(str(previously_returned_quantity or 0))
+            previously_returned_tax = session.scalar(select(func.coalesce(
+                func.sum(SalesReturnLine.tax_amount), 0
+            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
+                SalesReturnLine.invoice_line_id == invoice_line.id,
+                SalesReturnLine.business_id == business_id,
+                SalesReturn.status == "approved",
+            ))
+            previously_returned_taxes[invoice_line_id] = Decimal(str(previously_returned_tax or 0))
             previously_returned_amount = session.scalar(select(func.coalesce(
                 func.sum(SalesReturnLine.amount), 0
             )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
@@ -675,6 +693,37 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                 raise WorkflowError(str(exc)) from exc
             invoice_lines[invoice_line_id] = invoice_line
 
+        # Tax is allocated from immutable source-line tax snapshots. Cumulative
+        # rounding ensures partial returns never refund more tax than the sold line.
+        current_quantity_by_line: dict[UUID, Decimal] = {}
+        current_tax_by_line: dict[UUID, Decimal] = {}
+        for returned in sorted(lines, key=lambda item: str(item.id)):
+            invoice_line = invoice_lines[returned.invoice_line_id]
+            if invoice.tax_total <= ZERO:
+                returned.tax_amount = ZERO
+                continue
+            previous_quantity = previously_returned_quantities.get(returned.invoice_line_id, ZERO)
+            previous_tax = previously_returned_taxes.get(returned.invoice_line_id, ZERO)
+            quantity_before = current_quantity_by_line.get(returned.invoice_line_id, ZERO)
+            tax_before = current_tax_by_line.get(returned.invoice_line_id, ZERO)
+            quantity_after = quantity_before + Decimal(str(returned.quantity))
+            cumulative_tax = money(
+                Decimal(str(invoice_line.tax_amount)) *
+                (previous_quantity + quantity_after) / Decimal(str(invoice_line.quantity))
+            )
+            tax_for_line = money(cumulative_tax - previous_tax - tax_before)
+            if tax_for_line < ZERO:
+                raise WorkflowError("Calculated return tax cannot be negative")
+            returned.tax_amount = tax_for_line
+            current_quantity_by_line[returned.invoice_line_id] = quantity_after
+            current_tax_by_line[returned.invoice_line_id] = tax_before + tax_for_line
+
+        ret.tax_total = money(sum((Decimal(str(line.tax_amount or ZERO)) for line in lines), ZERO))
+        ret.total = money(sum(
+            (Decimal(str(line.amount)) + Decimal(str(line.tax_amount or ZERO)) for line in lines),
+            ZERO,
+        ))
+
         for returned in lines:
             invoice_line = invoice_lines[returned.invoice_line_id]
             if invoice_line.product_id:
@@ -693,7 +742,7 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         session.flush()
         return ret
     ret = _commit(session, op)
-    return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
+    return _dict(ret, ("id", "invoice_id", "status", "total", "tax_total", "created_at"))
 
 
 @router.post("/sales-returns/{return_id}/credit-note", status_code=201)
