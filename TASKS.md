@@ -1552,3 +1552,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+## T39 — Inventory, Purchasing & Supplier Payments — 2026-10-29 checkpoint
+
+- **Status:** PARTIALLY COMPLETE — source inventory and acceptance-test specification documented; procure-to-pay implementation BLOCKED pending approved T37 shared financial contract and T38 stock/payment boundaries.
+- **Baseline:** `main` SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`. Prior supplier/purchasing work to preserve: PRs #204, #215, #271, #294. No T39 implementation branch/PR was found before this documentation-only candidate.
+- **Documentation:** `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md` defines 18 acceptance scenarios for scoped PO/receipt, replay and concurrency, rejected quantities/returns, supplier bills/payables/payments/aging, role/tenant isolation, rollback, stock valuation and reconciliation. Policy-dependent cases are explicitly gated rather than silently decided.
+- **Observed source gaps:** no confirmed supplier bill/payable/payment lifecycle; no confirmed supplier-return/reversal workflow; receipt replay/concurrency requires proof; approved stock valuation/COGS and T40 expense/cash-flow boundary remain absent/unapproved.
+- **Validation:** documentation only. Backend tests/build/security checks and exact-head CI are NOT RUN. This is not T39 acceptance evidence.
+- **Release controls:** no merge, production migration, or deployment performed or authorized.
+- **Next action:** Master approves the T37/T38 financial and stock-effect contract; then implement the complete coherent feature on one branch/PR, adding the acceptance tests and running exact-head CI.
+
