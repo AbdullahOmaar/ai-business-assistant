@@ -1636,3 +1636,12 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - No schema migrations, supplier payable/payment posting, stock valuation/COGS, supplier-return accounting, or expense/cash-flow semantics were added.
 - **Validation: NOT RUN** — backend tests, frontend checks, build, security/dependency audit, migration checks and CI were not executed per instruction while the usage-limit blocker remains. Do not claim runtime correctness until validation can run.
 - PR #306 remains Draft/Open. Do not merge until exact-head checks pass and the T37/T38/T40 shared-contract gates are approved.
+
+
+## T39 duplicate purchase-order identifier feature — 2026-10-29
+
+- Added same-business duplicate order-number preflight validation to both purchase-order creation and draft editing in `backend/app/extended_api.py`. This returns a clear workflow validation error before staging changes instead of relying only on a database constraint error.
+- The query is scoped by `business_id`; the same order number may be used by a different business. Draft updates exclude the current order ID so saving an unchanged number remains valid.
+- The existing database unique constraint remains the final protection against concurrent duplicate requests; the preflight check is usability feedback, not a replacement for database integrity.
+- Added acceptance scenario T39-32 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- Tests/build/security/CI: **NOT RUN** per current instruction while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
