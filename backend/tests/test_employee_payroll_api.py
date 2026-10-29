@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
+import app.employee_payroll_api as employee_payroll_api
 from app import employee_payroll_api
 from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
@@ -1091,3 +1092,141 @@ def test_reapproving_payroll_is_rejected_without_duplicate_audit(employee_enviro
         ).order_by(AuditEvent.created_at, AuditEvent.action)).all() == [
             "payroll.created", "payroll.approved"
         ]
+
+
+
+def test_employee_update_duplicate_identity_is_rejected_without_side_effects(employee_environment):
+    env = employee_environment
+    first = _create_employee(
+        env, name="First Employee", code="EMP-FIRST", email="first@example.test"
+    )
+    second = _create_employee(
+        env, name="Second Employee", code="EMP-SECOND", email="second@example.test"
+    )
+    assert first.status_code == second.status_code == 201
+    base = f"/api/v1/businesses/{env['business_id']}"
+    for payload in (
+        {"email": " FIRST@example.test "},
+        {"employee_code": " emp-first "},
+    ):
+        response = env["client"].patch(
+            f"{base}/employees/{second.json()['id']}", json=payload
+        )
+        assert response.status_code == 409
+
+    with app.state.session_factory() as session:
+        persisted = session.get(Employee, UUID(second.json()["id"]))
+        assert persisted.email == "second@example.test"
+        assert persisted.employee_code == "EMP-SECOND"
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.target_type == "employee"
+        )) == 2
+
+
+def test_existing_payroll_keeps_salary_snapshot_after_employee_salary_update(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env, salary="5000.00").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11", "allowances": "100.00"},
+    )
+    assert payroll.status_code == 201
+    before = payroll.json()
+
+    updated = env["client"].patch(
+        f"{base}/employees/{employee['id']}", json={"monthly_salary": "7200.00"}
+    )
+    assert updated.status_code == 200
+    refreshed = env["client"].get(f"{base}/payroll?period=2026-11")
+    assert refreshed.status_code == 200
+    assert len(refreshed.json()) == 1
+    after = refreshed.json()[0]
+    assert after["base_salary"] == before["base_salary"] == "5000.00"
+    assert after["net_pay"] == before["net_pay"] == "5100.00"
+    assert updated.json()["monthly_salary"] == "7200.00"
+
+
+def test_payroll_listing_period_filter_and_pagination_are_stable(employee_environment):
+    env = employee_environment
+    first = _create_employee(env, name="Alpha", code="EMP-ALPHA").json()
+    second = _create_employee(env, name="Beta", code="EMP-BETA").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    for employee, period in ((first, "2026-10"), (first, "2026-11"), (second, "2026-11")):
+        response = env["client"].post(
+            f"{base}/employees/{employee['id']}/payroll", json={"period": period}
+        )
+        assert response.status_code == 201
+
+    filtered = env["client"].get(f"{base}/payroll?period=2026-11")
+    assert filtered.status_code == 200
+    assert len(filtered.json()) == 2
+    assert {row["period"] for row in filtered.json()} == {"2026-11"}
+
+    page = env["client"].get(f"{base}/payroll?limit=1&offset=1")
+    assert page.status_code == 200
+    assert len(page.json()) == 1
+    all_rows = env["client"].get(f"{base}/payroll?limit=10&offset=0")
+    assert all_rows.status_code == 200
+    assert page.json()[0]["id"] == all_rows.json()[1]["id"]
+
+
+def test_payroll_approval_and_payment_replays_have_no_duplicate_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-12"}
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+
+    self_approval = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert self_approval.status_code == 409
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    env["subject"]["value"] = OWNER
+    replay_approval = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert replay_approval.status_code == 409
+
+    paid = env["client"].post(f"{base}/payroll/{payroll_id}/pay", json={})
+    assert paid.status_code == 200
+    replay_payment = env["client"].post(f"{base}/payroll/{payroll_id}/pay", json={})
+    assert replay_payment.status_code == 409
+
+    with app.state.session_factory() as session:
+        record = session.get(PayrollRecord, UUID(payroll_id))
+        assert record.status == "paid"
+        assert record.expense_id is not None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 1
+        actions = session.scalars(select(AuditEvent.action).where(
+            AuditEvent.target_type == "payroll"
+        )).all()
+        assert actions.count("payroll.created") == 1
+        assert actions.count("payroll.approved") == 1
+        assert actions.count("payroll.paid") == 1
+
+
+def test_employee_creation_rolls_back_when_audit_write_fails(employee_environment, monkeypatch):
+    env = employee_environment
+
+    def fail_audit(*args, **kwargs):
+        raise RuntimeError("injected audit persistence failure")
+
+    monkeypatch.setattr(employee_payroll_api, "_audit", fail_audit)
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.post(
+        f"/api/v1/businesses/{env['business_id']}/employees",
+        json={
+            "name": "Rollback Employee",
+            "employee_code": "EMP-ROLLBACK",
+            "monthly_salary": "4000.00",
+        },
+    )
+    assert response.status_code == 500
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(Employee)) == 0
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.target_type == "employee"
+        )) == 0
