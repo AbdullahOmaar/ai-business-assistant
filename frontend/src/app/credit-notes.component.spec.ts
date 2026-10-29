@@ -116,3 +116,21 @@ test('credit application retries preserve the idempotency key and explain that n
   assert.match(component, /Keep the same key\/body available for a safe retry/);
   assert.match(component, /No cash refund was recorded and the original invoice total was unchanged/);
 });
+
+
+test('cash refund UI is owner-only, separate from receivable credit, and shows refund history', () => {
+  assert.match(component, /this\.api\.cashRefunds\(requestedBusinessId/);
+  assert.match(component, /this\.api\.createCashRefund\(requestedBusinessId, note\.id/);
+  assert.match(component, /this\.remainingCredit\(note\)/);
+  assert.match(component, /refundsForNote\(note\.id\)/);
+  assert.match(component, /Record a separate cash refund/);
+  assert.match(component, /لم يتم تغيير إجمالي الفاتورة/);
+  assert.match(api, /\/api\/v1\/businesses\/\$\{encodeURIComponent\(businessId\)\}\/cash-refunds/);
+});
+
+test('cash refund retries retain the same idempotency key for the same refund payload', () => {
+  assert.match(component, /private refundIdempotencyKeys: Record<string, string>/);
+  assert.match(component, /const requestKey = `\$\{note\.id\}\|\$\{amount\}\|\$\{method\}\|\$\{reference\}`/);
+  assert.match(component, /this\.refundIdempotencyKeys\[requestKey\] \?\?/);
+  assert.match(component, /delete this\.refundIdempotencyKeys\[requestKey\]/);
+});
