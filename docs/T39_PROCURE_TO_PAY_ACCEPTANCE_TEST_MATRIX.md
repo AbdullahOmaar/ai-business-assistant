@@ -61,8 +61,8 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-31 | Member reads PO activity timeline for own and foreign-business order IDs | Timeline returns only that PO's tenant-scoped audit events in stable chronological order; foreign order returns not-found | Audit visibility and tenant isolation invariant |
 | T39-32 | Create or edit a PO using an order number already used by another PO in the same business; reuse a number used only by another business | Same-business duplicate is rejected with a clear validation error before writes; cross-business identical numbers remain isolated; database uniqueness remains the concurrency backstop | Tenant-scoped identifier integrity |
 | T39-33 | API regression for duplicate PO number on create and draft edit | Same-business duplicate create/edit returns validation error with order/line/audit snapshots unchanged; another business may use the same number | Contract-independent API regression; execution pending |
-| T39-34 | OWNER exports purchase orders as CSV; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells (including leading tab/carriage-return characters) are escaped | Data portability and spreadsheet injection safety |
-| T39-35 | OWNER exports supplier directory as CSV including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
+| T39-34 | OWNER downloads purchase-order CSV from the Purchasing UI; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells (including leading tab/carriage-return characters) are escaped | Data portability and spreadsheet injection safety |
+| T39-35 | OWNER downloads supplier-directory CSV from the Suppliers UI including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
 
 ## Execution plan after contract approval
 
@@ -155,3 +155,11 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Source review found the purchase-order-specific CSV path checked literal backslash-plus-letter sequences for tab/carriage-return prefixes, unlike the shared export path which checks actual control characters.
 - Updated the PO export guard to detect actual leading tab and carriage-return characters as well as `=`, `+`, `-`, and `@`. This is a source-level security correction; tests were not run.
 - Matrix scenario T39-34 now explicitly calls out tab/carriage-return prefixes. Runtime verification remains pending.
+
+
+## T39 purchasing CSV UI integration — 2026-10-29
+
+- Added `ApiService.exportBusinessCsv` using the existing authenticated blob request path for `suppliers` and `purchase_orders`.
+- Added OWNER-only CSV download actions to the Supplier Directory and Purchase Orders section headers. The shared handler prevents overlapping exports, reports API errors through the existing operations error region, and ignores a response if the user has switched workspaces while it was pending.
+- Backend authorization remains authoritative; hiding the buttons for STAFF is a UI affordance, not a security boundary.
+- Frontend build/tests were not run per owner instruction. Source inspection only; runtime verification pending.
