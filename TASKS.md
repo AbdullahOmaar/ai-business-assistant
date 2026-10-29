@@ -1676,3 +1676,10 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Existing escaping for leading `=`, `+`, `-`, and `@` remains. Acceptance scenario T39-34 documents the control-character case.
 - Tests/build/security/CI remain **NOT RUN** per user instruction. This is a source-reviewed security fix, not runtime-verified.
 
+## T39 purchasing CSV UI integration — 2026-10-29
+
+- `frontend/src/app/api.service.ts`: added authenticated `exportBusinessCsv` for the owner-only `suppliers` and `purchase_orders` CSV endpoints using the existing blob request helper.
+- `frontend/src/app/app.component.ts`: added OWNER-only download buttons to Supplier Directory and Purchase Orders; a shared handler prevents concurrent downloads, displays request failures, and avoids downloading a response after switching workspaces.
+- The API remains the authorization boundary; UI role checks do not replace server-side authorization. Acceptance scenarios T39-34/T39-35 now explicitly describe the UI actions.
+- Frontend build/tests, backend tests, security/migration checks and CI remain **NOT RUN** per user instruction; implementation is not runtime-verified.
+
