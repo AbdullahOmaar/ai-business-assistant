@@ -23,6 +23,25 @@
 3. Continue issue #276's remaining route × role × tenant no-write/no-audit coverage on one dedicated branch.
 4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly **NOT RUN / BLOCKED** until performed with approved access.
 
+
+## Master parallel staff assignments — 2026-10-29
+
+These are execution assignments on existing Notion tasks, not new duplicate tasks. Notion comments on the linked task pages contain the detailed work orders and must be kept in sync with this section.
+
+1. **Staff 1 — Security & tenant isolation (Notion T03):** Continue the missing route × role × tenant coverage. Start by reviewing `docs/SECURITY_ROUTE_INVENTORY.md`, `backend/tests/test_business_tenant_boundaries.py`, and draft [PR #302](https://github.com/AbdullahOmaar/ai-business-assistant/pull/302) at head `bfda274696dc20305d5a770bb4c994770ffad6e8`. Do not duplicate PR #302 or modify its branch without coordination. Add focused regressions for uncovered routes, role/tenant denial, and no-read/no-write/no-audit side effects. Update the same T03 Notion page with exact evidence.
+
+2. **Staff 2 — Functional regression & automation (Notion T22):** Map the critical MVP workflows to existing tests, inspect scripts and CircleCI, run targeted tests then the full available regression suite, and add only missing coverage. Include success/failure paths and duplicate/retry/idempotency cases only where current contracts are unambiguous. Coordinate with Staff 1 to avoid overlapping security tests and do not invent financial behavior while T37 contracts are open. Update the same T22 Notion page with exact commands, SHA, results, and blockers.
+
+3. **Staff 3 — Repository / PR / CI reconciliation (Notion T01; T07 when relevant):** Re-verify current main SHA, open PR heads/bases/checks, branch inventory, and CI failures. Reconcile existing branch ledgers instead of creating duplicate reports. The totals in historical snapshots are not current counts; full pagination was last marked NOT RUN. Classify code failures vs infrastructure/provider failures and update the same T01 page; update T07 only where its CI-gate acceptance criteria were actually verified.
+
+**Shared controls:** Isolate changes by branch and coordinate shared files. Keep Notion task pages and this ledger aligned. Record exact SHAs and test/CI links; use VERIFIED COMPLETE / PARTIALLY COMPLETE / NOT RUN / BLOCKED accurately. No branch deletion, merge, or production deployment is authorized by these assignments.
+
+
+## Notion-first inter-agent communication — @n
+
+The canonical communication contract lives in the Notion [Agent Prompt Registry](https://app.notion.com/p/407bbf2bc2c58160be0cefe4f6374d05), section **Mandatory Notion-to-Notion Agent Communication Protocol — @n**. Master and specialist chats must read and reply on existing task-page discussions; the user is not a relay. Each operational comment must identify sender/receiver, canonical task, checkpoint, exact status, evidence, next action/owner, and conflicts/dependencies. A specialist's acknowledgement is not assumed until posted by that chat. Notion is not a guaranteed push channel: resumed chats must poll/read comments; never claim a separate chat was notified or woke up automatically. Notion task pages remain canonical for assignments/status, while GitHub remains canonical for code/CI/release evidence. No merge/deploy authorization is implied.
+
+
 ## Current evidence baseline
 
 - **Last fully verified main SHA:** `b84966db294c87338385508b35e98f2b2287e13e`; all six substantive CircleCI contexts plus `ci/circleci: verify-all-changes/all-checks-passed` passed **7/7** on this exact SHA. Vercel Web/API contexts still fail with `build-rate-limit`; no deployment was performed.
