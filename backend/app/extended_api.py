@@ -691,6 +691,33 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
                         "timezone", "next_run_at", "is_active", "created_at"))
 
 
+@router.get("/pricing-rules")
+def list_pricing_rules(business_id: UUID, limit: int = Query(default=50, ge=1, le=100),
+                       offset: int = Query(default=0, ge=0),
+                       rule_type: str | None = Query(default=None, pattern="^(tax|discount)$"),
+                       is_active: bool | None = Query(default=None),
+                       session: Session = Depends(get_session),
+                       principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """List configured tax/discount rules for owners; listing does not apply rules to invoices."""
+    _authorized(session, principal, business_id, owner_only=True)
+    statement = select(PricingRule).where(PricingRule.business_id == business_id)
+    if rule_type is not None:
+        statement = statement.where(PricingRule.rule_type == rule_type)
+    if is_active is not None:
+        statement = statement.where(PricingRule.is_active.is_(is_active))
+    rules = session.scalars(
+        statement.order_by(PricingRule.created_at.desc(), PricingRule.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(rule, (
+            "id", "business_id", "name", "rule_type", "rate", "is_active", "created_at",
+        )) for rule in rules],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
 @router.post("/pricing-rules", status_code=201)
 def post_pricing_rule(business_id: UUID, body: PricingRuleInput,
                       session: Session = Depends(get_session),
