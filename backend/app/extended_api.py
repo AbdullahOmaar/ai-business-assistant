@@ -505,6 +505,30 @@ def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurch
     return _dict(po, ("id", "order_number", "status", "total", "currency_code"))
 
 
+@router.get("/sales-returns")
+def list_sales_returns(business_id: UUID, limit: int = Query(default=50, ge=1, le=100),
+                       offset: int = Query(default=0, ge=0),
+                       status: str | None = Query(default=None, pattern="^(draft|approved|rejected)$"),
+                       session: Session = Depends(get_session),
+                       principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """List business-scoped sales returns; listing never issues a credit or refunds cash."""
+    _authorized(session, principal, business_id)
+    statement = select(SalesReturn).where(SalesReturn.business_id == business_id)
+    if status is not None:
+        statement = statement.where(SalesReturn.status == status)
+    returns = session.scalars(
+        statement.order_by(SalesReturn.created_at.desc(), SalesReturn.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(ret, (
+            "id", "business_id", "invoice_id", "status", "reason", "total", "created_at",
+        )) for ret in returns],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
 @router.post("/sales-returns", status_code=201)
 def post_sales_return(business_id: UUID, body: ReturnInput,
                       session: Session = Depends(get_session),
