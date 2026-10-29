@@ -1,5 +1,5 @@
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -7,7 +7,11 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.extended_api import approve_sales_return, issue_credit_note_for_return, list_sales_returns, list_credit_notes
+from app.extended_api import (
+    CreditApplicationInput, apply_credit_note, approve_sales_return,
+    issue_credit_note_for_return, list_credit_applications, list_credit_notes,
+    list_sales_returns,
+)
 from app.models import (
     AuditEvent, Base, Business, BusinessMembership, CreditApplication, CreditNote, Invoice,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
@@ -470,3 +474,38 @@ def test_credit_application_list_is_business_scoped(credit_note_workspace):
         assert len(page["items"]) == 1
         assert page["items"][0]["credit_note_id"] == note["id"]
         assert page["items"][0]["invoice_id"] == str(invoice.id)
+
+
+def test_credit_application_idempotency_key_cannot_be_reused_for_different_amount(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        first = CreditApplicationInput(
+            credit_note_id=UUID(note["id"]), invoice_id=invoice.id,
+            amount=Decimal("5.00"), idempotency_key="apply-credit-reused-key",
+        )
+        apply_credit_note(
+            business_id=business_id, body=first, session=session, principal=principal,
+        )
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=UUID(note["id"]), invoice_id=invoice.id,
+                    amount=Decimal("4.00"), idempotency_key="apply-credit-reused-key",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 409
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 1
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "credit_note.applied",
+        )) == 1
