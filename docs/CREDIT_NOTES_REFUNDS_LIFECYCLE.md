@@ -5,7 +5,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The first slice implements immutable 
 ## Existing behavior confirmed in source
 
 - SalesReturn and SalesReturnLine represent a return request and its invoice-line quantities/amounts.
-- Draft return creation checks the original issued invoice and calculates a discounted line amount. Approval is OWNER-only, locks the return and invoice, serializes competing approvals by locking the invoice, checks cumulative returned quantities/amounts, and writes stock-return movements for tracked products.
+- Draft return creation checks the original issued invoice and calculates a discounted line amount before tax. Approval is OWNER-only, locks the return and invoice, serializes competing approvals by locking the invoice, checks cumulative returned quantities/amounts, and writes stock-return movements for tracked products.
 - An approved return is **not** automatically a receivable credit or a cash refund. The current branch adds issuance of an immutable credit-note record, but that note is not yet applied to receivables or cash. Customer statements and reports must continue disclosing this gap.
 - Issued invoice totals are historical records and must not be edited to simulate a credit note.
 - Payment allocations are separate records and are currency/customer constrained. Unallocating a payment is not the same as refunding cash.
@@ -14,7 +14,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The first slice implements immutable 
 
 1. **Draft sales return** — references one issued invoice in the same business; every line references an invoice line on that invoice; amounts are derived server-side from stored invoice snapshots, not client-supplied totals.
 2. **Approve return** — OWNER-only, transactionally locks the invoice/return/lines, enforces remaining quantities and amounts, and posts stock restoration exactly once where applicable.
-3. **Issue credit note** — OWNER-only, idempotent, immutable after issue, references the approved return and original invoice/customer/currency. A unique constraint must prevent multiple active credit notes from crediting the same approved return unless an explicit partial-credit allocation model is introduced.
+3. **Issue credit note** — OWNER-only, idempotent, immutable after issue, references the approved return and original invoice/customer/currency. Current implementation blocks invoices with non-zero tax until tax can be allocated to return lines; this is deliberate to prevent an under-valued credit note. A unique constraint prevents multiple notes for one return.
 4. **Apply credit to receivable** — record a distinct credit allocation against the original customer's receivable. Never create a negative payment or rewrite invoice totals. Enforce same business, customer, and currency, plus a ceiling against the credit-note remainder.
 5. **Refund cash** — a separate, auditable cash-out record tied to the credit note and, where applicable, the original payment. Require an idempotency key and server-side amount ceiling; a refund must not silently unallocate/reuse a payment or double-credit receivables.
 6. **Read/report** — customer statements, receivables aging, P&L and tax summaries must show credits/refunds distinctly and only net amounts when their accounting meaning is defined. Until tax allocation and revenue treatment are implemented, show gross invoice and approved-return/credit-note figures separately with clear caveats.
@@ -26,7 +26,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The first slice implements immutable 
 - Use Decimal arithmetic and explicit rounding; never trust client-supplied totals or statuses.
 - Preserve original invoice and payment history. Corrections use compensating records, never destructive edits.
 - Approval/issue/refund operations must be atomic, replay-safe, and audited. Failed or replayed requests must not duplicate stock, receivable credit, or cash-out.
-- The implementation needs a database migration with constraints/indexes, owner-only authorization at route and service boundaries, API schemas/routes, frontend owner workflows, statement/report integration, and regression coverage for partial credit/refund, duplicate replay, currency/customer mismatch, concurrent approvals, already allocated payments, and no-side-effect denials.
+- The implementation now has a migration with relationship/uniqueness constraints, owner-only issue endpoint, paginated read endpoint, and Angular API methods. Remaining: frontend workflow, tax allocation, credit application, refund records, statement/report integration, and regression coverage for partial credit/refund, duplicate replay, currency/customer mismatch, concurrent approvals, already allocated payments, and no-side-effect denials.
 - Do not expose “refund complete” until a persisted cash-out record is committed. A credit note alone does not prove cash was returned.
 - Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active.
 
