@@ -694,6 +694,10 @@ def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
             raise WorkflowError("Credit note must reference an issued invoice")
         if invoice.customer_id is None:
             raise WorkflowError("Credit note requires an invoice linked to a customer")
+        if invoice.tax_total != ZERO:
+            raise WorkflowError(
+                "Credit note issuance is blocked for invoices with tax until tax is allocated to return lines"
+            )
         if ret.total <= ZERO:
             raise WorkflowError("A credit note requires a positive approved return total")
 
@@ -720,10 +724,36 @@ def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
         return note
 
     note = _commit(session, op)
+
     return _dict(note, (
         "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
         "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
     ))
+
+
+@router.get("/credit-notes")
+def list_credit_notes(business_id: UUID, limit: int = Query(default=50, ge=1, le=100),
+                      offset: int = Query(default=0, ge=0),
+                      customer_id: UUID | None = Query(default=None),
+                      session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """List issued credit notes in this business without implying cash refund or ledger netting."""
+    _authorized(session, principal, business_id)
+    statement = select(CreditNote).where(CreditNote.business_id == business_id)
+    if customer_id is not None:
+        statement = statement.where(CreditNote.customer_id == customer_id)
+    notes = session.scalars(
+        statement.order_by(CreditNote.created_at.desc(), CreditNote.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(note, (
+            "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
+            "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+        )) for note in notes],
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.post("/recurring-invoices", status_code=201)
