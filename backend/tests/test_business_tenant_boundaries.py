@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, MembershipRole, Product, StockMovement
+from app.models import AuditEvent, Base, BusinessMembership, Invoice, InvoiceLine, MembershipRole, Product, StockMovement
 from app.security import AuthenticatedPrincipal
 
 
@@ -242,6 +242,35 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         audit_b_before = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
         assert audit_b_before.status_code == 200, audit_b_before.text
 
+        # Snapshot the full foreign invoice and its line records before denied
+        # requests so a rejected PATCH/VOID cannot silently mutate child rows.
+        with app.state.session_factory() as session:
+            invoice_before = session.get(Invoice, UUID(invoice_id))
+            assert invoice_before is not None
+            invoice_snapshot_before = (
+                invoice_before.business_id,
+                invoice_before.customer_id,
+                invoice_before.invoice_number,
+                invoice_before.status,
+                invoice_before.currency_code,
+                invoice_before.issue_date,
+                invoice_before.due_date,
+                invoice_before.subtotal,
+                invoice_before.discount_total,
+                invoice_before.tax_total,
+                invoice_before.total,
+                invoice_before.notes,
+            )
+            invoice_lines_before = sorted(
+                (
+                    str(line.id), str(line.business_id), str(line.product_id),
+                    line.description, line.quantity, line.unit_price, line.line_total,
+                )
+                for line in session.query(InvoiceLine)
+                .filter(InvoiceLine.invoice_id == UUID(invoice_id))
+                .all()
+            )
+
         # The caller is an OWNER of tenant A. Membership must not make a
         # foreign tenant-B resource addressable through tenant A's route.
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
@@ -306,6 +335,35 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         assert unchanged_invoice.status_code == 200
         assert unchanged_invoice.json()["status"] == "issued"
         assert unchanged_invoice.json()["invoice_number"] == "INV-TENANT-B-READ-GUARD"
+
+        with app.state.session_factory() as session:
+            invoice_after = session.get(Invoice, UUID(invoice_id))
+            assert invoice_after is not None
+            invoice_snapshot_after = (
+                invoice_after.business_id,
+                invoice_after.customer_id,
+                invoice_after.invoice_number,
+                invoice_after.status,
+                invoice_after.currency_code,
+                invoice_after.issue_date,
+                invoice_after.due_date,
+                invoice_after.subtotal,
+                invoice_after.discount_total,
+                invoice_after.tax_total,
+                invoice_after.total,
+                invoice_after.notes,
+            )
+            invoice_lines_after = sorted(
+                (
+                    str(line.id), str(line.business_id), str(line.product_id),
+                    line.description, line.quantity, line.unit_price, line.line_total,
+                )
+                for line in session.query(InvoiceLine)
+                .filter(InvoiceLine.invoice_id == UUID(invoice_id))
+                .all()
+            )
+        assert invoice_snapshot_after == invoice_snapshot_before
+        assert invoice_lines_after == invoice_lines_before
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
