@@ -43,7 +43,7 @@ def credit_note_workspace():
     engine.dispose()
 
 
-def _issued_invoice_and_return(session, business_id, principal, *, tax_total=Decimal("0.00")):
+def _issued_invoice_and_return(session, business_id, principal, *, taxable=False):
     customer = create_customer(
         session, principal=principal, business_id=business_id,
         name=f"Credit customer {uuid4().hex[:8]}",
@@ -58,10 +58,8 @@ def _issued_invoice_and_return(session, business_id, principal, *, tax_total=Dec
         customer_id=customer.id, invoice_number=f"INV-CN-{uuid4().hex[:8]}",
         currency_code="EGP",
         lines=[{"product_id": str(product.id), "quantity": "2"}],
+        tax_rate=Decimal("0.10") if taxable else Decimal("0.00"),
     )
-    # The tax guard is tested by setting the persisted snapshot before issuance.
-    invoice.tax_total = tax_total
-    session.flush()
     issue_invoice(session, principal=principal, business_id=business_id, invoice_id=invoice.id)
     line = session.scalars(select(InvoiceLine).where(
         InvoiceLine.invoice_id == invoice.id,
@@ -148,7 +146,7 @@ def test_credit_note_tax_guard_rejects_without_note_or_audit(credit_note_workspa
     principal = AuthenticatedPrincipal(subject="credit-owner")
     with Session(engine) as session:
         invoice, ret = _issued_invoice_and_return(
-            session, business_id, principal, tax_total=Decimal("1.00"),
+            session, business_id, principal, taxable=True,
         )
         with pytest.raises(HTTPException) as error:
             issue_credit_note_for_return(
