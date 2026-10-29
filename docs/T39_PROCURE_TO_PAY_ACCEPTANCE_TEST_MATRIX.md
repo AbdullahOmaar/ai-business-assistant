@@ -51,7 +51,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-21 | OWNER or STAFF reads/updates a supplier profile, clears optional contact fields, or deactivates a supplier | Tenant-scoped response; blank name/empty patch rejected; audit event written; deactivated supplier cannot be selected for new POs but historical orders remain readable | Contract-independent supplier directory lifecycle |
 | T39-22 | Member opens a purchase-order detail view | Tenant-scoped supplier/product labels and ordered/received/remaining quantities are returned; foreign order or supplier/product references are not exposed | Contract-independent read model |
 | T39-23 | Member lists purchase orders filtered by status and/or supplier with pagination | Existing list response remains backward compatible; filters compose with tenant scope and stable ordering; invalid lifecycle filter is rejected | Contract-independent query behavior |
-| T39-23 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
+| T39-24 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
 
 ## Execution plan after contract approval
 
