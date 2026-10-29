@@ -428,3 +428,29 @@ def test_inactive_employee_cannot_create_payroll_without_side_effects(employee_e
         assert employee_actions.count("employee.created") == 1
         assert employee_actions.count("employee.updated") == 1
 
+def test_active_only_listing_excludes_deactivated_employees(employee_environment):
+    env = employee_environment
+    active = _create_employee(
+        env, name="Active Employee", code="EMP-ACTIVE", email="active@example.test"
+    )
+    inactive = _create_employee(
+        env, name="Inactive Employee", code="EMP-INACTIVE", email="inactive@example.test"
+    )
+    assert active.status_code == 201
+    assert inactive.status_code == 201
+
+    base = f"/api/v1/businesses/{env['business_id']}"
+    deactivated = env["client"].patch(
+        f"{base}/employees/{inactive.json()['id']}", json={"is_active": False}
+    )
+    assert deactivated.status_code == 200
+
+    all_rows = env["client"].get(f"{base}/employees")
+    active_rows = env["client"].get(f"{base}/employees?active_only=true")
+    assert all_rows.status_code == 200
+    assert active_rows.status_code == 200
+    assert {row["id"] for row in all_rows.json()} == {
+        active.json()["id"], inactive.json()["id"]
+    }
+    assert [row["id"] for row in active_rows.json()] == [active.json()["id"]]
+    assert all(row["is_active"] is True for row in active_rows.json())
