@@ -792,6 +792,8 @@ class BankReconciliationMatch(Base):
             name="fk_bank_match_expense_business", ondelete="RESTRICT",
         ),
         UniqueConstraint("business_id", "statement_row_id", name="uq_bank_match_statement_row"),
+        UniqueConstraint("business_id", "payment_id", name="uq_bank_match_payment"),
+        UniqueConstraint("business_id", "expense_id", name="uq_bank_match_expense"),
         CheckConstraint(
             "(payment_id IS NOT NULL AND expense_id IS NULL) OR "
             "(payment_id IS NULL AND expense_id IS NOT NULL)",
