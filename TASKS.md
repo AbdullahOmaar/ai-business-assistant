@@ -2,6 +2,15 @@
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
+## Active feature implementation — 2026-10-29 (tests intentionally paused)
+
+- **Feature 24 / Issue #63 — Invoice print view details:** branch `feat/invoice-print-details-20261029`.
+- **Implemented in source:** `frontend/src/app/api.service.ts` now types the persisted `issue_date`, `due_date`, and `notes` returned by invoice detail. `frontend/src/app/app.component.ts` print view now re-checks that the fetched invoice is still `issued`, shows issue/due dates, saved subtotal/discount/tax/total, and optional notes, with Arabic/English labels. Existing HTML escaping remains applied to dynamic values.
+- **Documentation:** `docs/INVOICE_PRINTING.md` describes the persisted-data contract, fields, date display, security escaping, and the distinction between browser print-to-PDF and a server-generated signed PDF.
+- **Safety boundary:** no backend financial calculations or stored invoice history are changed; print output uses persisted API values and does not recalculate totals in the browser.
+- **Validation:** automated tests/builds **NOT RUN** per owner instruction while CI limits are being resolved. Manual browser print-to-PDF smoke **NOT RUN**. No merge or deployment.
+- **Next feature steps:** finish source review and open a draft PR linking Issue #63; continue other low-risk feature gaps on dedicated branches. Resume tests only when the owner says the limit issue is resolved.
+
 ## Current verified repository state
 
 - **Current main SHA before the CSV OWNER-positive candidate:** `072f2eb0fb91c92b577859c4ba874a5c113c2628`. It includes PR #276's STAFF-denied invoice-void no-side-effect regression (`bf0bcdaf08353f15a532e692522730f42d2258e1`), PR #297's CSV denial/no-side-effect matrix (`3c560a0f425c8a97bcbe9384c5eefb580c936025`), and PR #299's AI suggestions layout improvement (`072f2eb0fb91c92b577859c4ba874a5c113c2628`).
