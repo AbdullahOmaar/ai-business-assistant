@@ -14,7 +14,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain_rules import (
+    allocate_tax_amounts,
     calculate_invoice_totals,
+    discounted_return_line_total,
     money,
     validate_payment_allocation,
 )
@@ -67,6 +69,32 @@ def _audit(
         target_id=str(target_id),
         change_summary=summary,
     ))
+
+
+def _snapshot_invoice_line_tax(session: Session, invoice: Invoice) -> None:
+    """Persist discounted taxable bases and a cent-exact allocation of header tax."""
+    lines = session.scalars(select(InvoiceLine).where(
+        InvoiceLine.invoice_id == invoice.id,
+        InvoiceLine.business_id == invoice.business_id,
+    ).order_by(InvoiceLine.id)).all()
+    line_inputs = [(str(line.id), line.line_total) for line in lines]
+    taxable_by_line = {
+        str(line.id): discounted_return_line_total(
+            invoice_subtotal=invoice.subtotal,
+            invoice_discount_total=invoice.discount_total,
+            invoice_lines=line_inputs,
+            target_line_id=str(line.id),
+        )
+        for line in lines
+    }
+    tax_by_line = allocate_tax_amounts(
+        Decimal(str(invoice.tax_total)),
+        [(str(line.id), taxable_by_line[str(line.id)]) for line in lines],
+    )
+    for line in lines:
+        line.taxable_amount = taxable_by_line[str(line.id)]
+        line.tax_amount = tax_by_line[str(line.id)]
+    session.flush()
 
 
 def create_customer(
@@ -238,7 +266,8 @@ def create_invoice(
         business_id=business_id, customer_id=customer_id,
         invoice_number=invoice_number.strip(), status="draft", currency_code=currency,
         subtotal=totals.subtotal, discount_total=totals.discount_total,
-        tax_total=totals.tax_total, total=totals.total, notes=notes,
+        tax_total=totals.tax_total, tax_rate=Decimal(str(tax_rate)),
+        total=totals.total, notes=notes,
     )
     session.add(invoice)
     session.flush()
@@ -249,6 +278,7 @@ def create_invoice(
             line_total=money(quantity * price),
         ))
     session.flush()
+    _snapshot_invoice_line_tax(session, invoice)
     _audit(session, business_id=business_id, principal=principal,
            action="invoice.created", target_type="invoice", target_id=invoice.id,
            summary=f"Draft {invoice.invoice_number}")
@@ -320,6 +350,7 @@ def replace_draft_invoice(
     invoice.subtotal = totals.subtotal
     invoice.discount_total = totals.discount_total
     invoice.tax_total = totals.tax_total
+    invoice.tax_rate = Decimal(str(tax_rate))
     invoice.total = totals.total
     invoice.notes = notes
     session.execute(delete(InvoiceLine).where(
@@ -334,6 +365,7 @@ def replace_draft_invoice(
             line_total=money(quantity * price),
         ))
     session.flush()
+    _snapshot_invoice_line_tax(session, invoice)
     _audit(session, business_id=business_id, principal=principal,
            action="invoice.draft_updated", target_type="invoice", target_id=invoice.id,
            summary=f"Draft {invoice.invoice_number} updated")
