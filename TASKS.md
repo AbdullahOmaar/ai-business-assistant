@@ -1583,3 +1583,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - New tests appended to `backend/tests/test_financial_report_date_boundaries.py`; commit: `9dafb76e27887d767b5f02ac70ece413e814d395`.
 - Validation: tests, build, and security scans **NOT RUN**; these are authored regression cases, not verified behavior. No financial formulas, schemas, posting rules, or T37 shared contracts changed.
 - Release: PR #304 remains open/Draft and unmerged. No deployment. Exact-head CI must be rechecked after this commit; prior failures do not establish this new head's status.
+
+## T40 — Date-boundary hardening follow-up (2026-10-30)
+
+- Continued on the same T40 branch and PR #304; no new branch or PR.
+- Hardened report date conversion in `backend/app/extended_api.py` with shared helpers for business-local UTC bounds. Calendar extremes that cannot be represented safely (year-1 local midnight underflow and inclusive end date 9999-12-31) now return HTTP 422 instead of leaking Python date arithmetic overflow as HTTP 500.
+- Applied the helpers to both expense-list and tax-summary date filters; normal inclusive business-local semantics and UTC half-open intervals are unchanged.
+- Added `test_expense_and_tax_filters_reject_unrepresentable_calendar_extremes` in `backend/tests/test_financial_report_date_boundaries.py`.
+- Commits: implementation `c2bcd7f66d7a9df18f5f6df51feb813fe8c288af`; regression test `2f16f421e40f7c4afe229d6336b2c9580ebf64b3`.
+- Validation: pytest/build/security **NOT RUN**; behavior is not runtime-verified. No accounting formulas, schemas, migrations, or shared T37 contract changed. PR #304 remains Draft/open; no merge or deployment.
