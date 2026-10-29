@@ -777,14 +777,32 @@ def list_credit_notes(business_id: UUID, limit: int = Query(default=50, ge=1, le
         statement.order_by(CreditNote.created_at.desc(), CreditNote.id.desc())
         .limit(limit).offset(offset)
     ).all()
-    return {
-        "items": [_dict(note, (
+    applied_by_note: dict[UUID, Decimal] = {}
+    if notes:
+        application_rows = session.execute(
+            select(
+                CreditApplication.credit_note_id,
+                func.coalesce(func.sum(CreditApplication.amount), 0),
+            ).where(
+                CreditApplication.business_id == business_id,
+                CreditApplication.credit_note_id.in_([note.id for note in notes]),
+            ).group_by(CreditApplication.credit_note_id)
+        ).all()
+        applied_by_note = {
+            note_id: Decimal(str(amount or ZERO))
+            for note_id, amount in application_rows
+        }
+    items = []
+    for note in notes:
+        applied = applied_by_note.get(note.id, ZERO)
+        item = _dict(note, (
             "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
             "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
-        )) for note in notes],
-        "limit": limit,
-        "offset": offset,
-    }
+        ))
+        item["applied_total"] = str(applied)
+        item["remaining_credit"] = str(max(ZERO, Decimal(str(note.total)) - applied))
+        items.append(item)
+    return {"items": items, "limit": limit, "offset": offset}
 
 
 @router.post("/credit-applications", status_code=201)
