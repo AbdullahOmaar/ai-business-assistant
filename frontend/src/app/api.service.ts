@@ -51,7 +51,7 @@ export interface EmployeePayrollRecord {
   approved_at: string | null; paid_by_subject: string | null; paid_at: string | null; created_at: string | null;
 }
 export interface MoneyTotal { currency_code: string; count?: number; total: string; }
-export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; approved_return_total: string; approved_return_count: number; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
+export interface ProfitLossRow { currency_code: string; revenue: string; revenue_invoice_count: number; approved_return_total: string; approved_return_count: number; credit_note_total?: string; credit_note_count?: number; net_revenue_after_credit_notes?: string; expenses: string; expense_count: number; operating_result_before_cost_of_goods: string; }
 export interface ProfitLossReport { period: { type: string; start_date: string | null; end_date: string | null; timezone: string }; revenue_basis: string; currencies: ProfitLossRow[]; limitations: string[]; }
 
 export interface ReceivablesAgingBucket { bucket: 'not_due' | '1_30_days' | '31_60_days' | '61_90_days' | 'over_90_days' | 'no_due_date'; outstanding_amount: string; }
