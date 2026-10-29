@@ -582,6 +582,12 @@ export class ApiService {
   suppliers(businessId: string): Promise<Supplier[]> {
     return this.request<Supplier[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers?limit=100');
   }
+
+  exportBusinessCsv(businessId: string, entityType: 'suppliers' | 'purchase_orders'): Promise<Blob> {
+    const path = '/api/v1/businesses/' + encodeURIComponent(businessId)
+      + '/exports/' + encodeURIComponent(entityType) + '.csv';
+    return this.requestBlob(path).then(response => response.blob());
+  }
   createSupplier(businessId: string, body: { name: string; email?: string; phone?: string; address?: string }): Promise<Supplier> {
     return this.request<Supplier>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers', 'POST', body);
   }
