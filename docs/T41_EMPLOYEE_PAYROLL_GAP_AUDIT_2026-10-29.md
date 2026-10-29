@@ -74,3 +74,15 @@ This section is test design only; it does not change runtime behavior or authori
 - Existing API test file contains employee CRUD, duplicate checks and role-denial coverage, but new cases above are not implemented or executed.
 - Local pytest, migration upgrade/downgrade, frontend tests/build and local security checks: NOT RUN in this connector-only session.
 - No runtime files changed; the shared-contract gate remains active.
+
+## Additional feature-quality workstreams — 2026-10-30
+
+Five test-only workstreams were added to the existing T41 branch and tracked as tasks 21–25 in TASKS.md:
+
+1. Employee update duplicate code/email rejection with no employee or audit side effects.
+2. Employee directory stable pagination and active-only filtering.
+3. Payroll period filtering and deterministic pagination.
+4. Payroll approval separation-of-duties and repeated-approval idempotency guard.
+5. Payment transaction rollback when the paid-audit write fails, proving no expense or paid transition is committed.
+
+Evidence: five regressions in backend/tests/test_employee_payroll_api.py, initial commit 0f346eaf7fe77465490330fbc529e1a087bd8324; approval timestamp assertion made timezone-robust in 85fbcfe8c41fc68bbaddd63b369d2a035fb16989. These are test additions, not implementation of new runtime behavior. Execution is NOT RUN on the latest HEAD. The SQLite fixture is not evidence for PostgreSQL concurrency or production transaction behavior. Existing T37/T40 approval gates remain unchanged; no merge or deployment performed.
