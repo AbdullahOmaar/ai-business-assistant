@@ -215,6 +215,7 @@ export class CreditNotesComponent implements OnChanges {
   notesHasMore = false;
   loadingMoreNotes = false;
   selectedCustomerId = '';
+  private readonly notesPageSize = 100;
   applicationNoteId: string | null = null;
   applicationInvoiceId = '';
   applicationAmount = '';
