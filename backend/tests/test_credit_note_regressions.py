@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.extended_api import approve_sales_return, issue_credit_note_for_return
+from app.extended_api import approve_sales_return, issue_credit_note_for_return, list_credit_notes
 from app.models import (
     AuditEvent, Base, Business, BusinessMembership, CreditNote, Invoice,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
@@ -215,3 +215,43 @@ def test_credit_note_cannot_reference_return_from_another_business(credit_note_w
             AuditEvent.business_id == business_id,
             AuditEvent.action == "credit_note.issued",
         )) == 0
+
+def test_credit_note_list_is_business_scoped_and_supports_customer_filter(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        own_invoice, own_return = _issued_invoice_and_return(session, business_id, principal)
+        own_note = issue_credit_note_for_return(
+            business_id=business_id, return_id=own_return.id,
+            session=session, principal=principal,
+        )
+
+        foreign_business = Business(name="Other Credit Shop", currency_code="USD")
+        session.add(foreign_business)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=foreign_business.id, user_subject="credit-owner",
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        _, foreign_return = _issued_invoice_and_return(
+            session, foreign_business.id, principal,
+        )
+        issue_credit_note_for_return(
+            business_id=foreign_business.id, return_id=foreign_return.id,
+            session=session, principal=principal,
+        )
+
+        page = list_credit_notes(
+            business_id=business_id, session=session, principal=principal,
+            limit=100, offset=0, customer_id=None,
+        )
+        assert len(page["items"]) == 1
+        assert page["items"][0]["id"] == own_note["id"]
+        assert page["items"][0]["business_id"] == str(business_id)
+
+        filtered = list_credit_notes(
+            business_id=business_id, session=session, principal=principal,
+            limit=100, offset=0, customer_id=own_invoice.customer_id,
+        )
+        assert [item["id"] for item in filtered["items"]] == [own_note["id"]]
