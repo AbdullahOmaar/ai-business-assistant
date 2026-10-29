@@ -13,7 +13,7 @@ from app.extended_api import (
     list_sales_returns,
 )
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, CreditApplication, CreditNote, Invoice,
+    AuditEvent, Base, Business, BusinessMembership, CreditApplication, CreditNote, Invoice, Payment, PaymentAllocation,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -509,3 +509,96 @@ def test_credit_application_idempotency_key_cannot_be_reused_for_different_amoun
             AuditEvent.business_id == business_id,
             AuditEvent.action == "credit_note.applied",
         )) == 1
+
+
+def test_credit_application_rejects_currency_mismatch_without_side_effects(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        foreign_currency_invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=invoice.customer_id, invoice_number=f"INV-USD-{uuid4().hex[:8]}",
+            currency_code="USD",
+            lines=[{"product_id": str(session.scalars(select(InvoiceLine).where(
+                InvoiceLine.invoice_id == invoice.id,
+                InvoiceLine.business_id == business_id,
+            )).one().product_id), "quantity": "1"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=foreign_currency_invoice.id,
+        )
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=UUID(note["id"]), invoice_id=foreign_currency_invoice.id,
+                    amount=Decimal("1.00"), idempotency_key="apply-credit-currency-mismatch",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 0
+
+
+def test_credit_application_cannot_exceed_invoice_outstanding_after_payments(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        source_invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        source_line = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.invoice_id == source_invoice.id,
+            InvoiceLine.business_id == business_id,
+        )).one()
+        target_invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=source_invoice.customer_id, invoice_number=f"INV-OPEN-{uuid4().hex[:8]}",
+            currency_code="EGP",
+            lines=[{"product_id": str(source_line.product_id), "quantity": "1"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id,
+            invoice_id=target_invoice.id,
+        )
+        payment = Payment(
+            business_id=business_id, customer_id=source_invoice.customer_id,
+            amount=Decimal("8.00"), currency_code="EGP",
+            idempotency_key=f"PAY-CREDIT-{uuid4().hex[:12]}",
+        )
+        session.add(payment)
+        session.flush()
+        session.add(PaymentAllocation(
+            business_id=business_id, payment_id=payment.id,
+            invoice_id=target_invoice.id, amount=Decimal("8.00"),
+        ))
+        session.flush()
+
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=UUID(note["id"]), invoice_id=target_invoice.id,
+                    amount=Decimal("3.00"), idempotency_key="apply-credit-over-receivable",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert "outstanding receivable" in str(error.value.detail).lower()
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 0
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "credit_note.applied",
+        )) == 0
