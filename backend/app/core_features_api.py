@@ -572,7 +572,7 @@ def profit_loss(
             "timezone": timezone_name,
         },
         "currencies": rows,
-        "revenue_basis": "gross issued invoice totals less credit notes issued in the selected period; stored invoice and credit-note tax are included",
+        "revenue_basis": "gross issued invoice totals before credit notes; stored invoice tax is included",
         "limitations": [
             "Revenue is based on issued invoice totals, not cash collected.",
             "Invoice and credit-note totals include stored tax amounts. Approved returns without an issued credit note are shown separately and are not netted from this figure.",
