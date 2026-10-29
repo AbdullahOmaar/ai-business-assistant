@@ -2231,6 +2231,43 @@ def customer_statement(
                     "affects_balance": True,
                 })
 
+        if invoice_ids:
+            refund_rows = session.execute(
+                select(CashRefund, CreditNote)
+                .join(
+                    CreditNote,
+                    (CreditNote.id == CashRefund.credit_note_id)
+                    & (CreditNote.business_id == CashRefund.business_id),
+                )
+                .where(
+                    CashRefund.business_id == business_id,
+                    CreditNote.business_id == business_id,
+                    CreditNote.customer_id == customer_id,
+                    CreditNote.invoice_id.in_(invoice_ids),
+                )
+            ).all()
+            for refund, note in refund_rows:
+                occurred_at = refund.created_at
+                if occurred_at is None:
+                    continue
+                occurred_date = occurred_at.date()
+                if from_date is not None and occurred_date < from_date:
+                    continue
+                if to_date is not None and occurred_date > to_date:
+                    continue
+                events.append({
+                    "occurred_at": occurred_at,
+                    "event_type": "cash_refund",
+                    "source_id": str(refund.id),
+                    "reference": refund.reference or f"Cash refund ({refund.method})",
+                    "invoice_id": str(note.invoice_id),
+                    "currency_code": note.currency_code,
+                    "debit": ZERO,
+                    "credit": ZERO,
+                    "affects_balance": False,
+                    "refund_amount": str(refund.amount),
+                })
+
         events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
         running: dict[str, Decimal] = {}
         for event in events:
@@ -2253,7 +2290,7 @@ def customer_statement(
             "balances_by_currency": {currency: str(balance) for currency, balance in running.items()},
             "limitations": [
                 "An issued credit note reduces receivables only when an explicit credit application is recorded.",
-                "A credit application is not a cash refund; cash refunds remain a separate unimplemented workflow.",
+                "Cash refunds are shown as separate informational events and do not change receivable balances a second time.",
                 "Allocations with a currency mismatch are shown but do not change the running balance.",
                 "Balances represent issued invoices less matching-currency payments and applied credits, not a double-entry general ledger.",
             ],
