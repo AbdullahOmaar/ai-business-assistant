@@ -1,5 +1,5 @@
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID
 
 import pytest
 from fastapi import HTTPException
@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.extended_api import PricingRuleInput, list_pricing_rules, post_pricing_rule
 from app.models import AuditEvent, Base, Business, BusinessMembership, MembershipRole, PricingRule
-from app.security import AuthenticatedPrincipal
+from app.security import AuthenticatedPrincipal, AuthorizationError
 
 
 @pytest.fixture()
@@ -61,12 +61,12 @@ def test_pricing_rule_list_is_owner_only_and_has_no_read_side_effects(pricing_wo
         _create_rule(session, business_id, owner, name="VAT", rule_type="tax", rate="14.0000")
         before_rules = session.scalar(select(func.count()).select_from(PricingRule))
         before_audits = session.scalar(select(func.count()).select_from(AuditEvent))
-        with pytest.raises(HTTPException) as error:
+        with pytest.raises(AuthorizationError) as error:
             list_pricing_rules(
                 business_id=business_id, session=session, principal=staff,
                 limit=50, offset=0, rule_type=None, is_active=None,
             )
-        assert error.value.status_code == 403
+        assert 'owner' in str(error.value).lower() or 'permission' in str(error.value).lower()
         assert session.scalar(select(func.count()).select_from(PricingRule)) == before_rules
         assert session.scalar(select(func.count()).select_from(AuditEvent)) == before_audits
 
@@ -78,7 +78,7 @@ def test_pricing_rule_list_filters_and_pagination_are_business_scoped(pricing_wo
         tax = _create_rule(session, business_id, owner, name="VAT", rule_type="tax", rate="14.0000")
         discount = _create_rule(session, business_id, owner, name="Promo", rule_type="discount", rate="5.0000")
         _create_rule(session, foreign_business_id, owner, name="Foreign VAT", rule_type="tax", rate="20.0000")
-        discount_row = session.get(PricingRule, discount["id"])
+        discount_row = session.get(PricingRule, UUID(discount["id"]))
         discount_row.is_active = False
         session.commit()
 
