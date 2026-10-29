@@ -598,6 +598,25 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/credit-note`, 'POST', {}
     );
   }
+  applyCreditNote(businessId: string, body: {
+    credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string;
+  }): Promise<CreditApplication> {
+    return this.request<CreditApplication>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications`, 'POST', body
+    );
+  }
+  creditApplications(businessId: string, filters: {
+    credit_note_id?: string; invoice_id?: string; limit?: number; offset?: number;
+  } = {}): Promise<{ items: CreditApplication[]; limit: number; offset: number }> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined) params.set(key, String(value));
+    }
+    const query = params.toString();
+    return this.request<{ items: CreditApplication[]; limit: number; offset: number }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications${query ? '?' + query : ''}`
+    );
+  }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
     invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
     discount_rate?: number | string; tax_rate?: number | string;
