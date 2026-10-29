@@ -1652,7 +1652,7 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Extended the existing owner-only CSV export route in `backend/app/extended_api.py` to support `purchase_orders` without introducing a new route or permission model.
 - Export includes one row per PO line, PO status/order number/currency/total, supplier and product labels, ordered/received/remaining quantities and unit cost. Joins are tenant-scoped using business IDs as well as record IDs.
 - Formula-like cells are escaped before CSV output to reduce spreadsheet formula-injection risk. The endpoint is read-only and does not change inventory, purchasing or financial records.
-- Added acceptance scenario T39-33 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- Added acceptance scenario T39-34 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
 - Tests/build/security/CI: **NOT RUN** per user instruction while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
 
 
@@ -1660,7 +1660,7 @@ Five major feature tasks were selected and implemented sequentially on the exist
 
 - Added `suppliers` to the existing owner-only CSV export entity allowlist in `backend/app/extended_api.py`. The export includes supplier ID, name, email, phone, address, active state and creation timestamp.
 - Reuses the existing tenant-scoped generic export path and CSV formula-injection escaping; no migration or mutation was added.
-- Added acceptance scenario T39-34 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- Added acceptance scenario T39-35 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
 - Tests/build/security/CI: **NOT RUN** as requested while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
 
 ## T39 duplicate order-number API regression — 2026-10-29
