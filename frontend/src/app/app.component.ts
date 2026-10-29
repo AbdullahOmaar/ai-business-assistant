@@ -1302,6 +1302,9 @@ export class AppComponent implements OnInit {
     if (normalized.includes('gross issued invoice totals before sales returns')) {
       return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات، شاملًا الضريبة المسجلة', 'Gross issued invoice totals before sales returns; stored tax included');
     }
+    if (normalized.includes('gross issued invoice totals before credit notes')) {
+      return this.t('إجمالي الفواتير الصادرة قبل خصم الإشعارات الدائنة، شاملًا ضريبة الفاتورة المسجلة', 'Gross issued invoice totals before credit notes; stored invoice tax included');
+    }
     if (normalized.includes('less credit notes issued in the selected period')) {
       return this.t('إجمالي الفواتير الصادرة مطروحًا منه الإشعارات الدائنة الصادرة في الفترة، شاملًا الضريبة المسجلة', 'Gross issued invoice totals less credit notes issued in the selected period; stored tax included');
     }
