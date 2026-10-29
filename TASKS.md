@@ -1552,3 +1552,25 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+---
+
+## Feature execution batch — 2026-10-29 (feature work only; checks intentionally paused)
+
+Five large feature tasks, ordered by financial risk and dependency:
+
+1. **Feature 31 — Credit notes, refunds, and customer returns (P0).** Establish an auditable credit-note/refund lifecycle linked to the issued invoice, customer, currency, payment allocations, and approved sales return. No edits to historical issued invoice totals; no implicit refund or receivable mutation.
+2. **Feature 32 — Inventory valuation and COGS (P0).** Define costing policy and immutable stock-cost layers/movements; reconcile sale/return COGS and prevent negative/duplicate valuation postings.
+3. **Feature 27 — Tax and discount rules (P1).** Normalize business-scoped rules, effective dates, rounding, invoice snapshots, and credit-note tax reversals.
+4. **Feature 33 — Cash/bank reconciliation (P1).** Add accounts/statements/import matching with currency-safe, idempotent matching and auditable differences; never treat unallocated receipts as reconciled cash by assumption.
+5. **Feature 34 — Period close/lock (P1).** Add owner-only close windows, locked-period write prevention, audit history, and controlled correction workflows.
+
+### Current batch execution
+
+- **Task 1 / Feature 31:** IN PROGRESS. Source inspection confirms SalesReturn/SalesReturnLine exist and approval restores tracked stock, but no credit-note/refund model or workflow is present. Approved returns are explicitly not receivable credits in customer statements; issued invoice totals must remain immutable. Initial lifecycle/contract design is being recorded before any financial mutations are introduced.
+- **Task 2 / Feature 32:** TODO — dependent on approved return/COGS event contract.
+- **Task 3 / Feature 27:** TODO — tax snapshot/reversal contract depends on Feature 31.
+- **Task 4 / Feature 33:** TODO — cash/bank matching must remain separate from payment allocation and customer receivables.
+- **Task 5 / Feature 34:** TODO — period locks must guard all financial mutation entry points and background jobs.
+- **Validation policy for this batch:** tests, builds, CI runs, and browser smoke checks are **NOT RUN** at the user's direction because the current runner/usage limit issue is unresolved. Static source review only; no merge or deployment is authorized.
