@@ -27,6 +27,7 @@ from app.models import (
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
 from app.domain_rules import discounted_return_line_total, money, validate_return_amount
+from app.operations import receive_purchase_order as receive_purchase_order_operation
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -461,46 +462,23 @@ def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurch
                            session: Session = Depends(get_session),
                            principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        po = session.scalars(select(PurchaseOrder).where(
-            PurchaseOrder.id == order_id, PurchaseOrder.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if po is None or po.status not in {"approved", "partially_received"}:
-            raise WorkflowError("Purchase order is not available for receiving")
-        if not body.lines:
-            raise WorkflowError("At least one received quantity is required")
+        # A list is used at the HTTP boundary, but the domain operation accepts a
+        # mapping. Reject duplicate line IDs explicitly rather than silently
+        # overwriting one requested quantity while building that mapping.
+        received_quantities: dict[UUID, Decimal] = {}
         for item in body.lines:
-            if item.quantity <= ZERO:
-                raise WorkflowError("Received quantity must be positive")
-            line = session.scalars(select(PurchaseOrderLine).where(
-                PurchaseOrderLine.id == item.line_id,
-                PurchaseOrderLine.purchase_order_id == po.id,
-                PurchaseOrderLine.business_id == business_id,
-            ).with_for_update()).one_or_none()
-            if line is None or line.received_quantity + item.quantity > line.quantity:
-                raise WorkflowError("Received quantity exceeds ordered quantity or line is invalid")
-            product = session.scalars(select(Product).where(
-                Product.id == line.product_id, Product.business_id == business_id,
-                Product.is_stock_tracked.is_(True),
-            ).with_for_update()).one_or_none()
-            if product is None:
-                raise WorkflowError("Stock-tracked product not found")
-            line.received_quantity += item.quantity
-            session.add(StockMovement(
-                business_id=business_id, product_id=product.id, movement_type="receipt",
-                quantity_delta=item.quantity, reason=f"Purchase order {po.order_number}",
-                reference_type="purchase_order", reference_id=po.id,
-                created_by_subject=principal.subject,
-            ))
-        lines = session.scalars(select(PurchaseOrderLine).where(
-            PurchaseOrderLine.purchase_order_id == po.id,
-            PurchaseOrderLine.business_id == business_id,
-        )).all()
-        po.status = "received" if all(x.received_quantity == x.quantity for x in lines) else "partially_received"
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="purchase_order.received", target_type="purchase_order", target_id=str(po.id)))
-        session.flush()
-        return po
+            if item.line_id in received_quantities:
+                raise WorkflowError("Each purchase order line may appear only once per receipt request")
+            received_quantities[item.line_id] = item.quantity
+
+        return receive_purchase_order_operation(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities=received_quantities,
+        )
+
     po = _commit(session, op)
     return _dict(po, ("id", "order_number", "status", "total", "currency_code"))
 
