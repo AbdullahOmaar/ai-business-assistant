@@ -48,7 +48,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-18 | Reconciliation after mixed partial receipts, returns and payments | Source records, movement ledger, supplier balance and cash postings reconcile; discrepancies are explicit | Final contract required |
 | T39-19 | Receipt request targets draft, received, or cancelled purchase order | Reject stale/invalid lifecycle state; no order-line, stock-ledger, or audit mutation | Contract-independent lifecycle invariant |
 | T39-20 | Receipt quantity is NaN, positive/negative infinity, zero, or negative | Reject before arithmetic/write; order, received quantities, stock ledger and audit remain unchanged | Contract-independent numeric input invariant |
-| T39-21 | OWNER or STAFF reads/updates a supplier profile, clears optional contact fields, or deactivates a supplier | Tenant-scoped response; blank name/empty patch rejected; audit event written; deactivated supplier cannot be selected for new POs but historical orders remain readable | Contract-independent supplier directory lifecycle |
+| T39-21 | OWNER or STAFF reads/updates a supplier profile, clears optional contact fields, or deactivates a supplier | Tenant-scoped response; blank name/empty patch rejected; audit event written; OWNER UI can show inactive suppliers and reactivate/deactivate them; inactive supplier cannot be selected for new POs while historical orders remain readable | Contract-independent supplier directory lifecycle |
 | T39-22 | Member opens a purchase-order detail view | Tenant-scoped supplier/product labels and ordered/received/remaining quantities are returned; foreign order or supplier/product references are not exposed | Contract-independent read model |
 | T39-23 | Member filters purchase orders by status and/or supplier in the Purchasing UI | UI filters call the API; filters compose with tenant scope and stable ordering; clear restores all orders; invalid lifecycle filter is rejected | Contract-independent query behavior |
 | T39-24 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
@@ -183,3 +183,11 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added status and supplier filters to the Purchasing UI, with Filter and Clear actions.
 - `ApiService.purchaseOrders` now serializes optional status/supplier filters. Initial load and post-create/receive refreshes preserve active filter selections; workspace reset clears them.
 - Backend remains responsible for validating status values and applying tenant-scoped query predicates. Tests/build were not run per owner instruction.
+
+
+## T39 supplier activation UI — 2026-10-29
+
+- Connected the existing supplier PATCH endpoint to `ApiService.updateSupplier`.
+- Added OWNER-only Show/Hide inactive and Deactivate/Reactivate controls in the Supplier Directory. Inactive listing is requested only when the OWNER opts in; backend membership checks remain authoritative.
+- Supplier status is shown in each row, and the list refreshes after state changes. Workspace reset clears the inactive-list toggle.
+- Tests/build were not run per user instruction; source inspection only.
