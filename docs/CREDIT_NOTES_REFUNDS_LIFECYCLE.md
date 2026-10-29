@@ -1,6 +1,6 @@
 # Credit notes, refunds, and customer returns — lifecycle contract
 
-Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace can create return drafts from issued invoice lines, lets owners approve draft returns, lists approved returns and issued notes, supports customer-filtered credit-note listing with customer names, and exposes an OWNER-only credit-note issue action. Credit application now has an OWNER-only, idempotent backend ledger API and paginated reads; the UI workflow, cash refunds, tax allocation, and report/statement integration are still incomplete.
+Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace can create return drafts from issued invoice lines, lets owners approve draft returns, lists approved returns and issued notes, supports customer-filtered, offset-paginated credit-note listing with duplicate-safe load-more and customer names, and exposes an OWNER-only credit-note issue action. Credit application now has an OWNER-only, idempotent backend ledger API and paginated reads; the UI workflow, cash refunds, tax allocation, and report/statement integration are still incomplete.
 
 ## Existing behavior confirmed in source
 
@@ -60,3 +60,5 @@ E. Resume tests and exact-head CI only after the user clears the current testing
 
 
 - Frontend follow-up: added a customer selector for the issued credit-note list; the selected customer is sent to the business-scoped API filter and the list now displays customer names instead of abbreviated IDs. On a failed filtered refresh, stale credit-note rows are cleared so a previous customer's results cannot be mistaken for the selected filter. Added source-level regression assertions for the filter and stale-result guard. These latest UI/test edits are **NOT RUN**; prior sandbox results above predate this head and do not verify them.
+
+- Frontend pagination follow-up: the credit-note list now loads additional pages in batches of 100, preserves the active customer filter, ignores responses for a changed workspace/filter, and deduplicates rows by note ID. Source-level assertions were added. This pagination change and its assertions are **NOT RUN**.
