@@ -194,6 +194,12 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         )
         assert business_a.status_code == 201, business_a.text
         business_a_id = business_a.json()["id"]
+        customer_a = client.post(
+            f"/api/v1/businesses/{business_a_id}/customers",
+            json={"name": "Tenant A valid invoice customer"},
+        )
+        assert customer_a.status_code == 201, customer_a.text
+        customer_a_id = customer_a.json()["id"]
         audit_a_before = client.get(f"/api/v1/businesses/{business_a_id}/audit-events")
         assert audit_a_before.status_code == 200, audit_a_before.text
 
@@ -251,7 +257,9 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
                 json={
                     "invoice_number": "INV-FOREIGN-TAMPER",
                     "currency_code": "EGP",
-                    "customer_id": customer_id,
+                    # Use a valid Tenant A customer so this request isolates
+                    # the foreign invoice ID rather than failing customer validation.
+                    "customer_id": customer_a_id,
                     "lines": [{"description": "Tampered line", "quantity": "1", "unit_price": "1.00"}],
                 },
             )),
