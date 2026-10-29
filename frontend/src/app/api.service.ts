@@ -30,6 +30,9 @@ export interface SalesReturnPage { items: SalesReturn[]; limit: number; offset: 
 export interface CreditNotePage { items: CreditNote[]; limit: number; offset: number; }
 export interface CreditApplication { id: string; business_id: string; credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string; applied_by_subject: string; created_at: string; }
 export interface CreditApplicationPage { items: CreditApplication[]; limit: number; offset: number; }
+export interface BankAccount { id: string; business_id: string; account_key: string; display_name: string; currency_code: string; is_active: boolean; created_at: string; }
+export interface BankStatementRow { id: string; business_id: string; account_id: string; external_transaction_id: string; transaction_date: string; description: string; amount: string; currency_code: string; status: 'unmatched' | 'matched' | 'ignored'; imported_at: string; }
+export interface BankReconciliationMatch { id: string; business_id: string; statement_row_id: string; payment_id: string | null; expense_id: string | null; matched_amount: string; matched_by_subject: string; matched_at: string; }
 export interface CashRefund {
   id: string; business_id: string; credit_note_id: string; payment_id: string | null;
   amount: string; method: 'cash' | 'bank' | 'card' | 'other'; reference: string | null;
@@ -607,6 +610,28 @@ export class ApiService {
     return this.request<{ items: CreditApplication[]; limit: number; offset: number }>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications${query ? '?' + query : ''}`
     );
+  }
+
+  bankAccounts(businessId: string): Promise<{ items: BankAccount[] }> {
+    return this.request<{ items: BankAccount[] }>(`/api/v1/businesses/${encodeURIComponent(businessId)}/bank-accounts`);
+  }
+  createBankAccount(businessId: string, body: { account_key: string; display_name: string; currency_code: string }): Promise<BankAccount> {
+    return this.request<BankAccount>(`/api/v1/businesses/${encodeURIComponent(businessId)}/bank-accounts`, 'POST', body);
+  }
+  importBankStatement(businessId: string, accountId: string, csv_content: string): Promise<{ items: BankStatementRow[]; created_count: number; duplicate_count: number; skipped: number }> {
+    return this.request(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/bank-accounts/${encodeURIComponent(accountId)}/statement-import`,
+      'POST', { csv_content }
+    );
+  }
+  bankStatementRows(businessId: string, filters: { account_id?: string; status?: 'unmatched' | 'matched' | 'ignored'; limit?: number; offset?: number } = {}): Promise<{ items: BankStatementRow[]; limit: number; offset: number }> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) if (value !== undefined) params.set(key, String(value));
+    const query = params.toString();
+    return this.request(`/api/v1/businesses/${encodeURIComponent(businessId)}/bank-statement-rows${query ? '?' + query : ''}`);
+  }
+  matchBankStatementRow(businessId: string, body: { statement_row_id: string; payment_id?: string; expense_id?: string }): Promise<BankReconciliationMatch> {
+    return this.request<BankReconciliationMatch>(`/api/v1/businesses/${encodeURIComponent(businessId)}/bank-reconciliation/matches`, 'POST', body);
   }
 
   cashRefunds(businessId: string, filters: {
