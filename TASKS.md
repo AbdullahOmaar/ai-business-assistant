@@ -2,14 +2,15 @@
 
 ## T41 — Employees & Payroll regression checkpoint (2026-10-29)
 
-- **Status:** PARTIALLY COMPLETE — added one API regression test on the existing branch; not yet locally executed.
-- **Branch / HEAD:** `feat/t41-salary-history-effective-dates` / `266d0cece300dbd595c4fdaa291043114d0fa46e`.
-- **Current diff vs main:** 4 commits ahead, 0 behind; only `backend/tests/test_employee_payroll_api.py` (+36 lines) and `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md` (+76 lines).
-- **Regression added:** deactivated employees cannot create a payroll record; response is 404; payroll and expense tables remain unchanged; no payroll audit event is emitted; employee creation/deactivation audit events remain present.
-- **Quality:** local pytest, migration upgrade/downgrade, frontend tests/build, and local security checks are **NOT RUN** in this connector-only session. Exact-head CircleCI statuses currently report six failures (backend-accounting, backend-container, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke); aggregate check has not appeared. Root cause is **NOT YET DIAGNOSED**. Do not treat the prior docs-only SHA's green checks as validation of this test commit.
-- **PR / delivery:** no T41 PR found in current search; no merge or deployment performed.
+- **Status:** PARTIALLY COMPLETE — added one API regression test; local execution is still NOT RUN.
+- **Branch / HEAD:** `feat/t41-salary-history-effective-dates` / `bb23839d093fd4d013b488b6f4b416beaf30e3e8`.
+- **PR:** [#308 — draft, open, not merged](https://github.com/AbdullahOmaar/ai-business-assistant/pull/308).
+- **Current diff vs main:** 5 commits ahead, 0 behind; three changed files: `backend/tests/test_employee_payroll_api.py` (+36), `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md` (+76), and this checkpoint in `TASKS.md` (+12).
+- **Regression added:** deactivated employees cannot create payroll; the API returns 404; payroll and expense rows remain unchanged; no payroll audit event is emitted; employee create/deactivation audit events remain present.
+- **Quality:** local pytest, migration upgrade/downgrade, frontend tests/build, and local security checks are **NOT RUN** in this connector-only session. Exact-head CircleCI reports six failed contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke). Existing GitHub Actions audit/backend/frontend jobs also failed within seconds; fetching job logs/steps returned `BlobNotFound`, so root cause is **BLOCKED / NOT DIAGNOSED**. The earlier docs-only SHA's green checks do not validate this commit.
+- **Delivery:** PR #308 remains draft/open; no merge or deployment performed.
 - **Dependencies:** effective-dated salary history, payroll snapshots and shared financial posting/lifecycle remain gated by Master-approved T37/T40 contracts and permissions.
-- **Next:** diagnose the exact-head CI failures from their CircleCI job logs, correct only evidence-backed defects, then rerun. No weakening assertions or merging while checks fail.
+- **Next:** restore/inspect CI job evidence, determine whether failures are workflow/infrastructure or code-related, then rerun exact-head checks. Do not weaken assertions or merge while checks fail.
 
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
