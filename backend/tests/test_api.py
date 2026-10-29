@@ -1049,6 +1049,86 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+def test_purchase_receipt_duplicate_line_ids_are_rejected_atomically():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Duplicate receipt supplier")
+        product = Product(
+            business_id=business_id, name="Duplicate receipt stock",
+            unit_price=Decimal("6.00"), is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        created = client.post(
+            f"{base}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id), "order_number": "PO-DUPLICATE-RECEIPT",
+                "currency_code": "EGP",
+                "lines": [{"product_id": str(product_id), "quantity": "2.000", "unit_cost": "3.00"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        order_id = UUID(created.json()["id"])
+        approved = client.post(f"{base}/purchase-orders/{order_id}/approve")
+        assert approved.status_code == 200, approved.text
+
+        with Session(engine) as session:
+            line = session.scalar(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.purchase_order_id == order_id
+            ))
+            assert line is not None
+            line_id = line.id
+            movement_count_before = session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.reference_type == "purchase_order",
+                    StockMovement.reference_id == order_id,
+                )
+            )
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.target_id == str(order_id),
+                )
+            )
+
+        duplicate_receipt = client.post(
+            f"{base}/purchase-orders/{order_id}/receive",
+            json={"lines": [
+                {"line_id": str(line_id), "quantity": "1.000"},
+                {"line_id": str(line_id), "quantity": "1.000"},
+            ]},
+        )
+        assert duplicate_receipt.status_code == 422, duplicate_receipt.text
+        assert "only once" in duplicate_receipt.json()["detail"]
+
+        with Session(engine) as session:
+            assert session.get(PurchaseOrder, order_id).status == "approved"
+            assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("0.000")
+            assert session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.reference_type == "purchase_order",
+                    StockMovement.reference_id == order_id,
+                )
+            ) == movement_count_before
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.target_id == str(order_id),
+                )
+            ) == audit_count_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized():
     from datetime import datetime, timezone
     from app.models import Customer, Invoice, Payment, PaymentAllocation
