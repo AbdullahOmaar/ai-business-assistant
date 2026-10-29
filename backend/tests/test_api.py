@@ -1507,3 +1507,66 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_payment_allocation_rejects_foreign_business_invoice_without_side_effects():
+    engine, business_id, local_invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        local_invoice = session.get(Invoice, local_invoice_id)
+        assert local_invoice is not None and local_invoice.customer_id is not None
+        local_customer_id = local_invoice.customer_id
+
+        foreign_business = Business(name="Foreign payment shop", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        foreign_customer = Customer(
+            business_id=foreign_business.id,
+            name="Foreign payment customer",
+        )
+        session.add(foreign_customer)
+        session.flush()
+        foreign_invoice = Invoice(
+            business_id=foreign_business.id,
+            customer_id=foreign_customer.id,
+            invoice_number="FOREIGN-PAY-1",
+            status="issued",
+            currency_code="EGP",
+            subtotal=Decimal("10.00"),
+            tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"),
+            total=Decimal("10.00"),
+        )
+        session.add(foreign_invoice)
+        session.commit()
+        foreign_invoice_id = foreign_invoice.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    try:
+        response = TestClient(app).post(
+            f"/api/v1/businesses/{business_id}/payments",
+            json={
+                "amount": "5.00",
+                "currency_code": "EGP",
+                "idempotency_key": "cross-tenant-invoice-allocation",
+                "customer_id": str(local_customer_id),
+                "allocations": [{"invoice_id": str(foreign_invoice_id), "amount": "5.00"}],
+            },
+        )
+        assert response.status_code == 422, response.text
+        assert "in this business" in response.json()["detail"]
+
+        with Session(engine) as session:
+            assert session.scalar(
+                select(func.count()).select_from(Payment)
+            ) == 0
+            assert session.scalar(
+                select(func.count()).select_from(PaymentAllocation)
+            ) == 0
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            ) == 0
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
