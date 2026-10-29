@@ -537,7 +537,7 @@ def list_sales_returns(business_id: UUID, limit: int = Query(default=50, ge=1, l
     ).all()
     return {
         "items": [_dict(ret, (
-            "id", "business_id", "invoice_id", "status", "reason", "total", "created_at",
+            "id", "business_id", "invoice_id", "status", "reason", "total", "tax_total", "created_at",
         )) for ret in returns],
         "limit": limit,
         "offset": offset,
@@ -1899,10 +1899,10 @@ def get_invoice(business_id: UUID, invoice_id: UUID,
         )).all()
         return {
             **_dict(invoice, ("id", "invoice_number", "customer_id", "status", "currency_code",
-                              "subtotal", "discount_total", "tax_total", "total", "issue_date",
+                              "subtotal", "discount_total", "tax_total", "tax_rate", "total", "issue_date",
                               "due_date", "notes", "created_at")),
             "lines": [_dict(line, ("id", "product_id", "description", "quantity",
-                                   "unit_price", "line_total")) for line in lines],
+                                   "unit_price", "line_total", "taxable_amount", "tax_amount")) for line in lines],
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
@@ -1956,7 +1956,7 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
         result = []
         for invoice in items:
             row = _dict(invoice, ("id", "invoice_number", "customer_id", "status", "currency_code",
-                                  "subtotal", "discount_total", "tax_total", "total", "issue_date", "created_at"))
+                                  "subtotal", "discount_total", "tax_total", "tax_rate", "total", "issue_date", "created_at"))
             allocated = allocated_by_invoice.get(invoice.id, ZERO)
             applied_credits = credits_by_invoice.get(invoice.id, ZERO)
             outstanding = max(
