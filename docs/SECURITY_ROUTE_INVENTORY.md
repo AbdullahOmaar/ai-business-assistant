@@ -1,7 +1,7 @@
 # Authenticated API Route Inventory
 
 **Reviewed:** 2026-10-23  
-**Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, and `assistant_api.py`.  
+**Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, `assistant_api.py`, `platform_admin_api.py`, and `employee_payroll_api.py`.  
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
@@ -50,6 +50,7 @@
 |---|---|---|
 | GET | `/health` | Public liveness only |
 | GET | `/readyz` | Operational readiness gate; no business data |
+| GET | `/version` | Public, non-sensitive release metadata only; never expose secrets or tokens |
 
 ### Workspace and dashboard — `backend/app/core_features_api.py` (prefix `/api/v1`)
 
@@ -60,6 +61,10 @@
 | GET | `/api/v1/businesses/{business_id}` | Active membership required |
 | PATCH | `/api/v1/businesses/{business_id}` | Active membership/role policy required |
 | GET | `/api/v1/businesses/{business_id}/dashboard` | Active membership required; aggregates scoped to business |
+| GET | `/api/v1/businesses/{business_id}/memberships` | OWNER only; list roles within the requested business |
+| PATCH | `/api/v1/businesses/{business_id}/memberships/{membership_id}` | OWNER only; target membership must belong to business; never demote/remove the last owner |
+| DELETE | `/api/v1/businesses/{business_id}/memberships/{membership_id}` | OWNER only; target membership must belong to business; preserve at least one owner |
+| GET | `/api/v1/businesses/{business_id}/profit-loss` | Active membership required; business-scoped revenue/expense summary without cross-currency aggregation |
 
 ### Core business workflows — `backend/app/api.py` (prefix `/api/v1`)
 
@@ -93,6 +98,7 @@ All paths below inherit the business ID in the prefix and require a trusted prin
 | POST | `/expenses` | Membership required |
 | GET | `/expenses` | Membership required; filter by business |
 | GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
+| POST | `/suppliers` | Membership required; create supplier under the requested business and audit the mutation |
 | GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |
 | POST | `/purchase-orders/{order_id}/receive` | Membership and same-business order/lines |
@@ -125,6 +131,39 @@ All paths below inherit the business ID in the prefix and require a trusted prin
 | Method | Path | Access expectation |
 |---|---|---|
 | POST | `/api/v1/businesses/{business_id}/assistant/chat` | Membership check before provider configuration/use; bounded input; reject caller-supplied system/tool roles; never expose another tenant’s records |
+
+### Platform administration — `backend/app/platform_admin_api.py` (prefix `/api/v1/platform-admin`)
+
+All routes require a trusted authenticated principal and explicit server-side platform allowlist/permission checks; workspace OWNER/STAFF roles do not grant platform access.
+
+| Method | Path | Access expectation |
+|---|---|---|
+| GET | `/api/v1/platform-admin/access` | Platform allowlist only; return effective platform roles and permissions |
+| GET | `/api/v1/platform-admin/system-status` | `view_system_status` permission; safe runtime metadata only |
+| GET | `/api/v1/platform-admin/overview` | `view_overview` permission; platform counts with financial totals separated by currency |
+| GET | `/api/v1/platform-admin/businesses` | `view_workspaces` permission; bounded, read-only workspace search |
+| GET | `/api/v1/platform-admin/businesses/{business_id}` | `view_workspaces` permission; no credentials or tokens |
+| PATCH | `/api/v1/platform-admin/businesses/{business_id}/status` | `manage_workspace_status` permission; meaningful reason and audit event required |
+| GET | `/api/v1/platform-admin/audit-events` | `view_audit` permission; bounded, read-only platform audit stream |
+| GET | `/api/v1/platform-admin/audit-events/export.csv` | `view_audit` permission; bounded, redacted export with security logging |
+| GET | `/api/v1/platform-admin/users` | `view_users` permission; Firebase account listing/search with bounded pagination |
+| POST | `/api/v1/platform-admin/users/{user_uid}/roles` | Platform super-admin only; bounded delegated roles, reason and audit trail; root admin cannot be granted in-app |
+| GET | `/api/v1/platform-admin/role-audit-events` | `view_audit` permission; read-only history of delegated platform role changes |
+
+### Employees and payroll — `backend/app/employee_payroll_api.py` (prefix `/api/v1/businesses/{business_id}`)
+
+All endpoints require OWNER membership in the requested business; employee/payroll IDs must also be scoped to that business. Payroll totals are calculated server-side. Marking payroll paid is a financial mutation and must only apply to an approved eligible record with linked expense/audit effects.
+
+| Method | Path | Access expectation |
+|---|---|---|
+| GET | `/api/v1/businesses/{business_id}/employees` | OWNER only; list employees scoped to business |
+| POST | `/api/v1/businesses/{business_id}/employees` | OWNER only; create employee in business; enforce business-scoped uniqueness and audit trail |
+| PATCH | `/api/v1/businesses/{business_id}/employees/{employee_id}` | OWNER only; employee ID must belong to business; no cross-tenant mutation |
+| GET | `/api/v1/businesses/{business_id}/payroll` | OWNER only; list payroll records and employee labels scoped to business |
+| POST | `/api/v1/businesses/{business_id}/employees/{employee_id}/payroll` | OWNER only; employee ID must belong to business; server-calculated payroll totals |
+| PATCH | `/api/v1/businesses/{business_id}/payroll/{payroll_id}` | OWNER only; payroll ID must belong to business and remain in an editable lifecycle state |
+| POST | `/api/v1/businesses/{business_id}/payroll/{payroll_id}/approve` | OWNER only; same-business payroll; enforce approval lifecycle and audit |
+| POST | `/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay` | OWNER only; same-business approved payroll; create linked expense exactly once and audit payment |
 
 ## Current regression-test evidence
 
