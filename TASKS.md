@@ -1583,3 +1583,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Validation: NOT RUN** by request; no claim that syntax, tests, or CI passed. The existing CI failures remain unresolved and separate from this feature work.
 - **Delivery:** PR #306 remains the existing Draft candidate; no duplicate PR, merge, migration, or deployment. T37/T38/T40 contract gate remains in place for supplier bills/payments, returns/reversals, and costing/financial posting.
 - **Next feature tasks:** add a purchase-order detail/read model with supplier/product labels and receipt progress, then implement receipt idempotency only after the shared contract is approved.
+
+
+## T39 purchase-order detail read model — 2026-10-29
+
+- Added tenant-scoped `GET /api/v1/businesses/{business_id}/purchase-orders/{order_id}` in `backend/app/extended_api.py`.
+- The detail response includes the order header, supplier label/status, product labels/SKU/unit, and each line's ordered, received, and remaining quantities. Supplier and products are queried with the same `business_id`; missing/cross-tenant references fail closed rather than returning foreign labels.
+- Added acceptance scenario T39-22 in `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- Per instruction, tests/build/CI were not run during this work. Syntax/runtime correctness and behavior remain unverified.
+- PR #306 stays Draft/Open; no merge/deploy. The T37/T38/T40 approval gate still blocks supplier financial records, returns/reversals, idempotency policy and costing/COGS.
