@@ -130,7 +130,16 @@ test('cash refund UI is owner-only, separate from receivable credit, and shows r
 
 test('cash refund retries retain the same idempotency key for the same refund payload', () => {
   assert.match(component, /private refundIdempotencyKeys: Record<string, string>/);
-  assert.match(component, /const requestKey = `\$\{note\.id\}\|\$\{amount\}\|\$\{method\}\|\$\{reference\}`/);
+  assert.match(component, /const requestKey = `\$\{note\.id\}\|\$\{amount\}\|\$\{method\}\|\$\{reference \?\? ''\}`/);
   assert.match(component, /this\.refundIdempotencyKeys\[requestKey\] \?\?/);
   assert.match(component, /delete this\.refundIdempotencyKeys\[requestKey\]/);
+});
+
+
+test('cash refunds require a settled original receivable and cannot reuse applied credit', () => {
+  assert.match(component, /invoice\.outstanding_amount !== undefined/);
+  assert.match(component, /Number\(invoice\.outstanding_amount\) <= 0/);
+  assert.match(component, /amount <= Number\(this\.remainingCredit\(note\)\)/);
+  assert.match(component, /Cash refunds require the original invoice receivable to be fully settled/);
+  assert.match(component, /Original payment must be allocated to the credit note's invoice/);
 });
