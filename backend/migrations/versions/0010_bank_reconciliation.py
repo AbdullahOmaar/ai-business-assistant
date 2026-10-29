@@ -92,6 +92,8 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("business_id", "statement_row_id", name="uq_bank_match_statement_row"),
+        sa.UniqueConstraint("business_id", "payment_id", name="uq_bank_match_payment"),
+        sa.UniqueConstraint("business_id", "expense_id", name="uq_bank_match_expense"),
     )
     op.create_index(
         "ix_bank_reconciliation_matches_business_payment",
