@@ -1,8 +1,10 @@
-# Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
+# Current prioritized work queue — 2026-10-29 (T39 active branch checkpoint appended; repository-wide snapshots retained as historical)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
 ## Current verified repository state
+
+- **Active T39 feature workstream (latest exact-head check):** Draft PR [#306](https://github.com/AbdullahOmaar/ai-business-assistant/pull/306), branch `docs/t39-procure-to-pay-test-matrix-20261029`, head `1fb4f79ab7767315c9ccc2f8923091ba1e498cb2`, OPEN / DRAFT / NOT MERGED. Changed files now include backend purchasing API/domain code, API/domain tests, acceptance matrix/TASKS, and frontend API/component files. Features added in this continuation: authenticated owner-only CSV downloads for suppliers/POs; PO CSV tab/CR formula-injection correction; supplier name search UI; PO status/supplier filter UI; supplier active/inactive lifecycle controls; duplicate PO number API regression. Matrix contains 35 unique sequential scenarios. Tests/build/security/migrations are **NOT RUN** per owner instruction. Exact-head CircleCI has six FAILURE contexts; root cause NOT VERIFIED. T37 contract remains unapproved, so financial posting, supplier returns/reversals, receipt idempotency contract and valuation/COGS remain blocked.
 
 - **Current main SHA before the CSV OWNER-positive candidate:** `072f2eb0fb91c92b577859c4ba874a5c113c2628`. It includes PR #276's STAFF-denied invoice-void no-side-effect regression (`bf0bcdaf08353f15a532e692522730f42d2258e1`), PR #297's CSV denial/no-side-effect matrix (`3c560a0f425c8a97bcbe9384c5eefb580c936025`), and PR #299's AI suggestions layout improvement (`072f2eb0fb91c92b577859c4ba874a5c113c2628`).
 - **PR #276 — invoice-void STAFF denial:** MERGED at `bf0bcdaf08353f15a532e692522730f42d2258e1`; exact pre-merge CircleCI passed six substantive checks plus aggregate (7/7). It asserts denied requests cause no business-state or audit side effects.
@@ -22,6 +24,7 @@
 2. Merge only after all required checks pass, then verify the resulting main SHA and its post-merge checks.
 3. Continue issue #276's remaining route × role × tenant no-write/no-audit coverage on one dedicated branch.
 4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly **NOT RUN / BLOCKED** until performed with approved access.
+5. **T39 feature branch:** continue contract-independent purchasing/supplier UI/API work on PR #306; inspect the latest diff and preserve the six failing CI contexts as unresolved. Do not run tests until the usage-limit instruction is lifted; do not merge before exact-head required checks pass and T37/T38/T40 approvals are recorded.
 
 ## Current evidence baseline
 
