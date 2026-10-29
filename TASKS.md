@@ -19,6 +19,21 @@
 - **Next:** restore authorized CircleCI credits or use an already approved runner, then rerun all six checks on the exact current HEAD. Do not weaken assertions or merge while required checks fail. Continue only policy-independent tests; salary-history/backfill/snapshot and payment lifecycle changes remain blocked by T37/T40 approval.
 
 
+## T41 — Five-workstream execution batch (2026-10-30)
+
+Requested execution scope: five substantial, contract-independent workstreams on the existing branch and PR #308 only. No merge or deployment.
+
+1. **Employee profile integrity:** verify normalization, invalid profile rejection, duplicate email/code conflicts on create/update, and atomic no-partial-update behavior. Regression: `test_employee_profile_normalization_and_duplicate_update_are_atomic`.
+2. **Employee directory integrity:** verify deterministic ordering, page boundaries, complete pagination coverage, active filter compatibility (existing test), and business isolation. Regression: `test_employee_directory_pagination_is_stable_and_business_scoped`.
+3. **Payroll query integrity:** verify period filtering, stable order, pagination boundaries, and business-scoped results. Regression: `test_payroll_listing_period_filter_and_pagination_are_deterministic`.
+4. **Approval state machine:** verify approval replay and post-approval edits are rejected without changing payroll or duplicating audit events. Regression: `test_payroll_approval_cannot_be_replayed_or_edited_after_transition`.
+5. **Payment atomicity:** inject failure while writing the paid audit event after expense flush; verify the transaction rolls back the expense and paid transition. Regression: `test_payment_audit_failure_rolls_back_expense_and_paid_transition`.
+
+- **Implementation:** five focused regression tests added to `backend/tests/test_employee_payroll_api.py`; no runtime, schema, or financial-policy changes.
+- **Verification:** all five new tests are committed but NOT RUN in this connector-only session. Existing prior focused run (16 passed) predates this batch and does not verify these additions. Full PostgreSQL concurrency, migration, frontend, security, and exact-head CircleCI checks remain NOT RUN / BLOCKED as applicable.
+- **Dependencies:** T37/T40 approvals continue to gate salary history/backfill/snapshots and shared payment lifecycle changes. Payment rollback test uses the existing SQLite fixture and is not evidence of PostgreSQL concurrency.
+- **Delivery:** preserve PR #308 as Draft/Open/Unmerged. No merge or deployment.
+
 ## T41 — Follow-up backlog beyond the initial 15 tasks (2026-10-29)
 
 These are newly identified tasks from source/test inspection. They are NOT marked complete and must stay on the existing T41 branch/PR where appropriate, with schema/financial contract changes held behind T37/T40 approval.
