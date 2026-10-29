@@ -1069,7 +1069,7 @@ def test_purchase_order_approval_is_owner_only_and_idempotent():
     """Only the workspace owner may approve a draft PO, with one audit event."""
     from uuid import uuid4
     from decimal import Decimal
-    from app.models import Business, PurchaseOrder, Supplier
+    from app.models import Business, Supplier
 
     engine = create_engine(
         "sqlite+pysqlite://",
