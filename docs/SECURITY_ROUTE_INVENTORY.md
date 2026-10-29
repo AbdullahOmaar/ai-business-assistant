@@ -98,7 +98,6 @@ All paths below inherit the business ID in the prefix and require a trusted prin
 | POST | `/expenses` | Membership required |
 | GET | `/expenses` | Membership required; filter by business |
 | GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
-| POST | `/suppliers` | Membership required; create supplier under the requested business and audit the mutation |
 | GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |
 | POST | `/purchase-orders/{order_id}/receive` | Membership and same-business order/lines |
