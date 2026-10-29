@@ -1,3 +1,21 @@
+# Session handoff — GitHub canonical / GitLab CI-only (2026-10-30)
+
+## Current governance work: IN_PROGRESS
+
+- Canonical code repository: GitHub AbdullahOmaar/ai-business-assistant; GitLab project abdullahomarrefaat/ai-business-assistant (ID 88276557) is intended only as a CI mirror/runner.
+- Existing governance PR: https://github.com/AbdullahOmaar/ai-business-assistant/pull/315, branch ci/gitlab-fallback-canonical-20261030. At session start its head was 90994dfcb64598b1c36f68f70bf26d3ce74466df, Draft, one file changed. Do not create a duplicate PR/branch.
+- GitLab imported main SHA observed as ae7a34b884d86e0ed26ffd64c528c1d488b956ef; GitHub main SHA was not independently re-read in this checkpoint. GitLab pipeline query for main returned zero pipelines. This does not prove automatic GitHub status integration is configured.
+- GitGuardian flagged the literal disposable PostgreSQL password in .gitlab-ci.yml; remove the unnecessary password and use PostgreSQL trust auth only for the isolated ephemeral CI service. This is a CI test credential, not evidence of production credential exposure; do not rotate production secrets based solely on this finding.
+- PR #315's body states backend container build/import and exact-head GitLab CI are outstanding. The older GitLab-only pipeline success on SHA f397dbbca2d0f5c88c966bd8daaf6ff2d34886aa is not evidence for the GitHub PR head.
+- Required acceptance: no independent GitLab code edits; one-way GitHub→GitLab sync demonstrably updates the exact branch/SHA; GitLab CI runs that exact SHA; status is visible/required for the GitHub PR; all relevant checks pass; GitLab pipeline cannot deploy. Until proven, governance status remains IN_PROGRESS/BLOCKED, not VERIFIED.
+- Deployment platform per README: Vercel Web project ai-business-assistant-web and API project ai-business-assistant-api. No deployment is part of this CI governance task.
+
+## Next actions
+1. Finish the current PR #315 on its existing branch: remove the flagged CI password, add explicit repository-boundary/session-start instructions, and complete the missing backend-container validation job if safely reproducible from existing CircleCI config.
+2. Configure/verify GitHub→GitLab one-way mirroring and exact-SHA pipeline/status integration; do not manually push divergent GitLab commits.
+3. Run exact-head checks and review the complete diff; keep Draft until gates pass.
+
+---
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
