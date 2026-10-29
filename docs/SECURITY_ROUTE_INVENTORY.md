@@ -77,6 +77,16 @@
 
 ### Extended business workflows — `backend/app/extended_api.py` (prefix `/api/v1/businesses/{business_id}`)
 
+| GET | `/operations/health` | OWNER only; read-only operational snapshot, no secret values |
+| GET | `/reports/tax-summary` | Membership required; totals separated by currency |
+| POST | `/purchase-orders/{order_id}/approve` | OWNER only; draft-only transition with one audit event |
+| POST | `/imports/{entity_type}.csv/preview` | OWNER only; validate/preview without persistent writes |
+| GET | `/reports/receivables-aging` | Membership required; currency-separated outstanding balances |
+| GET | `/customers/{customer_id}/statement` | Membership and same-business customer; read-only, currency-safe |
+| GET | `/audit-events` | OWNER only; paginated and business-scoped |
+| GET | `/reports/data-integrity` | OWNER only; read-only integrity findings scoped to business |
+
+
 All paths below inherit the business ID in the prefix and require a trusted principal plus membership authorization.
 
 | Method | Path suffix | Access expectation |
@@ -175,3 +185,11 @@ The route inventory is broader than current negative integration tests. Add expl
 - The test snapshots both tenants' audit-event totals and confirms no audit writes occur; tenant B's customer/product data and issued invoice state/number remain unchanged and readable by tenant B's OWNER.
 - This closes a direct foreign-resource read/update/delete test gap for customer/product/invoice routes. It does not complete the entire route × role × tenant matrix; other routes and authenticated production smoke remain outstanding.
 - Exact-head CI and test execution are pending on the dedicated branch. Local pytest/build were not run in this connector session.
+
+
+## Candidate route-matrix regressions — 2026-10-29
+
+- On the existing PR #302 branch, `backend/tests/test_business_tenant_boundaries.py` now includes `test_purchase_order_approval_is_owner_only_and_idempotent`: STAFF and non-members must be denied; denied requests leave the order draft and add no approval audit event; OWNER approval transitions the order and writes one approval event; duplicate approval is rejected without a second event.
+- The same file includes `test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_side_effects`, exercising non-member denial for operations health, tax summary, purchase-order approval, CSV preview, receivables aging, customer statement, audit events, and data-integrity report. Each request is followed by an audit-count assertion.
+- These tests are **implemented but not yet verified**. Exact-head CircleCI is currently not visible from the GitHub combined-status endpoint; local pytest/build are NOT RUN in this connector-only environment. Do not treat the regressions as passing until exact-head CI completes.
+- This is targeted denial coverage, not proof that every role × route × tenant combination or production behavior is verified. Authenticated production smoke remains NOT RUN.
