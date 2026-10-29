@@ -982,9 +982,14 @@ def test_payroll_listing_does_not_expose_another_business_records(employee_envir
     assert second.status_code == 201
     foreign_business_id = second.json()["id"]
     foreign_base = f"/api/v1/businesses/{foreign_business_id}"
-    foreign_employee = _create_employee(
-        env, name="Foreign Payroll Employee", code="EMP-FOREIGN",
-        email="foreign-payroll@example.test",
+    foreign_employee = env["client"].post(
+        f"{foreign_base}/employees",
+        json={
+            "name": "Foreign Payroll Employee",
+            "employee_code": "EMP-FOREIGN",
+            "email": "foreign-payroll@example.test",
+            "monthly_salary": "5000.00",
+        },
     )
     assert foreign_employee.status_code == 201
     foreign_created = env["client"].post(
