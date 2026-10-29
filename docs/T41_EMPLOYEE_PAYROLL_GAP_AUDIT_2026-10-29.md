@@ -98,3 +98,8 @@ On the existing T41 branch / PR #308, added test-only regressions for:
 - Invalid employee update atomicity: empty/whitespace/null profile updates are rejected without changing employee or audit state.
 
 Implementation evidence: commit `1daf5f9f73de2ecd1bbe5674bda5a4c23f28d355` in `backend/tests/test_employee_payroll_api.py`; task record updated separately in `TASKS.md`. These are regression tests only; runtime/schema/financial-policy behavior was not changed. Tests are NOT RUN on the latest HEAD. The existing SQLite fixture does not establish PostgreSQL concurrency guarantees. T37/T40 contract gates remain active; no merge or deployment.
+
+
+## Regression refinement — 2026-10-30
+
+The tenant-isolation regression now creates payroll records in both businesses and checks that each listing returns only the matching record ID and business_id. The invalid employee-update regression additionally checks persisted database fields, not only the response payload, and confirms no audit event was added. The foreign employee is created through the foreign business endpoint to avoid reusing a fixture helper scoped to the primary business. Commits: `babbe6c282372d350963f4955a59de345cfe7deb`, `bc7462416c5043cd9d0dd96821cbbde0fa3ec451`. Tests remain NOT RUN pending a usable runner; current CircleCI jobs are blocked before execution by the no-credits plan limit. No runtime behavior, schema, or payroll policy changed.
