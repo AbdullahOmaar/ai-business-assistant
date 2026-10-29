@@ -106,6 +106,12 @@ export const FEATURE_CATALOG = [
         detailAr: 'تُطبّق قواعد حالة الفاتورة والصلاحيات قبل تنفيذ العملية.',
         detailEn: 'Invoice state and permissions are checked before the action is applied.',
       },
+      {
+        titleAr: 'طباعة تفاصيل الفاتورة',
+        titleEn: 'Invoice print breakdown',
+        detailAr: 'تُظهر نسخة الطباعة المجموع قبل الخصم والخصم والضريبة والإجمالي النهائي.',
+        detailEn: 'The print view shows subtotal, discount, tax, and final total.',
+      },
     ],
   },
   {
@@ -130,8 +136,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'مطابقة الدفعة',
         titleEn: 'Payment allocation',
-        detailAr: 'يتحقق النظام من العميل والعملة والرصيد ويمنع تسجيل العملية مرتين بالمفتاح نفسه.',
-        detailEn: 'The system checks customer, currency, and balance and prevents duplicate processing with the same idempotency key.',
+        detailAr: 'وزّع الدفعة على عدة فواتير صادرة للعميل نفسه، مع مراجعة الرصيد المتبقي ومنع تكرار التخصيص. يتحقق الخادم من العميل والعملة والرصيد ويمنع تكرار التسجيل بالمفتاح نفسه.',
+        detailEn: 'Allocate one receipt across multiple issued invoices for the same customer, review the remaining receipt amount, and avoid duplicate invoice allocations. The server validates customer, currency, balance, and idempotency.',
       },
     ],
   },
