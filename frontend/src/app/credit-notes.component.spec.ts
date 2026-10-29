@@ -133,3 +133,17 @@ test('credit-note pagination is bounded, deduplicated, and scoped to the selecte
   assert.match(component, /requestedCustomerId !== this\.selectedCustomerId/);
   assert.match(component, /\(click\)="loadMoreCreditNotes\(\)"/);
 });
+
+test('credit application UI is owner-only and limits invoices to the same customer and currency', () => {
+  assert.match(component, /role === 'owner' && hasRemainingCredit\(note\)/);
+  assert.match(component, /invoice\.customer_id === note\.customer_id/);
+  assert.match(component, /invoice\.currency_code\.trim\(\)\.toUpperCase\(\) === note\.currency_code\.trim\(\)\.toUpperCase\(\)/);
+  assert.match(component, /this\.api\.applyCreditNote\(requestedBusinessId/);
+  assert.match(api, /\/api\/v1\/businesses\/\$\{encodeURIComponent\(businessId\)\}\/credit-applications/);
+});
+
+test('credit application retries preserve the idempotency key and explain that no cash refund occurs', () => {
+  assert.match(component, /if \(!this\.applicationIdempotencyKey\) this\.applicationIdempotencyKey = crypto\.randomUUID\(\)/);
+  assert.match(component, /Keep the same key\/body available for a safe retry/);
+  assert.match(component, /No cash refund was recorded and the original invoice total was unchanged/);
+});
