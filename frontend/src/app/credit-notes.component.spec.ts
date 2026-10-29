@@ -14,7 +14,7 @@ test('credit-note screen reads returns and notes through business-scoped API met
 });
 
 test('credit-note issuance is owner-only and guarded against duplicate clicks', () => {
-  assert.match(component, /if \(this\.role !== 'owner' \|\| this\.issuingId !== null \|\| this\.creditNoteForReturn\(ret\.id\)\) return/);
+  assert.match(component, /if \(this\.role !== 'owner' \|\| ret\.status !== 'approved' \|\| this\.issuingId !== null \|\| this\.approvingId !== null \|\| this\.creditNoteForReturn\(ret\.id\)\) return/);
   assert.match(component, /@else if \(role === 'owner'\)/);
   assert.match(component, /this\.api\.issueCreditNoteForReturn\(this\.businessId, ret\.id\)/);
 });
