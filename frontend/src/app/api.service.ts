@@ -547,6 +547,18 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`
     );
   }
+  createSalesReturn(businessId: string, body: {
+    invoice_id: string; reason?: string; lines: Array<{ invoice_line_id: string; quantity: string }>;
+  }): Promise<SalesReturn> {
+    return this.request<SalesReturn>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns`, 'POST', body
+    );
+  }
+  approveSalesReturn(businessId: string, returnId: string): Promise<SalesReturn> {
+    return this.request<SalesReturn>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/approve`, 'POST', {}
+    );
+  }
   salesReturns(businessId: string, filters: { limit?: number; offset?: number; status?: 'draft' | 'approved' | 'rejected' } = {}): Promise<SalesReturnPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
