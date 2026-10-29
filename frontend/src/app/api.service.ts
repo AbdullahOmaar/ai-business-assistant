@@ -595,8 +595,13 @@ export class ApiService {
   createSupplier(businessId: string, body: { name: string; email?: string; phone?: string; address?: string }): Promise<Supplier> {
     return this.request<Supplier>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers', 'POST', body);
   }
-  purchaseOrders(businessId: string): Promise<PurchaseOrder[]> {
-    return this.request<PurchaseOrder[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders?limit=100');
+  purchaseOrders(businessId: string, filters: { status?: string; supplier_id?: string } = {}): Promise<PurchaseOrder[]> {
+    const params = new URLSearchParams({ limit: '100' });
+    if (filters.status) params.set('status', filters.status);
+    if (filters.supplier_id) params.set('supplier_id', filters.supplier_id);
+    return this.request<PurchaseOrder[]>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders?' + params.toString()
+    );
   }
   createPurchaseOrder(businessId: string, body: { supplier_id: string; order_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string; unit_cost: string }> }): Promise<PurchaseOrder> {
     return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders', 'POST', body);
