@@ -24,7 +24,7 @@ Owner scope: platform Admin APIs and least-privilege regression coverage. Work i
 - PR: [#313](https://github.com/AbdullahOmaar/ai-business-assistant/pull/313), open.
 - Local pytest / build: **NOT RUN** (connector-only execution; no repository runtime attached).
 - CircleCI on earlier PR head `2241f3e64a05b76bdea02a0230530d16127d10af`: all six reported contexts failed; job logs unavailable through the connected GitHub integration, and CircleCI page URLs were inaccessible from web access. Root cause **UNVERIFIED**.
-- Latest test/code commit CI: status API returned an empty legacy-status list; check-run conclusion **NOT VERIFIED**. Do not interpret an empty status list as pass.
+- Latest test/code commit CI: status API returned an empty legacy-status list; check-run conclusion **NOT VERIFIED**. GitHub Actions workflow runs on test/code commit `c09e04988591d6737af9613dd80ed344f3ce9261` reported failure for backend/frontend, dependency scans, container build and backend tests; job-log retrieval returned HTTP 404 `BlobNotFound`, so the failing step and root cause remain **UNVERIFIED**. This does not prove an application test failure. Do not interpret an empty status list as pass.
 - Review: **NOT RUN**. Merge: **BLOCKED** until exact-head checks and independent review are verified. Production deploy: **NOT RUN**.
 
 Next: inspect fresh exact-head CI statuses and available logs, then address any reproducible code-level failure. Do not weaken tests or merge based on missing status evidence.
