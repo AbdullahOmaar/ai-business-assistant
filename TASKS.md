@@ -595,10 +595,10 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Required validation: backend tests against supported PostgreSQL behavior (including concurrent duplicate/over-return attempts), plus existing SQLite unit coverage where applicable. Do not mark VERIFIED from source inspection alone.
 
 ### FIN-REPORT-003 — Financial report reconciliation contract
-- Status: IN PROGRESS — regression tests added; exact-head validation pending.
-- Added `backend/tests/test_financial_report_reconciliation.py` with invoice-only/draft exclusion and partial/full payment reconciliation across EGP/USD, including expenses and outstanding balances.
-- Tests/build/security: NOT RUN in this connector-only execution; exact-head CircleCI must be observed before treating coverage as verified.
-- Remaining fixtures: approved return assertions in the reconciliation scenario, DST/business-local half-open UTC edge cases, and any missing authorization/tenant-isolation coverage.
+- Status: IN PROGRESS — reconciliation, report authorization, and half-open UTC boundary regression tests added; new exact-head validation pending.
+- Added `backend/tests/test_financial_report_reconciliation.py` coverage for invoice-only/draft exclusion, no inferred cash collection, partial/full payments, outstanding balances, expenses, EGP/USD separation, direct non-member denial for `profit-loss`, and exact half-open UTC day boundaries (start inclusive, next-day boundary exclusive).
+- Tests/build/security: local execution NOT RUN in this connector-only execution; exact-head CircleCI for the latest commit must be observed before treating coverage as verified.
+- Existing `backend/tests/test_business_timezone_reporting.py` already covers approved-return gross-revenue disclosure, business-local boundaries, and DST 23/25-hour days. Remaining: consider integrating approved-return metric into the same reconciliation fixture only after T37/T38 semantics are approved; broader tenant/role matrix and supported-PostgreSQL concurrency checks remain separate.
 - Assert dashboard invoiced sales, collected payments, expenses, outstanding balances, and profit/loss remain distinct measures; no currency aggregation/conversion; date filtering is business-local and half-open in UTC.
 - Report names must not imply net profit until COGS and the approved return/tax treatment are represented. Keep explicit limitations until the required ledgers exist.
 
