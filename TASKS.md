@@ -2,17 +2,31 @@
 
 ## T41 — Employees & Payroll regression checkpoint (2026-10-29)
 
-- **Status:** PARTIALLY COMPLETE — added three focused API regressions across the current branch; execution of the new tests is NOT RUN until exact-head CI/local runner evidence is available.
+- **Status:** PARTIALLY COMPLETE — added four focused API regressions across the current branch; execution of the new tests is NOT RUN until exact-head CI/local runner evidence is available.
 - **Branch / HEAD:** `feat/t41-salary-history-effective-dates` / `bb23839d093fd4d013b488b6f4b416beaf30e3e8`.
 - **PR:** [#308 — draft, open, not merged](https://github.com/AbdullahOmaar/ai-business-assistant/pull/308).
 - **Current diff scope:** test-only additions in `backend/tests/test_employee_payroll_api.py`, the existing gap audit in `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md`, and this task checkpoint in `TASKS.md`; refresh commit counts and exact HEAD from live PR metadata after this checkpoint lands.
 - **Regression added:** deactivated employees cannot create payroll; the API returns 404; payroll and expense rows remain unchanged; no payroll audit event is emitted; employee create/deactivation audit events remain present.
 - **Additional regression added (commit `f6dc3b8acdac96f9b8cef611044df37e2e87c48b`):** `active_only=true` excludes deactivated employees while the unfiltered OWNER listing retains both active and inactive employees.
-- **Additional regression added (commit `1c34563edf28d1952ff8165bbfd7f280526d02de`):** duplicate payroll creation for the same employee/period must return 409 without changing the original record, adding an expense, or emitting a second payroll audit event. Both new test cases are test-only; execution remains NOT RUN pending exact-head CI.
+- **Additional regression added (commit `1c34563edf28d1952ff8165bbfd7f280526d02de`):** duplicate payroll creation for the same employee/period must return 409 without changing the original record, adding an expense, or emitting a second payroll audit event.
+- **Additional regression added (commit `629df2e6c3b095024e149a7c6e5c9646a125282b`):** negative allowance/bonus/deduction values and invalid periods (`2026-13`, `2026-1`) must return 422 without payroll/expense/audit side effects. This is API-boundary test coverage only; execution remains NOT RUN pending exact-head CI.
 - **Quality:** local pytest, migration upgrade/downgrade, frontend tests/build, and local security checks are **NOT RUN** in this connector-only session. Exact-head CircleCI reports six failed contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke). Existing GitHub Actions audit/backend/frontend jobs also failed within seconds; fetching job logs/steps returned `BlobNotFound`, so root cause is **BLOCKED / NOT DIAGNOSED**. The earlier docs-only SHA's green checks do not validate this commit.
 - **Delivery:** PR #308 remains draft/open; no merge or deployment performed.
 - **Dependencies:** effective-dated salary history, payroll snapshots and shared financial posting/lifecycle remain gated by Master-approved T37/T40 contracts and permissions.
 - **Next:** diagnose the six failed CircleCI contexts on the new exact HEAD; do not weaken assertions or merge while required checks fail. Continue only policy-independent tests; salary-history/backfill/snapshot and payment lifecycle changes remain blocked by T37/T40 approval.
+
+
+## T41 — Follow-up backlog beyond the initial 15 tasks (2026-10-29)
+
+These are newly identified tasks from source/test inspection. They are NOT marked complete and must stay on the existing T41 branch/PR where appropriate, with schema/financial contract changes held behind T37/T40 approval.
+
+16. **Concurrent duplicate payroll creation:** add a PostgreSQL-backed concurrent request regression proving the employee/business/period unique constraint yields one record, one audit event, and no partial side effects.
+17. **Payment transaction rollback injection:** force an expense insert or audit write failure and prove payroll remains approved/unpaid and no orphan expense is committed.
+18. **Concurrent/replayed payment safety:** test parallel pay requests against PostgreSQL and prove one paid transition, one linked expense, and one payroll.paid audit event.
+19. **Payroll edit boundary matrix:** cover negative, excess precision, over-limit decimals, unknown fields, and invalid draft-only edits with unchanged persisted rows/audit state.
+20. **Payroll audit/privacy review:** confirm salary, email, phone, and sensitive payslip values are not copied into generic audit text, logs, AI context, or STAFF-accessible reports; add denial/no-leak regressions where gaps are found.
+
+- **Current state:** tasks 16–20 are identified only; NOT STARTED / NOT RUN. Do not add new CI infrastructure or bypass existing CircleCI gates. Any concurrency claim requires a real PostgreSQL run, not SQLite-only tests.
 
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
