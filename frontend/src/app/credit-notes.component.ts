@@ -94,7 +94,28 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
         @for (note of notes; track note.id) {
           <article class="record">
             <div class="record-main"><strong>{{ note.credit_note_number }}</strong><small>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(note.sales_return_id) }}</small><small>{{ language === 'ar' ? 'العميل' : 'Customer' }} · {{ customerName(note.customer_id) }}</small></div>
-            <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong><span class="issued">{{ language === 'ar' ? 'صادر' : 'Issued' }}</span>
+            <div class="record-main">
+              <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong>
+              <small>{{ language === 'ar' ? 'المستخدم من الإشعار' : 'Applied' }}: {{ appliedTotal(note) }} {{ note.currency_code }}</small>
+              <small>{{ language === 'ar' ? 'الرصيد المتبقي' : 'Remaining credit' }}: {{ remainingCredit(note).toFixed(2) }} {{ note.currency_code }}</small>
+            </div>
+            <span class="issued">{{ language === 'ar' ? 'صادر' : 'Issued' }}</span>
+            @if (role === 'owner' && remainingCredit(note) > 0) {
+              <form class="apply-form" (ngSubmit)="applyCredit(note)">
+                <label>{{ language === 'ar' ? 'الفاتورة المستحقة للعميل نفسه' : 'Receivable for the same customer' }}
+                  <select [name]="'applyInvoice' + note.id" required [(ngModel)]="applicationInvoiceByNote[note.id]" (ngModelChange)="onApplicationInvoiceChanged(note)" [disabled]="applyingNoteId !== null || loading">
+                    <option value="">{{ language === 'ar' ? 'اختر فاتورة مستحقة' : 'Choose an outstanding invoice' }}</option>
+                    @for (invoice of eligibleInvoices(note); track invoice.id) {
+                      <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</option>
+                    }
+                  </select>
+                </label>
+                <label>{{ language === 'ar' ? 'المبلغ المراد تطبيقه' : 'Amount to apply' }}
+                  <input type="number" [name]="'applyAmount' + note.id" min="0.01" step="0.01" [max]="maxApplyAmount(note)" [(ngModel)]="applicationAmountByNote[note.id]" required [disabled]="applyingNoteId !== null || !applicationInvoiceByNote[note.id]">
+                </label>
+                <button class="primary" type="submit" [disabled]="!canApply(note)">{{ applyingNoteId === note.id ? (language === 'ar' ? 'جارٍ تطبيق الرصيد…' : 'Applying credit…') : (language === 'ar' ? 'تطبيق على المديونية' : 'Apply to receivable') }}</button>
+              </form>
+            }
           </article>
         }
       </div>
@@ -113,6 +134,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
     h2 { margin: 0 0 .4rem; font-size: 1.2rem; } h3 { margin: 1.2rem 0 .6rem; font-size: 1rem; }
     p, .muted, .footnote { color: var(--muted, #5b6474); line-height: 1.5; } .footnote { font-size: .85rem; margin-top: 1rem; }
     .return-form { display: grid; gap: .8rem; margin: .6rem 0 1.2rem; }
+    .apply-form { display: grid; gap: .55rem; flex: 1 1 260px; min-width: min(100%, 240px); }
     .customer-filter { display: grid; gap: .35rem; max-width: 420px; margin: .6rem 0; }
     .load-more { display: block; margin: .8rem auto; }
     label { display: grid; gap: .35rem; font-size: .92rem; }
@@ -150,6 +172,9 @@ export class CreditNotesComponent implements OnChanges {
   creatingReturn = false;
   approvingId: string | null = null;
   issuingId: string | null = null;
+  applyingNoteId: string | null = null;
+  applicationInvoiceByNote: Record<string, string> = {};
+  applicationAmountByNote: Record<string, string> = {};
   message = '';
   error = '';
   private refreshSequence = 0;
@@ -166,6 +191,9 @@ export class CreditNotesComponent implements OnChanges {
       this.customers = [];
       this.returns = [];
       this.notes = [];
+      this.applicationInvoiceByNote = {};
+      this.applicationAmountByNote = {};
+      this.applyingNoteId = null;
       this.selectedCustomerId = '';
       this.notesHasMore = false;
       this.loadingMoreNotes = false;
@@ -343,6 +371,74 @@ export class CreditNotesComponent implements OnChanges {
       this.error = this.language === 'ar' ? 'تعذر إصدار الإشعار. تأكد أن المرتجع معتمد وأن الفاتورة لا تحتوي على ضريبة غير موزعة.' : 'Credit note could not be issued. Confirm the return is approved and the invoice has no unallocated tax.';
     } finally {
       this.issuingId = null;
+    }
+  }
+
+  appliedTotal(note: CreditNote): string {
+    return note.applied_total ?? '0.00';
+  }
+
+  remainingCredit(note: CreditNote): number {
+    const remaining = Number(note.remaining_credit ?? note.total);
+    return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
+  }
+
+  eligibleInvoices(note: CreditNote): Invoice[] {
+    return this.invoices.filter(invoice =>
+      invoice.status === 'issued'
+      && invoice.customer_id === note.customer_id
+      && invoice.currency_code.trim().toUpperCase() === note.currency_code.trim().toUpperCase()
+      && Number(invoice.outstanding_amount ?? 0) > 0
+    );
+  }
+
+  maxApplyAmount(note: CreditNote): number {
+    const invoice = this.eligibleInvoices(note).find(item => item.id === this.applicationInvoiceByNote[note.id]);
+    if (!invoice) return 0;
+    const maximum = Math.min(this.remainingCredit(note), Number(invoice.outstanding_amount ?? 0));
+    return Math.max(0, Math.floor((maximum + Number.EPSILON) * 100) / 100);
+  }
+
+  onApplicationInvoiceChanged(note: CreditNote): void {
+    const maximum = this.maxApplyAmount(note);
+    this.applicationAmountByNote[note.id] = maximum > 0 ? maximum.toFixed(2) : '';
+  }
+
+  canApply(note: CreditNote): boolean {
+    if (this.role !== 'owner' || this.loading || this.applyingNoteId !== null || this.remainingCredit(note) <= 0) return false;
+    const amount = Number(this.applicationAmountByNote[note.id]);
+    const invoice = this.eligibleInvoices(note).find(item => item.id === this.applicationInvoiceByNote[note.id]);
+    return !!invoice && Number.isFinite(amount) && amount > 0 && amount <= this.maxApplyAmount(note);
+  }
+
+  async applyCredit(note: CreditNote): Promise<void> {
+    if (!this.canApply(note) || !this.businessId) return;
+    const invoiceId = this.applicationInvoiceByNote[note.id];
+    const amount = Number(this.applicationAmountByNote[note.id]).toFixed(2);
+    this.applyingNoteId = note.id;
+    this.error = '';
+    this.message = '';
+    try {
+      const idempotencyKey = globalThis.crypto?.randomUUID?.()
+        ?? `credit-${note.id}-${invoiceId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      await this.api.applyCreditNote(this.businessId, {
+        credit_note_id: note.id,
+        invoice_id: invoiceId,
+        amount,
+        idempotency_key: idempotencyKey,
+      });
+      await this.refresh();
+      this.applicationAmountByNote[note.id] = '';
+      this.message = this.language === 'ar'
+        ? 'تم تطبيق الرصيد على المديونية. هذا ليس ردًا نقديًا.'
+        : 'Credit applied to the receivable. This is not a cash refund.';
+    } catch {
+      this.error = this.language === 'ar'
+        ? 'تعذر تطبيق الرصيد. قد يكون الرصيد أو المديونية تغيرا؛ حدّث البيانات وحاول مجددًا.'
+        : 'Could not apply credit. The remaining credit or receivable may have changed; refresh and retry.';
+      await this.refresh();
+    } finally {
+      this.applyingNoteId = null;
     }
   }
 
