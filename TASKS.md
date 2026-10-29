@@ -1667,6 +1667,6 @@ Five major feature tasks were selected and implemented sequentially on the exist
 
 - Added `backend/tests/test_api.py::test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit`.
 - Same-business duplicate creation/edit should fail before order/line/audit mutations; another business may use the same identifier. Existing database unique constraint remains the concurrency backstop.
-- Acceptance matrix uses **T39-34** for this regression because concurrent feature work already assigned T39-33 to purchase-order CSV export.
+- Acceptance matrix uses **T39-33** for this regression; concurrent feature work uses T39-34 and T39-35 for purchase-order and supplier CSV export.
 - Test/build/security/migration/CI checks remain **NOT RUN** per user instruction; runtime verification is pending.
 
