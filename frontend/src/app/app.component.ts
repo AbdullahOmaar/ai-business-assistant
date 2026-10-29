@@ -414,8 +414,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select></label>
                   <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate"></label>
                   <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate"></label>
-                  <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة بند', 'Add line') }} +</button></div>
-                    @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select></label><label>{{ t('الكمية', 'Quantity') }}<input [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity"></label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
+                  <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><div class="section-actions"><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة منتج', 'Add product') }} +</button><button class="secondary" type="button" (click)="addManualInvoiceLine()" [disabled]="loading">{{ t('إضافة بند يدوي / خدمة', 'Add manual line / service') }} +</button></div></div>
+                    @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('نوع البند', 'Line type') }} {{ i + 1 }}<select [name]="'invoiceLineKind' + i" [attr.aria-label]="t('نوع البند', 'Line type') + ' ' + (i + 1)" [(ngModel)]="line.kind" (ngModelChange)="changeInvoiceLineKind(line)"><option value="product">{{ t('منتج من القائمة', 'Catalog product') }}</option><option value="manual">{{ t('بند يدوي / خدمة', 'Manual line / service') }}</option></select></label>@if (line.kind === 'product') { <label>{{ t('المنتج', 'Product') }}<select [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select></label> } @else { <label>{{ t('وصف البند', 'Line description') }}<input [name]="'invoiceDescription' + i" [attr.aria-label]="t('وصف البند', 'Line description') + ' ' + (i + 1)" maxlength="500" required [(ngModel)]="line.description" [placeholder]="t('مثال: خدمة تركيب', 'e.g. Installation service')"></label><label>{{ t('سعر الوحدة', 'Unit price') }}<input [name]="'invoiceUnitPrice' + i" [attr.aria-label]="t('سعر الوحدة', 'Unit price') + ' ' + (i + 1)" type="number" min="0" step="0.01" required [(ngModel)]="line.unitPrice"></label> }<label>{{ t('الكمية', 'Quantity') }}<input [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" max="999999999.999" step="0.001" required [(ngModel)]="line.quantity"></label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
                   </div>
                   @if (invoicePreview; as preview) {
                     <div class="invoice-preview" aria-label="Invoice totals preview" aria-live="polite">
@@ -428,7 +428,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
                   }
                   <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
-                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
+                  <button class="primary" type="submit" [disabled]="loading || !customers.length || !invoiceCustomerId || !invoiceLines.length">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
                 </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
@@ -436,7 +436,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
-                  @if (!filteredInvoices.length) { <p class="empty">{{ (invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.')) }}</p> }
+                  @if (!filteredInvoices.length) { <p class="empty">{{ (invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا أو بندًا يدويًا، ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and a product or manual line, then create your first invoice.')) }}</p> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
@@ -1035,7 +1035,7 @@ export class AppComponent implements OnInit {
   invoiceCustomerId = '';
   invoiceProductId = '';
   invoiceQuantity = '1';
-  invoiceLines: Array<{ productId: string; quantity: string }> = [{ productId: '', quantity: '1' }];
+  invoiceLines: Array<{ kind: 'product' | 'manual'; productId: string; quantity: string; description: string; unitPrice: string }> = [{ kind: 'product', productId: '', quantity: '1', description: '', unitPrice: '' }];
   invoiceDiscountRate = '0';
   invoiceTaxRate = '0';
   invoiceMessage = '';
@@ -1538,7 +1538,7 @@ export class AppComponent implements OnInit {
     this.invoiceCustomerId = '';
     this.invoiceProductId = '';
     this.invoiceQuantity = '1';
-    this.invoiceLines = [{ productId: '', quantity: '1' }];
+    this.invoiceLines = [{ kind: 'product', productId: '', quantity: '1', description: '', unitPrice: '' }];
     this.invoiceNumber = '';
     this.invoiceFilterCustomerId = '';
     this.editingInvoiceId = null;
@@ -2175,10 +2175,13 @@ export class AppComponent implements OnInit {
     // to cents with ROUND_HALF_UP, then sum the rounded line totals.
     let subtotalCents = 0n;
     for (const line of this.invoiceLines) {
-      const product = this.products.find(item => item.id === line.productId);
+      const product = line.kind === 'product' ? this.products.find(item => item.id === line.productId) : undefined;
       const quantityMilli = parseScaled(line.quantity, 3);
-      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
-      if (!product || quantityMilli === null || quantityMilli <= 0n ||
+      const rawUnitPrice = line.kind === 'manual' ? line.unitPrice : product?.unit_price ?? '';
+      const unitPriceCents = parseScaled(rawUnitPrice, 2);
+      if ((line.kind === 'product' && !product) ||
+          (line.kind === 'manual' && !line.description.trim()) ||
+          quantityMilli === null || quantityMilli <= 0n ||
           unitPriceCents === null) return null;
       const lineMilliCents = quantityMilli * unitPriceCents;
       subtotalCents += roundHalfUp(lineMilliCents, 1000n);
@@ -2213,7 +2216,25 @@ export class AppComponent implements OnInit {
 
   addInvoiceLine(): void {
     if (this.loading || !this.products.length) return;
-    this.invoiceLines = [...this.invoiceLines, { productId: '', quantity: '1' }];
+    this.invoiceLines = [...this.invoiceLines, { kind: 'product', productId: '', quantity: '1', description: '', unitPrice: '' }];
+  }
+
+  addManualInvoiceLine(): void {
+    if (this.loading) return;
+    this.invoiceLines = [...this.invoiceLines, { kind: 'manual', productId: '', quantity: '1', description: '', unitPrice: '0.00' }];
+  }
+
+  changeInvoiceLineKind(line: { kind: 'product' | 'manual'; productId: string; quantity: string; description: string; unitPrice: string }): void {
+    if (line.kind === 'manual') {
+      const selectedProduct = this.products.find(item => item.id === line.productId);
+      line.description = line.description.trim() || selectedProduct?.name || '';
+      line.unitPrice = line.unitPrice || selectedProduct?.unit_price || '0.00';
+      line.productId = '';
+      return;
+    }
+    line.productId = '';
+    line.description = '';
+    line.unitPrice = '';
   }
 
   removeInvoiceLine(index: number): void {
@@ -2225,10 +2246,17 @@ export class AppComponent implements OnInit {
     const discountRate = Number(this.invoiceDiscountRate);
     const taxRate = Number(this.invoiceTaxRate);
     if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length ||
-        this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) ||
+        this.invoiceLines.some(line =>
+          !/^\d+(?:\.\d{1,3})?$/.test(line.quantity.trim()) ||
+          !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0 ||
+          (line.kind === 'product' && (!line.productId || !this.products.some(product => product.id === line.productId))) ||
+          (line.kind === 'manual' && (!line.description.trim() ||
+            !/^\d+(?:\.\d{1,2})?$/.test(line.unitPrice.trim()) ||
+            !Number.isFinite(Number(line.unitPrice)) || Number(line.unitPrice) < 0))
+        ) ||
         !Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
         !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
-      this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
+      this.error = this.t('اختَر العميل، وأكمل وصف وسعر البنود اليدوية والكمية الصحيحة، وتأكد من أن الخصم والضريبة بين 0 و100.', 'Choose a customer, complete manual line descriptions/prices and valid quantities, and keep discount/tax rates between 0 and 100.');
       return;
     }
     this.loading = true;
@@ -2239,7 +2267,9 @@ export class AppComponent implements OnInit {
         invoice_number: invoiceNumber,
         currency_code: this.business.currency_code,
         customer_id: this.invoiceCustomerId,
-        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
+        lines: this.invoiceLines.map(line => line.kind === 'manual'
+          ? { description: line.description.trim(), quantity: String(line.quantity), unit_price: line.unitPrice.trim() }
+          : { product_id: line.productId, quantity: String(line.quantity), ...(line.description.trim() ? { description: line.description.trim() } : {}) }),
         discount_rate: String(discountRate),
         tax_rate: String(taxRate),
       };
@@ -2334,8 +2364,8 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
-      if (!detail.lines.length || detail.lines.some(line => !line.product_id)) {
-        throw new Error(this.t('تحتوي المسودة على بند غير مرتبط بمنتج؛ لم يتم تغيير الفاتورة.', 'This draft contains a line without a linked product; no changes were made.'));
+      if (!detail.lines.length) {
+        throw new Error(this.t('لا تحتوي المسودة على بنود قابلة للتعديل.', 'This draft has no editable invoice lines.'));
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
@@ -2344,7 +2374,13 @@ export class AppComponent implements OnInit {
       const taxableBase = Number(detail.subtotal || 0) - Number(detail.discount_total || 0);
       this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
       this.invoiceMessage = '';
-      this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
+      this.invoiceLines = detail.lines.map(line => ({
+        kind: line.product_id ? 'product' as const : 'manual' as const,
+        productId: line.product_id || '',
+        quantity: line.quantity,
+        description: line.description || '',
+        unitPrice: line.unit_price || '0.00',
+      }));
     } catch (error) {
       this.error = this.message(error);
     } finally {
@@ -2360,7 +2396,7 @@ export class AppComponent implements OnInit {
     this.invoiceDiscountRate = '0';
     this.invoiceTaxRate = '0';
     this.invoiceQuantity = '1';
-    this.invoiceLines = [{ productId: '', quantity: '1' }];
+    this.invoiceLines = [{ kind: 'product', productId: '', quantity: '1', description: '', unitPrice: '' }];
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
