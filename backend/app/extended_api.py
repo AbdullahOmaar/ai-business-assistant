@@ -323,13 +323,22 @@ def patch_supplier(business_id: UUID, supplier_id: UUID, body: SupplierUpdateInp
 @router.get("/purchase-orders")
 def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                          offset: int = Query(default=0, ge=0),
+                         status: str | None = Query(default=None, pattern="^(draft|approved|partially_received|received|cancelled)$"),
+                         supplier_id: UUID | None = None,
                          session: Session = Depends(get_session),
                          principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
         _authorized(session, principal, business_id)
-        orders = session.scalars(select(PurchaseOrder).where(
-            PurchaseOrder.business_id == business_id,
-        ).order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc()).offset(offset).limit(limit)).all()
+        statement = select(PurchaseOrder).where(PurchaseOrder.business_id == business_id)
+        if status is not None:
+            statement = statement.where(PurchaseOrder.status == status)
+        if supplier_id is not None:
+            # Keep supplier filters tenant-scoped; a foreign supplier simply matches no orders.
+            statement = statement.where(PurchaseOrder.supplier_id == supplier_id)
+        orders = session.scalars(
+            statement.order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc())
+            .offset(offset).limit(limit)
+        ).all()
         result = []
         for order in orders:
             lines = session.scalars(select(PurchaseOrderLine).where(
