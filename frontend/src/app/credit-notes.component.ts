@@ -130,7 +130,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
                     <input type="number" [name]="'refundAmount' + note.id" min="0.01" step="0.01" [max]="remainingCredit(note)" [(ngModel)]="refundAmountByNote[note.id]" required [disabled]="refundingNoteId !== null || applyingCredit || loading">
                   </label>
                   <label>{{ language === 'ar' ? 'طريقة الرد' : 'Refund method' }}
-                    <select [name]="'refundMethod' + note.id" [(ngModel)]="refundMethodByNote[note.id]" required [disabled]="refundingNoteId !== null || applyingCredit || loading">
+                    <select [name]="'refundMethod' + note.id" [ngModel]="refundMethodByNote[note.id] || 'cash'" (ngModelChange)="refundMethodByNote[note.id] = $event" required [disabled]="refundingNoteId !== null || applyingCredit || loading">
                       <option value="cash">{{ language === 'ar' ? 'نقدي' : 'Cash' }}</option>
                       <option value="bank">{{ language === 'ar' ? 'تحويل بنكي' : 'Bank transfer' }}</option>
                       <option value="card">{{ language === 'ar' ? 'بطاقة' : 'Card' }}</option>
