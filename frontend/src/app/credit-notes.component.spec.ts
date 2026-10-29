@@ -31,3 +31,17 @@ test('credit notes are reachable through desktop and mobile navigation', () => {
   assert.match(app, /setTab\('credit-notes'\)/);
   assert.match(app, /platform-admin','credit-notes'\]\.includes\(tab\)/);
 });
+
+
+test('return draft creation uses persisted invoice-line identifiers and quantities', () => {
+  assert.match(component, /this\.api\.createSalesReturn\(this\.businessId/);
+  assert.match(component, /invoice_line_id: line\.invoiceLineId, quantity: String\(line\.quantity\)/);
+  assert.match(component, /line\.quantity\) > Number\(line\.invoicedQuantity\)/);
+  assert.match(api, /\/sales-returns`?,? 'POST', body/);
+});
+
+test('return approval is owner-only and remains separate from credit-note issuance', () => {
+  assert.match(component, /if \(this\.role !== 'owner' \|\| ret\.status !== 'draft'/);
+  assert.match(component, /this\.api\.approveSalesReturn\(this\.businessId, ret\.id\)/);
+  assert.match(component, /Return approved\. Credit-note issuance is a separate step\./);
+});
