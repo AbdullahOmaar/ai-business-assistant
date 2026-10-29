@@ -102,6 +102,13 @@ class SupplierInput(BaseModel):
     phone: str | None = Field(default=None, max_length=32)
     address: str | None = Field(default=None, max_length=500)
 
+class SupplierPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    email: str | None = Field(default=None, max_length=254)
+    phone: str | None = Field(default=None, max_length=32)
+    address: str | None = Field(default=None, max_length=500)
+    is_active: bool | None = None
+
 class PurchaseOrderInput(BaseModel):
     supplier_id: UUID
     order_number: str = Field(min_length=1, max_length=64)
@@ -377,6 +384,60 @@ def report_tax_summary(
             "This is an operational summary, not a jurisdiction-specific tax filing.",
         ],
     }
+
+@router.get("/suppliers/{supplier_id}")
+def get_supplier(business_id: UUID, supplier_id: UUID,
+                 session: Session = Depends(get_session),
+                 principal: AuthenticatedPrincipal = Depends(get_principal)):
+    try:
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Supplier).where(
+            Supplier.id == supplier_id, Supplier.business_id == business_id,
+        )).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Supplier not found in this business")
+        return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.patch("/suppliers/{supplier_id}")
+def patch_supplier(business_id: UUID, supplier_id: UUID, body: SupplierPatch,
+                   session: Session = Depends(get_session),
+                   principal: AuthenticatedPrincipal = Depends(get_principal)):
+    def op():
+        _authorized(session, principal, business_id)
+        item = session.scalars(select(Supplier).where(
+            Supplier.id == supplier_id, Supplier.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if item is None:
+            raise WorkflowError("Supplier not found in this business")
+        changes = body.model_dump(exclude_unset=True)
+        if not changes:
+            raise WorkflowError("At least one supplier field must be provided")
+        if "name" in changes:
+            name = (changes["name"] or "").strip()
+            if not name:
+                raise WorkflowError("Supplier name is required")
+            item.name = name
+        for field in ("email", "phone", "address"):
+            if field in changes:
+                value = changes[field]
+                setattr(item, field, value.strip() if value else None)
+        if "is_active" in changes:
+            if changes["is_active"] is None:
+                raise WorkflowError("is_active must be true or false when provided")
+            item.is_active = changes["is_active"]
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="supplier.updated", target_type="supplier",
+            target_id=str(item.id), change_summary="Supplier record updated",
+        ))
+        session.flush()
+        return item
+    item = _commit(session, op)
+    return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
+
 
 @router.post("/purchase-orders", status_code=201)
 def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
