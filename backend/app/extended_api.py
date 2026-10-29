@@ -484,6 +484,62 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                       "currency_code", "total", "created_at"))
 
 
+@router.get("/purchase-orders/{order_id}")
+def get_purchase_order(business_id: UUID, order_id: UUID,
+                      session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Return a tenant-scoped purchase order with supplier/product labels and receipt progress."""
+    try:
+        _authorized(session, principal, business_id)
+        order = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        )).one_or_none()
+        if order is None:
+            raise HTTPException(status_code=404, detail="Purchase order not found in this business")
+
+        supplier = session.scalars(select(Supplier).where(
+            Supplier.id == order.supplier_id,
+            Supplier.business_id == business_id,
+        )).one_or_none()
+        if supplier is None:
+            # Do not return an order with a supplier reference that fails tenant scope.
+            raise HTTPException(status_code=404, detail="Purchase order supplier not found in this business")
+
+        lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == order.id,
+            PurchaseOrderLine.business_id == business_id,
+        ).order_by(PurchaseOrderLine.id)).all()
+        product_ids = {line.product_id for line in lines}
+        products = {
+            product.id: product
+            for product in session.scalars(select(Product).where(
+                Product.business_id == business_id,
+                Product.id.in_(product_ids),
+            )).all()
+        } if product_ids else {}
+        result = _dict(order, (
+            "id", "business_id", "supplier_id", "order_number", "status",
+            "currency_code", "total", "created_at",
+        ))
+        result["supplier"] = _dict(supplier, ("id", "name", "is_active"))
+        result["lines"] = []
+        for line in lines:
+            product = products.get(line.product_id)
+            if product is None:
+                raise HTTPException(status_code=404, detail="Purchase order product not found in this business")
+            result["lines"].append({
+                **_dict(line, ("id", "product_id", "quantity", "unit_cost", "received_quantity")),
+                "product_name": product.name,
+                "sku": product.sku,
+                "unit": product.unit,
+                "remaining_quantity": str(max(ZERO, line.quantity - line.received_quantity)),
+            })
+        return result
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.post("/purchase-orders/{order_id}/approve")
 def approve_purchase_order(business_id: UUID, order_id: UUID,
                            session: Session = Depends(get_session),
