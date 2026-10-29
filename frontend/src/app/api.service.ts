@@ -28,6 +28,8 @@ export interface SalesReturn {
 }
 export interface SalesReturnPage { items: SalesReturn[]; limit: number; offset: number; }
 export interface CreditNotePage { items: CreditNote[]; limit: number; offset: number; }
+export interface CreditApplication { id: string; business_id: string; credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string; applied_by_subject: string; created_at: string; }
+export interface CreditApplicationPage { items: CreditApplication[]; limit: number; offset: number; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
 export interface EmployeeRecord {
@@ -575,6 +577,22 @@ export class ApiService {
     const query = params.toString();
     return this.request<CreditNotePage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes${query ? '?' + query : ''}`);
   }
+  creditApplications(businessId: string, filters: { credit_note_id?: string; invoice_id?: string; limit?: number; offset?: number } = {}): Promise<CreditApplicationPage> {
+    const params = new URLSearchParams();
+    if (filters.credit_note_id) params.set('credit_note_id', filters.credit_note_id);
+    if (filters.invoice_id) params.set('invoice_id', filters.invoice_id);
+    if (filters.limit !== undefined) params.set('limit', String(filters.limit));
+    if (filters.offset !== undefined) params.set('offset', String(filters.offset));
+    const query = params.toString();
+    return this.request<CreditApplicationPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications${query ? '?' + query : ''}`);
+  }
+
+  applyCreditNote(businessId: string, input: { credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string }): Promise<CreditApplication> {
+    return this.request<CreditApplication>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications`, 'POST', input
+    );
+  }
+
   issueCreditNoteForReturn(businessId: string, returnId: string): Promise<CreditNote> {
     return this.request<CreditNote>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/credit-note`, 'POST', {}
