@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, Invoice, InvoiceLine, MembershipRole, Product, StockMovement
+from app.models import AuditEvent, Base, BusinessMembership, Customer, Invoice, InvoiceLine, MembershipRole, Payment, PaymentAllocation, Product, StockMovement
 from app.security import AuthenticatedPrincipal
 
 
@@ -105,6 +105,20 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
         assert invoice.status_code == 201
         invoice_id = invoice.json()["id"]
 
+        def resource_snapshot():
+            with app.state.session_factory() as session:
+                return (
+                    session.query(Customer).count(),
+                    session.query(Product).count(),
+                    session.query(Invoice).count(),
+                    session.query(InvoiceLine).count(),
+                    session.query(Payment).count(),
+                    session.query(PaymentAllocation).count(),
+                    session.query(StockMovement).count(),
+                    session.query(AuditEvent).count(),
+                )
+
+        resource_snapshot_before = resource_snapshot()
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
         protected_reads = [
             f"/api/v1/businesses/{business_id}/customers",
@@ -154,6 +168,10 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
             assert response.status_code == 403, f"Expected 403 for {method.upper()} {path}, got {response.status_code}"
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("resource-owner")
+        assert resource_snapshot() == resource_snapshot_before, (
+            "Unauthorized customer/product/invoice/payment attempts changed persisted rows, "
+            "stock movements, payment allocations, or audit events"
+        )
         assert client.get(f"/api/v1/businesses/{business_id}/customers/{customer_id}").json()["name"] == "Private Customer"
         assert client.get(f"/api/v1/businesses/{business_id}/products/{product_id}").json()["name"] == "Private Product"
         assert client.get(f"/api/v1/businesses/{business_id}/invoices/{invoice_id}").status_code == 200
