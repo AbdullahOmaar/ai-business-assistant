@@ -149,3 +149,45 @@ def summarize_money_by_currency(
             raise ValueError("report amounts cannot be negative")
         totals[currency_code] = money(totals.get(currency_code, ZERO) + amount)
     return dict(sorted(totals.items()))
+
+
+def allocate_tax_amounts(
+    tax_total: Decimal,
+    taxable_amounts: Iterable[tuple[str, Decimal]],
+) -> dict[str, Decimal]:
+    """Allocate the persisted invoice tax total across line taxable bases in cents.
+
+    Largest-remainder allocation guarantees line snapshots reconcile exactly to
+    the invoice header without recomputing or guessing a tax rate later.
+    """
+    total_cents = int(money(Decimal(str(tax_total))) * 100)
+    if total_cents < 0:
+        raise ValueError("tax total cannot be negative")
+    weights: dict[str, int] = {}
+    for key, amount in taxable_amounts:
+        normalized_key = str(key)
+        if normalized_key in weights:
+            raise ValueError("taxable line identifiers must be unique")
+        value = Decimal(str(amount))
+        if value < ZERO:
+            raise ValueError("taxable line amounts cannot be negative")
+        weights[normalized_key] = int(money(value) * 100)
+    if not weights:
+        if total_cents:
+            raise ValueError("cannot allocate non-zero tax without taxable invoice lines")
+        return {}
+    weight_total = sum(weights.values())
+    if weight_total <= 0:
+        if total_cents:
+            raise ValueError("cannot allocate non-zero tax without a taxable base")
+        return {key: ZERO for key in weights}
+
+    shares = {key: (total_cents * weight) // weight_total for key, weight in weights.items()}
+    remainders = [
+        ((total_cents * weight) % weight_total, key)
+        for key, weight in weights.items()
+    ]
+    cents_left = total_cents - sum(shares.values())
+    for _, key in sorted(remainders, key=lambda pair: (-pair[0], pair[1]))[:cents_left]:
+        shares[key] += 1
+    return {key: Decimal(cents) / 100 for key, cents in shares.items()}
