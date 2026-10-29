@@ -79,6 +79,27 @@ def _receivable_outstanding(total: Decimal, allocated: Decimal) -> tuple[Decimal
     return outstanding, outstanding < ZERO
 
 
+def _local_date_utc_bound(day: date, zone: ZoneInfo) -> datetime:
+    """Convert a business-local midnight to UTC without leaking overflow as HTTP 500."""
+    try:
+        return datetime.combine(day, datetime.min.time(), tzinfo=zone).astimezone(timezone.utc)
+    except (OverflowError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Date is outside the supported business-timezone range.",
+        ) from exc
+
+
+def _local_date_end_exclusive_utc(day: date, zone: ZoneInfo) -> datetime:
+    """Return the UTC instant immediately after an inclusive business-local date."""
+    if day == date.max:
+        raise HTTPException(
+            status_code=422,
+            detail="end_date is outside the supported business-timezone range.",
+        )
+    return _local_date_utc_bound(day + timedelta(days=1), zone)
+
+
 class ExpenseInput(BaseModel):
     category: str = Field(min_length=1, max_length=80)
     description: str = Field(min_length=1, max_length=500)
@@ -373,14 +394,10 @@ def report_tax_summary(
         func.count(Invoice.id),
     ).where(Invoice.business_id == business_id, Invoice.status == "issued")
     if start_date:
-        start_bound = datetime.combine(
-            start_date, datetime.min.time(), tzinfo=business_zone,
-        ).astimezone(timezone.utc)
+        start_bound = _local_date_utc_bound(start_date, business_zone)
         statement = statement.where(Invoice.issue_date >= start_bound)
     if end_date:
-        end_bound = datetime.combine(
-            end_date + timedelta(days=1), datetime.min.time(), tzinfo=business_zone,
-        ).astimezone(timezone.utc)
+        end_bound = _local_date_end_exclusive_utc(end_date, business_zone)
         statement = statement.where(Invoice.issue_date < end_bound)
     rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
     return {
@@ -1303,15 +1320,10 @@ def list_expenses(
                     detail="Business timezone must be a valid IANA timezone.",
                 ) from exc
             if start_date:
-                start_bound = datetime.combine(
-                    start_date, datetime.min.time(), tzinfo=business_zone,
-                ).astimezone(timezone.utc)
+                start_bound = _local_date_utc_bound(start_date, business_zone)
                 statement = statement.where(Expense.incurred_at >= start_bound)
             if end_date:
-                end_bound = datetime.combine(
-                    end_date + timedelta(days=1), datetime.min.time(),
-                    tzinfo=business_zone,
-                ).astimezone(timezone.utc)
+                end_bound = _local_date_end_exclusive_utc(end_date, business_zone)
                 statement = statement.where(Expense.incurred_at < end_bound)
 
         items = session.scalars(
