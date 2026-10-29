@@ -316,6 +316,10 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
                 f"{label} expected HTTP {expected_status}; "
                 f"got {response.status_code}: {response.text}"
             )
+            if label in {"PATCH invoice", "VOID invoice"}:
+                # A 422 alone is ambiguous: assert the route rejected the
+                # foreign invoice lookup itself, not a later state/payload rule.
+                assert response.json()["detail"] == "Invoice not found in this business"
 
         audit_a_after = client.get(f"/api/v1/businesses/{business_a_id}/audit-events")
         assert audit_a_after.status_code == 200, audit_a_after.text
