@@ -27,7 +27,7 @@ test('dynamic invoice print values are HTML-escaped before document insertion', 
   assert.match(componentSource, /this\.escapePrintHtml\(detail\.invoice_number\)/);
   assert.match(componentSource, /this\.escapePrintHtml\(detail\.notes\)/);
   assert.match(componentSource, /this\.escapePrintHtml\(this\.business\.name\)/);
-  assert.match(componentSource, /escapePrintHtml\(value: string\): string/);
+  assert.match(componentSource, /escapePrintHtml\(value: unknown\): string/);
 });
 
 test('invoice print uses the current language direction and excludes action controls from printed output', () => {
