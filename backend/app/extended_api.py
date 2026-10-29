@@ -782,12 +782,31 @@ def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
             raise WorkflowError("Credit note must reference an issued invoice")
         if invoice.customer_id is None:
             raise WorkflowError("Credit note requires an invoice linked to a customer")
-        if invoice.tax_total != ZERO:
+        return_lines = session.scalars(select(SalesReturnLine).where(
+            SalesReturnLine.sales_return_id == ret.id,
+            SalesReturnLine.business_id == business_id,
+        )).all()
+        source_line_ids = [line.invoice_line_id for line in return_lines]
+        source_lines = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.business_id == business_id,
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.id.in_(source_line_ids),
+        )).all() if source_line_ids else []
+        if invoice.tax_total > ZERO and (
+            invoice.tax_rate is None
+            or ret.tax_total is None
+            or any(line.taxable_amount is None or line.tax_amount is None for line in source_lines)
+        ):
             raise WorkflowError(
-                "Credit note issuance is blocked for invoices with tax until tax is allocated to return lines"
+                "Credit note issuance is blocked because the original tax invoice lacks complete line-level tax snapshots"
             )
-        if ret.total <= ZERO:
+        subtotal = money(sum((Decimal(str(line.amount)) for line in return_lines), ZERO))
+        tax_total = money(Decimal(str(ret.tax_total or ZERO)))
+        total = money(subtotal + tax_total)
+        if ret.total <= ZERO or total <= ZERO:
             raise WorkflowError("A credit note requires a positive approved return total")
+        if money(Decimal(str(ret.total))) != total:
+            raise WorkflowError("Approved return total does not reconcile to its persisted line tax allocation")
 
         note = CreditNote(
             business_id=business_id,
@@ -796,7 +815,9 @@ def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
             customer_id=invoice.customer_id,
             credit_note_number=f"CN-{ret.id.hex[:24].upper()}",
             currency_code=invoice.currency_code,
-            total=money(Decimal(str(ret.total))),
+            subtotal=subtotal,
+            tax_total=tax_total,
+            total=total,
             created_by_subject=principal.subject,
         )
         session.add(note)
@@ -815,7 +836,7 @@ def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
 
     return _dict(note, (
         "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
-        "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+        "credit_note_number", "currency_code", "subtotal", "tax_total", "total", "created_by_subject", "created_at",
     ))
 
 
@@ -870,7 +891,7 @@ def list_credit_notes(business_id: UUID, limit: int = Query(default=50, ge=1, le
         refunded = refunded_by_note.get(note.id, ZERO)
         item = _dict(note, (
             "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
-            "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+            "credit_note_number", "currency_code", "subtotal", "tax_total", "total", "created_by_subject", "created_at",
         ))
         item["applied_total"] = str(applied)
         item["refunded_total"] = str(refunded)
