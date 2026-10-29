@@ -595,8 +595,10 @@ This checkpoint supersedes older entries below where they describe PR #161/#166 
 - Required validation: backend tests against supported PostgreSQL behavior (including concurrent duplicate/over-return attempts), plus existing SQLite unit coverage where applicable. Do not mark VERIFIED from source inspection alone.
 
 ### FIN-REPORT-003 — Financial report reconciliation contract
-- Status: TODO.
-- Add fixtures covering invoice-only, partial payment, fully paid, approved return, expense, mixed currencies, business-local date boundaries, and DST transitions.
+- Status: IN PROGRESS — regression tests added; exact-head validation pending.
+- Added `backend/tests/test_financial_report_reconciliation.py` with invoice-only/draft exclusion and partial/full payment reconciliation across EGP/USD, including expenses and outstanding balances.
+- Tests/build/security: NOT RUN in this connector-only execution; exact-head CircleCI must be observed before treating coverage as verified.
+- Remaining fixtures: approved return assertions in the reconciliation scenario, DST/business-local half-open UTC edge cases, and any missing authorization/tenant-isolation coverage.
 - Assert dashboard invoiced sales, collected payments, expenses, outstanding balances, and profit/loss remain distinct measures; no currency aggregation/conversion; date filtering is business-local and half-open in UTC.
 - Report names must not imply net profit until COGS and the approved return/tax treatment are represented. Keep explicit limitations until the required ledgers exist.
 
