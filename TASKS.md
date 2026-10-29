@@ -1564,3 +1564,21 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Current test-file commit:** `3e538af73bb0b8d2b00f388cdde2989af5997846`. Ledger/PR evidence to be updated after the next commit.
 - **Validation:** Exact-head CI for the replacement test is **NOT RUN / pending recheck** at this checkpoint. Local pytest/build/security are **NOT RUN** because no authorized local repo runtime is connected.
 - **Dependency:** T37 shared contract remains unapproved; no shared schema or financial mutation interfaces changed. No merge/deployment.
+
+
+## T38 Sales-to-Cash five-feature package — 2026-10-29
+
+- **Status:** PARTIALLY COMPLETE — five coordinated user-facing feature slices have been implemented in the existing T38 branch; automated verification is intentionally NOT RUN at the user's direction while the CI/usage-limit blocker remains unresolved.
+- **Branch:** `test/t38-cross-tenant-payment-allocation-20261029`
+- **Latest observed commit:** `c19fb0b9eef41d8d715c745ca8e1dd03df6e6125`
+- **PR:** [#305](https://github.com/AbdullahOmaar/ai-business-assistant/pull/305), OPEN / DRAFT / UNMERGED.
+- **Feature 1 — invoice print breakdown:** print / Save as PDF displays subtotal, discount, tax, and final total in Arabic RTL and English LTR. Source commit: `add0fb1aebca7b032a323fdf0662d5c647ed496e`.
+- **Feature 2 — manual invoice/service lines:** invoice draft editor accepts catalog products and manual lines with description, unit price, and quantity; client preview supports both, saved drafts load manual lines back for editing, and product-line descriptions are preserved. API client contract updated to match the already-existing backend line schema. Source commits: `771af35f96497cf02bfa4ffc3aa0bb4cf05e98d6`, `08511ee88e2050b78cdaa3519927591f21f1a05d`; user guide updated at `7bf26d3b5a8fa3c14d715afa608256c5a554b4fa`.
+- **Feature 3 — multi-invoice payment allocation:** one receipt can be allocated to multiple issued invoices for the selected customer, using the existing `allocations[]` API contract; invoice options are limited to issued, outstanding invoices in the workspace currency. Selecting invoice from the existing invoice screen now pre-populates the allocation row.
+- **Feature 4 — allocation guardrails and summary:** monetary totals use integer cents in the UI; duplicate invoice allocation, mismatched customer/currency/status, allocation above invoice outstanding, invalid amount precision, and aggregate allocation exceeding the receipt are blocked client-side. The backend remains authoritative. Source commits: `13d25393175fd8933664c3a10e1b882e92c6373c`, `edf3974b35894c75f12bb333bc74d12754d3a7d6`.
+- **Feature 5 — payment history details:** history lists each allocated invoice and amount and shows the received amount not allocated to invoices, without claiming any general-ledger treatment for that remainder.
+- **Feature catalogue:** Arabic/English user-facing feature notes updated in `frontend/src/app/release-guide.ts`; latest documentation commit `c19fb0b9eef41d8d715c745ca8e1dd03df6e6125`.
+- **Validation:** Tests, lint/type checks, Angular build, backend build, dependency/security checks, and hosted workflow reruns are **NOT RUN** in this feature pass, per instruction to pause tests while the usage/CI limit issue is unresolved. Source files were re-fetched from the branch and checked for the new code paths/old single-invoice state references; this source review is not a substitute for compilation or automated checks.
+- **Financial guard:** T37 shared financial contract remains unapproved. No refunds, credit notes, shared schema/mutation interfaces, migrations, or accounting postings were changed. Currency conversion is not introduced.
+- **Delivery:** no merge, deployment, or production data change was authorized or performed. Do not merge until automated checks pass on the exact PR head and all required approvals/release gates are satisfied.
+- **Next action:** when the CI/usage limit is resolved, run frontend tests/build and relevant backend payment/invoice regressions against exact head `c19fb0b9eef41d8d715c745ca8e1dd03df6e6125`; fix verified failures and recheck the full diff before review/merge.
