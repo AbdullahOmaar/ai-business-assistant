@@ -1204,7 +1204,7 @@ export class AppComponent implements OnInit {
     document.documentElement.lang = this.language;
     document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
     try {
-      let config;
+      let config: Awaited<ReturnType<AuthService['getRuntimeConfig']>>;
       try {
         config = await this.auth.getRuntimeConfig();
       } catch (error) {
