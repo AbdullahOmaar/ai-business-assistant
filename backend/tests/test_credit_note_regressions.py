@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.extended_api import (
     CashRefundInput, CreditApplicationInput, apply_credit_note, approve_sales_return, create_cash_refund,
     customer_statement, issue_credit_note_for_return, list_credit_applications,
-    list_cash_refunds, list_credit_notes, list_invoices, list_sales_returns, receivables_aging,
+    list_cash_refunds, list_credit_notes, list_invoices, list_sales_returns, receivables_aging, report_tax_summary,
 )
 from app.models import (
     AuditEvent, Base, Business, BusinessMembership, CashRefund, CreditApplication, CreditNote, Invoice, Payment, PaymentAllocation,
