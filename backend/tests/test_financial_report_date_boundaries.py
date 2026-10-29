@@ -283,3 +283,25 @@ def test_non_member_cannot_read_expenses_or_tax_summary_with_date_filters():
         assert tax_summary.status_code == 403
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_receivables_aging_default_uses_business_local_date_not_utc_date():
+    """A request late in UTC day must use the next date for Africa/Cairo."""
+    from unittest.mock import patch
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            fixed_utc = datetime(2026, 1, 15, 23, 30, tzinfo=timezone.utc)
+            return fixed_utc.astimezone(tz) if tz is not None else fixed_utc.replace(tzinfo=None)
+
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with patch("app.extended_api.datetime", FrozenDateTime):
+            response = client.get(f"/api/v1/businesses/{business_id}/reports/receivables-aging")
+        assert response.status_code == 200, response.text
+        assert response.json()["as_of_date"] == "2026-01-16"
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
