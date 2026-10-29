@@ -33,6 +33,21 @@ These are newly identified tasks from source/test inspection. They are NOT marke
 - **Task 20 progress:** `test_employee_payroll_audit_summaries_exclude_sensitive_values` now exercises create/update audit summaries with original and changed email/phone values plus payroll salary/allowance/bonus values; it asserts all three summaries exclude those sensitive values. Strengthened in commits `f970be5d4162bae4c0ec3ca052300dd6364619eb` and `d3c5324a5abe0221ca91143f4eb9c6db9185d97c`. Test committed but NOT RUN; broader logs/chat/STAFF-report review remains open.
 - **Current state:** tasks 16–18 and 20 are identified only; NOT STARTED / NOT RUN. Task 19 is PARTIALLY COMPLETE (test added, execution NOT RUN). Do not add new CI infrastructure or bypass existing CircleCI gates. Any concurrency claim requires a real PostgreSQL run, not SQLite-only tests.
 
+## T41 — Five additional feature-quality workstreams (2026-10-30)
+
+All five workstreams below are test-only regressions on the existing T41 branch. They do not change runtime behavior, database schema, payroll policy, or shared T37/T40 contracts. Tests are committed but execution is NOT RUN pending an authorized runner / exact-head CI.
+
+21. **Employee identity integrity on updates — PARTIALLY IMPLEMENTED:** duplicate employee code/email updates must return 409 and preserve employee rows and audit counts.
+22. **Employee directory pagination and active-state filtering — PARTIALLY IMPLEMENTED:** stable name-ordered pages and active_only=true must exclude inactive employees without changing the unfiltered directory.
+23. **Payroll listing filters and pagination — PARTIALLY IMPLEMENTED:** period filtering and stable ordering across pages must return the correct employee/period rows.
+24. **Payroll approval lifecycle and separation of duties — PARTIALLY IMPLEMENTED:** creator self-approval is denied; a different OWNER can approve; repeated approval is rejected without changing approval metadata, expense rows, or audit count.
+25. **Atomic payroll payment rollback — PARTIALLY IMPLEMENTED:** inject failure while writing payroll.paid audit and assert the transaction leaves payroll approved/unpaid with no linked/orphan expense and no paid audit event.
+
+- **Implementation evidence:** five focused tests added to backend/tests/test_employee_payroll_api.py in commit 0f346eaf7fe77465490330fbc529e1a087bd8324; timezone-robust approval timestamp assertion corrected in 85fbcfe8c41fc68bbaddd63b369d2a035fb16989.
+- **Verification:** NOT RUN on the latest branch HEAD. These are source-level test additions only; no runtime fix is claimed and no PostgreSQL concurrency behavior is claimed.
+- **Next:** execute the focused employee/payroll test file and full backend accounting suite on exact HEAD, then diagnose/re-run all CircleCI contexts once credits/runner are available. Keep merge/deploy untouched.
+
+
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
