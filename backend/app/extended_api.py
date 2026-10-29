@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
-    AuditEvent, BusinessSetting, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
+    AuditEvent, BusinessSetting, CreditApplication, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
@@ -143,6 +143,13 @@ class PricingRuleInput(BaseModel):
 
 class SettingInput(BaseModel):
     setting_value: str = Field(max_length=1000)
+
+
+class CreditApplicationInput(BaseModel):
+    credit_note_id: UUID
+    invoice_id: UUID
+    amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    idempotency_key: str = Field(min_length=1, max_length=128)
 
 
 class CustomerPatch(BaseModel):
@@ -775,6 +782,138 @@ def list_credit_notes(business_id: UUID, limit: int = Query(default=50, ge=1, le
             "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
             "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
         )) for note in notes],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post("/credit-applications", status_code=201)
+def apply_credit_note(business_id: UUID, body: CreditApplicationInput,
+                      session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Apply an issued credit note to an eligible receivable; never records a cash refund."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+
+        replay = session.scalars(select(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+            CreditApplication.idempotency_key == body.idempotency_key,
+        ).with_for_update()).one_or_none()
+        if replay is not None:
+            if (
+                replay.credit_note_id != body.credit_note_id
+                or replay.invoice_id != body.invoice_id
+                or Decimal(str(replay.amount)) != money(body.amount)
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency key was already used for a different credit application",
+                )
+            return replay
+
+        note = session.scalars(select(CreditNote).where(
+            CreditNote.id == body.credit_note_id,
+            CreditNote.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if note is None:
+            raise WorkflowError("Credit note not found in this business")
+
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == body.invoice_id,
+            Invoice.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Credit can only be applied to an issued invoice")
+        if invoice.customer_id is None or invoice.customer_id != note.customer_id:
+            raise WorkflowError("Credit note and invoice must belong to the same customer")
+        if invoice.currency_code.strip().upper() != note.currency_code.strip().upper():
+            raise WorkflowError("Credit note and invoice currencies must match")
+
+        amount = money(body.amount)
+        if amount <= ZERO:
+            raise WorkflowError("Credit application amount must be positive")
+
+        applied_to_note = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(CreditApplication.amount), 0)).where(
+                CreditApplication.business_id == business_id,
+                CreditApplication.credit_note_id == note.id,
+            )
+        ) or ZERO))
+        note_remaining = money(Decimal(str(note.total)) - applied_to_note)
+        if amount > note_remaining:
+            raise WorkflowError("Credit application exceeds the remaining credit note balance")
+
+        paid_to_invoice = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(PaymentAllocation.amount), 0)).where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.invoice_id == invoice.id,
+            )
+        ) or ZERO))
+        applied_to_invoice = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(CreditApplication.amount), 0)).where(
+                CreditApplication.business_id == business_id,
+                CreditApplication.invoice_id == invoice.id,
+            )
+        ) or ZERO))
+        invoice_remaining = money(Decimal(str(invoice.total)) - paid_to_invoice - applied_to_invoice)
+        if amount > invoice_remaining:
+            raise WorkflowError("Credit application exceeds the invoice's outstanding receivable")
+
+        application = CreditApplication(
+            business_id=business_id,
+            credit_note_id=note.id,
+            invoice_id=invoice.id,
+            amount=amount,
+            idempotency_key=body.idempotency_key,
+            applied_by_subject=principal.subject,
+        )
+        session.add(application)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="credit_note.applied",
+            target_type="credit_application",
+            target_id=str(application.id),
+        ))
+        session.flush()
+        return application
+
+    application = _commit(session, op)
+    return _dict(application, (
+        "id", "business_id", "credit_note_id", "invoice_id", "amount",
+        "idempotency_key", "applied_by_subject", "created_at",
+    ))
+
+
+@router.get("/credit-applications")
+def list_credit_applications(
+    business_id: UUID,
+    credit_note_id: UUID | None = Query(default=None),
+    invoice_id: UUID | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List applied credits inside one business; this is not a cash-refund ledger."""
+    _authorized(session, principal, business_id)
+    statement = select(CreditApplication).where(
+        CreditApplication.business_id == business_id
+    )
+    if credit_note_id is not None:
+        statement = statement.where(CreditApplication.credit_note_id == credit_note_id)
+    if invoice_id is not None:
+        statement = statement.where(CreditApplication.invoice_id == invoice_id)
+    items = session.scalars(
+        statement.order_by(CreditApplication.created_at.desc(), CreditApplication.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(item, (
+            "id", "business_id", "credit_note_id", "invoice_id", "amount",
+            "idempotency_key", "applied_by_subject", "created_at",
+        )) for item in items],
         "limit": limit,
         "offset": offset,
     }
