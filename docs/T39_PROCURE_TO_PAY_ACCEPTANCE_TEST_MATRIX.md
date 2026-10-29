@@ -60,7 +60,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-30 | Member reads PO summary across multiple currencies and statuses | Counts and totals are grouped by status AND currency; no cross-currency aggregate is returned; tenant scope is enforced | Financial display integrity invariant |
 | T39-31 | Member reads PO activity timeline for own and foreign-business order IDs | Timeline returns only that PO's tenant-scoped audit events in stable chronological order; foreign order returns not-found | Audit visibility and tenant isolation invariant |
 | T39-32 | Create or edit a PO using an order number already used by another PO in the same business; reuse a number used only by another business | Same-business duplicate is rejected with a clear validation error before writes; cross-business identical numbers remain isolated; database uniqueness remains the concurrency backstop | Tenant-scoped identifier integrity |
-| T39-33 | API regression for duplicate PO number on create and draft edit | Same-business duplicate create/edit returns validation error with order/line/audit snapshots unchanged; another business may use the same number | Contract-independent API regression; execution pending |
+| T39-34 | API regression for duplicate PO number on create and draft edit | Same-business duplicate create/edit returns validation error with order/line/audit snapshots unchanged; another business may use the same number | Contract-independent API regression; execution pending |
 | T39-33 | OWNER exports purchase orders as CSV; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells are escaped | Data portability and spreadsheet injection safety |
 | T39-34 | OWNER exports supplier directory as CSV including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
 
@@ -137,7 +137,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 
 ## T39 duplicate order-number API regression — 2026-10-29
 
-- Added `backend/tests/test_api.py::test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit`.
+- Added `backend/tests/test_api.py::test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit` (acceptance scenario T39-34; T39-33 is reserved for PO CSV export).
 - The API regression checks same-business duplicate creation is rejected without changing purchase-order or audit counts; identical numbers are accepted in a second business; and draft editing to another same-business order's number is rejected without changing the original order number, line count, or audit count.
 - Existing `UniqueConstraint("business_id", "order_number")` remains the database concurrency backstop; the route preflight supplies a clear validation response but is not a substitute for that constraint.
 - The test was authored but **NOT RUN** per owner instruction. No passing test claim is made.
