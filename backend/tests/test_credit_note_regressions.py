@@ -984,3 +984,26 @@ def test_partial_return_tax_rounding_never_exceeds_original_line_tax(credit_note
         ]
         assert sum((Decimal(note["tax_total"]) for note in notes), Decimal("0.00")) == Decimal("0.05")
         assert sum((Decimal(note["total"]) for note in notes), Decimal("0.00")) == Decimal(str(invoice.total))
+
+
+def test_tax_summary_nets_issued_credit_note_tax_reversals_by_currency(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        _, ret = _issued_invoice_and_return(
+            session, business_id, principal, taxable=True,
+        )
+        issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        report = report_tax_summary(
+            business_id=business_id, start_date=None, end_date=None,
+            session=session, principal=principal,
+        )
+        egp = next(row for row in report["currencies"] if row["currency_code"] == "EGP")
+        assert Decimal(egp["invoice_tax_total"]) == Decimal("2.00")
+        assert Decimal(egp["credit_note_tax_reversed"]) == Decimal("1.00")
+        assert Decimal(egp["tax_total"]) == Decimal("1.00")
+        assert egp["invoice_count"] == 1
+        assert egp["credit_note_count"] == 1
