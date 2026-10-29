@@ -983,3 +983,113 @@ def test_payment_audit_failure_rolls_back_expense_and_paid_transition(employee_e
             )
         ).all()
         assert sorted(actions) == ["payroll.approved", "payroll.created"]
+
+
+
+def test_employee_update_rejects_invalid_values_without_side_effects(employee_environment):
+    env = employee_environment
+    created = _create_employee(env)
+    assert created.status_code == 201
+    employee_id = created.json()["id"]
+    base = f"/api/v1/businesses/{env['business_id']}"
+    invalid_payloads = [{}, {"name": "   "}, {"monthly_salary": None}, {"is_active": None}]
+    for payload in invalid_payloads:
+        response = env["client"].patch(f"{base}/employees/{employee_id}", json=payload)
+        assert response.status_code == 422, (payload, response.status_code, response.text)
+    with app.state.session_factory() as session:
+        employee = session.get(Employee, UUID(employee_id))
+        assert employee is not None
+        assert employee.name == "Mona Ali"
+        assert employee.monthly_salary == Decimal("5000.00")
+        assert employee.is_active is True
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.target_type == "employee"
+        )) == 1
+
+
+def test_employee_update_duplicate_email_and_code_rejected_without_side_effects(employee_environment):
+    env = employee_environment
+    first = _create_employee(env, name="First", code="EMP-1", email="first@example.test")
+    second = _create_employee(env, name="Second", code="EMP-2", email="second@example.test")
+    assert first.status_code == second.status_code == 201
+    base = f"/api/v1/businesses/{env['business_id']}"
+    attempts = [
+        (first.json()["id"], {"employee_code": "emp-2"}),
+        (first.json()["id"], {"email": "SECOND@example.test"}),
+    ]
+    for employee_id, payload in attempts:
+        before = env["client"].get(f"{base}/employees").json()
+        response = env["client"].patch(f"{base}/employees/{employee_id}", json=payload)
+        assert response.status_code == 409, (payload, response.status_code, response.text)
+        assert env["client"].get(f"{base}/employees").json() == before
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.action == "employee.updated"
+        )) == 0
+
+
+def test_employee_directory_pagination_is_stable_and_bounded(employee_environment):
+    env = employee_environment
+    for name, code, email in [
+        ("Charlie", "EMP-C", "c@example.test"),
+        ("Alice", "EMP-A", "a@example.test"),
+        ("Bravo", "EMP-B", "b@example.test"),
+    ]:
+        response = _create_employee(env, name=name, code=code, email=email)
+        assert response.status_code == 201
+    base = f"/api/v1/businesses/{env['business_id']}/employees"
+    first_page = env["client"].get(f"{base}?limit=2&offset=0")
+    second_page = env["client"].get(f"{base}?limit=2&offset=2")
+    assert first_page.status_code == second_page.status_code == 200
+    assert [row["name"] for row in first_page.json()] == ["Alice", "Bravo"]
+    assert [row["name"] for row in second_page.json()] == ["Charlie"]
+    assert env["client"].get(f"{base}?limit=201").status_code == 422
+    assert env["client"].get(f"{base}?offset=-1").status_code == 422
+
+
+def test_payroll_listing_filters_period_and_paginates_stably(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    for period in ["2026-08", "2026-09", "2026-10"]:
+        created = env["client"].post(
+            f"{base}/employees/{employee['id']}/payroll", json={"period": period}
+        )
+        assert created.status_code == 201
+    all_rows = env["client"].get(f"{base}/payroll?limit=2&offset=0")
+    next_page = env["client"].get(f"{base}/payroll?limit=2&offset=2")
+    filtered = env["client"].get(f"{base}/payroll?period=2026-09")
+    assert all_rows.status_code == next_page.status_code == filtered.status_code == 200
+    assert [row["period"] for row in all_rows.json()] == ["2026-10", "2026-09"]
+    assert [row["period"] for row in next_page.json()] == ["2026-08"]
+    assert [row["period"] for row in filtered.json()] == ["2026-09"]
+    assert env["client"].get(f"{base}/payroll?period=2026-13").status_code == 422
+
+
+def test_reapproving_payroll_is_rejected_without_duplicate_audit(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-11"}
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    before = approved.json()
+    duplicate = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert duplicate.status_code == 409
+    with app.state.session_factory() as session:
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None
+        assert persisted.status == "approved"
+        assert persisted.approved_by_subject == before["approved_by_subject"]
+        assert persisted.approved_at is not None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        assert session.scalars(select(AuditEvent.action).where(
+            AuditEvent.target_type == "payroll"
+        ).order_by(AuditEvent.created_at, AuditEvent.action)).all() == [
+            "payroll.created", "payroll.approved"
+        ]
