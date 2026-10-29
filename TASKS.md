@@ -1556,11 +1556,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 ## T38 sales-to-cash security regression — 2026-10-29
 
-- **Status:** PARTIALLY COMPLETE — added a regression test only; full lifecycle implementation remains blocked on the Master-approved T37 shared financial contract.
+- **Status:** PARTIALLY COMPLETE — focused API regression coverage added; full sales-to-cash lifecycle remains gated on Master approval of T37 shared financial contract.
 - **Branch:** `test/t38-cross-tenant-payment-allocation-20261029`
-- **Test:** `backend/tests/test_api.py::test_payment_allocation_rejects_foreign_business_invoice_without_side_effects`
-- **Coverage:** An OWNER authenticated for one business attempts to allocate a payment to an issued invoice belonging to another business. The API must reject the request (422) and persist no Payment, PaymentAllocation, or AuditEvent for the local business.
-- **Commits:** `934d85d21ba0a072ceb5b6861ea5c423e9839a05` (test) and `2e07a4f2757edf0cade826fd131dcb3c5cd723b0` (ledger update).
-- **Exact-head CI:** VERIFIED PASS on `2e07a4f2757edf0cade826fd131dcb3c5cd723b0`: six substantive CircleCI checks plus `verify-all-changes/all-checks-passed` succeeded (7/7).
-- **Runtime tests/build/security:** NOT RUN locally in this connector-only environment; CI passed on the exact recorded head.
-- **Dependency:** T37 shared contract remains unapproved; no shared schema/mutation behavior changed. No merge/deployment.
+- **Superseded duplicate:** The earlier cross-business payment allocation test duplicated `backend/tests/test_foreign_business_workflows.py::test_owner_cannot_mutate_foreign_business_financial_and_stock_ids`, already present on main and covering 422 + no protected-row/payment/allocation/audit side effects. Removed from the branch in favor of the uncovered API idempotency-replay case.
+- **Current test:** `backend/tests/test_api.py::test_payment_api_rejects_idempotency_key_reuse_with_changed_payload_without_writes`.
+- **Coverage:** Record a valid payment, replay the same business-scoped idempotency key with changed amount/allocation, require HTTP 422 with the different-details error, and verify the original Payment and PaymentAllocation remain unchanged, no duplicate rows appear, and the business AuditEvent count does not increase.
+- **Current test-file commit:** `3e538af73bb0b8d2b00f388cdde2989af5997846`. Ledger/PR evidence to be updated after the next commit.
+- **Validation:** Exact-head CI for the replacement test is **NOT RUN / pending recheck** at this checkpoint. Local pytest/build/security are **NOT RUN** because no authorized local repo runtime is connected.
+- **Dependency:** T37 shared contract remains unapproved; no shared schema or financial mutation interfaces changed. No merge/deployment.
