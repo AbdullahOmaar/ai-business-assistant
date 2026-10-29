@@ -1103,6 +1103,24 @@ def create_cash_refund(
                 raise WorkflowError("Original payment must belong to the credit note customer")
             if payment.currency_code.strip().upper() != note.currency_code.strip().upper():
                 raise WorkflowError("Original payment currency must match the credit note")
+            linked_to_original_invoice = session.scalar(
+                select(func.count()).select_from(PaymentAllocation)
+                .join(
+                    Invoice,
+                    (Invoice.id == PaymentAllocation.invoice_id)
+                    & (Invoice.business_id == PaymentAllocation.business_id),
+                )
+                .where(
+                    PaymentAllocation.business_id == business_id,
+                    PaymentAllocation.payment_id == payment.id,
+                    PaymentAllocation.invoice_id == note.invoice_id,
+                    Invoice.business_id == business_id,
+                    func.upper(func.trim(Invoice.currency_code))
+                    == func.upper(func.trim(payment.currency_code)),
+                )
+            ) or 0
+            if not linked_to_original_invoice:
+                raise WorkflowError("Original payment must be allocated to the credit note's invoice")
             allocated = Decimal(str(session.scalar(
                 select(func.coalesce(func.sum(PaymentAllocation.amount), 0))
                 .select_from(PaymentAllocation)
