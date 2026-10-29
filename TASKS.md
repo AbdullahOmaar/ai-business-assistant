@@ -1552,3 +1552,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+## T38 sales-to-cash security regression — 2026-10-29
+
+- **Status:** PARTIALLY COMPLETE — added a regression test only; full lifecycle implementation remains blocked on the Master-approved T37 shared financial contract.
+- **Branch:** `test/t38-cross-tenant-payment-allocation-20261029`
+- **Test:** `backend/tests/test_api.py::test_payment_allocation_rejects_foreign_business_invoice_without_side_effects`
+- **Coverage:** An OWNER authenticated for one business attempts to allocate a payment to an issued invoice belonging to another business. The API must reject the request (422) and persist no Payment, PaymentAllocation, or AuditEvent for the local business.
+- **Commit:** `934d85d21ba0a072ceb5b6861ea5c423e9839a05` (test file commit; exact-head CI pending at time of this note).
+- **Runtime tests/build/security:** NOT RUN locally in this connector-only environment. Do not mark verified until exact-head CI is observed.
+- **Dependency:** T37 shared contract remains unapproved; no shared schema/mutation behavior changed. No merge/deployment.
