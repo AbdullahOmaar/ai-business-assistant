@@ -76,3 +76,11 @@ test('failed customer-filter refresh does not leave stale credit-note results vi
   assert.match(component, /Never show a previous customer's result/);
   assert.match(component, /this\.notes = \[\]/);
 });
+
+test('credit-note listing supports guarded offset pagination without duplicate rows', () => {
+  assert.match(component, /notesHasMore = false/);
+  assert.match(component, /limit: 100, offset, customer_id: requestedCustomerId \|\| undefined/);
+  assert.match(component, /const existingIds = new Set\(this\.notes\.map\(note => note\.id\)\)/);
+  assert.match(component, /requestedCustomerId !== this\.selectedCustomerId/);
+  assert.match(component, /\(click\)="loadMoreCreditNotes\(\)"/);
+});
