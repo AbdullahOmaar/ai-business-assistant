@@ -231,6 +231,7 @@ def post_expense(business_id: UUID, body: ExpenseInput,
 @router.get("/suppliers")
 def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                   offset: int = Query(default=0, ge=0), include_inactive: bool = False,
+                  name: str | None = Query(default=None, max_length=160),
                   session: Session = Depends(get_session),
                   principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
@@ -238,6 +239,9 @@ def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=2
         statement = select(Supplier).where(Supplier.business_id == business_id)
         if not include_inactive:
             statement = statement.where(Supplier.is_active.is_(True))
+        search_name = name.strip() if name else ""
+        if search_name:
+            statement = statement.where(Supplier.name.ilike(f"%{search_name}%"))
         items = session.scalars(
             statement.order_by(Supplier.name, Supplier.id).offset(offset).limit(limit)
         ).all()
