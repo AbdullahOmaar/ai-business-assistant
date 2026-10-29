@@ -50,7 +50,7 @@ E. Resume tests and exact-head CI only after the user clears the current testing
 ## Feature 31 UI/API checkpoint — 2026-10-29
 
 - Added `GET /api/v1/businesses/{business_id}/sales-returns` with membership authorization, status filter, stable newest-first ordering, and bounded pagination.
-- Added Angular `salesReturns()` client contract and standalone bilingual credit-note workspace.
+- Added Angular `salesReturns()` client contract and standalone bilingual credit-note workspace. The component now invalidates stale workspace-refresh and invoice-detail responses to prevent old selections from overwriting current UI state; source-level regression assertions were added.
 - UI validates return quantities, lets workspace members create drafts, and exposes approval/issuance controls only to OWNER. The API's authorization and quantity checks remain authoritative. The component is deferred into a lazy chunk (21.23 kB).
 - UI explicitly states that a credit note is not a cash refund and does not mutate the original invoice. Tax-bearing invoices remain blocked until line-level tax allocation is implemented.
 - Focused backend tests: 8 passed in an assembled sandbox with selected branch source files refreshed; not a full checkout. Frontend unit tests: 58 passed. Angular production build: PASS; measured initial bundle 709.13 kB (9.13 kB above the 700 kB target), with existing optional-chain warnings. `prebuild` could not determine a commit SHA because the sandbox had no `.git`.
