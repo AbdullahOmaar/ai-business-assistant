@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import (
-    AuditEvent, Business, BusinessMembership, Expense, Invoice, MembershipRole,
+    AuditEvent, Business, BusinessMembership, CreditNote, Expense, Invoice, MembershipRole,
     Payment, PaymentAllocation, SalesReturn,
 )
 from app.security import (
@@ -501,10 +501,9 @@ def profit_loss(
     revenue_rows = session.execute(invoice_query.group_by(Invoice.currency_code)).all()
     expense_rows = session.execute(expense_query.group_by(Expense.currency_code)).all()
 
-    # Returns are shown separately and are deliberately not netted from revenue:
-    # the schema does not yet allocate tax/discounts or link credit notes/refunds.
-    # Period membership follows the original invoice issue date, not return creation
-    # time, because the model does not persist an approval timestamp.
+    # Approved returns remain a separate operational measure. Issued credit notes
+    # reduce gross invoice activity on their own issuance date; this avoids silently
+    # treating a draft/approved return as a posted financial credit.
     return_query = select(
         Invoice.currency_code,
         func.count(SalesReturn.id),
@@ -523,26 +522,47 @@ def profit_loss(
         return_query = return_query.where(Invoice.issue_date < end_ts)
     return_rows = session.execute(return_query.group_by(Invoice.currency_code)).all()
 
+    credit_note_query = select(
+        CreditNote.currency_code,
+        func.count(CreditNote.id),
+        func.coalesce(func.sum(CreditNote.total), 0),
+    ).where(CreditNote.business_id == business_id)
+    if start_ts is not None:
+        credit_note_query = credit_note_query.where(CreditNote.created_at >= start_ts)
+    if end_ts is not None:
+        credit_note_query = credit_note_query.where(CreditNote.created_at < end_ts)
+    credit_note_rows = session.execute(
+        credit_note_query.group_by(CreditNote.currency_code)
+    ).all()
+
     revenue = {currency: (int(count), Decimal(str(total))) for currency, count, total in revenue_rows}
     expenses = {currency: (int(count), Decimal(str(total))) for currency, count, total in expense_rows}
     approved_returns = {
         currency: (int(count), Decimal(str(total))) for currency, count, total in return_rows
     }
-    currencies = sorted(set(revenue) | set(expenses) | set(approved_returns))
+    credit_notes = {
+        currency: (int(count), Decimal(str(total))) for currency, count, total in credit_note_rows
+    }
+    currencies = sorted(set(revenue) | set(expenses) | set(approved_returns) | set(credit_notes))
     rows = []
     for currency in currencies:
         revenue_count, revenue_total = revenue.get(currency, (0, Decimal("0")))
         expense_count, expense_total = expenses.get(currency, (0, Decimal("0")))
         return_count, return_total = approved_returns.get(currency, (0, Decimal("0")))
+        credit_note_count, credit_note_total = credit_notes.get(currency, (0, Decimal("0")))
+        net_revenue_after_credit_notes = revenue_total - credit_note_total
         rows.append({
             "currency_code": currency,
             "revenue": str(revenue_total),
             "revenue_invoice_count": revenue_count,
             "approved_return_total": str(return_total),
             "approved_return_count": return_count,
+            "credit_note_total": str(credit_note_total),
+            "credit_note_count": credit_note_count,
+            "net_revenue_after_credit_notes": str(net_revenue_after_credit_notes),
             "expenses": str(expense_total),
             "expense_count": expense_count,
-            "operating_result_before_cost_of_goods": str(revenue_total - expense_total),
+            "operating_result_before_cost_of_goods": str(net_revenue_after_credit_notes - expense_total),
         })
     return {
         "period": {
@@ -552,10 +572,11 @@ def profit_loss(
             "timezone": timezone_name,
         },
         "currencies": rows,
-        "revenue_basis": "gross issued invoice totals before sales returns; stored invoice tax is included",
+        "revenue_basis": "gross issued invoice totals less credit notes issued in the selected period; stored invoice and credit-note tax are included",
         "limitations": [
             "Revenue is based on issued invoice totals, not cash collected.",
-            "Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.",
+            "Invoice and credit-note totals include stored tax amounts. Approved returns without an issued credit note are shown separately and are not netted from this figure.",
+            "Invoice revenue is grouped by invoice issue date; credit-note reductions are grouped by credit-note issuance date, so this is period activity rather than a full double-entry ledger.",
             "This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.",
             "Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.",
             "Currencies are kept separate and never converted or combined.",
