@@ -425,7 +425,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       <div class="total"><span>{{ t('الإجمالي التقديري', 'Estimated total') }}</span><strong>{{ preview.total }} {{ business.currency_code }}</strong></div>
                     </div>
                   } @else {
-                    <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
+                    <p class="muted">{{ t('أكمل نوع البند والكمية؛ وللبند اليدوي أدخل الوصف وسعر الوحدة لعرض الإجمالي التقديري.', 'Complete each line type and quantity; for manual lines, enter a description and unit price to preview totals.') }}</p>
                   }
                   <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
                   <button class="primary" type="submit" [disabled]="loading || !customers.length || !invoiceCustomerId || !invoiceLines.length">{{ t('حفظ كمسودة', 'Save draft') }}</button>
