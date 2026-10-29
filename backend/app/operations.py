@@ -68,8 +68,12 @@ def receive_purchase_order(
         line = by_id.get(line_id)
         if line is None:
             raise WorkflowError("Purchase order line not found on this order")
-        if quantity <= ZERO or line.received_quantity + quantity > line.quantity:
-            raise WorkflowError("Received quantity must be positive and cannot exceed ordered quantity")
+        if (
+            not quantity.is_finite()
+            or quantity <= ZERO
+            or line.received_quantity + quantity > line.quantity
+        ):
+            raise WorkflowError("Received quantity must be finite, positive and cannot exceed ordered quantity")
         product = session.scalars(select(Product).where(
             Product.id == line.product_id, Product.business_id == business_id,
         ).with_for_update()).one_or_none()
