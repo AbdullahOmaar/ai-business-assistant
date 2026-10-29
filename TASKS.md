@@ -1563,3 +1563,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Validation as of 2026-10-29:** exact-head CircleCI reports six substantive contexts FAILURE and no aggregate pass. GitHub Actions retries for backend container, dependency scans, backend tests and backend/frontend verification failed within seconds with `steps: []`, `runner_id: 0`, and empty runner names; job log retrieval returns `404 BlobNotFound`. This suggests jobs did not reach executable steps, but the underlying runner/account cause is NOT VERIFIED. CircleCI logs are inaccessible via current connector. Local tests, frontend build, security scans and migration checks are NOT RUN. Do not claim these tests passed.
 - **Release controls:** PR #306 remains Draft/Open; no merge, production migration, or deployment performed or authorized.
 - **Next actions:** (1) restore accessible CI diagnostics and identify evidenced first failure; (2) run backend tests/build/security/migration checks on the exact head when execution is available; (3) keep shared schema and financial mutations gated until T37/T38 contracts are approved; (4) then implement and validate supplier bills/payments, returns/reversals, idempotency/concurrency, valuation and reconciliation.
+
+
+## T39 receiving validation follow-up — 2026-10-29
+
+- Re-inspected the current Draft PR #306 head and found one stale test assertion: the multi-line atomicity test expected the old error text `Received quantity must be positive`, while the implementation now returns the broader finite/positive/no-over-receipt message.
+- Updated `backend/tests/test_t39_purchase_receiving_safety.py` to assert the stable shared prefix `Received quantity must be`, avoiding a false failure tied only to wording. This is a test correction, not a claim that the suite passed.
+- On the follow-up commit, all six substantive CircleCI contexts again report FAILURE. GitHub Actions backend test run reports a completed failed job with `steps: null` and no logs URL; diagnosis still lacks executable-step evidence. Exact root cause remains NOT VERIFIED.
+- Local pytest/build/security/migration checks remain NOT RUN. PR #306 remains Draft/Open; no merge or deployment.
+- Next action: recover usable CI job diagnostics or execute the focused backend test suite in an authorized runtime; do not infer test results from runner-startup failures.
