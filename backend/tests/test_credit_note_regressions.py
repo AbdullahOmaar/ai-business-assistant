@@ -1031,9 +1031,9 @@ def test_bank_statement_csv_import_is_idempotent_and_currency_scoped(credit_note
             session=session, principal=owner,
         )
         csv_body = BankStatementImportInput(csv_content=(
-            "transaction_id,transaction_date,description,amount,currency_code\\n"
-            "BANK-001,2026-10-28T10:00:00+00:00,Customer receipt,100.00,EGP\\n"
-            "BANK-002,2026-10-28,Office expense,-25.00,EGP\\n"
+            "transaction_id,transaction_date,description,amount,currency_code\n"
+            "BANK-001,2026-10-28T10:00:00+00:00,Customer receipt,100.00,EGP\n"
+            "BANK-002,2026-10-28,Office expense,-25.00,EGP\n"
         ))
         first = import_bank_statement(
             business_id=business_id, account_id=UUID(account["id"]),
@@ -1069,9 +1069,9 @@ def test_bank_statement_import_rejects_non_finite_amounts_atomically(credit_note
         )
         for index, invalid_amount in enumerate(("NaN", "sNaN", "Infinity", "-Infinity"), start=1):
             csv_content = (
-                "transaction_id,transaction_date,description,amount,currency_code\\n"
-                f"BANK-VALID-{index},2026-10-28,Valid first row,10.00,EGP\\n"
-                f"BANK-INVALID-{index},2026-10-28,Invalid amount,{invalid_amount},EGP\\n"
+                "transaction_id,transaction_date,description,amount,currency_code\n"
+                f"BANK-VALID-{index},2026-10-28,Valid first row,10.00,EGP\n"
+                f"BANK-INVALID-{index},2026-10-28,Invalid amount,{invalid_amount},EGP\n"
             )
             with pytest.raises(HTTPException) as error:
                 import_bank_statement(
@@ -1108,9 +1108,9 @@ def test_bank_statement_match_requires_exact_amount_currency_and_direction(credi
         imported = import_bank_statement(
             business_id=business_id, account_id=UUID(account["id"]),
             body=BankStatementImportInput(csv_content=(
-                "transaction_id,transaction_date,description,amount,currency_code\\n"
-                "BANK-IN,2026-10-28T10:00:00+00:00,Receipt,100.00,EGP\\n"
-                "BANK-OUT,2026-10-28T11:00:00+00:00,Expense,-30.00,EGP\\n"
+                "transaction_id,transaction_date,description,amount,currency_code\n"
+                "BANK-IN,2026-10-28T10:00:00+00:00,Receipt,100.00,EGP\n"
+                "BANK-OUT,2026-10-28T11:00:00+00:00,Expense,-30.00,EGP\n"
             )), session=session, principal=owner,
         )
         incoming, outgoing = imported["items"]
@@ -1164,8 +1164,8 @@ def test_staff_cannot_import_or_match_bank_statements(credit_note_workspace):
             import_bank_statement(
                 business_id=business_id, account_id=UUID(account["id"]),
                 body=BankStatementImportInput(csv_content=(
-                    "transaction_id,transaction_date,description,amount,currency_code\\n"
-                    "BANK-STAFF,2026-10-28,Receipt,10.00,EGP\\n"
+                    "transaction_id,transaction_date,description,amount,currency_code\n"
+                    "BANK-STAFF,2026-10-28,Receipt,10.00,EGP\n"
                 )), session=session, principal=staff,
             )
         assert error.value.status_code == 403
@@ -1252,9 +1252,9 @@ def test_bank_reconciliation_prevents_reusing_a_payment_for_two_statement_rows(c
         imported = import_bank_statement(
             business_id=business_id, account_id=UUID(account["id"]),
             body=BankStatementImportInput(csv_content=(
-                "transaction_id,transaction_date,description,amount,currency_code\\n"
-                "BANK-A,2026-10-28,Receipt A,50.00,EGP\\n"
-                "BANK-B,2026-10-28,Receipt B,50.00,EGP\\n"
+                "transaction_id,transaction_date,description,amount,currency_code\n"
+                "BANK-A,2026-10-28,Receipt A,50.00,EGP\n"
+                "BANK-B,2026-10-28,Receipt B,50.00,EGP\n"
             )), session=session, principal=owner,
         )
         payment = Payment(
@@ -1305,8 +1305,8 @@ def test_bank_reconciliation_rejects_cross_business_account_and_wrong_direction(
             import_bank_statement(
                 business_id=business_id, account_id=UUID(foreign_account["id"]),
                 body=BankStatementImportInput(csv_content=(
-                    "transaction_id,transaction_date,description,amount,currency_code\\n"
-                    "FOREIGN-1,2026-10-28,Foreign receipt,10.00,USD\\n"
+                    "transaction_id,transaction_date,description,amount,currency_code\n"
+                    "FOREIGN-1,2026-10-28,Foreign receipt,10.00,USD\n"
                 )), session=session, principal=owner,
             )
         assert cross_business.value.status_code == 422
@@ -1319,8 +1319,8 @@ def test_bank_reconciliation_rejects_cross_business_account_and_wrong_direction(
         imported = import_bank_statement(
             business_id=business_id, account_id=UUID(account["id"]),
             body=BankStatementImportInput(csv_content=(
-                "transaction_id,transaction_date,description,amount,currency_code\\n"
-                "BANK-OUT,2026-10-28,Outgoing,-10.00,EGP\\n"
+                "transaction_id,transaction_date,description,amount,currency_code\n"
+                "BANK-OUT,2026-10-28,Outgoing,-10.00,EGP\n"
             )), session=session, principal=owner,
         )
         payment = Payment(
