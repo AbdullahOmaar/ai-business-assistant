@@ -954,3 +954,36 @@ def test_workspace_status_change_rolls_back_when_audit_commit_fails(
             AuditEvent.action == "platform.business.deactivated",
         ))
     assert event is None
+
+
+def test_delegated_read_only_platform_role_cannot_change_workspace_status(platform_admin_environment):
+    """Read-only delegated grants must not mutate workspace state or create audit rows."""
+    environment = platform_admin_environment
+    subject = "firebase:test-project:read-only-platform-user"
+    with Session(environment["engine"]) as session:
+        session.add(
+            PlatformRoleGrant(
+                user_subject=subject,
+                role="platform_viewer",
+                is_active=True,
+                granted_by_subject=ADMIN_SUBJECT,
+                last_reason="Read-only support access",
+            )
+        )
+        session.commit()
+
+    environment["subject"]["value"] = subject
+    business_id = environment["alpha_id"]
+    response = environment["client"].patch(
+        f"/api/v1/platform-admin/businesses/{business_id}/status",
+        json={"is_active": False, "reason": "Should be denied"},
+    )
+
+    assert response.status_code == 403
+    with Session(environment["engine"]) as session:
+        business = session.get(Business, UUID(business_id))
+        assert business is not None and business.is_active is True
+        events = session.scalars(
+            select(AuditEvent).where(AuditEvent.business_id == UUID(business_id))
+        ).all()
+    assert not any(event.action == "platform.business.deactivated" for event in events)
