@@ -67,7 +67,7 @@ export interface ReceivablesAgingReport { as_of_date: string; source: string; cu
 export interface CustomerStatementEvent { occurred_at: string; event_type: string; source_id: string; reference: string | null; invoice_id?: string; currency_code: string; debit: string; credit: string; affects_balance: boolean; balance: string; }
 export interface CustomerStatement { customer: { id: string; name: string }; items: CustomerStatementEvent[]; total: number; limit: number; offset: number; balances_by_currency: Record<string, string>; limitations: string[]; }
 
-export interface TaxSummaryReport { period: { start_date: string | null; end_date: string | null }; source: string; currencies: Array<{ currency_code: string; tax_total: string; invoice_count: number }>; limitations: string[]; }
+export interface TaxSummaryReport { period: { start_date: string | null; end_date: string | null }; source: string; currencies: Array<{ currency_code: string; invoice_tax_total: string; credit_note_tax_reversed: string; tax_total: string; invoice_count: number; credit_note_count: number }>; limitations: string[]; }
 export interface PlatformAdminOverview {
   generated_at: string;
   businesses: { total: number; active: number; inactive: number };
