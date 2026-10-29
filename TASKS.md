@@ -1582,3 +1582,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Financial guard:** T37 shared financial contract remains unapproved. No refunds, credit notes, shared schema/mutation interfaces, migrations, or accounting postings were changed. Currency conversion is not introduced.
 - **Delivery:** no merge, deployment, or production data change was authorized or performed. Do not merge until automated checks pass on the exact PR head and all required approvals/release gates are satisfied.
 - **Next action:** when the CI/usage limit is resolved, re-fetch the current PR head, then run frontend tests/build and relevant backend payment/invoice regressions on that exact SHA; fix verified failures and recheck the full diff before review/merge.
+
+## Invoice print consolidation — 2026-10-29
+
+- Integrated the print-detail slice previously isolated in PR #310 into the existing T38 sales-to-cash branch / PR #305 to avoid parallel edits to `frontend/src/app/app.component.ts`.
+- Combined print output now reads persisted subtotal, discount, tax, and total; rechecks that the saved invoice remains issued; shows issue/due dates and optional notes; keeps Arabic RTL / English LTR and HTML escaping.
+- Updated `InvoiceDetail` typing for persisted `issue_date`, `due_date`, and `notes`.
+- Static source checks: print guard, totals, date fields, notes escaping, and interface fields present. **Automated tests/build and browser print smoke: NOT RUN** because exact-head CI failures remain unclassified.
+- PR #310 is now functionally overlapping; keep it open until PR #305 has passing required checks and is accepted as the canonical combined implementation. Do not merge either while CI is red.
