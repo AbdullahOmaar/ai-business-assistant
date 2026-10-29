@@ -323,3 +323,160 @@ def test_unfiltered_tax_summary_does_not_require_timezone_conversion():
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)
 
+
+
+
+def test_expense_date_filters_support_start_only_and_end_only():
+    """Each optional bound is independently inclusive in the business timezone."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with Session(engine) as session:
+            session.add_all([
+                Expense(
+                    business_id=business_id, category="ops", description="before",
+                    amount=Decimal("1.00"), currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 14, 21, 59, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=business_id, category="ops", description="on-day",
+                    amount=Decimal("2.00"), currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=business_id, category="ops", description="after",
+                    amount=Decimal("3.00"), currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 16, 12, 0, tzinfo=timezone.utc),
+                ),
+            ])
+            session.commit()
+
+        start_only = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"start_date": "2026-01-15"},
+        )
+        end_only = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"end_date": "2026-01-15"},
+        )
+        assert start_only.status_code == end_only.status_code == 200
+        assert {row["description"] for row in start_only.json()} == {"on-day", "after"}
+        assert {row["description"] for row in end_only.json()} == {"before", "on-day"}
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_expense_and_tax_date_filters_fail_closed_for_invalid_business_timezone():
+    """Filtered reporting must reject corrupt timezone metadata instead of using UTC."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with Session(engine) as session:
+            business = session.get(Business, business_id)
+            assert business is not None
+            business.timezone = "Not/A_Real_Zone"
+            session.commit()
+
+        expenses = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"start_date": "2026-01-15"},
+        )
+        tax = client.get(
+            f"/api/v1/businesses/{business_id}/reports/tax-summary",
+            params={"end_date": "2026-01-15"},
+        )
+        assert expenses.status_code == tax.status_code == 422
+        assert "valid IANA timezone" in expenses.json()["detail"]
+        assert "valid IANA timezone" in tax.json()["detail"]
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_expense_date_filters_never_return_another_business_records():
+    """The same principal's date-filtered expense read remains business-scoped."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        first_business_id = _create_business(client)
+        second = client.post(
+            "/api/v1/businesses",
+            json={"name": "Separate Date Filter Shop", "currency_code": "EGP", "timezone": "Africa/Cairo"},
+        )
+        assert second.status_code == 201, second.text
+        second_business_id = UUID(second.json()["id"])
+        with Session(engine) as session:
+            session.add_all([
+                Expense(
+                    business_id=first_business_id, category="ops", description="first-tenant",
+                    amount=Decimal("10.00"), currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=second_business_id, category="ops", description="second-tenant",
+                    amount=Decimal("999.00"), currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                ),
+            ])
+            session.commit()
+
+        response = client.get(
+            f"/api/v1/businesses/{first_business_id}/expenses",
+            params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
+        )
+        assert response.status_code == 200, response.text
+        assert [row["description"] for row in response.json()] == ["first-tenant"]
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_tax_summary_supports_single_sided_business_local_date_filters():
+    """A single inclusive local-date bound must not accidentally become a UTC date bound."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with Session(engine) as session:
+            session.add_all([
+                Invoice(
+                    business_id=business_id, invoice_number="TAX-BEFORE",
+                    status="issued", currency_code="EGP",
+                    issue_date=datetime(2026, 1, 14, 21, 59, tzinfo=timezone.utc),
+                    subtotal=Decimal("10.00"), discount_total=Decimal("0.00"),
+                    tax_total=Decimal("1.00"), total=Decimal("11.00"),
+                ),
+                Invoice(
+                    business_id=business_id, invoice_number="TAX-ON-DAY",
+                    status="issued", currency_code="EGP",
+                    issue_date=datetime(2026, 1, 14, 22, 0, tzinfo=timezone.utc),
+                    subtotal=Decimal("20.00"), discount_total=Decimal("0.00"),
+                    tax_total=Decimal("2.00"), total=Decimal("22.00"),
+                ),
+            ])
+            session.commit()
+
+        start_only = client.get(
+            f"/api/v1/businesses/{business_id}/reports/tax-summary",
+            params={"start_date": "2026-01-15"},
+        )
+        end_only = client.get(
+            f"/api/v1/businesses/{business_id}/reports/tax-summary",
+            params={"end_date": "2026-01-15"},
+        )
+        assert start_only.status_code == end_only.status_code == 200
+        assert start_only.json()["currencies"] == [{"currency_code": "EGP", "tax_total": "2.00", "invoice_count": 1}]
+        assert end_only.json()["currencies"] == [{"currency_code": "EGP", "tax_total": "3.00", "invoice_count": 2}]
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_receivables_aging_preserves_explicit_as_of_date():
+    """An explicit report date always wins over the business-local default."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+            params={"as_of": "2026-01-10"},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["as_of_date"] == "2026-01-10"
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
