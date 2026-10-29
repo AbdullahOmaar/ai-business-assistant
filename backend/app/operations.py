@@ -60,6 +60,10 @@ def receive_purchase_order(
     by_id = {line.id: line for line in lines}
     if not received_quantities:
         raise WorkflowError("At least one received quantity is required")
+    # Validate every line and lock its product before writing anything. A later
+    # invalid line must not leave earlier lines, stock movements, or audit events
+    # partially staged if the caller catches WorkflowError in the same transaction.
+    prepared_receipts: list[tuple[PurchaseOrderLine, Product, Decimal]] = []
     for line_id, quantity in received_quantities.items():
         line = by_id.get(line_id)
         if line is None:
@@ -71,6 +75,9 @@ def receive_purchase_order(
         ).with_for_update()).one_or_none()
         if product is None:
             raise WorkflowError("Purchase order product not found in this business")
+        prepared_receipts.append((line, product, quantity))
+
+    for line, product, quantity in prepared_receipts:
         line.received_quantity += quantity
         if product.is_stock_tracked:
             record_stock_movement(
