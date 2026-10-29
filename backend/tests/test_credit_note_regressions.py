@@ -9,12 +9,12 @@ from sqlalchemy.pool import StaticPool
 
 from app.core_features_api import profit_loss
 from app.extended_api import (
-    CashRefundInput, CreditApplicationInput, apply_credit_note, approve_sales_return, create_cash_refund,
+    BankAccountInput, BankReconciliationMatchInput, BankStatementImportInput, CashRefundInput, CreditApplicationInput, apply_credit_note, approve_sales_return, create_bank_account, create_cash_refund, import_bank_statement, match_bank_statement_row,
     customer_statement, issue_credit_note_for_return, list_credit_applications,
     list_cash_refunds, list_credit_notes, list_invoices, list_sales_returns, receivables_aging, report_tax_summary,
 )
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, CashRefund, CreditApplication, CreditNote, Invoice, Payment, PaymentAllocation,
+    AuditEvent, BankAccount, BankReconciliationMatch, BankStatementRow, Base, Business, BusinessMembership, CashRefund, CreditApplication, CreditNote, Expense, Invoice, Payment, PaymentAllocation,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -1018,3 +1018,111 @@ def test_tax_summary_nets_issued_credit_note_tax_reversals_by_currency(credit_no
         assert Decimal(pnl_egp["credit_note_total"]) == Decimal("11.00")
         assert Decimal(pnl_egp["net_revenue_after_credit_notes"]) == Decimal("11.00")
         assert Decimal(pnl_egp["operating_result_before_cost_of_goods"]) == Decimal("11.00")
+
+
+def test_bank_statement_csv_import_is_idempotent_and_currency_scoped(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        account = create_bank_account(
+            business_id=business_id,
+            body=BankAccountInput(account_key="main-egp", display_name="Main EGP", currency_code="EGP"),
+            session=session, principal=owner,
+        )
+        csv_body = BankStatementImportInput(csv_content=(
+            "transaction_id,transaction_date,description,amount,currency_code\\n"
+            "BANK-001,2026-10-28T10:00:00+00:00,Customer receipt,100.00,EGP\\n"
+            "BANK-002,2026-10-28,Office expense,-25.00,EGP\\n"
+        ))
+        first = import_bank_statement(
+            business_id=business_id, account_id=UUID(account["id"]),
+            body=csv_body, session=session, principal=owner,
+        )
+        replay = import_bank_statement(
+            business_id=business_id, account_id=UUID(account["id"]),
+            body=csv_body, session=session, principal=owner,
+        )
+        assert first["created_count"] == 2
+        assert replay["created_count"] == 0
+        assert replay["duplicate_count"] == 2
+        assert session.scalar(select(func.count()).select_from(BankStatementRow).where(
+            BankStatementRow.business_id == business_id,
+        )) == 2
+
+
+def test_bank_statement_match_requires_exact_amount_currency_and_direction(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        account = create_bank_account(
+            business_id=business_id,
+            body=BankAccountInput(account_key="cash-egp", display_name="Cash drawer", currency_code="EGP"),
+            session=session, principal=owner,
+        )
+        imported = import_bank_statement(
+            business_id=business_id, account_id=UUID(account["id"]),
+            body=BankStatementImportInput(csv_content=(
+                "transaction_id,transaction_date,description,amount,currency_code\\n"
+                "BANK-IN,2026-10-28T10:00:00+00:00,Receipt,100.00,EGP\\n"
+                "BANK-OUT,2026-10-28T11:00:00+00:00,Expense,-30.00,EGP\\n"
+            )), session=session, principal=owner,
+        )
+        incoming, outgoing = imported["items"]
+        payment = Payment(
+            business_id=business_id, customer_id=None, amount=Decimal("100.00"),
+            currency_code="EGP", method="cash", reference="RCPT-1",
+            idempotency_key="bank-test-payment",
+        )
+        expense = Expense(
+            business_id=business_id, category="office", description="Office supplies",
+            amount=Decimal("30.00"), currency_code="EGP",
+            incurred_at=datetime(2026, 10, 28, 11, tzinfo=timezone.utc),
+        )
+        session.add_all([payment, expense])
+        session.flush()
+        incoming_match = match_bank_statement_row(
+            business_id=business_id,
+            body=BankReconciliationMatchInput(statement_row_id=UUID(incoming["id"]), payment_id=payment.id),
+            session=session, principal=owner,
+        )
+        outgoing_match = match_bank_statement_row(
+            business_id=business_id,
+            body=BankReconciliationMatchInput(statement_row_id=UUID(outgoing["id"]), expense_id=expense.id),
+            session=session, principal=owner,
+        )
+        assert incoming_match["payment_id"] == str(payment.id)
+        assert outgoing_match["expense_id"] == str(expense.id)
+        assert session.get(BankStatementRow, UUID(incoming["id"])).status == "matched"
+        with pytest.raises(HTTPException):
+            match_bank_statement_row(
+                business_id=business_id,
+                body=BankReconciliationMatchInput(statement_row_id=UUID(incoming["id"]), payment_id=payment.id),
+                session=session, principal=owner,
+            )
+        assert session.scalar(select(func.count()).select_from(BankReconciliationMatch).where(
+            BankReconciliationMatch.business_id == business_id,
+        )) == 2
+
+
+def test_staff_cannot_import_or_match_bank_statements(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    staff = AuthenticatedPrincipal(subject="credit-staff")
+    with Session(engine) as session:
+        account = create_bank_account(
+            business_id=business_id,
+            body=BankAccountInput(account_key="owner-only", display_name="Owner account", currency_code="EGP"),
+            session=session, principal=owner,
+        )
+        with pytest.raises(HTTPException) as error:
+            import_bank_statement(
+                business_id=business_id, account_id=UUID(account["id"]),
+                body=BankStatementImportInput(csv_content=(
+                    "transaction_id,transaction_date,description,amount,currency_code\\n"
+                    "BANK-STAFF,2026-10-28,Receipt,10.00,EGP\\n"
+                )), session=session, principal=staff,
+            )
+        assert error.value.status_code == 403
+        assert session.scalar(select(func.count()).select_from(BankStatementRow).where(
+            BankStatementRow.business_id == business_id,
+        )) == 0
