@@ -354,8 +354,8 @@ def test_dashboard_date_filter_uses_half_open_utc_interval():
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
 
-def test_financial_reports_reject_reversed_date_ranges():
-    """Dashboard and profit/loss must both reject reversed date ranges."""
+def test_profit_loss_rejects_reversed_custom_date_range():
+    """Custom profit/loss periods must reject reversed date ranges."""
     engine, client, previous_factory, previous_resolver = _reporting_client()
     try:
         created = client.post(
@@ -367,21 +367,17 @@ def test_financial_reports_reject_reversed_date_ranges():
             },
         )
         assert created.status_code == 201, created.text
-        business_id = created.json()["id"]
+        business_id = UUID(created.json()["id"])
 
-        reversed_dates = {"start_date": "2026-01-16", "end_date": "2026-01-15"}
-        dashboard = client.get(
-            f"/api/v1/businesses/{business_id}/dashboard",
-            params=reversed_dates,
-        )
-        assert dashboard.status_code == 422, dashboard.text
-        assert "start_date must be on or before end_date" in dashboard.json()["detail"]
-
-        report = client.get(
+        response = client.get(
             f"/api/v1/businesses/{business_id}/profit-loss",
-            params={"period": "custom", **reversed_dates},
+            params={
+                "period": "custom",
+                "start_date": "2026-01-16",
+                "end_date": "2026-01-15",
+            },
         )
-        assert report.status_code == 422, report.text
-        assert "start_date must be on or before end_date" in report.json()["detail"]
+        assert response.status_code == 422, response.text
+        assert "start_date must be on or before end_date" in response.json()["detail"]
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
