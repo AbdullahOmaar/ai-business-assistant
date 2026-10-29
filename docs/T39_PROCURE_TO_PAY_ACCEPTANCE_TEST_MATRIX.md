@@ -60,6 +60,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-30 | Member reads PO summary across multiple currencies and statuses | Counts and totals are grouped by status AND currency; no cross-currency aggregate is returned; tenant scope is enforced | Financial display integrity invariant |
 | T39-31 | Member reads PO activity timeline for own and foreign-business order IDs | Timeline returns only that PO's tenant-scoped audit events in stable chronological order; foreign order returns not-found | Audit visibility and tenant isolation invariant |
 | T39-32 | Create or edit a PO using an order number already used by another PO in the same business; reuse a number used only by another business | Same-business duplicate is rejected with a clear validation error before writes; cross-business identical numbers remain isolated; database uniqueness remains the concurrency backstop | Tenant-scoped identifier integrity |
+| T39-33 | OWNER exports purchase orders as CSV; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells are escaped | Data portability and spreadsheet injection safety |
 
 ## Execution plan after contract approval
 
@@ -122,3 +123,11 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added paginated `GET /purchase-orders/{order_id}/receipts` over append-only stock receipt movements and `GET /purchase-orders/{order_id}/activity` over audit events; both first confirm the PO belongs to the requested business.
 - Added `GET /purchase-orders/summary`, grouped by lifecycle status and currency so different currencies are never summed together.
 - Tests/build/security/CI intentionally **NOT RUN** in this feature-only pass due to the current usage-limit issue. These scenarios are acceptance requirements, not evidence of runtime success.
+
+
+## Purchase-order CSV export (2026-10-29)
+
+- Extended the existing owner-only `GET /api/v1/businesses/{business_id}/exports/purchase_orders.csv` route to include purchase-order line details with supplier and product labels, order status/currency/total, ordered/received/remaining quantities and unit cost.
+- The query is business-scoped and joins supplier, line and product using both record IDs and business IDs. Export is flattened to one row per PO line so spreadsheet users can filter/sort individual items.
+- Formula-like values are escaped consistently with the existing CSV export behavior. The endpoint is read-only; no purchasing or financial records are mutated.
+- Automated checks were intentionally not run in this feature-only pass due to the usage-limit blocker; runtime verification remains pending.
