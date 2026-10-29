@@ -1045,6 +1045,37 @@ def create_cash_refund(
                 raise HTTPException(status_code=409, detail="Idempotency key was already used for a different cash refund")
             return replay
 
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == note.invoice_id,
+            Invoice.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Cash refund requires the original issued invoice")
+        paid_to_invoice = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(PaymentAllocation.amount), 0))
+            .select_from(PaymentAllocation)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
+            )
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                PaymentAllocation.invoice_id == invoice.id,
+                func.upper(func.trim(Payment.currency_code))
+                == func.upper(func.trim(invoice.currency_code)),
+            )
+        ) or ZERO))
+        applied_to_invoice = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(CreditApplication.amount), 0)).where(
+                CreditApplication.business_id == business_id,
+                CreditApplication.invoice_id == invoice.id,
+            )
+        ) or ZERO))
+        if money(Decimal(str(invoice.total)) - paid_to_invoice - applied_to_invoice) > ZERO:
+            raise WorkflowError("Cash refunds require the original invoice receivable to be fully settled; apply credit to open receivables instead")
+
         amount = money(body.amount)
         applied_to_note = Decimal(str(session.scalar(
             select(func.coalesce(func.sum(CreditApplication.amount), 0)).where(
@@ -1073,9 +1104,19 @@ def create_cash_refund(
             if payment.currency_code.strip().upper() != note.currency_code.strip().upper():
                 raise WorkflowError("Original payment currency must match the credit note")
             allocated = Decimal(str(session.scalar(
-                select(func.coalesce(func.sum(PaymentAllocation.amount), 0)).where(
+                select(func.coalesce(func.sum(PaymentAllocation.amount), 0))
+                .select_from(PaymentAllocation)
+                .join(
+                    Invoice,
+                    (Invoice.id == PaymentAllocation.invoice_id)
+                    & (Invoice.business_id == PaymentAllocation.business_id),
+                )
+                .where(
                     PaymentAllocation.business_id == business_id,
                     PaymentAllocation.payment_id == payment.id,
+                    Invoice.business_id == business_id,
+                    func.upper(func.trim(Invoice.currency_code))
+                    == func.upper(func.trim(payment.currency_code)),
                 )
             ) or ZERO))
             previously_refunded = Decimal(str(session.scalar(
