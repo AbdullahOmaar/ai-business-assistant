@@ -1,5 +1,35 @@
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
+## Admin workstream — PR #313 checkpoint (2026-10-29)
+
+Owner scope: platform Admin APIs and least-privilege regression coverage. Work is isolated to branch `admin/platform-permissions-regression-20261029`; do not duplicate existing platform-admin features/tests.
+
+### Ordered task register
+
+1. **Authentication / deny-by-default** — existing source/tests reviewed; current branch regression extends delegated viewer authorization. Local execution **NOT RUN**.
+2. **Server-side role and permission matrix** — existing `PLATFORM_ROLE_PERMISSIONS` and role matrix tests reviewed; viewer must not mutate protected resources. Local execution **NOT RUN**.
+3. **Workspace directory isolation, search, pagination, details** — existing bounded-query and detail-isolation tests reviewed; no new code in this checkpoint.
+4. **Workspace lifecycle / reason / idempotency** — existing status-change reason, audit, repeated-request and rollback tests reviewed; no new code in this checkpoint.
+5. **Overview / financial integrity** — existing overview tests assert real counts and currency-separated totals; no new code in this checkpoint.
+6. **System status / secret redaction** — existing healthy/degraded and redaction tests reviewed; no new code in this checkpoint.
+7. **Audit stream / export safety** — existing read-only, filtering, formula-neutralization, bounds and permission tests reviewed; no new code in this checkpoint.
+8. **Delegated platform-role grant/revoke** — existing bootstrap-super-admin, disabled-account, missing-user, idempotency and transactional rollback tests reviewed; new viewer test also denies role mutation.
+9. **Employee / payroll admin boundary** — coordinate with existing T41 / Payroll PRs; no overlapping changes made in this PR.
+10. **Route × role × tenant regressions and release verification** — PR #313 adds a focused test that a delegated `platform_viewer` can read allowed overview/audit views but cannot deactivate a workspace or grant roles; checks both business and platform audit counts and verifies no grant was persisted.
+
+### Current evidence
+
+- Branch: `admin/platform-permissions-regression-20261029`
+- Latest commit: `a8686a5846e27c7749a36225eea0d89c33fa21e0`
+- PR: [#313](https://github.com/AbdullahOmaar/ai-business-assistant/pull/313), open.
+- Local pytest / build: **NOT RUN** (connector-only execution; no repository runtime attached).
+- CircleCI on earlier PR head `2241f3e64a05b76bdea02a0230530d16127d10af`: all six reported contexts failed; job logs unavailable through the connected GitHub integration, and CircleCI page URLs were inaccessible from web access. Root cause **UNVERIFIED**.
+- Latest commit CI: **NOT YET REPORTED** by status API at last check; do not interpret an empty status list as pass.
+- Review: **NOT RUN**. Merge: **BLOCKED** until exact-head checks and independent review are verified. Production deploy: **NOT RUN**.
+
+Next: inspect fresh exact-head CI statuses and available logs, then address any reproducible code-level failure. Do not weaken tests or merge based on missing status evidence.
+
+
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
 ## Current verified repository state
