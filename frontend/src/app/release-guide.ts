@@ -91,8 +91,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'مسودة متعددة البنود',
         titleEn: 'Multi-line draft',
-        detailAr: 'أنشئ مسودة، وأضف أو احذف البنود وحدد الكمية.',
-        detailEn: 'Create a draft, add or remove lines, and enter quantities.',
+        detailAr: 'أنشئ مسودة متعددة البنود؛ اختر منتجًا من القائمة أو أضف بندًا يدويًا أو خدمة بوصف وسعر وحدة.',
+        detailEn: 'Create a multi-line draft with catalog products or manual service lines with a description and unit price.',
       },
       {
         titleAr: 'الخصم والضريبة',
