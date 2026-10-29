@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.extended_api import approve_sales_return, issue_credit_note_for_return, list_credit_notes
+from app.extended_api import approve_sales_return, issue_credit_note_for_return, list_sales_returns, list_credit_notes
 from app.models import (
     AuditEvent, Base, Business, BusinessMembership, CreditNote, Invoice,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
@@ -255,3 +255,58 @@ def test_credit_note_list_is_business_scoped_and_supports_customer_filter(credit
             limit=100, offset=0, customer_id=own_invoice.customer_id,
         )
         assert [item["id"] for item in filtered["items"]] == [own_note["id"]]
+
+
+
+def test_sales_return_listing_is_business_scoped_and_paginated(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        _, own_return = _issued_invoice_and_return(session, business_id, principal)
+        foreign_business = Business(name="Foreign Returns Shop", currency_code="USD")
+        session.add(foreign_business)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=foreign_business.id, user_subject="credit-owner",
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        _, foreign_return = _issued_invoice_and_return(session, foreign_business.id, principal)
+        session.commit()
+
+        first_page = list_sales_returns(
+            business_id=business_id, limit=1, offset=0, status="approved",
+            session=session, principal=principal,
+        )
+        second_page = list_sales_returns(
+            business_id=business_id, limit=1, offset=1, status="approved",
+            session=session, principal=principal,
+        )
+        assert first_page["limit"] == 1
+        assert first_page["offset"] == 0
+        assert len(first_page["items"]) == 1
+        assert len(second_page["items"]) == 0
+        assert first_page["items"][0]["id"] == str(own_return.id)
+        assert first_page["items"][0]["status"] == "approved"
+        assert first_page["items"][0]["business_id"] == str(business_id)
+        assert all(item["id"] != str(foreign_return.id) for item in first_page["items"])
+
+
+def test_staff_can_read_scoped_returns_and_status_filter_is_applied(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    staff = AuthenticatedPrincipal(subject="credit-staff")
+    with Session(engine) as session:
+        _, ret = _issued_invoice_and_return(session, business_id, owner)
+        approved = list_sales_returns(
+            business_id=business_id, limit=50, offset=0, status="approved",
+            session=session, principal=staff,
+        )
+        drafts = list_sales_returns(
+            business_id=business_id, limit=50, offset=0, status="draft",
+            session=session, principal=staff,
+        )
+        assert [item["id"] for item in approved["items"]] == [str(ret.id)]
+        assert drafts["items"] == []
+        assert approved["limit"] == 50
+        assert approved["offset"] == 0
