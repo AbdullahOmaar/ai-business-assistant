@@ -1349,7 +1349,22 @@ def receivables_aging(
     """Return open issued-invoice balances by currency without cross-currency netting."""
     try:
         _authorized(session, principal, business_id)
-        report_date = as_of or datetime.now(timezone.utc).date()
+        if as_of is not None:
+            report_date = as_of
+        else:
+            business = session.scalars(select(Business).where(
+                Business.id == business_id, Business.is_active.is_(True),
+            )).one_or_none()
+            if business is None:
+                raise HTTPException(status_code=404, detail="Business not found")
+            try:
+                business_zone = ZoneInfo(business.timezone.strip())
+            except (ZoneInfoNotFoundError, ValueError) as exc:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Business timezone must be a valid IANA timezone.",
+                ) from exc
+            report_date = datetime.now(timezone.utc).astimezone(business_zone).date()
         invoices = session.scalars(
             select(Invoice).where(
                 Invoice.business_id == business_id,
