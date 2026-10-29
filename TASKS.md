@@ -1690,3 +1690,10 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Acceptance scenario T39-25 now includes UI-to-API behavior. Tests/build/security/migration/CI remain **NOT RUN** per user instruction; source inspection only.
 
 - Follow-up UI hardening: clear supplier-search text and CSV-export busy state during workspace reset so UI state does not leak across business switches. Tests/build remain **NOT RUN**.
+
+## T39 purchase-order filter UI — 2026-10-29
+
+- `frontend/src/app/api.service.ts::purchaseOrders` accepts optional status and supplier filters and serializes them as query parameters.
+- `frontend/src/app/app.component.ts` adds status/supplier controls plus Filter/Clear actions. Load, create and receipt refresh paths preserve active filters; workspace reset clears them.
+- Acceptance scenario T39-23 now includes UI-to-API behavior. Frontend build/tests and backend tests remain **NOT RUN** per instruction; source inspection only.
+
