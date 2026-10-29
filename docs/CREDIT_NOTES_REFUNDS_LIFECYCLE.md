@@ -1,6 +1,6 @@
 # Credit notes, refunds, and customer returns — lifecycle contract
 
-Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace can create return drafts from issued invoice lines, lets owners approve draft returns, lists approved returns and issued notes, supports customer-filtered, offset-paginated credit-note listing with duplicate-safe load-more and customer names, and exposes an OWNER-only credit-note issue action. Credit application now has an OWNER-only, idempotent backend ledger API and paginated reads; the UI workflow, cash refunds, tax allocation, and report/statement integration are still incomplete.
+Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace can create return drafts from issued invoice lines, lets owners approve draft returns, lists approved returns and issued notes, supports customer-filtered offset pagination, and provides an OWNER-only credit-application form constrained by remaining credit and invoice receivable. The backend has an OWNER-only idempotent credit-application ledger API, paginated reads, applied/remaining totals, and customer-statement events for applied credits. Cash-refund records, line-level tax allocation/reversal, P&L/tax report integration, and exact-head validation remain incomplete.
 
 ## Existing behavior confirmed in source
 
@@ -26,7 +26,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-not
 - Use Decimal arithmetic and explicit rounding; never trust client-supplied totals or statuses.
 - Preserve original invoice and payment history. Corrections use compensating records, never destructive edits.
 - Approval/issue/refund operations must be atomic, replay-safe, and audited. Failed or replayed requests must not duplicate stock, receivable credit, or cash-out.
-- The implementation now has a migration with relationship/uniqueness constraints, owner-only issue endpoint, paginated read endpoint, and a bilingual Angular workflow for return drafts, owner approval, credit-note issuance, issued-note listing, and customer filtering. Remaining: tax allocation, credit application, refund records, statement/report integration, and regression coverage for partial credit/refund, currency/customer mismatch, concurrent approvals, and already allocated payments.
+- The implementation now has migrations `0006_credit_notes` and `0007_credit_applications`, relationship/uniqueness constraints, OWNER-only issuance/application endpoints, paginated reads, applied/remaining credit totals, customer-statement credit-application events, and a bilingual Angular workflow for return drafts, owner approval, credit-note issuance, customer filtering/pagination, and applying credit to a same-customer/same-currency receivable. Remaining: cash-refund records, line-level tax allocation/reversal, P&L/tax report integration, and exact-head validation.
 - Added `backend/tests/test_credit_note_regressions.py` coverage for credit-note issuance/replay, original invoice immutability, unapproved-return rejection, tax guard/no side effects, OWNER-only denial, cross-business isolation, business-scoped listing/customer filtering, credit application replay, credit and receivable ceilings, customer matching, staff denial, and application listing. The idempotency key is rechecked after acquiring the credit-note lock. Tests are authored but **NOT RUN** on the current head; they do not constitute a passing test result.
 - Do not expose “refund complete” until a persisted cash-out record is committed. A credit note alone does not prove cash was returned.
 - Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active. The focused credit-note regression tests have been added to source but still require execution.
@@ -40,7 +40,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-not
 
 ## Safe implementation order
 
-A. Add schema and migration for immutable credit notes, credit applications, and refund records with unique idempotency/relationship constraints. (Credit-note table and issuance are the first slice; application/refund tables remain.)
+A. Credit-note and credit-application schemas/migrations are implemented (`0006`, `0007`). Next: add an immutable cash-refund ledger with relationship and idempotency constraints; do not equate credit application with cash returned.
 B. Add transactional OWNER-only service operations and append-only audit events.
 C. Add read/list endpoints and a UI that distinguishes draft return, approved return, issued credit, applied credit, and refunded cash.
 D. Integrate customer statement and reports only after the ledger semantics are represented explicitly.
@@ -56,9 +56,10 @@ E. Resume tests and exact-head CI only after the user clears the current testing
 - Focused backend tests: 8 passed in an assembled sandbox with selected branch source files refreshed; not a full checkout. Frontend unit tests: 58 passed. Angular production build: PASS; measured initial bundle 709.13 kB (9.13 kB above the 700 kB target), with existing optional-chain warnings. `prebuild` could not determine a commit SHA because the sandbox had no `.git`.
 - Exact-head CircleCI and authenticated browser smoke remain NOT RUN / BLOCKED. No merge, deployment, or version change was performed.
 
-- Remaining Feature 31 gaps: cash refunds, applying credits to receivables, customer-statement/report integration, and line-level tax allocation. No automatic cash refund or receivable balance mutation is implied.
+- Remaining Feature 31 gaps: cash-refund records, line-level tax allocation/reversal, P&L/tax report integration, and exact-head validation. Credit applications are recorded separately from cash refunds; no cash refund is implied.
 
 
 - Frontend follow-up: added a customer selector for the issued credit-note list; the selected customer is sent to the business-scoped API filter and the list now displays customer names instead of abbreviated IDs. On a failed filtered refresh, stale credit-note rows are cleared so a previous customer's results cannot be mistaken for the selected filter. Added source-level regression assertions for the filter and stale-result guard. These latest UI/test edits are **NOT RUN**; prior sandbox results above predate this head and do not verify them.
 
 - Frontend pagination follow-up: the credit-note list now loads additional pages in batches of 100, preserves the active customer filter, ignores responses for a changed workspace/filter, and deduplicates rows by note ID. Source-level assertions were added. This pagination change and its assertions are **NOT RUN**.
+- Credit-application UI follow-up: OWNERs can choose an issued receivable for the same customer/currency, apply an amount bounded by the displayed remaining credit and invoice outstanding amount, and see applied/remaining totals. Exact retries retain the same idempotency key for the same note/invoice/amount tuple; source-level tests cover this behavior and amount/customer/currency guards. Latest UI/test changes are **NOT RUN**.
