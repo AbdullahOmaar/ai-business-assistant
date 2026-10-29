@@ -34,6 +34,20 @@ Requested execution scope: five substantial, contract-independent workstreams on
 - **Dependencies:** T37/T40 approvals continue to gate salary history/backfill/snapshots and shared payment lifecycle changes. Payment rollback test uses the existing SQLite fixture and is not evidence of PostgreSQL concurrency.
 - **Delivery:** preserve PR #308 as Draft/Open/Unmerged. No merge or deployment.
 
+## T41 — Five additional feature-hardening work packages (2026-10-30)
+
+Scope: remain on the existing branch `feat/t41-salary-history-effective-dates` and PR #308. Test-only coverage; no schema, financial policy, salary-history, or payment lifecycle implementation changes.
+
+1. **Employee identity update integrity:** duplicate normalized email/code updates must return 409, preserve the existing employee fields, and emit no additional audit events.
+2. **Payroll salary snapshot stability:** changing the employee's current monthly salary must not retroactively mutate an already-created payroll base salary or net-pay snapshot.
+3. **Payroll list correctness:** period filtering, stable ordering, limit, and offset pagination must return deterministic records.
+4. **Approval/payment replay protection:** self-approval and repeated approval/payment attempts must be rejected; successful approval/payment must produce exactly one linked expense and one audit event for each transition.
+5. **Audit transaction atomicity:** inject an audit-write exception during employee creation and prove the employee row and audit row are both rolled back.
+
+- **Implementation:** all five regression tests added to `backend/tests/test_employee_payroll_api.py` in commit `587c7b5501b06ec8b91c8017cd4ad7960da5918a`.
+- **Execution:** NOT RUN in this connector-only pass. Do not mark these tasks VERIFIED COMPLETE until the focused suite runs against the exact current branch head. The payment replay test uses the existing state-machine behavior only; it does not introduce or redefine the T37/T40 shared payment contract.
+- **Delivery:** existing PR #308 remains the sole workstream; no merge or deployment.
+
 ## T41 — Follow-up backlog beyond the initial 15 tasks (2026-10-29)
 
 These are newly identified tasks from source/test inspection. They are NOT marked complete and must stay on the existing T41 branch/PR where appropriate, with schema/financial contract changes held behind T37/T40 approval.
