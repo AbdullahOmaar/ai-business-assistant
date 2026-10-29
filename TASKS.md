@@ -3,9 +3,9 @@
 ## T41 — Employees & Payroll regression checkpoint (2026-10-29)
 
 - **Status:** PARTIALLY COMPLETE — added seven focused API regressions across the current branch; execution of the new tests is NOT RUN until exact-head CI/local runner evidence is available.
-- **Branch / HEAD:** `feat/t41-salary-history-effective-dates` / `bb23839d093fd4d013b488b6f4b416beaf30e3e8`.
+- **Branch / HEAD:** `feat/t41-salary-history-effective-dates` / `7c180a173097a5271207994138458794d44d3663` (live PR head verified after the latest test/docs commits).
 - **PR:** [#308 — draft, open, not merged](https://github.com/AbdullahOmaar/ai-business-assistant/pull/308).
-- **Current diff scope:** test-only additions in `backend/tests/test_employee_payroll_api.py`, the existing gap audit in `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md`, and this task checkpoint in `TASKS.md`; refresh commit counts and exact HEAD from live PR metadata after this checkpoint lands.
+- **Current diff scope:** test-only additions in `backend/tests/test_employee_payroll_api.py`, the existing gap audit in `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md`, and this task checkpoint in `TASKS.md`. Live PR metadata currently reports 19 commits, 3 changed files, +371/-0.
 - **Regression added:** deactivated employees cannot create payroll; the API returns 404; payroll and expense rows remain unchanged; no payroll audit event is emitted; employee create/deactivation audit events remain present.
 - **Additional regression added (commit `f6dc3b8acdac96f9b8cef611044df37e2e87c48b`):** `active_only=true` excludes deactivated employees while the unfiltered OWNER listing retains both active and inactive employees.
 - **Additional regression added (commit `1c34563edf28d1952ff8165bbfd7f280526d02de`):** duplicate payroll creation for the same employee/period must return 409 without changing the original record, adding an expense, or emitting a second payroll audit event.
