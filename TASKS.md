@@ -1568,7 +1568,7 @@ Five large feature tasks, ordered by financial risk and dependency:
 
 ### Current batch execution
 
-- **Task 1 / Feature 31:** IN PROGRESS. Source inspection confirms SalesReturn/SalesReturnLine exist and approval restores tracked stock, but no credit-note/refund model or workflow is present. Approved returns are explicitly not receivable credits in customer statements; issued invoice totals must remain immutable. Initial lifecycle/contract design is being recorded before any financial mutations are introduced.
+- **Task 1 / Feature 31:** PARTIALLY COMPLETE. Added the immutable CreditNote model, migration 0006, and an OWNER-only idempotent issuance endpoint for approved returns. It snapshots the original invoice/customer/currency and approved return total, preserves issued invoice totals, adds a unique one-credit-note-per-return constraint, and writes an audit event. Cash refunds, credit applications, customer-statement netting, tax treatment, frontend workflow, and tests remain incomplete.
 - **Task 2 / Feature 32:** TODO — dependent on approved return/COGS event contract.
 - **Task 3 / Feature 27:** TODO — tax snapshot/reversal contract depends on Feature 31.
 - **Task 4 / Feature 33:** TODO — cash/bank matching must remain separate from payment allocation and customer receivables.
