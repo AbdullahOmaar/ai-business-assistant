@@ -1568,7 +1568,7 @@ Five large feature tasks, ordered by financial risk and dependency:
 
 ### Current batch execution
 
-- **Task 1 / Feature 31:** PARTIALLY COMPLETE. Added the immutable CreditNote model, migration 0006, and an OWNER-only idempotent issuance endpoint for approved returns. It snapshots the original invoice/customer/currency and approved return total, preserves issued invoice totals, adds a unique one-credit-note-per-return constraint, and writes an audit event. Cash refunds, credit applications, customer-statement netting, tax treatment, frontend workflow, and tests remain incomplete.
+- **Task 1 / Feature 31:** PARTIALLY COMPLETE. Added immutable CreditNote model, migration 0006, OWNER-only issuance from approved returns, paginated read API, and Angular API contracts. The endpoint snapshots original invoice/customer/currency and approved return amount, preserves invoice totals, enforces one note per return, and writes an audit event. To avoid issuing a misleading under-valued credit note, issuance is blocked when the original invoice has tax until tax can be allocated to returned lines. Cash refunds, credit applications, customer-statement netting, tax allocation, UI workflow, and tests remain incomplete.
 - **Task 2 / Feature 32:** TODO — dependent on approved return/COGS event contract.
 - **Task 3 / Feature 27:** TODO — tax snapshot/reversal contract depends on Feature 31.
 - **Task 4 / Feature 33:** TODO — cash/bank matching must remain separate from payment allocation and customer receivables.
