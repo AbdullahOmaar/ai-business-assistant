@@ -713,6 +713,107 @@ class CashRefund(Base):
     )
 
 
+class BankAccount(Base):
+    """Business-owned cash/bank account used only for statement reconciliation."""
+
+    __tablename__ = "bank_accounts"
+    __table_args__ = (
+        UniqueConstraint("id", "business_id", name="uq_bank_accounts_id_business"),
+        UniqueConstraint("business_id", "account_key", name="uq_bank_account_business_key"),
+        CheckConstraint("length(currency_code) = 3", name="ck_bank_account_currency_length"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    account_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class BankStatementRow(Base):
+    """Imported bank/cash statement entry; positive is inflow, negative is outflow."""
+
+    __tablename__ = "bank_statement_rows"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["account_id", "business_id"],
+            ["bank_accounts.id", "bank_accounts.business_id"],
+            name="fk_bank_statement_rows_account_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("id", "business_id", name="uq_bank_statement_rows_id_business"),
+        UniqueConstraint("business_id", "account_id", "external_transaction_id",
+                         name="uq_bank_statement_external_transaction"),
+        CheckConstraint("amount <> 0", name="ck_bank_statement_amount_nonzero"),
+        CheckConstraint("length(currency_code) = 3", name="ck_bank_statement_currency_length"),
+        CheckConstraint("status IN ('unmatched', 'matched', 'ignored')",
+                        name="ck_bank_statement_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    account_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    external_transaction_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    transaction_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="unmatched")
+    imported_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class BankReconciliationMatch(Base):
+    """Exact, auditable link between one statement row and one recorded payment/expense."""
+
+    __tablename__ = "bank_reconciliation_matches"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["statement_row_id", "business_id"],
+            ["bank_statement_rows.id", "bank_statement_rows.business_id"],
+            name="fk_bank_match_statement_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["payment_id", "business_id"],
+            ["payments.id", "payments.business_id"],
+            name="fk_bank_match_payment_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["expense_id", "business_id"],
+            ["expenses.id", "expenses.business_id"],
+            name="fk_bank_match_expense_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("business_id", "statement_row_id", name="uq_bank_match_statement_row"),
+        CheckConstraint(
+            "(payment_id IS NOT NULL AND expense_id IS NULL) OR "
+            "(payment_id IS NULL AND expense_id IS NOT NULL)",
+            name="ck_bank_match_exactly_one_target",
+        ),
+        CheckConstraint("matched_amount > 0", name="ck_bank_match_amount_positive"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    statement_row_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    payment_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    expense_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    matched_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    matched_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    matched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class PlatformRoleGrant(Base):
     """A delegated platform role assigned by a bootstrap super administrator.
 
