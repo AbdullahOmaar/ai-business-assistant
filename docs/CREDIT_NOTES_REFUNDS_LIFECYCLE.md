@@ -26,9 +26,10 @@ Status: PARTIALLY COMPLETE for Feature 31. The first slice implements immutable 
 - Use Decimal arithmetic and explicit rounding; never trust client-supplied totals or statuses.
 - Preserve original invoice and payment history. Corrections use compensating records, never destructive edits.
 - Approval/issue/refund operations must be atomic, replay-safe, and audited. Failed or replayed requests must not duplicate stock, receivable credit, or cash-out.
-- The implementation now has a migration with relationship/uniqueness constraints, owner-only issue endpoint, paginated read endpoint, and Angular API methods. Remaining: frontend workflow, tax allocation, credit application, refund records, statement/report integration, and regression coverage for partial credit/refund, duplicate replay, currency/customer mismatch, concurrent approvals, already allocated payments, and no-side-effect denials.
+- The implementation now has a migration with relationship/uniqueness constraints, owner-only issue endpoint, paginated read endpoint, and Angular API methods. Remaining: frontend workflow, tax allocation, credit application, refund records, statement/report integration, and regression coverage for partial credit/refund, currency/customer mismatch, concurrent approvals, and already allocated payments.
+- Added `backend/tests/test_credit_note_regressions.py` covering successful issuance/idempotent replay, unchanged original invoice totals, OWNER-only denial with no note/audit side effects, rejection of unapproved returns, the tax guard, and cross-business return isolation. These tests are authored but **NOT RUN**; they do not constitute a passing test result.
 - Do not expose “refund complete” until a persisted cash-out record is committed. A credit note alone does not prove cash was returned.
-- Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active.
+- Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active. The focused credit-note regression tests have been added to source but still require execution.
 
 ## Implementation progress
 
