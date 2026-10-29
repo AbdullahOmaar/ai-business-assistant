@@ -69,6 +69,7 @@
 | POST | `/api/v1/businesses/{business_id}/suppliers` | Membership required |
 | POST | `/api/v1/businesses/{business_id}/products` | Membership required |
 | POST | `/api/v1/businesses/{business_id}/invoices` | Membership required; customer/product IDs must belong to same business |
+| POST | `/api/v1/businesses/{business_id}/invoices/issue` | OWNER only; create and issue atomically; customer/product IDs must belong to same business |
 | POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue` | Membership and invoice ownership required |
 | PATCH | `/api/v1/businesses/{business_id}/invoices/{invoice_id}` | Membership, same-business invoice, and draft-state checks required |
 | POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/void` | Membership, same-business invoice, and lifecycle rules required |
@@ -91,10 +92,13 @@ All paths below inherit the business ID in the prefix and require a trusted prin
 | GET | `/reports/data-integrity` | OWNER only; read-only integrity findings scoped to business |
 | POST | `/expenses` | Membership required |
 | GET | `/expenses` | Membership required; filter by business |
+| GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
+| GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |
 | POST | `/purchase-orders/{order_id}/receive` | Membership and same-business order/lines |
 | POST | `/sales-returns` | Membership; invoice and invoice lines must be same-business |
 | POST | `/sales-returns/{return_id}/approve` | Membership and same-business return |
+| GET | `/recurring-invoices` | Membership required; schedules scoped to the requested business |
 | POST | `/recurring-invoices` | Membership; customer reference must be same-business |
 | POST | `/pricing-rules` | Membership required |
 | POST | `/notifications` | Membership required |
