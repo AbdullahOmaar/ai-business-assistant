@@ -21,6 +21,15 @@
 
 ## T41 — Five additional integrity workstreams (2026-10-30)
 
+### Follow-up strengthening — 2026-10-30
+
+- Strengthened `test_payroll_listing_does_not_expose_another_business_records`: it now creates a payroll record in each of two businesses and asserts each business receives only its own payroll ID and business_id. This replaces the weaker empty-second-business assertion.
+- Strengthened `test_invalid_employee_updates_do_not_change_profile_or_audit`: it now checks persisted Employee database fields directly in addition to API output and audit count.
+- Corrected the foreign-business test setup to create the second employee through the second business endpoint (the shared fixture helper is intentionally scoped to the primary business).
+- Commits: `babbe6c282372d350963f4955a59de345cfe7deb` and `bc7462416c5043cd9d0dd96821cbbde0fa3ec451`.
+- Verification: NOT RUN. These refinements are committed but require an authorized runner; CircleCI currently blocks all six jobs before execution because the connected plan has no credits. No merge/deployment.
+
+
 Requested: five substantial feature-specific tasks on the existing branch/PR #308 only; no merge or deployment.
 
 1. **Payment expense-insert failure recovery:** inject an Expense insert failure and assert payroll remains approved/unpaid, no expense persists, and no paid audit event is emitted.
