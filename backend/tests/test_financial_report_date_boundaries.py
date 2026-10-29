@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import Base, Expense, Invoice
+from app.models import Base, Business, Expense, Invoice
 from app.security import AuthenticatedPrincipal
 
 
@@ -302,6 +302,24 @@ def test_receivables_aging_default_uses_business_local_date_not_utc_date():
             response = client.get(f"/api/v1/businesses/{business_id}/reports/receivables-aging")
         assert response.status_code == 200, response.text
         assert response.json()["as_of_date"] == "2026-01-16"
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_unfiltered_tax_summary_does_not_require_timezone_conversion():
+    """Legacy unfiltered summary should remain available even if timezone metadata is invalid."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with Session(engine) as session:
+            business = session.get(Business, business_id)
+            assert business is not None
+            business.timezone = "Not/A_Real_Zone"
+            session.commit()
+
+        response = client.get(f"/api/v1/businesses/{business_id}/reports/tax-summary")
+        assert response.status_code == 200, response.text
+        assert response.json()["period"] == {"start_date": None, "end_date": None}
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)
 
