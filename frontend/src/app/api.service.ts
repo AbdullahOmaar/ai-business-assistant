@@ -20,7 +20,7 @@ export interface InvoiceDetail extends Invoice {
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface CreditNote {
   id: string; business_id: string; sales_return_id: string; invoice_id: string; customer_id: string;
-  credit_note_number: string; currency_code: string; total: string; applied_total?: string; remaining_credit?: string; created_by_subject: string; created_at: string;
+  credit_note_number: string; currency_code: string; total: string; applied_total?: string; refunded_total?: string; remaining_credit?: string; created_by_subject: string; created_at: string;
 }
 export interface SalesReturn {
   id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
