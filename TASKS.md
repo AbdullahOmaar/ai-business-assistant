@@ -1560,6 +1560,7 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Branch:** `test/t38-cross-tenant-payment-allocation-20261029`
 - **Test:** `backend/tests/test_api.py::test_payment_allocation_rejects_foreign_business_invoice_without_side_effects`
 - **Coverage:** An OWNER authenticated for one business attempts to allocate a payment to an issued invoice belonging to another business. The API must reject the request (422) and persist no Payment, PaymentAllocation, or AuditEvent for the local business.
-- **Commit:** `934d85d21ba0a072ceb5b6861ea5c423e9839a05` (test file commit; exact-head CI pending at time of this note).
-- **Runtime tests/build/security:** NOT RUN locally in this connector-only environment. Do not mark verified until exact-head CI is observed.
+- **Commits:** `934d85d21ba0a072ceb5b6861ea5c423e9839a05` (test) and `2e07a4f2757edf0cade826fd131dcb3c5cd723b0` (ledger update).
+- **Exact-head CI:** VERIFIED PASS on `2e07a4f2757edf0cade826fd131dcb3c5cd723b0`: six substantive CircleCI checks plus `verify-all-changes/all-checks-passed` succeeded (7/7).
+- **Runtime tests/build/security:** NOT RUN locally in this connector-only environment; CI passed on the exact recorded head.
 - **Dependency:** T37 shared contract remains unapproved; no shared schema/mutation behavior changed. No merge/deployment.
