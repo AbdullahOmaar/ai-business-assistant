@@ -200,7 +200,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 
 @if (tab === 'suppliers') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span></div>
+                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportSupplierCsv()" [disabled]="csvExporting">{{ csvExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <form class="inline-form" (ngSubmit)="createSupplier()">
                   <input name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
                   <input name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
@@ -217,7 +217,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 
 @if (tab === 'purchases') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('أوامر الشراء', 'Purchase orders') }}</h2><p>{{ t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') }}</p></div><span class="count">{{ purchaseOrders.length }}</span></div>
+                <div class="section-head"><div><h2>{{ t('أوامر الشراء', 'Purchase orders') }}</h2><p>{{ t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') }}</p></div><span class="count">{{ purchaseOrders.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportPurchaseOrdersCsv()" [disabled]="csvExporting">{{ csvExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <form class="stack" (ngSubmit)="createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input name="purchaseOrderNumber" required maxlength="64" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select name="purchaseSupplierId" required [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -990,6 +990,7 @@ export class AppComponent implements OnInit {
   notificationScheduledAt = '';
   suppliersLoading = false;
   purchasesLoading = false;
+  csvExporting = false;
   recurringLoading = false;
   operationsError = '';
   supplierName = '';
@@ -1650,6 +1651,35 @@ export class AppComponent implements OnInit {
       this.profitLoss = null;
     } catch (error) {
       if (this.business?.id === businessId) this.error = this.message(error);
+    }
+  }
+
+  exportSupplierCsv(): void {
+    void this.downloadBusinessCsv('suppliers', 'suppliers.csv');
+  }
+
+  exportPurchaseOrdersCsv(): void {
+    void this.downloadBusinessCsv('purchase_orders', 'purchase_orders.csv');
+  }
+
+  private async downloadBusinessCsv(entityType: 'suppliers' | 'purchase_orders', filename: string): Promise<void> {
+    if (!this.business || this.business.role !== 'owner' || this.csvExporting) return;
+    const businessId = this.business.id;
+    this.csvExporting = true;
+    this.operationsError = '';
+    try {
+      const blob = await this.api.exportBusinessCsv(businessId, entityType);
+      if (this.business?.id !== businessId) return;
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      if (this.business?.id === businessId) this.operationsError = this.message(error);
+    } finally {
+      this.csvExporting = false;
     }
   }
 
