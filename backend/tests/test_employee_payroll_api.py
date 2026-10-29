@@ -424,6 +424,48 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
 
+def test_approved_payroll_cannot_be_edited_without_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11", "allowances": "25.00"},
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "approved"
+    before = approved.json()
+
+    rejected = env["client"].patch(
+        f"{base}/payroll/{payroll_id}",
+        json={"allowances": "999.00", "deductions": "10.00"},
+    )
+    assert rejected.status_code == 409
+    assert rejected.json()["detail"] == "Only draft payroll can be edited."
+
+    with app.state.session_factory() as session:
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None
+        assert persisted.status == "approved"
+        assert persisted.allowances == Decimal(before["allowances"])
+        assert persisted.bonuses == Decimal(before["bonuses"])
+        assert persisted.deductions == Decimal(before["deductions"])
+        assert persisted.net_pay == Decimal(before["net_pay"])
+        assert persisted.expense_id is None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        actions = session.scalars(
+            select(AuditEvent.action)
+            .where(AuditEvent.target_type == "payroll")
+            .order_by(AuditEvent.created_at, AuditEvent.action)
+        ).all()
+        assert actions == ["payroll.created", "payroll.approved"]
+
+
 def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(employee_environment):
     env = employee_environment
     employee = _create_employee(env).json()
