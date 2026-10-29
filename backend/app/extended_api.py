@@ -102,13 +102,6 @@ class SupplierInput(BaseModel):
     phone: str | None = Field(default=None, max_length=32)
     address: str | None = Field(default=None, max_length=500)
 
-class SupplierUpdateInput(BaseModel):
-    name: str | None = Field(default=None, max_length=160)
-    email: str | None = Field(default=None, max_length=254)
-    phone: str | None = Field(default=None, max_length=32)
-    address: str | None = Field(default=None, max_length=500)
-    is_active: bool | None = None
-
 
 class SupplierPatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=160)
@@ -275,51 +268,6 @@ def post_supplier(business_id: UUID, body: SupplierInput,
     item = _commit(session, op)
     return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
 
-@router.patch("/suppliers/{supplier_id}")
-def patch_supplier(business_id: UUID, supplier_id: UUID, body: SupplierUpdateInput,
-                   session: Session = Depends(get_session),
-                   principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Update supplier contact data; only owners may deactivate/reactivate a supplier."""
-    def op():
-        _authorized(session, principal, business_id)
-        changes = body.model_fields_set
-        if not changes:
-            raise WorkflowError("At least one supplier field must be provided")
-        if "is_active" in changes:
-            _authorized(session, principal, business_id, owner_only=True)
-        item = session.scalars(select(Supplier).where(
-            Supplier.id == supplier_id,
-            Supplier.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if item is None:
-            raise WorkflowError("Supplier not found in this business")
-        if "name" in changes:
-            name = (body.name or "").strip()
-            if not name:
-                raise WorkflowError("Supplier name cannot be blank")
-            item.name = name
-        for field in ("email", "phone", "address"):
-            if field in changes:
-                value = getattr(body, field)
-                setattr(item, field, value.strip() if value else None)
-        if "is_active" in changes:
-            if body.is_active is None:
-                raise WorkflowError("Supplier active state must be true or false")
-            item.is_active = body.is_active
-        session.add(AuditEvent(
-            business_id=business_id,
-            actor_subject=principal.subject,
-            action="supplier.updated",
-            target_type="supplier",
-            target_id=str(item.id),
-            change_summary="Updated supplier profile",
-        ))
-        session.flush()
-        return item
-    item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
-
-
 @router.get("/purchase-orders")
 def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                          offset: int = Query(default=0, ge=0),
@@ -480,6 +428,8 @@ def patch_supplier(business_id: UUID, supplier_id: UUID, body: SupplierPatch,
         changes = body.model_dump(exclude_unset=True)
         if not changes:
             raise WorkflowError("At least one supplier field must be provided")
+        if "is_active" in changes:
+            _authorized(session, principal, business_id, owner_only=True)
         if "name" in changes:
             name = (changes["name"] or "").strip()
             if not name:
