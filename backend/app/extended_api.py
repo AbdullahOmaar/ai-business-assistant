@@ -1209,6 +1209,7 @@ def export_csv(business_id: UUID, entity_type: str,
             "customers": ("customers", ("id", "name", "email", "phone", "address", "created_at")),
             "products": ("products", ("id", "sku", "name", "unit", "unit_price", "is_stock_tracked", "created_at")),
             "expenses": ("expenses", ("id", "category", "description", "amount", "currency_code", "incurred_at", "vendor_name", "reference")),
+            "suppliers": ("suppliers", ("id", "name", "email", "phone", "address", "is_active", "created_at")),
         }
         if entity_type == "purchase_orders":
             rows = session.execute(
@@ -1261,7 +1262,8 @@ def export_csv(business_id: UUID, entity_type: str,
             raise HTTPException(status_code=404, detail="Unsupported export entity")
         from app.models import Customer
         model_name, columns = supported[entity_type]
-        model = {"customers": Customer, "products": Product, "expenses": Expense}[entity_type]
+        model = {"customers": Customer, "products": Product, "expenses": Expense,
+                 "suppliers": Supplier}[entity_type]
         rows = session.scalars(select(model).where(model.business_id == business_id)).all()
         buffer = io.StringIO(newline="")
         writer = csv.writer(buffer)
