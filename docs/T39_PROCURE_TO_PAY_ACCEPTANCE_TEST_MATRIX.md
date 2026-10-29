@@ -35,8 +35,6 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-05 | Same receipt request replayed with same idempotency identity | One logical receipt and one stock effect only; stable response or documented conflict | Requires T37 idempotency contract |
 | T39-06 | Two concurrent receipts for the same remaining quantity | No over-receipt; stock and received quantities reconcile after both transactions | Requires DB-backed concurrency test; SQLite alone may not prove production locking |
 | T39-07 | Receipt quantity exceeds remaining order quantity, including an invalid later line after an earlier valid line | Validate all requested lines before writes; reject atomically with no stock, order, audit, or financial side effects | Contract-independent safety invariant |
-| T39-19 | Receipt request targets draft, received, or cancelled purchase order | Reject stale/invalid lifecycle state; no order-line, stock-ledger, or audit mutation | Contract-independent lifecycle invariant |
-| T39-20 | Receipt quantity is NaN, positive/negative infinity, zero, or negative | Reject before arithmetic/write; order, received quantities, stock ledger and audit remain unchanged | Contract-independent numeric input invariant |
 | T39-08 | Supplier rejects part of delivered goods | Accepted and rejected quantities remain separately traceable; rejected goods never increase available stock | Requires approved rejection lifecycle |
 | T39-09 | Return accepted goods to supplier | Return references original receipt/movement; quantity cannot exceed eligible received quantity; repeated return cannot double-post | Requires T37/T38 return/reversal boundary |
 | T39-10 | Supplier bill differs from PO/receipt | Server-side matching exposes mismatch; no silent overwrite of receipt or PO values | Matching policy needs product-owner decision |
@@ -48,6 +46,8 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-16 | Invalid currency, negative/zero quantity, foreign supplier/product IDs, stale state | Request rejected before mutation; no stock/payable/payment side effects | Contract-independent input/tenant safety |
 | T39-17 | Transaction failure after stock mutation is staged | Rollback leaves no partial order/stock/audit/financial state | Requires integration test using supported database |
 | T39-18 | Reconciliation after mixed partial receipts, returns and payments | Source records, movement ledger, supplier balance and cash postings reconcile; discrepancies are explicit | Final contract required |
+| T39-19 | Receipt request targets draft, received, or cancelled purchase order | Reject stale/invalid lifecycle state; no order-line, stock-ledger, or audit mutation | Contract-independent lifecycle invariant |
+| T39-20 | Receipt quantity is NaN, positive/negative infinity, zero, or negative | Reject before arithmetic/write; order, received quantities, stock ledger and audit remain unchanged | Contract-independent numeric input invariant |
 
 ## Execution plan after contract approval
 
