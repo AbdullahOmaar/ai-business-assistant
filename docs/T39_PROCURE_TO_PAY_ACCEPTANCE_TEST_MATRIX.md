@@ -65,4 +65,16 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Whether supplier bills create expenses, and how T40 cash-flow/report metrics consume payment events.
 - OWNER/STAFF policy for create, approve, receive, return, bill, and pay actions beyond already verified existing behavior.
 
-**Validation note:** This commit changes documentation only. No application tests, build, security scan, or CI have been run by this document change.
+
+
+## Existing source-to-test map (verified by source inspection)
+
+- `backend/app/operations.py::receive_purchase_order`: requires OWNER; locks the order and its lines; accepts only `approved` / `partially_received`; rejects empty, non-positive, foreign-line, or over-remaining quantities; locks and validates each product; updates received quantity; records a `StockMovement` for stock-tracked products; updates order state and writes an audit event. The operation accepts quantities only and has no receipt-event/idempotency identity, so a retried request cannot be distinguished from a genuinely new partial delivery by this function alone.
+- `backend/tests/test_operations.py::test_purchase_receiving_records_stock_and_completes_order`: checks a 4 + 6 partial receipt sequence and final order states; currently only asserts that at least one stock movement exists, not the exact movement count/quantity or replay behavior.
+- `backend/tests/test_operations.py::test_purchase_receiving_requires_owner_role`: checks the OWNER-only guard raises for STAFF; this unit test does not itself assert before/after no-side-effect snapshots.
+- `backend/tests/test_api.py` and `backend/tests/test_business_tenant_boundaries.py`: contain receiving API and business-scope denial coverage; preserve and extend these rather than duplicate endpoints or replace the existing authorization matrix.
+- `backend/app/models.py::StockMovement`: append-only movement records are business-scoped, constrain movement type/quantity, and link product to business. No supplier bill/payable/payment model was found in the inspected model source.
+
+**Safe conclusion:** receiving already has useful quantity bounds, row-lock intent, audit, and movement recording. Replay identity, exact stock-effect assertions, rejected goods/returns, and supplier liability/payment records remain separate gaps. SQLite tests are not evidence that PostgreSQL row-lock/concurrency behavior is correct.
+
+**Validation note:** documentation only. Prior PR head `dffcb7656121eacaa875671ffa1c3f34bc7a6376` reported CircleCI 7/7 SUCCESS. After updating the checkpoint, head `a2b48c47f648d0c139a9fd438cc4165a98aab420` had 2 contexts SUCCESS and 4 PENDING at last poll. Any new commit changes the head again, so exact-head CI must be rechecked. Local backend tests/build/security scan remain NOT RUN; this is not T39 acceptance evidence.
