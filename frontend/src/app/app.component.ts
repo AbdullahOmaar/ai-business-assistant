@@ -1204,7 +1204,15 @@ export class AppComponent implements OnInit {
     document.documentElement.lang = this.language;
     document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
     try {
-      const config = await this.auth.getRuntimeConfig();
+      let config;
+      try {
+        config = await this.auth.getRuntimeConfig();
+      } catch (error) {
+        this.startupFailed = true;
+        this.error = this.message(error);
+        return;
+      }
+
       this.setupNeeded = !config.apiBaseUrl?.trim() ||
         !config.firebase?.apiKey || !config.firebase?.authDomain ||
         !config.firebase?.projectId || !config.firebase?.appId;
@@ -1217,7 +1225,6 @@ export class AppComponent implements OnInit {
         await this.loadBusinesses();
       }
     } catch (error) {
-      this.startupFailed = true;
       this.error = this.message(error);
     } finally {
       this.loading = false;
