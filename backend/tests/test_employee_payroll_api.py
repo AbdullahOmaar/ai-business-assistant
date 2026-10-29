@@ -60,9 +60,9 @@ def employee_environment(monkeypatch):
         engine.dispose()
 
 
-def _create_employee(env, *, name="Mona Ali", code="EMP-01", email="mona@example.test", salary="5000.00"):
+def _create_employee(env, *, name="Mona Ali", code="EMP-01", email="mona@example.test", phone=None, salary="5000.00"):
     response = env["client"].post(f"/api/v1/businesses/{env['business_id']}/employees", json={
-        "name": name, "employee_code": code, "email": email,
+        "name": name, "employee_code": code, "email": email, "phone": phone,
         "department": "Sales", "job_title": "Associate", "monthly_salary": salary,
     })
     return response
@@ -428,7 +428,7 @@ def test_employee_payroll_audit_summaries_exclude_sensitive_values(employee_envi
     env = employee_environment
     created = _create_employee(
         env, name="Confidential Employee", code="EMP-PRIVATE",
-        email="private.person@example.test", salary="8765.43",
+        email="private.person@example.test", phone="+20-100-555-0199", salary="8765.43",
     )
     assert created.status_code == 201
     employee = created.json()
@@ -444,7 +444,7 @@ def test_employee_payroll_audit_summaries_exclude_sensitive_values(employee_envi
         "8765.43",
         "123.45",
         "67.89",
-        employee["phone"] or "",
+        "+20-100-555-0199",
     ]
     with app.state.session_factory() as session:
         summaries = session.scalars(
