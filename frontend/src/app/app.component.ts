@@ -479,7 +479,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' |
 
             @if (tab === 'taxes' && business?.role === 'owner') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('ملخص الضرائب', 'Tax summary') }}</h2><p>{{ t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.') }}</p></div></div>
+                <div class="section-head"><div><h2>{{ t('ملخص الضرائب', 'Tax summary') }}</h2><p>{{ t('يعرض ضريبة الفواتير الصادرة مطروحًا منها ضريبة الإشعارات الدائنة الصادرة، مع فصل العملات.', 'Shows tax on issued invoices less tax reversed by issued credit notes, keeping currencies separate.') }}</p></div></div>
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
                   <label>{{ t('من تاريخ', 'Start date') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
                   <label>{{ t('إلى تاريخ', 'End date') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
@@ -487,8 +487,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' |
                 </form>
                 @if (taxError) { <div class="error-banner" role="alert">{{ taxError }}</div> }
                 @if (taxSummaryReport) {
-                  <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
-                  @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.') }}</p> }
+                  <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) {
+                    <article class="metric"><span>{{ t('ضريبة الفواتير الصادرة', 'Tax on issued invoices') }} · {{ entry.currency_code }}</span><strong>{{ entry.invoice_tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article>
+                    <article class="metric"><span>{{ t('ضريبة الإشعارات الدائنة المرتجعة', 'Tax reversed by credit notes') }} · {{ entry.currency_code }}</span><strong>{{ entry.credit_note_tax_reversed }} {{ entry.currency_code }}</strong><small>{{ entry.credit_note_count }} {{ t('إشعار دائن صادر', 'issued credit notes') }}</small></article>
+                    <article class="metric"><span>{{ t('صافي الضريبة بعد الإشعارات الدائنة', 'Net tax after credit notes') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong></article>
+                  }</div>
+                  @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير أو إشعارات دائنة في الفترة المحددة.', 'No issued invoices or credit notes in the selected period.') }}</p> }
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
