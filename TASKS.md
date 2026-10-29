@@ -1609,3 +1609,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Extended `GET /purchase-orders` with optional `status` and `supplier_id` filters while preserving existing limit/offset pagination and the existing list response shape.
 - Status is constrained to the current lifecycle values `draft`, `approved`, `partially_received`, `received`, and `cancelled`; supplier filtering is still combined with business-scoped query predicates.
 - Added acceptance scenario T39-23. Tests/build/CI remain **NOT RUN** by owner instruction because the current blocker is the usage limit; this is not a passing validation claim.
+
+
+## T39 five-work-item feature tranche — 2026-10-29
+
+1. **Supplier directory lifecycle/search:** supplier detail and patch endpoints, audit trail, owner-only active/inactive transitions, optional contact clearing, and partial-name search with tenant scope.
+2. **Purchase-order detail read model:** scoped supplier/product labels and ordered/received/remaining quantities; missing cross-scope references fail closed.
+3. **Purchase-order list query/performance:** status/supplier filters plus batched line and supplier retrieval to avoid one query per order; stable ordering and existing pagination retained.
+4. **Purchase-order creation integrity:** normalize and reject blank order numbers; require a three-letter ASCII currency code; validate every active stock-tracked product in the same business before staging order writes; resolve products with one tenant-scoped query.
+5. **Acceptance/docs/release evidence:** acceptance matrix now includes T39-24 and T39-25; this queue and Notion checkpoint record changes and validation limits.
+
+**Validation:** Tests, build, security, migration checks and CI are **NOT RUN** per owner instruction because the current usage-limit blocker remains. Code changes are not runtime-verified. Existing CI failures remain unresolved. PR #306 is still the only candidate; do not merge until exact-head required checks pass and the T37/T38/T40 contract gate is approved.
