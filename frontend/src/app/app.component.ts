@@ -447,20 +447,33 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             }
             @if (tab === 'payments' && business?.role === 'owner') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div></div>
+                <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ووزّعه على فاتورة صادرة أو أكثر لنفس العميل.', 'Record the receipt and allocate it across one or more issued invoices for the same customer.') }}</p></div><div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
                   <input [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount">
-                  <select [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>
+                  <select [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="loading || paymentAllocations.length > 0"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>
                   <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
-                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount"> }
+                  <div class="payment-allocation-editor">
+                    <div class="section-actions"><strong>{{ t('تخصيص المبلغ للفواتير', 'Allocate receipt to invoices') }}</strong><button class="secondary" type="button" (click)="addPaymentAllocation()" [disabled]="loading || !paymentCustomerId || !eligiblePaymentInvoices.length">{{ t('إضافة فاتورة', 'Add invoice') }} +</button></div>
+                    @if (!paymentAllocations.length) { <p class="muted">{{ t('يمكنك تسجيل الدفعة دون تخصيصها الآن، أو إضافة عدة فواتير للعميل نفسه.', 'You may record the receipt without allocating it now, or add multiple invoices for the same customer.') }}</p> }
+                    @for (allocation of paymentAllocations; track $index; let i = $index) {
+                      <div class="payment-allocation-row">
+                        <label>{{ t('الفاتورة', 'Invoice') }} {{ i + 1 }}<select [name]="'paymentAllocationInvoice' + i" [attr.aria-label]="t('الفاتورة', 'Invoice') + ' ' + (i + 1)" required [(ngModel)]="allocation.invoiceId" (ngModelChange)="onPaymentAllocationInvoiceChange(allocation)"><option value="" disabled>{{ t('اختر فاتورة مستحقة', 'Choose an outstanding invoice') }}</option>@for (invoice of paymentInvoicesForAllocation(allocation); track invoice.id) { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ t('متبقي', 'due') }} {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</option> }</select></label>
+                        <label>{{ t('المبلغ المخصص', 'Allocated amount') }}<input [name]="'paymentAllocationAmount' + i" [attr.aria-label]="t('المبلغ المخصص', 'Allocated amount') + ' ' + (i + 1)" type="number" min="0.01" step="0.01" required [(ngModel)]="allocation.amount"></label>
+                        <button class="secondary danger" type="button" (click)="removePaymentAllocation(i)" [disabled]="loading" [attr.aria-label]="t('حذف التخصيص', 'Remove allocation')">{{ t('حذف', 'Remove') }}</button>
+                      </div>
+                    }
+                    @if (paymentAllocations.length) {
+                      <div class="payment-allocation-summary"><span>{{ t('إجمالي التخصيصات', 'Allocated total') }}: <strong>{{ paymentAllocationTotal }} {{ business.currency_code }}</strong></span><span>{{ t('المتبقي من الدفعة غير المخصص', 'Receipt amount not allocated') }}: <strong>{{ paymentAllocationBalance }} {{ business.currency_code }}</strong></span></div>
+                      @if (paymentAllocationValidationMessage) { <p class="error" role="alert">{{ paymentAllocationValidationMessage }}</p> }
+                    }
+                  </div>
                   <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">{{ t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
                 @if (paymentMessage) { <p [class.error]="paymentError" [attr.role]="paymentError ? 'alert' : 'status'" aria-live="polite">{{ paymentMessage }}</p> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list">
-                  @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
+                  @for (payment of payments; track payment.id) { <article class="list-row payment-history-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small>@if (payment.allocations.length) { <small>{{ t('التخصيصات المسجلة', 'Recorded allocations') }}:</small>@for (allocation of payment.allocations; track allocation.invoice_id) { <small class="payment-history-allocation">{{ paymentInvoiceLabel(allocation.invoice_id) }} — {{ allocation.amount }} {{ payment.currency_code }}</small> } } @else { <small>{{ t('دفعة غير مخصصة', 'Unallocated payment') }}</small> }<small>{{ t('المبلغ غير المخصص', 'Amount not allocated') }}: {{ unallocatedPaymentAmount(payment) }} {{ payment.currency_code }}</small></div></article> }
                   @if (!payments.length) { <p class="empty">{{ t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.') }}</p> }
                 </div>
               </section>
@@ -1044,10 +1057,9 @@ export class AppComponent implements OnInit {
   editingInvoiceId: string | null = null;
   paymentCustomerId = '';
   paymentAmount = '';
-  paymentAllocationAmount = '';
+  paymentAllocations: Array<{ invoiceId: string; amount: string }> = [];
   paymentMessage = '';
   paymentError = false;
-  paymentInvoiceId = '';
   paymentMethod = 'cash';
   paymentReference = '';
   paymentIdempotencyKey = '';
@@ -1138,10 +1150,142 @@ export class AppComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  syncPaymentCustomer(): void {
-    if (!this.paymentInvoiceId) return;
-    const invoice = this.invoices.find(item => item.id === this.paymentInvoiceId);
-    if (invoice?.customer_id) this.paymentCustomerId = invoice.customer_id;
+  get eligiblePaymentInvoices(): Invoice[] {
+    if (!this.business || !this.paymentCustomerId) return [];
+    return this.invoices.filter(invoice =>
+      invoice.status === 'issued' &&
+      invoice.customer_id === this.paymentCustomerId &&
+      invoice.currency_code === this.business?.currency_code &&
+      this.hasOutstandingBalance(invoice) &&
+      !this.paymentAllocations.some(allocation => allocation.invoiceId === invoice.id)
+    );
+  }
+
+  paymentInvoicesForAllocation(current: { invoiceId: string; amount: string }): Invoice[] {
+    if (!this.business || !this.paymentCustomerId) return [];
+    return this.invoices.filter(invoice =>
+      invoice.status === 'issued' &&
+      invoice.customer_id === this.paymentCustomerId &&
+      invoice.currency_code === this.business?.currency_code &&
+      this.hasOutstandingBalance(invoice) &&
+      (invoice.id === current.invoiceId ||
+        !this.paymentAllocations.some(allocation => allocation !== current && allocation.invoiceId === invoice.id))
+    );
+  }
+
+  addPaymentAllocation(): void {
+    if (this.loading || !this.paymentCustomerId) return;
+    if (!this.eligiblePaymentInvoices.length) {
+      this.error = this.t('لا توجد فواتير صادرة مستحقة إضافية لهذا العميل وبعملة مساحة العمل.', 'No additional outstanding issued invoices exist for this customer and workspace currency.');
+      return;
+    }
+    this.error = '';
+    this.paymentAllocations = [...this.paymentAllocations, { invoiceId: '', amount: '' }];
+  }
+
+  onPaymentAllocationInvoiceChange(allocation: { invoiceId: string; amount: string }): void {
+    const invoice = this.invoices.find(item => item.id === allocation.invoiceId);
+    if (!invoice) { allocation.amount = ''; return; }
+    const outstanding = this.moneyToCents(invoice.outstanding_amount);
+    if (outstanding === null || outstanding <= 0n) { allocation.amount = ''; return; }
+    const paymentAmount = this.moneyToCents(this.paymentAmount);
+    let alreadyAssigned = 0n;
+    for (const item of this.paymentAllocations) {
+      if (item === allocation || !item.amount.trim()) continue;
+      const cents = this.moneyToCents(item.amount);
+      if (cents !== null) alreadyAssigned += cents;
+    }
+    const receiptRemaining = paymentAmount === null ? outstanding : paymentAmount - alreadyAssigned;
+    const selected = receiptRemaining > 0n && receiptRemaining < outstanding ? receiptRemaining : outstanding;
+    allocation.amount = selected > 0n ? this.formatMoneyCents(selected) : '';
+  }
+
+  removePaymentAllocation(index: number): void {
+    if (this.loading) return;
+    this.paymentAllocations = this.paymentAllocations.filter((_, i) => i !== index);
+  }
+
+  private moneyToCents(raw: string | number | null | undefined): bigint | null {
+    const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(raw ?? '').trim());
+    if (!match || match[1].length > 12) return null;
+    return BigInt(match[1]) * 100n + BigInt((match[2] || '').padEnd(2, '0') || '0');
+  }
+
+  private formatMoneyCents(cents: bigint): string {
+    return `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
+  }
+
+  get paymentAllocationTotal(): string {
+    let total = 0n;
+    for (const allocation of this.paymentAllocations) {
+      const cents = this.moneyToCents(allocation.amount);
+      if (cents === null) return '—';
+      total += cents;
+    }
+    return this.formatMoneyCents(total);
+  }
+
+  get paymentAllocationBalance(): string {
+    const receipt = this.moneyToCents(this.paymentAmount);
+    if (receipt === null) return '—';
+    let total = 0n;
+    for (const allocation of this.paymentAllocations) {
+      const cents = this.moneyToCents(allocation.amount);
+      if (cents === null) return '—';
+      total += cents;
+    }
+    return total <= receipt ? this.formatMoneyCents(receipt - total) : '—';
+  }
+
+  private validatePaymentAllocations(receiptRaw: string): string | null {
+    if (!this.paymentAllocations.length) return null;
+    const receipt = this.moneyToCents(receiptRaw);
+    if (receipt === null || receipt <= 0n) return this.t('أدخل مبلغ دفعة صحيحًا قبل تخصيصها.', 'Enter a valid payment amount before allocating it.');
+    const seen = new Set<string>();
+    let total = 0n;
+    for (const allocation of this.paymentAllocations) {
+      if (!allocation.invoiceId || !allocation.amount.trim()) return this.t('أكمل اختيار الفاتورة والمبلغ لكل تخصيص.', 'Complete the invoice and amount for every allocation.');
+      if (seen.has(allocation.invoiceId)) return this.t('لا يمكن تكرار الفاتورة نفسها في أكثر من تخصيص.', 'The same invoice cannot appear more than once in an allocation list.');
+      seen.add(allocation.invoiceId);
+      const amount = this.moneyToCents(allocation.amount);
+      if (amount === null || amount <= 0n) return this.t('أدخل مبلغ تخصيص موجبًا بدقتين عشريتين كحد أقصى.', 'Enter a positive allocation amount with at most two decimal places.');
+      const invoice = this.invoices.find(item => item.id === allocation.invoiceId);
+      if (!invoice || invoice.status !== 'issued' || !invoice.customer_id ||
+          invoice.customer_id !== this.paymentCustomerId ||
+          invoice.currency_code !== this.business?.currency_code) {
+        return this.t('كل فاتورة مخصصة يجب أن تخص العميل والعملة نفسيهما وأن تكون صادرة.', 'Every allocated invoice must be issued and match the selected customer and currency.');
+      }
+      const outstanding = this.moneyToCents(invoice.outstanding_amount);
+      if (outstanding === null || outstanding <= 0n || amount > outstanding) {
+        return this.t('مبلغ التخصيص يتجاوز الرصيد المستحق لإحدى الفواتير.', 'An allocation exceeds an invoice outstanding balance.');
+      }
+      total += amount;
+    }
+    if (total > receipt) return this.t('إجمالي التخصيصات أكبر من مبلغ الدفعة المستلمة.', 'Total allocations exceed the received payment amount.');
+    return null;
+  }
+
+  get paymentAllocationValidationMessage(): string {
+    if (!this.paymentAllocations.length ||
+        this.paymentAllocations.some(allocation => !allocation.invoiceId || !allocation.amount.trim())) return '';
+    return this.validatePaymentAllocations(this.paymentAmount) || '';
+  }
+
+  paymentInvoiceLabel(invoiceId: string): string {
+    const invoice = this.invoices.find(item => item.id === invoiceId);
+    return invoice?.invoice_number || this.t('فاتورة غير موجودة في القائمة الحالية', 'Invoice not present in the current list');
+  }
+
+  unallocatedPaymentAmount(payment: Payment): string {
+    const receipt = this.moneyToCents(payment.amount);
+    if (receipt === null) return '—';
+    let allocated = 0n;
+    for (const item of payment.allocations) {
+      const cents = this.moneyToCents(item.amount);
+      if (cents === null) return '—';
+      allocated += cents;
+    }
+    return allocated <= receipt ? this.formatMoneyCents(receipt - allocated) : '—';
   }
 
   ngOnInit(): void {
@@ -1544,8 +1688,7 @@ export class AppComponent implements OnInit {
     this.editingInvoiceId = null;
     this.paymentCustomerId = '';
     this.paymentAmount = '';
-    this.paymentAllocationAmount = '';
-    this.paymentInvoiceId = '';
+    this.paymentAllocations = [];
     this.paymentMethod = 'cash';
     this.paymentReference = '';
     this.paymentIdempotencyKey = '';
@@ -1625,7 +1768,7 @@ export class AppComponent implements OnInit {
       this.payments = دفعة;
       this.expenses = مصروفات;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
-      if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
+
     } catch (error) {
       if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
         this.clearWorkspaceData();
@@ -2454,9 +2597,8 @@ export class AppComponent implements OnInit {
     this.error = '';
     this.tab = 'payments';
     this.paymentCustomerId = invoice.customer_id;
-    this.paymentInvoiceId = invoice.id;
     this.paymentAmount = outstanding.toFixed(2);
-    this.paymentAllocationAmount = outstanding.toFixed(2);
+    this.paymentAllocations = [{ invoiceId: invoice.id, amount: outstanding.toFixed(2) }];
     this.paymentMessage = this.t('تم اختيار الفاتورة وتحديد الرصيد المستحق. راجع المبلغ وطريقة الدفع ثم سجّل الدفعة.', 'Invoice selected and outstanding balance filled in. Review the amount and method, then record the payment.');
   }
 
@@ -2571,12 +2713,16 @@ export class AppComponent implements OnInit {
     }
     const businessId = this.business.id;
     const amount = this.paymentAmount.trim();
-    const allocation = this.paymentAllocationAmount.trim();
-    if (this.paymentInvoiceId && !allocation) {
-      this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
+    const allocationValidation = this.validatePaymentAllocations(amount);
+    if (allocationValidation) {
+      this.error = allocationValidation;
       return;
     }
     const currencyCode = this.business.currency_code;
+    const allocations = this.paymentAllocations.map(allocation => ({
+      invoice_id: allocation.invoiceId,
+      amount: allocation.amount.trim(),
+    }));
     this.loading = true;
     this.error = '';
     this.paymentMessage = '';
@@ -2592,18 +2738,14 @@ export class AppComponent implements OnInit {
         customer_id: this.paymentCustomerId,
         method: this.paymentMethod,
         reference: this.paymentReference.trim() || undefined,
-        allocations: this.paymentInvoiceId ? [{
-          invoice_id: this.paymentInvoiceId,
-          amount: allocation
-        }] : []
+        allocations
       });
 
       // Do not treat a post-save refresh failure as a failed payment mutation.
       if (this.business?.id !== businessId) return;
       this.paymentAmount = '';
       this.paymentCustomerId = '';
-      this.paymentInvoiceId = '';
-      this.paymentAllocationAmount = '';
+      this.paymentAllocations = [];
       this.paymentReference = '';
       this.paymentIdempotencyKey = '';
       this.paymentMessage = this.t('تم تسجيل الدفعة بنجاح.', 'Payment recorded successfully.');
