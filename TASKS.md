@@ -1571,3 +1571,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+## Feature 27 tax/discount rules — checkpoint 2026-10-29
+
+- **PARTIALLY COMPLETE:** added OWNER-only, business-scoped `GET /api/v1/businesses/{business_id}/pricing-rules` with `rule_type`, `is_active`, bounded pagination, stable ordering, and no read-side effects. Added focused authorization, isolation, filter, pagination, and no-side-effect tests.
+- **Validation:** `backend/tests/test_pricing_rule_management.py` 2 passed; focused combined run 2 passed, 24 deselected, 6 warnings. Assembled sandbox, selected source files refreshed; not a full exact checkout.
+- **Remaining:** effective dates/migration, overlap policy and validation, UI, calculation application contract, boundary/rounding integration tests, exact-head CI. Existing `PricingRule` has no effective dates and is not auto-applied to invoice calculations.
+- **Migration coordination:** this branch adds no migration. Coordinate migration ordering with open PR #312 (Feature 31) before schema work; both workstreams remain unmerged.
+- **Delivery:** branch `feat/tax-discount-rule-management-20261029`; no merge, deployment, or version bump.
