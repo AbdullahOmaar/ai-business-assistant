@@ -29,6 +29,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <h1>{{ t('جارٍ تشغيل التطبيق', 'Starting the app') }}</h1>
           <p class="muted">{{ t('نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.', 'Checking configuration and your sign-in session before opening the workspace.') }}</p>
         </main>
+      } @else if (startupFailed) {
+        <main class="auth-card">
+          <div class="brand-mark">A</div>
+          <h1>{{ t('تعذر تحميل إعدادات التطبيق', 'Unable to load app configuration') }}</h1>
+          <p class="error" role="alert">{{ error }}</p>
+          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button>
+        </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
@@ -918,6 +925,7 @@ export class AppComponent implements OnInit {
   apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
+  startupFailed = false;
   setupNeeded = false;
   signedIn = false;
   platformAdminAvailable = false;
@@ -1190,6 +1198,7 @@ export class AppComponent implements OnInit {
 
   async initializeApp(): Promise<void> {
     this.initialized = false;
+    this.startupFailed = false;
     this.loading = true;
     this.error = '';
     document.documentElement.lang = this.language;
@@ -1208,6 +1217,7 @@ export class AppComponent implements OnInit {
         await this.loadBusinesses();
       }
     } catch (error) {
+      this.startupFailed = true;
       this.error = this.message(error);
     } finally {
       this.loading = false;
