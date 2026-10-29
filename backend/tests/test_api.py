@@ -1587,3 +1587,128 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit():
+    engine, business_a_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier_a = Supplier(business_id=business_a_id, name="T39 uniqueness supplier A")
+        product_a = Product(
+            business_id=business_a_id, name="T39 uniqueness product A",
+            unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        business_b = Business(name="T39 uniqueness business B", currency_code="EGP")
+        session.add_all([supplier_a, product_a, business_b])
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=business_b.id,
+            user_subject="test-subject",
+            role=MembershipRole.OWNER,
+        ))
+        supplier_b = Supplier(business_id=business_b.id, name="T39 uniqueness supplier B")
+        product_b = Product(
+            business_id=business_b.id, name="T39 uniqueness product B",
+            unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        session.add_all([supplier_b, product_b])
+        session.commit()
+        supplier_a_id, product_a_id = supplier_a.id, product_a.id
+        business_b_id, supplier_b_id, product_b_id = business_b.id, supplier_b.id, product_b.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base_a = f"/api/v1/businesses/{business_a_id}"
+    base_b = f"/api/v1/businesses/{business_b_id}"
+    order_number = "PO-T39-SAME-NUMBER"
+    payload_a = {
+        "supplier_id": str(supplier_a_id),
+        "order_number": order_number,
+        "currency_code": "EGP",
+        "lines": [{"product_id": str(product_a_id), "quantity": "2.000", "unit_cost": "10.00"}],
+    }
+    try:
+        first = client.post(f"{base_a}/purchase-orders", json=payload_a)
+        assert first.status_code == 201, first.text
+        first_id = UUID(first.json()["id"])
+
+        with Session(engine) as session:
+            orders_before_duplicate = session.scalar(
+                select(func.count()).select_from(PurchaseOrder).where(
+                    PurchaseOrder.business_id == business_a_id
+                )
+            )
+            audit_before_duplicate = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_a_id
+                )
+            )
+
+        duplicate = client.post(f"{base_a}/purchase-orders", json=payload_a)
+        assert duplicate.status_code == 422, duplicate.text
+        assert "already exists in this business" in duplicate.json()["detail"]
+        with Session(engine) as session:
+            assert session.scalar(
+                select(func.count()).select_from(PurchaseOrder).where(
+                    PurchaseOrder.business_id == business_a_id
+                )
+            ) == orders_before_duplicate
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_a_id
+                )
+            ) == audit_before_duplicate
+
+        # Identical order numbers are allowed across different business tenants.
+        payload_b = {
+            "supplier_id": str(supplier_b_id),
+            "order_number": order_number,
+            "currency_code": "EGP",
+            "lines": [{"product_id": str(product_b_id), "quantity": "1.000", "unit_cost": "10.00"}],
+        }
+        created_b = client.post(f"{base_b}/purchase-orders", json=payload_b)
+        assert created_b.status_code == 201, created_b.text
+        assert created_b.json()["order_number"] == order_number
+
+        second_a_payload = {**payload_a, "order_number": "PO-T39-OTHER-NUMBER"}
+        second_a = client.post(f"{base_a}/purchase-orders", json=second_a_payload)
+        assert second_a.status_code == 201, second_a.text
+        second_a_id = UUID(second_a.json()["id"])
+
+        with Session(engine) as session:
+            audit_before_edit = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_a_id
+                )
+            )
+            first_line_count_before = session.scalar(
+                select(func.count()).select_from(PurchaseOrderLine).where(
+                    PurchaseOrderLine.purchase_order_id == first_id,
+                    PurchaseOrderLine.business_id == business_a_id,
+                )
+            )
+
+        conflicting_edit = client.put(
+            f"{base_a}/purchase-orders/{first_id}",
+            json=second_a_payload,
+        )
+        assert conflicting_edit.status_code == 422, conflicting_edit.text
+        assert "already exists in this business" in conflicting_edit.json()["detail"]
+        with Session(engine) as session:
+            first_order = session.get(PurchaseOrder, first_id)
+            assert first_order is not None and first_order.order_number == order_number
+            assert session.get(PurchaseOrder, second_a_id).order_number == "PO-T39-OTHER-NUMBER"
+            assert session.scalar(
+                select(func.count()).select_from(PurchaseOrderLine).where(
+                    PurchaseOrderLine.purchase_order_id == first_id,
+                    PurchaseOrderLine.business_id == business_a_id,
+                )
+            ) == first_line_count_before
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_a_id
+                )
+            ) == audit_before_edit
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
