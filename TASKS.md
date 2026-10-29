@@ -20,11 +20,11 @@ Owner scope: platform Admin APIs and least-privilege regression coverage. Work i
 ### Current evidence
 
 - Branch: `admin/platform-permissions-regression-20261029`
-- Latest commit: `a8686a5846e27c7749a36225eea0d89c33fa21e0`
+- Latest test/code commit: `c09e04988591d6737af9613dd80ed344f3ce9261` (includes a follow-up fix for the SQLAlchemy `func` import used by audit-count assertions).
 - PR: [#313](https://github.com/AbdullahOmaar/ai-business-assistant/pull/313), open.
 - Local pytest / build: **NOT RUN** (connector-only execution; no repository runtime attached).
 - CircleCI on earlier PR head `2241f3e64a05b76bdea02a0230530d16127d10af`: all six reported contexts failed; job logs unavailable through the connected GitHub integration, and CircleCI page URLs were inaccessible from web access. Root cause **UNVERIFIED**.
-- Latest commit CI: **NOT YET REPORTED** by status API at last check; do not interpret an empty status list as pass.
+- Latest test/code commit CI: status API returned an empty legacy-status list; check-run conclusion **NOT VERIFIED**. Do not interpret an empty status list as pass.
 - Review: **NOT RUN**. Merge: **BLOCKED** until exact-head checks and independent review are verified. Production deploy: **NOT RUN**.
 
 Next: inspect fresh exact-head CI statuses and available logs, then address any reproducible code-level failure. Do not weaken tests or merge based on missing status evidence.
