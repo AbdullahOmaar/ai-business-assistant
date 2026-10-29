@@ -1217,6 +1217,7 @@ def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_sid
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal(owner_subject)
         client = TestClient(app)
+
         def business_audit_count():
             with app.state.session_factory() as session:
                 return session.query(AuditEvent).filter_by(business_id=business_id).count()
@@ -1233,7 +1234,7 @@ def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_sid
                 "POST CSV preview",
                 lambda: client.post(
                     f"{base}/imports/customers.csv/preview",
-                    content="name\\nOutside Customer\\n",
+                    content="name\nOutside Customer\n",
                     headers={"content-type": "text/csv"},
                 ),
             ),
