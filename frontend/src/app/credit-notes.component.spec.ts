@@ -28,6 +28,7 @@ test('screen explicitly distinguishes credit notes from cash refunds and invoice
 test('credit notes are reachable through desktop and mobile navigation', () => {
   assert.match(app, /tab === 'credit-notes'/);
   assert.match(app, /<aba-credit-notes \[businessId\]="business\.id"/);
+  assert.match(app, /@defer \(on immediate\)/);
   assert.match(app, /setTab\('credit-notes'\)/);
   assert.match(app, /platform-admin','credit-notes'\]\.includes\(tab\)/);
 });
@@ -36,7 +37,7 @@ test('credit notes are reachable through desktop and mobile navigation', () => {
 test('return draft creation uses persisted invoice-line identifiers and quantities', () => {
   assert.match(component, /this\.api\.createSalesReturn\(this\.businessId/);
   assert.match(component, /invoice_line_id: line\.invoiceLineId, quantity: String\(line\.quantity\)/);
-  assert.match(component, /line\.quantity\) > Number\(line\.invoicedQuantity\)/);
+  assert.match(component, /quantity > Number\(line\.invoicedQuantity\)/);
   assert.match(api, /createSalesReturn\(businessId:[\s\S]{0,400}'POST', body/);
 });
 
