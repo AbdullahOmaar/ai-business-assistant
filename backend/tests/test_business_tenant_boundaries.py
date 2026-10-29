@@ -1,6 +1,7 @@
 """API-level regression tests for cross-business isolation."""
 
 from fastapi.testclient import TestClient
+from fastapi.routing import APIRoute
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -9,6 +10,24 @@ from uuid import UUID
 from app.main import app
 from app.models import AuditEvent, Base, BusinessMembership, Customer, Invoice, InvoiceLine, MembershipRole, Payment, PaymentAllocation, Product, StockMovement
 from app.security import AuthenticatedPrincipal
+
+
+def test_registered_api_route_methods_are_unique():
+    """Each HTTP method/path pair must resolve to one FastAPI route handler."""
+    seen = {}
+    duplicates = []
+    for route in app.routes:
+        if not isinstance(route, APIRoute):
+            continue
+        for method in route.methods or set():
+            key = (method, route.path)
+            if key in seen:
+                duplicates.append(
+                    f"{method} {route.path}: {seen[key]} and {route.name}"
+                )
+            else:
+                seen[key] = route.name
+    assert not duplicates, "Duplicate FastAPI method/path registrations: " + "; ".join(duplicates)
 
 
 def test_non_member_cannot_read_dashboard_or_mutate_workspace():
