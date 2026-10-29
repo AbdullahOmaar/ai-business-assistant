@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 
 from app.domain_rules import (
+    allocate_tax_amounts,
     calculate_invoice_totals,
     money,
     derive_stock_balance,
@@ -166,3 +167,22 @@ def test_money_rounds_half_up_to_two_decimal_places() -> None:
 
 def test_report_totals_are_empty_when_no_amounts_are_provided() -> None:
     assert summarize_money_by_currency([]) == {}
+
+
+
+def test_tax_allocation_reconciles_exactly_and_is_deterministic():
+    allocated = allocate_tax_amounts(
+        D("0.05"),
+        [("line-c", D("10.00")), ("line-a", D("10.00")), ("line-b", D("10.00"))],
+    )
+    assert allocated == {"line-c": D("0.01"), "line-a": D("0.02"), "line-b": D("0.02")}
+    assert sum(allocated.values(), D("0.00")) == D("0.05")
+
+
+def test_zero_tax_can_be_allocated_without_taxable_base():
+    assert allocate_tax_amounts(D("0.00"), [("line-a", D("0.00"))]) == {"line-a": D("0.00")}
+
+
+def test_nonzero_tax_rejects_missing_taxable_base():
+    with pytest.raises(ValueError, match="taxable base"):
+        allocate_tax_amounts(D("0.01"), [("line-a", D("0.00"))])
