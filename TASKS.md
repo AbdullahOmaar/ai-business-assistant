@@ -1654,3 +1654,11 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Formula-like cells are escaped before CSV output to reduce spreadsheet formula-injection risk. The endpoint is read-only and does not change inventory, purchasing or financial records.
 - Added acceptance scenario T39-33 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
 - Tests/build/security/CI: **NOT RUN** per user instruction while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
+
+
+## T39 supplier directory CSV export — 2026-10-29
+
+- Added `suppliers` to the existing owner-only CSV export entity allowlist in `backend/app/extended_api.py`. The export includes supplier ID, name, email, phone, address, active state and creation timestamp.
+- Reuses the existing tenant-scoped generic export path and CSV formula-injection escaping; no migration or mutation was added.
+- Added acceptance scenario T39-34 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- Tests/build/security/CI: **NOT RUN** as requested while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
