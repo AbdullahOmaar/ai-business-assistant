@@ -1670,3 +1670,9 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Acceptance matrix uses **T39-33** for this regression; concurrent feature work uses T39-34 and T39-35 for purchase-order and supplier CSV export.
 - Test/build/security/migration/CI checks remain **NOT RUN** per user instruction; runtime verification is pending.
 
+## T39 purchase-order CSV formula-injection hardening — 2026-10-29
+
+- Fixed the PO-specific CSV export branch to detect actual leading tab and carriage-return characters; previously that branch checked literal backslash-letter sequences for these two prefixes, unlike the shared entity-export path.
+- Existing escaping for leading `=`, `+`, `-`, and `@` remains. Acceptance scenario T39-34 documents the control-character case.
+- Tests/build/security/CI remain **NOT RUN** per user instruction. This is a source-reviewed security fix, not runtime-verified.
+
