@@ -61,7 +61,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-31 | Member reads PO activity timeline for own and foreign-business order IDs | Timeline returns only that PO's tenant-scoped audit events in stable chronological order; foreign order returns not-found | Audit visibility and tenant isolation invariant |
 | T39-32 | Create or edit a PO using an order number already used by another PO in the same business; reuse a number used only by another business | Same-business duplicate is rejected with a clear validation error before writes; cross-business identical numbers remain isolated; database uniqueness remains the concurrency backstop | Tenant-scoped identifier integrity |
 | T39-33 | API regression for duplicate PO number on create and draft edit | Same-business duplicate create/edit returns validation error with order/line/audit snapshots unchanged; another business may use the same number | Contract-independent API regression; execution pending |
-| T39-34 | OWNER exports purchase orders as CSV; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells are escaped | Data portability and spreadsheet injection safety |
+| T39-34 | OWNER exports purchase orders as CSV; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells (including leading tab/carriage-return characters) are escaped | Data portability and spreadsheet injection safety |
 | T39-35 | OWNER exports supplier directory as CSV including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
 
 ## Execution plan after contract approval
@@ -148,3 +148,10 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added `suppliers` to the existing owner-only `GET /exports/{entity_type}.csv` entity allowlist. The export includes supplier ID, name, email, phone, address, active state and creation timestamp.
 - It uses the same tenant-filtered generic export query and CSV formula-injection escaping as the existing customer/product/expense exports. No data mutation or migration is involved.
 - Validation intentionally not run during this feature-only pass due to the usage-limit blocker.
+
+
+## T39 purchase-order CSV formula-safety correction — 2026-10-29
+
+- Source review found the purchase-order-specific CSV path checked literal backslash-plus-letter sequences for tab/carriage-return prefixes, unlike the shared export path which checks actual control characters.
+- Updated the PO export guard to detect actual leading tab and carriage-return characters as well as `=`, `+`, `-`, and `@`. This is a source-level security correction; tests were not run.
+- Matrix scenario T39-34 now explicitly calls out tab/carriage-return prefixes. Runtime verification remains pending.
