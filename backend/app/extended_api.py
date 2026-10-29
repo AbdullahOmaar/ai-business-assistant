@@ -710,6 +710,36 @@ def get_purchase_order(business_id: UUID, order_id: UUID,
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
+@router.get("/purchase-orders/{order_id}/activity")
+def get_purchase_order_activity(business_id: UUID, order_id: UUID,
+                               limit: int = Query(default=100, ge=1, le=200),
+                               offset: int = Query(default=0, ge=0),
+                               session: Session = Depends(get_session),
+                               principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Read lifecycle audit events for a tenant-scoped purchase order."""
+    try:
+        _authorized(session, principal, business_id)
+        order = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        )).one_or_none()
+        if order is None:
+            raise HTTPException(status_code=404, detail="Purchase order not found in this business")
+        events = session.scalars(select(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.target_type == "purchase_order",
+            AuditEvent.target_id == str(order.id),
+        ).order_by(AuditEvent.created_at, AuditEvent.id).offset(offset).limit(limit)).all()
+        return [{
+            "id": str(event.id),
+            "action": event.action,
+            "summary": event.change_summary,
+            "created_at": event.created_at.isoformat(),
+        } for event in events]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.get("/purchase-orders/{order_id}/receipts")
 def list_purchase_order_receipts(business_id: UUID, order_id: UUID,
                                  limit: int = Query(default=100, ge=1, le=200),
