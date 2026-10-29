@@ -381,3 +381,66 @@ def test_profit_loss_rejects_reversed_custom_date_range():
         assert "start_date must be on or before end_date" in response.json()["detail"]
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+def test_expense_date_filter_respects_dst_transition_in_business_timezone():
+    """A New York spring-forward day is a 23-hour local day, not a fixed 24-hour UTC window."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "DST Expense Boundary Shop",
+                "currency_code": "USD",
+                "timezone": "America/New_York",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+
+        with Session(engine) as session:
+            session.add_all([
+                Expense(
+                    business_id=business_id,
+                    category="operations",
+                    description="before-local-day",
+                    amount=Decimal("1.00"),
+                    currency_code="USD",
+                    incurred_at=datetime(2026, 3, 8, 4, 59, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=business_id,
+                    category="operations",
+                    description="start-inclusive",
+                    amount=Decimal("2.00"),
+                    currency_code="USD",
+                    incurred_at=datetime(2026, 3, 8, 5, 0, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=business_id,
+                    category="operations",
+                    description="end-exclusive-local-day",
+                    amount=Decimal("3.00"),
+                    currency_code="USD",
+                    incurred_at=datetime(2026, 3, 9, 3, 59, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=business_id,
+                    category="operations",
+                    description="next-local-day",
+                    amount=Decimal("900.00"),
+                    currency_code="USD",
+                    incurred_at=datetime(2026, 3, 9, 4, 0, tzinfo=timezone.utc),
+                ),
+            ])
+            session.commit()
+
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"start_date": "2026-03-08", "end_date": "2026-03-08"},
+        )
+        assert response.status_code == 200, response.text
+        descriptions = {item["description"] for item in response.json()}
+        assert descriptions == {"start-inclusive", "end-exclusive-local-day"}
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
