@@ -433,6 +433,13 @@ def test_employee_payroll_audit_summaries_exclude_sensitive_values(employee_envi
     assert created.status_code == 201
     employee = created.json()
     base = f"/api/v1/businesses/{env['business_id']}"
+    updated_email = "updated.private.person@example.test"
+    updated_phone = "+20-100-555-0177"
+    updated = env["client"].patch(
+        f"{base}/employees/{employee['id']}",
+        json={"email": updated_email, "phone": updated_phone},
+    )
+    assert updated.status_code == 200
     payroll = env["client"].post(
         f"{base}/employees/{employee['id']}/payroll",
         json={"period": "2026-11", "allowances": "123.45", "bonuses": "67.89"},
@@ -445,6 +452,8 @@ def test_employee_payroll_audit_summaries_exclude_sensitive_values(employee_envi
         "123.45",
         "67.89",
         "+20-100-555-0199",
+        updated_email,
+        updated_phone,
     ]
     with app.state.session_factory() as session:
         summaries = session.scalars(
@@ -453,7 +462,7 @@ def test_employee_payroll_audit_summaries_exclude_sensitive_values(employee_envi
                 AuditEvent.target_type.in_(["employee", "payroll"]),
             )
         ).all()
-        assert len(summaries) == 2
+        assert len(summaries) == 3
         for summary in summaries:
             for value in sensitive_values:
                 if value:
