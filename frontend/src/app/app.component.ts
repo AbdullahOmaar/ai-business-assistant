@@ -2451,6 +2451,10 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      // Print only the persisted invoice state, not a stale list snapshot.
+      if (detail.status !== 'issued') {
+        throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
+      }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
         this.escapePrintHtml(line.quantity) + '</td><td class="number">' +
@@ -2464,10 +2468,16 @@ export class AppComponent implements OnInit {
       const discount = this.escapePrintHtml(detail.discount_total ?? '0.00');
       const tax = this.escapePrintHtml(detail.tax_total ?? '0.00');
       const total = this.escapePrintHtml(detail.total);
+      const issueDate = detail.issue_date ? this.escapePrintHtml(detail.issue_date.slice(0, 10)) : '—';
+      const dueDate = detail.due_date ? this.escapePrintHtml(detail.due_date.slice(0, 10)) : '—';
+      const notes = detail.notes?.trim()
+        ? '<section class="notes"><strong>' + (this.language === 'ar' ? 'ملاحظات' : 'Notes') +
+          ':</strong><p>' + this.escapePrintHtml(detail.notes) + '</p></section>'
+        : '';
       const direction = this.language === 'ar' ? 'rtl' : 'ltr';
       const labels = this.language === 'ar'
-        ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', subtotal: 'المجموع قبل الخصم والضريبة', discount: 'الخصم', tax: 'الضريبة', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.' }
-        : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', subtotal: 'Subtotal', discount: 'Discount', tax: 'Tax', total: 'Total due', note: 'Generated from saved business records.' };
+        ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', subtotal: 'المجموع قبل الخصم والضريبة', discount: 'الخصم', tax: 'الضريبة', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.', status: 'الحالة', issued: 'صادرة', issueDate: 'تاريخ الإصدار', dueDate: 'تاريخ الاستحقاق' }
+        : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', subtotal: 'Subtotal', discount: 'Discount', tax: 'Tax', total: 'Total due', note: 'Generated from saved business records.', status: 'Status', issued: 'Issued', issueDate: 'Issue date', dueDate: 'Due date' };
       printWindow.onload = () => printWindow.print();
       printWindow.document.open();
       printWindow.document.write(
@@ -2479,17 +2489,21 @@ export class AppComponent implements OnInit {
         'table{width:100%;border-collapse:collapse;margin-top:22px}th,td{padding:12px 8px;border-bottom:1px solid #d1d5db;text-align:start}' +
         'th{background:#f3f4f6;font-weight:700}.number{text-align:end;font-variant-numeric:tabular-nums}' +
         '.total-breakdown{margin-top:24px;margin-inline-start:auto;max-width:420px}.total-breakdown>p{display:flex;justify-content:space-between;gap:24px;padding:8px 12px;border-bottom:1px solid #e5e7eb}.total-breakdown .total{margin-top:8px;padding:14px;border:1px solid #d1d5db;border-radius:8px;font-size:18px;font-weight:700}.total-breakdown strong{font-variant-numeric:tabular-nums}' +
+        '.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px;margin:16px 0}.meta span{display:block}' +
+        '.notes{margin-top:24px;white-space:pre-wrap;overflow-wrap:anywhere}' +
         '.actions{margin-top:24px;display:flex;gap:8px}button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
         '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.total{break-inside:avoid}}</style></head><body>' +
-        '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p></div>' +
+        '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p><p>' + labels.status + ': ' + labels.issued + '</p></div>' +
         '<div><strong>' + this.escapePrintHtml(this.business.name) + '</strong><p>' + this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
+        '<section class="meta"><div><span class="muted">' + labels.issueDate + '</span><strong>' + issueDate + '</strong></div>' +
+        '<div><span class="muted">' + labels.dueDate + '</span><strong>' + dueDate + '</strong></div></section>' +
         '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table><section class="total-breakdown" aria-label="' + labels.total + '">' +
         '<p><span>' + labels.subtotal + '</span><strong>' + subtotal + ' ' + currency + '</strong></p>' +
         '<p><span>' + labels.discount + '</span><strong>− ' + discount + ' ' + currency + '</strong></p>' +
         '<p><span>' + labels.tax + '</span><strong>' + tax + ' ' + currency + '</strong></p>' +
         '<p class="total"><span>' + labels.total + '</span><strong>' + total + ' ' + currency + '</strong></p></section>' +
-        '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
+        notes + '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
         (this.language === 'ar' ? 'طباعة / حفظ PDF' : 'Print / Save PDF') + '</button></div></body></html>'
       );
       printWindow.document.close();
