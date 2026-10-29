@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+from app.core_features_api import profit_loss
 from app.extended_api import (
     CashRefundInput, CreditApplicationInput, apply_credit_note, approve_sales_return, create_cash_refund,
     customer_statement, issue_credit_note_for_return, list_credit_applications,
@@ -1007,3 +1008,13 @@ def test_tax_summary_nets_issued_credit_note_tax_reversals_by_currency(credit_no
         assert Decimal(egp["tax_total"]) == Decimal("1.00")
         assert egp["invoice_count"] == 1
         assert egp["credit_note_count"] == 1
+
+        pnl = profit_loss(
+            business_id=business_id, period="all", start_date=None, end_date=None,
+            session=session, principal=principal,
+        )
+        pnl_egp = next(row for row in pnl["currencies"] if row["currency_code"] == "EGP")
+        assert Decimal(pnl_egp["revenue"]) == Decimal("22.00")
+        assert Decimal(pnl_egp["credit_note_total"]) == Decimal("11.00")
+        assert Decimal(pnl_egp["net_revenue_after_credit_notes"]) == Decimal("11.00")
+        assert Decimal(pnl_egp["operating_result_before_cost_of_goods"]) == Decimal("11.00")
