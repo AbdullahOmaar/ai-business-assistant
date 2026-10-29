@@ -101,3 +101,35 @@ test('credit application UI constrains amount to remaining credit and invoice re
   assert.match(component, /invoice\.currency_code\.trim\(\)\.toUpperCase\(\) === note\.currency_code\.trim\(\)\.toUpperCase\(\)/);
   assert.match(component, /amount <= this\.maxApplyAmount\(note\)/);
 });
+
+
+test('credit application is owner-only and only offers matching customer/currency receivables', () => {
+  assert.match(component, /if \(this\.role !== 'owner' \|\| this\.loading \|\| this\.applyingNoteId !== null/);
+  assert.match(component, /invoice\.customer_id === note\.customer_id/);
+  assert.match(component, /invoice\.currency_code\.trim\(\)\.toUpperCase\(\) === note\.currency_code\.trim\(\)\.toUpperCase\(\)/);
+  assert.match(component, /Number\(invoice\.outstanding_amount \?\? 0\) > 0/);
+  assert.match(component, /this\.api\.applyCreditNote\(this\.businessId/);
+});
+
+test('credit application UI displays remaining credit and distinguishes it from cash refunds', () => {
+  assert.match(component, /remaining_credit/);
+  assert.match(component, /Applied/);
+  assert.match(component, /This is not a cash refund/);
+  assert.match(api, /applyCreditNote\(businessId: string/);
+  assert.match(api, /credit-applications/);
+});
+
+test('credit application prevents duplicate UI submissions and refreshes server balances', () => {
+  assert.match(component, /applyingNoteId: string \| null = null/);
+  assert.match(component, /this\.applyingNoteId = note\.id/);
+  assert.match(component, /await this\.refresh\(\)/);
+  assert.match(component, /idempotency_key: idempotencyKey/);
+});
+
+test('credit-note pagination is bounded, deduplicated, and scoped to the selected customer', () => {
+  assert.match(component, /notesHasMore = false/);
+  assert.match(component, /limit: this\.notesPageSize,[\s\S]{0,100}offset,[\s\S]{0,100}customer_id: requestedCustomerId/);
+  assert.match(component, /const existingIds = new Set\(this\.notes\.map\(note => note\.id\)\)/);
+  assert.match(component, /requestedCustomerId !== this\.selectedCustomerId/);
+  assert.match(component, /\(click\)="loadMoreCreditNotes\(\)"/);
+});
