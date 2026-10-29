@@ -1602,3 +1602,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added `POST /purchase-orders/{order_id}/cancel`: OWNER-only, business-scoped and row-locked; only draft/approved orders with no received quantities can be cancelled. Received/partially received orders cannot be cancelled by this endpoint, avoiding implicit stock reversal. Successful cancellation is audited.
 - `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`: added T39-22 for cancellation and documented supplier lifecycle/cancellation behavior; T39-21 already covers supplier profile updates and activation.
 - **Tests/build/security/CI: NOT RUN** in this feature-only pass as requested. Do not interpret implementation as verified. Keep PR #306 Draft until validation is authorized/available and exact-head release checks pass. T37/T38 financial contracts remain a gate for bills, payments, supplier returns, valuation and COGS.
+
+
+## T39 purchase-order list filters — 2026-10-29
+
+- Extended `GET /purchase-orders` with optional `status` and `supplier_id` filters while preserving existing limit/offset pagination and the existing list response shape.
+- Status is constrained to the current lifecycle values `draft`, `approved`, `partially_received`, `received`, and `cancelled`; supplier filtering is still combined with business-scoped query predicates.
+- Added acceptance scenario T39-23. Tests/build/CI remain **NOT RUN** by owner instruction because the current blocker is the usage limit; this is not a passing validation claim.
