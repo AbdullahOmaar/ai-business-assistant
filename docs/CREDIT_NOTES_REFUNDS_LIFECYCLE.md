@@ -1,6 +1,6 @@
 # Credit notes, refunds, and customer returns — lifecycle contract
 
-Status: PARTIALLY COMPLETE for Feature 31. The first slice implements immutable credit-note issuance from an approved sales return; credit application, cash refunds, report/statement integration, and frontend workflow are not implemented yet.
+Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace now lists approved returns and issued notes and exposes an OWNER-only issue action. Credit application, cash refunds, tax allocation, and report/statement integration are not implemented yet.
 
 ## Existing behavior confirmed in source
 
@@ -45,3 +45,13 @@ B. Add transactional OWNER-only service operations and append-only audit events.
 C. Add read/list endpoints and a UI that distinguishes draft return, approved return, issued credit, applied credit, and refunded cash.
 D. Integrate customer statement and reports only after the ledger semantics are represented explicitly.
 E. Resume tests and exact-head CI only after the user clears the current testing-limit pause.
+
+
+## Feature 31 UI/API checkpoint — 2026-10-29
+
+- Added `GET /api/v1/businesses/{business_id}/sales-returns` with membership authorization, status filter, stable newest-first ordering, and bounded pagination.
+- Added Angular `salesReturns()` client contract and standalone bilingual credit-note workspace.
+- UI only displays approved returns for issuance; only OWNER sees the issue button. The API's OWNER guard remains authoritative.
+- UI explicitly states that a credit note is not a cash refund and does not mutate the original invoice. Tax-bearing invoices remain blocked until line-level tax allocation is implemented.
+- Focused backend tests: 8 passed in an assembled sandbox with selected branch source files refreshed; not a full checkout. Frontend unit tests: 56 passed. Angular production build: PASS; measured initial bundle 719.77 kB, with existing optional-chain warnings. `prebuild` could not determine a commit SHA because the sandbox had no `.git`.
+- Exact-head CircleCI and authenticated browser smoke remain NOT RUN / BLOCKED. No merge, deployment, or version change was performed.
