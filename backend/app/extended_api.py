@@ -95,12 +95,6 @@ class PurchaseLineInput(BaseModel):
     unit_cost: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
 
 
-class SupplierInput(BaseModel):
-    name: str = Field(min_length=1, max_length=160)
-    email: str | None = Field(default=None, max_length=254)
-    phone: str | None = Field(default=None, max_length=32)
-    address: str | None = Field(default=None, max_length=500)
-
 class PurchaseOrderInput(BaseModel):
     supplier_id: UUID
     order_number: str = Field(min_length=1, max_length=64)
@@ -233,28 +227,6 @@ def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=2
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
-
-@router.post("/suppliers", status_code=201)
-def post_supplier(business_id: UUID, body: SupplierInput,
-                  session: Session = Depends(get_session),
-                  principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id)
-        name = body.name.strip()
-        if not name:
-            raise WorkflowError("Supplier name is required")
-        item = Supplier(business_id=business_id, name=name,
-                        email=body.email.strip() if body.email else None,
-                        phone=body.phone.strip() if body.phone else None,
-                        address=body.address.strip() if body.address else None,
-                        is_active=True)
-        session.add(item)
-        session.flush()
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="supplier.created", target_type="supplier", target_id=str(item.id)))
-        return item
-    item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
 
 @router.get("/purchase-orders")
 def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
