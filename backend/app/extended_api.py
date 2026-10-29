@@ -1046,7 +1046,10 @@ def import_bank_statement(
             if currency != account.currency_code:
                 raise WorkflowError(f"Currency mismatch on CSV line {line_number}")
             try:
-                amount = money(Decimal((row.get("amount") or "").strip()))
+                raw_amount = Decimal((row.get("amount") or "").strip())
+                if not raw_amount.is_finite():
+                    raise ValueError("Statement amount must be finite")
+                amount = money(raw_amount)
                 raw_date = (row.get("transaction_date") or "").strip()
                 try:
                     occurred_at = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
