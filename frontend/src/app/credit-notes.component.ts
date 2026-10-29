@@ -259,7 +259,9 @@ export class CreditNotesComponent implements OnChanges {
       this.applicationInvoiceId = '';
       this.applicationAmount = '';
       this.applicationIdempotencyKey = '';
+      this.applicationIdempotencyKeys = {};
       this.applyingCredit = false;
+      this.refundIdempotencyKeys = {};
       this.selectedInvoiceId = '';
       this.invoiceDetail = null;
       this.returnLines = [];
@@ -453,7 +455,7 @@ export class CreditNotesComponent implements OnChanges {
       this.refundReferenceByNote[note.id] = '';
       await this.refresh();
       this.message = this.language === 'ar'
-        ? 'تم تسجيل رد النقد كعملية مستقلة. لم يتم تعديل الفاتورة أو تسجيل خصم مديونية إضافي.'
+        ? 'تم تسجيل رد النقد كعملية مستقلة. لم يتم تغيير إجمالي الفاتورة الأصلية أو تسجيل خصم مديونية إضافي.'
         : 'Cash refund recorded separately. The invoice was not edited and no extra receivable credit was posted.';
     } catch {
       if (requestedBusinessId === this.businessId) {
