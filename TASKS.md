@@ -1689,3 +1689,4 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - `frontend/src/app/api.service.ts::suppliers` accepts an optional name and sends it as a query parameter to the existing tenant-scoped, case-insensitive, paginated backend search.
 - Acceptance scenario T39-25 now includes UI-to-API behavior. Tests/build/security/migration/CI remain **NOT RUN** per user instruction; source inspection only.
 
+- Follow-up UI hardening: clear supplier-search text and CSV-export busy state during workspace reset so UI state does not leak across business switches. Tests/build remain **NOT RUN**.
