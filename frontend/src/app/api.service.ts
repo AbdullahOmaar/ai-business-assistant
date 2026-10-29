@@ -30,6 +30,7 @@ export interface SalesReturnPage { items: SalesReturn[]; limit: number; offset: 
 export interface CreditNotePage { items: CreditNote[]; limit: number; offset: number; }
 export interface CreditApplication { id: string; business_id: string; credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string; applied_by_subject: string; created_at: string; }
 export interface CreditApplicationPage { items: CreditApplication[]; limit: number; offset: number; }
+export interface PricingRule { id: string; business_id: string; name: string; rule_type: 'tax' | 'discount'; rate: string; is_active: boolean; effective_from: string; effective_until: string | null; created_at: string; }
 export interface BankAccount { id: string; business_id: string; account_key: string; display_name: string; currency_code: string; is_active: boolean; created_at: string; }
 export interface BankStatementRow { id: string; business_id: string; account_id: string; external_transaction_id: string; transaction_date: string; description: string; amount: string; currency_code: string; status: 'unmatched' | 'matched' | 'ignored'; imported_at: string; }
 export interface BankReconciliationMatch { id: string; business_id: string; statement_row_id: string; payment_id: string | null; expense_id: string | null; matched_amount: string; matched_by_subject: string; matched_at: string; }
@@ -610,6 +611,16 @@ export class ApiService {
     return this.request<{ items: CreditApplication[]; limit: number; offset: number }>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications${query ? '?' + query : ''}`
     );
+  }
+
+  pricingRules(businessId: string, filters: { rule_type?: 'tax' | 'discount'; as_of?: string } = {}): Promise<{ items: PricingRule[]; as_of: string }> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) if (value !== undefined) params.set(key, String(value));
+    const query = params.toString();
+    return this.request(`/api/v1/businesses/${encodeURIComponent(businessId)}/pricing-rules${query ? '?' + query : ''}`);
+  }
+  createPricingRule(businessId: string, body: { name: string; rule_type: 'tax' | 'discount'; rate: string; effective_from?: string; effective_until?: string }): Promise<PricingRule> {
+    return this.request<PricingRule>(`/api/v1/businesses/${encodeURIComponent(businessId)}/pricing-rules`, 'POST', body);
   }
 
   bankAccounts(businessId: string): Promise<{ items: BankAccount[] }> {
