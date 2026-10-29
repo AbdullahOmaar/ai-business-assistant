@@ -54,6 +54,11 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-24 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
 | T39-25 | Member searches suppliers by partial name, including owner-only inactive listing | Search is case-insensitive, remains tenant-scoped and paginated; inactive records are included only when explicitly requested by an owner | Contract-independent directory behavior |
 | T39-26 | Create a purchase order with whitespace-only number, non-ASCII currency code, or foreign/inactive/non-stock-tracked product | Request is rejected before order/line/audit writes; valid multi-line orders resolve products in a tenant-scoped batch query | Contract-independent input and tenant safety |
+| T39-27 | OWNER/STAFF edits a draft PO; edits an approved/received/cancelled PO; supplies foreign/inactive supplier or product | Only draft PO can be replaced; validation occurs before writes; total is recalculated from submitted lines; one audit event is recorded | Draft lifecycle and tenant-integrity invariant |
+| T39-28 | OWNER approves a draft after its supplier or product was deactivated | Approval rejects stale inactive supplier/product references; status remains draft and no approval audit event is written | Lifecycle revalidation invariant |
+| T39-29 | Member reads PO receipt history for own and foreign-business order IDs | Own order returns paginated receipt ledger rows with product labels and stable ordering; foreign order returns not-found without exposing ledger rows | Tenant-scoped read-model invariant |
+| T39-30 | Member reads PO summary across multiple currencies and statuses | Counts and totals are grouped by status AND currency; no cross-currency aggregate is returned; tenant scope is enforced | Financial display integrity invariant |
+| T39-31 | Member reads PO activity timeline for own and foreign-business order IDs | Timeline returns only that PO's tenant-scoped audit events in stable chronological order; foreign order returns not-found | Audit visibility and tenant isolation invariant |
 
 ## Execution plan after contract approval
 
@@ -107,3 +112,12 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added `POST /purchase-orders/{order_id}/cancel`: OWNER-only, tenant-scoped, row-lock intent; only draft/approved orders with no received quantities can be cancelled. Partially/fully received orders cannot be cancelled through this endpoint, so it does not reverse stock movements.
 - Successful mutations record audit events. No schema migrations, supplier liabilities, payment posting, valuation, or COGS semantics are introduced.
 - Per current user instruction, implementation work only; tests/CI were not run in this session because of the existing execution-limit issue. Runtime verification remains pending.
+
+
+## Draft editing, approval revalidation, and purchasing visibility additions (2026-10-29)
+
+- Added draft-only `PUT /purchase-orders/{order_id}`: validates the active same-business supplier and all active stock-tracked products before replacing existing lines, recalculates the order total, and records an audit event. Approved/received/cancelled orders cannot be edited.
+- Approval now locks and revalidates the supplier and product references. A draft that became invalid after creation cannot be approved until corrected.
+- Added paginated `GET /purchase-orders/{order_id}/receipts` over append-only stock receipt movements and `GET /purchase-orders/{order_id}/activity` over audit events; both first confirm the PO belongs to the requested business.
+- Added `GET /purchase-orders/summary`, grouped by lifecycle status and currency so different currencies are never summed together.
+- Tests/build/security/CI intentionally **NOT RUN** in this feature-only pass due to the current usage-limit issue. These scenarios are acceptance requirements, not evidence of runtime success.
