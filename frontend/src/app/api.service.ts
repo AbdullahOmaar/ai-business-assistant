@@ -559,8 +559,16 @@ export class ApiService {
     return this.request<AuditEventPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/audit-events?${params.toString()}`);
   }
 
-  customerStatement(businessId: string, customerId: string, offset = 0): Promise<CustomerStatement> {
+  customerStatement(
+    businessId: string,
+    customerId: string,
+    offset = 0,
+    fromDate?: string,
+    toDate?: string,
+  ): Promise<CustomerStatement> {
     const params = new URLSearchParams({ limit: '50', offset: String(offset) });
+    if (fromDate) params.set('from_date', fromDate);
+    if (toDate) params.set('to_date', toDate);
     return this.request<CustomerStatement>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}/statement?${params.toString()}`);
   }
 
