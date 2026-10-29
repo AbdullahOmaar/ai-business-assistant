@@ -1263,3 +1263,102 @@ def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_sid
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_staff_owner_only_route_matrix_and_allowed_read_reports():
+    """STAFF cannot use owner-only endpoints but may read member-scoped reports."""
+    from uuid import uuid4
+    from app.models import Business, Customer
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    owner_subject, staff_subject = "staff-route-owner", "staff-route-member"
+    business_id, customer_id = uuid4(), uuid4()
+
+    try:
+        with app.state.session_factory() as session:
+            session.add(Business(
+                id=business_id, name="STAFF Route Matrix", currency_code="EGP"
+            ))
+            session.flush()
+            session.add_all([
+                BusinessMembership(
+                    business_id=business_id, user_subject=owner_subject,
+                    role=MembershipRole.OWNER,
+                ),
+                BusinessMembership(
+                    business_id=business_id, user_subject=staff_subject,
+                    role=MembershipRole.STAFF,
+                ),
+                Customer(
+                    id=customer_id, business_id=business_id,
+                    name="Staff Statement Customer",
+                ),
+            ])
+            session.commit()
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(staff_subject)
+        client = TestClient(app)
+        def business_audit_count():
+            with app.state.session_factory() as session:
+                return session.query(AuditEvent).filter_by(business_id=business_id).count()
+
+        audit_before = business_audit_count()
+        base = f"/api/v1/businesses/{business_id}"
+        denied_requests = [
+            ("GET operations health", lambda: client.get(f"{base}/operations/health")),
+            (
+                "POST CSV preview",
+                lambda: client.post(
+                    f"{base}/imports/customers.csv/preview",
+                    content="name\nStaff Preview\n",
+                    headers={"content-type": "text/csv"},
+                ),
+            ),
+            ("GET audit events", lambda: client.get(f"{base}/audit-events")),
+            ("GET data integrity", lambda: client.get(f"{base}/reports/data-integrity")),
+        ]
+        for label, request in denied_requests:
+            response = request()
+            assert response.status_code == 403, (
+                f"{label} expected HTTP 403; got {response.status_code}: {response.text}"
+            )
+            assert business_audit_count() == audit_before, (
+                f"{label} unexpectedly changed business audit records"
+            )
+
+        allowed_reads = [
+            ("GET tax summary", lambda: client.get(f"{base}/reports/tax-summary")),
+            ("GET receivables aging", lambda: client.get(f"{base}/reports/receivables-aging")),
+            (
+                "GET customer statement",
+                lambda: client.get(f"{base}/customers/{customer_id}/statement"),
+            ),
+        ]
+        for label, request in allowed_reads:
+            response = request()
+            assert response.status_code == 200, (
+                f"{label} expected HTTP 200; got {response.status_code}: {response.text}"
+            )
+            assert business_audit_count() == audit_before, (
+                f"{label} unexpectedly changed business audit records"
+            )
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
