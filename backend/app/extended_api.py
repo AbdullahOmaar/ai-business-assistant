@@ -139,6 +139,8 @@ class PricingRuleInput(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     rule_type: str = Field(pattern="^(tax|discount)$")
     rate: Decimal = Field(ge=0, le=100, max_digits=7, decimal_places=4)
+    effective_from: datetime | None = None
+    effective_until: datetime | None = None
 
 
 class SettingInput(BaseModel):
@@ -1589,15 +1591,51 @@ def post_pricing_rule(business_id: UUID, body: PricingRuleInput,
                       principal: AuthenticatedPrincipal = Depends(get_principal)):
     def op():
         _authorized(session, principal, business_id, owner_only=True)
-        rule = PricingRule(business_id=business_id, name=body.name.strip(),
-                           rule_type=body.rule_type, rate=body.rate, is_active=True)
+        effective_from = body.effective_from or datetime.now(timezone.utc)
+        effective_until = body.effective_until
+        if effective_from.tzinfo is None or (effective_until is not None and effective_until.tzinfo is None):
+            raise WorkflowError("Pricing rule effective dates must include a timezone")
+        if effective_until is not None and effective_until <= effective_from:
+            raise WorkflowError("Pricing rule effective_until must be later than effective_from")
+        rule = PricingRule(
+            business_id=business_id, name=body.name.strip(), rule_type=body.rule_type,
+            rate=body.rate, is_active=True, effective_from=effective_from,
+            effective_until=effective_until,
+        )
         session.add(rule)
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="pricing_rule.created", target_type="pricing_rule"))
         session.flush()
         return rule
     item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "name", "rule_type", "rate", "is_active", "created_at"))
+    return _dict(item, ("id", "business_id", "name", "rule_type", "rate", "is_active", "effective_from", "effective_until", "created_at"))
+
+
+@router.get("/pricing-rules")
+def get_pricing_rules(
+    business_id: UUID,
+    rule_type: str | None = Query(default=None, pattern="^(tax|discount)$"),
+    as_of: datetime | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    _authorized(session, principal, business_id)
+    effective_at = as_of or datetime.now(timezone.utc)
+    if effective_at.tzinfo is None:
+        raise HTTPException(status_code=422, detail="as_of must include a timezone")
+    statement = select(PricingRule).where(
+        PricingRule.business_id == business_id,
+        PricingRule.is_active.is_(True),
+        PricingRule.effective_from <= effective_at,
+        or_(PricingRule.effective_until.is_(None), PricingRule.effective_until > effective_at),
+    )
+    if rule_type is not None:
+        statement = statement.where(PricingRule.rule_type == rule_type)
+    items = session.scalars(statement.order_by(PricingRule.rule_type, PricingRule.name, PricingRule.id)).all()
+    return {"items": [_dict(item, (
+        "id", "business_id", "name", "rule_type", "rate", "is_active",
+        "effective_from", "effective_until", "created_at",
+    )) for item in items], "as_of": effective_at}
 
 
 @router.post("/notifications", status_code=201)
