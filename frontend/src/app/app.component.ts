@@ -11,13 +11,14 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { CreditNotesComponent } from './credit-notes.component';
+import { BankReconciliationComponent } from './bank-reconciliation.component';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' | 'reconciliation' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, CreditNotesComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, CreditNotesComponent, BankReconciliationComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="mobileMoreOpen = false">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -68,6 +69,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' |
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
           @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('التقارير الضريبية', 'Tax summary')" [attr.title]="t('التقارير الضريبية', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
+          @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('مطابقة البنك والصندوق', 'Bank reconciliation')" [attr.title]="t('مطابقة البنك والصندوق', 'Bank reconciliation')" [class.active]="tab === 'reconciliation'" [attr.aria-current]="tab === 'reconciliation' ? 'page' : null" (click)="setTab('reconciliation')"><span class="nav-icon" aria-hidden="true">⇄</span><span>{{ t('مطابقة البنك', 'Bank matching') }}</span></button> }
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المرتجعات والإشعارات الدائنة', 'Returns & credit notes')" [attr.title]="t('المرتجعات والإشعارات الدائنة', 'Returns & credit notes')" [class.active]="tab === 'credit-notes'" [attr.aria-current]="tab === 'credit-notes' ? 'page' : null" (click)="setTab('credit-notes')"><span class="nav-icon" aria-hidden="true">↩</span><span>{{ t('المرتجعات والدائن', 'Returns & credits') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('العملاء', 'Customers')" [attr.title]="t('العملاء', 'Customers')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
@@ -90,6 +92,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' |
               <button class="nav-item" role="menuitem" [class.active]="tab === 'expenses'" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'employees'" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</span></button> }
               <button class="nav-item" role="menuitem" [class.active]="tab === 'notifications'" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
+              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'reconciliation'" (click)="setTab('reconciliation')"><span class="nav-icon" aria-hidden="true">⇄</span><span>{{ t('مطابقة البنك والصندوق', 'Bank reconciliation') }}</span></button> }
               <button class="nav-item" role="menuitem" [class.active]="tab === 'credit-notes'" (click)="setTab('credit-notes')"><span class="nav-icon" aria-hidden="true">↩</span><span>{{ t('المرتجعات والدائن', 'Returns & credits') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'suppliers'" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'purchases'" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
@@ -408,6 +411,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'credit-notes' |
                   @if (!filteredProducts.length) { <p class="empty">{{ productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.') }}</p> }
                 </div>
               </section>
+            }
+
+            @if (tab === 'reconciliation' && business?.role === 'owner' && business) {
+              @defer (on immediate) {
+                <aba-bank-reconciliation [businessId]="business.id" [role]="business.role || 'staff'" [language]="language"></aba-bank-reconciliation>
+              } @placeholder {
+                <section class="panel" role="status">{{ t('جارٍ تحميل قسم مطابقة البنك…', 'Loading bank reconciliation…') }}</section>
+              }
             }
 
             @if (tab === 'credit-notes' && business) {
