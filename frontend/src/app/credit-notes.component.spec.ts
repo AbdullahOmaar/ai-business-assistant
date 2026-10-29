@@ -143,3 +143,12 @@ test('cash refunds require a settled original receivable and cannot reuse applie
   assert.match(component, /Cash refunds require the original invoice receivable to be fully settled/);
   assert.match(component, /Original payment must be allocated to the credit note's invoice/);
 });
+
+
+test('cash refund history is loaded per credit note and paginates without duplicate records', () => {
+  assert.match(component, /this\.api\.cashRefunds\(requestedBusinessId, \{[\s\S]{0,100}credit_note_id: requestedNoteId, limit: 100, offset/);
+  assert.match(component, /refundHistoryHasMore\[requestedNoteId\] = page\.items\.length === 100/);
+  assert.match(component, /const existingIds = new Set\(existing\.map\(refund => refund\.id\)\)/);
+  assert.match(component, /loadMoreRefundHistory\(note\)/);
+  assert.match(component, /requestedBusinessId !== this\.businessId/);
+});
