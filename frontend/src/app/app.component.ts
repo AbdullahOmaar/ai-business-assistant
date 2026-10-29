@@ -201,6 +201,11 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 @if (tab === 'suppliers') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportSupplierCsv()" [disabled]="csvExporting">{{ csvExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <form class="inline-form" (ngSubmit)="searchSuppliers()">
+                  <input name="supplierSearch" maxlength="160" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث باسم المورد…', 'Search suppliers by name…')" [(ngModel)]="supplierSearch">
+                  <button class="secondary" type="submit" [disabled]="suppliersLoading">{{ t('بحث', 'Search') }}</button>
+                  <button class="secondary" type="button" (click)="clearSupplierSearch()" [disabled]="suppliersLoading">{{ t('عرض الكل', 'Show all') }}</button>
+                </form>
                 <form class="inline-form" (ngSubmit)="createSupplier()">
                   <input name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
                   <input name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
@@ -997,6 +1002,7 @@ export class AppComponent implements OnInit {
   supplierEmail = '';
   supplierPhone = '';
   supplierAddress = '';
+  supplierSearch = '';
   purchaseOrderNumber = '';
   purchaseSupplierId = '';
   purchaseProductId = '';
@@ -1842,11 +1848,20 @@ export class AppComponent implements OnInit {
     }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
   }
 
+  searchSuppliers(): void {
+    void this.loadSuppliers();
+  }
+
+  clearSupplierSearch(): void {
+    this.supplierSearch = '';
+    void this.loadSuppliers();
+  }
+
   private async loadSuppliers(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
     this.suppliersLoading = true; this.operationsError = '';
-    try { const items = await this.api.suppliers(businessId); if (this.business?.id === businessId) this.suppliers = items; }
+    try { const items = await this.api.suppliers(businessId, this.supplierSearch); if (this.business?.id === businessId) this.suppliers = items; }
     catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
     finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
   }
