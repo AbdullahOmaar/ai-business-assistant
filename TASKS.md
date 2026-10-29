@@ -1645,3 +1645,12 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - The existing database unique constraint remains the final protection against concurrent duplicate requests; the preflight check is usability feedback, not a replacement for database integrity.
 - Added acceptance scenario T39-32 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
 - Tests/build/security/CI: **NOT RUN** per current instruction while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
+
+
+## T39 purchase-order CSV export — 2026-10-29
+
+- Extended the existing owner-only CSV export route in `backend/app/extended_api.py` to support `purchase_orders` without introducing a new route or permission model.
+- Export includes one row per PO line, PO status/order number/currency/total, supplier and product labels, ordered/received/remaining quantities and unit cost. Joins are tenant-scoped using business IDs as well as record IDs.
+- Formula-like cells are escaped before CSV output to reduce spreadsheet formula-injection risk. The endpoint is read-only and does not change inventory, purchasing or financial records.
+- Added acceptance scenario T39-33 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- Tests/build/security/CI: **NOT RUN** per user instruction while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
