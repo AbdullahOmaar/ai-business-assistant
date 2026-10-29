@@ -983,14 +983,25 @@ def test_delegated_read_only_platform_role_cannot_change_workspace_status(platfo
         f"/api/v1/platform-admin/businesses/{business_id}/status",
         json={"is_active": False, "reason": "Should be denied"},
     )
+    role_change = client.post(
+        "/api/v1/platform-admin/users/new-platform-user/roles",
+        json={"role": "workspace_operator", "active": True, "reason": "Should be denied"},
+    )
 
     assert overview.status_code == 200
     assert audit_read.status_code == 200
     assert response.status_code == 403
+    assert role_change.status_code == 403
     with Session(environment["engine"]) as session:
         business = session.get(Business, UUID(business_id))
         business_audit_after = session.scalar(select(func.count(AuditEvent.id)))
         platform_audit_after = session.scalar(select(func.count(PlatformAdminAuditEvent.id)))
+        grant_after = session.scalar(
+            select(func.count(PlatformRoleGrant.id)).where(
+                PlatformRoleGrant.user_subject == "firebase:test-project:new-platform-user"
+            )
+        )
     assert business is not None and business.is_active is True
     assert business_audit_after == business_audit_before
     assert platform_audit_after == platform_audit_before
+    assert grant_after == 0
