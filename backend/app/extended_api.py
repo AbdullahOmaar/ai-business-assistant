@@ -291,17 +291,38 @@ def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1
             statement.order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc())
             .offset(offset).limit(limit)
         ).all()
+        if not orders:
+            return []
+
+        order_ids = [order.id for order in orders]
+        lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.business_id == business_id,
+            PurchaseOrderLine.purchase_order_id.in_(order_ids),
+        ).order_by(PurchaseOrderLine.purchase_order_id, PurchaseOrderLine.id)).all()
+        lines_by_order: dict[UUID, list[PurchaseOrderLine]] = {}
+        for line in lines:
+            lines_by_order.setdefault(line.purchase_order_id, []).append(line)
+
+        supplier_ids = {order.supplier_id for order in orders}
+        suppliers = {
+            supplier.id: supplier
+            for supplier in session.scalars(select(Supplier).where(
+                Supplier.business_id == business_id,
+                Supplier.id.in_(supplier_ids),
+            )).all()
+        } if supplier_ids else {}
+
         result = []
         for order in orders:
-            lines = session.scalars(select(PurchaseOrderLine).where(
-                PurchaseOrderLine.business_id == business_id,
-                PurchaseOrderLine.purchase_order_id == order.id,
-            ).order_by(PurchaseOrderLine.id)).all()
             item = _dict(order, ("id", "business_id", "supplier_id", "order_number", "status", "currency_code", "total", "created_at"))
+            supplier = suppliers.get(order.supplier_id)
+            if supplier is not None:
+                item["supplier_name"] = supplier.name
+                item["supplier_is_active"] = supplier.is_active
             item["lines"] = [
                 {**_dict(line, ("id", "product_id", "quantity", "unit_cost", "received_quantity")),
                  "remaining_quantity": str(max(ZERO, line.quantity - line.received_quantity))}
-                for line in lines
+                for line in lines_by_order.get(order.id, [])
             ]
             result.append(item)
         return result
