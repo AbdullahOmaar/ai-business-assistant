@@ -1509,64 +1509,104 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
         engine.dispose()
 
 
-def test_payment_allocation_rejects_foreign_business_invoice_without_side_effects():
-    engine, business_id, local_invoice_id, _ = _sales_return_fixture()
+def test_payment_api_rejects_idempotency_key_reuse_with_changed_payload_without_writes():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
-        local_invoice = session.get(Invoice, local_invoice_id)
-        assert local_invoice is not None and local_invoice.customer_id is not None
-        local_customer_id = local_invoice.customer_id
-
-        foreign_business = Business(name="Foreign payment shop", currency_code="EGP")
-        session.add(foreign_business)
-        session.flush()
-        foreign_customer = Customer(
-            business_id=foreign_business.id,
-            name="Foreign payment customer",
-        )
-        session.add(foreign_customer)
-        session.flush()
-        foreign_invoice = Invoice(
-            business_id=foreign_business.id,
-            customer_id=foreign_customer.id,
-            invoice_number="FOREIGN-PAY-1",
-            status="issued",
-            currency_code="EGP",
-            subtotal=Decimal("10.00"),
-            tax_total=Decimal("0.00"),
-            discount_total=Decimal("0.00"),
-            total=Decimal("10.00"),
-        )
-        session.add(foreign_invoice)
-        session.commit()
-        foreign_invoice_id = foreign_invoice.id
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
 
     previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "5.00",
+        "currency_code": "EGP",
+        "idempotency_key": "api-changed-payload-replay",
+        "customer_id": str(customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+        "method": "cash",
+        "reference": "original payment",
+    }
     try:
-        response = TestClient(app).post(
-            f"/api/v1/businesses/{business_id}/payments",
-            json={
-                "amount": "5.00",
-                "currency_code": "EGP",
-                "idempotency_key": "cross-tenant-invoice-allocation",
-                "customer_id": str(local_customer_id),
-                "allocations": [{"invoice_id": str(foreign_invoice_id), "amount": "5.00"}],
-            },
-        )
-        assert response.status_code == 422, response.text
-        assert "in this business" in response.json()["detail"]
+        first = client.post(base, json=payload)
+        assert first.status_code == 201, first.text
+        payment_id = first.json()["id"]
+
+        with Session(engine) as session:
+            payment_before = session.get(Payment, UUID(payment_id))
+            assert payment_before is not None
+            payment_snapshot = (
+                payment_before.amount,
+                payment_before.currency_code,
+                payment_before.customer_id,
+                payment_before.method,
+                payment_before.reference,
+                payment_before.idempotency_key,
+            )
+            allocations_before = tuple(
+                sorted(
+                    (str(item.invoice_id), item.amount)
+                    for item in session.scalars(
+                        select(PaymentAllocation).where(
+                            PaymentAllocation.business_id == business_id,
+                            PaymentAllocation.payment_id == UUID(payment_id),
+                        )
+                    ).all()
+                )
+            )
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+
+        changed_payload = {**payload, "amount": "6.00"}
+        changed_payload["allocations"] = [
+            {"invoice_id": str(invoice_id), "amount": "6.00"}
+        ]
+        rejected = client.post(base, json=changed_payload)
+        assert rejected.status_code == 422, rejected.text
+        assert "different payment details" in rejected.json()["detail"]
 
         with Session(engine) as session:
             assert session.scalar(
-                select(func.count()).select_from(Payment)
-            ) == 0
+                select(func.count()).select_from(Payment).where(
+                    Payment.business_id == business_id
+                )
+            ) == 1
             assert session.scalar(
-                select(func.count()).select_from(PaymentAllocation)
-            ) == 0
+                select(func.count()).select_from(PaymentAllocation).where(
+                    PaymentAllocation.business_id == business_id
+                )
+            ) == 1
+            payment_after = session.get(Payment, UUID(payment_id))
+            assert payment_after is not None
+            assert (
+                payment_after.amount,
+                payment_after.currency_code,
+                payment_after.customer_id,
+                payment_after.method,
+                payment_after.reference,
+                payment_after.idempotency_key,
+            ) == payment_snapshot
+            allocations_after = tuple(
+                sorted(
+                    (str(item.invoice_id), item.amount)
+                    for item in session.scalars(
+                        select(PaymentAllocation).where(
+                            PaymentAllocation.business_id == business_id,
+                            PaymentAllocation.payment_id == UUID(payment_id),
+                        )
+                    ).all()
+                )
+            )
+            assert allocations_after == allocations_before
             assert session.scalar(
                 select(func.count()).select_from(AuditEvent).where(
                     AuditEvent.business_id == business_id
                 )
-            ) == 0
+            ) == audit_count_before
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
