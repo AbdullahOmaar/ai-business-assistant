@@ -540,6 +540,8 @@ def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(
     before = created.json()
 
     invalid_update_payloads = [
+        {},
+        {"allowances": None},
         {"allowances": "1.001"},
         {"allowances": "-0.01"},
         {"bonuses": "-0.01"},
