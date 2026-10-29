@@ -693,12 +693,31 @@ def approve_purchase_order(business_id: UUID, order_id: UUID,
             raise WorkflowError("Purchase order not found in this business")
         if po.status != "draft":
             raise WorkflowError("Only draft purchase orders can be approved")
+        supplier = session.scalars(select(Supplier).where(
+            Supplier.id == po.supplier_id,
+            Supplier.business_id == business_id,
+            Supplier.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if supplier is None:
+            raise WorkflowError("An active supplier in this business is required for approval")
         lines = session.scalars(select(PurchaseOrderLine).where(
             PurchaseOrderLine.purchase_order_id == po.id,
             PurchaseOrderLine.business_id == business_id,
-        )).all()
+        ).with_for_update()).all()
         if not lines:
             raise WorkflowError("A purchase order must contain at least one line")
+        product_ids = {line.product_id for line in lines}
+        active_products = {
+            product.id
+            for product in session.scalars(select(Product).where(
+                Product.id.in_(product_ids),
+                Product.business_id == business_id,
+                Product.is_active.is_(True),
+                Product.is_stock_tracked.is_(True),
+            ).with_for_update()).all()
+        } if product_ids else set()
+        if active_products != product_ids:
+            raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
         po.status = "approved"
         session.add(AuditEvent(
             business_id=business_id, actor_subject=principal.subject,
