@@ -98,6 +98,11 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
           </article>
         }
       </div>
+      @if (notesHasMore) {
+        <button type="button" (click)="loadMoreCreditNotes()" [disabled]="loading || loadingMoreNotes" class="load-more">
+          {{ loadingMoreNotes ? (language === 'ar' ? 'جارٍ تحميل المزيد…' : 'Loading more…') : (language === 'ar' ? 'تحميل المزيد من الإشعارات' : 'Load more credit notes') }}
+        </button>
+      }
       <p class="footnote">{{ language === 'ar' ? 'إصدار الإشعار موقوف للفواتير ذات الضريبة حتى دعم توزيع الضريبة على بنود المرتجع. لا يتم تسجيل رد نقدي أو خصم رصيد العميل تلقائيًا.' : 'Issuance is blocked for tax-bearing invoices until tax can be allocated to return lines. No cash refund or customer-balance credit is recorded automatically.' }}</p>
     </section>
   `,
@@ -109,6 +114,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
     p, .muted, .footnote { color: var(--muted, #5b6474); line-height: 1.5; } .footnote { font-size: .85rem; margin-top: 1rem; }
     .return-form { display: grid; gap: .8rem; margin: .6rem 0 1.2rem; }
     .customer-filter { display: grid; gap: .35rem; max-width: 420px; margin: .6rem 0; }
+    .load-more { display: block; margin: .8rem auto; }
     label { display: grid; gap: .35rem; font-size: .92rem; }
     input, select { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; border: 1px solid var(--border, #cbd5e1); border-radius: 9px; background: var(--surface, #fff); color: inherit; }
     .return-lines { display: grid; gap: .5rem; }
@@ -133,6 +139,8 @@ export class CreditNotesComponent implements OnChanges {
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
   selectedCustomerId = '';
+  notesHasMore = false;
+  loadingMoreNotes = false;
   invoiceDetail: InvoiceDetail | null = null;
   returnLines: ReturnDraftLine[] = [];
   selectedInvoiceId = '';
@@ -159,6 +167,8 @@ export class CreditNotesComponent implements OnChanges {
       this.returns = [];
       this.notes = [];
       this.selectedCustomerId = '';
+      this.notesHasMore = false;
+      this.loadingMoreNotes = false;
       this.selectedInvoiceId = '';
       this.invoiceDetail = null;
       this.returnLines = [];
@@ -173,6 +183,7 @@ export class CreditNotesComponent implements OnChanges {
     const requestId = ++this.refreshSequence;
     const requestedBusinessId = this.businessId;
     this.loading = true;
+    this.loadingMoreNotes = false;
     this.error = '';
     try {
       const [returnsPage, notesPage, invoices, customers] = await Promise.all([
@@ -188,6 +199,7 @@ export class CreditNotesComponent implements OnChanges {
       if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId) return;
       this.returns = returnsPage.items;
       this.notes = notesPage.items;
+      this.notesHasMore = notesPage.items.length === 100;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
       this.customers = customers;
       this.message = '';
@@ -195,6 +207,7 @@ export class CreditNotesComponent implements OnChanges {
       if (requestId === this.refreshSequence && requestedBusinessId === this.businessId) {
         // Never show a previous customer's result as if it matched the newly selected filter.
         this.notes = [];
+        this.notesHasMore = false;
         this.error = this.language === 'ar' ? 'تعذر تحميل الفواتير والمرتجعات. تحقق من الصلاحيات والاتصال ثم أعد المحاولة.' : 'Could not load invoices and returns. Check access and connectivity, then retry.';
       }
     } finally {
@@ -208,6 +221,33 @@ export class CreditNotesComponent implements OnChanges {
 
   customerName(customerId: string): string {
     return this.customers.find(customer => customer.id === customerId)?.name || this.shortId(customerId);
+  }
+
+  async loadMoreCreditNotes(): Promise<void> {
+    if (!this.businessId || !this.notesHasMore || this.loading || this.loadingMoreNotes) return;
+    const requestedBusinessId = this.businessId;
+    const requestedCustomerId = this.selectedCustomerId;
+    const requestId = this.refreshSequence;
+    const offset = this.notes.length;
+    this.loadingMoreNotes = true;
+    this.error = '';
+    try {
+      const page = await this.api.creditNotes(requestedBusinessId, {
+        limit: 100, offset, customer_id: requestedCustomerId || undefined,
+      });
+      if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId ||
+          requestedCustomerId !== this.selectedCustomerId) return;
+      const existingIds = new Set(this.notes.map(note => note.id));
+      this.notes = [...this.notes, ...page.items.filter(note => !existingIds.has(note.id))];
+      this.notesHasMore = page.items.length === 100;
+    } catch {
+      if (requestId === this.refreshSequence && requestedBusinessId === this.businessId &&
+          requestedCustomerId === this.selectedCustomerId) {
+        this.error = this.language === 'ar' ? 'تعذر تحميل المزيد من الإشعارات الدائنة.' : 'Could not load more credit notes.';
+      }
+    } finally {
+      if (requestId === this.refreshSequence) this.loadingMoreNotes = false;
+    }
   }
 
   async onInvoiceSelected(invoiceId: string): Promise<void> {
