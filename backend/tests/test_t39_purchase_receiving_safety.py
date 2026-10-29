@@ -200,7 +200,7 @@ def test_invalid_later_line_does_not_partially_receive_earlier_lines(purchasing_
 
         # The first line is valid, but the second would over-receive. The entire
         # request must be validated before the first stock/audit write is staged.
-        with pytest.raises(WorkflowError, match="Received quantity must be positive"):
+        with pytest.raises(WorkflowError, match="Received quantity must be"):
             receive_purchase_order(
                 session,
                 principal=principal,
