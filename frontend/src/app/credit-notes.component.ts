@@ -97,6 +97,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
             <div class="record-main credit-balance">
               <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong>
               <small>{{ language === 'ar' ? 'المستخدم من الإشعار' : 'Applied' }}: {{ note.applied_total ?? '0.00' }} {{ note.currency_code }}</small>
+              <small>{{ language === 'ar' ? 'المردود نقدًا' : 'Cash refunded' }}: {{ note.refunded_total ?? '0.00' }} {{ note.currency_code }}</small>
               <small>{{ language === 'ar' ? 'الرصيد المتبقي' : 'Remaining credit' }}: {{ remainingCredit(note) }} {{ note.currency_code }}</small>
             </div>
             <span class="issued">{{ language === 'ar' ? 'صادر' : 'Issued' }}</span>
@@ -122,9 +123,11 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
                   {{ applyingCredit ? (language === 'ar' ? 'جارٍ تطبيق الرصيد…' : 'Applying credit…') : (language === 'ar' ? 'تأكيد تطبيق الرصيد' : 'Confirm credit application') }}
                 </button>
               </form>
+            }
+            @if (role === 'owner' && hasRemainingCredit(note)) {
               <form class="refund-form" (ngSubmit)="refundCredit(note)">
                 <h4>{{ language === 'ar' ? 'تسجيل رد نقدي منفصل' : 'Record a separate cash refund' }}</h4>
-                <p class="footnote">{{ language === 'ar' ? 'لا يمكن رد مبلغ تم تطبيقه على المديونية أو تجاوز الرصيد المتبقي.' : 'Cannot refund credit already applied to receivables or exceed the remaining credit.' }}</p>
+                <p class="footnote">{{ language === 'ar' ? 'لا يمكن رد مبلغ تم تطبيقه على المديونية أو تجاوز الرصيد المتبقي. يجب تسوية الفاتورة الأصلية أولًا.' : 'A refund cannot reuse applied credit or exceed the remaining balance. The original invoice receivable must be settled first.' }}</p>
                 <div class="refund-fields">
                   <label>{{ language === 'ar' ? 'المبلغ' : 'Amount' }}
                     <input type="number" [name]="'refundAmount' + note.id" min="0.01" step="0.01" [max]="remainingCredit(note)" [(ngModel)]="refundAmountByNote[note.id]" required [disabled]="refundingNoteId !== null || applyingCredit || loading">
@@ -141,6 +144,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
                 <label>{{ language === 'ar' ? 'مرجع العملية (اختياري)' : 'Refund reference (optional)' }}
                   <input [name]="'refundReference' + note.id" maxlength="128" [(ngModel)]="refundReferenceByNote[note.id]" [disabled]="refundingNoteId !== null || applyingCredit || loading">
                 </label>
+                @if (!canRefund(note)) { <small class="muted">{{ language === 'ar' ? 'رد النقد غير متاح قبل تسوية مديونية الفاتورة الأصلية.' : 'Cash refund is unavailable until the original invoice receivable is settled.' }}</small> }
                 <button class="secondary" type="submit" [disabled]="!canRefund(note)">
                   {{ refundingNoteId === note.id ? (language === 'ar' ? 'جارٍ تسجيل الرد…' : 'Recording refund…') : (language === 'ar' ? 'تأكيد رد المبلغ' : 'Confirm cash refund') }}
                 </button>
@@ -409,6 +413,67 @@ export class CreditNotesComponent implements OnChanges {
     } finally {
       if (requestedBusinessId === this.businessId) this.applyingCredit = false;
     }
+  }
+
+  canRefund(note: CreditNote): boolean {
+    if (this.role !== 'owner' || this.loading || this.applyingCredit || this.refundingNoteId !== null || !this.hasRemainingCredit(note)) return false;
+    const invoice = this.invoices.find(item => item.id === note.invoice_id);
+    const amount = Number(this.refundAmountByNote[note.id]);
+    const method = this.refundMethodByNote[note.id] || 'cash';
+    return invoice?.status === 'issued'
+      && invoice.outstanding_amount !== undefined
+      && Number(invoice.outstanding_amount) <= 0
+      && Number.isFinite(amount)
+      && amount > 0
+      && amount <= Number(this.remainingCredit(note))
+      && ['cash', 'bank', 'card', 'other'].includes(method);
+  }
+
+  async refundCredit(note: CreditNote): Promise<void> {
+    if (!this.canRefund(note) || !this.businessId) return;
+    const requestedBusinessId = this.businessId;
+    const requestedNoteId = note.id;
+    const amount = Number(this.refundAmountByNote[note.id]).toFixed(2);
+    const method = this.refundMethodByNote[note.id] || 'cash';
+    const reference = this.refundReferenceByNote[note.id]?.trim() || undefined;
+    const requestKey = `${note.id}|${amount}|${method}|${reference ?? ''}`;
+    const idempotencyKey = this.refundIdempotencyKeys[requestKey] ?? crypto.randomUUID();
+    this.refundIdempotencyKeys[requestKey] = idempotencyKey;
+    this.refundingNoteId = note.id;
+    this.error = '';
+    this.message = '';
+    try {
+      await this.api.createCashRefund(requestedBusinessId, note.id, {
+        amount, method, reference, idempotency_key: idempotencyKey,
+      });
+      delete this.refundIdempotencyKeys[requestKey];
+      if (requestedBusinessId !== this.businessId) return;
+      this.refundAmountByNote[note.id] = '';
+      this.refundReferenceByNote[note.id] = '';
+      await this.refresh();
+      this.message = this.language === 'ar'
+        ? 'تم تسجيل رد النقد كعملية مستقلة. لم يتم تعديل الفاتورة أو تسجيل خصم مديونية إضافي.'
+        : 'Cash refund recorded separately. The invoice was not edited and no extra receivable credit was posted.';
+    } catch {
+      if (requestedBusinessId === this.businessId) {
+        this.error = this.language === 'ar'
+          ? 'تعذر تأكيد رد النقد. أعد المحاولة بنفس المبلغ والطريقة والمرجع لتكرار الطلب بأمان.'
+          : 'Could not confirm the refund. Retry with the same amount, method, and reference to replay safely.';
+      }
+    } finally {
+      if (requestedBusinessId === this.businessId) this.refundingNoteId = null;
+    }
+  }
+
+  refundsForNote(noteId: string): CashRefund[] {
+    return this.cashRefunds.filter(refund => refund.credit_note_id === noteId);
+  }
+
+  refundMethodLabel(method: CashRefund['method']): string {
+    const labels = this.language === 'ar'
+      ? { cash: 'نقدي', bank: 'تحويل بنكي', card: 'بطاقة', other: 'أخرى' }
+      : { cash: 'Cash', bank: 'Bank transfer', card: 'Card', other: 'Other' };
+    return labels[method];
   }
 
   customerName(customerId: string): string {
