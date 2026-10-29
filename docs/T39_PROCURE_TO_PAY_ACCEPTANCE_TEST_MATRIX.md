@@ -71,8 +71,9 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 
 ## Existing source-to-test map (verified by source inspection)
 
-- `backend/app/operations.py::receive_purchase_order`: requires OWNER; locks the order and its lines; accepts only `approved` / `partially_received`; rejects empty, non-positive, foreign-line, or over-remaining quantities; locks and validates each product; updates received quantity; records a `StockMovement` for stock-tracked products; updates order state and writes an audit event. The operation accepts quantities only and has no receipt-event/idempotency identity, so a retried request cannot be distinguished from a genuinely new partial delivery by this function alone.
-- `backend/tests/test_operations.py::test_purchase_receiving_records_stock_and_completes_order`: checks a 4 + 6 partial receipt sequence and final order states; currently only asserts that at least one stock movement exists, not the exact movement count/quantity or replay behavior.
+- `backend/app/extended_api.py::receive_purchase_order` now delegates to `backend/app/operations.py::receive_purchase_order`, so API and service share the OWNER check, row-lock intent, finite-positive and over-remaining quantity validation, product/business validation, stock ledger posting, order-state transition, and audit event. The HTTP adapter rejects duplicate line IDs instead of silently collapsing the list into a mapping. The operation still has no receipt-event/idempotency identity, so a retried request with a new request body cannot be distinguished from a genuinely new partial delivery by this function alone.
+- `backend/tests/test_operations.py::test_purchase_receiving_records_stock_and_completes_order` retains the original 4 + 6 flow. `backend/tests/test_t39_purchase_receiving_safety.py::test_partial_receipts_create_exact_stock_ledger_effects` asserts exactly two stock movements with total quantity 10; other safety tests assert no side effects for over-receipt, invalid later lines, role denial, non-finite quantities, and cross-business product references.
+- `backend/tests/test_api.py::test_purchase_receipt_duplicate_line_ids_are_rejected_atomically` exercises the HTTP endpoint and checks duplicate line IDs return 422 with no receipt, stock, or audit mutation.
 - `backend/tests/test_operations.py::test_purchase_receiving_requires_owner_role`: checks the OWNER-only guard raises for STAFF; this unit test does not itself assert before/after no-side-effect snapshots.
 - `backend/tests/test_api.py` and `backend/tests/test_business_tenant_boundaries.py`: contain receiving API and business-scope denial coverage; preserve and extend these rather than duplicate endpoints or replace the existing authorization matrix.
 - `backend/app/models.py::StockMovement`: append-only movement records are business-scoped, constrain movement type/quantity, and link product to business. No supplier bill/payable/payment model was found in the inspected model source.
@@ -85,3 +86,9 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 
 - `backend/tests/test_t39_purchase_receiving_safety.py::test_foreign_business_product_is_rejected_without_receipt_side_effects` builds a PO in business A with one valid local line and one line referencing a product owned by business B. It requests both receipts in one call and asserts the foreign product is rejected before any local received quantity, order status, stock movement, or audit event changes.
 - This is source/test coverage added to the existing Draft PR #306; execution remains NOT RUN until CI logs or an execution environment are available. It does not replace the T37/T38 contract approval gate.
+
+
+## API/domain consistency fix (2026-10-29)
+
+- The API previously had a separate receiving implementation that mutated each line before validating later lines and could diverge from the hardened domain operation. It now calls the shared operation and rejects duplicate line IDs at the HTTP boundary.
+- Regression coverage added in `backend/tests/test_api.py` for duplicate line IDs and atomic no-side-effect behavior. Code and test are implemented; runtime validation is still NOT RUN because the available GitHub Actions jobs expose no step data/logs and the current execution environment cannot clone the repository.
