@@ -6,7 +6,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-not
 
 - SalesReturn and SalesReturnLine represent a return request and its invoice-line quantities/amounts.
 - Draft return creation checks the original issued invoice and calculates a discounted line amount before tax. Approval is OWNER-only, locks the return and invoice, serializes competing approvals by locking the invoice, checks cumulative returned quantities/amounts, and writes stock-return movements for tracked products.
-- An approved return is **not** automatically a receivable credit or a cash refund. The current branch adds issuance of an immutable credit-note record, but that note is not yet applied to receivables or cash. Customer statements and reports must continue disclosing this gap.
+- An approved return is **not** automatically a receivable credit or a cash refund. Credit-note issuance and a separate explicit credit-application action are now represented as separate records. Neither action records a cash refund. Customer statements and reports must continue disclosing this gap.
 - Issued invoice totals are historical records and must not be edited to simulate a credit note.
 - Payment allocations are separate records and are currency/customer constrained. Unallocating a payment is not the same as refunding cash.
 
@@ -63,3 +63,5 @@ E. Resume tests and exact-head CI only after the user clears the current testing
 
 - Frontend pagination follow-up: the credit-note list now loads additional pages in batches of 100, preserves the active customer filter, ignores responses for a changed workspace/filter, and deduplicates rows by note ID. Source-level assertions were added. This pagination change and its assertions are **NOT RUN**.
 - Credit-application UI follow-up: OWNERs can choose an issued receivable for the same customer/currency, apply an amount bounded by the displayed remaining credit and invoice outstanding amount, and see applied/remaining totals. Exact retries retain the same idempotency key for the same note/invoice/amount tuple; source-level tests cover this behavior and amount/customer/currency guards. Latest UI/test changes are **NOT RUN**.
+
+- Frontend credit-application follow-up: added a workspace form for owners to apply a credit note to an issued invoice belonging to the same customer and currency, with client-side amount caps, a stable idempotency key across retries, applied/remaining balance display, and explicit no-cash-refund messaging. Added source-level regression assertions. These latest API-client/UI/test changes are **NOT RUN**; earlier test/build results do not verify this head.
