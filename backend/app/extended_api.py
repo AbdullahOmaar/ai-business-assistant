@@ -397,8 +397,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Create a draft purchase order; owner approval is a separate privileged step."""
-    def op():
-        _authorized(session, principal, business_id)
+    def op():        _authorized(session, principal, business_id)
         supplier = session.scalars(select(Supplier).where(
             Supplier.id == body.supplier_id, Supplier.business_id == business_id,
             Supplier.is_active.is_(True),
@@ -797,8 +796,7 @@ def report_summary(business_id: UUID,
             "issued_invoices_by_currency": [
                 {"currency_code": currency, "count": count, "total": str(total)}
                 for currency, count, total in invoices
-            ],
-            "expenses_by_currency": [
+            ],            "expenses_by_currency": [
                 {"currency_code": currency, "count": count, "total": str(total)}
                 for currency, count, total in expenses
             ],
@@ -1197,8 +1195,7 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
             movement_count = session.scalar(select(func.count()).select_from(StockMovement).where(
                 StockMovement.business_id == business_id, StockMovement.product_id == item.id
             ))
-            if movement_count:
-                raise WorkflowError("Stock tracking cannot be disabled after stock movements exist")
+            if movement_count:                raise WorkflowError("Stock tracking cannot be disabled after stock movements exist")
         for key, value in changes.items():
             if value is None and key in {"name", "unit", "unit_price", "is_stock_tracked"}:
                 raise WorkflowError(f"{key} cannot be null")
@@ -1309,7 +1306,7 @@ def list_expenses(
                 statement = statement.where(Expense.incurred_at < end_bound)
 
         items = session.scalars(
-            statement.order_by(Expense.incurred_at.desc()).offset(offset).limit(limit)
+            statement.order_by(Expense.incurred_at.desc(), Expense.id.desc()).offset(offset).limit(limit)
         ).all()
         return [_dict(x, ("id", "category", "description", "amount", "currency_code",
                           "incurred_at", "vendor_name", "reference", "created_at")) for x in items]
@@ -1597,8 +1594,7 @@ def assistant_insights(business_id: UUID,
 def customer_statement(
     business_id: UUID,
     customer_id: UUID,
-    from_date: date | None = Query(default=None),
-    to_date: date | None = Query(default=None),
+    from_date: date | None = Query(default=None),    to_date: date | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
