@@ -1717,3 +1717,15 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Local tests, frontend build, security scans, migration checks, browser smoke and runtime verification: **NOT RUN**. No passing test result is claimed.
 - Financial work remains gated by T37 Master contract approval and T38/T40 shared stock/costing/posting boundaries. No supplier payable/payment schema, supplier-return accounting, stock valuation/COGS or expense-posting semantics were introduced. No merge, deployment or migration performed.
 - Next action: retrieve actionable logs for exact-head CircleCI and GitHub Actions failures, fix only the verified cause, and run all exact-head gates. Keep PR Draft until checks pass and required contract approvals are recorded.
+
+## T39 structured closeout — 2026-10-29
+
+- **Overall: PARTIALLY COMPLETE; release: BLOCKED.** Existing Draft PR #306 remains the only candidate; no new branch/PR was created.
+- Closeout baseline observed before this ledger update: head `9eaa630859cf2cdf3fdda1dce5050984d143a0b8`, base `c464398e0a6ace77eba32aabfbdbd09091f53999`, 106 commits ahead / 0 behind, 9 changed files.
+- Current scope files: `backend/app/extended_api.py`, `backend/app/operations.py`, `backend/tests/test_api.py`, `backend/tests/test_operations.py`, `backend/tests/test_t39_purchase_receiving_safety.py`, `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`, `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`, and this file.
+- Latest exact-head CircleCI snapshot: six contexts **FAILURE** (frontend-browser-smoke 6908, frontend-unit-tests 6913, backend-container 6911, backend-accounting 6912, frontend-dependency-audit 6909, frontend-production-build 6910). No aggregate pass.
+- GitHub Actions #979 Backend tests, #1180 Verify backend container, #1884 Verify backend/frontend, and #1648 Dependency security scan all **FAILURE**. Logs/step detail are unavailable through the current connector; root cause is **NOT VERIFIED**.
+- Local backend/frontend tests, build, security, migration/rollback, browser smoke and runtime checks: **NOT RUN** by owner instruction due usage-limit blocker. Matrix scenarios are requirements, not passing-test evidence.
+- Full supplier bills/payables/payments, supplier returns/reversals, receipt idempotency/concurrency, stock valuation/COGS and expense/cash-flow semantics remain gated on T37/T38/T40 approvals.
+- No merge, deployment, or migration performed. Keep PR #306 Draft. Next action: obtain actionable CI logs/runner diagnostics, fix only an evidenced cause, and rerun required checks on the resulting exact head; do not merge until checks pass and contract approval is recorded.
+
