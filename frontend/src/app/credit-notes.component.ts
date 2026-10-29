@@ -94,26 +94,33 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
         @for (note of notes; track note.id) {
           <article class="record">
             <div class="record-main"><strong>{{ note.credit_note_number }}</strong><small>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(note.sales_return_id) }}</small><small>{{ language === 'ar' ? 'العميل' : 'Customer' }} · {{ customerName(note.customer_id) }}</small></div>
-            <div class="record-main">
+            <div class="record-main credit-balance">
               <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong>
-              <small>{{ language === 'ar' ? 'المستخدم من الإشعار' : 'Applied' }}: {{ appliedTotal(note) }} {{ note.currency_code }}</small>
-              <small>{{ language === 'ar' ? 'الرصيد المتبقي' : 'Remaining credit' }}: {{ remainingCredit(note).toFixed(2) }} {{ note.currency_code }}</small>
+              <small>{{ language === 'ar' ? 'المستخدم من الإشعار' : 'Applied' }}: {{ note.applied_total ?? '0.00' }} {{ note.currency_code }}</small>
+              <small>{{ language === 'ar' ? 'الرصيد المتبقي' : 'Remaining credit' }}: {{ remainingCredit(note) }} {{ note.currency_code }}</small>
             </div>
             <span class="issued">{{ language === 'ar' ? 'صادر' : 'Issued' }}</span>
-            @if (role === 'owner' && remainingCredit(note) > 0) {
+            @if (role === 'owner' && hasRemainingCredit(note)) {
+              <button type="button" class="primary" (click)="beginApplyCredit(note)" [disabled]="applyingCredit || loading">
+                {{ applicationNoteId === note.id ? (language === 'ar' ? 'إلغاء التطبيق' : 'Cancel application') : (language === 'ar' ? 'تطبيق على المديونية' : 'Apply to receivable') }}
+              </button>
+            }
+            @if (applicationNoteId === note.id) {
               <form class="apply-form" (ngSubmit)="applyCredit(note)">
                 <label>{{ language === 'ar' ? 'الفاتورة المستحقة للعميل نفسه' : 'Receivable for the same customer' }}
-                  <select [name]="'applyInvoice' + note.id" required [(ngModel)]="applicationInvoiceByNote[note.id]" (ngModelChange)="onApplicationInvoiceChanged(note)" [disabled]="applyingNoteId !== null || loading">
+                  <select name="applicationInvoice" required [(ngModel)]="applicationInvoiceId" (ngModelChange)="onApplicationDraftChanged()" [disabled]="applyingCredit || !eligibleInvoicesFor(note).length">
                     <option value="">{{ language === 'ar' ? 'اختر فاتورة مستحقة' : 'Choose an outstanding invoice' }}</option>
-                    @for (invoice of eligibleInvoices(note); track invoice.id) {
-                      <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</option>
+                    @for (invoice of eligibleInvoicesFor(note); track invoice.id) {
+                      <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.outstanding_amount ?? '—' }} {{ invoice.currency_code }}</option>
                     }
                   </select>
                 </label>
                 <label>{{ language === 'ar' ? 'المبلغ المراد تطبيقه' : 'Amount to apply' }}
-                  <input type="number" [name]="'applyAmount' + note.id" min="0.01" step="0.01" [max]="maxApplyAmount(note)" [(ngModel)]="applicationAmountByNote[note.id]" required [disabled]="applyingNoteId !== null || !applicationInvoiceByNote[note.id]">
+                  <input type="number" name="applicationAmount" min="0.01" step="0.01" [max]="applicationAmountMax(note)" [(ngModel)]="applicationAmount" (ngModelChange)="onApplicationDraftChanged()" required [disabled]="applyingCredit || !applicationInvoiceId">
                 </label>
-                <button class="primary" type="submit" [disabled]="!canApply(note)">{{ applyingNoteId === note.id ? (language === 'ar' ? 'جارٍ تطبيق الرصيد…' : 'Applying credit…') : (language === 'ar' ? 'تطبيق على المديونية' : 'Apply to receivable') }}</button>
+                <button class="primary" type="submit" [disabled]="applyingCredit || !canApplyToInvoice(note)">
+                  {{ applyingCredit ? (language === 'ar' ? 'جارٍ تطبيق الرصيد…' : 'Applying credit…') : (language === 'ar' ? 'تأكيد تطبيق الرصيد' : 'Confirm credit application') }}
+                </button>
               </form>
             }
           </article>
@@ -122,11 +129,6 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
       @if (notesHasMore) {
         <button type="button" (click)="loadMoreCreditNotes()" [disabled]="loading || loadingMoreNotes" class="load-more">
           {{ loadingMoreNotes ? (language === 'ar' ? 'جارٍ تحميل المزيد…' : 'Loading more…') : (language === 'ar' ? 'تحميل المزيد من الإشعارات' : 'Load more credit notes') }}
-        </button>
-      }
-      @if (notesHasMore) {
-        <button type="button" (click)="loadMoreCreditNotes()" [disabled]="loading || notesLoadingMore">
-          {{ notesLoadingMore ? (language === 'ar' ? 'جارٍ تحميل المزيد…' : 'Loading more…') : (language === 'ar' ? 'تحميل المزيد من الإشعارات' : 'Load more credit notes') }}
         </button>
       }
       <p class="footnote">{{ language === 'ar' ? 'إصدار الإشعار موقوف للفواتير ذات الضريبة حتى دعم توزيع الضريبة على بنود المرتجع. لا يتم تسجيل رد نقدي أو خصم رصيد العميل تلقائيًا.' : 'Issuance is blocked for tax-bearing invoices until tax can be allocated to return lines. No cash refund or customer-balance credit is recorded automatically.' }}</p>
@@ -139,7 +141,6 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
     h2 { margin: 0 0 .4rem; font-size: 1.2rem; } h3 { margin: 1.2rem 0 .6rem; font-size: 1rem; }
     p, .muted, .footnote { color: var(--muted, #5b6474); line-height: 1.5; } .footnote { font-size: .85rem; margin-top: 1rem; }
     .return-form { display: grid; gap: .8rem; margin: .6rem 0 1.2rem; }
-    .apply-form { display: grid; gap: .55rem; flex: 1 1 260px; min-width: min(100%, 240px); }
     .customer-filter { display: grid; gap: .35rem; max-width: 420px; margin: .6rem 0; }
     .load-more { display: block; margin: .8rem auto; }
     label { display: grid; gap: .35rem; font-size: .92rem; }
@@ -168,11 +169,8 @@ export class CreditNotesComponent implements OnChanges {
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
   notesHasMore = false;
-  notesLoadingMore = false;
+  loadingMoreNotes = false;
   selectedCustomerId = '';
-  private readonly notesPageSize = 100;
-  private notesPaginationSequence = 0;
-  notesHasMore = false;
   loadingMoreNotes = false;
   applicationNoteId: string | null = null;
   applicationInvoiceId = '';
@@ -188,9 +186,6 @@ export class CreditNotesComponent implements OnChanges {
   creatingReturn = false;
   approvingId: string | null = null;
   issuingId: string | null = null;
-  applyingNoteId: string | null = null;
-  applicationInvoiceByNote: Record<string, string> = {};
-  applicationAmountByNote: Record<string, string> = {};
   private applicationIdempotencyKeys: Record<string, string> = {};
   message = '';
   error = '';
@@ -208,12 +203,6 @@ export class CreditNotesComponent implements OnChanges {
       this.customers = [];
       this.returns = [];
       this.notes = [];
-      this.notesHasMore = false;
-      this.notesLoadingMore = false;
-      this.notesPaginationSequence++;
-      this.applicationInvoiceByNote = {};
-      this.applicationAmountByNote = {};
-      this.applyingNoteId = null;
       this.selectedCustomerId = '';
       this.notesHasMore = false;
       this.loadingMoreNotes = false;
@@ -253,7 +242,6 @@ export class CreditNotesComponent implements OnChanges {
       if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId || requestedCustomerId !== this.selectedCustomerId) return;
       this.returns = returnsPage.items;
       this.notes = notesPage.items;
-      this.notesHasMore = notesPage.items.length === this.notesPageSize;
       this.notesHasMore = notesPage.items.length === 100;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
       this.customers = customers;
@@ -262,7 +250,6 @@ export class CreditNotesComponent implements OnChanges {
       if (requestId === this.refreshSequence && requestedBusinessId === this.businessId && requestedCustomerId === this.selectedCustomerId) {
         // Never show a previous customer's result as if it matched the newly selected filter.
         this.notes = [];
-        this.notesHasMore = false;
         this.notesHasMore = false;
         this.error = this.language === 'ar' ? 'تعذر تحميل الفواتير والمرتجعات. تحقق من الصلاحيات والاتصال ثم أعد المحاولة.' : 'Could not load invoices and returns. Check access and connectivity, then retry.';
       }
@@ -274,7 +261,10 @@ export class CreditNotesComponent implements OnChanges {
   onCustomerFilterChanged(): void {
     this.notes = [];
     this.notesHasMore = false;
-    this.notesPaginationSequence++;
+    this.applicationNoteId = null;
+    this.applicationInvoiceId = '';
+    this.applicationAmount = '';
+    this.applicationIdempotencyKey = '';
     void this.refresh();
   }
 
@@ -372,36 +362,6 @@ export class CreditNotesComponent implements OnChanges {
       }
     } finally {
       if (requestedBusinessId === this.businessId) this.applyingCredit = false;
-    }
-  }
-
-  async loadMoreCreditNotes(): Promise<void> {
-    if (!this.businessId || this.loading || this.notesLoadingMore || !this.notesHasMore) return;
-    const sequence = ++this.notesPaginationSequence;
-    const requestedBusinessId = this.businessId;
-    const requestedCustomerId = this.selectedCustomerId;
-    const offset = this.notes.length;
-    this.notesLoadingMore = true;
-    try {
-      const page = await this.api.creditNotes(requestedBusinessId, {
-        limit: this.notesPageSize,
-        offset,
-        customer_id: requestedCustomerId || undefined,
-      });
-      if (sequence !== this.notesPaginationSequence
-        || requestedBusinessId !== this.businessId
-        || requestedCustomerId !== this.selectedCustomerId) return;
-      const existingIds = new Set(this.notes.map(note => note.id));
-      this.notes = [...this.notes, ...page.items.filter(note => !existingIds.has(note.id))];
-      this.notesHasMore = page.items.length === this.notesPageSize;
-    } catch {
-      if (sequence === this.notesPaginationSequence
-        && requestedBusinessId === this.businessId
-        && requestedCustomerId === this.selectedCustomerId) {
-        this.error = this.language === 'ar' ? 'تعذر تحميل المزيد من الإشعارات الدائنة.' : 'Could not load more credit notes.';
-      }
-    } finally {
-      if (sequence === this.notesPaginationSequence) this.notesLoadingMore = false;
     }
   }
 
@@ -529,78 +489,6 @@ export class CreditNotesComponent implements OnChanges {
       this.error = this.language === 'ar' ? 'تعذر إصدار الإشعار. تأكد أن المرتجع معتمد وأن الفاتورة لا تحتوي على ضريبة غير موزعة.' : 'Credit note could not be issued. Confirm the return is approved and the invoice has no unallocated tax.';
     } finally {
       this.issuingId = null;
-    }
-  }
-
-  appliedTotal(note: CreditNote): string {
-    return note.applied_total ?? '0.00';
-  }
-
-  remainingCredit(note: CreditNote): number {
-    const remaining = Number(note.remaining_credit ?? note.total);
-    return Number.isFinite(remaining) ? Math.max(0, remaining) : 0;
-  }
-
-  eligibleInvoices(note: CreditNote): Invoice[] {
-    return this.invoices.filter(invoice =>
-      invoice.status === 'issued'
-      && invoice.customer_id === note.customer_id
-      && invoice.currency_code.trim().toUpperCase() === note.currency_code.trim().toUpperCase()
-      && Number(invoice.outstanding_amount ?? 0) > 0
-    );
-  }
-
-  maxApplyAmount(note: CreditNote): number {
-    const invoice = this.eligibleInvoices(note).find(item => item.id === this.applicationInvoiceByNote[note.id]);
-    if (!invoice) return 0;
-    const maximum = Math.min(this.remainingCredit(note), Number(invoice.outstanding_amount ?? 0));
-    return Math.max(0, Math.floor((maximum + Number.EPSILON) * 100) / 100);
-  }
-
-  onApplicationInvoiceChanged(note: CreditNote): void {
-    const maximum = this.maxApplyAmount(note);
-    this.applicationAmountByNote[note.id] = maximum > 0 ? maximum.toFixed(2) : '';
-  }
-
-  canApply(note: CreditNote): boolean {
-    if (this.role !== 'owner' || this.loading || this.applyingNoteId !== null || this.remainingCredit(note) <= 0) return false;
-    const amount = Number(this.applicationAmountByNote[note.id]);
-    const invoice = this.eligibleInvoices(note).find(item => item.id === this.applicationInvoiceByNote[note.id]);
-    return !!invoice && Number.isFinite(amount) && amount > 0 && amount <= this.maxApplyAmount(note);
-  }
-
-  async applyCredit(note: CreditNote): Promise<void> {
-    if (!this.canApply(note) || !this.businessId) return;
-    const invoiceId = this.applicationInvoiceByNote[note.id];
-    const amount = Number(this.applicationAmountByNote[note.id]).toFixed(2);
-    this.applyingNoteId = note.id;
-    this.error = '';
-    this.message = '';
-    const requestKey = `${note.id}|${invoiceId}|${amount}`;
-    const idempotencyKey = this.applicationIdempotencyKeys[requestKey]
-      ?? (globalThis.crypto?.randomUUID?.()
-        ?? `credit-${note.id}-${invoiceId}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
-    this.applicationIdempotencyKeys[requestKey] = idempotencyKey;
-    try {
-      await this.api.applyCreditNote(this.businessId, {
-        credit_note_id: note.id,
-        invoice_id: invoiceId,
-        amount,
-        idempotency_key: idempotencyKey,
-      });
-      delete this.applicationIdempotencyKeys[requestKey];
-      await this.refresh();
-      this.applicationAmountByNote[note.id] = '';
-      this.message = this.language === 'ar'
-        ? 'تم تطبيق الرصيد على المديونية. هذا ليس ردًا نقديًا.'
-        : 'Credit applied to the receivable. This is not a cash refund.';
-    } catch {
-      this.error = this.language === 'ar'
-        ? 'تعذر تطبيق الرصيد. قد يكون الرصيد أو المديونية تغيرا؛ حدّث البيانات وحاول مجددًا.'
-        : 'Could not apply credit. The remaining credit or receivable may have changed; refresh and retry.';
-      await this.refresh();
-    } finally {
-      this.applyingNoteId = null;
     }
   }
 
