@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CreditNote, Customer, Invoice, InvoiceDetail, SalesReturn } from './api.service';
+import { ApiService, CashRefund, CreditNote, Customer, Invoice, InvoiceDetail, SalesReturn } from './api.service';
 
 type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQuantity: string; quantity: string };
 
@@ -122,6 +122,40 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
                   {{ applyingCredit ? (language === 'ar' ? 'جارٍ تطبيق الرصيد…' : 'Applying credit…') : (language === 'ar' ? 'تأكيد تطبيق الرصيد' : 'Confirm credit application') }}
                 </button>
               </form>
+              <form class="refund-form" (ngSubmit)="refundCredit(note)">
+                <h4>{{ language === 'ar' ? 'تسجيل رد نقدي منفصل' : 'Record a separate cash refund' }}</h4>
+                <p class="footnote">{{ language === 'ar' ? 'لا يمكن رد مبلغ تم تطبيقه على المديونية أو تجاوز الرصيد المتبقي.' : 'Cannot refund credit already applied to receivables or exceed the remaining credit.' }}</p>
+                <div class="refund-fields">
+                  <label>{{ language === 'ar' ? 'المبلغ' : 'Amount' }}
+                    <input type="number" [name]="'refundAmount' + note.id" min="0.01" step="0.01" [max]="remainingCredit(note)" [(ngModel)]="refundAmountByNote[note.id]" required [disabled]="refundingNoteId !== null || applyingCredit || loading">
+                  </label>
+                  <label>{{ language === 'ar' ? 'طريقة الرد' : 'Refund method' }}
+                    <select [name]="'refundMethod' + note.id" [(ngModel)]="refundMethodByNote[note.id]" required [disabled]="refundingNoteId !== null || applyingCredit || loading">
+                      <option value="cash">{{ language === 'ar' ? 'نقدي' : 'Cash' }}</option>
+                      <option value="bank">{{ language === 'ar' ? 'تحويل بنكي' : 'Bank transfer' }}</option>
+                      <option value="card">{{ language === 'ar' ? 'بطاقة' : 'Card' }}</option>
+                      <option value="other">{{ language === 'ar' ? 'أخرى' : 'Other' }}</option>
+                    </select>
+                  </label>
+                </div>
+                <label>{{ language === 'ar' ? 'مرجع العملية (اختياري)' : 'Refund reference (optional)' }}
+                  <input [name]="'refundReference' + note.id" maxlength="128" [(ngModel)]="refundReferenceByNote[note.id]" [disabled]="refundingNoteId !== null || applyingCredit || loading">
+                </label>
+                <button class="secondary" type="submit" [disabled]="!canRefund(note)">
+                  {{ refundingNoteId === note.id ? (language === 'ar' ? 'جارٍ تسجيل الرد…' : 'Recording refund…') : (language === 'ar' ? 'تأكيد رد المبلغ' : 'Confirm cash refund') }}
+                </button>
+              </form>
+            }
+            @if (refundsForNote(note.id).length) {
+              <div class="refund-history">
+                <strong>{{ language === 'ar' ? 'سجل الردود النقدية' : 'Cash refund history' }}</strong>
+                @for (refund of refundsForNote(note.id); track refund.id) {
+                  <div class="refund-row">
+                    <span>{{ refund.amount }} {{ note.currency_code }} · {{ refundMethodLabel(refund.method) }}</span>
+                    <small>{{ refund.created_at | date:'short' }}{{ refund.reference ? ' · ' + refund.reference : '' }}</small>
+                  </div>
+                }
+              </div>
             }
           </article>
         }
@@ -156,7 +190,7 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
     button { border: 1px solid var(--border, #cbd5e1); border-radius: 9px; padding: .6rem .8rem; background: var(--surface, #f8fafc); color: inherit; cursor: pointer; }
     button.primary { background: var(--primary, #174ea6); color: white; border-color: transparent; } button:disabled { opacity: .6; cursor: not-allowed; }
     .notice, .error, .empty { padding: .7rem; border-radius: 8px; background: var(--surface, #f8fafc); } .error { color: var(--danger, #a32222); }
-    @media (max-width: 480px) { .panel { padding: .75rem; } .record { align-items: flex-start; } .amount { flex-basis: 100%; } .return-line { grid-template-columns: 1fr; } }
+    @media (max-width: 480px) { .panel { padding: .75rem; } .record { align-items: flex-start; } .amount { flex-basis: 100%; } .return-line, .refund-fields { grid-template-columns: 1fr; } }
   `],
 })
 export class CreditNotesComponent implements OnChanges {
@@ -168,6 +202,12 @@ export class CreditNotesComponent implements OnChanges {
   customers: Customer[] = [];
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
+  cashRefunds: CashRefund[] = [];
+  refundAmountByNote: Record<string, string> = {};
+  refundMethodByNote: Record<string, 'cash' | 'bank' | 'card' | 'other'> = {};
+  refundReferenceByNote: Record<string, string> = {};
+  refundingNoteId: string | null = null;
+  private refundIdempotencyKeys: Record<string, string> = {};
   notesHasMore = false;
   loadingMoreNotes = false;
   selectedCustomerId = '';
@@ -202,6 +242,11 @@ export class CreditNotesComponent implements OnChanges {
       this.customers = [];
       this.returns = [];
       this.notes = [];
+      this.cashRefunds = [];
+      this.refundAmountByNote = {};
+      this.refundMethodByNote = {};
+      this.refundReferenceByNote = {};
+      this.refundingNoteId = null;
       this.selectedCustomerId = '';
       this.notesHasMore = false;
       this.loadingMoreNotes = false;
@@ -228,7 +273,7 @@ export class CreditNotesComponent implements OnChanges {
     this.loadingMoreNotes = false;
     this.error = '';
     try {
-      const [returnsPage, notesPage, invoices, customers] = await Promise.all([
+      const [returnsPage, notesPage, invoices, customers, refundsPage] = await Promise.all([
         this.api.salesReturns(requestedBusinessId, { limit: 100, offset: 0 }),
         this.api.creditNotes(requestedBusinessId, {
           limit: this.notesPageSize, offset: 0,
@@ -236,6 +281,7 @@ export class CreditNotesComponent implements OnChanges {
         }),
         this.api.invoices(requestedBusinessId),
         this.api.customers(requestedBusinessId),
+        this.api.cashRefunds(requestedBusinessId, { limit: 100, offset: 0 }),
       ]);
       // Ignore responses for an older refresh or a workspace the user has left.
       if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId || requestedCustomerId !== this.selectedCustomerId) return;
@@ -244,6 +290,7 @@ export class CreditNotesComponent implements OnChanges {
       this.notesHasMore = notesPage.items.length === 100;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
       this.customers = customers;
+      this.cashRefunds = refundsPage.items;
       this.message = '';
     } catch {
       if (requestId === this.refreshSequence && requestedBusinessId === this.businessId && requestedCustomerId === this.selectedCustomerId) {
