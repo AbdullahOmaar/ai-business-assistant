@@ -818,6 +818,24 @@ def apply_credit_note(business_id: UUID, body: CreditApplicationInput,
         if note is None:
             raise WorkflowError("Credit note not found in this business")
 
+        # Re-check after acquiring the credit-note lock. Concurrent retries can
+        # both observe no idempotency row before either transaction owns the note.
+        replay = session.scalars(select(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+            CreditApplication.idempotency_key == body.idempotency_key,
+        ).with_for_update()).one_or_none()
+        if replay is not None:
+            if (
+                replay.credit_note_id != body.credit_note_id
+                or replay.invoice_id != body.invoice_id
+                or Decimal(str(replay.amount)) != money(body.amount)
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Idempotency key was already used for a different credit application",
+                )
+            return replay
+
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == body.invoice_id,
             Invoice.business_id == business_id,
