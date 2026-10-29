@@ -106,16 +106,25 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
         invoice_id = invoice.json()["id"]
 
         def resource_snapshot():
+            # Compare every persisted column, not just row counts: an unauthorized
+            # UPDATE could otherwise alter an existing row without changing counts.
+            models = (
+                Customer, Product, Invoice, InvoiceLine, Payment,
+                PaymentAllocation, StockMovement, AuditEvent,
+            )
             with app.state.session_factory() as session:
-                return (
-                    session.query(Customer).count(),
-                    session.query(Product).count(),
-                    session.query(Invoice).count(),
-                    session.query(InvoiceLine).count(),
-                    session.query(Payment).count(),
-                    session.query(PaymentAllocation).count(),
-                    session.query(StockMovement).count(),
-                    session.query(AuditEvent).count(),
+                return tuple(
+                    (
+                        model.__tablename__,
+                        tuple(sorted(
+                            (
+                                tuple(getattr(row, column.key) for column in model.__table__.columns)
+                                for row in session.query(model).all()
+                            ),
+                            key=lambda values: tuple(str(value) for value in values),
+                        )),
+                    )
+                    for model in models
                 )
 
         resource_snapshot_before = resource_snapshot()
