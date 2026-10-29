@@ -527,6 +527,12 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         order_number = body.order_number.strip()
         if not order_number:
             raise WorkflowError("Purchase order number is required")
+        duplicate_number = session.scalars(select(PurchaseOrder.id).where(
+            PurchaseOrder.business_id == business_id,
+            PurchaseOrder.order_number == order_number,
+        ).limit(1)).first()
+        if duplicate_number is not None:
+            raise WorkflowError("Purchase order number already exists in this business")
         currency = body.currency_code.strip().upper()
         if len(currency) != 3 or not currency.isascii() or not currency.isalpha():
             raise WorkflowError("Currency must be a three-letter ASCII code")
@@ -597,6 +603,13 @@ def update_purchase_order(business_id: UUID, order_id: UUID, body: PurchaseOrder
         order_number = body.order_number.strip()
         if not order_number:
             raise WorkflowError("Purchase order number is required")
+        duplicate_number = session.scalars(select(PurchaseOrder.id).where(
+            PurchaseOrder.business_id == business_id,
+            PurchaseOrder.order_number == order_number,
+            PurchaseOrder.id != po.id,
+        ).limit(1)).first()
+        if duplicate_number is not None:
+            raise WorkflowError("Purchase order number already exists in this business")
         currency = body.currency_code.strip().upper()
         if len(currency) != 3 or not currency.isascii() or not currency.isalpha():
             raise WorkflowError("Currency must be a three-letter ASCII code")
