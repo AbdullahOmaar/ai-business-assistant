@@ -8,8 +8,8 @@ This directory is a **migration handoff package**, not a full export of the old 
 
 - GitHub remains authoritative for source code, branches, issues, pull requests, commits, and CI.
 - Notion is intended to remain the canonical coordination layer for the new workspace.
-- The package preserves known operating rules, old workspace page links, a historical task snapshot, and a bootstrap procedure.
-- It does **not** contain every Notion page/database row, all comments, files/attachments, permissions, relation IDs, integration credentials, or agent-session state.
+- The package preserves operating rules, old workspace page links, historical GitHub evidence, ten rendered Notion page snapshots, seven discussion responses, and a bootstrap procedure.
+- It does **not** contain every Notion page/database row, every comment/suggested edit, files/attachments, permissions, relation IDs, integration credentials, or agent-session state. See `MIGRATION_CAPTURE_MANIFEST.md`.
 - The old Notion workspace must not be deleted or disconnected until the new workspace has been reconciled and verified.
 
 ## Files
@@ -18,6 +18,9 @@ This directory is a **migration handoff package**, not a full export of the old 
 - `LIVE_SNAPSHOT.md` — evidence observed while creating this package, plus explicitly stale historical notes.
 - `NOTION_PAGE_INDEX.md` — old workspace links and the known task database schema.
 - `BOOTSTRAP_PROMPT.md` — instructions for the first migration/reconciliation session in the new workspace.
+- `MIGRATION_CAPTURE_MANIFEST.md` — list of Notion page/discussion snapshots captured and a precise inventory of what remains missing.
+- `notion-page-snapshots/` — rendered snapshots of Product Home, Operating Model, Agent Registry, Master Task Plan, BRD/PRD, and key feature/security pages.
+- `notion-discussion-snapshots/` — discussion tool responses for seven key governance/task pages; suggested-edit discovery reported `upgrade_required`.
 
 ## Migration sequence
 
