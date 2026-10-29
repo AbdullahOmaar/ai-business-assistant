@@ -1184,3 +1184,80 @@ def test_purchase_order_approval_is_owner_only_and_idempotent():
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_side_effects():
+    """Close the non-member denial matrix for sensitive extended API routes."""
+    from uuid import uuid4
+    from app.models import Business
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    owner_subject = "route-matrix-owner"
+    business_id = uuid4()
+    customer_id, order_id = uuid4(), uuid4()
+
+    try:
+        with app.state.session_factory() as session:
+            session.add(Business(
+                id=business_id, name="Route Matrix Workspace", currency_code="EGP"
+            ))
+            session.add(BusinessMembership(
+                business_id=business_id, user_subject=owner_subject,
+                role=MembershipRole.OWNER,
+            ))
+            session.commit()
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(owner_subject)
+        client = TestClient(app)
+        def business_audit_count():
+            with app.state.session_factory() as session:
+                return session.query(AuditEvent).filter_by(business_id=business_id).count()
+
+        audit_before = business_audit_count()
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal("route-matrix-outsider")
+        base = f"/api/v1/businesses/{business_id}"
+        requests = [
+            ("GET operations health", client.get(f"{base}/operations/health")),
+            ("GET tax summary", client.get(f"{base}/reports/tax-summary")),
+            ("POST purchase-order approval", client.post(f"{base}/purchase-orders/{order_id}/approve")),
+            (
+                "POST CSV preview",
+                client.post(
+                    f"{base}/imports/customers.csv/preview",
+                    content="name\\nOutside Customer\\n",
+                    headers={"content-type": "text/csv"},
+                ),
+            ),
+            ("GET receivables aging", client.get(f"{base}/reports/receivables-aging")),
+            ("GET customer statement", client.get(f"{base}/customers/{customer_id}/statement")),
+            ("GET audit events", client.get(f"{base}/audit-events")),
+            ("GET data integrity report", client.get(f"{base}/reports/data-integrity")),
+        ]
+        for label, response in requests:
+            assert response.status_code == 403, (
+                f"{label} expected HTTP 403; got {response.status_code}: {response.text}"
+            )
+            assert business_audit_count() == audit_before, (
+                f"{label} unexpectedly changed business audit records"
+            )
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
