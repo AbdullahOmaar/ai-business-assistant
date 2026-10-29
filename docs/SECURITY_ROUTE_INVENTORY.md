@@ -77,6 +77,10 @@
 
 ### Extended business workflows — `backend/app/extended_api.py` (prefix `/api/v1/businesses/{business_id}`)
 
+All paths below inherit the business ID in the prefix and require a trusted principal plus membership authorization.
+
+| Method | Path suffix | Access expectation |
+|---|---|---|
 | GET | `/operations/health` | OWNER only; read-only operational snapshot, no secret values |
 | GET | `/reports/tax-summary` | Membership required; totals separated by currency |
 | POST | `/purchase-orders/{order_id}/approve` | OWNER only; draft-only transition with one audit event |
@@ -85,12 +89,6 @@
 | GET | `/customers/{customer_id}/statement` | Membership and same-business customer; read-only, currency-safe |
 | GET | `/audit-events` | OWNER only; paginated and business-scoped |
 | GET | `/reports/data-integrity` | OWNER only; read-only integrity findings scoped to business |
-
-
-All paths below inherit the business ID in the prefix and require a trusted principal plus membership authorization.
-
-| Method | Path suffix | Access expectation |
-|---|---|---|
 | POST | `/expenses` | Membership required |
 | GET | `/expenses` | Membership required; filter by business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |
