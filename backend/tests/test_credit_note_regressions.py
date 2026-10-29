@@ -185,3 +185,33 @@ def test_staff_cannot_issue_credit_note_and_denial_has_no_side_effect(credit_not
             AuditEvent.business_id == business_id,
             AuditEvent.action == "credit_note.issued",
         )) == before_credit_audits == 0
+
+def test_credit_note_cannot_reference_return_from_another_business(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        foreign_business = Business(name="Other Credit Shop", currency_code="USD")
+        session.add(foreign_business)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=foreign_business.id, user_subject="credit-owner",
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        _, foreign_return = _issued_invoice_and_return(
+            session, foreign_business.id, principal,
+        )
+        session.commit()
+
+        with pytest.raises(HTTPException):
+            issue_credit_note_for_return(
+                business_id=business_id, return_id=foreign_return.id,
+                session=session, principal=principal,
+            )
+        assert session.scalar(select(func.count()).select_from(CreditNote).where(
+            CreditNote.business_id == business_id,
+        )) == 0
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "credit_note.issued",
+        )) == 0
