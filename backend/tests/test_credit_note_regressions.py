@@ -1051,6 +1051,51 @@ def test_bank_statement_csv_import_is_idempotent_and_currency_scoped(credit_note
         )) == 2
 
 
+def test_bank_statement_import_rejects_non_finite_amounts_atomically(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        account = create_bank_account(
+            business_id=business_id,
+            body=BankAccountInput(account_key="finite-egp", display_name="Finite EGP", currency_code="EGP"),
+            session=session, principal=owner,
+        )
+        account_id = UUID(account["id"])
+        imported_audits_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "bank_statement.imported",
+            )
+        )
+        for index, invalid_amount in enumerate(("NaN", "sNaN", "Infinity", "-Infinity"), start=1):
+            csv_content = (
+                "transaction_id,transaction_date,description,amount,currency_code\\n"
+                f"BANK-VALID-{index},2026-10-28,Valid first row,10.00,EGP\\n"
+                f"BANK-INVALID-{index},2026-10-28,Invalid amount,{invalid_amount},EGP\\n"
+            )
+            with pytest.raises(HTTPException) as error:
+                import_bank_statement(
+                    business_id=business_id,
+                    account_id=account_id,
+                    body=BankStatementImportInput(csv_content=csv_content),
+                    session=session,
+                    principal=owner,
+                )
+            assert error.value.status_code == 422
+            assert session.scalar(
+                select(func.count()).select_from(BankStatementRow).where(
+                    BankStatementRow.business_id == business_id,
+                    BankStatementRow.account_id == account_id,
+                )
+            ) == 0
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "bank_statement.imported",
+                )
+            ) == imported_audits_before
+
+
 def test_bank_statement_match_requires_exact_amount_currency_and_direction(credit_note_workspace):
     engine, business_id = credit_note_workspace
     owner = AuthenticatedPrincipal(subject="credit-owner")
