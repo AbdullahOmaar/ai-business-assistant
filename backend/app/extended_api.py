@@ -272,6 +272,38 @@ def post_supplier(business_id: UUID, body: SupplierInput,
     item = _commit(session, op)
     return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
 
+@router.get("/purchase-orders/summary")
+def purchase_order_summary(business_id: UUID,
+                           session: Session = Depends(get_session),
+                           principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Return PO counts and totals grouped by status AND currency (never mix currencies)."""
+    try:
+        _authorized(session, principal, business_id)
+        rows = session.execute(
+            select(
+                PurchaseOrder.status,
+                PurchaseOrder.currency_code,
+                func.count(PurchaseOrder.id),
+                func.coalesce(func.sum(PurchaseOrder.total), ZERO),
+            )
+            .where(PurchaseOrder.business_id == business_id)
+            .group_by(PurchaseOrder.status, PurchaseOrder.currency_code)
+            .order_by(PurchaseOrder.status, PurchaseOrder.currency_code)
+        ).all()
+        return {
+            "business_id": str(business_id),
+            "groups": [{
+                "status": status,
+                "currency_code": currency,
+                "order_count": count,
+                "total": str(money(Decimal(str(total)))),
+            } for status, currency, count, total in rows],
+            "currency_note": "Totals are grouped by currency and must not be added across currencies.",
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.get("/purchase-orders")
 def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
                          offset: int = Query(default=0, ge=0),
