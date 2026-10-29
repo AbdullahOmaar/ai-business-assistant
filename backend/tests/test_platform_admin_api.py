@@ -957,7 +957,7 @@ def test_workspace_status_change_rolls_back_when_audit_commit_fails(
 
 
 def test_delegated_read_only_platform_role_cannot_change_workspace_status(platform_admin_environment):
-    """Read-only delegated grants must not mutate workspace state or create audit rows."""
+    """A viewer can read permitted admin views but cannot mutate state or audit trails."""
     environment = platform_admin_environment
     subject = "firebase:test-project:read-only-platform-user"
     with Session(environment["engine"]) as session:
@@ -971,19 +971,26 @@ def test_delegated_read_only_platform_role_cannot_change_workspace_status(platfo
             )
         )
         session.commit()
+        business_audit_before = session.scalar(select(func.count(AuditEvent.id)))
+        platform_audit_before = session.scalar(select(func.count(PlatformAdminAuditEvent.id)))
 
     environment["subject"]["value"] = subject
+    client = environment["client"]
     business_id = environment["alpha_id"]
-    response = environment["client"].patch(
+    overview = client.get("/api/v1/platform-admin/overview")
+    audit_read = client.get("/api/v1/platform-admin/audit-events")
+    response = client.patch(
         f"/api/v1/platform-admin/businesses/{business_id}/status",
         json={"is_active": False, "reason": "Should be denied"},
     )
 
+    assert overview.status_code == 200
+    assert audit_read.status_code == 200
     assert response.status_code == 403
     with Session(environment["engine"]) as session:
         business = session.get(Business, UUID(business_id))
-        assert business is not None and business.is_active is True
-        events = session.scalars(
-            select(AuditEvent).where(AuditEvent.business_id == UUID(business_id))
-        ).all()
-    assert not any(event.action == "platform.business.deactivated" for event in events)
+        business_audit_after = session.scalar(select(func.count(AuditEvent.id)))
+        platform_audit_after = session.scalar(select(func.count(PlatformAdminAuditEvent.id)))
+    assert business is not None and business.is_active is True
+    assert business_audit_after == business_audit_before
+    assert platform_audit_after == platform_audit_before
