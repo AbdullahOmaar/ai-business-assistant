@@ -13,7 +13,7 @@ export interface Business {
 }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; }
-export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; }
+export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; applied_credits?: string; outstanding_amount?: string; }
 export interface InvoiceDetail extends Invoice {
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
@@ -49,7 +49,7 @@ export interface ProfitLossReport { period: { type: string; start_date: string |
 
 export interface ReceivablesAgingBucket { bucket: 'not_due' | '1_30_days' | '31_60_days' | '61_90_days' | 'over_90_days' | 'no_due_date'; outstanding_amount: string; }
 export interface ReceivablesAgingCurrencySummary { currency_code: string; buckets: ReceivablesAgingBucket[]; total_outstanding: string; }
-export interface ReceivablesAgingInvoice { invoice_id: string; invoice_number: string; customer_id: string | null; currency_code: string; due_date: string | null; invoice_total: string; allocated_payments: string; outstanding_amount: string; aging_bucket: ReceivablesAgingBucket['bucket']; days_overdue: number | null; customer_link_missing: boolean; }
+export interface ReceivablesAgingInvoice { invoice_id: string; invoice_number: string; customer_id: string | null; currency_code: string; due_date: string | null; invoice_total: string; allocated_payments: string; applied_credits?: string; outstanding_amount: string; aging_bucket: ReceivablesAgingBucket['bucket']; days_overdue: number | null; customer_link_missing: boolean; }
 export interface ReceivablesAgingWarning { invoice_id: string; invoice_number: string; type: 'payment_currency_mismatch' | 'allocations_exceed_invoice_total'; invoice_currency?: string; mismatched_allocations_amount?: string; invoice_total?: string; allocated_payments?: string; excess_allocated?: string; }
 export interface AuditEvent {
   id: string; business_id: string; actor_subject: string | null; action: string;
