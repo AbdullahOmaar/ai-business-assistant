@@ -46,3 +46,20 @@ test('return approval is owner-only and remains separate from credit-note issuan
   assert.match(component, /this\.api\.approveSalesReturn\(this\.businessId, ret\.id\)/);
   assert.match(component, /Return approved\. Credit-note issuance is a separate step\./);
 });
+
+test('stale workspace refreshes cannot overwrite data for the newly selected business', () => {
+  assert.match(component, /private refreshSequence = 0/);
+  assert.match(component, /const requestId = \+\+this\.refreshSequence/);
+  assert.match(component, /requestedBusinessId !== this\.businessId/);
+  assert.match(component, /if \(requestId === this\.refreshSequence\) this\.loading = false/);
+  assert.match(component, /this\.invoices = \[\]/);
+  assert.match(component, /this\.returns = \[\]/);
+  assert.match(component, /this\.notes = \[\]/);
+});
+
+test('stale invoice-detail responses cannot replace the latest invoice selection', () => {
+  assert.match(component, /private invoiceDetailSequence = 0/);
+  assert.match(component, /const requestId = \+\+this\.invoiceDetailSequence/);
+  assert.match(component, /requestedBusinessId !== this\.businessId \|\| invoiceId !== this\.selectedInvoiceId/);
+  assert.match(component, /if \(requestId === this\.invoiceDetailSequence\) this\.detailLoading = false/);
+});
