@@ -685,7 +685,19 @@ def test_cash_refund_is_idempotent_audited_and_reduces_remaining_credit(credit_n
     engine, business_id = credit_note_workspace
     principal = AuthenticatedPrincipal(subject="credit-owner")
     with Session(engine) as session:
-        _, ret = _issued_invoice_and_return(session, business_id, principal)
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        payment = Payment(
+            business_id=business_id, customer_id=invoice.customer_id,
+            amount=Decimal(str(invoice.total)), currency_code=invoice.currency_code,
+            idempotency_key="payment-settle-before-refund-001",
+        )
+        session.add(payment)
+        session.flush()
+        session.add(PaymentAllocation(
+            business_id=business_id, payment_id=payment.id,
+            invoice_id=invoice.id, amount=Decimal(str(invoice.total)),
+        ))
+        session.flush()
         note = issue_credit_note_for_return(
             business_id=business_id, return_id=ret.id,
             session=session, principal=principal,
@@ -729,6 +741,18 @@ def test_cash_refund_cannot_exceed_credit_remaining_after_applications(credit_no
             business_id=business_id, return_id=ret.id,
             session=session, principal=principal,
         )
+        payment = Payment(
+            business_id=business_id, customer_id=invoice.customer_id,
+            amount=Decimal("13.00"), currency_code=invoice.currency_code,
+            idempotency_key="payment-settle-before-credit-refund-001",
+        )
+        session.add(payment)
+        session.flush()
+        session.add(PaymentAllocation(
+            business_id=business_id, payment_id=payment.id,
+            invoice_id=invoice.id, amount=Decimal("13.00"),
+        ))
+        session.flush()
         apply_credit_note(
             business_id=business_id,
             body=CreditApplicationInput(
@@ -775,6 +799,17 @@ def test_cash_refund_linked_to_payment_cannot_consume_allocated_cash(credit_note
         session.add(PaymentAllocation(
             business_id=business_id, payment_id=payment.id,
             invoice_id=invoice.id, amount=Decimal("7.00"),
+        ))
+        other_payment = Payment(
+            business_id=business_id, customer_id=invoice.customer_id,
+            amount=Decimal("13.00"), currency_code="EGP",
+            idempotency_key="payment-complete-invoice-before-refund-001",
+        )
+        session.add(other_payment)
+        session.flush()
+        session.add(PaymentAllocation(
+            business_id=business_id, payment_id=other_payment.id,
+            invoice_id=invoice.id, amount=Decimal("13.00"),
         ))
         session.flush()
         with pytest.raises(HTTPException) as error:
