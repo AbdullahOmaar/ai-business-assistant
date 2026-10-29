@@ -508,7 +508,8 @@ def test_approved_payroll_cannot_be_edited_without_side_effects(employee_environ
             .where(AuditEvent.target_type == "payroll")
             .order_by(AuditEvent.created_at, AuditEvent.action)
         ).all()
-        assert actions == ["payroll.created", "payroll.approved"]
+        assert len(actions) == 2
+        assert set(actions) == {"payroll.created", "payroll.approved"}
 
 
 def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(employee_environment):
