@@ -1306,6 +1306,7 @@ def test_staff_owner_only_route_matrix_and_allowed_read_reports():
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal(staff_subject)
         client = TestClient(app)
+
         def business_audit_count():
             with app.state.session_factory() as session:
                 return session.query(AuditEvent).filter_by(business_id=business_id).count()
