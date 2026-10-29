@@ -2,6 +2,15 @@
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
+## Active feature implementation — Customer statement filters (2026-10-29; tests intentionally paused)
+
+- **Feature 23 / Issue #62:** branch `feat/customer-statement-date-filters-20261029`.
+- Added optional inclusive `from_date` / `to_date` parameters to the frontend API client for the existing business-scoped customer statement endpoint.
+- Added Arabic/English date inputs, Apply range and Clear range actions; validates start <= end, resets pagination on filter changes, and clears filters when switching customers.
+- Added an explicit UI note that filtered balances sum events inside the selected range only and do not include a carried-forward opening balance. This matches current backend behavior and avoids implying a full opening-balance statement.
+- Added `docs/CUSTOMER_STATEMENT_DATE_FILTERS.md` with query behavior, pagination/request-race handling, balance semantics, and current credit-note/return limitations.
+- Automated tests/builds and authenticated browser smoke: **NOT RUN** per owner instruction while CI limits are being resolved. No merge/deployment.
+
 ## Current verified repository state
 
 - **Current main SHA before the CSV OWNER-positive candidate:** `072f2eb0fb91c92b577859c4ba874a5c113c2628`. It includes PR #276's STAFF-denied invoice-void no-side-effect regression (`bf0bcdaf08353f15a532e692522730f42d2258e1`), PR #297's CSV denial/no-side-effect matrix (`3c560a0f425c8a97bcbe9384c5eefb580c936025`), and PR #299's AI suggestions layout improvement (`072f2eb0fb91c92b577859c4ba874a5c113c2628`).
