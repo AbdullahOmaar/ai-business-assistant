@@ -602,3 +602,80 @@ def test_credit_application_cannot_exceed_invoice_outstanding_after_payments(cre
             AuditEvent.business_id == business_id,
             AuditEvent.action == "credit_note.applied",
         )) == 0
+
+
+def test_applied_credit_reduces_invoice_and_aging_balances_and_appears_on_statement(credit_note_workspace):
+    from datetime import date
+
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        apply_credit_note(
+            business_id=business_id,
+            body=CreditApplicationInput(
+                credit_note_id=note["id"], invoice_id=str(invoice.id),
+                amount=Decimal("10.00"), idempotency_key="apply-credit-report-001",
+            ),
+            session=session, principal=principal,
+        )
+
+        invoice_rows = list_invoices(
+            business_id=business_id, limit=50, offset=0,
+            session=session, principal=principal,
+        )
+        invoice_row = next(row for row in invoice_rows if row["id"] == str(invoice.id))
+        assert Decimal(invoice_row["applied_credits"]) == Decimal("10.00")
+        assert Decimal(invoice_row["outstanding_amount"]) == Decimal("10.00")
+
+        aging = receivables_aging(
+            business_id=business_id, as_of=date.today(),
+            session=session, principal=principal,
+        )
+        aging_row = next(row for row in aging["invoices"] if row["invoice_id"] == str(invoice.id))
+        assert Decimal(aging_row["applied_credits"]) == Decimal("10.00")
+        assert Decimal(aging_row["outstanding_amount"]) == Decimal("10.00")
+
+        statement = customer_statement(
+            business_id=business_id, customer_id=invoice.customer_id,
+            session=session, principal=principal,
+        )
+        credit_events = [event for event in statement["items"] if event["event_type"] == "credit_application"]
+        assert len(credit_events) == 1
+        assert Decimal(credit_events[0]["credit"]) == Decimal("10.00")
+        assert Decimal(statement["balances_by_currency"]["EGP"]) == Decimal("10.00")
+
+
+def test_idempotency_key_cannot_be_reused_for_different_credit_application(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        first = CreditApplicationInput(
+            credit_note_id=note["id"], invoice_id=str(invoice.id),
+            amount=Decimal("5.00"), idempotency_key="apply-credit-reuse-001",
+        )
+        apply_credit_note(
+            business_id=business_id, body=first, session=session, principal=principal,
+        )
+        with pytest.raises(HTTPException) as error:
+            apply_credit_note(
+                business_id=business_id,
+                body=CreditApplicationInput(
+                    credit_note_id=note["id"], invoice_id=str(invoice.id),
+                    amount=Decimal("6.00"), idempotency_key="apply-credit-reuse-001",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 409
+        assert session.scalar(select(func.count()).select_from(CreditApplication).where(
+            CreditApplication.business_id == business_id,
+        )) == 1
