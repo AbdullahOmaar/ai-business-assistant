@@ -834,9 +834,7 @@ def test_employee_profile_normalization_and_duplicate_update_are_atomic(employee
     assert first.json()["email"] == "first@example.test"
     assert first.json()["phone"] == "0100"
 
-    before = env["client"].get(f"{base}/employees/{second.json()['id']}")
-    # The endpoint intentionally has no employee detail GET; use the response
-    # returned by the collection after the rejected update as the persisted view.
+    # Verify persisted state through the collection after the rejected update.
     duplicate = env["client"].patch(
         f"{base}/employees/{second.json()['id']}",
         json={"email": " FIRST@example.test ", "name": "Should Not Persist"},
