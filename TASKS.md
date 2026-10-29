@@ -1706,3 +1706,14 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - `frontend/src/app/app.component.ts`: OWNER-only Show/Hide inactive and Deactivate/Reactivate controls, visible active/inactive status, and refresh after mutation. Backend authorization remains authoritative; inactive suppliers are excluded by default.
 - Acceptance scenario T39-21 updated. Tests/build/security/migration/CI remain **NOT RUN** per user instruction.
 
+
+
+## T39 closeout checkpoint — 2026-10-29
+
+- **Overall T39: BLOCKED.** Supplier/purchase-order feature tranche is PARTIALLY COMPLETE; it is not VERIFIED COMPLETE because exact-head CI fails and runtime validation was not run.
+- Existing PR: [#306](https://github.com/AbdullahOmaar/ai-business-assistant/pull/306), Draft/Open/Unmerged. Branch: `docs/t39-procure-to-pay-test-matrix-20261029`. Current exact head at closeout: `c98d075e2f22631bf3cb77dd1b1df1d69879b203`; baseline main: `c464398e0a6ace77eba32aabfbdbd09091f53999`; compare: 104 ahead / 0 behind; 9 changed files.
+- Changed files: `TASKS.md`, `backend/app/extended_api.py`, `backend/app/operations.py`, `backend/tests/test_api.py`, `backend/tests/test_operations.py`, `backend/tests/test_t39_purchase_receiving_safety.py`, `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`, `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`.
+- Exact-head CircleCI FAILURE contexts: backend-container (6898), backend-accounting (6896), frontend-unit-tests (6894), frontend-production-build (6899), frontend-dependency-audit (6895), frontend-browser-smoke (6897). GitHub Actions also failed: Dependency security scan #1646, Verify backend container #1178, Verify backend and frontend #1882, Backend tests #977. Root cause is not verified because actionable logs/steps are unavailable through current integration.
+- Local tests, frontend build, security scans, migration checks, browser smoke and runtime verification: **NOT RUN**. No passing test result is claimed.
+- Financial work remains gated by T37 Master contract approval and T38/T40 shared stock/costing/posting boundaries. No supplier payable/payment schema, supplier-return accounting, stock valuation/COGS or expense-posting semantics were introduced. No merge, deployment or migration performed.
+- Next action: retrieve actionable logs for exact-head CircleCI and GitHub Actions failures, fix only the verified cause, and run all exact-head gates. Keep PR Draft until checks pass and required contract approvals are recorded.
