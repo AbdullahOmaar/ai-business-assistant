@@ -579,8 +579,12 @@ export class ApiService {
     return this.request<NotificationRecord>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/notifications', 'POST', body);
   }
 
-  suppliers(businessId: string): Promise<Supplier[]> {
-    return this.request<Supplier[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers?limit=100');
+  suppliers(businessId: string, name?: string): Promise<Supplier[]> {
+    const params = new URLSearchParams({ limit: '100' });
+    if (name?.trim()) params.set('name', name.trim());
+    return this.request<Supplier[]>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers?' + params.toString()
+    );
   }
 
   exportBusinessCsv(businessId: string, entityType: 'suppliers' | 'purchase_orders'): Promise<Blob> {
