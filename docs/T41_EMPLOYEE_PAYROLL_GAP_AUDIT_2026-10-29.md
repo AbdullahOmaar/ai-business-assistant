@@ -86,3 +86,15 @@ Five test-only workstreams were added to the existing T41 branch and tracked as 
 5. Payment transaction rollback when the paid-audit write fails, proving no expense or paid transition is committed.
 
 Evidence: five regressions in backend/tests/test_employee_payroll_api.py, initial commit 0f346eaf7fe77465490330fbc529e1a087bd8324; approval timestamp assertion made timezone-robust in 85fbcfe8c41fc68bbaddd63b369d2a035fb16989. These are test additions, not implementation of new runtime behavior. Execution is NOT RUN on the latest HEAD. The SQLite fixture is not evidence for PostgreSQL concurrency or production transaction behavior. Existing T37/T40 approval gates remain unchanged; no merge or deployment performed.
+
+
+## Additional five-workstream integrity batch — 2026-10-30
+
+On the existing T41 branch / PR #308, added test-only regressions for:
+- Expense insert failure during payroll payment: transaction rollback leaves the record approved/unpaid, with no expense or paid audit event.
+- Paid payroll immutability: post-payment edit and payment replay are rejected without changing amounts, expense linkage, or audit lifecycle.
+- Salary snapshot stability: a later employee salary update does not rewrite a previously created payroll record; subsequent payroll uses the new current salary.
+- Payroll listing tenant isolation: the second business cannot see the first business's payroll rows.
+- Invalid employee update atomicity: empty/whitespace/null profile updates are rejected without changing employee or audit state.
+
+Implementation evidence: commit `1daf5f9f73de2ecd1bbe5674bda5a4c23f28d355` in `backend/tests/test_employee_payroll_api.py`; task record updated separately in `TASKS.md`. These are regression tests only; runtime/schema/financial-policy behavior was not changed. Tests are NOT RUN on the latest HEAD. The existing SQLite fixture does not establish PostgreSQL concurrency guarantees. T37/T40 contract gates remain active; no merge or deployment.
