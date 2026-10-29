@@ -316,6 +316,37 @@ def test_employee_ids_cannot_be_used_across_businesses(employee_environment):
     assert _create_employee(env).status_code == 409
 
 
+def test_duplicate_payroll_period_rejected_without_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    first = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11"},
+    )
+    assert first.status_code == 201
+
+    duplicate = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11", "allowances": "100.00"},
+    )
+    assert duplicate.status_code == 409
+
+    with app.state.session_factory() as session:
+        records = session.scalars(select(PayrollRecord)).all()
+        assert len(records) == 1
+        assert records[0].id == UUID(first.json()["id"])
+        assert records[0].allowances == Decimal("0.00")
+        assert records[0].status == "draft"
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        actions = session.scalars(
+            select(AuditEvent.action)
+            .where(AuditEvent.target_type == "payroll")
+            .order_by(AuditEvent.created_at, AuditEvent.action)
+        ).all()
+        assert actions == ["payroll.created"]
+
+
 def test_payroll_math_approval_and_payment_create_one_linked_expense(employee_environment):
     env = employee_environment
     employee = _create_employee(env).json()
