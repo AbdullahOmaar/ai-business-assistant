@@ -124,6 +124,9 @@ test('report labels translate the actual backend revenue-basis and integrity-war
   assert.match(source, /Tax on issued invoices/);
   assert.match(source, /Tax reversed by credit notes/);
   assert.match(source, /Net tax after credit notes/);
+  assert.match(source, /Net invoice activity after credit notes/);
+  assert.match(source, /Issued credit notes/);
+  assert.match(source, /credit-note reductions are grouped by credit-note issuance date/);
 });
 
 
