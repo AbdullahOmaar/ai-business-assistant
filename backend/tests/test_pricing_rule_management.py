@@ -2,7 +2,6 @@ from decimal import Decimal
 from uuid import UUID
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
@@ -66,7 +65,7 @@ def test_pricing_rule_list_is_owner_only_and_has_no_read_side_effects(pricing_wo
                 business_id=business_id, session=session, principal=staff,
                 limit=50, offset=0, rule_type=None, is_active=None,
             )
-        assert 'owner' in str(error.value).lower() or 'permission' in str(error.value).lower()
+        assert 'role is not permitted' in str(error.value).lower()
         assert session.scalar(select(func.count()).select_from(PricingRule)) == before_rules
         assert session.scalar(select(func.count()).select_from(AuditEvent)) == before_audits
 
