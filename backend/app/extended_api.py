@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
-    AuditEvent, BusinessSetting, CashRefund, CreditApplication, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
+    AuditEvent, BankAccount, BankReconciliationMatch, BankStatementRow, BusinessSetting, CashRefund, CreditApplication, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
@@ -143,6 +143,22 @@ class PricingRuleInput(BaseModel):
 
 class SettingInput(BaseModel):
     setting_value: str = Field(max_length=1000)
+
+
+class BankAccountInput(BaseModel):
+    account_key: str = Field(min_length=1, max_length=80)
+    display_name: str = Field(min_length=1, max_length=160)
+    currency_code: str = Field(min_length=3, max_length=3)
+
+
+class BankStatementImportInput(BaseModel):
+    csv_content: str = Field(min_length=1, max_length=1_000_000)
+
+
+class BankReconciliationMatchInput(BaseModel):
+    statement_row_id: UUID
+    payment_id: UUID | None = None
+    expense_id: UUID | None = None
 
 
 class CreditApplicationInput(BaseModel):
@@ -951,6 +967,211 @@ def list_credit_notes(business_id: UUID, limit: int = Query(default=50, ge=1, le
         item["remaining_credit"] = str(max(ZERO, Decimal(str(note.total)) - applied - refunded))
         items.append(item)
     return {"items": items, "limit": limit, "offset": offset}
+
+
+@router.post("/bank-accounts", status_code=201)
+def create_bank_account(
+    business_id: UUID, body: BankAccountInput,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        account_key = body.account_key.strip()
+        display_name = body.display_name.strip()
+        currency = body.currency_code.strip().upper()
+        if not account_key or not display_name or not re.fullmatch(r"[A-Z]{3}", currency):
+            raise WorkflowError("Account key, display name and ISO-style currency code are required")
+        account = BankAccount(
+            business_id=business_id, account_key=account_key,
+            display_name=display_name, currency_code=currency, is_active=True,
+        )
+        session.add(account)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="bank_account.created", target_type="bank_account", target_id=str(account.id),
+        ))
+        session.flush()
+        return account
+    account = _commit(session, op)
+    return _dict(account, ("id", "business_id", "account_key", "display_name", "currency_code", "is_active", "created_at"))
+
+
+@router.get("/bank-accounts")
+def list_bank_accounts(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    _authorized(session, principal, business_id)
+    accounts = session.scalars(
+        select(BankAccount).where(BankAccount.business_id == business_id)
+        .order_by(BankAccount.display_name, BankAccount.id)
+    ).all()
+    return {"items": [_dict(item, ("id", "business_id", "account_key", "display_name", "currency_code", "is_active", "created_at")) for item in accounts]}
+
+
+@router.post("/bank-accounts/{account_id}/statement-import", status_code=201)
+def import_bank_statement(
+    business_id: UUID, account_id: UUID, body: BankStatementImportInput,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        account = session.scalars(select(BankAccount).where(
+            BankAccount.id == account_id, BankAccount.business_id == business_id,
+            BankAccount.is_active.is_(True),
+        ).with_for_update()).one_or_none()
+        if account is None:
+            raise WorkflowError("Active bank account not found in this business")
+        reader = csv.DictReader(io.StringIO(body.csv_content))
+        required = {"transaction_id", "transaction_date", "description", "amount", "currency_code"}
+        if reader.fieldnames is None or not required.issubset(set(reader.fieldnames)):
+            raise WorkflowError("CSV headers must include transaction_id, transaction_date, description, amount, currency_code")
+        parsed = []
+        seen_ids = set()
+        for line_number, row in enumerate(reader, start=2):
+            external_id = (row.get("transaction_id") or "").strip()
+            description = (row.get("description") or "").strip()
+            currency = (row.get("currency_code") or "").strip().upper()
+            if not external_id or not description or len(external_id) > 160 or len(description) > 500:
+                raise WorkflowError(f"Invalid transaction id or description on CSV line {line_number}")
+            if external_id in seen_ids:
+                raise WorkflowError(f"Duplicate transaction_id inside CSV on line {line_number}")
+            seen_ids.add(external_id)
+            if currency != account.currency_code:
+                raise WorkflowError(f"Currency mismatch on CSV line {line_number}")
+            try:
+                amount = money(Decimal((row.get("amount") or "").strip()))
+                raw_date = (row.get("transaction_date") or "").strip()
+                try:
+                    occurred_at = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+                except ValueError:
+                    occurred_at = datetime.combine(date.fromisoformat(raw_date), datetime.min.time(), tzinfo=timezone.utc)
+            except (ValueError, ArithmeticError):
+                raise WorkflowError(f"Invalid amount or transaction date on CSV line {line_number}")
+            if amount == ZERO:
+                raise WorkflowError(f"Statement amount cannot be zero on CSV line {line_number}")
+            if occurred_at.tzinfo is None:
+                occurred_at = occurred_at.replace(tzinfo=timezone.utc)
+            parsed.append((external_id, description, currency, amount, occurred_at))
+        if not parsed:
+            raise WorkflowError("CSV contains no statement transactions")
+        existing_ids = set(session.scalars(select(BankStatementRow.external_transaction_id).where(
+            BankStatementRow.business_id == business_id,
+            BankStatementRow.account_id == account_id,
+            BankStatementRow.external_transaction_id.in_([item[0] for item in parsed]),
+        )).all())
+        created = []
+        for external_id, description, currency, amount, occurred_at in parsed:
+            if external_id in existing_ids:
+                continue
+            row = BankStatementRow(
+                business_id=business_id, account_id=account_id,
+                external_transaction_id=external_id, transaction_date=occurred_at,
+                description=description, amount=amount, currency_code=currency,
+                status="unmatched",
+            )
+            session.add(row)
+            created.append(row)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="bank_statement.imported", target_type="bank_account",
+            target_id=str(account_id),
+        ))
+        session.flush()
+        return {"created": created, "duplicate_count": len(existing_ids), "skipped": len(existing_ids)}
+    result = _commit(session, op)
+    return {
+        "items": [_dict(item, ("id", "business_id", "account_id", "external_transaction_id", "transaction_date", "description", "amount", "currency_code", "status", "imported_at")) for item in result["created"]],
+        "created_count": len(result["created"]), "duplicate_count": result["duplicate_count"],
+        "skipped": result["skipped"],
+    }
+
+
+@router.get("/bank-statement-rows")
+def list_bank_statement_rows(
+    business_id: UUID,
+    account_id: UUID | None = None,
+    status: str | None = Query(default=None, pattern="^(unmatched|matched|ignored)$"),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    _authorized(session, principal, business_id)
+    statement = select(BankStatementRow).where(BankStatementRow.business_id == business_id)
+    if account_id is not None:
+        statement = statement.where(BankStatementRow.account_id == account_id)
+    if status is not None:
+        statement = statement.where(BankStatementRow.status == status)
+    rows = session.scalars(
+        statement.order_by(BankStatementRow.transaction_date.desc(), BankStatementRow.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {"items": [_dict(item, ("id", "business_id", "account_id", "external_transaction_id", "transaction_date", "description", "amount", "currency_code", "status", "imported_at")) for item in rows], "limit": limit, "offset": offset}
+
+
+@router.post("/bank-reconciliation/matches", status_code=201)
+def match_bank_statement_row(
+    business_id: UUID, body: BankReconciliationMatchInput,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        if (body.payment_id is None) == (body.expense_id is None):
+            raise WorkflowError("Choose exactly one payment or expense to match")
+        row = session.scalars(select(BankStatementRow).where(
+            BankStatementRow.id == body.statement_row_id,
+            BankStatementRow.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if row is None:
+            raise WorkflowError("Statement row not found in this business")
+        if row.status != "unmatched":
+            raise WorkflowError("Only unmatched statement rows can be reconciled")
+        if body.payment_id is not None:
+            if row.amount <= ZERO:
+                raise WorkflowError("Incoming statement rows can only match recorded payments")
+            target = session.scalars(select(Payment).where(
+                Payment.id == body.payment_id, Payment.business_id == business_id,
+            ).with_for_update()).one_or_none()
+            if target is None:
+                raise WorkflowError("Payment not found in this business")
+            if target.currency_code != row.currency_code or money(target.amount) != money(row.amount):
+                raise WorkflowError("Payment amount and currency must exactly match the statement row")
+            payment_id, expense_id = target.id, None
+        else:
+            if row.amount >= ZERO:
+                raise WorkflowError("Outgoing statement rows can only match recorded expenses")
+            target = session.scalars(select(Expense).where(
+                Expense.id == body.expense_id, Expense.business_id == business_id,
+            ).with_for_update()).one_or_none()
+            if target is None:
+                raise WorkflowError("Expense not found in this business")
+            if target.currency_code != row.currency_code or money(target.amount) != money(abs(row.amount)):
+                raise WorkflowError("Expense amount and currency must exactly match the statement row")
+            payment_id, expense_id = None, target.id
+        match = BankReconciliationMatch(
+            business_id=business_id, statement_row_id=row.id,
+            payment_id=payment_id, expense_id=expense_id,
+            matched_amount=abs(row.amount), matched_by_subject=principal.subject,
+        )
+        row.status = "matched"
+        session.add(match)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="bank_statement.row_matched", target_type="bank_statement_row",
+            target_id=str(row.id),
+        ))
+        session.flush()
+        return match
+    match = _commit(session, op)
+    return _dict(match, ("id", "business_id", "statement_row_id", "payment_id", "expense_id", "matched_amount", "matched_by_subject", "matched_at"))
 
 
 @router.post("/credit-applications", status_code=201)
