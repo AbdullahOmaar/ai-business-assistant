@@ -357,6 +357,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('تطبيق الفترة', 'Apply range') }}</button>
                       <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('مسح الفترة', 'Clear range') }}</button>
                     </div>
+                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('الرصيد المعروض يجمع الحركات داخل الفترة المحددة فقط، ولا يشمل رصيد ما قبل بدايتها.', 'Displayed balances sum movements inside the selected range only; they do not include the opening balance before the range.') }}</p> }
                     @if (statementLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل كشف الحساب…', 'Loading statement…') }}</p> }
                     @if (statementError) { <p class="error" role="alert">{{ statementError }}</p> }
                     @if (customerStatement) {
