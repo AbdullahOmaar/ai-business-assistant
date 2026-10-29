@@ -4,7 +4,7 @@ These tests are authored for the candidate branch but are intentionally NOT run
 while the owner has asked to pause test execution due to the current CI/usage issue.
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -478,5 +478,39 @@ def test_receivables_aging_preserves_explicit_as_of_date():
         )
         assert response.status_code == 200, response.text
         assert response.json()["as_of_date"] == "2026-01-10"
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+def test_expense_and_tax_filters_reject_unrepresentable_calendar_extremes():
+    """Date arithmetic at year 1/9999 must fail with 422, never an internal error."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        expense_start_underflow = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"start_date": date.min.isoformat()},
+        )
+        expense_end_overflow = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"end_date": date.max.isoformat()},
+        )
+        tax_start_underflow = client.get(
+            f"/api/v1/businesses/{business_id}/reports/tax-summary",
+            params={"start_date": date.min.isoformat()},
+        )
+        tax_end_overflow = client.get(
+            f"/api/v1/businesses/{business_id}/reports/tax-summary",
+            params={"end_date": date.max.isoformat()},
+        )
+
+        assert expense_start_underflow.status_code == 422
+        assert expense_end_overflow.status_code == 422
+        assert tax_start_underflow.status_code == 422
+        assert tax_end_overflow.status_code == 422
+        assert "supported business-timezone range" in expense_start_underflow.json()["detail"]
+        assert "supported business-timezone range" in expense_end_overflow.json()["detail"]
+        assert "supported business-timezone range" in tax_start_underflow.json()["detail"]
+        assert "supported business-timezone range" in tax_end_overflow.json()["detail"]
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)
