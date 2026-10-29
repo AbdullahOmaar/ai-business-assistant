@@ -678,6 +678,48 @@ def get_purchase_order(business_id: UUID, order_id: UUID,
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
+@router.get("/purchase-orders/{order_id}/receipts")
+def list_purchase_order_receipts(business_id: UUID, order_id: UUID,
+                                 limit: int = Query(default=100, ge=1, le=200),
+                                 offset: int = Query(default=0, ge=0),
+                                 session: Session = Depends(get_session),
+                                 principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Read the append-only stock receipt movements linked to one tenant-scoped PO."""
+    try:
+        _authorized(session, principal, business_id)
+        order = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        )).one_or_none()
+        if order is None:
+            raise HTTPException(status_code=404, detail="Purchase order not found in this business")
+        rows = session.execute(
+            select(StockMovement, Product.name, Product.sku)
+            .join(Product, (Product.id == StockMovement.product_id)
+                  & (Product.business_id == StockMovement.business_id))
+            .where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.reference_id == order.id,
+                StockMovement.movement_type == "receipt",
+            )
+            .order_by(StockMovement.created_at, StockMovement.id)
+            .offset(offset).limit(limit)
+        ).all()
+        return [{
+            "id": str(movement.id),
+            "business_id": str(movement.business_id),
+            "product_id": str(movement.product_id),
+            "product_name": product_name,
+            "sku": sku,
+            "quantity": str(movement.quantity_delta),
+            "reason": movement.reason,
+            "created_at": movement.created_at.isoformat(),
+        } for movement, product_name, sku in rows]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.post("/purchase-orders/{order_id}/approve")
 def approve_purchase_order(business_id: UUID, order_id: UUID,
                            session: Session = Depends(get_session),
