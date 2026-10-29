@@ -71,3 +71,8 @@ test('credit-note list supports customer filtering and displays customer names',
   assert.match(component, /customerName\(note\.customer_id\)/);
   assert.match(component, /onCustomerFilterChanged\(\): void/);
 });
+
+test('failed customer-filter refresh does not leave stale credit-note results visible', () => {
+  assert.match(component, /Never show a previous customer's result/);
+  assert.match(component, /this\.notes = \[\]/);
+});
