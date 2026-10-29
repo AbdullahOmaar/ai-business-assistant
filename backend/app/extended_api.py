@@ -352,18 +352,20 @@ def report_tax_summary(
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     if start_date and end_date and start_date > end_date:
         raise HTTPException(status_code=422, detail="start_date must not be after end_date")
-    business = session.scalars(select(Business).where(
-        Business.id == business_id, Business.is_active.is_(True),
-    )).one_or_none()
-    if business is None:
-        raise HTTPException(status_code=404, detail="Business not found")
-    try:
-        business_zone = ZoneInfo(business.timezone.strip())
-    except (ZoneInfoNotFoundError, ValueError) as exc:
-        raise HTTPException(
-            status_code=422,
-            detail="Business timezone must be a valid IANA timezone.",
-        ) from exc
+    business_zone = None
+    if start_date is not None or end_date is not None:
+        business = session.scalars(select(Business).where(
+            Business.id == business_id, Business.is_active.is_(True),
+        )).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        try:
+            business_zone = ZoneInfo(business.timezone.strip())
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise HTTPException(
+                status_code=422,
+                detail="Business timezone must be a valid IANA timezone.",
+            ) from exc
 
     statement = select(
         Invoice.currency_code,
@@ -371,10 +373,14 @@ def report_tax_summary(
         func.count(Invoice.id),
     ).where(Invoice.business_id == business_id, Invoice.status == "issued")
     if start_date:
-        start_bound = datetime.combine(start_date, datetime.min.time(), tzinfo=business_zone).astimezone(timezone.utc)
+        start_bound = datetime.combine(
+            start_date, datetime.min.time(), tzinfo=business_zone,
+        ).astimezone(timezone.utc)
         statement = statement.where(Invoice.issue_date >= start_bound)
     if end_date:
-        end_bound = datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=business_zone).astimezone(timezone.utc)
+        end_bound = datetime.combine(
+            end_date + timedelta(days=1), datetime.min.time(), tzinfo=business_zone,
+        ).astimezone(timezone.utc)
         statement = statement.where(Invoice.issue_date < end_bound)
     rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
     return {
