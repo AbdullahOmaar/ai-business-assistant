@@ -151,7 +151,10 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
                 </button>
               </form>
             }
-            @if (refundsForNote(note.id).length) {
+            <button type="button" class="secondary" (click)="toggleRefundHistory(note)" [disabled]="refundHistoryLoadingNoteId !== null">
+              {{ refundHistoryLoadingNoteId === note.id ? (language === 'ar' ? 'جارٍ تحميل سجل الردود…' : 'Loading refund history…') : (refundHistoryExpanded[note.id] ? (language === 'ar' ? 'إخفاء سجل الردود' : 'Hide refund history') : (language === 'ar' ? 'عرض سجل الردود النقدية' : 'View cash refund history')) }}
+            </button>
+            @if (refundHistoryExpanded[note.id]) {
               <div class="refund-history">
                 <strong>{{ language === 'ar' ? 'سجل الردود النقدية' : 'Cash refund history' }}</strong>
                 @for (refund of refundsForNote(note.id); track refund.id) {
@@ -159,6 +162,14 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
                     <span>{{ refund.amount }} {{ note.currency_code }} · {{ refundMethodLabel(refund.method) }}</span>
                     <small>{{ refund.created_at | date:'short' }}{{ refund.reference ? ' · ' + refund.reference : '' }}</small>
                   </div>
+                }
+                @if (!refundsForNote(note.id).length && refundHistoryLoadingNoteId !== note.id) {
+                  <small class="muted">{{ language === 'ar' ? 'لا توجد عمليات رد نقدي مسجلة.' : 'No cash refunds recorded.' }}</small>
+                }
+                @if (refundHistoryHasMore[note.id]) {
+                  <button type="button" class="secondary" (click)="loadMoreRefundHistory(note)" [disabled]="refundHistoryLoadingNoteId !== null">
+                    {{ language === 'ar' ? 'تحميل المزيد' : 'Load more' }}
+                  </button>
                 }
               </div>
             }
@@ -207,7 +218,11 @@ export class CreditNotesComponent implements OnChanges {
   customers: Customer[] = [];
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
-  cashRefunds: CashRefund[] = [];
+  refundsByNote: Record<string, CashRefund[]> = {};
+  refundHistoryHasMore: Record<string, boolean> = {};
+  refundHistoryExpanded: Record<string, boolean> = {};
+  refundHistoryLoadingNoteId: string | null = null;
+  private refundHistorySequence = 0;
   refundAmountByNote: Record<string, string> = {};
   refundMethodByNote: Record<string, 'cash' | 'bank' | 'card' | 'other'> = {};
   refundReferenceByNote: Record<string, string> = {};
@@ -248,7 +263,11 @@ export class CreditNotesComponent implements OnChanges {
       this.customers = [];
       this.returns = [];
       this.notes = [];
-      this.cashRefunds = [];
+      this.refundsByNote = {};
+      this.refundHistoryHasMore = {};
+      this.refundHistoryExpanded = {};
+      this.refundHistoryLoadingNoteId = null;
+      this.refundHistorySequence++;
       this.refundAmountByNote = {};
       this.refundMethodByNote = {};
       this.refundReferenceByNote = {};
@@ -281,7 +300,7 @@ export class CreditNotesComponent implements OnChanges {
     this.loadingMoreNotes = false;
     this.error = '';
     try {
-      const [returnsPage, notesPage, invoices, customers, refundsPage] = await Promise.all([
+      const [returnsPage, notesPage, invoices, customers] = await Promise.all([
         this.api.salesReturns(requestedBusinessId, { limit: 100, offset: 0 }),
         this.api.creditNotes(requestedBusinessId, {
           limit: this.notesPageSize, offset: 0,
@@ -289,7 +308,6 @@ export class CreditNotesComponent implements OnChanges {
         }),
         this.api.invoices(requestedBusinessId),
         this.api.customers(requestedBusinessId),
-        this.api.cashRefunds(requestedBusinessId, { limit: 100, offset: 0 }),
       ]);
       // Ignore responses for an older refresh or a workspace the user has left.
       if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId || requestedCustomerId !== this.selectedCustomerId) return;
@@ -298,7 +316,6 @@ export class CreditNotesComponent implements OnChanges {
       this.notesHasMore = notesPage.items.length === 100;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
       this.customers = customers;
-      this.cashRefunds = refundsPage.items;
       this.message = '';
     } catch {
       if (requestId === this.refreshSequence && requestedBusinessId === this.businessId && requestedCustomerId === this.selectedCustomerId) {
@@ -470,7 +487,53 @@ export class CreditNotesComponent implements OnChanges {
   }
 
   refundsForNote(noteId: string): CashRefund[] {
-    return this.cashRefunds.filter(refund => refund.credit_note_id === noteId);
+    return this.refundsByNote[noteId] ?? [];
+  }
+
+  async toggleRefundHistory(note: CreditNote): Promise<void> {
+    if (this.refundHistoryExpanded[note.id]) {
+      this.refundHistoryExpanded[note.id] = false;
+      this.refundHistorySequence++;
+      this.refundHistoryLoadingNoteId = null;
+      return;
+    }
+    this.refundHistoryExpanded[note.id] = true;
+    if (this.refundsByNote[note.id] === undefined) await this.loadRefundHistory(note, true);
+  }
+
+  async loadMoreRefundHistory(note: CreditNote): Promise<void> {
+    await this.loadRefundHistory(note, false);
+  }
+
+  private async loadRefundHistory(note: CreditNote, reset: boolean): Promise<void> {
+    if (!this.businessId || this.refundHistoryLoadingNoteId !== null) return;
+    const requestId = ++this.refundHistorySequence;
+    const requestedBusinessId = this.businessId;
+    const requestedNoteId = note.id;
+    const offset = reset ? 0 : (this.refundsByNote[requestedNoteId]?.length ?? 0);
+    this.refundHistoryLoadingNoteId = requestedNoteId;
+    this.error = '';
+    try {
+      const page = await this.api.cashRefunds(requestedBusinessId, {
+        credit_note_id: requestedNoteId, limit: 100, offset,
+      });
+      if (requestId !== this.refundHistorySequence
+        || requestedBusinessId !== this.businessId
+        || !this.refundHistoryExpanded[requestedNoteId]) return;
+      const existing = reset ? [] : (this.refundsByNote[requestedNoteId] ?? []);
+      const existingIds = new Set(existing.map(refund => refund.id));
+      const incoming = page.items.filter(refund => !existingIds.has(refund.id));
+      this.refundsByNote[requestedNoteId] = [...existing, ...incoming];
+      this.refundHistoryHasMore[requestedNoteId] = page.items.length === 100;
+    } catch {
+      if (requestId === this.refundHistorySequence && requestedBusinessId === this.businessId) {
+        this.error = this.language === 'ar'
+          ? 'تعذر تحميل سجل الردود النقدية.'
+          : 'Could not load cash refund history.';
+      }
+    } finally {
+      if (requestId === this.refundHistorySequence) this.refundHistoryLoadingNoteId = null;
+    }
   }
 
   refundMethodLabel(method: CashRefund['method']): string {
