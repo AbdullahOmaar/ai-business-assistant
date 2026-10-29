@@ -323,7 +323,7 @@ export class ApiService {
   platformAdminUsers(filters: { q?: string; page_token?: string; limit?: number } = {}): Promise<PlatformAdminUsersPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     return this.request<PlatformAdminUsersPage>(`/api/v1/platform-admin/users?${params.toString()}`);
   }
@@ -361,7 +361,7 @@ export class ApiService {
   } = {}): Promise<PlatformBusinessPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     return this.request<PlatformBusinessPage>(`/api/v1/platform-admin/businesses?${params.toString()}`);
   }
@@ -386,7 +386,7 @@ export class ApiService {
   } = {}): Promise<PlatformAuditEventPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     return this.request<PlatformAuditEventPage>(`/api/v1/platform-admin/audit-events?${params.toString()}`);
   }
@@ -397,7 +397,7 @@ export class ApiService {
   } = {}): Promise<{ blob: Blob; truncated: boolean; rowCount: number }> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     return this.requestBlob(`/api/v1/platform-admin/audit-events/export.csv?${params.toString()}`).then(async response => ({
       blob: await response.blob(),
@@ -550,7 +550,7 @@ export class ApiService {
   salesReturns(businessId: string, filters: { limit?: number; offset?: number; status?: 'draft' | 'approved' | 'rejected' } = {}): Promise<SalesReturnPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     const query = params.toString();
     return this.request<SalesReturnPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns${query ? '?' + query : ''}`);
@@ -558,7 +558,7 @@ export class ApiService {
   creditNotes(businessId: string, filters: { limit?: number; offset?: number; customer_id?: string } = {}): Promise<CreditNotePage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     const query = params.toString();
     return this.request<CreditNotePage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes${query ? '?' + query : ''}`);
@@ -585,7 +585,7 @@ export class ApiService {
   auditEvents(businessId: string, filters: { limit?: number; offset?: number; action?: string; target_type?: string }): Promise<AuditEventPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+      if (value !== undefined) params.set(key, String(value));
     }
     return this.request<AuditEventPage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/audit-events?${params.toString()}`);
   }
