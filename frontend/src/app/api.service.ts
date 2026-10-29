@@ -13,18 +13,18 @@ export interface Business {
 }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; }
-export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; applied_credits?: string; outstanding_amount?: string; }
+export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; tax_rate?: string | null; customer_id?: string | null; allocated_payments?: string; applied_credits?: string; outstanding_amount?: string; }
 export interface InvoiceDetail extends Invoice {
-  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
+  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string; taxable_amount?: string | null; tax_amount?: string | null }>;
 }
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface CreditNote {
   id: string; business_id: string; sales_return_id: string; invoice_id: string; customer_id: string;
-  credit_note_number: string; currency_code: string; total: string; applied_total?: string; refunded_total?: string; remaining_credit?: string; created_by_subject: string; created_at: string;
+  credit_note_number: string; currency_code: string; total: string; subtotal?: string; tax_total?: string; applied_total?: string; refunded_total?: string; remaining_credit?: string; created_by_subject: string; created_at: string;
 }
 export interface SalesReturn {
   id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
-  reason?: string | null; total: string; created_at: string;
+  reason?: string | null; total: string; tax_total?: string | null; created_at: string;
 }
 export interface SalesReturnPage { items: SalesReturn[]; limit: number; offset: number; }
 export interface CreditNotePage { items: CreditNote[]; limit: number; offset: number; }
