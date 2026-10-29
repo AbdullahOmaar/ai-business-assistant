@@ -2392,7 +2392,7 @@ export class AppComponent implements OnInit {
         this.invoiceLines.some(line =>
           !/^\d+(?:\.\d{1,3})?$/.test(line.quantity.trim()) ||
           !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0 ||
-          (line.kind === 'product' && (!line.productId || !this.products.some(product => product.id === line.productId))) ||
+          (line.kind === 'product' && !line.productId) ||
           (line.kind === 'manual' && (!line.description.trim() ||
             !/^\d+(?:\.\d{1,2})?$/.test(line.unitPrice.trim()) ||
             !Number.isFinite(Number(line.unitPrice)) || Number(line.unitPrice) < 0))
