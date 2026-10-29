@@ -1,6 +1,6 @@
 # Authenticated API Route Inventory
 
-**Reviewed:** 2026-10-23  
+**Reviewed:** 2026-10-29  
 **Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, `assistant_api.py`, `platform_admin_api.py`, and `employee_payroll_api.py`.  
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
