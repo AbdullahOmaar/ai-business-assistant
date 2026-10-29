@@ -2278,6 +2278,10 @@ export class AppComponent implements OnInit {
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      // The invoice may have changed after the list was loaded; never print a stale issued snapshot.
+      if (detail.status !== 'issued') {
+        throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
+      }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
         this.escapePrintHtml(line.quantity) + '</td><td class="number">' +
@@ -2287,11 +2291,32 @@ export class AppComponent implements OnInit {
       const customer = this.escapePrintHtml(this.customerNameForInvoice(detail.customer_id));
       const invoiceNumber = this.escapePrintHtml(detail.invoice_number);
       const currency = this.escapePrintHtml(detail.currency_code);
+      const subtotal = this.escapePrintHtml(detail.subtotal ?? '0.00');
+      const discount = this.escapePrintHtml(detail.discount_total ?? '0.00');
+      const tax = this.escapePrintHtml(detail.tax_total ?? '0.00');
       const total = this.escapePrintHtml(detail.total);
+      const issueDate = detail.issue_date ? this.escapePrintHtml(detail.issue_date.slice(0, 10)) : '—';
+      const dueDate = detail.due_date ? this.escapePrintHtml(detail.due_date.slice(0, 10)) : '—';
+      const notes = detail.notes?.trim()
+        ? '<section class="notes"><strong>' + (this.language === 'ar' ? 'ملاحظات' : 'Notes') +
+          ':</strong><p>' + this.escapePrintHtml(detail.notes) + '</p></section>'
+        : '';
       const direction = this.language === 'ar' ? 'rtl' : 'ltr';
       const labels = this.language === 'ar'
-        ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.' }
-        : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', total: 'Total due', note: 'Generated from saved business records.' };
+        ? {
+            title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية',
+            price: 'سعر الوحدة', amount: 'الإجمالي', total: 'الإجمالي المستحق',
+            note: 'مستند مستخرج من سجلات النشاط المحفوظة.', status: 'الحالة',
+            issued: 'صادرة', issueDate: 'تاريخ الإصدار', dueDate: 'تاريخ الاستحقاق',
+            subtotal: 'الإجمالي قبل الخصم والضريبة', discount: 'الخصم', tax: 'الضريبة',
+          }
+        : {
+            title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity',
+            price: 'Unit price', amount: 'Line total', total: 'Total due',
+            note: 'Generated from saved business records.', status: 'Status',
+            issued: 'Issued', issueDate: 'Issue date', dueDate: 'Due date',
+            subtotal: 'Subtotal', discount: 'Discount', tax: 'Tax',
+          };
       printWindow.onload = () => printWindow.print();
       printWindow.document.open();
       printWindow.document.write(
@@ -2300,16 +2325,28 @@ export class AppComponent implements OnInit {
         '<style>*{box-sizing:border-box}body{font:14px/1.5 Arial,sans-serif;color:#111827;margin:0;padding:32px}' +
         'header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;border-bottom:2px solid #111827;padding-bottom:18px;margin-bottom:24px}' +
         'h1{font-size:25px;margin:0 0 6px}p{margin:4px 0}.muted{color:#6b7280;font-size:12px}' +
+        '.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px;margin:16px 0}.meta span{display:block}' +
         'table{width:100%;border-collapse:collapse;margin-top:22px}th,td{padding:12px 8px;border-bottom:1px solid #d1d5db;text-align:start}' +
         'th{background:#f3f4f6;font-weight:700}.number{text-align:end;font-variant-numeric:tabular-nums}' +
-        '.total{margin-top:24px;margin-inline-start:auto;max-width:340px;padding:16px;border:1px solid #d1d5db;border-radius:8px;font-size:18px;font-weight:700}' +
-        '.actions{margin-top:24px;display:flex;gap:8px}button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
-        '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.total{break-inside:avoid}}</style></head><body>' +
-        '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p></div>' +
-        '<div><strong>' + this.escapePrintHtml(this.business.name) + '</strong><p>' + this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
-        '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody></table><div class="total">' + labels.total + ': ' + total + ' ' + currency + '</div>' +
-        '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
+        '.summary{margin-top:20px;margin-inline-start:auto;max-width:380px}.summary td{padding:7px 8px}.summary tr:last-child{font-weight:700;font-size:18px;border-top:2px solid #111827}' +
+        '.notes{margin-top:24px;white-space:pre-wrap;overflow-wrap:anywhere}.actions{margin-top:24px;display:flex;gap:8px}' +
+        'button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
+        '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.summary,.notes{break-inside:avoid}}</style></head><body>' +
+        '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p>' +
+        '<p>' + labels.customer + ': ' + customer + '</p><p>' + labels.status + ': ' + labels.issued + '</p></div>' +
+        '<div><strong>' + this.escapePrintHtml(this.business.name) + '</strong><p>' +
+        this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
+        '<section class="meta"><div><span class="muted">' + labels.issueDate + '</span><strong>' + issueDate + '</strong></div>' +
+        '<div><span class="muted">' + labels.dueDate + '</span><strong>' + dueDate + '</strong></div></section>' +
+        '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity +
+        '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table>' +
+        '<table class="summary"><tbody><tr><td>' + labels.subtotal + '</td><td class="number">' + subtotal + ' ' + currency + '</td></tr>' +
+        '<tr><td>' + labels.discount + '</td><td class="number">−' + discount + ' ' + currency + '</td></tr>' +
+        '<tr><td>' + labels.tax + '</td><td class="number">' + tax + ' ' + currency + '</td></tr>' +
+        '<tr><td>' + labels.total + '</td><td class="number">' + total + ' ' + currency + '</td></tr></tbody></table>' +
+        notes + '<p class="muted" style="margin-top:24px">' + labels.note + '</p>' +
+        '<div class="actions"><button onclick="window.print()">' +
         (this.language === 'ar' ? 'طباعة / حفظ PDF' : 'Print / Save PDF') + '</button></div></body></html>'
       );
       printWindow.document.close();
