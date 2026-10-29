@@ -133,47 +133,69 @@ export class CreditNotesComponent implements OnChanges {
   issuingId: string | null = null;
   message = '';
   error = '';
+  private refreshSequence = 0;
+  private invoiceDetailSequence = 0;
 
   constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['businessId'] && this.businessId) {
+      // Invalidate in-flight requests before loading the newly selected workspace.
+      this.refreshSequence++;
+      this.invoiceDetailSequence++;
+      this.invoices = [];
+      this.returns = [];
+      this.notes = [];
       this.selectedInvoiceId = '';
       this.invoiceDetail = null;
       this.returnLines = [];
+      this.error = '';
+      this.message = '';
       void this.refresh();
     }
   }
 
   async refresh(): Promise<void> {
-    if (!this.businessId || this.loading) return;
+    if (!this.businessId) return;
+    const requestId = ++this.refreshSequence;
+    const requestedBusinessId = this.businessId;
     this.loading = true;
     this.error = '';
     try {
       const [returnsPage, notesPage, invoices] = await Promise.all([
-        this.api.salesReturns(this.businessId, { limit: 100, offset: 0 }),
-        this.api.creditNotes(this.businessId, { limit: 100, offset: 0 }),
-        this.api.invoices(this.businessId),
+        this.api.salesReturns(requestedBusinessId, { limit: 100, offset: 0 }),
+        this.api.creditNotes(requestedBusinessId, { limit: 100, offset: 0 }),
+        this.api.invoices(requestedBusinessId),
       ]);
+      // Ignore responses for an older refresh or a workspace the user has left.
+      if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId) return;
       this.returns = returnsPage.items;
       this.notes = notesPage.items;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
       this.message = '';
     } catch {
-      this.error = this.language === 'ar' ? 'تعذر تحميل الفواتير والمرتجعات. تحقق من الصلاحيات والاتصال ثم أعد المحاولة.' : 'Could not load invoices and returns. Check access and connectivity, then retry.';
+      if (requestId === this.refreshSequence && requestedBusinessId === this.businessId) {
+        this.error = this.language === 'ar' ? 'تعذر تحميل الفواتير والمرتجعات. تحقق من الصلاحيات والاتصال ثم أعد المحاولة.' : 'Could not load invoices and returns. Check access and connectivity, then retry.';
+      }
     } finally {
-      this.loading = false;
+      if (requestId === this.refreshSequence) this.loading = false;
     }
   }
 
   async onInvoiceSelected(invoiceId: string): Promise<void> {
+    const requestId = ++this.invoiceDetailSequence;
+    const requestedBusinessId = this.businessId;
     this.invoiceDetail = null;
     this.returnLines = [];
     this.error = '';
-    if (!invoiceId || !this.businessId) return;
+    if (!invoiceId || !requestedBusinessId) {
+      this.detailLoading = false;
+      return;
+    }
     this.detailLoading = true;
     try {
-      const detail = await this.api.invoiceDetail(this.businessId, invoiceId);
+      const detail = await this.api.invoiceDetail(requestedBusinessId, invoiceId);
+      if (requestId !== this.invoiceDetailSequence || requestedBusinessId !== this.businessId || invoiceId !== this.selectedInvoiceId) return;
       if (detail.status !== 'issued') throw new Error('Invoice is no longer issued');
       this.invoiceDetail = detail;
       this.returnLines = detail.lines.map(line => ({
@@ -183,9 +205,11 @@ export class CreditNotesComponent implements OnChanges {
         quantity: '0',
       }));
     } catch {
-      this.error = this.language === 'ar' ? 'تعذر تحميل بنود الفاتورة. اختر فاتورة صادرة أخرى.' : 'Could not load invoice lines. Choose another issued invoice.';
+      if (requestId === this.invoiceDetailSequence && requestedBusinessId === this.businessId && invoiceId === this.selectedInvoiceId) {
+        this.error = this.language === 'ar' ? 'تعذر تحميل بنود الفاتورة. اختر فاتورة صادرة أخرى.' : 'Could not load invoice lines. Choose another issued invoice.';
+      }
     } finally {
-      this.detailLoading = false;
+      if (requestId === this.invoiceDetailSequence) this.detailLoading = false;
     }
   }
 
