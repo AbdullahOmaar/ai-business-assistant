@@ -21,47 +21,18 @@
 
 ## T41 — Five-workstream execution batch (2026-10-30)
 
-Requested execution scope: five substantial, contract-independent workstreams on the existing branch and PR #308 only. No merge or deployment.
+Requested execution scope: five substantial workstreams on the existing branch and PR #308 only. No merge or deployment.
 
-1. **Employee profile integrity:** verify normalization, invalid profile rejection, duplicate email/code conflicts on create/update, and atomic no-partial-update behavior. Regression: `test_employee_profile_normalization_and_duplicate_update_are_atomic`.
-2. **Employee directory integrity:** verify deterministic ordering, page boundaries, complete pagination coverage, active filter compatibility (existing test), and business isolation. Regression: `test_employee_directory_pagination_is_stable_and_business_scoped`.
-3. **Payroll query integrity:** verify period filtering, stable order, pagination boundaries, and business-scoped results. Regression: `test_payroll_listing_period_filter_and_pagination_are_deterministic`.
-4. **Approval state machine:** verify approval replay and post-approval edits are rejected without changing payroll or duplicating audit events. Regression: `test_payroll_approval_cannot_be_replayed_or_edited_after_transition`.
-5. **Payment atomicity:** inject failure while writing the paid audit event after expense flush; verify the transaction rolls back the expense and paid transition. Regression: `test_payment_audit_failure_rolls_back_expense_and_paid_transition`.
+1. **Employee profile integrity:** added a focused normalization + invalid-input + duplicate-update/no-partial-update regression: `test_employee_profile_normalization_and_duplicate_update_are_atomic`.
+2. **Employee directory integrity:** reused and reviewed existing `test_employee_listing_pagination_is_stable_and_respects_active_filter` and `test_active_only_listing_excludes_deactivated_employees`; no duplicate test retained.
+3. **Payroll query integrity:** reused and reviewed existing `test_payroll_listing_period_filter_and_pagination_are_deterministic`; no duplicate test retained.
+4. **Approval state machine:** reused and reviewed existing `test_payroll_approval_is_separated_and_repeated_approval_has_no_side_effects`; no duplicate test retained.
+5. **Payment atomicity:** reused and reviewed existing `test_payroll_payment_rolls_back_when_paid_audit_write_fails`; no duplicate test retained.
 
-- **Implementation:** five focused regression tests added to `backend/tests/test_employee_payroll_api.py`; no runtime, schema, or financial-policy changes.
-- **Verification:** all five new tests are committed but NOT RUN in this connector-only session. Existing prior focused run (16 passed) predates this batch and does not verify these additions. Full PostgreSQL concurrency, migration, frontend, security, and exact-head CircleCI checks remain NOT RUN / BLOCKED as applicable.
-- **Dependencies:** T37/T40 approvals continue to gate salary history/backfill/snapshots and shared payment lifecycle changes. Payment rollback test uses the existing SQLite fixture and is not evidence of PostgreSQL concurrency.
+- **Implementation:** one new regression retained in `backend/tests/test_employee_payroll_api.py`; four duplicate tests authored during this pass were removed after source review found equivalent existing coverage. No runtime, schema, or financial-policy changes.
+- **Verification:** the new regression and all pre-existing target tests are NOT RUN on the latest HEAD. An earlier focused 16-pass run predates this batch and does not verify it. Full PostgreSQL concurrency, migrations, frontend, security, and exact-head CircleCI checks remain NOT RUN / BLOCKED as applicable.
+- **Dependencies:** T37/T40 approvals continue to gate salary history/backfill/snapshots and shared payment lifecycle changes. Existing payment rollback coverage uses the current test fixture and is not evidence of PostgreSQL concurrency.
 - **Delivery:** preserve PR #308 as Draft/Open/Unmerged. No merge or deployment.
-
-## T41 — Five additional feature-hardening work packages (2026-10-30)
-
-Scope: remain on the existing branch `feat/t41-salary-history-effective-dates` and PR #308. Test-only coverage; no schema, financial policy, salary-history, or payment lifecycle implementation changes.
-
-1. **Employee identity update integrity:** duplicate normalized email/code updates must return 409, preserve the existing employee fields, and emit no additional audit events.
-2. **Payroll salary snapshot stability:** changing the employee's current monthly salary must not retroactively mutate an already-created payroll base salary or net-pay snapshot.
-3. **Payroll list correctness:** period filtering, stable ordering, limit, and offset pagination must return deterministic records.
-4. **Approval/payment replay protection:** self-approval and repeated approval/payment attempts must be rejected; successful approval/payment must produce exactly one linked expense and one audit event for each transition.
-5. **Audit transaction atomicity:** inject an audit-write exception during employee creation and prove the employee row and audit row are both rolled back.
-
-- **Implementation:** all five regression tests added to `backend/tests/test_employee_payroll_api.py` in commit `587c7b5501b06ec8b91c8017cd4ad7960da5918a`.
-- **Execution:** NOT RUN in this connector-only pass. Do not mark these tasks VERIFIED COMPLETE until the focused suite runs against the exact current branch head. The payment replay test uses the existing state-machine behavior only; it does not introduce or redefine the T37/T40 shared payment contract.
-- **Delivery:** existing PR #308 remains the sole workstream; no merge or deployment.
-
-## T41 — Five additional feature workstreams (2026-10-30)
-
-Scope: continued on the existing branch and PR #308 only. No merge or deployment.
-
-1. **Employee update validation and no-side-effect guarantees** — regression coverage for empty updates, whitespace-only names, null salary, and null active status; persisted profile and audit count must remain unchanged.
-2. **Employee uniqueness on update** — case-normalized duplicate email/code updates must return 409 without changing either employee or creating update audit events.
-3. **Employee directory pagination** — ordered multi-page coverage plus invalid limit/offset boundary checks.
-4. **Payroll listing and period filtering** — descending period pagination, exact-period filtering, and malformed-period rejection coverage.
-5. **Payroll approval state transition** — repeated approval must return 409 and not alter approval metadata or add another audit event/expense.
-
-- Implementation: test-first API regression additions in `backend/tests/test_employee_payroll_api.py`; no runtime, schema, migration, or financial posting logic changed.
-- Added tests in commit `ecf5fe873ac28a6c4022cb57b25e479d615eba07`.
-- **Execution:** NOT RUN in this connector-only environment; no local repository checkout/runtime was available. These five additions are not VERIFIED COMPLETE until executed.
-- **Delivery:** PR #308 remains the only workstream; do not merge. T37/T40 approval gates remain unchanged.
 
 ## T41 — Follow-up backlog beyond the initial 15 tasks (2026-10-29)
 
