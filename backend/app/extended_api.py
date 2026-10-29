@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
-    AuditEvent, BusinessSetting, CreditApplication, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
+    AuditEvent, BusinessSetting, CashRefund, CreditApplication, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
@@ -149,6 +149,14 @@ class CreditApplicationInput(BaseModel):
     credit_note_id: UUID
     invoice_id: UUID
     amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    idempotency_key: str = Field(min_length=1, max_length=128)
+
+
+class CashRefundInput(BaseModel):
+    amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+    method: str = Field(pattern="^(cash|bank|card|other)$")
+    payment_id: UUID | None = None
+    reference: str | None = Field(default=None, max_length=128)
     idempotency_key: str = Field(min_length=1, max_length=128)
 
 
@@ -778,29 +786,46 @@ def list_credit_notes(business_id: UUID, limit: int = Query(default=50, ge=1, le
         .limit(limit).offset(offset)
     ).all()
     applied_by_note: dict[UUID, Decimal] = {}
+    refunded_by_note: dict[UUID, Decimal] = {}
     if notes:
+        note_ids = [note.id for note in notes]
         application_rows = session.execute(
             select(
                 CreditApplication.credit_note_id,
                 func.coalesce(func.sum(CreditApplication.amount), 0),
             ).where(
                 CreditApplication.business_id == business_id,
-                CreditApplication.credit_note_id.in_([note.id for note in notes]),
+                CreditApplication.credit_note_id.in_(note_ids),
             ).group_by(CreditApplication.credit_note_id)
         ).all()
         applied_by_note = {
             note_id: Decimal(str(amount or ZERO))
             for note_id, amount in application_rows
         }
+        refund_rows = session.execute(
+            select(
+                CashRefund.credit_note_id,
+                func.coalesce(func.sum(CashRefund.amount), 0),
+            ).where(
+                CashRefund.business_id == business_id,
+                CashRefund.credit_note_id.in_(note_ids),
+            ).group_by(CashRefund.credit_note_id)
+        ).all()
+        refunded_by_note = {
+            note_id: Decimal(str(amount or ZERO))
+            for note_id, amount in refund_rows
+        }
     items = []
     for note in notes:
         applied = applied_by_note.get(note.id, ZERO)
+        refunded = refunded_by_note.get(note.id, ZERO)
         item = _dict(note, (
             "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
             "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
         ))
         item["applied_total"] = str(applied)
-        item["remaining_credit"] = str(max(ZERO, Decimal(str(note.total)) - applied))
+        item["refunded_total"] = str(refunded)
+        item["remaining_credit"] = str(max(ZERO, Decimal(str(note.total)) - applied - refunded))
         items.append(item)
     return {"items": items, "limit": limit, "offset": offset}
 
@@ -875,7 +900,13 @@ def apply_credit_note(business_id: UUID, body: CreditApplicationInput,
                 CreditApplication.credit_note_id == note.id,
             )
         ) or ZERO))
-        note_remaining = money(Decimal(str(note.total)) - applied_to_note)
+        refunded_from_note = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(CashRefund.amount), 0)).where(
+                CashRefund.business_id == business_id,
+                CashRefund.credit_note_id == note.id,
+            )
+        ) or ZERO))
+        note_remaining = money(Decimal(str(note.total)) - applied_to_note - refunded_from_note)
         if amount > note_remaining:
             raise WorkflowError("Credit application exceeds the remaining credit note balance")
 
@@ -959,6 +990,155 @@ def list_credit_applications(
         "items": [_dict(item, (
             "id", "business_id", "credit_note_id", "invoice_id", "amount",
             "idempotency_key", "applied_by_subject", "created_at",
+        )) for item in items],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post("/credit-notes/{credit_note_id}/refunds", status_code=201)
+def create_cash_refund(
+    business_id: UUID,
+    credit_note_id: UUID,
+    body: CashRefundInput,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Record an explicit cash outflow; this is separate from applying credit to receivables."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        replay = session.scalars(select(CashRefund).where(
+            CashRefund.business_id == business_id,
+            CashRefund.idempotency_key == body.idempotency_key,
+        ).with_for_update()).one_or_none()
+        if replay is not None:
+            if (
+                replay.credit_note_id != credit_note_id
+                or replay.payment_id != body.payment_id
+                or Decimal(str(replay.amount)) != money(body.amount)
+                or replay.method != body.method
+                or replay.reference != (body.reference.strip() if body.reference else None)
+            ):
+                raise HTTPException(status_code=409, detail="Idempotency key was already used for a different cash refund")
+            return replay
+
+        note = session.scalars(select(CreditNote).where(
+            CreditNote.id == credit_note_id,
+            CreditNote.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if note is None:
+            raise WorkflowError("Credit note not found in this business")
+
+        # Serialize refund/application decisions against the same credit-note balance.
+        replay = session.scalars(select(CashRefund).where(
+            CashRefund.business_id == business_id,
+            CashRefund.idempotency_key == body.idempotency_key,
+        ).with_for_update()).one_or_none()
+        if replay is not None:
+            if (
+                replay.credit_note_id != credit_note_id
+                or replay.payment_id != body.payment_id
+                or Decimal(str(replay.amount)) != money(body.amount)
+                or replay.method != body.method
+                or replay.reference != (body.reference.strip() if body.reference else None)
+            ):
+                raise HTTPException(status_code=409, detail="Idempotency key was already used for a different cash refund")
+            return replay
+
+        amount = money(body.amount)
+        applied_to_note = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(CreditApplication.amount), 0)).where(
+                CreditApplication.business_id == business_id,
+                CreditApplication.credit_note_id == note.id,
+            )
+        ) or ZERO))
+        refunded_from_note = Decimal(str(session.scalar(
+            select(func.coalesce(func.sum(CashRefund.amount), 0)).where(
+                CashRefund.business_id == business_id,
+                CashRefund.credit_note_id == note.id,
+            )
+        ) or ZERO))
+        if amount > money(Decimal(str(note.total)) - applied_to_note - refunded_from_note):
+            raise WorkflowError("Cash refund exceeds the remaining credit note balance")
+
+        if body.payment_id is not None:
+            payment = session.scalars(select(Payment).where(
+                Payment.id == body.payment_id,
+                Payment.business_id == business_id,
+            ).with_for_update()).one_or_none()
+            if payment is None:
+                raise WorkflowError("Original payment not found in this business")
+            if payment.customer_id != note.customer_id:
+                raise WorkflowError("Original payment must belong to the credit note customer")
+            if payment.currency_code.strip().upper() != note.currency_code.strip().upper():
+                raise WorkflowError("Original payment currency must match the credit note")
+            allocated = Decimal(str(session.scalar(
+                select(func.coalesce(func.sum(PaymentAllocation.amount), 0)).where(
+                    PaymentAllocation.business_id == business_id,
+                    PaymentAllocation.payment_id == payment.id,
+                )
+            ) or ZERO))
+            previously_refunded = Decimal(str(session.scalar(
+                select(func.coalesce(func.sum(CashRefund.amount), 0)).where(
+                    CashRefund.business_id == business_id,
+                    CashRefund.payment_id == payment.id,
+                )
+            ) or ZERO))
+            unallocated_cash = money(Decimal(str(payment.amount)) - allocated - previously_refunded)
+            if amount > unallocated_cash:
+                raise WorkflowError("Cash refund exceeds the original payment's unallocated balance")
+
+        refund = CashRefund(
+            business_id=business_id,
+            credit_note_id=note.id,
+            payment_id=body.payment_id,
+            amount=amount,
+            method=body.method,
+            reference=body.reference.strip() if body.reference and body.reference.strip() else None,
+            idempotency_key=body.idempotency_key,
+            refunded_by_subject=principal.subject,
+        )
+        session.add(refund)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id, actor_subject=principal.subject,
+            action="cash_refund.created", target_type="cash_refund", target_id=str(refund.id),
+        ))
+        session.flush()
+        return refund
+
+    refund = _commit(session, op)
+    return _dict(refund, (
+        "id", "business_id", "credit_note_id", "payment_id", "amount",
+        "method", "reference", "idempotency_key", "refunded_by_subject", "created_at",
+    ))
+
+
+@router.get("/cash-refunds")
+def list_cash_refunds(
+    business_id: UUID,
+    credit_note_id: UUID | None = Query(default=None),
+    payment_id: UUID | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List explicit cash outflows within the current business."""
+    _authorized(session, principal, business_id)
+    statement = select(CashRefund).where(CashRefund.business_id == business_id)
+    if credit_note_id is not None:
+        statement = statement.where(CashRefund.credit_note_id == credit_note_id)
+    if payment_id is not None:
+        statement = statement.where(CashRefund.payment_id == payment_id)
+    items = session.scalars(
+        statement.order_by(CashRefund.created_at.desc(), CashRefund.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(item, (
+            "id", "business_id", "credit_note_id", "payment_id", "amount",
+            "method", "reference", "idempotency_key", "refunded_by_subject", "created_at",
         )) for item in items],
         "limit": limit,
         "offset": offset,
