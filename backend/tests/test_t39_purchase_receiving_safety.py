@@ -329,3 +329,77 @@ def test_receipt_rejects_order_in_invalid_lifecycle_state_without_side_effects(
                 AuditEvent.business_id == business_id
             )
         ) == audit_count_before
+
+def test_foreign_business_product_is_rejected_without_receipt_side_effects(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, local_line, local_product = _approved_order(session, business_id, principal)
+
+        foreign_business = Business(name="T39 Foreign Shop", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=foreign_business.id,
+            user_subject=principal.subject,
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        foreign_product = create_product(
+            session,
+            principal=principal,
+            business_id=foreign_business.id,
+            name="Foreign Stock Item",
+            unit_price=Decimal("10"),
+            is_stock_tracked=True,
+        )
+        foreign_line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=foreign_product.id,
+            quantity=Decimal("5"),
+            unit_cost=Decimal("10"),
+            received_quantity=Decimal("0"),
+        )
+        order.total = Decimal("150")
+        session.add(foreign_line)
+        session.commit()
+
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+
+        with pytest.raises(WorkflowError, match="product not found in this business"):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={
+                    local_line.id: Decimal("2"),
+                    foreign_line.id: Decimal("2"),
+                },
+            )
+
+        session.refresh(order)
+        session.refresh(local_line)
+        session.refresh(foreign_line)
+        assert order.status == "approved"
+        assert local_line.received_quantity == Decimal("0.000")
+        assert foreign_line.received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
