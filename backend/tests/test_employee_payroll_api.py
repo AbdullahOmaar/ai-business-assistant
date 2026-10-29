@@ -392,3 +392,39 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
     assert response.status_code == 422
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
+
+def test_inactive_employee_cannot_create_payroll_without_side_effects(employee_environment):
+    env = employee_environment
+    created = _create_employee(env)
+    assert created.status_code == 201
+    employee = created.json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+
+    deactivated = env["client"].patch(
+        f"{base}/employees/{employee['id']}", json={"is_active": False}
+    )
+    assert deactivated.status_code == 200
+    assert deactivated.json()["is_active"] is False
+
+    response = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11"},
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Active employee not found"
+
+    with app.state.session_factory() as session:
+        persisted = session.get(Employee, UUID(employee["id"]))
+        assert persisted is not None and persisted.is_active is False
+        assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        payroll_actions = session.scalars(
+            select(AuditEvent.action).where(AuditEvent.target_type == "payroll")
+        ).all()
+        assert payroll_actions == []
+        employee_actions = session.scalars(
+            select(AuditEvent.action).where(AuditEvent.target_type == "employee")
+        ).all()
+        assert employee_actions.count("employee.created") == 1
+        assert employee_actions.count("employee.updated") == 1
+
