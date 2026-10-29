@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
-    AuditEvent, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
+    AuditEvent, BusinessSetting, CreditNote, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
@@ -655,6 +655,67 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         return ret
     ret = _commit(session, op)
     return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
+
+
+@router.post("/sales-returns/{return_id}/credit-note", status_code=201)
+def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
+                                 session: Session = Depends(get_session),
+                                 principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Issue one immutable credit note for an approved return; this does not refund cash."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        existing = session.scalars(select(CreditNote).where(
+            CreditNote.business_id == business_id,
+            CreditNote.sales_return_id == return_id,
+        ).with_for_update()).one_or_none()
+        if existing is not None:
+            return existing
+
+        ret = session.scalars(select(SalesReturn).where(
+            SalesReturn.id == return_id,
+            SalesReturn.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if ret is None or ret.status != "approved":
+            raise WorkflowError("Only an approved sales return can be credited")
+
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == ret.invoice_id,
+            Invoice.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Credit note must reference an issued invoice")
+        if invoice.customer_id is None:
+            raise WorkflowError("Credit note requires an invoice linked to a customer")
+        if ret.total <= ZERO:
+            raise WorkflowError("A credit note requires a positive approved return total")
+
+        note = CreditNote(
+            business_id=business_id,
+            sales_return_id=ret.id,
+            invoice_id=invoice.id,
+            customer_id=invoice.customer_id,
+            credit_note_number=f"CN-{ret.id.hex[:24].upper()}",
+            currency_code=invoice.currency_code,
+            total=money(Decimal(str(ret.total))),
+            created_by_subject=principal.subject,
+        )
+        session.add(note)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="credit_note.issued",
+            target_type="credit_note",
+            target_id=str(note.id),
+        ))
+        session.flush()
+        return note
+
+    note = _commit(session, op)
+    return _dict(note, (
+        "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
+        "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+    ))
 
 
 @router.post("/recurring-invoices", status_code=201)
