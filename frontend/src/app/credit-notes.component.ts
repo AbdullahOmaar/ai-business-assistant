@@ -191,8 +191,12 @@ export class CreditNotesComponent implements OnChanges {
 
   async createReturn(): Promise<void> {
     if (!this.businessId || !this.invoiceDetail || this.creatingReturn || this.detailLoading) return;
+    const invalidQuantity = this.returnLines.some(line => {
+      const quantity = Number(line.quantity);
+      return !Number.isFinite(quantity) || quantity < 0 || quantity > Number(line.invoicedQuantity);
+    });
     const lines = this.returnLines.filter(line => Number(line.quantity) > 0);
-    if (!lines.length || lines.some(line => !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0 || Number(line.quantity) > Number(line.invoicedQuantity))) {
+    if (invalidQuantity || !lines.length) {
       this.error = this.language === 'ar' ? 'أدخل كمية مرتجع صحيحة لا تتجاوز كمية الفاتورة لكل بند.' : 'Enter a valid return quantity that does not exceed the invoiced quantity for each line.';
       return;
     }
