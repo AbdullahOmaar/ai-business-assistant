@@ -1683,3 +1683,9 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - The API remains the authorization boundary; UI role checks do not replace server-side authorization. Acceptance scenarios T39-34/T39-35 now explicitly describe the UI actions.
 - Frontend build/tests, backend tests, security/migration checks and CI remain **NOT RUN** per user instruction; implementation is not runtime-verified.
 
+## T39 supplier directory search UI — 2026-10-29
+
+- Added supplier-name search and Show all actions to the Suppliers section in `frontend/src/app/app.component.ts`.
+- `frontend/src/app/api.service.ts::suppliers` accepts an optional name and sends it as a query parameter to the existing tenant-scoped, case-insensitive, paginated backend search.
+- Acceptance scenario T39-25 now includes UI-to-API behavior. Tests/build/security/migration/CI remain **NOT RUN** per user instruction; source inspection only.
+
