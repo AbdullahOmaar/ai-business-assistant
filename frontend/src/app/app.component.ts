@@ -200,7 +200,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 
 @if (tab === 'suppliers') {
               <section class="panel">
-                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportSupplierCsv()" [disabled]="csvExporting">{{ csvExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="toggleInactiveSuppliers()" [disabled]="suppliersLoading">{{ includeInactiveSuppliers ? t('إخفاء غير النشط', 'Hide inactive') : t('عرض غير النشط', 'Show inactive') }}</button><button class="secondary" type="button" (click)="exportSupplierCsv()" [disabled]="csvExporting">{{ csvExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <form class="inline-form" (ngSubmit)="searchSuppliers()">
                   <input name="supplierSearch" maxlength="160" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث باسم المورد…', 'Search suppliers by name…')" [(ngModel)]="supplierSearch">
                   <button class="secondary" type="submit" [disabled]="suppliersLoading">{{ t('بحث', 'Search') }}</button>
@@ -215,7 +215,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 </form>
                 @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
                 @if (suppliersLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الموردين…', 'Loading suppliers…') }}</p> }
-                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <p class="empty">{{ t('لا يوجد موردون بعد.', 'No suppliers yet.') }}</p> }</div>
+                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.is_active ? t('نشط', 'Active') : t('غير نشط', 'Inactive') }} · {{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="toggleSupplierActive(supplier)" [disabled]="suppliersLoading">{{ supplier.is_active ? t('إيقاف', 'Deactivate') : t('تفعيل', 'Reactivate') }}</button> }</article> } @if (!suppliers.length && !suppliersLoading) { <p class="empty">{{ t('لا يوجد موردون بعد.', 'No suppliers yet.') }}</p> }</div>
               </section>
             }
 
@@ -1019,6 +1019,7 @@ export class AppComponent implements OnInit {
   supplierPhone = '';
   supplierAddress = '';
   supplierSearch = '';
+  includeInactiveSuppliers = false;
   purchaseOrderStatusFilter = '';
   purchaseOrderSupplierFilter = '';
   purchaseOrderNumber = '';
@@ -1436,6 +1437,7 @@ export class AppComponent implements OnInit {
     this.supplierPhone = '';
     this.supplierAddress = '';
     this.supplierSearch = '';
+    this.includeInactiveSuppliers = false;
     this.csvExporting = false;
     this.purchaseQuantity = '1';
     this.purchaseUnitCost = '0';
@@ -1870,6 +1872,28 @@ export class AppComponent implements OnInit {
     }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
   }
 
+  toggleInactiveSuppliers(): void {
+    if (!this.business || this.business.role !== 'owner') return;
+    this.includeInactiveSuppliers = !this.includeInactiveSuppliers;
+    void this.loadSuppliers();
+  }
+
+  async toggleSupplierActive(supplier: Supplier): Promise<void> {
+    if (!this.business || this.business.role !== 'owner' || this.suppliersLoading) return;
+    const businessId = this.business.id;
+    this.suppliersLoading = true;
+    this.operationsError = '';
+    try {
+      await this.api.updateSupplier(businessId, supplier.id, { is_active: !supplier.is_active });
+      const items = await this.api.suppliers(businessId, this.supplierSearch, this.includeInactiveSuppliers);
+      if (this.business?.id === businessId) this.suppliers = items;
+    } catch (error) {
+      if (this.business?.id === businessId) this.operationsError = this.message(error);
+    } finally {
+      if (this.business?.id === businessId) this.suppliersLoading = false;
+    }
+  }
+
   searchSuppliers(): void {
     void this.loadSuppliers();
   }
@@ -1883,7 +1907,7 @@ export class AppComponent implements OnInit {
     if (!this.business) return;
     const businessId = this.business.id;
     this.suppliersLoading = true; this.operationsError = '';
-    try { const items = await this.api.suppliers(businessId, this.supplierSearch); if (this.business?.id === businessId) this.suppliers = items; }
+    try { const items = await this.api.suppliers(businessId, this.supplierSearch, this.includeInactiveSuppliers); if (this.business?.id === businessId) this.suppliers = items; }
     catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
     finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
   }
@@ -1918,7 +1942,7 @@ export class AppComponent implements OnInit {
     const businessId = this.business.id; this.suppliersLoading = true; this.operationsError = '';
     try { await this.api.createSupplier(businessId,{name:this.supplierName.trim(),email:this.supplierEmail.trim()||undefined,phone:this.supplierPhone.trim()||undefined,address:this.supplierAddress.trim()||undefined});
       this.supplierName='';this.supplierEmail='';this.supplierPhone='';this.supplierAddress='';
-      const items=await this.api.suppliers(businessId); if(this.business?.id===businessId)this.suppliers=items;
+      const items=await this.api.suppliers(businessId, this.supplierSearch, this.includeInactiveSuppliers); if(this.business?.id===businessId)this.suppliers=items;
     } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.suppliersLoading=false}
   }
   async createPurchaseOrder(): Promise<void> {
