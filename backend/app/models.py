@@ -221,6 +221,8 @@ class Invoice(Base):
         UniqueConstraint("id", "business_id", name="uq_invoices_id_business"),
         CheckConstraint("subtotal >= 0 AND tax_total >= 0 AND discount_total >= 0 AND total >= 0",
                         name="ck_invoice_nonnegative_totals"),
+        CheckConstraint("tax_rate IS NULL OR (tax_rate >= 0 AND tax_rate <= 100)",
+                        name="ck_invoice_tax_rate_range"),
         CheckConstraint("status IN ('draft', 'issued', 'void')", name="ck_invoice_status"),
     )
 
@@ -236,6 +238,7 @@ class Invoice(Base):
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
     tax_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    tax_rate: Mapped[Decimal | None] = mapped_column(Numeric(7, 4), nullable=True)
     discount_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
     notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
@@ -266,6 +269,10 @@ class InvoiceLine(Base):
         CheckConstraint("quantity > 0", name="ck_invoice_line_quantity_positive"),
         CheckConstraint("unit_price >= 0 AND line_total >= 0",
                         name="ck_invoice_line_amounts_nonnegative"),
+        CheckConstraint("taxable_amount IS NULL OR taxable_amount >= 0",
+                        name="ck_invoice_line_taxable_amount_nonnegative"),
+        CheckConstraint("tax_amount IS NULL OR tax_amount >= 0",
+                        name="ck_invoice_line_tax_amount_nonnegative"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -278,6 +285,8 @@ class InvoiceLine(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     line_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    taxable_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tax_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     invoice: Mapped[Invoice] = relationship(back_populates="lines")
 
 
@@ -574,6 +583,7 @@ class SalesReturn(Base):
         UniqueConstraint("id", "business_id", name="uq_sales_returns_id_business"),
         CheckConstraint("status IN ('draft', 'approved', 'rejected')", name="ck_sales_return_status"),
         CheckConstraint("total >= 0", name="ck_sales_return_total_nonnegative"),
+        CheckConstraint("tax_total IS NULL OR tax_total >= 0", name="ck_sales_return_tax_nonnegative"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -584,6 +594,7 @@ class SalesReturn(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
     reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    tax_total: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -604,6 +615,7 @@ class SalesReturnLine(Base):
         ),
         CheckConstraint("quantity > 0", name="ck_sales_return_line_quantity_positive"),
         CheckConstraint("amount >= 0", name="ck_sales_return_line_amount_nonnegative"),
+        CheckConstraint("tax_amount IS NULL OR tax_amount >= 0", name="ck_sales_return_line_tax_nonnegative"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -614,6 +626,7 @@ class SalesReturnLine(Base):
     invoice_line_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    tax_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
 
 class CreditNote(Base):
     """Immutable issued credit note derived from one approved sales return."""
@@ -638,6 +651,9 @@ class CreditNote(Base):
         UniqueConstraint("id", "business_id", name="uq_credit_notes_id_business"),
         UniqueConstraint("business_id", "sales_return_id", name="uq_credit_note_per_return"),
         UniqueConstraint("business_id", "credit_note_number", name="uq_credit_note_number_business"),
+        CheckConstraint("subtotal >= 0", name="ck_credit_note_subtotal_nonnegative"),
+        CheckConstraint("tax_total >= 0", name="ck_credit_note_tax_nonnegative"),
+        CheckConstraint("total = subtotal + tax_total", name="ck_credit_note_total_reconciles"),
         CheckConstraint("total > 0", name="ck_credit_note_total_positive"),
         CheckConstraint("length(currency_code) = 3", name="ck_credit_note_currency_length"),
     )
@@ -651,6 +667,8 @@ class CreditNote(Base):
     customer_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     credit_note_number: Mapped[str] = mapped_column(String(80), nullable=False)
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    tax_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     created_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
