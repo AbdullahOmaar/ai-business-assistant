@@ -852,3 +852,173 @@ def test_employee_profile_normalization_and_duplicate_update_are_atomic(employee
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(Employee)) == 2
 
+
+
+
+# T41 five additional payroll integrity workstreams — 2026-10-30.
+
+def test_payroll_expense_insert_failure_rolls_back_paid_transition(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-12"}
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+    env["subject"]["value"] = APPROVER
+    assert env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={}).status_code == 200
+    env["subject"]["value"] = OWNER
+
+    def fail_expense_insert(mapper, connection, target):
+        raise RuntimeError("injected expense insert failure")
+
+    event.listen(Expense, "before_insert", fail_expense_insert)
+    try:
+        response = TestClient(app, raise_server_exceptions=False).post(
+            f"{base}/payroll/{payroll_id}/pay", json={}
+        )
+    finally:
+        event.remove(Expense, "before_insert", fail_expense_insert)
+
+    assert response.status_code == 500
+    with app.state.session_factory() as session:
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None
+        assert persisted.status == "approved"
+        assert persisted.expense_id is None
+        assert persisted.paid_at is None
+        assert persisted.paid_by_subject is None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        assert set(session.scalars(
+            select(AuditEvent.action).where(AuditEvent.target_type == "payroll")
+        ).all()) == {"payroll.created", "payroll.approved"}
+
+
+def test_paid_payroll_is_immutable_and_payment_replay_has_no_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-12", "allowances": "75.00"},
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+    env["subject"]["value"] = APPROVER
+    assert env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={}).status_code == 200
+    env["subject"]["value"] = OWNER
+    paid = env["client"].post(f"{base}/payroll/{payroll_id}/pay", json={})
+    assert paid.status_code == 200
+    before = paid.json()
+
+    edited = env["client"].patch(
+        f"{base}/payroll/{payroll_id}", json={"allowances": "999.00"}
+    )
+    replayed = env["client"].post(f"{base}/payroll/{payroll_id}/pay", json={})
+    assert edited.status_code == 409
+    assert replayed.status_code == 409
+
+    with app.state.session_factory() as session:
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        expenses = session.scalars(select(Expense)).all()
+        assert persisted is not None
+        assert persisted.status == "paid"
+        assert str(persisted.expense_id) == before["expense_id"]
+        assert persisted.allowances == Decimal(before["allowances"])
+        assert persisted.net_pay == Decimal(before["net_pay"])
+        assert len(expenses) == 1
+        assert expenses[0].id == persisted.expense_id
+        actions = session.scalars(
+            select(AuditEvent.action).where(AuditEvent.target_type == "payroll")
+        ).all()
+        assert len(actions) == 3
+        assert set(actions) == {"payroll.created", "payroll.approved", "payroll.paid"}
+
+
+def test_salary_change_does_not_rewrite_existing_payroll_snapshot(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env, salary="5000.00").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    october = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-10"}
+    )
+    assert october.status_code == 201
+
+    changed = env["client"].patch(
+        f"{base}/employees/{employee['id']}", json={"monthly_salary": "6500.00"}
+    )
+    assert changed.status_code == 200
+    november = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-11"}
+    )
+    assert november.status_code == 201
+
+    assert october.json()["base_salary"] == "5000.00"
+    assert october.json()["net_pay"] == "5000.00"
+    assert november.json()["base_salary"] == "6500.00"
+    assert november.json()["net_pay"] == "6500.00"
+    with app.state.session_factory() as session:
+        old_record = session.get(PayrollRecord, UUID(october.json()["id"]))
+        new_record = session.get(PayrollRecord, UUID(november.json()["id"]))
+        assert old_record is not None and new_record is not None
+        assert old_record.base_salary == Decimal("5000.00")
+        assert new_record.base_salary == Decimal("6500.00")
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+
+
+def test_payroll_listing_does_not_expose_another_business_records(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-12"}
+    )
+    assert created.status_code == 201
+
+    second = env["client"].post(
+        "/api/v1/businesses", json={"name": "Payroll listing isolation", "currency_code": "USD"}
+    )
+    assert second.status_code == 201
+    foreign_base = f"/api/v1/businesses/{second.json()['id']}"
+    own_rows = env["client"].get(f"{base}/payroll")
+    foreign_rows = env["client"].get(f"{foreign_base}/payroll")
+    assert own_rows.status_code == 200
+    assert foreign_rows.status_code == 200
+    assert len(own_rows.json()) == 1
+    assert foreign_rows.json() == []
+
+
+def test_invalid_employee_updates_do_not_change_profile_or_audit(employee_environment):
+    env = employee_environment
+    created = _create_employee(env, name="Stable Employee", salary="5000.00")
+    assert created.status_code == 201
+    employee = created.json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    invalid_updates = [
+        {},
+        {"name": "   "},
+        {"monthly_salary": None},
+        {"is_active": None},
+    ]
+    for payload in invalid_updates:
+        response = env["client"].patch(
+            f"{base}/employees/{employee['id']}", json=payload
+        )
+        assert response.status_code == 422
+
+    current = env["client"].get(f"{base}/employees")
+    assert current.status_code == 200
+    assert len(current.json()) == 1
+    assert current.json()[0]["name"] == "Stable Employee"
+    assert current.json()[0]["monthly_salary"] == "5000.00"
+    assert current.json()[0]["is_active"] is True
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(Employee)) == 1
+        actions = session.scalars(
+            select(AuditEvent.action).where(
+                AuditEvent.business_id == UUID(env["business_id"]),
+                AuditEvent.target_type == "employee",
+            )
+        ).all()
+        assert actions == ["employee.created"]
