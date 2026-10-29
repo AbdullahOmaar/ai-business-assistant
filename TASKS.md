@@ -48,6 +48,21 @@ Scope: remain on the existing branch `feat/t41-salary-history-effective-dates` a
 - **Execution:** NOT RUN in this connector-only pass. Do not mark these tasks VERIFIED COMPLETE until the focused suite runs against the exact current branch head. The payment replay test uses the existing state-machine behavior only; it does not introduce or redefine the T37/T40 shared payment contract.
 - **Delivery:** existing PR #308 remains the sole workstream; no merge or deployment.
 
+## T41 — Five additional feature workstreams (2026-10-30)
+
+Scope: continued on the existing branch and PR #308 only. No merge or deployment.
+
+1. **Employee update validation and no-side-effect guarantees** — regression coverage for empty updates, whitespace-only names, null salary, and null active status; persisted profile and audit count must remain unchanged.
+2. **Employee uniqueness on update** — case-normalized duplicate email/code updates must return 409 without changing either employee or creating update audit events.
+3. **Employee directory pagination** — ordered multi-page coverage plus invalid limit/offset boundary checks.
+4. **Payroll listing and period filtering** — descending period pagination, exact-period filtering, and malformed-period rejection coverage.
+5. **Payroll approval state transition** — repeated approval must return 409 and not alter approval metadata or add another audit event/expense.
+
+- Implementation: test-first API regression additions in `backend/tests/test_employee_payroll_api.py`; no runtime, schema, migration, or financial posting logic changed.
+- Added tests in commit `ecf5fe873ac28a6c4022cb57b25e479d615eba07`.
+- **Execution:** NOT RUN in this connector-only environment; no local repository checkout/runtime was available. These five additions are not VERIFIED COMPLETE until executed.
+- **Delivery:** PR #308 remains the only workstream; do not merge. T37/T40 approval gates remain unchanged.
+
 ## T41 — Follow-up backlog beyond the initial 15 tasks (2026-10-29)
 
 These are newly identified tasks from source/test inspection. They are NOT marked complete and must stay on the existing T41 branch/PR where appropriate, with schema/financial contract changes held behind T37/T40 approval.
