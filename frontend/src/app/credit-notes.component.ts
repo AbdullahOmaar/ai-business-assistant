@@ -471,7 +471,10 @@ export class CreditNotesComponent implements OnChanges {
       if (requestedBusinessId !== this.businessId) return;
       this.refundAmountByNote[note.id] = '';
       this.refundReferenceByNote[note.id] = '';
+      delete this.refundsByNote[note.id];
+      delete this.refundHistoryHasMore[note.id];
       await this.refresh();
+      if (this.refundHistoryExpanded[note.id]) await this.loadRefundHistory(note, true);
       this.message = this.language === 'ar'
         ? 'تم تسجيل رد النقد كعملية مستقلة. لم يتم تغيير إجمالي الفاتورة الأصلية أو تسجيل خصم مديونية إضافي.'
         : 'Cash refund recorded separately. The invoice was not edited and no extra receivable credit was posted.';
