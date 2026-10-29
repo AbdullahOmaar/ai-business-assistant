@@ -124,6 +124,11 @@ type ReturnDraftLine = { invoiceLineId: string; description: string; invoicedQua
           {{ loadingMoreNotes ? (language === 'ar' ? 'جارٍ تحميل المزيد…' : 'Loading more…') : (language === 'ar' ? 'تحميل المزيد من الإشعارات' : 'Load more credit notes') }}
         </button>
       }
+      @if (notesHasMore) {
+        <button type="button" (click)="loadMoreCreditNotes()" [disabled]="loading || notesLoadingMore">
+          {{ notesLoadingMore ? (language === 'ar' ? 'جارٍ تحميل المزيد…' : 'Loading more…') : (language === 'ar' ? 'تحميل المزيد من الإشعارات' : 'Load more credit notes') }}
+        </button>
+      }
       <p class="footnote">{{ language === 'ar' ? 'إصدار الإشعار موقوف للفواتير ذات الضريبة حتى دعم توزيع الضريبة على بنود المرتجع. لا يتم تسجيل رد نقدي أو خصم رصيد العميل تلقائيًا.' : 'Issuance is blocked for tax-bearing invoices until tax can be allocated to return lines. No cash refund or customer-balance credit is recorded automatically.' }}</p>
     </section>
   `,
@@ -160,7 +165,11 @@ export class CreditNotesComponent implements OnChanges {
   customers: Customer[] = [];
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
+  notesHasMore = false;
+  notesLoadingMore = false;
   selectedCustomerId = '';
+  private readonly notesPageSize = 100;
+  private notesPaginationSequence = 0;
   notesHasMore = false;
   loadingMoreNotes = false;
   invoiceDetail: InvoiceDetail | null = null;
@@ -191,6 +200,9 @@ export class CreditNotesComponent implements OnChanges {
       this.customers = [];
       this.returns = [];
       this.notes = [];
+      this.notesHasMore = false;
+      this.notesLoadingMore = false;
+      this.notesPaginationSequence++;
       this.applicationInvoiceByNote = {};
       this.applicationAmountByNote = {};
       this.applyingNoteId = null;
@@ -210,6 +222,7 @@ export class CreditNotesComponent implements OnChanges {
     if (!this.businessId) return;
     const requestId = ++this.refreshSequence;
     const requestedBusinessId = this.businessId;
+    const requestedCustomerId = this.selectedCustomerId;
     this.loading = true;
     this.loadingMoreNotes = false;
     this.error = '';
@@ -217,24 +230,26 @@ export class CreditNotesComponent implements OnChanges {
       const [returnsPage, notesPage, invoices, customers] = await Promise.all([
         this.api.salesReturns(requestedBusinessId, { limit: 100, offset: 0 }),
         this.api.creditNotes(requestedBusinessId, {
-          limit: 100, offset: 0,
-          customer_id: this.selectedCustomerId || undefined,
+          limit: this.notesPageSize, offset: 0,
+          customer_id: requestedCustomerId || undefined,
         }),
         this.api.invoices(requestedBusinessId),
         this.api.customers(requestedBusinessId),
       ]);
       // Ignore responses for an older refresh or a workspace the user has left.
-      if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId) return;
+      if (requestId !== this.refreshSequence || requestedBusinessId !== this.businessId || requestedCustomerId !== this.selectedCustomerId) return;
       this.returns = returnsPage.items;
       this.notes = notesPage.items;
+      this.notesHasMore = notesPage.items.length === this.notesPageSize;
       this.notesHasMore = notesPage.items.length === 100;
       this.invoices = invoices.filter(invoice => invoice.status === 'issued');
       this.customers = customers;
       this.message = '';
     } catch {
-      if (requestId === this.refreshSequence && requestedBusinessId === this.businessId) {
+      if (requestId === this.refreshSequence && requestedBusinessId === this.businessId && requestedCustomerId === this.selectedCustomerId) {
         // Never show a previous customer's result as if it matched the newly selected filter.
         this.notes = [];
+        this.notesHasMore = false;
         this.notesHasMore = false;
         this.error = this.language === 'ar' ? 'تعذر تحميل الفواتير والمرتجعات. تحقق من الصلاحيات والاتصال ثم أعد المحاولة.' : 'Could not load invoices and returns. Check access and connectivity, then retry.';
       }
@@ -244,7 +259,40 @@ export class CreditNotesComponent implements OnChanges {
   }
 
   onCustomerFilterChanged(): void {
+    this.notes = [];
+    this.notesHasMore = false;
+    this.notesPaginationSequence++;
     void this.refresh();
+  }
+
+  async loadMoreCreditNotes(): Promise<void> {
+    if (!this.businessId || this.loading || this.notesLoadingMore || !this.notesHasMore) return;
+    const sequence = ++this.notesPaginationSequence;
+    const requestedBusinessId = this.businessId;
+    const requestedCustomerId = this.selectedCustomerId;
+    const offset = this.notes.length;
+    this.notesLoadingMore = true;
+    try {
+      const page = await this.api.creditNotes(requestedBusinessId, {
+        limit: this.notesPageSize,
+        offset,
+        customer_id: requestedCustomerId || undefined,
+      });
+      if (sequence !== this.notesPaginationSequence
+        || requestedBusinessId !== this.businessId
+        || requestedCustomerId !== this.selectedCustomerId) return;
+      const existingIds = new Set(this.notes.map(note => note.id));
+      this.notes = [...this.notes, ...page.items.filter(note => !existingIds.has(note.id))];
+      this.notesHasMore = page.items.length === this.notesPageSize;
+    } catch {
+      if (sequence === this.notesPaginationSequence
+        && requestedBusinessId === this.businessId
+        && requestedCustomerId === this.selectedCustomerId) {
+        this.error = this.language === 'ar' ? 'تعذر تحميل المزيد من الإشعارات الدائنة.' : 'Could not load more credit notes.';
+      }
+    } finally {
+      if (sequence === this.notesPaginationSequence) this.notesLoadingMore = false;
+    }
   }
 
   customerName(customerId: string): string {
