@@ -26,21 +26,21 @@ Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-not
 - Use Decimal arithmetic and explicit rounding; never trust client-supplied totals or statuses.
 - Preserve original invoice and payment history. Corrections use compensating records, never destructive edits.
 - Approval/issue/refund operations must be atomic, replay-safe, and audited. Failed or replayed requests must not duplicate stock, receivable credit, or cash-out.
-- The implementation now has migrations `0006_credit_notes` and `0007_credit_applications`, relationship/uniqueness constraints, OWNER-only issuance/application endpoints, paginated reads, applied/remaining credit totals, customer-statement credit-application events, and a bilingual Angular workflow for return drafts, owner approval, credit-note issuance, customer filtering/pagination, and applying credit to a same-customer/same-currency receivable. Remaining: cash-refund records, line-level tax allocation/reversal, P&L/tax report integration, and exact-head validation.
+- The implementation now has migrations `0006_credit_notes` and `0007_credit_applications`, relationship/uniqueness constraints, OWNER-only issuance/application endpoints, paginated reads, applied/remaining credit totals, customer-statement credit-application events, and invoice-list/receivables-aging balances that subtract valid applied credits. The bilingual Angular workflow supports return drafts, owner approval, credit-note issuance, customer filtering/pagination, and applying credit to a same-customer/same-currency receivable. Remaining: cash-refund records, line-level tax allocation/reversal, P&L/tax report integration, and exact-head validation.
 - Added `backend/tests/test_credit_note_regressions.py` coverage for credit-note issuance/replay, original invoice immutability, unapproved-return rejection, tax guard/no side effects, OWNER-only denial, cross-business isolation, business-scoped listing/customer filtering, credit application replay, credit and receivable ceilings, customer matching, staff denial, and application listing. The idempotency key is rechecked after acquiring the credit-note lock. Tests are authored but **NOT RUN** on the current head; they do not constitute a passing test result.
 - Do not expose “refund complete” until a persisted cash-out record is committed. A credit note alone does not prove cash was returned.
-- Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active. The focused credit-note regression tests have been added to source but still require execution.
+- Latest focused backend/frontend regression additions cover credit application idempotency, amount/customer/currency/tenant authorization, invoice outstanding limits, applied-credit statement and aging behavior, and UI retry/pagination guards. These latest tests/build/browser checks are **NOT RUN** while the user-requested runner-limit pause remains active. Older sandbox results do not verify the current head.
 
 ## Implementation progress
 
 - Added `CreditNote` schema and migration `0006_credit_notes`.
 - Added OWNER-only `POST /api/v1/businesses/{business_id}/sales-returns/{return_id}/credit-note`. It accepts no client-supplied amount/currency/customer, requires an approved return and issued invoice with a linked customer, rejects zero-value returns, uses a deterministic credit-note number, records the actor and an audit event, and re-checks after locking the return so concurrent retries do not create a second note.
 - Database uniqueness prevents more than one credit note per sales return and duplicate credit-note numbers within a business.
-- This endpoint only issues the credit note; it does not yet apply credit to receivables or assert that cash was refunded.
+- Credit application is now a separate OWNER-only, idempotent, audited ledger operation. It reduces the eligible invoice receivable without mutating the invoice total; it does not assert that cash was refunded.
 
 ## Safe implementation order
 
-A. Credit-note and credit-application schemas/migrations are implemented (`0006`, `0007`). Next: add an immutable cash-refund ledger with relationship and idempotency constraints; do not equate credit application with cash returned.
+A. Credit-note and credit-application schemas/migrations are implemented (`0006`, `0007`). Next: add an immutable cash-refund ledger with relationship, amount-ceiling, and idempotency constraints; do not equate credit application with cash returned.
 B. Add transactional OWNER-only service operations and append-only audit events.
 C. Add read/list endpoints and a UI that distinguishes draft return, approved return, issued credit, applied credit, and refunded cash.
 D. Integrate customer statement and reports only after the ledger semantics are represented explicitly.
