@@ -1252,7 +1252,7 @@ def export_csv(business_id: UUID, entity_type: str,
                     elif isinstance(value, Decimal):
                         value = format(value, "f")
                     text_value = "" if value is None else str(value)
-                    if text_value.startswith(("=", "+", "-", "@", "\\t", "\\r")):
+                    if text_value.startswith(("=", "+", "-", "@", "\t", "\r")):
                         text_value = "'" + text_value
                     safe_values.append(text_value)
                 writer.writerow(safe_values)
