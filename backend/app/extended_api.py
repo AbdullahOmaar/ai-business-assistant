@@ -1007,6 +1007,7 @@ def create_cash_refund(
     """Record an explicit cash outflow; this is separate from applying credit to receivables."""
     def op():
         _authorized(session, principal, business_id, owner_only=True)
+        clean_reference = body.reference.strip() if body.reference and body.reference.strip() else None
         replay = session.scalars(select(CashRefund).where(
             CashRefund.business_id == business_id,
             CashRefund.idempotency_key == body.idempotency_key,
@@ -1017,7 +1018,7 @@ def create_cash_refund(
                 or replay.payment_id != body.payment_id
                 or Decimal(str(replay.amount)) != money(body.amount)
                 or replay.method != body.method
-                or replay.reference != (body.reference.strip() if body.reference else None)
+                or replay.reference != clean_reference
             ):
                 raise HTTPException(status_code=409, detail="Idempotency key was already used for a different cash refund")
             return replay
@@ -1153,7 +1154,7 @@ def create_cash_refund(
             payment_id=body.payment_id,
             amount=amount,
             method=body.method,
-            reference=body.reference.strip() if body.reference and body.reference.strip() else None,
+            reference=clean_reference,
             idempotency_key=body.idempotency_key,
             refunded_by_subject=principal.subject,
         )
