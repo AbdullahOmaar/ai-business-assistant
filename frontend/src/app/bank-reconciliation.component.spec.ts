@@ -16,7 +16,7 @@ test('bank reconciliation UI is bilingual and only exposes owner mutations', () 
 test('CSV import uses the tenant-scoped bank account endpoint', () => {
   assert.match(component, /this\.api\.importBankStatement\(this\.businessId/);
   assert.match(api, /\/bank-accounts\/\$\{encodeURIComponent\(accountId\)\}\/statement-import/);
-  assert.match(api, /transaction_id/);
+  assert.match(component, /transaction_id,transaction_date,description,amount,currency_code/);
 });
 
 test('matching only links existing payment or expense records', () => {
