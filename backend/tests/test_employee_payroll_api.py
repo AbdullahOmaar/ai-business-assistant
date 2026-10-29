@@ -424,6 +424,66 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
 
+def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    invalid_create_payloads = [
+        {"period": "2026-11", "allowances": "1.001"},
+        {"period": "2026-11", "bonuses": "1000000000000.00"},
+        {"period": "2026-11", "net_pay": "1.00"},
+    ]
+
+    for payload in invalid_create_payloads:
+        response = env["client"].post(
+            f"{base}/employees/{employee['id']}/payroll",
+            json=payload,
+        )
+        assert response.status_code == 422, (
+            f"Invalid payroll payload {payload} was not rejected: "
+            f"{response.status_code} {response.text}"
+        )
+
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11", "allowances": "10.00"},
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+    before = created.json()
+
+    invalid_update_payloads = [
+        {"allowances": "1.001"},
+        {"deductions": "1000000000000.00"},
+        {"net_pay": "1.00"},
+    ]
+    for payload in invalid_update_payloads:
+        response = env["client"].patch(f"{base}/payroll/{payroll_id}", json=payload)
+        assert response.status_code == 422, (
+            f"Invalid payroll update {payload} was not rejected: "
+            f"{response.status_code} {response.text}"
+        )
+
+    with app.state.session_factory() as session:
+        records = session.scalars(select(PayrollRecord)).all()
+        assert len(records) == 1
+        persisted = records[0]
+        assert str(persisted.id) == payroll_id
+        assert persisted.allowances == Decimal(before["allowances"])
+        assert persisted.bonuses == Decimal(before["bonuses"])
+        assert persisted.deductions == Decimal(before["deductions"])
+        assert persisted.net_pay == Decimal(before["net_pay"])
+        assert persisted.status == "draft"
+        assert persisted.expense_id is None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        actions = session.scalars(
+            select(AuditEvent.action)
+            .where(AuditEvent.target_type == "payroll")
+            .order_by(AuditEvent.created_at, AuditEvent.action)
+        ).all()
+        assert actions == ["payroll.created"]
+
+
 def test_invalid_payroll_components_and_period_have_no_side_effects(employee_environment):
     env = employee_environment
     employee = _create_employee(env).json()
