@@ -84,3 +84,20 @@ test('credit-note listing supports guarded offset pagination without duplicate r
   assert.match(component, /requestedCustomerId !== this\.selectedCustomerId/);
   assert.match(component, /\(click\)="loadMoreCreditNotes\(\)"/);
 });
+
+
+test('credit application retries reuse the same idempotency key for the exact payload', () => {
+  assert.match(component, /private applicationIdempotencyKeys: Record<string, string>/);
+  assert.match(component, /const requestKey = `\$\{note\.id\}\|\$\{invoiceId\}\|\$\{amount\}`/);
+  assert.match(component, /this\.applicationIdempotencyKeys\[requestKey\] \?\?/);
+  assert.match(component, /delete this\.applicationIdempotencyKeys\[requestKey\]/);
+  assert.match(component, /this\.api\.applyCreditNote\(this\.businessId/);
+  assert.match(component, /@if \(role === 'owner' && remainingCredit\(note\) > 0\)/);
+});
+
+test('credit application UI constrains amount to remaining credit and invoice receivable', () => {
+  assert.match(component, /Math\.min\(this\.remainingCredit\(note\), Number\(invoice\.outstanding_amount \?\? 0\)\)/);
+  assert.match(component, /invoice\.customer_id === note\.customer_id/);
+  assert.match(component, /invoice\.currency_code\.trim\(\)\.toUpperCase\(\) === note\.currency_code\.trim\(\)\.toUpperCase\(\)/);
+  assert.match(component, /amount <= this\.maxApplyAmount\(note\)/);
+});
