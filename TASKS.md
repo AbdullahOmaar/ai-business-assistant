@@ -1620,3 +1620,19 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 5. **Acceptance/docs/release evidence:** acceptance matrix now includes T39-25 and T39-26; this queue and Notion checkpoint record changes and validation limits.
 
 **Validation:** Tests, build, security, migration checks and CI are **NOT RUN** per owner instruction because the current usage-limit blocker remains. Code changes are not runtime-verified. Existing CI failures remain unresolved. PR #306 is still the only candidate; do not merge until exact-head required checks pass and the T37/T38/T40 contract gate is approved.
+
+
+## T39 five-feature tranche — 2026-10-29
+
+Five major feature tasks were selected and implemented sequentially on the existing T39 branch. This is feature work only; tests and CI were intentionally not run due to the current usage-limit blocker.
+
+1. **Draft purchase-order editing:** added `PUT /api/v1/businesses/{business_id}/purchase-orders/{order_id}`. Only draft orders are editable. The handler locks the tenant-scoped order and lines, validates active same-business supplier/product references before replacing lines, recalculates total from submitted quantity × unit cost, resets line received quantities to zero (the draft-only guard means no receipt should exist), and records `purchase_order.updated` audit activity.
+2. **Approval-time revalidation:** approval now locks and revalidates the active supplier and all active stock-tracked products in the same business. A draft whose references became inactive after creation cannot move to approved.
+3. **Receipt history:** added paginated `GET /purchase-orders/{order_id}/receipts`, returning the append-only receipt stock ledger joined to tenant-matched product labels with stable chronological ordering. The endpoint first verifies that the order belongs to the requested business.
+4. **Purchasing summary:** added `GET /purchase-orders/summary`, grouped by lifecycle status and currency. It deliberately never combines totals from different currencies.
+5. **Purchase-order activity timeline:** added paginated `GET /purchase-orders/{order_id}/activity` backed by scoped audit events, returning action, summary and timestamp in chronological order after confirming order ownership by business.
+
+- Acceptance matrix extended with T39-27 through T39-31 in `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
+- No schema migrations, supplier payable/payment posting, stock valuation/COGS, supplier-return accounting, or expense/cash-flow semantics were added.
+- **Validation: NOT RUN** — backend tests, frontend checks, build, security/dependency audit, migration checks and CI were not executed per instruction while the usage-limit blocker remains. Do not claim runtime correctness until validation can run.
+- PR #306 remains Draft/Open. Do not merge until exact-head checks pass and the T37/T38/T40 shared-contract gates are approved.
