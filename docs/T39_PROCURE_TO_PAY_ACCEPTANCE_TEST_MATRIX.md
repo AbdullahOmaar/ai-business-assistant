@@ -170,3 +170,9 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added a supplier-name search form with Search and Show all actions in the Supplier Directory UI.
 - `ApiService.suppliers` now passes an optional trimmed `name` query parameter to the existing business-scoped API. The server retains case-insensitive matching, pagination and active-only default behavior.
 - No test/build was run per instruction; source inspection only and runtime verification pending.
+
+
+## T39 supplier search workspace reset — 2026-10-29
+
+- Supplier search text and the CSV-export loading flag are cleared when workspace-scoped UI state is reset. This prevents a prior business's search term from unexpectedly filtering another business's directory.
+- Tests/build were not run; source inspection only.
