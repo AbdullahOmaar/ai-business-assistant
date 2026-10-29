@@ -1,12 +1,12 @@
 # Credit notes, refunds, and customer returns — lifecycle contract
 
-Status: design contract for Feature 31. This document does not claim that credit notes or refunds are implemented.
+Status: PARTIALLY COMPLETE for Feature 31. The first slice implements immutable credit-note issuance from an approved sales return; credit application, cash refunds, report/statement integration, and frontend workflow are not implemented yet.
 
 ## Existing behavior confirmed in source
 
 - SalesReturn and SalesReturnLine represent a return request and its invoice-line quantities/amounts.
 - Draft return creation checks the original issued invoice and calculates a discounted line amount. Approval is OWNER-only, locks the return and invoice, serializes competing approvals by locking the invoice, checks cumulative returned quantities/amounts, and writes stock-return movements for tracked products.
-- An approved return is **not** currently a receivable credit or a cash refund. Customer statements and reports explicitly disclose this gap.
+- An approved return is **not** automatically a receivable credit or a cash refund. The current branch adds issuance of an immutable credit-note record, but that note is not yet applied to receivables or cash. Customer statements and reports must continue disclosing this gap.
 - Issued invoice totals are historical records and must not be edited to simulate a credit note.
 - Payment allocations are separate records and are currency/customer constrained. Unallocating a payment is not the same as refunding cash.
 
@@ -30,9 +30,16 @@ Status: design contract for Feature 31. This document does not claim that credit
 - Do not expose “refund complete” until a persisted cash-out record is committed. A credit note alone does not prove cash was returned.
 - Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active.
 
+## Implementation progress
+
+- Added `CreditNote` schema and migration `0006_credit_notes`.
+- Added OWNER-only `POST /api/v1/businesses/{business_id}/sales-returns/{return_id}/credit-note`. It accepts no client-supplied amount/currency/customer, requires an approved return and issued invoice with a linked customer, rejects zero-value returns, uses a deterministic credit-note number, records the actor and an audit event, and re-checks after locking the return so concurrent retries do not create a second note.
+- Database uniqueness prevents more than one credit note per sales return and duplicate credit-note numbers within a business.
+- This endpoint only issues the credit note; it does not yet apply credit to receivables or assert that cash was refunded.
+
 ## Safe implementation order
 
-A. Add schema and migration for immutable credit notes, credit applications, and refund records with unique idempotency/relationship constraints.
+A. Add schema and migration for immutable credit notes, credit applications, and refund records with unique idempotency/relationship constraints. (Credit-note table and issuance are the first slice; application/refund tables remain.)
 B. Add transactional OWNER-only service operations and append-only audit events.
 C. Add read/list endpoints and a UI that distinguishes draft return, approved return, issued credit, applied credit, and refunded cash.
 D. Integrate customer statement and reports only after the ledger semantics are represented explicitly.
