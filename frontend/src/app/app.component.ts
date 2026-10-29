@@ -223,6 +223,22 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 @if (tab === 'purchases') {
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('أوامر الشراء', 'Purchase orders') }}</h2><p>{{ t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') }}</p></div><span class="count">{{ purchaseOrders.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportPurchaseOrdersCsv()" [disabled]="csvExporting">{{ csvExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <form class="inline-form" (ngSubmit)="searchPurchaseOrders()">
+                  <select name="purchaseOrderStatusFilter" [attr.aria-label]="t('حالة أمر الشراء', 'Purchase order status')" [(ngModel)]="purchaseOrderStatusFilter">
+                    <option value="">{{ t('كل الحالات', 'All statuses') }}</option>
+                    <option value="draft">{{ t('مسودة', 'Draft') }}</option>
+                    <option value="approved">{{ t('معتمد', 'Approved') }}</option>
+                    <option value="partially_received">{{ t('مستلم جزئيًا', 'Partially received') }}</option>
+                    <option value="received">{{ t('مستلم بالكامل', 'Received') }}</option>
+                    <option value="cancelled">{{ t('ملغي', 'Cancelled') }}</option>
+                  </select>
+                  <select name="purchaseOrderSupplierFilter" [attr.aria-label]="t('تصفية حسب المورد', 'Filter by supplier')" [(ngModel)]="purchaseOrderSupplierFilter">
+                    <option value="">{{ t('كل الموردين', 'All suppliers') }}</option>
+                    @for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }
+                  </select>
+                  <button class="secondary" type="submit" [disabled]="purchasesLoading">{{ t('تصفية', 'Filter') }}</button>
+                  <button class="secondary" type="button" (click)="clearPurchaseOrderFilters()" [disabled]="purchasesLoading">{{ t('مسح', 'Clear') }}</button>
+                </form>
                 <form class="stack" (ngSubmit)="createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input name="purchaseOrderNumber" required maxlength="64" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select name="purchaseSupplierId" required [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -1003,6 +1019,8 @@ export class AppComponent implements OnInit {
   supplierPhone = '';
   supplierAddress = '';
   supplierSearch = '';
+  purchaseOrderStatusFilter = '';
+  purchaseOrderSupplierFilter = '';
   purchaseOrderNumber = '';
   purchaseSupplierId = '';
   purchaseProductId = '';
@@ -1408,6 +1426,8 @@ export class AppComponent implements OnInit {
     this.notificationTitle = '';
     this.notificationBody = '';
     this.supplierName = '';
+    this.purchaseOrderStatusFilter = '';
+    this.purchaseOrderSupplierFilter = '';
     this.purchaseOrderNumber = '';
     this.purchaseSupplierId = '';
     this.purchaseProductId = '';
@@ -1867,11 +1887,21 @@ export class AppComponent implements OnInit {
     catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
     finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
   }
+  searchPurchaseOrders(): void {
+    void this.loadPurchaseOrders();
+  }
+
+  clearPurchaseOrderFilters(): void {
+    this.purchaseOrderStatusFilter = '';
+    this.purchaseOrderSupplierFilter = '';
+    void this.loadPurchaseOrders();
+  }
+
   private async loadPurchaseOrders(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
     this.purchasesLoading = true; this.operationsError = '';
-    try { const items = await this.api.purchaseOrders(businessId); if (this.business?.id === businessId) this.purchaseOrders = items; }
+    try { const items = await this.api.purchaseOrders(businessId, { status: this.purchaseOrderStatusFilter || undefined, supplier_id: this.purchaseOrderSupplierFilter || undefined }); if (this.business?.id === businessId) this.purchaseOrders = items; }
     catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
     finally { if (this.business?.id === businessId) this.purchasesLoading = false; }
   }
@@ -1898,7 +1928,7 @@ export class AppComponent implements OnInit {
     const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
     try { await this.api.createPurchaseOrder(businessId,{supplier_id:this.purchaseSupplierId,order_number:this.purchaseOrderNumber.trim(),currency_code:this.business.currency_code,lines:[{product_id:this.purchaseProductId,quantity:this.purchaseQuantity,unit_cost:this.purchaseUnitCost}]});
       this.purchaseOrderNumber='';this.purchaseQuantity='1';this.purchaseUnitCost='0';
-      const items=await this.api.purchaseOrders(businessId);if(this.business?.id===businessId)this.purchaseOrders=items;
+      const items=await this.api.purchaseOrders(businessId, { status: this.purchaseOrderStatusFilter || undefined, supplier_id: this.purchaseOrderSupplierFilter || undefined });if(this.business?.id===businessId)this.purchaseOrders=items;
     } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
   }
   hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
@@ -1909,7 +1939,7 @@ export class AppComponent implements OnInit {
     const lines=order.lines.filter(line=>this.hasRemainingQuantity(line)).map(line=>({line_id:line.id,quantity:line.remaining_quantity}));
     if(!lines.length)return;
     const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
-    try { await this.api.receivePurchaseOrder(businessId,order.id,lines); const [orders,products,dashboard]=await Promise.all([this.api.purchaseOrders(businessId),this.api.products(businessId),this.api.dashboard(businessId)]);if(this.business?.id===businessId){this.purchaseOrders=orders;this.products=products;this.dashboard=dashboard;} }
+    try { await this.api.receivePurchaseOrder(businessId,order.id,lines); const [orders,products,dashboard]=await Promise.all([this.api.purchaseOrders(businessId, { status: this.purchaseOrderStatusFilter || undefined, supplier_id: this.purchaseOrderSupplierFilter || undefined }),this.api.products(businessId),this.api.dashboard(businessId)]);if(this.business?.id===businessId){this.purchaseOrders=orders;this.products=products;this.dashboard=dashboard;} }
     catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
   }
   async createRecurringSchedule(): Promise<void> {
