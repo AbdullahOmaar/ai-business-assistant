@@ -1226,23 +1226,24 @@ def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_sid
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("route-matrix-outsider")
         base = f"/api/v1/businesses/{business_id}"
         requests = [
-            ("GET operations health", client.get(f"{base}/operations/health")),
-            ("GET tax summary", client.get(f"{base}/reports/tax-summary")),
-            ("POST purchase-order approval", client.post(f"{base}/purchase-orders/{order_id}/approve")),
+            ("GET operations health", lambda: client.get(f"{base}/operations/health")),
+            ("GET tax summary", lambda: client.get(f"{base}/reports/tax-summary")),
+            ("POST purchase-order approval", lambda: client.post(f"{base}/purchase-orders/{order_id}/approve")),
             (
                 "POST CSV preview",
-                client.post(
+                lambda: client.post(
                     f"{base}/imports/customers.csv/preview",
                     content="name\\nOutside Customer\\n",
                     headers={"content-type": "text/csv"},
                 ),
             ),
-            ("GET receivables aging", client.get(f"{base}/reports/receivables-aging")),
-            ("GET customer statement", client.get(f"{base}/customers/{customer_id}/statement")),
-            ("GET audit events", client.get(f"{base}/audit-events")),
-            ("GET data integrity report", client.get(f"{base}/reports/data-integrity")),
+            ("GET receivables aging", lambda: client.get(f"{base}/reports/receivables-aging")),
+            ("GET customer statement", lambda: client.get(f"{base}/customers/{customer_id}/statement")),
+            ("GET audit events", lambda: client.get(f"{base}/audit-events")),
+            ("GET data integrity report", lambda: client.get(f"{base}/reports/data-integrity")),
         ]
-        for label, response in requests:
+        for label, request in requests:
+            response = request()
             assert response.status_code == 403, (
                 f"{label} expected HTTP 403; got {response.status_code}: {response.text}"
             )
