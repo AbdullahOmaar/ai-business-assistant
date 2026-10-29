@@ -1265,15 +1265,52 @@ def list_payments(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
 
 
 @router.get("/expenses")
-def list_expenses(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
-                  offset: int = Query(default=0, ge=0),
-                  session: Session = Depends(get_session),
-                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+def list_expenses(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
     try:
         _authorized(session, principal, business_id)
-        items = session.scalars(select(Expense).where(
-            Expense.business_id == business_id
-        ).order_by(Expense.incurred_at.desc()).offset(offset).limit(limit)).all()
+        if start_date and end_date and start_date > end_date:
+            raise HTTPException(
+                status_code=422,
+                detail="start_date must not be after end_date",
+            )
+
+        statement = select(Expense).where(Expense.business_id == business_id)
+        if start_date or end_date:
+            business = session.scalars(select(Business).where(
+                Business.id == business_id, Business.is_active.is_(True),
+            )).one_or_none()
+            if business is None:
+                raise HTTPException(status_code=404, detail="Business not found")
+            try:
+                business_zone = ZoneInfo(business.timezone.strip())
+            except (ZoneInfoNotFoundError, ValueError) as exc:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Business timezone must be a valid IANA timezone.",
+                ) from exc
+            if start_date:
+                start_bound = datetime.combine(
+                    start_date, datetime.min.time(), tzinfo=business_zone,
+                ).astimezone(timezone.utc)
+                statement = statement.where(Expense.incurred_at >= start_bound)
+            if end_date:
+                end_bound = datetime.combine(
+                    end_date + timedelta(days=1), datetime.min.time(),
+                    tzinfo=business_zone,
+                ).astimezone(timezone.utc)
+                statement = statement.where(Expense.incurred_at < end_bound)
+
+        items = session.scalars(
+            statement.order_by(Expense.incurred_at.desc()).offset(offset).limit(limit)
+        ).all()
         return [_dict(x, ("id", "category", "description", "amount", "currency_code",
                           "incurred_at", "vendor_name", "reference", "created_at")) for x in items]
     except AuthorizationError as exc:
