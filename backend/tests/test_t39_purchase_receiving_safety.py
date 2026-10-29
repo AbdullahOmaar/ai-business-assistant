@@ -11,7 +11,6 @@ from app.models import (
     Business,
     BusinessMembership,
     MembershipRole,
-    Product,
     PurchaseOrder,
     PurchaseOrderLine,
     StockMovement,
