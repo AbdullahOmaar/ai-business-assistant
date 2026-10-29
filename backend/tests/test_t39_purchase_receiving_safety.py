@@ -403,3 +403,57 @@ def test_foreign_business_product_is_rejected_without_receipt_side_effects(purch
                 AuditEvent.business_id == business_id
             )
         ) == audit_count_before
+
+
+@pytest.mark.parametrize(
+    "invalid_quantity",
+    [
+        Decimal("NaN"),
+        Decimal("Infinity"),
+        Decimal("-Infinity"),
+        Decimal("0"),
+        Decimal("-1"),
+    ],
+)
+def test_non_finite_or_non_positive_receipt_quantity_is_rejected_without_side_effects(
+    purchasing_workspace, invalid_quantity
+):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, _ = _approved_order(session, business_id, principal)
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+
+        with pytest.raises(
+            WorkflowError,
+            match="Received quantity must be finite, positive",
+        ):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={line.id: invalid_quantity},
+            )
+
+        session.expire_all()
+        assert session.get(PurchaseOrder, order.id).status == "approved"
+        assert session.get(PurchaseOrderLine, line.id).received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
