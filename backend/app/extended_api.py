@@ -880,9 +880,19 @@ def apply_credit_note(business_id: UUID, body: CreditApplicationInput,
             raise WorkflowError("Credit application exceeds the remaining credit note balance")
 
         paid_to_invoice = Decimal(str(session.scalar(
-            select(func.coalesce(func.sum(PaymentAllocation.amount), 0)).where(
+            select(func.coalesce(func.sum(PaymentAllocation.amount), 0))
+            .select_from(PaymentAllocation)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
+            )
+            .where(
                 PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
                 PaymentAllocation.invoice_id == invoice.id,
+                func.upper(func.trim(Payment.currency_code))
+                == func.upper(func.trim(invoice.currency_code)),
             )
         ) or ZERO))
         applied_to_invoice = Decimal(str(session.scalar(
@@ -1600,7 +1610,24 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
         ).order_by(Invoice.created_at.desc()).offset(offset).limit(limit)).all()
         allocation_rows = session.execute(
             select(PaymentAllocation.invoice_id, func.coalesce(func.sum(PaymentAllocation.amount), 0))
-            .where(PaymentAllocation.business_id == business_id)
+            .select_from(PaymentAllocation)
+            .join(
+                Payment,
+                (Payment.id == PaymentAllocation.payment_id)
+                & (Payment.business_id == PaymentAllocation.business_id),
+            )
+            .join(
+                Invoice,
+                (Invoice.id == PaymentAllocation.invoice_id)
+                & (Invoice.business_id == PaymentAllocation.business_id),
+            )
+            .where(
+                PaymentAllocation.business_id == business_id,
+                Payment.business_id == business_id,
+                Invoice.business_id == business_id,
+                func.upper(func.trim(Payment.currency_code))
+                == func.upper(func.trim(Invoice.currency_code)),
+            )
             .group_by(PaymentAllocation.invoice_id)
         ).all()
         allocated_by_invoice = {
@@ -1928,7 +1955,7 @@ def customer_statement(
                     continue
                 if to_date is not None and occurred_date > to_date:
                     continue
-                same_currency = payment.currency_code == invoice.currency_code
+                same_currency = payment.currency_code.strip().upper() == invoice.currency_code.strip().upper()
                 events.append({
                     "occurred_at": occurred_at,
                     "event_type": "payment_allocation" if same_currency else "currency_mismatch_allocation",
