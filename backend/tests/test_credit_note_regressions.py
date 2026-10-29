@@ -145,25 +145,63 @@ def test_credit_note_requires_approved_return_and_leaves_no_note_on_rejection(cr
         )) == 0
 
 
-def test_credit_note_tax_guard_rejects_without_note_or_audit(credit_note_workspace):
+def test_credit_note_tax_allocation_reconciles_and_preserves_original_invoice(credit_note_workspace):
     engine, business_id = credit_note_workspace
     principal = AuthenticatedPrincipal(subject="credit-owner")
     with Session(engine) as session:
         invoice, ret = _issued_invoice_and_return(
             session, business_id, principal, taxable=True,
         )
+        original_invoice_total = Decimal(str(invoice.total))
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        assert Decimal(note["subtotal"]) == Decimal("10.00")
+        assert Decimal(note["tax_total"]) == Decimal("1.00")
+        assert Decimal(note["total"]) == Decimal("11.00")
+        assert Decimal(str(ret.tax_total)) == Decimal("1.00")
+        assert Decimal(str(ret.total)) == Decimal("11.00")
+        assert Decimal(str(session.get(Invoice, invoice.id).total)) == original_invoice_total
+        assert session.scalar(select(func.count()).select_from(CreditNote).where(
+            CreditNote.business_id == business_id,
+        )) == 1
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "credit_note.issued",
+        )) == 1
+
+
+def test_legacy_tax_invoice_without_line_snapshots_remains_blocked(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(
+            session, business_id, principal, taxable=True,
+        )
+        invoice.tax_rate = None
+        for line in session.scalars(select(InvoiceLine).where(
+            InvoiceLine.business_id == business_id,
+            InvoiceLine.invoice_id == invoice.id,
+        )).all():
+            line.taxable_amount = None
+            line.tax_amount = None
+        ret.tax_total = None
+        ret.total = Decimal("10.00")
+        for line in session.scalars(select(SalesReturnLine).where(
+            SalesReturnLine.business_id == business_id,
+            SalesReturnLine.sales_return_id == ret.id,
+        )).all():
+            line.tax_amount = None
+        session.commit()
         with pytest.raises(HTTPException) as error:
             issue_credit_note_for_return(
                 business_id=business_id, return_id=ret.id,
                 session=session, principal=principal,
             )
-        assert "tax" in str(error.value.detail).lower()
+        assert "tax snapshots" in str(error.value.detail).lower()
         assert session.scalar(select(func.count()).select_from(CreditNote).where(
             CreditNote.business_id == business_id,
-        )) == 0
-        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
-            AuditEvent.business_id == business_id,
-            AuditEvent.action == "credit_note.issued",
         )) == 0
 
 
