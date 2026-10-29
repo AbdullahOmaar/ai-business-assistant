@@ -2,7 +2,7 @@
 
 ## T41 — Employees & Payroll regression checkpoint (2026-10-29)
 
-- **Status:** PARTIALLY COMPLETE — added four focused API regressions across the current branch; execution of the new tests is NOT RUN until exact-head CI/local runner evidence is available.
+- **Status:** PARTIALLY COMPLETE — added five focused API regressions across the current branch; execution of the new tests is NOT RUN until exact-head CI/local runner evidence is available.
 - **Branch / HEAD:** `feat/t41-salary-history-effective-dates` / `bb23839d093fd4d013b488b6f4b416beaf30e3e8`.
 - **PR:** [#308 — draft, open, not merged](https://github.com/AbdullahOmaar/ai-business-assistant/pull/308).
 - **Current diff scope:** test-only additions in `backend/tests/test_employee_payroll_api.py`, the existing gap audit in `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md`, and this task checkpoint in `TASKS.md`; refresh commit counts and exact HEAD from live PR metadata after this checkpoint lands.
@@ -10,6 +10,7 @@
 - **Additional regression added (commit `f6dc3b8acdac96f9b8cef611044df37e2e87c48b`):** `active_only=true` excludes deactivated employees while the unfiltered OWNER listing retains both active and inactive employees.
 - **Additional regression added (commit `1c34563edf28d1952ff8165bbfd7f280526d02de`):** duplicate payroll creation for the same employee/period must return 409 without changing the original record, adding an expense, or emitting a second payroll audit event.
 - **Additional regression added (commit `629df2e6c3b095024e149a7c6e5c9646a125282b`):** negative allowance/bonus/deduction values and invalid periods (`2026-13`, `2026-1`) must return 422 without payroll/expense/audit side effects. This is API-boundary test coverage only; execution remains NOT RUN pending exact-head CI.
+- **Additional regression added (commit `719961d4fef7e2e10da0d65ea641ea095bad7a84`):** payroll create/update rejects excess decimal precision, over-limit amounts, and client-supplied `net_pay`; persisted draft amounts/status/expense link and audit events remain unchanged. Test-only coverage; execution remains NOT RUN pending exact-head CI.
 - **Quality:** local pytest, migration upgrade/downgrade, frontend tests/build, and local security checks are **NOT RUN** in this connector-only session. Exact-head CircleCI reports six failed contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke). CircleCI job detail retrieval now confirms all six jobs were blocked before starting because the plan has no credits available (`free-plan-no-credits-available`); no executor ran and no test metadata was produced. This is a CI quota/infrastructure blocker, not evidence of a code failure or a passing test. GitHub Actions log retrieval on prior runs also returned `BlobNotFound`. The earlier docs-only SHA's green checks do not validate this commit.
 - **Delivery:** PR #308 remains draft/open; no merge or deployment performed.
 - **Dependencies:** effective-dated salary history, payroll snapshots and shared financial posting/lifecycle remain gated by Master-approved T37/T40 contracts and permissions.
@@ -26,7 +27,8 @@ These are newly identified tasks from source/test inspection. They are NOT marke
 19. **Payroll edit boundary matrix:** cover negative, excess precision, over-limit decimals, unknown fields, and invalid draft-only edits with unchanged persisted rows/audit state.
 20. **Payroll audit/privacy review:** confirm salary, email, phone, and sensitive payslip values are not copied into generic audit text, logs, AI context, or STAFF-accessible reports; add denial/no-leak regressions where gaps are found.
 
-- **Current state:** tasks 16–20 are identified only; NOT STARTED / NOT RUN. Do not add new CI infrastructure or bypass existing CircleCI gates. Any concurrency claim requires a real PostgreSQL run, not SQLite-only tests.
+- **Task 19 progress:** added `test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects` to cover excessive decimal precision, over-limit values, forbidden client `net_pay`, and no persisted/audit/expense side effects. Test is committed but NOT RUN; the broader matrix (including concurrency and draft-state edits) remains open.
+- **Current state:** tasks 16–18 and 20 are identified only; NOT STARTED / NOT RUN. Task 19 is PARTIALLY COMPLETE (test added, execution NOT RUN). Do not add new CI infrastructure or bypass existing CircleCI gates. Any concurrency claim requires a real PostgreSQL run, not SQLite-only tests.
 
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
