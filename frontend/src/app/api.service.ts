@@ -18,6 +18,11 @@ export interface InvoiceDetail extends Invoice {
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
 export interface PaymentAllocation { invoice_id: string; amount: string; }
+export interface CreditNote {
+  id: string; business_id: string; sales_return_id: string; invoice_id: string; customer_id: string;
+  credit_note_number: string; currency_code: string; total: string; created_by_subject: string; created_at: string;
+}
+export interface CreditNotePage { items: CreditNote[]; limit: number; offset: number; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
 export interface EmployeeRecord {
@@ -535,6 +540,19 @@ export class ApiService {
   invoiceDetail(businessId: string, invoiceId: string): Promise<InvoiceDetail> {
     return this.request<InvoiceDetail>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`
+    );
+  }
+  creditNotes(businessId: string, filters: { limit?: number; offset?: number; customer_id?: string } = {}): Promise<CreditNotePage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== '') params.set(key, String(value));
+    }
+    const query = params.toString();
+    return this.request<CreditNotePage>(`/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes${query ? '?' + query : ''}`);
+  }
+  issueCreditNoteForReturn(businessId: string, returnId: string): Promise<CreditNote> {
+    return this.request<CreditNote>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/credit-note`, 'POST', {}
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
