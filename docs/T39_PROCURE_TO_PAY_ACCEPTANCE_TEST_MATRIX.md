@@ -52,7 +52,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-22 | Member opens a purchase-order detail view | Tenant-scoped supplier/product labels and ordered/received/remaining quantities are returned; foreign order or supplier/product references are not exposed | Contract-independent read model |
 | T39-23 | Member lists purchase orders filtered by status and/or supplier with pagination | Existing list response remains backward compatible; filters compose with tenant scope and stable ordering; invalid lifecycle filter is rejected | Contract-independent query behavior |
 | T39-24 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
-| T39-25 | Member searches suppliers by partial name, including owner-only inactive listing | Search is case-insensitive, remains tenant-scoped and paginated; inactive records are included only when explicitly requested by an owner | Contract-independent directory behavior |
+| T39-25 | Member searches suppliers by partial name in the Suppliers UI, including owner-only inactive listing | UI submits the search to the API; results are case-insensitive, tenant-scoped and paginated; inactive records are included only when explicitly requested by an owner | Contract-independent directory behavior |
 | T39-26 | Create a purchase order with whitespace-only number, non-ASCII currency code, or foreign/inactive/non-stock-tracked product | Request is rejected before order/line/audit writes; valid multi-line orders resolve products in a tenant-scoped batch query | Contract-independent input and tenant safety |
 | T39-27 | OWNER/STAFF edits a draft PO; edits an approved/received/cancelled PO; supplies foreign/inactive supplier or product | Only draft PO can be replaced; validation occurs before writes; total is recalculated from submitted lines; one audit event is recorded | Draft lifecycle and tenant-integrity invariant |
 | T39-28 | OWNER approves a draft after its supplier or product was deactivated | Approval rejects stale inactive supplier/product references; status remains draft and no approval audit event is written | Lifecycle revalidation invariant |
@@ -163,3 +163,10 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added OWNER-only CSV download actions to the Supplier Directory and Purchase Orders section headers. The shared handler prevents overlapping exports, reports API errors through the existing operations error region, and ignores a response if the user has switched workspaces while it was pending.
 - Backend authorization remains authoritative; hiding the buttons for STAFF is a UI affordance, not a security boundary.
 - Frontend build/tests were not run per owner instruction. Source inspection only; runtime verification pending.
+
+
+## T39 supplier search UI integration — 2026-10-29
+
+- Added a supplier-name search form with Search and Show all actions in the Supplier Directory UI.
+- `ApiService.suppliers` now passes an optional trimmed `name` query parameter to the existing business-scoped API. The server retains case-insensitive matching, pagination and active-only default behavior.
+- No test/build was run per instruction; source inspection only and runtime verification pending.
