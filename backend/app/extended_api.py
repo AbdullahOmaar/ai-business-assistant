@@ -539,6 +539,89 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                       "currency_code", "total", "created_at"))
 
 
+@router.put("/purchase-orders/{order_id}")
+def update_purchase_order(business_id: UUID, order_id: UUID, body: PurchaseOrderInput,
+                          session: Session = Depends(get_session),
+                          principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Replace a draft PO's supplier, number, currency and lines; never edit after approval/receipt."""
+    def op():
+        _authorized(session, principal, business_id)
+        po = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if po is None:
+            raise WorkflowError("Purchase order not found in this business")
+        if po.status != "draft":
+            raise WorkflowError("Only draft purchase orders can be edited")
+
+        supplier = session.scalars(select(Supplier).where(
+            Supplier.id == body.supplier_id,
+            Supplier.business_id == business_id,
+            Supplier.is_active.is_(True),
+        )).one_or_none()
+        if supplier is None:
+            raise WorkflowError("Active supplier not found in this business")
+        order_number = body.order_number.strip()
+        if not order_number:
+            raise WorkflowError("Purchase order number is required")
+        currency = body.currency_code.strip().upper()
+        if len(currency) != 3 or not currency.isascii() or not currency.isalpha():
+            raise WorkflowError("Currency must be a three-letter ASCII code")
+
+        product_ids = {line.product_id for line in body.lines}
+        products = {
+            product.id: product
+            for product in session.scalars(select(Product).where(
+                Product.id.in_(product_ids),
+                Product.business_id == business_id,
+                Product.is_active.is_(True),
+                Product.is_stock_tracked.is_(True),
+            )).all()
+        } if product_ids else {}
+        if len(products) != len(product_ids):
+            raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
+
+        # Validate the complete replacement before mutating the existing draft.
+        lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == po.id,
+            PurchaseOrderLine.business_id == business_id,
+        ).with_for_update()).all()
+        if any(line.received_quantity != ZERO for line in lines):
+            raise WorkflowError("A purchase order with received quantities cannot be edited")
+
+        total = sum((money(line.quantity * line.unit_cost) for line in body.lines), ZERO)
+        po.supplier_id = supplier.id
+        po.order_number = order_number
+        po.currency_code = currency
+        po.total = total
+        for line in lines:
+            session.delete(line)
+        session.flush()
+        for line in body.lines:
+            session.add(PurchaseOrderLine(
+                business_id=business_id,
+                purchase_order_id=po.id,
+                product_id=products[line.product_id].id,
+                quantity=line.quantity,
+                unit_cost=line.unit_cost,
+                received_quantity=ZERO,
+            ))
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="purchase_order.updated",
+            target_type="purchase_order",
+            target_id=str(po.id),
+            change_summary=f"Updated draft order {po.order_number}",
+        ))
+        session.flush()
+        return po
+    po = _commit(session, op)
+    return _dict(po, ("id", "business_id", "supplier_id", "order_number", "status",
+                      "currency_code", "total", "created_at"))
+
+
 @router.get("/purchase-orders/{order_id}")
 def get_purchase_order(business_id: UUID, order_id: UUID,
                       session: Session = Depends(get_session),
