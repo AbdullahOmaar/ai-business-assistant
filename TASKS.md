@@ -1662,3 +1662,11 @@ Five major feature tasks were selected and implemented sequentially on the exist
 - Reuses the existing tenant-scoped generic export path and CSV formula-injection escaping; no migration or mutation was added.
 - Added acceptance scenario T39-34 to `docs/T39_PROCURE_TO_PAY_ACCEPTANCE_TEST_MATRIX.md`.
 - Tests/build/security/CI: **NOT RUN** as requested while the usage-limit issue remains. Runtime verification pending; PR #306 remains Draft/Open.
+
+## T39 duplicate order-number API regression — 2026-10-29
+
+- Added `backend/tests/test_api.py::test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit`.
+- Same-business duplicate creation/edit should fail before order/line/audit mutations; another business may use the same identifier. Existing database unique constraint remains the concurrency backstop.
+- Acceptance matrix uses **T39-34** for this regression because concurrent feature work already assigned T39-33 to purchase-order CSV export.
+- Test/build/security/migration/CI checks remain **NOT RUN** per user instruction; runtime verification is pending.
+
