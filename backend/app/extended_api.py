@@ -518,6 +518,43 @@ def approve_purchase_order(business_id: UUID, order_id: UUID,
                       "currency_code", "total", "created_at"))
 
 
+@router.post("/purchase-orders/{order_id}/cancel")
+def cancel_purchase_order(business_id: UUID, order_id: UUID,
+                          session: Session = Depends(get_session),
+                          principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Cancel an unreceived draft/approved PO; received stock is never reversed here."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        po = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if po is None:
+            raise WorkflowError("Purchase order not found in this business")
+        if po.status not in {"draft", "approved"}:
+            raise WorkflowError("Only draft or approved purchase orders can be cancelled")
+        lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == po.id,
+            PurchaseOrderLine.business_id == business_id,
+        ).with_for_update()).all()
+        if any(line.received_quantity != ZERO for line in lines):
+            raise WorkflowError("A purchase order with received quantities cannot be cancelled")
+        po.status = "cancelled"
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="purchase_order.cancelled",
+            target_type="purchase_order",
+            target_id=str(po.id),
+            change_summary=f"Cancelled unreceived order {po.order_number}",
+        ))
+        session.flush()
+        return po
+    po = _commit(session, op)
+    return _dict(po, ("id", "business_id", "supplier_id", "order_number", "status",
+                      "currency_code", "total", "created_at"))
+
+
 @router.post("/purchase-orders/{order_id}/receive")
 def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurchaseInput,
                            session: Session = Depends(get_session),
