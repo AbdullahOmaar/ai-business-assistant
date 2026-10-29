@@ -14,7 +14,10 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
+from fastapi.testclient import TestClient
+
+from app.main import app
 
 from app.models import (
     AuditEvent,
@@ -22,9 +25,12 @@ from app.models import (
     Business,
     BusinessMembership,
     Customer,
+    Employee,
+    Expense,
     Invoice,
     InvoiceLine,
     MembershipRole,
+    PayrollRecord,
     Payment,
     PaymentAllocation,
     Product,
@@ -484,3 +490,81 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             "only the winning lifecycle transition may append an audit event"
         )
         assert lifecycle_events[0].action == expected_audit_action
+
+
+def test_concurrent_payroll_creation_for_same_employee_period_commits_once(
+    postgres_engine, pg_workspace, monkeypatch,
+):
+    """Real PostgreSQL row locking + unique constraint must allow one payroll only."""
+    business_id = pg_workspace["business_id"]
+    principal = pg_workspace["principal"]
+    with Session(postgres_engine) as session:
+        employee = Employee(
+            business_id=business_id,
+            employee_code="PAYROLL-RACE",
+            name="Concurrent payroll employee",
+            monthly_salary=Decimal("4200.00"),
+            is_active=True,
+        )
+        session.add(employee)
+        session.commit()
+        employee_id = employee.id
+
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    monkeypatch.setattr(
+        app.state, "session_factory",
+        sessionmaker(bind=postgres_engine, expire_on_commit=False),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        app.state, "principal_resolver",
+        lambda request: principal,
+        raising=False,
+    )
+    barrier = Barrier(2)
+    base = f"/api/v1/businesses/{business_id}"
+
+    def create(_index):
+        client = TestClient(app)
+        barrier.wait(timeout=15)
+        response = client.post(
+            f"{base}/employees/{employee_id}/payroll",
+            json={"period": "2026-12", "allowances": "125.00"},
+        )
+        return response.status_code, response.json()
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(create, range(2)))
+
+        assert sorted(status for status, _ in results) == [201, 409], results
+        with Session(postgres_engine) as session:
+            records = session.scalars(select(PayrollRecord).where(
+                PayrollRecord.business_id == business_id,
+                PayrollRecord.employee_id == employee_id,
+                PayrollRecord.period == "2026-12",
+            )).all()
+            assert len(records) == 1
+            assert records[0].status == "draft"
+            assert records[0].net_pay == Decimal("4325.00")
+            assert session.scalar(select(func.count()).select_from(Expense).where(
+                Expense.business_id == business_id,
+            )) == 0
+            actions = session.scalars(select(AuditEvent.action).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.target_type == "payroll",
+                AuditEvent.target_id == str(records[0].id),
+            )).all()
+            assert actions == ["payroll.created"]
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
