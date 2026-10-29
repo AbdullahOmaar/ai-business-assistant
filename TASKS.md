@@ -1561,7 +1561,7 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Superseded duplicate:** The earlier cross-business payment allocation test duplicated `backend/tests/test_foreign_business_workflows.py::test_owner_cannot_mutate_foreign_business_financial_and_stock_ids`, already present on main and covering 422 + no protected-row/payment/allocation/audit side effects. Removed from the branch in favor of the uncovered API idempotency-replay case.
 - **Current test:** `backend/tests/test_api.py::test_payment_api_rejects_idempotency_key_reuse_with_changed_payload_without_writes`.
 - **Coverage:** Record a valid payment, replay the same business-scoped idempotency key with changed amount/allocation, require HTTP 422 with the different-details error, and verify the original Payment and PaymentAllocation remain unchanged, no duplicate rows appear, and the business AuditEvent count does not increase.
-- **Current test-file commit:** `3e538af73bb0b8d2b00f388cdde2989af5997846`. Ledger/PR evidence to be updated after the next commit.
+- **Current test-file commit:** `3e538af73bb0b8d2b00f388cdde2989af5997846`. This is a historical checkpoint; the subsequent five-feature package and PR evidence are documented in the T38 section at the end of this file.
 - **Validation:** Exact-head CI for the replacement test is **NOT RUN / pending recheck** at this checkpoint. Local pytest/build/security are **NOT RUN** because no authorized local repo runtime is connected.
 - **Dependency:** T37 shared contract remains unapproved; no shared schema or financial mutation interfaces changed. No merge/deployment.
 
@@ -1570,7 +1570,7 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - **Status:** PARTIALLY COMPLETE — five coordinated user-facing feature slices have been implemented in the existing T38 branch; automated verification is intentionally NOT RUN at the user's direction while the CI/usage-limit blocker remains unresolved.
 - **Branch:** `test/t38-cross-tenant-payment-allocation-20261029`
-- **Latest observed commit:** `3552011cc3ca5039a79c585a38915b4da6b1c089`
+- **Feature code commit covered by this ledger entry:** `3552011cc3ca5039a79c585a38915b4da6b1c089`
 - **PR:** [#305](https://github.com/AbdullahOmaar/ai-business-assistant/pull/305), OPEN / DRAFT / UNMERGED.
 - **Feature 1 — invoice print breakdown:** print / Save as PDF displays subtotal, discount, tax, and final total in Arabic RTL and English LTR. Source commit: `add0fb1aebca7b032a323fdf0662d5c647ed496e`.
 - **Feature 2 — manual invoice/service lines:** invoice draft editor accepts catalog products and manual lines with description, unit price, and quantity; client preview supports both, saved drafts load manual lines back for editing, and product-line descriptions are preserved. API client contract updated to match the already-existing backend line schema. Source commits: `771af35f96497cf02bfa4ffc3aa0bb4cf05e98d6`, `08511ee88e2050b78cdaa3519927591f21f1a05d`; user guide updated at `7bf26d3b5a8fa3c14d715afa608256c5a554b4fa`.
@@ -1581,4 +1581,4 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Validation:** Tests, lint/type checks, Angular build, backend build, dependency/security checks, and hosted workflow reruns are **NOT RUN** in this feature pass, per instruction to pause tests while the usage/CI limit issue is unresolved. Source files were re-fetched from the branch and checked for the new code paths/old single-invoice state references; this source review is not a substitute for compilation or automated checks.
 - **Financial guard:** T37 shared financial contract remains unapproved. No refunds, credit notes, shared schema/mutation interfaces, migrations, or accounting postings were changed. Currency conversion is not introduced.
 - **Delivery:** no merge, deployment, or production data change was authorized or performed. Do not merge until automated checks pass on the exact PR head and all required approvals/release gates are satisfied.
-- **Next action:** when the CI/usage limit is resolved, run frontend tests/build and relevant backend payment/invoice regressions against exact head `3552011cc3ca5039a79c585a38915b4da6b1c089`; fix verified failures and recheck the full diff before review/merge.
+- **Next action:** when the CI/usage limit is resolved, re-fetch the current PR head, then run frontend tests/build and relevant backend payment/invoice regressions on that exact SHA; fix verified failures and recheck the full diff before review/merge.
