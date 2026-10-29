@@ -50,7 +50,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-20 | Receipt quantity is NaN, positive/negative infinity, zero, or negative | Reject before arithmetic/write; order, received quantities, stock ledger and audit remain unchanged | Contract-independent numeric input invariant |
 | T39-21 | OWNER or STAFF reads/updates a supplier profile, clears optional contact fields, or deactivates a supplier | Tenant-scoped response; blank name/empty patch rejected; audit event written; deactivated supplier cannot be selected for new POs but historical orders remain readable | Contract-independent supplier directory lifecycle |
 | T39-22 | Member opens a purchase-order detail view | Tenant-scoped supplier/product labels and ordered/received/remaining quantities are returned; foreign order or supplier/product references are not exposed | Contract-independent read model |
-| T39-23 | Member lists purchase orders filtered by status and/or supplier with pagination | Existing list response remains backward compatible; filters compose with tenant scope and stable ordering; invalid lifecycle filter is rejected | Contract-independent query behavior |
+| T39-23 | Member filters purchase orders by status and/or supplier in the Purchasing UI | UI filters call the API; filters compose with tenant scope and stable ordering; clear restores all orders; invalid lifecycle filter is rejected | Contract-independent query behavior |
 | T39-24 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
 | T39-25 | Member searches suppliers by partial name in the Suppliers UI, including owner-only inactive listing | UI submits the search to the API; results are case-insensitive, tenant-scoped and paginated; inactive records are included only when explicitly requested by an owner | Contract-independent directory behavior |
 | T39-26 | Create a purchase order with whitespace-only number, non-ASCII currency code, or foreign/inactive/non-stock-tracked product | Request is rejected before order/line/audit writes; valid multi-line orders resolve products in a tenant-scoped batch query | Contract-independent input and tenant safety |
@@ -176,3 +176,10 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 
 - Supplier search text and the CSV-export loading flag are cleared when workspace-scoped UI state is reset. This prevents a prior business's search term from unexpectedly filtering another business's directory.
 - Tests/build were not run; source inspection only.
+
+
+## T39 purchase-order filter UI integration — 2026-10-29
+
+- Added status and supplier filters to the Purchasing UI, with Filter and Clear actions.
+- `ApiService.purchaseOrders` now serializes optional status/supplier filters. Initial load and post-create/receive refreshes preserve active filter selections; workspace reset clears them.
+- Backend remains responsible for validating status values and applying tenant-scoped query predicates. Tests/build were not run per owner instruction.
