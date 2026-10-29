@@ -615,6 +615,49 @@ class SalesReturnLine(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
 
+class CreditNote(Base):
+    """Immutable issued credit note derived from one approved sales return."""
+
+    __tablename__ = "credit_notes"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["sales_return_id", "business_id"],
+            ["sales_returns.id", "sales_returns.business_id"],
+            name="fk_credit_notes_return_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["invoice_id", "business_id"],
+            ["invoices.id", "invoices.business_id"],
+            name="fk_credit_notes_invoice_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["customer_id", "business_id"],
+            ["customers.id", "customers.business_id"],
+            name="fk_credit_notes_customer_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("id", "business_id", name="uq_credit_notes_id_business"),
+        UniqueConstraint("business_id", "sales_return_id", name="uq_credit_note_per_return"),
+        UniqueConstraint("business_id", "credit_note_number", name="uq_credit_note_number_business"),
+        CheckConstraint("total > 0", name="ck_credit_note_total_positive"),
+        CheckConstraint("length(currency_code) = 3", name="ck_credit_note_currency_length"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    sales_return_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    invoice_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    customer_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    credit_note_number: Mapped[str] = mapped_column(String(80), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    created_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class PlatformRoleGrant(Base):
     """A delegated platform role assigned by a bootstrap super administrator.
 
