@@ -1571,13 +1571,26 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
             invoice_id: Decimal(str(amount or ZERO))
             for invoice_id, amount in allocation_rows
         }
+        credit_rows = session.execute(
+            select(CreditApplication.invoice_id, func.coalesce(func.sum(CreditApplication.amount), 0))
+            .where(CreditApplication.business_id == business_id)
+            .group_by(CreditApplication.invoice_id)
+        ).all()
+        credits_by_invoice = {
+            invoice_id: Decimal(str(amount or ZERO))
+            for invoice_id, amount in credit_rows
+        }
         result = []
         for invoice in items:
             row = _dict(invoice, ("id", "invoice_number", "customer_id", "status", "currency_code",
                                   "subtotal", "discount_total", "tax_total", "total", "issue_date", "created_at"))
             allocated = allocated_by_invoice.get(invoice.id, ZERO)
-            outstanding = max(ZERO, Decimal(str(invoice.total)) - allocated) if invoice.status == "issued" else ZERO
+            applied_credits = credits_by_invoice.get(invoice.id, ZERO)
+            outstanding = max(
+                ZERO, Decimal(str(invoice.total)) - allocated - applied_credits
+            ) if invoice.status == "issued" else ZERO
             row["allocated_payments"] = str(allocated)
+            row["applied_credits"] = str(applied_credits)
             row["outstanding_amount"] = str(outstanding)
             result.append(row)
         return result
@@ -1644,12 +1657,23 @@ def receivables_aging(
                     payment_currency, ZERO
                 ) + amount
 
+        credit_rows = session.execute(
+            select(CreditApplication.invoice_id, func.coalesce(func.sum(CreditApplication.amount), 0))
+            .where(CreditApplication.business_id == business_id)
+            .group_by(CreditApplication.invoice_id)
+        ).all()
+        credits_by_invoice = {
+            invoice_id: Decimal(str(amount or ZERO))
+            for invoice_id, amount in credit_rows
+        }
+
         bucket_totals: dict[str, dict[str, Decimal]] = {}
         invoice_rows = []
         data_quality_warnings = []
         for invoice in invoices:
             total = Decimal(str(invoice.total or ZERO))
             paid = allocated_by_invoice.get(invoice.id, ZERO)
+            applied_credits = credits_by_invoice.get(invoice.id, ZERO)
             mismatched = mismatched_by_invoice.get(invoice.id, {})
             if mismatched:
                 mismatch_details = "; ".join(
@@ -1664,15 +1688,20 @@ def receivables_aging(
                     "mismatched_allocations_amount": mismatch_details,
                 })
 
-            outstanding, overallocated = _receivable_outstanding(total, paid)
-            if overallocated:
+            outstanding = total - paid - applied_credits
+            if outstanding < ZERO:
                 data_quality_warnings.append({
                     "invoice_id": str(invoice.id),
                     "invoice_number": invoice.invoice_number,
-                    "type": "allocations_exceed_invoice_total",
+                    "type": (
+                        "allocations_exceed_invoice_total"
+                        if paid > total
+                        else "credits_and_payments_exceed_invoice_total"
+                    ),
                     "invoice_currency": invoice.currency_code,
                     "invoice_total": str(total),
                     "allocated_payments": str(paid),
+                    "applied_credits": str(applied_credits),
                     "excess_allocated": str(abs(outstanding)),
                 })
                 # A credit/excess allocation is a data-quality issue, not a negative
@@ -1697,6 +1726,7 @@ def receivables_aging(
                 "due_date": due_day.isoformat() if due_day else None,
                 "invoice_total": str(total),
                 "allocated_payments": str(paid),
+                "applied_credits": str(applied_credits),
                 "outstanding_amount": str(outstanding),
                 "aging_bucket": bucket,
                 "days_overdue": days_overdue,
@@ -1719,7 +1749,7 @@ def receivables_aging(
             })
         return {
             "as_of_date": report_date.isoformat(),
-            "source": "issued invoices minus matching-currency payment allocations",
+            "source": "issued invoices minus matching-currency payment allocations and applied credit notes",
             "currency_policy": (
                 "Payment allocations reduce an invoice only when their currency matches; "
                 "different currencies are never combined."
@@ -1734,7 +1764,8 @@ def receivables_aging(
                 "Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.",
                 "Invoices without due dates are reported separately and are not assumed current.",
                 "Legacy invoices without customer links are flagged for review, not auto-corrected.",
-                "Currency-mismatched allocations are listed as warnings and never reduce receivables.",
+                "Currency-mismatched payment allocations are listed as warnings and never reduce receivables.",
+                "Applied credit notes reduce receivables; they are not cash refunds.",
                 "This is an accounts-receivable aging report, not net profit or a full general ledger.",
             ],
         }
@@ -1799,11 +1830,7 @@ def customer_statement(
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
-    """Return a currency-separated customer statement from issued invoices and payment allocations.
-
-    Credit notes are not represented by a dedicated ledger model yet, so this endpoint
-    explicitly reports that limitation rather than treating sales returns as cash credits.
-    """
+    """Return a currency-separated customer statement with invoice, payment and applied-credit events."""
     try:
         _authorized(session, principal, business_id)
         if from_date is not None and to_date is not None and from_date > to_date:
@@ -1878,6 +1905,48 @@ def customer_statement(
                     "affects_balance": same_currency,
                 })
 
+        if invoice_ids:
+            credit_rows = session.execute(
+                select(CreditApplication, CreditNote, Invoice)
+                .join(
+                    CreditNote,
+                    (CreditNote.id == CreditApplication.credit_note_id)
+                    & (CreditNote.business_id == CreditApplication.business_id),
+                )
+                .join(
+                    Invoice,
+                    (Invoice.id == CreditApplication.invoice_id)
+                    & (Invoice.business_id == CreditApplication.business_id),
+                )
+                .where(
+                    CreditApplication.business_id == business_id,
+                    CreditNote.business_id == business_id,
+                    Invoice.business_id == business_id,
+                    Invoice.customer_id == customer_id,
+                    CreditApplication.invoice_id.in_(invoice_ids),
+                )
+            ).all()
+            for application, note, invoice in credit_rows:
+                occurred_at = application.created_at
+                if occurred_at is None:
+                    continue
+                occurred_date = occurred_at.date()
+                if from_date is not None and occurred_date < from_date:
+                    continue
+                if to_date is not None and occurred_date > to_date:
+                    continue
+                events.append({
+                    "occurred_at": occurred_at,
+                    "event_type": "credit_application",
+                    "source_id": str(application.id),
+                    "reference": note.credit_note_number,
+                    "invoice_id": str(invoice.id),
+                    "currency_code": invoice.currency_code,
+                    "debit": ZERO,
+                    "credit": application.amount,
+                    "affects_balance": True,
+                })
+
         events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
         running: dict[str, Decimal] = {}
         for event in events:
@@ -1899,10 +1968,10 @@ def customer_statement(
             "offset": offset,
             "balances_by_currency": {currency: str(balance) for currency, balance in running.items()},
             "limitations": [
-                "Credit notes are not implemented in the current data model and are excluded.",
-                "Approved sales returns are not treated as receivable credits until a credit-note ledger exists.",
+                "An issued credit note reduces receivables only when an explicit credit application is recorded.",
+                "A credit application is not a cash refund; cash refunds remain a separate unimplemented workflow.",
                 "Allocations with a currency mismatch are shown but do not change the running balance.",
-                "Balances represent issued invoices less matching-currency allocations, not a double-entry general ledger.",
+                "Balances represent issued invoices less matching-currency payments and applied credits, not a double-entry general ledger.",
             ],
         }
     except AuthorizationError as exc:
