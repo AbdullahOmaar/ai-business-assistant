@@ -492,25 +492,40 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
         )).one_or_none()
         if supplier is None:
             raise WorkflowError("Active supplier not found in this business")
-        currency = body.currency_code.upper()
-        if len(currency) != 3 or not currency.isalpha():
-            raise WorkflowError("Currency must be a three-letter code")
+        order_number = body.order_number.strip()
+        if not order_number:
+            raise WorkflowError("Purchase order number is required")
+        currency = body.currency_code.strip().upper()
+        if len(currency) != 3 or not currency.isascii() or not currency.isalpha():
+            raise WorkflowError("Currency must be a three-letter ASCII code")
+
+        product_ids = {line.product_id for line in body.lines}
+        products = {
+            product.id: product
+            for product in session.scalars(select(Product).where(
+                Product.id.in_(product_ids),
+                Product.business_id == business_id,
+                Product.is_active.is_(True),
+                Product.is_stock_tracked.is_(True),
+            )).all()
+        } if product_ids else {}
+        if len(products) != len(product_ids):
+            raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
+
+        # Validate all supplier/product references before staging any order or line writes.
         po = PurchaseOrder(business_id=business_id, supplier_id=supplier.id,
-                           order_number=body.order_number.strip(), status="draft",
+                           order_number=order_number, status="draft",
                            currency_code=currency, total=ZERO)
         total = ZERO
+        for line in body.lines:
+            total += money(line.quantity * line.unit_cost)
+        po.total = total
         session.add(po)
         session.flush()
         for line in body.lines:
-            product = session.scalars(select(Product).where(
-                Product.id == line.product_id, Product.business_id == business_id,
-                Product.is_active.is_(True), Product.is_stock_tracked.is_(True),
-            )).one_or_none()
-            if product is None:
-                raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
-            total += money(line.quantity * line.unit_cost)
             session.add(PurchaseOrderLine(
-                business_id=business_id, purchase_order_id=po.id, product_id=product.id,
+                business_id=business_id, purchase_order_id=po.id,
+                product_id=products[line.product_id].id,
                 quantity=line.quantity, unit_cost=line.unit_cost, received_quantity=ZERO,
             ))
         po.total = total
