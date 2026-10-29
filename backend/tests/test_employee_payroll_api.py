@@ -980,13 +980,27 @@ def test_payroll_listing_does_not_expose_another_business_records(employee_envir
         "/api/v1/businesses", json={"name": "Payroll listing isolation", "currency_code": "USD"}
     )
     assert second.status_code == 201
-    foreign_base = f"/api/v1/businesses/{second.json()['id']}"
+    foreign_business_id = second.json()["id"]
+    foreign_base = f"/api/v1/businesses/{foreign_business_id}"
+    foreign_employee = _create_employee(
+        env, name="Foreign Payroll Employee", code="EMP-FOREIGN",
+        email="foreign-payroll@example.test",
+    )
+    assert foreign_employee.status_code == 201
+    foreign_created = env["client"].post(
+        f"{foreign_base}/employees/{foreign_employee.json()['id']}/payroll",
+        json={"period": "2026-12"},
+    )
+    assert foreign_created.status_code == 201
+
     own_rows = env["client"].get(f"{base}/payroll")
     foreign_rows = env["client"].get(f"{foreign_base}/payroll")
     assert own_rows.status_code == 200
     assert foreign_rows.status_code == 200
-    assert len(own_rows.json()) == 1
-    assert foreign_rows.json() == []
+    assert [row["id"] for row in own_rows.json()] == [created.json()["id"]]
+    assert [row["id"] for row in foreign_rows.json()] == [foreign_created.json()["id"]]
+    assert all(row["business_id"] == env["business_id"] for row in own_rows.json())
+    assert all(row["business_id"] == foreign_business_id for row in foreign_rows.json())
 
 
 def test_invalid_employee_updates_do_not_change_profile_or_audit(employee_environment):
@@ -1014,6 +1028,11 @@ def test_invalid_employee_updates_do_not_change_profile_or_audit(employee_enviro
     assert current.json()[0]["monthly_salary"] == "5000.00"
     assert current.json()[0]["is_active"] is True
     with app.state.session_factory() as session:
+        persisted = session.get(Employee, UUID(employee["id"]))
+        assert persisted is not None
+        assert persisted.name == "Stable Employee"
+        assert persisted.monthly_salary == Decimal("5000.00")
+        assert persisted.is_active is True
         assert session.scalar(select(func.count()).select_from(Employee)) == 1
         actions = session.scalars(
             select(AuditEvent.action).where(
