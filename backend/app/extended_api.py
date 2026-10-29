@@ -1210,6 +1210,53 @@ def export_csv(business_id: UUID, entity_type: str,
             "products": ("products", ("id", "sku", "name", "unit", "unit_price", "is_stock_tracked", "created_at")),
             "expenses": ("expenses", ("id", "category", "description", "amount", "currency_code", "incurred_at", "vendor_name", "reference")),
         }
+        if entity_type == "purchase_orders":
+            rows = session.execute(
+                select(
+                    PurchaseOrder, Supplier.name, PurchaseOrderLine,
+                    Product.sku, Product.name,
+                )
+                .join(Supplier, (Supplier.id == PurchaseOrder.supplier_id)
+                      & (Supplier.business_id == PurchaseOrder.business_id))
+                .join(PurchaseOrderLine, (PurchaseOrderLine.purchase_order_id == PurchaseOrder.id)
+                      & (PurchaseOrderLine.business_id == PurchaseOrder.business_id))
+                .join(Product, (Product.id == PurchaseOrderLine.product_id)
+                      & (Product.business_id == PurchaseOrderLine.business_id))
+                .where(PurchaseOrder.business_id == business_id)
+                .order_by(PurchaseOrder.created_at, PurchaseOrder.id, PurchaseOrderLine.id)
+            ).all()
+            columns = (
+                "order_id", "order_number", "status", "supplier_id", "supplier_name",
+                "currency_code", "order_total", "created_at", "line_id", "product_id",
+                "product_sku", "product_name", "ordered_quantity", "received_quantity",
+                "remaining_quantity", "unit_cost",
+            )
+            buffer = io.StringIO(newline="")
+            writer = csv.writer(buffer)
+            writer.writerow(columns)
+            for order, supplier_name, line, product_sku, product_name in rows:
+                values = (
+                    order.id, order.order_number, order.status, order.supplier_id,
+                    supplier_name, order.currency_code, order.total, order.created_at,
+                    line.id, line.product_id, product_sku, product_name, line.quantity,
+                    line.received_quantity, max(ZERO, line.quantity - line.received_quantity),
+                    line.unit_cost,
+                )
+                safe_values = []
+                for value in values:
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    elif isinstance(value, UUID):
+                        value = str(value)
+                    elif isinstance(value, Decimal):
+                        value = format(value, "f")
+                    text_value = "" if value is None else str(value)
+                    if text_value.startswith(("=", "+", "-", "@", "\\t", "\\r")):
+                        text_value = "'" + text_value
+                    safe_values.append(text_value)
+                writer.writerow(safe_values)
+            return Response(content=buffer.getvalue(), media_type="text/csv",
+                            headers={"Content-Disposition": 'attachment; filename="purchase_orders.csv"'})
         if entity_type not in supported:
             raise HTTPException(status_code=404, detail="Unsupported export entity")
         from app.models import Customer
