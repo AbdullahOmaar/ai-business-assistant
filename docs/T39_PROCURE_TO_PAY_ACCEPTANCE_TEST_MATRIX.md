@@ -30,11 +30,12 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 |---|---|---|---|
 | T39-01 | OWNER creates supplier and purchase order within own business | Records are scoped to business A; server validates supplier/product ownership and line quantities | Existing behavior regression |
 | T39-02 | STAFF attempts owner-only approval | Denied; order, movements, balances and business audit snapshot have no mutation | Existing behavior regression |
-| T39-03 | Non-member accesses supplier/order/receipt routes | Denied; no cross-tenant reads or writes | Existing behavior regression |
+| T39-03 | Non-member accesses supplier/order/receipt routes, and business A owner submits business B order ID under business A context | Denied/not found; no cross-tenant reads or writes or business B side effects | Contract-independent tenant boundary regression |
 | T39-04 | Partial receipt across multiple lines | Only accepted quantities create stock effects; remaining quantity and source references reconcile | Contract-independent assertions only; state labels pending |
 | T39-05 | Same receipt request replayed with same idempotency identity | One logical receipt and one stock effect only; stable response or documented conflict | Requires T37 idempotency contract |
 | T39-06 | Two concurrent receipts for the same remaining quantity | No over-receipt; stock and received quantities reconcile after both transactions | Requires DB-backed concurrency test; SQLite alone may not prove production locking |
 | T39-07 | Receipt quantity exceeds remaining order quantity, including an invalid later line after an earlier valid line | Validate all requested lines before writes; reject atomically with no stock, order, audit, or financial side effects | Contract-independent safety invariant |
+| T39-19 | Receipt request targets draft, received, or cancelled purchase order | Reject stale/invalid lifecycle state; no order-line, stock-ledger, or audit mutation | Contract-independent lifecycle invariant |
 | T39-08 | Supplier rejects part of delivered goods | Accepted and rejected quantities remain separately traceable; rejected goods never increase available stock | Requires approved rejection lifecycle |
 | T39-09 | Return accepted goods to supplier | Return references original receipt/movement; quantity cannot exceed eligible received quantity; repeated return cannot double-post | Requires T37/T38 return/reversal boundary |
 | T39-10 | Supplier bill differs from PO/receipt | Server-side matching exposes mismatch; no silent overwrite of receipt or PO values | Matching policy needs product-owner decision |
