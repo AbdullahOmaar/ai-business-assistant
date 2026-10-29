@@ -30,6 +30,13 @@ export interface SalesReturnPage { items: SalesReturn[]; limit: number; offset: 
 export interface CreditNotePage { items: CreditNote[]; limit: number; offset: number; }
 export interface CreditApplication { id: string; business_id: string; credit_note_id: string; invoice_id: string; amount: string; idempotency_key: string; applied_by_subject: string; created_at: string; }
 export interface CreditApplicationPage { items: CreditApplication[]; limit: number; offset: number; }
+export interface CashRefund {
+  id: string; business_id: string; credit_note_id: string; payment_id: string | null;
+  amount: string; method: 'cash' | 'bank' | 'card' | 'other'; reference: string | null;
+  idempotency_key: string; refunded_by_subject: string; created_at: string;
+}
+export interface CashRefundPage { items: CashRefund[]; limit: number; offset: number; }
+
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
 export interface EmployeeRecord {
@@ -599,6 +606,27 @@ export class ApiService {
     const query = params.toString();
     return this.request<{ items: CreditApplication[]; limit: number; offset: number }>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-applications${query ? '?' + query : ''}`
+    );
+  }
+
+  cashRefunds(businessId: string, filters: {
+    credit_note_id?: string; payment_id?: string; limit?: number; offset?: number;
+  } = {}): Promise<CashRefundPage> {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined) params.set(key, String(value));
+    }
+    const query = params.toString();
+    return this.request<CashRefundPage>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/cash-refunds${query ? '?' + query : ''}`
+    );
+  }
+  createCashRefund(businessId: string, creditNoteId: string, body: {
+    amount: string; method: 'cash' | 'bank' | 'card' | 'other'; reference?: string; idempotency_key: string;
+  }): Promise<CashRefund> {
+    return this.request<CashRefund>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes/${encodeURIComponent(creditNoteId)}/refunds`,
+      'POST', body
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
