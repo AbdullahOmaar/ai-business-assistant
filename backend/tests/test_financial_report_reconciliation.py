@@ -354,8 +354,8 @@ def test_dashboard_date_filter_uses_half_open_utc_interval():
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
 
-def test_financial_reports_reject_reversed_date_ranges():
-    """Reject reversed reporting periods instead of returning misleading financial totals."""
+def test_profit_loss_rejects_reversed_custom_date_range():
+    """Reject reversed custom periods; dashboard has a separate regression in core API tests."""
     engine, client, previous_factory, previous_resolver = _reporting_client()
     try:
         created = client.post(
@@ -368,13 +368,6 @@ def test_financial_reports_reject_reversed_date_ranges():
         )
         assert created.status_code == 201, created.text
         business_id = created.json()["id"]
-
-        dashboard = client.get(
-            f"/api/v1/businesses/{business_id}/dashboard",
-            params={"start_date": "2026-01-16", "end_date": "2026-01-15"},
-        )
-        assert dashboard.status_code == 422, dashboard.text
-        assert "start_date must be on or before end_date" in dashboard.json()["detail"]
 
         report = client.get(
             f"/api/v1/businesses/{business_id}/profit-loss",
