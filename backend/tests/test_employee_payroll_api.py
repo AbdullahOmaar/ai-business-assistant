@@ -669,3 +669,145 @@ def test_active_only_listing_excludes_deactivated_employees(employee_environment
     }
     assert [row["id"] for row in active_rows.json()] == [active.json()["id"]]
     assert all(row["is_active"] is True for row in active_rows.json())
+
+
+def test_employee_update_duplicate_code_and_email_are_rejected_without_side_effects(employee_environment):
+    env = employee_environment
+    first = _create_employee(env, code="EMP-ONE", email="one@example.test")
+    second = _create_employee(
+        env, name="Second Employee", code="EMP-TWO", email="two@example.test"
+    )
+    assert first.status_code == second.status_code == 201
+    base = f"/api/v1/businesses/{env['business_id']}"
+    attempts = [
+        (first.json()["id"], {"employee_code": "EMP-TWO"}),
+        (first.json()["id"], {"email": "TWO@example.test"}),
+    ]
+    for employee_id, payload in attempts:
+        before = env["client"].get(f"{base}/employees").json()
+        with app.state.session_factory() as session:
+            audit_before = session.scalar(select(func.count()).select_from(AuditEvent))
+        response = env["client"].patch(f"{base}/employees/{employee_id}", json=payload)
+        assert response.status_code == 409
+        assert env["client"].get(f"{base}/employees").json() == before
+        with app.state.session_factory() as session:
+            assert session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+
+
+def test_employee_listing_pagination_is_stable_and_respects_active_filter(employee_environment):
+    env = employee_environment
+    employees = [
+        _create_employee(env, name=name, code=code, email=email).json()
+        for name, code, email in [
+            ("Cairo", "EMP-C", "c@example.test"),
+            ("Alex", "EMP-A", "a@example.test"),
+            ("Giza", "EMP-G", "g@example.test"),
+        ]
+    ]
+    base = f"/api/v1/businesses/{env['business_id']}"
+    deactivated = env["client"].patch(
+        f"{base}/employees/{employees[2]['id']}", json={"is_active": False}
+    )
+    assert deactivated.status_code == 200
+    first_page = env["client"].get(f"{base}/employees?limit=1&offset=0")
+    second_page = env["client"].get(f"{base}/employees?limit=1&offset=1")
+    active_page = env["client"].get(f"{base}/employees?limit=10&active_only=true")
+    assert first_page.status_code == second_page.status_code == active_page.status_code == 200
+    assert first_page.json()[0]["name"] == "Alex"
+    assert second_page.json()[0]["name"] == "Cairo"
+    assert [row["name"] for row in active_page.json()] == ["Alex", "Cairo"]
+
+
+def test_payroll_listing_period_filter_and_pagination_are_deterministic(employee_environment):
+    env = employee_environment
+    base = f"/api/v1/businesses/{env['business_id']}"
+    for name, code, email, period in [
+        ("Mona", "EMP-M", "mona@example.test", "2026-09"),
+        ("Ali", "EMP-A", "ali@example.test", "2026-10"),
+        ("Sara", "EMP-S", "sara@example.test", "2026-10"),
+    ]:
+        employee = _create_employee(env, name=name, code=code, email=email).json()
+        created = env["client"].post(
+            f"{base}/employees/{employee['id']}/payroll", json={"period": period}
+        )
+        assert created.status_code == 201
+    october = env["client"].get(f"{base}/payroll?period=2026-10&limit=10")
+    first_page = env["client"].get(f"{base}/payroll?limit=1&offset=0")
+    second_page = env["client"].get(f"{base}/payroll?limit=1&offset=1")
+    assert october.status_code == first_page.status_code == second_page.status_code == 200
+    assert len(october.json()) == 2
+    assert {row["period"] for row in october.json()} == {"2026-10"}
+    assert first_page.json()[0]["period"] == "2026-10"
+    assert second_page.json()[0]["period"] == "2026-10"
+    assert first_page.json()[0]["employee_name"] == "Ali"
+    assert second_page.json()[0]["employee_name"] == "Sara"
+
+
+def test_payroll_approval_is_separated_and_repeated_approval_has_no_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-12"}
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+    self_approval = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert self_approval.status_code == 409
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    snapshot = approved.json()
+    with app.state.session_factory() as session:
+        audit_before = session.scalar(select(func.count()).select_from(AuditEvent))
+    repeated = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert repeated.status_code == 409
+    with app.state.session_factory() as session:
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None
+        assert persisted.status == "approved"
+        assert persisted.approved_by_subject == snapshot["approved_by_subject"]
+        assert persisted.approved_at == datetime.fromisoformat(snapshot["approved_at"])
+        assert session.scalar(select(func.count()).select_from(AuditEvent)) == audit_before
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+
+
+def test_payroll_payment_rolls_back_when_paid_audit_write_fails(employee_environment, monkeypatch):
+    from app import employee_payroll_api
+
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll", json={"period": "2026-12"}
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll_id}/approve", json={})
+    assert approved.status_code == 200
+    env["subject"]["value"] = OWNER
+
+    original_audit = employee_payroll_api._audit
+
+    def fail_paid_audit(session, business_id, actor, action, target_type, target_id, summary):
+        if action == "payroll.paid":
+            raise RuntimeError("injected payroll audit failure")
+        return original_audit(session, business_id, actor, action, target_type, target_id, summary)
+
+    monkeypatch.setattr(employee_payroll_api, "_audit", fail_paid_audit)
+    with pytest.raises(RuntimeError, match="injected payroll audit failure"):
+        env["client"].post(f"{base}/payroll/{payroll_id}/pay", json={})
+
+    with app.state.session_factory() as session:
+        persisted = session.get(PayrollRecord, UUID(payroll_id))
+        assert persisted is not None
+        assert persisted.status == "approved"
+        assert persisted.expense_id is None
+        assert persisted.paid_at is None
+        assert persisted.paid_by_subject is None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        actions = session.scalars(
+            select(AuditEvent.action).where(AuditEvent.target_type == "payroll")
+        ).all()
+        assert set(actions) == {"payroll.created", "payroll.approved"}
