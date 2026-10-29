@@ -678,6 +678,14 @@ def issue_credit_note_for_return(business_id: UUID, return_id: UUID,
         if ret is None or ret.status != "approved":
             raise WorkflowError("Only an approved sales return can be credited")
 
+        # Re-check after locking the return so concurrent retries observe the first committed note.
+        existing = session.scalars(select(CreditNote).where(
+            CreditNote.business_id == business_id,
+            CreditNote.sales_return_id == ret.id,
+        ).with_for_update()).one_or_none()
+        if existing is not None:
+            return existing
+
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == ret.invoice_id,
             Invoice.business_id == business_id,
