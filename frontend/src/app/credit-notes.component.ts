@@ -282,6 +282,14 @@ export class CreditNotesComponent implements OnChanges {
     return note.remaining_credit ?? note.total;
   }
 
+  hasRemainingCredit(note: CreditNote): boolean {
+    return Number(this.remainingCredit(note)) > 0;
+  }
+
+  canApplyToInvoice(note: CreditNote): boolean {
+    return this.eligibleInvoicesFor(note).some(invoice => invoice.id === this.applicationInvoiceId);
+  }
+
   eligibleInvoicesFor(note: CreditNote): Invoice[] {
     return this.invoices.filter(invoice =>
       invoice.status === 'issued' &&
