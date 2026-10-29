@@ -424,6 +424,36 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
 
+def test_invalid_payroll_components_and_period_have_no_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env).json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    invalid_payloads = [
+        {"period": "2026-11", "allowances": "-0.01"},
+        {"period": "2026-11", "bonuses": "-0.01"},
+        {"period": "2026-11", "deductions": "-0.01"},
+        {"period": "2026-13"},
+        {"period": "2026-1"},
+    ]
+
+    for payload in invalid_payloads:
+        response = env["client"].post(
+            f"{base}/employees/{employee['id']}/payroll",
+            json=payload,
+        )
+        assert response.status_code == 422, (
+            f"Invalid payroll payload {payload} was not rejected: "
+            f"{response.status_code} {response.text}"
+        )
+
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        assert session.scalars(
+            select(AuditEvent.action).where(AuditEvent.target_type == "payroll")
+        ).all() == []
+
+
 def test_inactive_employee_cannot_create_payroll_without_side_effects(employee_environment):
     env = employee_environment
     created = _create_employee(env)
