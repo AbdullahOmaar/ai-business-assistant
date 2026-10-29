@@ -1063,3 +1063,124 @@ def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_purchase_order_approval_is_owner_only_and_idempotent():
+    """Only the workspace owner may approve a draft PO, with one audit event."""
+    from uuid import uuid4
+    from decimal import Decimal
+    from app.models import Business, PurchaseOrder, Supplier
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    owner_subject = "po-approval-owner"
+    staff_subject = "po-approval-staff"
+    outsider_subject = "po-approval-outsider"
+    business_id, product_id, supplier_id = uuid4(), uuid4(), uuid4()
+    order_id = None
+
+    try:
+        with app.state.session_factory() as session:
+            session.add(Business(
+                id=business_id, name="PO Approval Boundary", currency_code="EGP"
+            ))
+            session.flush()
+            session.add_all([
+                BusinessMembership(
+                    business_id=business_id, user_subject=owner_subject,
+                    role=MembershipRole.OWNER,
+                ),
+                BusinessMembership(
+                    business_id=business_id, user_subject=staff_subject,
+                    role=MembershipRole.STAFF,
+                ),
+                Product(
+                    id=product_id, business_id=business_id, name="Stock item",
+                    unit_price=Decimal("10.00"), is_stock_tracked=True,
+                ),
+                Supplier(
+                    id=supplier_id, business_id=business_id, name="PO Supplier",
+                    is_active=True,
+                ),
+            ])
+            session.commit()
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(owner_subject)
+        client = TestClient(app)
+        created = client.post(
+            f"/api/v1/businesses/{business_id}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id),
+                "order_number": "PO-APPROVAL-ROLE-MATRIX",
+                "currency_code": "EGP",
+                "lines": [{
+                    "product_id": str(product_id),
+                    "quantity": "2.000",
+                    "unit_cost": "5.00",
+                }],
+            },
+        )
+        assert created.status_code == 201, created.text
+        order_id = created.json()["id"]
+
+        def approved_event_count():
+            with app.state.session_factory() as session:
+                return session.query(AuditEvent).filter_by(
+                    business_id=business_id,
+                    action="purchase_order.approved",
+                    target_id=str(order_id),
+                ).count()
+
+        assert approved_event_count() == 0
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(staff_subject)
+        staff_denied = client.post(
+            f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve"
+        )
+        assert staff_denied.status_code == 403, staff_denied.text
+        assert approved_event_count() == 0
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(outsider_subject)
+        outsider_denied = client.post(
+            f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve"
+        )
+        assert outsider_denied.status_code == 403, outsider_denied.text
+        assert approved_event_count() == 0
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(owner_subject)
+        draft = client.get(f"/api/v1/businesses/{business_id}/purchase-orders")
+        assert draft.status_code == 200, draft.text
+        assert next(item for item in draft.json() if item["id"] == order_id)["status"] == "draft"
+
+        approved = client.post(
+            f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve"
+        )
+        assert approved.status_code == 200, approved.text
+        approved_list = client.get(f"/api/v1/businesses/{business_id}/purchase-orders")
+        assert approved_list.status_code == 200, approved_list.text
+        assert next(item for item in approved_list.json() if item["id"] == order_id)["status"] == "approved"
+        assert approved_event_count() == 1
+
+        duplicate = client.post(
+            f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve"
+        )
+        assert duplicate.status_code == 422, duplicate.text
+        assert approved_event_count() == 1
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
