@@ -547,6 +547,7 @@ def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(
         {"bonuses": "-0.01"},
         {"deductions": "-0.01"},
         {"deductions": "1000000000000.00"},
+        {"deductions": "5010.00"},  # Would reduce this draft payroll net pay to zero.
         {"net_pay": "1.00"},
     ]
     for payload in invalid_update_payloads:
