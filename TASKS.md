@@ -17,17 +17,23 @@ Owner scope: platform Admin APIs and least-privilege regression coverage. Work i
 9. **Employee / payroll admin boundary** — coordinate with existing T41 / Payroll PRs; no overlapping changes made in this PR.
 10. **Route × role × tenant regressions and release verification** — PR #313 adds a focused test that a delegated `platform_viewer` can read allowed overview/audit views but cannot deactivate a workspace or grant roles; checks both business and platform audit counts and verifies no grant was persisted.
 
-### Current evidence
+### Current evidence (refreshed 2026-10-29 17:08 UTC)
 
 - Branch: `admin/platform-permissions-regression-20261029`
-- Latest test/code commit: `c09e04988591d6737af9613dd80ed344f3ce9261` (includes a follow-up fix for the SQLAlchemy `func` import used by audit-count assertions).
-- PR: [#313](https://github.com/AbdullahOmaar/ai-business-assistant/pull/313), open.
+- Latest PR head: `7673cda27c07b0a54bbe6911f47ce53e367fd259`; PR [#313](https://github.com/AbdullahOmaar/ai-business-assistant/pull/313) is **OPEN / READY FOR REVIEW / UNMERGED** (GitHub reports mergeable=true, but checks are failing).
+- Code change: `backend/tests/test_platform_admin_api.py` adds the delegated `platform_viewer` read-vs-mutation/no-side-effect regression; SQLAlchemy `func` import fixed. No application runtime code changed.
 - Local pytest / build: **NOT RUN** (connector-only execution; no repository runtime attached).
-- CircleCI on earlier PR head `2241f3e64a05b76bdea02a0230530d16127d10af`: all six reported contexts failed; job logs unavailable through the connected GitHub integration, and CircleCI page URLs were inaccessible from web access. Root cause **UNVERIFIED**.
-- Latest test/code commit CI: status API returned an empty legacy-status list; check-run conclusion **NOT VERIFIED**. GitHub Actions workflow runs on test/code commit `c09e04988591d6737af9613dd80ed344f3ce9261` reported failure for backend/frontend, dependency scans, container build and backend tests; job-log retrieval returned HTTP 404 `BlobNotFound`, so the failing step and root cause remain **UNVERIFIED**. This does not prove an application test failure. Do not interpret an empty status list as pass.
-- Review: **NOT RUN**. Merge: **BLOCKED** until exact-head checks and independent review are verified. Production deploy: **NOT RUN**.
+- Exact-head CircleCI statuses on `7673cda27c07b0a54bbe6911f47ce53e367fd259`: all six contexts currently **FAILURE** — backend-container (7045), frontend-browser-smoke (7041), backend-accounting (7042), frontend-unit-tests (7046), frontend-production-build (7044), frontend-dependency-audit (7043).
+- Exact-head GitHub Actions runs also report failure for backend container, backend/frontend verification, backend tests, and JS/Python dependency audits. The corresponding jobs expose `steps=[]` and log retrieval returns HTTP 404 `BlobNotFound`; therefore the runner never exposed an actionable failing step and the underlying cause remains **UNVERIFIED**. Do not misclassify this as a proven source/test defect, but do treat all reported checks as failures, not passes.
+- Independent review: **NOT RUN** (no submitted reviews). Merge: **BLOCKED** until the failed exact-head checks are diagnosed/resolved and independent review is recorded. Production deploy: **NOT RUN** and not part of this test-only PR.
 
-Next: inspect fresh exact-head CI statuses and available logs, then address any reproducible code-level failure. Do not weaken tests or merge based on missing status evidence.
+### Next ordered actions
+
+1. **P0 — CI evidence:** obtain usable CircleCI job logs for runs 7041–7046 or restore a supported CI execution path; do not repeatedly rerun empty-step GitHub Actions jobs without a changed diagnostic approach.
+2. **P0 — Regression validation:** once a runnable environment/logs are available, run the focused platform-admin test and relevant backend suite; fix only reproducible defects and rerun.
+3. **P1 — Security review:** request/obtain independent review of the test's authorization and no-side-effect assertions.
+4. **P1 — Merge gate:** merge PR #313 only after all six required CircleCI contexts pass on the exact head and review is approved; then verify the resulting main SHA and post-merge checks.
+5. **Separate follow-up workstream:** continue missing route × role × tenant no-read/no-write/no-audit coverage on the existing security task/branch without duplicating PR #302 or this PR. No stale branch cleanup or deployment is authorized by this checkpoint.
 
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
