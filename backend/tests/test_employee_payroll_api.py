@@ -424,6 +424,42 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
 
+def test_employee_payroll_audit_summaries_exclude_sensitive_values(employee_environment):
+    env = employee_environment
+    created = _create_employee(
+        env, name="Confidential Employee", code="EMP-PRIVATE",
+        email="private.person@example.test", salary="8765.43",
+    )
+    assert created.status_code == 201
+    employee = created.json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11", "allowances": "123.45", "bonuses": "67.89"},
+    )
+    assert payroll.status_code == 201
+
+    sensitive_values = [
+        "private.person@example.test",
+        "8765.43",
+        "123.45",
+        "67.89",
+        employee["phone"] or "",
+    ]
+    with app.state.session_factory() as session:
+        summaries = session.scalars(
+            select(AuditEvent.change_summary).where(
+                AuditEvent.business_id == UUID(env["business_id"]),
+                AuditEvent.target_type.in_(["employee", "payroll"]),
+            )
+        ).all()
+        assert len(summaries) == 2
+        for summary in summaries:
+            for value in sensitive_values:
+                if value:
+                    assert value not in summary
+
+
 def test_approved_payroll_cannot_be_edited_without_side_effects(employee_environment):
     env = employee_environment
     employee = _create_employee(env).json()
