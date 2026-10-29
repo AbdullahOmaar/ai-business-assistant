@@ -1641,3 +1641,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+## T41 — Five feature-quality workstreams validation checkpoint (2026-10-30)
+
+- **Branch:** `feat/t41-salary-history-effective-dates`; existing PR #308 remains Draft/Open/Unmerged. No merge or deployment performed.
+- **Five workstreams:** (21) employee identity update/duplicate protection; (22) employee directory pagination and active-state filtering; (23) payroll period filters and deterministic pagination; (24) approval separation of duties and repeated-approval no-side-effects; (25) atomic payroll payment rollback on paid-audit failure.
+- **Exact branch test source:** `backend/tests/test_employee_payroll_api.py` fetched from PR head `e81cc1955b61c0f26f6ff98cb880aabbeffc3d57` (1,048 lines; complete source).
+- **Focused validation:** employee/payroll test file **27 passed, 0 failed**. Combined `tests/test_employee_payroll_api.py tests/test_api.py`: **50 passed, 1 skipped, 0 failed** (7 warnings). These ran in the available Vercel sandbox with the exact-head test file and backend runtime files already present there; this is focused sandbox evidence, not a full repository checkout or CI result.
+- **Full backend suite:** NOT RUN to completion. Collection stopped on two ImportErrors because the assembled sandbox lacks `issue_credit_note_for_return` and `list_pricing_rules` in its `app.extended_api` module; this is an incomplete sandbox source set, not evidence that those tests failed.
+- **Exact-head CI:** at pre-checkpoint head `e81cc1955b61c0f26f6ff98cb880aabbeffc3d57`, all six CircleCI contexts reported FAILURE: backend-accounting, backend-container, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke. The branch's canonical T41 checkpoint records `free-plan-no-credits-available`; executor did not run. No passing CI claim is made.
+- **Next:** restore an authorized CircleCI runner/credits, run exact-head backend-accounting, backend-container, frontend tests/build, dependency audit and browser smoke. Keep salary-history effective-date/schema/backfill work blocked pending T37/T40 Master approval. No merge/deploy.
