@@ -926,3 +926,61 @@ def test_cash_refund_is_rejected_while_original_invoice_has_open_receivable(cred
             AuditEvent.business_id == business_id,
             AuditEvent.action == "cash_refund.created",
         )) == 0
+
+
+def test_partial_return_tax_rounding_never_exceeds_original_line_tax(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        customer = create_customer(
+            session, principal=principal, business_id=business_id, name="Tax rounding customer",
+        )
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Tax rounding item", unit_price=Decimal("0.10"), is_stock_tracked=False,
+        )
+        invoice = create_invoice(
+            session, principal=principal, business_id=business_id,
+            customer_id=customer.id, invoice_number=f"INV-TAX-ROUND-{uuid4().hex[:8]}",
+            currency_code="EGP", tax_rate=Decimal("17.00"),
+            lines=[{"product_id": str(product.id), "quantity": "3"}],
+        )
+        issue_invoice(
+            session, principal=principal, business_id=business_id, invoice_id=invoice.id,
+        )
+        invoice_line = session.scalars(select(InvoiceLine).where(
+            InvoiceLine.business_id == business_id,
+            InvoiceLine.invoice_id == invoice.id,
+        )).one()
+        assert Decimal(str(invoice.tax_total)) == Decimal("0.05")
+        assert Decimal(str(invoice_line.tax_amount)) == Decimal("0.05")
+
+        notes = []
+        for index in range(3):
+            ret = SalesReturn(
+                business_id=business_id, invoice_id=invoice.id,
+                status="draft", total=Decimal("0.10"),
+            )
+            session.add(ret)
+            session.flush()
+            session.add(SalesReturnLine(
+                business_id=business_id, sales_return_id=ret.id,
+                invoice_line_id=invoice_line.id, quantity=Decimal("1.000"),
+                amount=Decimal("0.10"),
+            ))
+            session.flush()
+            approve_sales_return(
+                business_id=business_id, return_id=ret.id,
+                session=session, principal=principal,
+            )
+            note = issue_credit_note_for_return(
+                business_id=business_id, return_id=ret.id,
+                session=session, principal=principal,
+            )
+            notes.append(note)
+
+        assert [Decimal(note["tax_total"]) for note in notes] == [
+            Decimal("0.02"), Decimal("0.01"), Decimal("0.02"),
+        ]
+        assert sum((Decimal(note["tax_total"]) for note in notes), Decimal("0.00")) == Decimal("0.05")
+        assert sum((Decimal(note["total"]) for note in notes), Decimal("0.00")) == Decimal(str(invoice.total))
