@@ -579,11 +579,22 @@ export class ApiService {
     return this.request<NotificationRecord>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/notifications', 'POST', body);
   }
 
-  suppliers(businessId: string, name?: string): Promise<Supplier[]> {
+  suppliers(businessId: string, name?: string, includeInactive = false): Promise<Supplier[]> {
     const params = new URLSearchParams({ limit: '100' });
     if (name?.trim()) params.set('name', name.trim());
+    if (includeInactive) params.set('include_inactive', 'true');
     return this.request<Supplier[]>(
       '/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers?' + params.toString()
+    );
+  }
+  updateSupplier(businessId: string, supplierId: string, patch: {
+    name?: string | null; email?: string | null; phone?: string | null;
+    address?: string | null; is_active?: boolean;
+  }): Promise<Supplier> {
+    return this.request<Supplier>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/suppliers/' + encodeURIComponent(supplierId),
+      'PATCH',
+      patch
     );
   }
 
