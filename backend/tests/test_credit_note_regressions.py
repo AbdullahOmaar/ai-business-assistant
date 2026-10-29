@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -1341,3 +1341,31 @@ def test_bank_reconciliation_rejects_cross_business_account_and_wrong_direction(
         assert session.scalar(select(func.count()).select_from(BankReconciliationMatch).where(
             BankReconciliationMatch.business_id == business_id,
         )) == 0
+
+
+def test_profit_loss_rejects_unrepresentable_business_date_boundaries(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        business = session.get(Business, business_id)
+        business.timezone = "Etc/GMT-12"
+        session.commit()
+        with pytest.raises(HTTPException) as lower_error:
+            profit_loss(
+                business_id=business_id, period="custom",
+                start_date=date.min, end_date=date.min,
+                session=session, principal=principal,
+            )
+        assert lower_error.value.status_code == 422
+        assert "supported business-timezone range" in lower_error.value.detail
+
+        business.timezone = "UTC"
+        session.commit()
+        with pytest.raises(HTTPException) as upper_error:
+            profit_loss(
+                business_id=business_id, period="custom",
+                start_date=date.max, end_date=date.max,
+                session=session, principal=principal,
+            )
+        assert upper_error.value.status_code == 422
+        assert "supported business-timezone range" in upper_error.value.detail
