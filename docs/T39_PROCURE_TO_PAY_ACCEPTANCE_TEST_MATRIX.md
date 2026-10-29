@@ -49,6 +49,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-19 | Receipt request targets draft, received, or cancelled purchase order | Reject stale/invalid lifecycle state; no order-line, stock-ledger, or audit mutation | Contract-independent lifecycle invariant |
 | T39-20 | Receipt quantity is NaN, positive/negative infinity, zero, or negative | Reject before arithmetic/write; order, received quantities, stock ledger and audit remain unchanged | Contract-independent numeric input invariant |
 | T39-21 | OWNER or STAFF reads/updates a supplier profile, clears optional contact fields, or deactivates a supplier | Tenant-scoped response; blank name/empty patch rejected; audit event written; deactivated supplier cannot be selected for new POs but historical orders remain readable | Contract-independent supplier directory lifecycle |
+| T39-22 | OWNER cancels a draft/approved PO before any receipt; STAFF attempts cancellation; cancellation after receipt is attempted | Only OWNER may cancel an unreceived draft/approved order; cancellation after any receipt is rejected; status/audit transition is traceable | Contract-independent lifecycle and authorization invariant |
 
 ## Execution plan after contract approval
 
@@ -93,3 +94,12 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 
 - The API previously had a separate receiving implementation that mutated each line before validating later lines and could diverge from the hardened domain operation. It now calls the shared operation and rejects duplicate line IDs at the HTTP boundary.
 - Regression coverage added in `backend/tests/test_api.py` for duplicate line IDs and atomic no-side-effect behavior. Code and test are implemented; runtime validation is still NOT RUN because the available GitHub Actions jobs expose no step data/logs and the current execution environment cannot clone the repository.
+
+
+## Supplier directory and purchase-order lifecycle additions (2026-10-29)
+
+- Added `PATCH /suppliers/{supplier_id}` for tenant-scoped supplier contact updates. Explicit null/empty contact fields clear optional values; omitted fields remain unchanged; empty patches and blank names are rejected.
+- Supplier deactivation/reactivation is OWNER-only. `GET /suppliers?include_inactive=true` is also OWNER-only so inactive suppliers can be reviewed/reactivated without making them available to normal selection. Existing PO creation continues to require an active supplier, preserving historical order records.
+- Added `POST /purchase-orders/{order_id}/cancel`: OWNER-only, tenant-scoped, row-lock intent; only draft/approved orders with no received quantities can be cancelled. Partially/fully received orders cannot be cancelled through this endpoint, so it does not reverse stock movements.
+- Successful mutations record audit events. No schema migrations, supplier liabilities, payment posting, valuation, or COGS semantics are introduced.
+- Per current user instruction, implementation work only; tests/CI were not run in this session because of the existing execution-limit issue. Runtime verification remains pending.
