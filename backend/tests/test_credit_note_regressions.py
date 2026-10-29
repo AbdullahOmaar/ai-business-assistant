@@ -8,12 +8,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.extended_api import (
-    CreditApplicationInput, apply_credit_note, approve_sales_return,
+    CashRefundInput, CreditApplicationInput, apply_credit_note, approve_sales_return, create_cash_refund,
     customer_statement, issue_credit_note_for_return, list_credit_applications,
-    list_credit_notes, list_invoices, list_sales_returns, receivables_aging,
+    list_cash_refunds, list_credit_notes, list_invoices, list_sales_returns, receivables_aging,
 )
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, CreditApplication, CreditNote, Invoice, Payment, PaymentAllocation,
+    AuditEvent, Base, Business, BusinessMembership, CashRefund, CreditApplication, CreditNote, Invoice, Payment, PaymentAllocation,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -679,3 +679,140 @@ def test_idempotency_key_cannot_be_reused_for_different_credit_application(credi
         assert session.scalar(select(func.count()).select_from(CreditApplication).where(
             CreditApplication.business_id == business_id,
         )) == 1
+
+
+def test_cash_refund_is_idempotent_audited_and_reduces_remaining_credit(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        _, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        body = CashRefundInput(
+            amount=Decimal("4.00"), method="cash",
+            reference="REFUND-100", idempotency_key="cash-refund-idempotent-001",
+        )
+        first = create_cash_refund(
+            business_id=business_id, credit_note_id=UUID(note["id"]),
+            body=body, session=session, principal=principal,
+        )
+        replay = create_cash_refund(
+            business_id=business_id, credit_note_id=UUID(note["id"]),
+            body=body, session=session, principal=principal,
+        )
+        assert first["id"] == replay["id"]
+        assert Decimal(first["amount"]) == Decimal("4.00")
+        assert session.scalar(select(func.count()).select_from(CashRefund).where(
+            CashRefund.business_id == business_id,
+        )) == 1
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "cash_refund.created",
+        )) == 1
+        notes_page = list_credit_notes(
+            business_id=business_id, limit=50, offset=0,
+            session=session, principal=principal,
+        )
+        listed = next(item for item in notes_page["items"] if item["id"] == note["id"])
+        assert Decimal(listed["refunded_total"]) == Decimal("4.00")
+        assert Decimal(listed["remaining_credit"]) == Decimal("6.00")
+
+
+def test_cash_refund_cannot_exceed_credit_remaining_after_applications(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        apply_credit_note(
+            business_id=business_id,
+            body=CreditApplicationInput(
+                credit_note_id=UUID(note["id"]), invoice_id=invoice.id,
+                amount=Decimal("7.00"), idempotency_key="apply-before-refund-001",
+            ),
+            session=session, principal=principal,
+        )
+        with pytest.raises(HTTPException) as error:
+            create_cash_refund(
+                business_id=business_id, credit_note_id=UUID(note["id"]),
+                body=CashRefundInput(
+                    amount=Decimal("4.00"), method="bank",
+                    idempotency_key="refund-over-credit-remaining",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert session.scalar(select(func.count()).select_from(CashRefund).where(
+            CashRefund.business_id == business_id,
+        )) == 0
+        assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.action == "cash_refund.created",
+        )) == 0
+
+
+def test_cash_refund_linked_to_payment_cannot_consume_allocated_cash(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        invoice, ret = _issued_invoice_and_return(session, business_id, principal)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=principal,
+        )
+        payment = Payment(
+            business_id=business_id, customer_id=invoice.customer_id,
+            amount=Decimal("8.00"), currency_code="EGP",
+            idempotency_key="payment-for-cash-refund-001",
+        )
+        session.add(payment)
+        session.flush()
+        session.add(PaymentAllocation(
+            business_id=business_id, payment_id=payment.id,
+            invoice_id=invoice.id, amount=Decimal("7.00"),
+        ))
+        session.flush()
+        with pytest.raises(HTTPException) as error:
+            create_cash_refund(
+                business_id=business_id, credit_note_id=UUID(note["id"]),
+                body=CashRefundInput(
+                    amount=Decimal("2.00"), method="bank", payment_id=payment.id,
+                    idempotency_key="refund-allocated-payment-001",
+                ),
+                session=session, principal=principal,
+            )
+        assert error.value.status_code == 422
+        assert "unallocated balance" in str(error.value.detail).lower()
+        assert session.scalar(select(func.count()).select_from(CashRefund).where(
+            CashRefund.business_id == business_id,
+        )) == 0
+
+
+def test_staff_cannot_create_cash_refund(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    staff = AuthenticatedPrincipal(subject="credit-staff")
+    with Session(engine) as session:
+        _, ret = _issued_invoice_and_return(session, business_id, owner)
+        note = issue_credit_note_for_return(
+            business_id=business_id, return_id=ret.id,
+            session=session, principal=owner,
+        )
+        with pytest.raises(HTTPException) as error:
+            create_cash_refund(
+                business_id=business_id, credit_note_id=UUID(note["id"]),
+                body=CashRefundInput(
+                    amount=Decimal("1.00"), method="cash",
+                    idempotency_key="staff-refund-denied-001",
+                ),
+                session=session, principal=staff,
+            )
+        assert error.value.status_code == 403
+        assert session.scalar(select(func.count()).select_from(CashRefund).where(
+            CashRefund.business_id == business_id,
+        )) == 0
