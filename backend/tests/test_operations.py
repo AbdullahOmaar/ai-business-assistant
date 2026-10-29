@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.models import (
-    Base, Business, BusinessMembership, InvoiceLine, MembershipRole,
+    AuditEvent, Base, Business, BusinessMembership, InvoiceLine, MembershipRole,
     Product, PurchaseOrder, PurchaseOrderLine, SalesReturn, SalesReturnLine,
     StockMovement, Supplier,
 )
@@ -116,6 +116,65 @@ def test_purchase_receiving_requires_owner_role(operation_workspace):
                 purchase_order_id=order.id,
                 received_quantities={line.id: Decimal("1")},
             )
+
+
+
+def test_purchase_receiving_over_receipt_rejects_without_side_effects(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Over-receipt Supplier")
+        product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Over-receipt Stock", unit_price=Decimal("10"), is_stock_tracked=True,
+        )
+        session.add(supplier)
+        session.flush()
+        order = PurchaseOrder(
+            business_id=business_id, supplier_id=supplier.id,
+            order_number="PO-OVER-RECEIPT", status="approved", currency_code="EGP",
+            total=Decimal("100"),
+        )
+        session.add(order)
+        session.flush()
+        line = PurchaseOrderLine(
+            business_id=business_id, purchase_order_id=order.id,
+            product_id=product.id, quantity=Decimal("10"),
+            unit_cost=Decimal("10"), received_quantity=Decimal("0"),
+        )
+        session.add(line)
+        session.flush()
+        session.commit()
+
+        movement_count_before = session.scalar(select(func.count()).select_from(StockMovement))
+        movement_quantity_before = session.scalar(select(func.coalesce(
+            func.sum(StockMovement.quantity_delta), 0
+        )).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        ))
+        audit_count_before = session.scalar(select(func.count()).select_from(AuditEvent))
+
+        with pytest.raises(WorkflowError, match="cannot exceed ordered quantity"):
+            receive_purchase_order(
+                session, principal=principal, business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={line.id: Decimal("11")},
+            )
+
+        session.expire_all()
+        persisted_line = session.get(PurchaseOrderLine, line.id)
+        assert persisted_line.received_quantity == Decimal("0.000")
+        assert session.scalar(select(func.count()).select_from(StockMovement)) == movement_count_before
+        movement_quantity_after = session.scalar(select(func.coalesce(
+            func.sum(StockMovement.quantity_delta), 0
+        )).where(
+            StockMovement.business_id == business_id,
+            StockMovement.product_id == product.id,
+        ))
+        assert Decimal(str(movement_quantity_after)) == Decimal(str(movement_quantity_before))
+        assert session.scalar(select(func.count()).select_from(AuditEvent)) == audit_count_before
+        persisted_order = session.get(PurchaseOrder, order.id)
+        assert persisted_order.status == "approved"
 
 
 def test_sales_return_approval_rejects_quantity_over_original_sale(operation_workspace):
