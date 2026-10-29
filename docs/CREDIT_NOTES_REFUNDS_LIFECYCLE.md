@@ -1,6 +1,6 @@
 # Credit notes, refunds, and customer returns — lifecycle contract
 
-Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace can create return drafts from issued invoice lines, lets owners approve draft returns, lists approved returns and issued notes, and exposes an OWNER-only credit-note issue action. Credit application, cash refunds, tax allocation, and report/statement integration are not implemented yet.
+Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-note issuance from an approved sales return, paginated credit-note reads, and a business-scoped paginated sales-return listing. The Angular workspace can create return drafts from issued invoice lines, lets owners approve draft returns, lists approved returns and issued notes, supports customer-filtered credit-note listing with customer names, and exposes an OWNER-only credit-note issue action. Credit application, cash refunds, tax allocation, and report/statement integration are not implemented yet.
 
 ## Existing behavior confirmed in source
 
@@ -26,7 +26,7 @@ Status: PARTIALLY COMPLETE for Feature 31. The API supports immutable credit-not
 - Use Decimal arithmetic and explicit rounding; never trust client-supplied totals or statuses.
 - Preserve original invoice and payment history. Corrections use compensating records, never destructive edits.
 - Approval/issue/refund operations must be atomic, replay-safe, and audited. Failed or replayed requests must not duplicate stock, receivable credit, or cash-out.
-- The implementation now has a migration with relationship/uniqueness constraints, owner-only issue endpoint, paginated read endpoint, and Angular API methods. Remaining: frontend workflow, tax allocation, credit application, refund records, statement/report integration, and regression coverage for partial credit/refund, currency/customer mismatch, concurrent approvals, and already allocated payments.
+- The implementation now has a migration with relationship/uniqueness constraints, owner-only issue endpoint, paginated read endpoint, and a bilingual Angular workflow for return drafts, owner approval, credit-note issuance, issued-note listing, and customer filtering. Remaining: tax allocation, credit application, refund records, statement/report integration, and regression coverage for partial credit/refund, currency/customer mismatch, concurrent approvals, and already allocated payments.
 - Added `backend/tests/test_credit_note_regressions.py` covering successful issuance/idempotent replay, unchanged original invoice totals, OWNER-only denial with no note/audit side effects, rejection of unapproved returns, the tax guard, cross-business return isolation, and business-scoped list/customer filtering. These tests are authored but **NOT RUN**; they do not constitute a passing test result.
 - Do not expose “refund complete” until a persisted cash-out record is committed. A credit note alone does not prove cash was returned.
 - Tests/build/CI/browser checks are intentionally **NOT RUN** in this batch while the user-requested runner-limit pause remains active. The focused credit-note regression tests have been added to source but still require execution.
@@ -57,3 +57,6 @@ E. Resume tests and exact-head CI only after the user clears the current testing
 - Exact-head CircleCI and authenticated browser smoke remain NOT RUN / BLOCKED. No merge, deployment, or version change was performed.
 
 - Remaining Feature 31 gaps: cash refunds, applying credits to receivables, customer-statement/report integration, and line-level tax allocation. No automatic cash refund or receivable balance mutation is implied.
+
+
+- Frontend follow-up: added a customer selector for the issued credit-note list; the selected customer is sent to the business-scoped API filter and the list now displays customer names instead of abbreviated IDs. Added a source-level regression assertion. This latest UI/test edit is **NOT RUN**; prior sandbox results above predate this head and do not verify it.
