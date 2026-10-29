@@ -228,3 +228,104 @@ def test_invalid_later_line_does_not_partially_receive_earlier_lines(purchasing_
                 AuditEvent.business_id == business_id
             )
         ) == audit_count_before
+
+
+
+def test_foreign_business_order_is_not_receivable(purchasing_workspace):
+    engine, business_a_id, principal_a = purchasing_workspace
+    with Session(engine) as session:
+        business_b = Business(name="T39 Foreign Shop", currency_code="EGP")
+        session.add(business_b)
+        session.flush()
+        membership_b = BusinessMembership(
+            business_id=business_b.id,
+            user_subject="t39-owner-b",
+            role=MembershipRole.OWNER,
+        )
+        session.add(membership_b)
+        session.commit()
+        business_b_id = business_b.id
+        principal_b = AuthenticatedPrincipal(subject="t39-owner-b")
+
+        order_b, line_b, _ = _approved_order(session, business_b_id, principal_b)
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_b_id
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_b_id
+            )
+        )
+
+        # A valid owner from business A must not receive an order belonging to B.
+        with pytest.raises(WorkflowError, match="Purchase order not found"):
+            receive_purchase_order(
+                session,
+                principal=principal_a,
+                business_id=business_a_id,
+                purchase_order_id=order_b.id,
+                received_quantities={line_b.id: Decimal("1")},
+            )
+
+        session.expire_all()
+        persisted_order_b = session.get(PurchaseOrder, order_b.id)
+        persisted_line_b = session.get(PurchaseOrderLine, line_b.id)
+        assert persisted_order_b.status == "approved"
+        assert persisted_line_b.received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_b_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_b_id
+            )
+        ) == audit_count_before
+
+
+@pytest.mark.parametrize("invalid_status", ["draft", "received", "cancelled"])
+def test_receipt_rejects_order_in_invalid_lifecycle_state_without_side_effects(
+    purchasing_workspace, invalid_status
+):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, _ = _approved_order(session, business_id, principal)
+        order.status = invalid_status
+        session.commit()
+
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+
+        with pytest.raises(WorkflowError, match="Only approved purchase orders"):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={line.id: Decimal("1")},
+            )
+
+        session.expire_all()
+        assert session.get(PurchaseOrder, order.id).status == invalid_status
+        assert session.get(PurchaseOrderLine, line.id).received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
