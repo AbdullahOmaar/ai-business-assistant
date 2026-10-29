@@ -10,12 +10,12 @@ from sqlalchemy.pool import StaticPool
 
 from app.core_features_api import profit_loss
 from app.extended_api import (
-    BankAccountInput, BankReconciliationMatchInput, BankStatementImportInput, CashRefundInput, CreditApplicationInput, apply_credit_note, approve_sales_return, create_bank_account, create_cash_refund, import_bank_statement, match_bank_statement_row,
+    BankAccountInput, BankReconciliationMatchInput, BankStatementImportInput, CashRefundInput, CreditApplicationInput, PricingRuleInput, apply_credit_note, approve_sales_return, create_bank_account, create_cash_refund, get_pricing_rules, import_bank_statement, match_bank_statement_row, post_pricing_rule,
     customer_statement, issue_credit_note_for_return, list_credit_applications,
     list_cash_refunds, list_credit_notes, list_invoices, list_sales_returns, receivables_aging, report_tax_summary,
 )
 from app.models import (
-    AuditEvent, BankAccount, BankReconciliationMatch, BankStatementRow, Base, Business, BusinessMembership, CashRefund, CreditApplication, CreditNote, Expense, Invoice, Payment, PaymentAllocation,
+    AuditEvent, BankAccount, BankReconciliationMatch, BankStatementRow, Base, Business, BusinessMembership, CashRefund, CreditApplication, CreditNote, Expense, Invoice, Payment, PaymentAllocation, PricingRule,
     InvoiceLine, MembershipRole, SalesReturn, SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
@@ -1126,4 +1126,70 @@ def test_staff_cannot_import_or_match_bank_statements(credit_note_workspace):
         assert error.value.status_code == 403
         assert session.scalar(select(func.count()).select_from(BankStatementRow).where(
             BankStatementRow.business_id == business_id,
+        )) == 0
+
+
+def test_pricing_rules_are_filtered_by_effective_window_and_tenant(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        post_pricing_rule(
+            business_id=business_id,
+            body=PricingRuleInput(
+                name="Summer VAT", rule_type="tax", rate=Decimal("14.0000"),
+                effective_from=datetime(2026, 7, 1, tzinfo=timezone.utc),
+                effective_until=datetime(2026, 10, 1, tzinfo=timezone.utc),
+            ),
+            session=session, principal=owner,
+        )
+        post_pricing_rule(
+            business_id=business_id,
+            body=PricingRuleInput(
+                name="Future discount", rule_type="discount", rate=Decimal("5.0000"),
+                effective_from=datetime(2026, 11, 1, tzinfo=timezone.utc),
+            ),
+            session=session, principal=owner,
+        )
+        active = get_pricing_rules(
+            business_id=business_id, rule_type="tax",
+            as_of=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            session=session, principal=owner,
+        )
+        expired = get_pricing_rules(
+            business_id=business_id, rule_type=None,
+            as_of=datetime(2026, 10, 15, tzinfo=timezone.utc),
+            session=session, principal=owner,
+        )
+        assert len(active["items"]) == 1
+        assert active["items"][0]["name"] == "Summer VAT"
+        assert expired["items"] == []
+
+
+def test_pricing_rule_rejects_naive_or_reversed_effective_dates(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    owner = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as naive:
+            post_pricing_rule(
+                business_id=business_id,
+                body=PricingRuleInput(
+                    name="Naive tax", rule_type="tax", rate=Decimal("10.0000"),
+                    effective_from=datetime(2026, 1, 1),
+                ),
+                session=session, principal=owner,
+            )
+        assert naive.value.status_code == 422
+        with pytest.raises(HTTPException) as reversed_window:
+            post_pricing_rule(
+                business_id=business_id,
+                body=PricingRuleInput(
+                    name="Reversed tax", rule_type="tax", rate=Decimal("10.0000"),
+                    effective_from=datetime(2026, 2, 1, tzinfo=timezone.utc),
+                    effective_until=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                ),
+                session=session, principal=owner,
+            )
+        assert reversed_window.value.status_code == 422
+        assert session.scalar(select(func.count()).select_from(PricingRule).where(
+            PricingRule.business_id == business_id,
         )) == 0
