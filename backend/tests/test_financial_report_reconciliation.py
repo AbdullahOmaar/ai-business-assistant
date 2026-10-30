@@ -727,3 +727,110 @@ def test_payment_overallocation_is_reported_and_never_reduces_receivables():
         )
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+def test_dashboard_and_profit_loss_are_isolated_from_another_business():
+    """Report aggregates must never include rows from an unrelated tenant."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        business_id = UUID(client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Primary Reporting Tenant",
+                "currency_code": "EGP",
+                "timezone": "Africa/Cairo",
+            },
+        ).json()["id"])
+        recorded_at = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
+
+        with Session(engine) as session:
+            unrelated_business = Business(
+                name="Unrelated Reporting Tenant",
+                currency_code="EGP",
+                timezone="Africa/Cairo",
+            )
+            session.add(unrelated_business)
+            session.flush()
+            session.add_all([
+                Invoice(
+                    business_id=business_id,
+                    invoice_number="TENANT-A-ISSUED",
+                    status="issued",
+                    currency_code="EGP",
+                    issue_date=recorded_at,
+                    subtotal=Decimal("100.00"),
+                    discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"),
+                    total=Decimal("100.00"),
+                ),
+                Invoice(
+                    business_id=unrelated_business.id,
+                    invoice_number="TENANT-B-ISSUED",
+                    status="issued",
+                    currency_code="EGP",
+                    issue_date=recorded_at,
+                    subtotal=Decimal("900.00"),
+                    discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"),
+                    total=Decimal("900.00"),
+                ),
+                Expense(
+                    business_id=business_id,
+                    category="operations",
+                    description="Primary tenant expense",
+                    amount=Decimal("10.00"),
+                    currency_code="EGP",
+                    incurred_at=recorded_at,
+                ),
+                Expense(
+                    business_id=unrelated_business.id,
+                    category="operations",
+                    description="Unrelated tenant expense",
+                    amount=Decimal("90.00"),
+                    currency_code="EGP",
+                    incurred_at=recorded_at,
+                ),
+            ])
+            session.commit()
+            unrelated_business_id = unrelated_business.id
+
+        dashboard = client.get(
+            f"/api/v1/businesses/{business_id}/dashboard",
+            params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
+        )
+        assert dashboard.status_code == 200, dashboard.text
+        dashboard_payload = dashboard.json()
+        assert dashboard_payload["invoiced_sales"] == [
+            {"currency_code": "EGP", "count": 1, "total": "100.00"}
+        ]
+        assert dashboard_payload["expenses"] == [
+            {"currency_code": "EGP", "count": 1, "total": "10.00"}
+        ]
+
+        report = client.get(
+            f"/api/v1/businesses/{business_id}/profit-loss",
+            params={
+                "period": "custom",
+                "start_date": "2026-01-15",
+                "end_date": "2026-01-15",
+            },
+        )
+        assert report.status_code == 200, report.text
+        assert report.json()["currencies"] == [{
+            "currency_code": "EGP",
+            "revenue": "100.00",
+            "revenue_invoice_count": 1,
+            "approved_return_total": "0",
+            "approved_return_count": 0,
+            "expenses": "10.00",
+            "expense_count": 1,
+            "operating_result_before_cost_of_goods": "90.00",
+        }]
+
+        denied = client.get(
+            f"/api/v1/businesses/{unrelated_business_id}/dashboard",
+            params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
+        )
+        assert denied.status_code == 403
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
+
