@@ -429,6 +429,35 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
     _, outstanding_cutoff_end = _day_bounds(
         outstanding_as_of_date, outstanding_as_of_date, timezone_name
     )
+    payment_allocation_totals = (
+        select(
+            PaymentAllocation.payment_id.label("payment_id"),
+            func.coalesce(func.sum(PaymentAllocation.amount), 0).label("allocated_total"),
+        )
+        .where(
+            PaymentAllocation.business_id == business_id,
+            PaymentAllocation.created_at < outstanding_cutoff_end,
+        )
+        .group_by(PaymentAllocation.payment_id)
+        .subquery()
+    )
+    overallocated_payment_ids = select(Payment.id).join(
+        payment_allocation_totals,
+        payment_allocation_totals.c.payment_id == Payment.id,
+    ).where(
+        Payment.business_id == business_id,
+        payment_allocation_totals.c.allocated_total > Payment.amount,
+    )
+    overallocated_payment_rows = session.execute(select(
+        Payment.id, Payment.amount, payment_allocation_totals.c.allocated_total
+    ).join(
+        payment_allocation_totals,
+        payment_allocation_totals.c.payment_id == Payment.id,
+    ).where(
+        Payment.business_id == business_id,
+        payment_allocation_totals.c.allocated_total > Payment.amount,
+    )).all()
+
     allocation_joins = (
         select(
             PaymentAllocation.invoice_id.label("invoice_id"),
@@ -451,6 +480,7 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
             Invoice.status == "issued",
             Invoice.issue_date < outstanding_cutoff_end,
             PaymentAllocation.created_at < outstanding_cutoff_end,
+            ~Payment.id.in_(overallocated_payment_ids),
             func.upper(Payment.currency_code) == func.upper(Invoice.currency_code),
             Payment.customer_id.is_not(None),
             Invoice.customer_id.is_not(None),
@@ -530,6 +560,13 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         }
         for invoice_id, invoice_number in missing_issue_date_rows
     ]
+    data_quality_warnings.extend({
+        "payment_id": str(payment_id),
+        "type": "allocations_exceed_payment_amount",
+        "payment_amount": str(payment_amount),
+        "allocated_amount": str(allocated_amount),
+        "excess_allocated": str(Decimal(str(allocated_amount)) - Decimal(str(payment_amount))),
+    } for payment_id, payment_amount, allocated_amount in overallocated_payment_rows)
     for invoice_id, invoice_number, currency, invoice_total, allocated_total in outstanding_invoice_rows:
         currency = currency.strip().upper()
         total = Decimal(str(invoice_total or 0))
