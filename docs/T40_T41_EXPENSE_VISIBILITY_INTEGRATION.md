@@ -98,9 +98,9 @@ A broader open Draft PR #312 was inspected because it changes the same report su
 **Integration rule:** do not cherry-pick or merge PR #312 wholesale into T40. First obtain T37 approval and coordinate with T38/Feature 31. Then reconcile only the approved, scoped report behavior while preserving T40 date-boundary semantics and T41 payroll visibility. The six migration chain and its dependencies require independent migration review and isolated PostgreSQL upgrade/recovery validation; they are not part of T40's current authorized changes.
 
 
-## OWNER APPROVAL + IMPLEMENTATION CHECKPOINT — T37 v1.0.1 (2026-10-30)
+## Separate payroll privacy v1.0 approval; T37 financial contract remains NOT APPROVED (2026-10-30)
 
-The Product Owner explicitly approved the bounded policy recommendations. The canonical versioned record is T37 v1.0.1: https://app.notion.com/p/4089320b90fb81708c5cc14a1b74580b. This section supersedes the earlier "Decision gate" and "no code changed" status above; those statements remain historical for their original checkpoint only.
+Master explicitly approved the narrow Payroll Privacy Policy v1.0 in the T40 task discussion. This is a separate security/access decision only. The canonical T37 page remains PARTIALLY COMPLETE / Draft / NOT APPROVED and contains no versioned T37 v1.0.1 approval; prior Operating Model/PR statements claiming otherwise conflict with the canonical T37 record and the owner's latest closeout instruction. The payroll privacy approval does NOT approve receivables-as-of, allocation/over-allocation, expense settlement, cashflow, posting, tax, COGS, FX, GL or schema semantics.
 
 ### Implemented on the existing T40 PR #304 branch
 
@@ -124,10 +124,10 @@ The Product Owner explicitly approved the bounded policy recommendations. The ca
 
 - Source-level review confirms visibility is applied before expense pagination and aggregate queries on the changed surfaces. OWNER-only CSV/export and payroll management guards remain unchanged.
 - The new test is authored but **NOT RUN**. All prior T40 tests and the 26 related suites remain **NOT RUN**. Build, PostgreSQL, browser, security and exact-head executable checks are **NOT RUN**.
-- Latest PR #304 head at this checkpoint: `6cfb8155f12e42ee6719226af49e9f9b5b34406d`; OPEN / DRAFT / UNMERGED; 58 commits ahead / 2 behind live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; GitHub reports mergeable=true, but the base is diverged and no exact-head status contexts exist. Empty status is NOT a pass.
+- This is a historical PR checkpoint; exact current PR #304 head/base/mergeability must be read from live GitHub metadata. The PR is still Draft, has no formal reviews, and empty status contexts on [skip ci] commits are NOT a pass.
 - CircleCI remains prohibited; no retry/run was initiated. GitHub Actions was not used. No authorized local runner is available. No merge, rebase, deployment, schema migration or production financial-data write occurred.
 
-### Next T40 implementation order
+### T40 implementation status and approval boundaries
 
 1. Add/extend regressions for OWNER/STAFF visibility with all date-filter variants and offset pages; cross-tenant PayrollRecord link isolation; no-side-effect assertions.
 2. Complete dashboard allocation integrity: only same-currency Payment/Invoice allocations reduce receivables; expose mismatched/over-allocated records as explicit data-quality warnings; remove silent negative-balance clamping. Preserve the existing aging warning behavior.
@@ -136,9 +136,9 @@ The Product Owner explicitly approved the bounded policy recommendations. The ca
 5. Reconcile the two commits behind main after reviewing their changes, then exact-SHA validation through an authorized non-CircleCI runner and independent review. Keep Draft/unmerged.
 
 
-## T37 v1.0.1 — allocation integrity and historical as-of implementation update (2026-10-30)
+## Candidate allocation integrity and historical as-of implementation — T37 NOT APPROVED (2026-10-30)
 
-This section supersedes the earlier "Next T40 implementation order" items 2–3 where they are now implemented on this branch.
+The following changes are present on PR #304 as candidate code only. They do not have T37 approval and are not eligible for merge/release. This section records source state, not accepted accounting policy.
 
 ### Implemented
 
@@ -182,6 +182,16 @@ This section supersedes the earlier "Next T40 implementation order" items 2–3 
 
 1. Add STAFF/OWNER date-filter matrix coverage for start-only, end-only and combined local-day filters with offset pages; add no-side-effect assertions for denied paths.
 2. Review the two commits behind live main and reconcile the base only after source review; do not assume mergeable metadata is a release gate.
-3. Design and implement the separate Expense settlement/disbursement and cashbox lifecycle only after model/API idempotency, migration and PostgreSQL recovery tests are specified; the policy is approved, but schema and runtime are still absent.
+3. Expense settlement/disbursement and cashbox lifecycle remains NEEDS APPROVAL under T37; schema/runtime are absent. Do not add migration or posting behavior before versioned approval.
 4. Keep credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
 5. Obtain an authorized non-CircleCI runner and execute all 26 targeted + 26 related tests, PostgreSQL integration, build and security checks on the exact SHA; obtain independent review before any readiness decision.
+
+
+## WORKSTREAM CLOSEOUT CORRECTION — 2026-10-30
+
+- The canonical T37 page is still PARTIALLY COMPLETE / Draft / NOT APPROVED. The Operating Model and earlier PR comments claim T37 v1.0.1 approval, but that approval is not present in the canonical T37 page or its decision comments and conflicts with the owner's latest closeout instruction. No T37 financial policy approval is inferred.
+- Master did separately approve Payroll Privacy Policy v1.0 in the T40 task discussion. That approval is limited to OWNER-only payroll-linked Expense visibility and STAFF access to ordinary expenses only, enforced using business-scoped PayrollRecord.expense_id before pagination, aggregation and AI context. The existing implementation and new date-filter/offset/no-side-effect regression are within that separate security approval.
+- Dashboard allocation/customer/currency validation, payment/invoice over-allocation treatment and historical receivables-as-of changes remain candidate implementation only. They must not be merged or released until the canonical T37 contract is explicitly approved.
+- PR #304 currently contains both approved payroll-privacy/date-filter work and T37-gated financial-report candidate changes. It remains Draft and is not merge eligible. Current exact SHA and base comparison must be read from live GitHub PR metadata; earlier snapshots in this document are historical.
+- All 26 targeted T40/privacy tests + 26 related tests remain NOT RUN. Build/PostgreSQL/browser/security checks NOT RUN. CircleCI execution/retries prohibited; no authorized local runner (Desktop Commander OFFLINE).
+- No merge, rebase, deployment, migration or production financial-data mutation was performed.
