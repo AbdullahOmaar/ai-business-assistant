@@ -1,3 +1,34 @@
+# Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
+
+## User directive
+- Do NOT trigger, rerun, retry, or otherwise execute CircleCI jobs; user confirmed the CircleCI quota is exhausted.
+- Continue repository work and prepare a production release without consuming CircleCI quota.
+- This directive does not waive security, data-integrity, required-review, or production migration safeguards.
+
+## Verified source and delivery state
+- GitHub canonical repository: `AbdullahOmaar/ai-business-assistant`.
+- Main at inspection: `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`.
+- Frontend package: `1.3.4`; backend package: `1.3.4`; FastAPI app version: `1.3.4`. Version remains aligned; no version bump has been made.
+- Existing Vercel production deployments for Web and API are READY on the same main SHA `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`. No new deployment was triggered in this checkpoint.
+- Vercel runtime inspection (API, last 24h window) reports 7 exceptions across 1 user, including PostgreSQL UndefinedTable for both `employees` and `payroll_records`; Web runtime inspection reports no runtime errors in that window.
+- The API error is a database schema/migration mismatch, not something a redeploy of unchanged application code can repair. Migration `0005_employee_payroll` adds these tables but has not been verified/applied to production. No production SQL, migration, snapshot, or restore operation was run.
+- The release runbook requires backup/restore evidence, schema revision verification, migration rehearsal, and exact candidate checks before applying production migrations.
+
+## PR reconciliation
+- PR #313: OPEN, non-draft, mergeable=true; adds a delegated platform-viewer no-mutation/no-audit regression. No independent review; exact-head CircleCI contexts are failure (not rerun); GitHub Actions also reported failures with unavailable step logs. Not merged.
+- PR #314: OPEN, draft, mergeable=true; adds OWNER-only read-only pricing-rule listing and focused tests. Branch notes report 2 passed in an assembled sandbox, but full exact checkout / CI / review are not verified. It is explicitly PARTIALLY COMPLETE and does not implement effective dates or invoice calculation integration. Not merged.
+- PR #315: OPEN, draft, mergeable=true; adds GitLab CI fallback and repository-boundary docs. Exact-SHA GitLab pipeline/status integration remains unverified. GitLab project inspection returned HTTP 403; no GitLab pipeline was triggered. Not merged.
+- PRs #302, #304–#312 remain based on older base SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`; do not merge wholesale. Reconcile/rebase and review individually.
+- CircleCI statuses remain recorded as unavailable/failing due quota; do not rerun. No required status or branch-protection settings were changed.
+
+## Actions and outcomes
+- Inspected current main, package/app version alignment, release history/runbook, PR #313–#315 diffs, Vercel projects/deployments, and recent API/Web runtime errors.
+- NOT RUN: CircleCI (per user directive), GitLab pipeline (GitLab returned 403), local full test/build, production database backup/restore, production migration, new Vercel deployment.
+- BLOCKED: production release that claims employee/payroll functionality until migration `0005_employee_payroll` is rehearsed against an isolated restored database and production schema/backup gates are satisfied.
+- Next highest-value action: obtain authorized, cost-safe database backup/restore and schema-revision evidence; then rehearse migration `0005_employee_payroll` in isolation. Keep CircleCI untouched and use an independently verified alternative CI path when GitLab access is restored.
+
+---
+
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
@@ -22,6 +53,26 @@
 2. Merge only after all required checks pass, then verify the resulting main SHA and its post-merge checks.
 3. Continue issue #276's remaining route × role × tenant no-write/no-audit coverage on one dedicated branch.
 4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly **NOT RUN / BLOCKED** until performed with approved access.
+
+## Master parallel staff assignments — 2026-10-29
+
+These are execution assignments on existing Notion tasks, not new duplicate tasks. Notion comments on the linked task pages contain the detailed work orders and must be kept in sync with this section.
+
+1. **Staff 1 — Security & tenant isolation (Notion T03):** Continue the missing route × role × tenant coverage. Start by reviewing `docs/SECURITY_ROUTE_INVENTORY.md`, `backend/tests/test_business_tenant_boundaries.py`, and draft [PR #302](https://github.com/AbdullahOmaar/ai-business-assistant/pull/302) at head `bfda274696dc20305d5a770bb4c994770ffad6e8`. Do not duplicate PR #302 or modify its branch without coordination. Add focused regressions for uncovered routes, role/tenant denial, and no-read/no-write/no-audit side effects. Update the same T03 Notion page with exact evidence.
+
+2. **Staff 2 — Functional regression & automation (Notion T22):** Map the critical MVP workflows to existing tests, inspect scripts and CircleCI, run targeted tests then the full available regression suite, and add only missing coverage. Include success/failure paths and duplicate/retry/idempotency cases only where current contracts are unambiguous. Coordinate with Staff 1 to avoid overlapping security tests and do not invent financial behavior while T37 contracts are open. Update the same T22 Notion page with exact commands, SHA, results, and blockers.
+
+3. **Staff 3 — Repository / PR / CI reconciliation (Notion T01; T07 when relevant):** Re-verify current main SHA, open PR heads/bases/checks, branch inventory, and CI failures. Reconcile existing branch ledgers instead of creating duplicate reports. The totals in historical snapshots are not current counts; full pagination was last marked NOT RUN. Classify code failures vs infrastructure/provider failures and update the same T01 page; update T07 only where its CI-gate acceptance criteria were actually verified.
+
+**Shared controls:** Isolate changes by branch and coordinate shared files. Keep Notion task pages and this ledger aligned. Record exact SHAs and test/CI links; use VERIFIED COMPLETE / PARTIALLY COMPLETE / NOT RUN / BLOCKED accurately. No branch deletion, merge, or production deployment is authorized by these assignments.
+
+
+## Notion-first inter-agent communication — @n
+
+The canonical communication contract lives in the Notion [Agent Prompt Registry](https://app.notion.com/p/407bbf2bc2c58160be0cefe4f6374d05), section **Mandatory Notion-to-Notion Agent Communication Protocol — @n**. Master and specialist chats must read and reply on existing task-page discussions; the user is not a relay. Each operational comment must identify sender/receiver, canonical task, checkpoint, exact status, evidence, next action/owner, and conflicts/dependencies. A specialist's acknowledgement is not assumed until posted by that chat. Notion is not a guaranteed push channel: resumed chats must poll/read comments; never claim a separate chat was notified or woke up automatically. Notion task pages remain canonical for assignments/status, while GitHub remains canonical for code/CI/release evidence. No merge/deploy authorization is implied.
+
+
+
 
 ## Current evidence baseline
 
