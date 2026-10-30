@@ -1748,7 +1748,7 @@ Additional implementation/test commits (all [skip ci]):
 
 ### Remaining
 
-1. Add date-filter × role × offset pagination and denied-path no-side-effect regression coverage.
+1. Date-filter × role × offset pagination and denied-path no-side-effect regression coverage is now authored; execute it when an authorized non-CircleCI runner is available.
 2. Review the two commits behind main before reconciling the base.
 3. Design and implement the separate Expense settlement/disbursement/cashbox lifecycle with idempotency, reversal, audit and PostgreSQL migration/recovery tests; policy is approved, but the schema/runtime are absent.
 4. Keep tax/credit-note, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
