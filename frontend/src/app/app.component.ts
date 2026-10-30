@@ -1508,10 +1508,10 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
-      const workspaceChanged = this.business?.id !== chosen.id;
+      const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      if (workspaceChanged) this.clearWorkspaceData();
+      if (workspaceAccessChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
       if (requestVersion !== this.businessListRequestVersion ||
