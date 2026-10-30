@@ -877,12 +877,16 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
     previous_resolver = getattr(app.state, "principal_resolver", None)
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     app.state.principal_resolver = lambda request: AuthenticatedPrincipal("operations-owner")
+    staff_subject = "operations-staff"
     try:
         business_id, product_id = uuid4(), uuid4()
         with app.state.session_factory() as session:
             session.add(Business(id=business_id, name="Operations workspace", currency_code="EGP"))
             session.flush()
-            session.add(BusinessMembership(business_id=business_id, user_subject="operations-owner", role=MembershipRole.OWNER))
+            session.add_all([
+                BusinessMembership(business_id=business_id, user_subject="operations-owner", role=MembershipRole.OWNER),
+                BusinessMembership(business_id=business_id, user_subject=staff_subject, role=MembershipRole.STAFF),
+            ])
             session.add(Product(id=product_id, business_id=business_id, name="Stock item", unit_price=Decimal("10.00"), is_stock_tracked=True))
             session.commit()
         client = TestClient(app)
@@ -930,6 +934,39 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
         listed_schedules = client.get(f"/api/v1/businesses/{business_id}/recurring-invoices")
         assert listed_schedules.status_code == 200
         assert listed_schedules.json()[0]["id"] == schedule.json()["id"]
+
+        # STAFF has membership-scoped read access to operational lists, but the
+        # reads must remain tenant-scoped and must not create audit side effects.
+        def business_row_snapshot():
+            with app.state.session_factory() as session:
+                snapshot = []
+                for table in Base.metadata.sorted_tables:
+                    if "business_id" not in table.c:
+                        continue
+                    statement = table.select().where(table.c.business_id == business_id)
+                    primary_key = list(table.primary_key.columns)
+                    if primary_key:
+                        statement = statement.order_by(*primary_key)
+                    rows = session.execute(statement).all()
+                    snapshot.append((table.name, tuple(tuple(row) for row in rows)))
+                return tuple(snapshot)
+
+        staff_read_baseline = business_row_snapshot()
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(staff_subject)
+        staff_suppliers = client.get(f"/api/v1/businesses/{business_id}/suppliers")
+        assert staff_suppliers.status_code == 200, staff_suppliers.text
+        assert [item["id"] for item in staff_suppliers.json()] == [supplier["id"]]
+        assert business_row_snapshot() == staff_read_baseline
+
+        staff_orders = client.get(f"/api/v1/businesses/{business_id}/purchase-orders")
+        assert staff_orders.status_code == 200, staff_orders.text
+        assert [item["id"] for item in staff_orders.json()] == [order_id]
+        assert business_row_snapshot() == staff_read_baseline
+
+        staff_schedules = client.get(f"/api/v1/businesses/{business_id}/recurring-invoices")
+        assert staff_schedules.status_code == 200, staff_schedules.text
+        assert [item["id"] for item in staff_schedules.json()] == [schedule.json()["id"]]
+        assert business_row_snapshot() == staff_read_baseline
     finally:
         if previous_factory is None:
             if hasattr(app.state, "session_factory"):
