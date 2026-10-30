@@ -72,7 +72,7 @@
 |---|---|---|
 | POST | `/api/v1/businesses/{business_id}/customers` | Membership required |
 | POST | `/api/v1/businesses/{business_id}/suppliers` | Membership required |
-| POST | `/api/v1/businesses/{business_id}/products` | Membership required |
+| POST | `/api/v1/businesses/{business_id}/products` | Membership required; positive `opening_quantity` requires OWNER before any product/stock/audit writes |
 | POST | `/api/v1/businesses/{business_id}/invoices` | Membership required; customer/product IDs must belong to same business |
 | POST | `/api/v1/businesses/{business_id}/invoices/issue` | OWNER only; create and issue atomically; customer/product IDs must belong to same business |
 | POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue` | OWNER only; invoice must belong to the requested business and satisfy issue lifecycle rules |
@@ -137,7 +137,7 @@ All routes require a trusted authenticated principal and explicit server-side pl
 
 | Method | Path | Access expectation |
 |---|---|---|
-| GET | `/api/v1/platform-admin/access` | Platform allowlist only; return effective platform roles and permissions |
+| GET | `/api/v1/platform-admin/access` | Active delegated platform-role grant or bootstrap super-admin allowlist; return only the caller's effective roles and permissions |
 | GET | `/api/v1/platform-admin/system-status` | `view_system_status` permission; safe runtime metadata only |
 | GET | `/api/v1/platform-admin/overview` | `view_overview` permission; platform counts with financial totals separated by currency |
 | GET | `/api/v1/platform-admin/businesses` | `view_workspaces` permission; bounded, read-only workspace search |
