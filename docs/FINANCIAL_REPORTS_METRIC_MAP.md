@@ -1,6 +1,6 @@
 # Financial Reports — Source-to-Metric Map
 
-Status: **PARTIALLY COMPLETE**. This document records the current implementation contract observed in the T40 candidate. It is not approval of the shared financial contract. T37 remains Draft / NOT APPROVED; no lifecycle, posting, formula, schema, or migration changes may be made on the strength of this document alone.
+Status: **PARTIALLY COMPLETE**. This document records the implementation contract observed in the T40 candidate; it is not approval of the shared financial contract. The Master Task Plan/effective project instruction classify T37 as Draft / NOT APPROVED, while the canonical T37 page also contains a v1.0.1 owner-decision section claiming bounded approval. That scope/status conflict remains unresolved; no lifecycle, posting, formula, schema, or migration changes may be made on the strength of this document alone.
 
 ## Report sources and meanings
 
@@ -89,7 +89,7 @@ The matrix below separates already-authored tests from missing coverage and cont
 
 ## Payroll privacy v1.0 approval; T37 financial contract remains NOT APPROVED — 2026-10-30
 
-Master separately approved Payroll Privacy Policy v1.0 on the canonical T40 task discussion. This narrow approval covers OWNER-only payroll-linked Expense rows/aggregates and STAFF access to ordinary expenses only, with business-scoped PayrollRecord.expense_id filtering before pagination/aggregation/AI context. The canonical T37 page remains PARTIALLY COMPLETE / Draft / NOT APPROVED. Earlier Operating Model/PR statements claiming T37 v1.0.1 approval conflict with the canonical T37 record and the owner's latest closeout instruction; do not treat those statements as approval.
+Master separately approved Payroll Privacy Policy v1.0 on the canonical T40 task discussion. This narrow approval covers OWNER-only payroll-linked Expense rows/aggregates and STAFF access to ordinary expenses only, with business-scoped PayrollRecord.expense_id filtering before pagination/aggregation/AI context. The Master Task Plan and latest authority reconciliation classify T37 overall as PARTIALLY COMPLETE / Draft / NOT APPROVED. The canonical T37 page itself also contains an OWNER DECISION v1.0.1 section claiming Product Owner approval for bounded operational policies. These records conflict on effective scope; current project instruction remains fail-closed until Master explicitly reconciles them. Do not treat v1.0.1 as blanket approval.
 
 ### Separately approved payroll privacy behavior present on the T40 branch
 
@@ -145,8 +145,8 @@ This addendum clarifies that the earlier metric table describes the baseline imp
 
 ### Current source authority
 - Live `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
-- Current T40 candidate: PR #304, branch `task/t40-fin-report-003-current-main-20261029`, HEAD `7fcb24526e768949c87c6a0538115510f4c802a1`, base/merge base `c464398e0a6ace77eba32aabfbdbd09091f53999`, 101 ahead / 2 behind, diverged, OPEN/DRAFT/UNMERGED, GitHub `mergeable=false`.
-- Latest Master authority correction (PR #304 comment `https://github.com/AbdullahOmaar/ai-business-assistant/pull/304#issuecomment-6530108102`) says **T37 remains Draft / NOT APPROVED overall**. Only the narrow AUTH-T41 payroll-privacy access policy is separately approved. Earlier PR/Operating Model text asserting broader T37 v1.0.1 financial approval is superseded.
+- Historical T40 checkpoint from 2026-10-30: PR #304 remained OPEN/DRAFT/UNMERGED and diverged from main. Live branch SHA, ancestry, checks and review state are maintained on the canonical T40 Notion task; do not use this historical snapshot as current delivery evidence.
+- Latest Master authority correction (PR #304 comment `https://github.com/AbdullahOmaar/ai-business-assistant/pull/304#issuecomment-6530108102`) says **T37 remains Draft / NOT APPROVED overall**. The canonical T37 page also contains a v1.0.1 owner-decision section claiming bounded approval. This is an unresolved authority/scope conflict; effective handling remains fail-closed under the current project instruction until Master reconciles the two. Only the narrow AUTH-T41 payroll-privacy access policy is separately approved.
 
 ### Candidate delta — present in PR #304, not approved for merge
 The candidate branch has moved beyond the main-baseline behavior described in the table above:
@@ -249,3 +249,8 @@ Source review of the actual PR #304 diff found that Dashboard and receivables-ag
 - Response metadata reports `limit`, `offset`, full `total_count`, `has_more` and `next_offset`. Invoice rows are sliced after report-wide calculations, so `invoice_count`, `by_currency` and `data_quality_warnings` remain identical across pages. Stable ordering now adds Invoice.id as the final tie-breaker.
 - This is response pagination only; current implementation still materializes the full report before slicing. It is not a database-query optimization or a financial formula change. Frontend controls/API-service wiring remain separate.
 - Added a synthetic no-allocation pagination regression comparing the complete result with page 1 and page 2; it does not assert disputed allocation/settlement semantics. Runtime execution remains NOT RUN.
+
+
+### T37 authority conflict and effective handling — 2026-10-31
+
+The canonical T37 task page includes an “OWNER DECISION — T37 Shared Financial Contract v1.0.1” section stating Product Owner approval on 2026-10-30 for bounded operational policies. The Master Task Plan and later Master authority reconciliation still classify T37 overall as PARTIALLY COMPLETE / DRAFT / NOT APPROVED and require fail-closed handling until scope is reconciled. The Operating Model preserves both statements. Under the current project-level instruction, candidate historical-as-of, allocation-eligibility, over-allocation and settlement semantics remain blocked until Master explicitly confirms which v1.0.1 decisions are effective. The separately approved Payroll Privacy v1.0 scope remains narrow and independent.
