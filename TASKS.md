@@ -15,7 +15,7 @@
 ## PR / base reconciliation
 - PR #304 and PRs #305–#312 remain based on merge base c464398e0a6ace77eba32aabfbdbd09091f53999; review and reconcile individually, never merge wholesale.
 - The two commits from merge base to current main are documentation-only changes in TASKS.md: ae7a34b884d86e0ed26ffd64c528c1d488b956ef (parallel staff assignments + Notion-first protocol) and d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f (CircleCI quota freeze + production release hold). The T40 branch has manually ported the applicable checkpoint/coordination content while preserving its own work; ancestry remains diverged until an independently reviewed base reconciliation.
-- PR #304 remains OPEN / DRAFT / UNMERGED. Latest exact head is tracked in live PR metadata and Notion T40; current comparison is 76 ahead / 2 behind main. Empty status contexts on [skip ci] commits are NOT a pass.
+- PR #304 remains OPEN / DRAFT / UNMERGED. At the start of this docs-only reconciliation it was 76 ahead / 2 behind main; the final head/compare are tracked in live PR metadata and Notion T40. Empty status contexts on [skip ci] commits are NOT a pass.
 - CircleCI remains prohibited; no manual run/retry. GitHub Actions was not used. Desktop Commander is OFFLINE; no authorized local runner. GitLab exact-SHA validation is not available.
 
 ## Master parallel staff assignments — 2026-10-29 (reconciled)
