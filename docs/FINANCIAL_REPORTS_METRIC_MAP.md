@@ -133,7 +133,7 @@ This update supersedes the previous "Approved but not yet fully implemented" bul
 Updated coverage:
 - 14 date-boundary tests.
 - 10 report-reconciliation tests.
-- 1 payroll privacy integration test.
+- 2 payroll privacy integration tests (broad-surface visibility + date-filter/offset/no-side-effect matrix).
 - 26 related existing tests.
-- 25 targeted/authored + 26 related tests total. All **NOT RUN**.
+- 26 targeted/authored + 26 related tests total. All **NOT RUN**.
 - Current exact PR #304 head at the last code checkpoint: e9ed52816469cf439b1b66b92bf04c97b011617b; latest docs checkpoints follow on the same branch. Empty status on [skip ci] commits is NOT a pass. No CircleCI run/retry, no GitHub Actions, no authorized local runner.
