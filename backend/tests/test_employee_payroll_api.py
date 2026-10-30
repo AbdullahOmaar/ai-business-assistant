@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+import json
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
+import app.assistant_api as assistant_api
 import app.employee_payroll_api as employee_payroll_api
 from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
@@ -1076,13 +1078,20 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
             "description": "Office supplies",
             "amount": "100.00",
             "currency_code": "EGP",
-            "incurred_at": datetime.now(timezone.utc).isoformat(),
+            # Older than the payroll expense so limit=1 proves the privacy
+            # predicate is applied before ordering/pagination, not afterwards.
+            "incurred_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
         },
     )
     assert ordinary_expense.status_code == 201, ordinary_expense.text
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
     env["subject"]["value"] = STAFF
+    first_expense_page = env["client"].get(f"{base}/expenses", params={"limit": 1})
+    assert first_expense_page.status_code == 200, first_expense_page.text
+    assert len(first_expense_page.json()) == 1
+    assert first_expense_page.json()[0]["description"] == "Office supplies"
+
     staff_expenses = env["client"].get(f"{base}/expenses")
     assert staff_expenses.status_code == 200, staff_expenses.text
     assert len(staff_expenses.json()) == 1
@@ -1128,6 +1137,40 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert "Confidential Payroll Employee" not in chat.text
     assert "5000.00" not in chat.text
     assert "payroll:" not in chat.text
+
+    # Exercise the provider-backed path and inspect the exact outbound payload.
+    captured = {}
+
+    class FakeProviderResponse:
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "answer": "Only ordinary expenses are available.",
+                            "source_ids": [],
+                        })
+                    }
+                }]
+            }
+
+    async def fake_provider_post(_client, *, headers, payload):
+        captured["headers"] = headers
+        captured["payload"] = payload
+        return FakeProviderResponse()
+
+    monkeypatch.setattr(assistant_api, "_provider_post", fake_provider_post)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    provider_chat = env["client"].post(
+        f"{base}/assistant/chat",
+        json={"message": "Summarize recent expenses."},
+    )
+    assert provider_chat.status_code == 200, provider_chat.text
+    outbound = json.dumps(captured["payload"], ensure_ascii=False)
+    assert "Office supplies" in outbound
+    assert "Confidential Payroll Employee" not in outbound
+    assert "5000.00" not in outbound
+    assert "payroll:" not in outbound
 
     # OWNER retains access to the linked payroll expense and its totals.
     env["subject"]["value"] = OWNER
