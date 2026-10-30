@@ -1739,9 +1739,9 @@ Additional implementation/test commits (all [skip ci]):
 
 - Date-boundary suite: 14 tests.
 - Report-reconciliation suite: 10 tests.
-- Payroll visibility integration: 1 test.
+- Payroll visibility integration: 2 tests (broad-surface privacy + date-filter/offset/no-side-effect matrix).
 - Related existing suites: 26 tests.
-- Total authored/targeted: 25 T40/integration + 26 related. All are source-reviewed only; **NOT RUN**.
+- Total authored/targeted: 26 T40/integration + 26 related. All are source-reviewed only; **NOT RUN**.
 - Build, PostgreSQL integration, frontend/browser, security scans and exact-head runtime validation: **NOT RUN**.
 - Pre-TASKS-refresh PR #304 checkpoint: 5b9bcf04d1a6e956be9d1947624d806920dafef3; 74 ahead / 2 behind live main d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f; OPEN/DRAFT/UNMERGED, mergeable=true; exact-head status empty due [skip ci] (NOT a pass). This TASKS refresh is another docs-only [skip ci] commit; read back PR metadata for the resulting final exact head.
 - CircleCI execution/retries remain prohibited; GitHub Actions is not a replacement. Desktop Commander is OFFLINE; no authorized local runner. No merge/rebase/deployment/migration/production write.
@@ -1752,4 +1752,4 @@ Additional implementation/test commits (all [skip ci]):
 2. Review the two commits behind main before reconciling the base.
 3. Design and implement the separate Expense settlement/disbursement/cashbox lifecycle with idempotency, reversal, audit and PostgreSQL migration/recovery tests; policy is approved, but the schema/runtime are absent.
 4. Keep tax/credit-note, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
-5. Run 25 targeted + 26 related tests, PostgreSQL integration, build and security checks on an exact SHA via an authorized non-CircleCI runner; obtain independent review.
+5. Run 26 targeted + 26 related tests, PostgreSQL integration, build and security checks on an exact SHA via an authorized non-CircleCI runner; obtain independent review.
