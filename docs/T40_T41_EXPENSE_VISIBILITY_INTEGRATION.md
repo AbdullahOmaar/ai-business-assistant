@@ -204,3 +204,19 @@ This addendum supersedes older T37 status statements in this review. Product & A
 The following remain deferred: salary effective-date/history/backfill/proration; failed/partial/reversed/corrected payout lifecycle; broader T37 financial contracts; cashbox/expense settlement; tax/FX/AP/COGS/GL and accounting posting. This approval does not authorize merge, production migration, production financial write or deployment.
 
 The exact-head and CI checkpoint earlier in this document is historical. Refresh live PR metadata before any integration decision. Current live heads at the time this correction began were #304 0e013da87d925c3e31a5da868c425e1cbfaa6079 and #308 a300fa5fbb818c8f0b5e2b83e9cf263b76ba98c4; both were two commits behind main, with empty status lists and no independent reviews. No tests/build/PostgreSQL/browser/security checks were run by this documentation correction. [skip ci] was used; no CI was triggered.
+
+
+## Source and regression coverage review — 2026-10-30
+
+A fresh source-level review of the current T40 branch confirms the approved OWNER/STAFF visibility predicate is applied to:
+- GET /expenses before T40 date filters, stable ordering and pagination;
+- report summary and deterministic assistant insights before aggregation;
+- dashboard and P&L expense aggregates;
+- internal operations financial_summary;
+- recent Expense records included in AI chat context.
+
+The expense CSV export remains OWNER-only. A route inventory of the current T40 backend files found only POST /expenses and GET /expenses for expense routes; no direct GET /expenses/{id} endpoint was found. The predicate is based on PayrollRecord.expense_id plus business_id, not mutable description/category/vendor text.
+
+The current T41 payroll test file has 28 authored test functions. The broad privacy regression covers STAFF list with limit=1 (predicate-before-pagination), report summary, dashboard, P&L, deterministic insights, internal summary, CSV denial, AI chat without a provider key, and a mocked provider outbound payload. The T40 date-boundary test file has 14 authored test functions for local inclusive dates, start/end filters, stable ordering, invalid timezone, tenant isolation, calendar extremes and Cairo DST.
+
+**Remaining regression gap:** the broad payroll-privacy test does not yet combine payroll-linked visibility with T40 start-only, end-only and combined date filters. The T40 date tests exercise date filtering separately, but not the intersection. Add those cases to the consolidated integration test before declaring the cross-module contract fully covered. Tests/build/PostgreSQL/browser/security remain NOT RUN on these exact heads; source review is not execution evidence.
