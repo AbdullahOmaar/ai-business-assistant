@@ -35,10 +35,15 @@ blocks:
             - python -m alembic upgrade head
             - python -m alembic current
             - python -m alembic check
-            - python -m pytest -q
+            - mkdir -p test-results
+            - python -m pytest -q --junitxml=test-results/pytest.xml
             - python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
             - test -s /tmp/alembic-upgrade.sql
             - pip-audit -r requirements.txt
+      epilogue:
+        always:
+          commands:
+            - test-results publish "$SEMAPHORE_GIT_DIR/backend/test-results"
 
   - name: Frontend unit tests
     dependencies: []
@@ -104,3 +109,14 @@ blocks:
             - npx playwright install --with-deps chromium
             - npx playwright --version
             - npx playwright test
+      epilogue:
+        always:
+          commands:
+            - test-results publish "$SEMAPHORE_GIT_DIR/frontend/test-results"
+
+after_pipeline:
+  task:
+    jobs:
+      - name: Publish consolidated test report
+        commands:
+          - test-results gen-pipeline-report
