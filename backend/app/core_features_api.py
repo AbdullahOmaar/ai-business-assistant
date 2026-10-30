@@ -20,7 +20,7 @@ from app.models import (
     Payment, PaymentAllocation, SalesReturn,
 )
 from app.security import (
-    AuthenticatedPrincipal, AuthorizationError, authorize_membership,
+    AuthenticatedPrincipal, AuthorizationError, apply_expense_visibility, authorize_membership,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["workspace and dashboard"])
@@ -65,8 +65,8 @@ def _serialize_business(item: Business) -> dict:
 
 
 def _authorize(session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
-               *, owner_only: bool = False) -> None:
-    authorize_membership(
+               *, owner_only: bool = False):
+    return authorize_membership(
         session, principal=principal, business_id=business_id,
         allowed_roles={MembershipRole.OWNER} if owner_only else None,
     )
@@ -383,7 +383,7 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
               principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Return source-record metrics by currency; never label invoice totals as cash."""
     try:
-        _authorize(session, principal, business_id)
+        membership = _authorize(session, principal, business_id)
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     timezone_name = _business_timezone(session, business_id)
@@ -401,9 +401,15 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
 
     expense_clauses = [Expense.business_id == business_id]
     expense_clauses.extend(_date_filter(Expense.incurred_at, start, end))
-    expenses = session.execute(select(
+    expense_statement = select(
         Expense.currency_code, func.count(Expense.id), func.coalesce(func.sum(Expense.amount), 0)
-    ).where(*expense_clauses).group_by(Expense.currency_code)).all()
+    ).where(*expense_clauses)
+    expense_statement = apply_expense_visibility(
+        expense_statement, business_id=business_id, role=membership.role
+    )
+    expenses = session.execute(
+        expense_statement.group_by(Expense.currency_code)
+    ).all()
 
     payment_clauses = [Payment.business_id == business_id]
     payment_clauses.extend(_date_filter(Payment.received_at, start, end))
@@ -458,7 +464,7 @@ def profit_loss(
 ):
     """Summarize invoiced revenue and recorded expenses without overstating net profit."""
     try:
-        _authorize(session, principal, business_id)
+        membership = _authorize(session, principal, business_id)
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
@@ -491,6 +497,9 @@ def profit_loss(
         func.count(Expense.id),
         func.coalesce(func.sum(Expense.amount), 0),
     ).where(Expense.business_id == business_id)
+    expense_query = apply_expense_visibility(
+        expense_query, business_id=business_id, role=membership.role
+    )
     if start_ts is not None:
         invoice_query = invoice_query.where(Invoice.issue_date >= start_ts)
         expense_query = expense_query.where(Expense.incurred_at >= start_ts)
