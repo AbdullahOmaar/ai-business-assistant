@@ -22,6 +22,7 @@ export class AuthService {
   private configPromise?: Promise<RuntimeConfig>;
   private auth: Auth | null = null;
   private authReady?: Promise<void>;
+  private authStateUnsubscribe?: () => void;
   private user: User | null = null;
 
   getRuntimeConfig(): Promise<RuntimeConfig> {
@@ -72,35 +73,48 @@ export class AuthService {
         : initializeApp(config.firebase, appName);
       this.auth = getAuth(app);
     }
-    // Re-create the observer after a timeout/error so the Retry button is effective.
+    // Keep the observer subscribed after the initial auth check. Firebase persists
+    // sign-out/auth changes across tabs; a one-shot observer leaves this cached User
+    // stale and can keep sending an ID token after the user signs out elsewhere.
     if (!this.authReady) {
       this.authReady = new Promise<void>((resolve, reject) => {
-        let unsubscribe: () => void = () => {};
         let settled = false;
+        let unsubscribe: () => void = () => {};
         const timeoutId = setTimeout(() => {
           if (settled) return;
           settled = true;
           unsubscribe();
+          this.authStateUnsubscribe = undefined;
           this.authReady = undefined;
           reject(new Error('Firebase sign-in session check timed out. Retry when your connection is stable.'));
         }, 10_000);
-        const finish = (error?: unknown, user?: User | null) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeoutId);
-          unsubscribe();
-          if (error) {
-            this.authReady = undefined;
-            reject(error);
-            return;
-          }
-          this.user = user ?? null;
-          resolve();
-        };
         unsubscribe = onAuthStateChanged(
           this.auth!,
-          user => finish(undefined, user),
-          error => finish(error)
+          user => {
+            this.user = user ?? null;
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutId);
+              this.authStateUnsubscribe = unsubscribe;
+              resolve();
+            }
+          },
+          error => {
+            this.user = null;
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutId);
+              unsubscribe();
+              this.authStateUnsubscribe = undefined;
+              this.authReady = undefined;
+              reject(error);
+            } else {
+              // The SDK terminates an observer after an error. Allow a later
+              // initialize() call to establish a fresh observer.
+              this.authStateUnsubscribe = undefined;
+              this.authReady = undefined;
+            }
+          }
         );
       });
     }
@@ -108,6 +122,8 @@ export class AuthService {
       await this.authReady;
     } catch (error) {
       this.authReady = undefined;
+      this.authStateUnsubscribe?.();
+      this.authStateUnsubscribe = undefined;
       throw error;
     }
   }
