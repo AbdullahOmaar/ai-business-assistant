@@ -7,6 +7,7 @@ PostgreSQL test module and must run in disposable CI PostgreSQL.
 
 from datetime import datetime, timezone
 from decimal import Decimal
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -77,6 +78,8 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     )
     assert customer_response.status_code == 201, customer_response.text
     customer_id = customer_response.json()["id"]
+    business_uuid = UUID(business_id)
+    customer_uuid = UUID(customer_id)
 
     # 2. Create an inventory-tracked product with 10 units of opening stock.
     product_response = client.post(
@@ -91,6 +94,7 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     )
     assert product_response.status_code == 201, product_response.text
     product_id = product_response.json()["id"]
+    product_uuid = UUID(product_id)
 
     # 3. Draft invoice: 3 × EGP 200 = 600; 10% discount = 60;
     #    tax 14% on 540 = 75.60; total = EGP 615.60.
@@ -174,17 +178,17 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     with Session(engine) as session:
         assert session.scalar(
             select(func.count()).select_from(Payment).where(
-                Payment.business_id == business_id
+                Payment.business_id == business_uuid
             )
         ) == 1
         assert session.scalar(
             select(func.count()).select_from(PaymentAllocation).where(
-                PaymentAllocation.business_id == business_id
+                PaymentAllocation.business_id == business_uuid
             )
         ) == 1
         assert session.scalar(
             select(func.count()).select_from(AuditEvent).where(
-                AuditEvent.business_id == business_id,
+                AuditEvent.business_id == business_uuid,
                 AuditEvent.action == "payment.recorded",
             )
         ) == 1
