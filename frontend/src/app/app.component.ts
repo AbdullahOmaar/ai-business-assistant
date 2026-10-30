@@ -3,7 +3,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
-import { WorkspaceLoadGuard } from './workspace-load-guard';
+import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
@@ -1955,15 +1955,26 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async loadAuditEvents(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid) return;
     const requestVersion = this.auditLoadGuard.begin();
     const businessId = this.business.id;
-    const requestUid = this.currentAuthUid;
-    const isCurrentRequest = (): boolean =>
-      this.auditLoadGuard.isCurrent(requestVersion, this.business?.id, businessId) &&
-      this.signedIn &&
-      this.currentAuthUid === requestUid &&
-      this.business?.role === 'owner';
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role,
+      signedIn: this.signedIn,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.auditLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+      },
+    );
 
     this.auditLoading = true;
     this.auditError = '';
@@ -2024,16 +2035,29 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async loadCustomerStatementPage(offset: number): Promise<void> {
-    if (!this.business || !this.statementCustomerId) return;
+    if (!this.business || !this.statementCustomerId || !this.signedIn || !this.currentAuthUid) return;
     const requestVersion = this.statementLoadGuard.begin();
     const requestedCustomerId = this.statementCustomerId;
     const businessId = this.business.id;
-    const requestUid = this.currentAuthUid;
-    const isCurrentRequest = (): boolean =>
-      this.statementLoadGuard.isCurrent(requestVersion, this.business?.id, businessId) &&
-      requestedCustomerId === this.statementCustomerId &&
-      this.currentAuthUid === requestUid &&
-      this.signedIn;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role,
+      signedIn: this.signedIn,
+      customerId: requestedCustomerId,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.statementLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+        customerId: this.statementCustomerId,
+      },
+    );
 
     this.customerStatement = null;
     this.statementOffset = offset;
