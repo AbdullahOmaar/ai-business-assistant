@@ -1784,3 +1784,24 @@ This is an evidence addendum to the existing live queue. It does not authorize m
 | T22.7 exact-head validation and independent review | Backend, PostgreSQL, frontend, Playwright, Docker and audits with retained artifacts | BLOCKED pending non-CircleCI runner and exact-SHA mirror/status |
 
 Do not mark any source-audited item PASS until its test command has actually run against the reported SHA.
+
+
+## T07 database backup data-integrity addendum — 2026-10-30 02:39 UTC
+
+Read-only exact SQL row counts refine the earlier backup finding:
+
+| Table | Neon main (0005) | pre-prod-migration-backup (0003) | restored-snapshot branch (0003) |
+|---|---:|---:|---:|
+| businesses | 2 | 2 | 0 |
+| business_memberships | 2 | 2 | 0 |
+| customers | 4 | 4 | 0 |
+| products | 5 | 5 | 0 |
+| invoices | 19 | 19 | 0 |
+| invoice_lines | 21 | 21 | 0 |
+| audit_events | 48 | 48 | 0 |
+| employees | 0 | table absent | table absent |
+| payroll_records | 0 | table absent | table absent |
+
+Interpretation: the 2026-10-30 pre-prod branch is a data-bearing clone matching the sampled main row counts, but it is not schema-equivalent because it is still at 0003 and lacks employee/payroll tables. The 2026-10-27 restored-snapshot branch is empty for every sampled business table, so it is not a successful production-data restore proof. The only snapshot predates 0005; main and pre-prod automatic snapshot schedules are empty. No write, snapshot, restore, migration, or branch swap was performed.
+
+Next: owner-approved fresh snapshot of current 0005 main and restore to a separate isolated branch, then compare all table names, Alembic revision, exact row counts, constraints/indexes, and read-only application smoke. Production release remains BLOCKED until proven.
