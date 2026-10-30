@@ -1,3 +1,55 @@
+# Master execution checkpoint — 2026-10-31 (v1.3.5 production; demo readiness NOT READY)
+
+This checkpoint supersedes older status snapshots below where they conflict. Historical notes remain preserved.
+
+## Verified production delivery
+- GitHub canonical main/release SHA: `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`.
+- Production version: **1.3.5** in frontend/backend release metadata.
+- Vercel Web and API deployments are both **READY** on production aliases and the same GitHub SHA; GitHub Vercel status contexts are SUCCESS.
+- GitLab is the sole CI provider. GitLab mirror main SHA: `843751f396b6b6d308d9c833666d848c42c909ca`; pipeline [#3010621725](https://gitlab.com/abdullahomarrefaat/ai-business-assistant/-/pipelines/3010621725) is SUCCESS (8/8). This is a mirror commit, not the GitHub SHA; the release handoff verified content parity for the 20 changed/added release files.
+- Main pipeline evidence: backend pytest **253/253 PASS**; frontend unit tests/build PASS; Playwright **4/4 PASS**; backend container smoke PASS; backup/restore safety PASS; npm audit 0 vulnerabilities; pip-audit PASS.
+- Production Neon main branch was inspected read-only: Alembic revision `0005_employee_payroll`; `employees` and `payroll_records` tables exist. No production migration or write was performed.
+- Vercel API runtime error query for the most recent one-hour window returned no errors. This is not a substitute for a live endpoint or authenticated journey probe.
+
+## Demo readiness — NOT READY for a fully verified authenticated demo
+- Direct HTTP probes for `/version` and `/readyz`: **NOT RUN**; no successful response evidence is available from the current execution environment.
+- Authenticated Firebase browser E2E (two-tab account switch, business/workspace switch, OWNER→STAFF, OWNER→OWNER in another business, revocation, non-member denial, delayed Audit/Customer Statement response fencing): **NOT RUN**.
+- Existing 4/4 Playwright smoke suite is not authenticated ERP E2E. It uses an empty/mocked runtime config for startup/setup, language/RTL and mobile viewport; the #315 business-cycle tests use synthetic API principals rather than Firebase browser login.
+- Manual visual review of production main user flows: **NOT RUN**; source review only.
+- Therefore the app is deployed and can be opened, but final Demo Readiness remains **NOT READY / PARTIALLY COMPLETE** until endpoint and authenticated browser evidence is obtained.
+
+## Closed-unmerged PR reconciliation — 2026-10-31
+- A fresh GitHub search was partitioned across non-overlapping creation-date ranges and returned **123 closed-unmerged PRs**. The prior reconciliation file documents 109 historical dispositions; this refresh records the 14 later closures and their successor/disposition.
+- No stale branch was merged wholesale and no remote branch was deleted. Most closed PRs are superseded by merged successors. **PR #310 is the exception with a still-pending successor:** its invoice-print changes are consolidated into open PR #305; do not merge #310 separately.
+- Additional closures: #298→#301; #295/#291→#294; #289→#288; #286/#285/#280→#287; #283→#282; #270/#249→the later authoritative reconciliation #264; #261→#267; #293 documentation findings are reconciled in the current ledger; #310→open #305; #319 was closed by owner direction because Semaphore conflicts with the GitLab-only policy.
+- GitLab mirror branch listing returned **282 refs**. This is not a canonical GitHub branch count; full GitHub branch-ref pagination remains **NOT VERIFIED**. Do not infer GitHub branch count from the GitLab mirror.
+
+## Current open PRs and merge gates
+- GitHub currently has **14 open PRs** after closing #319.
+- #305 (sales-to-cash/invoice print) remains Draft and merge-blocked; current exact-head GitLab pipeline is not verified. Its frontend regex/source-text tests are static guards, not behavioral tests. Required browser behavior includes popup blocking, delayed invoice detail after workspace switch, payment controls locked while pending, stable idempotency key/payload on retry, and no stale workspace update.
+- #315 (Production V1 scenarios) remains Draft and merge-blocked. GitLab pipeline #3010128927 passed 8/8 on its older exact head, but the branch is not current-main aligned and its four browser tests do not cover authenticated Firebase ERP flows. Its API/persistence scenarios use synthetic principals.
+- #309 (runtime-config fail-closed) and #316's merged auth-state synchronization must not be combined by stale wholesale merge; #309's validation behavior needs a current-main integration and exact GitLab validation.
+- #302 tenant-route hardening and #313 delegated platform-role regression remain unmerged; exact current-head GitLab evidence and required review are not established.
+- #312 credit-note work remains blocked by T37 DRAFT / NOT APPROVED. No tax, discount posting, credit-note/refund posting, AP, COGS, FX, GL, payroll payout, schema or financial semantics are authorized by this checkpoint.
+- #318 GitHub→GitLab safe-sync workflow remains Draft; credentials and end-to-end sync are not verified. #317 shared knowledge package remains Draft and must not be published as approved.
+- #319 Semaphore pipeline PR is CLOSED / NOT MERGED per owner direction. No Semaphore or CircleCI job was triggered.
+
+## Next actions
+1. Obtain an authorized non-production Firebase demo identity set and a browser/HTTP execution path; complete the authenticated role/workspace switching matrix without production data mutation.
+2. Run direct production `/version` and `/readyz` probes from a reachable environment and record actual responses.
+3. Reconcile #305 and #315 against current main, add behavioral browser tests, run GitLab on content-matched candidate refs, and satisfy required review/merge gates before any merge.
+4. Continue the open PR review individually; do not mass-merge closed history.
+5. Update Notion T03/T07/T43/T50 handoffs with these evidence and remaining acceptance gaps.
+
+## Scope counts
+- Overall delivery: v1.3.5 production deployment **VERIFIED**; final demo acceptance **IN PROGRESS**.
+- Closed-unmerged PR dispositions: **123 enumerated**; 14 post-baseline closures recorded in the accompanying reconciliation refresh.
+- Production DB writes/migrations: **0**.
+- Authenticated Firebase E2E: **NOT RUN**.
+- Direct endpoint probes: **NOT RUN**.
+
+---
+
 # Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
 
 ## User directive
