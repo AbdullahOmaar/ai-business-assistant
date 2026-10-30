@@ -105,7 +105,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <form class="payroll-form" (ngSubmit)="savePayroll()">
           <div class="payroll-employee-picker">
             <label>{{ t('ابحث في دليل الموظفين النشطين', 'Search the active employee directory') }}
-              <input name="payrollEmployeeSearch" maxlength="100" [(ngModel)]="payrollEmployeeSearch" (keyup.enter)="searchPayrollEmployees" [disabled]="busy || !!editingPayrollId">
+              <input name="payrollEmployeeSearch" maxlength="100" [(ngModel)]="payrollEmployeeSearch" (keyup.enter)="searchPayrollEmployees()" [disabled]="busy || !!editingPayrollId">
             </label>
             <button class="secondary" type="button" (click)="searchPayrollEmployees()" [disabled]="busy || pickerBusy || !!editingPayrollId">{{ pickerBusy ? t('جارٍ البحث…', 'Searching…') : t('بحث عن موظف', 'Find employee') }}</button>
           </div>
@@ -296,6 +296,7 @@ export class EmployeePayrollComponent implements OnChanges {
       // Clear every workspace-scoped salary value before loading the next workspace.
       this.loadSequence++;
       this.pickerLoadSequence++;
+      this.pickerBusy = false;
       this.employees = [];
       this.payrollEmployeeOptions = [];
       this.payrollRecords = [];
