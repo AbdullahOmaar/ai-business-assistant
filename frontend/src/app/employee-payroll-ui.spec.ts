@@ -80,3 +80,11 @@ test('a successful payroll payment refreshes the workspace expense list and dash
   assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
   assert.match(refresh, /if \(this\.business\?\.id === businessId\) this\.error = this\.message\(error\)/);
 });
+
+
+test('employee and payroll screens explicitly disclose the current 200-record UI cap', () => {
+  assert.match(component, /تعرض أول 200 موظف فقط حاليًا/);
+  assert.match(component, /shows only the first 200 employees/);
+  assert.match(component, /تعرض أول 200 سجل مرتب فقط للفترة المحددة/);
+  assert.match(component, /shows only the first 200 payroll records for the selected period/);
+});
