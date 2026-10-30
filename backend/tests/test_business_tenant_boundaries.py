@@ -1471,3 +1471,211 @@ def test_staff_owner_only_route_matrix_and_allowed_read_reports():
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_orders():
+    """An OWNER sees only resources belonging to the business in the route path."""
+    from app.models import (
+        AuditEvent, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
+        Supplier,
+    )
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    client = TestClient(app)
+
+    def use_owner(subject: str) -> None:
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject)
+
+    def create_business(owner: str, name: str, currency: str) -> str:
+        use_owner(owner)
+        response = client.post(
+            "/api/v1/businesses",
+            json={"name": name, "currency_code": currency},
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def create_resources(business_id: str, suffix: str, currency: str, approve_po: bool):
+        customer = client.post(
+            f"/api/v1/businesses/{business_id}/customers",
+            json={"name": f"Customer {suffix}"},
+        )
+        assert customer.status_code == 201, customer.text
+        supplier = client.post(
+            f"/api/v1/businesses/{business_id}/suppliers",
+            json={"name": f"Supplier {suffix}", "email": f"{suffix.lower()}@example.test"},
+        )
+        assert supplier.status_code == 201, supplier.text
+        product = client.post(
+            f"/api/v1/businesses/{business_id}/products",
+            json={"name": f"Product {suffix}", "unit_price": "10.00", "is_stock_tracked": True},
+        )
+        assert product.status_code == 201, product.text
+        invoice = client.post(
+            f"/api/v1/businesses/{business_id}/invoices",
+            json={
+                "invoice_number": f"INV-{suffix}",
+                "currency_code": currency,
+                "customer_id": customer.json()["id"],
+                "lines": [{"description": f"Service {suffix}", "quantity": "1", "unit_price": "10.00"}],
+            },
+        )
+        assert invoice.status_code == 201, invoice.text
+        issued = client.post(
+            f"/api/v1/businesses/{business_id}/invoices/{invoice.json()['id']}/issue",
+            json={},
+        )
+        assert issued.status_code == 200, issued.text
+        order = client.post(
+            f"/api/v1/businesses/{business_id}/purchase-orders",
+            json={
+                "supplier_id": supplier.json()["id"],
+                "order_number": f"PO-{suffix}",
+                "currency_code": currency,
+                "lines": [{"product_id": product.json()["id"], "quantity": "2.000", "unit_cost": "5.00"}],
+            },
+        )
+        assert order.status_code == 201, order.text
+        if approve_po:
+            approved = client.post(
+                f"/api/v1/businesses/{business_id}/purchase-orders/{order.json()['id']}/approve"
+            )
+            assert approved.status_code == 200, approved.text
+        schedule = client.post(
+            f"/api/v1/businesses/{business_id}/recurring-invoices",
+            json={
+                "customer_id": customer.json()["id"],
+                "interval_days": 30,
+                "timezone": "UTC",
+                "next_run_at": "2026-11-30T00:00:00+00:00",
+            },
+        )
+        assert schedule.status_code == 201, schedule.text
+        return {
+            "customer_id": customer.json()["id"],
+            "supplier_id": supplier.json()["id"],
+            "product_id": product.json()["id"],
+            "invoice_id": invoice.json()["id"],
+            "invoice_number": invoice.json()["invoice_number"],
+            "order_id": order.json()["id"],
+            "schedule_id": schedule.json()["id"],
+        }
+
+    try:
+        business_a = create_business("tenant-a-owner", "Tenant A Feature Scope", "EGP")
+        resources_a = create_resources(business_a, "A", "EGP", approve_po=False)
+
+        business_b = create_business("tenant-b-owner", "Tenant B Feature Scope", "USD")
+        resources_b = create_resources(business_b, "B", "USD", approve_po=True)
+
+        # Snapshot the foreign PO, line, stock movements and audit rows before
+        # attempting to access or mutate it through Business A.
+        with app.state.session_factory() as session:
+            foreign_order = session.get(PurchaseOrder, UUID(resources_b["order_id"]))
+            assert foreign_order is not None
+            foreign_line = session.query(PurchaseOrderLine).filter_by(
+                purchase_order_id=UUID(resources_b["order_id"]),
+                business_id=UUID(business_b),
+            ).one()
+            foreign_before = (
+                foreign_order.status,
+                foreign_order.total,
+                foreign_line.received_quantity,
+                session.query(StockMovement).filter_by(business_id=UUID(business_b)).count(),
+                session.query(AuditEvent).filter_by(business_id=UUID(business_b)).count(),
+            )
+
+        use_owner("tenant-a-owner")
+        base_a = f"/api/v1/businesses/{business_a}"
+
+        foreign_statement = client.get(
+            f"{base_a}/customers/{resources_b['customer_id']}/statement"
+        )
+        assert foreign_statement.status_code == 404, foreign_statement.text
+
+        audit = client.get(f"{base_a}/audit-events")
+        assert audit.status_code == 200, audit.text
+        assert audit.json()["items"]
+        assert all(item["business_id"] == business_a for item in audit.json()["items"])
+        assert all(resources_b["order_id"] != item["target_id"] for item in audit.json()["items"])
+
+        suppliers = client.get(f"{base_a}/suppliers")
+        assert suppliers.status_code == 200, suppliers.text
+        assert [item["id"] for item in suppliers.json()] == [resources_a["supplier_id"]]
+
+        orders = client.get(f"{base_a}/purchase-orders")
+        assert orders.status_code == 200, orders.text
+        assert [item["id"] for item in orders.json()] == [resources_a["order_id"]]
+        assert all(line["remaining_quantity"] == "2.000" for item in orders.json() for line in item["lines"])
+
+        schedules = client.get(f"{base_a}/recurring-invoices")
+        assert schedules.status_code == 200, schedules.text
+        assert [item["id"] for item in schedules.json()] == [resources_a["schedule_id"]]
+
+        tax = client.get(
+            f"{base_a}/reports/tax-summary?start_date=2026-01-01&end_date=2027-01-01"
+        )
+        assert tax.status_code == 200, tax.text
+        assert {item["currency_code"] for item in tax.json()["currencies"]} == {"EGP"}
+
+        aging = client.get(f"{base_a}/reports/receivables-aging?as_of=2026-10-31")
+        assert aging.status_code == 200, aging.text
+        assert [item["invoice_number"] for item in aging.json()["invoices"]] == [
+            resources_a["invoice_number"]
+        ]
+
+        # Foreign purchase-order IDs must fail at lookup, before any PO, line,
+        # stock movement or audit record can be changed.
+        foreign_approve = client.post(
+            f"{base_a}/purchase-orders/{resources_b['order_id']}/approve"
+        )
+        assert foreign_approve.status_code == 422, foreign_approve.text
+        assert foreign_approve.json()["detail"] == "Purchase order not found in this business"
+
+        foreign_receive = client.post(
+            f"{base_a}/purchase-orders/{resources_b['order_id']}/receive",
+            json={
+                "lines": [{
+                    "line_id": str(foreign_line.id),
+                    "quantity": "1.000",
+                }]
+            },
+        )
+        assert foreign_receive.status_code == 422, foreign_receive.text
+        assert foreign_receive.json()["detail"] == "Purchase order is not available for receiving"
+
+        with app.state.session_factory() as session:
+            foreign_order_after = session.get(PurchaseOrder, UUID(resources_b["order_id"]))
+            foreign_line_after = session.query(PurchaseOrderLine).filter_by(
+                purchase_order_id=UUID(resources_b["order_id"]),
+                business_id=UUID(business_b),
+            ).one()
+            foreign_after = (
+                foreign_order_after.status,
+                foreign_order_after.total,
+                foreign_line_after.received_quantity,
+                session.query(StockMovement).filter_by(business_id=UUID(business_b)).count(),
+                session.query(AuditEvent).filter_by(business_id=UUID(business_b)).count(),
+            )
+        assert foreign_after == foreign_before
+
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
