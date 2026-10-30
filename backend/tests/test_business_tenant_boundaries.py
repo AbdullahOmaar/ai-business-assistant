@@ -1518,9 +1518,11 @@ def test_staff_owner_only_route_matrix_and_allowed_read_reports():
 
 def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_orders():
     """An OWNER sees only resources belonging to the business in the route path."""
+    from datetime import datetime, timezone
+    from decimal import Decimal
     from app.models import (
-        AuditEvent, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
-        Supplier,
+        AuditEvent, Invoice, PurchaseOrder, PurchaseOrderLine,
+        RecurringInvoiceSchedule, Supplier,
     )
 
     engine = create_engine(
@@ -1618,6 +1620,25 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
 
         business_b = create_business("tenant-b-owner", "Tenant B Feature Scope", "USD")
         resources_b = create_resources(business_b, "B", "USD", approve_po=True)
+        # Seed a foreign-only data-integrity finding so Tenant A's OWNER report
+        # must not disclose Tenant B's unlinked issued invoice.
+        foreign_unlinked_invoice_id = uuid4()
+        with app.state.session_factory() as session:
+            session.add(Invoice(
+                id=foreign_unlinked_invoice_id,
+                business_id=UUID(business_b),
+                customer_id=None,
+                invoice_number="INV-B-UNLINKED",
+                status="issued",
+                currency_code="USD",
+                issue_date=datetime(2026, 10, 30, tzinfo=timezone.utc),
+                due_date=None,
+                subtotal=Decimal("15.00"),
+                tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"),
+                total=Decimal("15.00"),
+            ))
+            session.commit()
 
         # Capture every business-scoped persisted row, not just selected PO fields
         # and row counts. Reads and denied foreign-ID operations below must not
@@ -1688,6 +1709,23 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         assert [item["invoice_number"] for item in aging.json()["invoices"]] == [
             resources_a["invoice_number"]
         ]
+
+        integrity_a = client.get(f"{base_a}/reports/data-integrity")
+        assert integrity_a.status_code == 200, integrity_a.text
+        assert all(
+            item["invoice_id"] != str(foreign_unlinked_invoice_id)
+            for item in integrity_a.json()["unlinked_issued_invoices"]["items"]
+        )
+        use_owner("tenant-b-owner")
+        integrity_b = client.get(
+            f"/api/v1/businesses/{business_b}/reports/data-integrity"
+        )
+        assert integrity_b.status_code == 200, integrity_b.text
+        assert [
+            item["invoice_id"]
+            for item in integrity_b.json()["unlinked_issued_invoices"]["items"]
+        ] == [str(foreign_unlinked_invoice_id)]
+        use_owner("tenant-a-owner")
 
         # Foreign purchase-order IDs must fail at lookup, before any PO, line,
         # stock movement or audit record can be changed.
