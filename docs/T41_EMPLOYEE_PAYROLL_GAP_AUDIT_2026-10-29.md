@@ -327,3 +327,12 @@ The test source remains 28 test functions. A Python `compile()` syntax check of 
 - Salary effective-date/history schema, backfill, proration/statutory rules, and failed/partial/reversed/corrected payout lifecycle remain deferred.
 
 **Next action for Master:** obtain an authorized non-CircleCI exact-SHA runner, run the focused payroll privacy regression and relevant backend/PostgreSQL checks on the updated PR #308 HEAD, then obtain independent security review and reconcile the two main-only documentation commits without changing shared-file ownership. Keep PR #308 Draft/Open/Unmerged until all gates are satisfied.
+
+## PostgreSQL recorded-payout concurrency regression — 2026-10-30
+
+- Added T41-unique regression `test_concurrent_payroll_payment_records_one_expense_and_paid_audit` to `backend/tests/test_postgres_financial_concurrency.py` on the existing PR #308 branch.
+- The test creates a payroll draft under one OWNER, approves it under a different OWNER (preserving creator/approver separation), then races two recorded `/pay` requests against the same approved PayrollRecord using two concurrent TestClient requests.
+- Expected evidence when executed: exactly one HTTP 200 and one HTTP 409; one paid PayrollRecord with one linked Expense; expense amount/reference match the payroll record; exactly one `payroll.paid` audit event alongside one created and one approved event. This is recorded in-app payout behavior only, not external bank/provider confirmation.
+- Commit: `5fd16b911e9f1bb1b98f07cfa63846771f29173e` (test-only; message includes `[skip ci]`).
+- A Python AST syntax check of the new function passed. PostgreSQL execution remains **NOT RUN**: it requires `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and an authorized disposable PostgreSQL `TEST_DATABASE_URL`. CircleCI remains frozen; no retry or replacement CI was triggered.
+- No runtime code, schema, migration, financial formula, payout state, production data, merge or deployment changed.
