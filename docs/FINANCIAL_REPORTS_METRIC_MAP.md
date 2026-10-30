@@ -133,7 +133,7 @@ The following changes are present on PR #304 as candidate code only. They must n
 Updated coverage:
 - 14 date-boundary tests.
 - 10 report-reconciliation tests.
-- 2 payroll privacy integration tests (broad-surface visibility + date-filter/offset/no-side-effect matrix).
+- 3 payroll privacy/date-filter integration tests (broad-surface, Cairo date-filter/offset, dynamic date-filter/offset/read-only snapshot).
 - 26 related existing tests.
-- 26 targeted/authored + 26 related tests total. All **NOT RUN**.
+- 27 targeted/authored + 26 related tests total. All **NOT RUN**.
 - Exact current PR #304 head is tracked in live GitHub metadata; historical SHA snapshots in this document are not current. Empty status on [skip ci] commits is NOT a pass. No CircleCI run/retry, no GitHub Actions, no authorized local runner.
