@@ -87,3 +87,11 @@ export function toInvoiceDraftPayload(input: InvoiceDraftInput, products: readon
         }),
   };
 }
+
+export function moveInvoiceDraftLine<T>(lines: readonly T[], index: number, direction: -1 | 1): T[] {
+  const target = index + direction;
+  if (index < 0 || index >= lines.length || target < 0 || target >= lines.length) return [...lines];
+  const next = [...lines];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
