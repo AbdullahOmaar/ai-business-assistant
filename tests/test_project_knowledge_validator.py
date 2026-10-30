@@ -104,5 +104,51 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
         self.assertTrue(any("canonical_sources" in e for e in self.run_validation()))
 
 
+    def test_rejects_unexpected_nested_package_content(self) -> None:
+        nested = self.package / "archive"
+        nested.mkdir()
+        (nested / "old.md").write_text("# stale", encoding="utf-8")
+        self.assertTrue(any("package entry set mismatch" in e for e in self.run_validation()))
+
+    def test_rejects_non_http_canonical_source(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        content = (self.package / filename).read_text(encoding="utf-8")
+        content = content.replace("https://example.com/canonical", "javascript:alert(1)")
+        (self.package / filename).write_text(content, encoding="utf-8")
+        self.assertTrue(any("absolute HTTP(S) URL" in e for e in self.run_validation()))
+
+    def test_rejects_duplicate_metadata_key(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        content = (self.package / filename).read_text(encoding="utf-8")
+        content = content.replace("title: Test document", "title: Test document\ntitle: Duplicate")
+        (self.package / filename).write_text(content, encoding="utf-8")
+        self.assertTrue(any("duplicate metadata key: title" in e for e in self.run_validation()))
+
+    def test_rejects_review_date_before_verification_date(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        content = (self.package / filename).read_text(encoding="utf-8")
+        content = content.replace("review_due: 2026-11-29", "review_due: 2026-10-01")
+        (self.package / filename).write_text(content, encoding="utf-8")
+        self.assertTrue(any("review_due must not precede" in e for e in self.run_validation()))
+
+    def test_rejects_broken_local_link(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        (self.package / filename).write_text(
+            document(filename, "ABA-KNOW-00", link="../../missing.md"),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("broken local link" in e for e in self.run_validation()))
+
+    def test_rejects_inconsistent_package_owners(self) -> None:
+        filename = "04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md"
+        content = (self.package / filename).read_text(encoding="utf-8")
+        content = content.replace(
+            "owner: Project Master / Repository Owner",
+            "owner: Different Owner",
+        )
+        (self.package / filename).write_text(content, encoding="utf-8")
+        self.assertTrue(any("owners are inconsistent" in e for e in self.run_validation()))
+
+
 if __name__ == "__main__":
     unittest.main()
