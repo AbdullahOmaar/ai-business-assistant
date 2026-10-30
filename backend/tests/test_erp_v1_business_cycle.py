@@ -21,6 +21,7 @@ from app.models import (
     Base,
     Payment,
     PaymentAllocation,
+    PurchaseOrderLine,
     StockMovement,
 )
 from app.security import AuthenticatedPrincipal
@@ -231,3 +232,136 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     assert Decimal(egp["operating_result_before_cost_of_goods"]) == Decimal("515.60")
     assert any("tax amounts" in item for item in report["limitations"])
     assert any("excludes cost of goods sold" in item for item in report["limitations"])
+
+
+def test_erp_v1_purchase_receiving_reconciles_order_and_stock(erp_environment):
+    """Exercise supplier PO approval and partial/final receiving without over-receipt."""
+    client = erp_environment["client"]
+    engine = erp_environment["engine"]
+
+    business_response = client.post(
+        "/api/v1/businesses",
+        json={"name": "Production V1 Purchasing Shop", "currency_code": "EGP"},
+    )
+    assert business_response.status_code == 201, business_response.text
+    business_id = business_response.json()["id"]
+    business_uuid = UUID(business_id)
+
+    supplier_response = client.post(
+        f"/api/v1/businesses/{business_id}/suppliers",
+        json={"name": "Synthetic Supplier"},
+    )
+    assert supplier_response.status_code == 201, supplier_response.text
+    supplier_id = supplier_response.json()["id"]
+
+    product_response = client.post(
+        f"/api/v1/businesses/{business_id}/products",
+        json={
+            "name": "Synthetic Purchased Item",
+            "sku": "ERP-V1-PURCHASE-001",
+            "unit_price": "200.00",
+            "is_stock_tracked": True,
+            "opening_quantity": "10.000",
+        },
+    )
+    assert product_response.status_code == 201, product_response.text
+    product_id = product_response.json()["id"]
+    product_uuid = UUID(product_id)
+
+    order_response = client.post(
+        f"/api/v1/businesses/{business_id}/purchase-orders",
+        json={
+            "supplier_id": supplier_id,
+            "order_number": "ERP-V1-PO-001",
+            "currency_code": "EGP",
+            "lines": [{
+                "product_id": product_id,
+                "quantity": "5.000",
+                "unit_cost": "100.00",
+            }],
+        },
+    )
+    assert order_response.status_code == 201, order_response.text
+    order = order_response.json()
+    order_id = order["id"]
+    order_uuid = UUID(order_id)
+    assert Decimal(order["total"]) == Decimal("500.00")
+    assert order["status"] == "draft"
+
+    approved = client.post(
+        f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve"
+    )
+    assert approved.status_code == 200, approved.text
+    assert approved.json()["status"] == "approved"
+
+    listed_orders = client.get(
+        f"/api/v1/businesses/{business_id}/purchase-orders"
+    )
+    assert listed_orders.status_code == 200, listed_orders.text
+    line_id = listed_orders.json()[0]["lines"][0]["id"]
+
+    partial = client.post(
+        f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
+        json={"lines": [{"line_id": line_id, "quantity": "3.000"}]},
+    )
+    assert partial.status_code == 200, partial.text
+    assert partial.json()["status"] == "partially_received"
+
+    with Session(engine) as session:
+        partial_stock = session.scalar(
+            select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
+                StockMovement.business_id == business_uuid,
+                StockMovement.product_id == product_uuid,
+            )
+        )
+        received = session.scalar(
+            select(PurchaseOrderLine.received_quantity).where(
+                PurchaseOrderLine.business_id == business_uuid,
+                PurchaseOrderLine.purchase_order_id == order_uuid,
+            )
+        )
+        assert Decimal(str(partial_stock)) == Decimal("13.000")
+        assert Decimal(str(received)) == Decimal("3.000")
+
+    final = client.post(
+        f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
+        json={"lines": [{"line_id": line_id, "quantity": "2.000"}]},
+    )
+    assert final.status_code == 200, final.text
+    assert final.json()["status"] == "received"
+
+    over_receipt = client.post(
+        f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
+        json={"lines": [{"line_id": line_id, "quantity": "1.000"}]},
+    )
+    assert over_receipt.status_code == 422, over_receipt.text
+
+    with Session(engine) as session:
+        final_stock = session.scalar(
+            select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
+                StockMovement.business_id == business_uuid,
+                StockMovement.product_id == product_uuid,
+            )
+        )
+        final_received = session.scalar(
+            select(PurchaseOrderLine.received_quantity).where(
+                PurchaseOrderLine.business_id == business_uuid,
+                PurchaseOrderLine.purchase_order_id == order_uuid,
+            )
+        )
+        assert Decimal(str(final_stock)) == Decimal("15.000")
+        assert Decimal(str(final_received)) == Decimal("5.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_uuid,
+                StockMovement.product_id == product_uuid,
+                StockMovement.movement_type == "receipt",
+            )
+        ) == 2
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_uuid,
+                AuditEvent.action == "purchase_order.received",
+            )
+        ) == 2
+
