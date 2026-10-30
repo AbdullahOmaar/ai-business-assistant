@@ -1425,11 +1425,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
+    const requestUid = this.currentAuthUid;
     this.platformAdminAvailable = false;
     try {
       const access = await this.api.platformAdminAccess();
+      if (requestUid !== this.currentAuthUid) return;
       this.platformAdminAvailable = access.is_platform_admin === true;
     } catch {
+      if (requestUid !== this.currentAuthUid) return;
       // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
       this.platformAdminAvailable = false;
       if (this.tab === 'platform-admin') this.tab = 'overview';

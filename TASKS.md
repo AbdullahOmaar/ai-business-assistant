@@ -1686,3 +1686,4 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Auth snapshots observed while startup or a local sign-in/sign-out flow is in progress are queued; after the flow finishes, the latest snapshot is reconciled against the current UID/email. This prevents a remote sign-out/account switch racing initialization or a local auth action from being silently ignored.
 - Sign-up now uses the same auth-state broadcaster as sign-in and the Firebase observer.
 - This follow-up source still requires the full GitLab 8-job pipeline and independent review; no production release action.
+- Added a UID guard to platform-admin access resolution so a slow response from a previous signed-in identity cannot overwrite the current account's platform-admin visibility.
