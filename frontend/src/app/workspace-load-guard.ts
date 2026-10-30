@@ -25,3 +25,28 @@ export class WorkspaceLoadGuard {
     return this.isLatest(version) && currentWorkspaceId === requestedWorkspaceId;
   }
 }
+
+export interface TenantRequestContext {
+  workspaceId: string;
+  userId: string | null;
+  role: string | null;
+  signedIn: boolean;
+  customerId?: string;
+}
+
+/** Validates that a delayed tenant-scoped response still belongs to the active identity and view. */
+export function isCurrentTenantRequest(
+  guard: WorkspaceLoadGuard,
+  requestVersion: number,
+  requested: TenantRequestContext,
+  current: TenantRequestContext,
+): boolean {
+  return guard.isCurrent(requestVersion, current.workspaceId, requested.workspaceId)
+    && requested.signedIn
+    && current.signedIn
+    && Boolean(requested.userId)
+    && requested.userId === current.userId
+    && requested.role !== null
+    && requested.role === current.role
+    && (requested.customerId === undefined || requested.customerId === current.customerId);
+}
