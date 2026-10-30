@@ -116,3 +116,24 @@ Statutory tax/ETA, credit-note tax allocation/reversal, supplier AP/bills/paymen
 - Related existing suites: 26 (6 business timezone + 20 core feature tests).
 - Total targeted/authored coverage on this branch: 22 T40/T40-integration tests plus 26 related tests. **All NOT RUN.**
 - Current T40 branch head at this doc checkpoint is recorded separately in PR #304 / TASKS.md. The exact [skip ci] head has no status contexts; this is NOT a pass. CircleCI is prohibited; no manual run/retry; GitHub Actions is not a replacement. No authorized local runner is available.
+
+
+## Follow-up implementation after T37 v1.0.1 — 2026-10-30
+
+This update supersedes the previous "Approved but not yet fully implemented" bullets for dashboard allocation integrity and historical receivables as-of:
+
+- Dashboard outstanding balances now use the selected period end as a business-local as-of cutoff (or business-local today when no end date is supplied).
+- Only same-business, same non-null customer and same-currency allocations created before the cutoff reduce receivables.
+- Allocations from a payment whose total allocations exceed its recorded payment amount are excluded; payment-level excess is a data-quality warning.
+- Invoice-level over-allocation is reported and excluded from positive receivable totals. No negative balance is silently clamped.
+- Invalid currency/customer allocations and missing invoice issue timestamps are explicit warnings.
+- Receivables aging is historical as-of using Invoice.issue_date and PaymentAllocation.created_at before the business-local cutoff; due dates are converted to business-local dates. Credit applications/notes are not included while their tax/receivable treatment remains deferred.
+- Expense settlement/disbursement and cashbox lifecycle remains approved in policy but NOT IMPLEMENTED in the current schema.
+
+Updated coverage:
+- 14 date-boundary tests.
+- 10 report-reconciliation tests.
+- 1 payroll privacy integration test.
+- 26 related existing tests.
+- 25 targeted/authored + 26 related tests total. All **NOT RUN**.
+- Current exact PR #304 head at the last code checkpoint: e9ed52816469cf439b1b66b92bf04c97b011617b; latest docs checkpoints follow on the same branch. Empty status on [skip ci] commits is NOT a pass. No CircleCI run/retry, no GitHub Actions, no authorized local runner.
