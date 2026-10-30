@@ -1526,6 +1526,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    // Invalidate the top-level workspace load too; otherwise an old load's finally
+    // block can still mutate loading state while a new identity is being resolved.
+    this.workspaceLoadGuard.invalidate();
     this.profitLossLoadGuard.invalidate();
     this.auditLoadGuard.invalidate();
     this.statementLoadGuard.invalidate();
