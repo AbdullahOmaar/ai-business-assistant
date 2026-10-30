@@ -1,6 +1,6 @@
 # Shared Project Knowledge System Implementation Plan
 
-> **For agentic workers:** Implement the approved handoff in this plan task-by-task. The five published knowledge documents remain the only files inside `docs/project-knowledge/`.
+ > **Execution record:** User-authorized implementation and verification handoff; this plan records actual execution and outstanding gates. The five published knowledge documents remain the only files inside `docs/project-knowledge/`.
 
 **Goal:** Create a versioned, evidence-backed five-document knowledge package for ChatGPT Project Sources, with repository validation and a governed Notion closeout workflow.
 
@@ -37,7 +37,7 @@
 - [x] Read repository identity, README, AGENTS, TASKS, CONTRIBUTING, Architecture Baseline, ADR-001 and deployment runbook.
 - [x] Read canonical Notion Registry, Operating Model, Master Task Plan, Universal Execution Standard, Work Package Standard, E2E Assurance, Product Charter and T37 decision page.
 - [x] Verify current main SHA and open PR inventory.
-- [ ] Record exact inaccessible surfaces and unresolved conflicts.
+- [x] Record exact inaccessible surfaces and unresolved conflicts: Project Sources / Project Instructions UI unavailable; CircleCI frozen; Desktop Commander device offline; T37 authority conflict remains fail-closed.
 
 ### Task 2: Author the five knowledge documents
 
@@ -48,43 +48,43 @@
 - Create: `docs/project-knowledge/03_SECURITY_POLICY_AND_RELEASE_GATES.md`
 - Create: `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`
 
-- [ ] Add consistent metadata and canonical source references.
-- [ ] Mark the initial package DRAFT pending independent review/approval.
-- [ ] Keep all dynamic status out of the package.
+- [x] Add consistent metadata and canonical source references.
+- [x] Mark all five documents DRAFT pending independent review/approval.
+- [x] Keep dynamic task, PR, CI, deployment and runtime status out of the package.
 
 ### Task 3: Add package validation
 
 **Files:**
 - Create: `scripts/validate_project_knowledge.py`
 
-- [ ] Validate exact five-file set, required metadata, unique document IDs, allowed status values, and local Markdown links.
-- [ ] Run validator against the package and record output.
+- [x] Implement exact package-file set, required metadata, expected unique IDs, allowed status, package version/status/owner consistency, valid dates, SHA format, non-empty canonical sources and repository-confined local links.
+- [ ] Run validator against the package and record output — NOT RUN (only connected Desktop Commander device is offline; no local checkout/runtime available).
 
 ### Task 4: Repository ledger and PR
 
 **Files:**
 - Modify: `TASKS.md`
 
-- [ ] Append a dated evidence checkpoint without rewriting historical entries.
-- [ ] Open one Draft PR; no merge.
+- [x] Append a dated evidence checkpoint without rewriting historical entries.
+- [x] Open one Draft PR; no merge.
 
 ### Task 5: Notion governance
 
 **Files:** existing canonical Operating Model page only.
 
-- [ ] Append a bounded knowledge-publication/closeout procedure and GitHub package link.
+- [x] Append a bounded knowledge-publication/closeout procedure and GitHub package link to the existing canonical Operating Model.
 - [ ] Preserve existing text and conflicting history; do not mark T37 approved.
 
 ### Task 6: Publication and UI verification
 
 **Files:** none.
 
-- [ ] Inspect Project Sources inventory and publish only after approval if the UI is accessible.
-- [ ] Read back Project Sources and Project Instructions.
-- [ ] If the UI is inaccessible, provide exact manual upload/settings steps and mark publication/readback NOT VERIFIED.
+- [ ] Inspect Project Sources inventory and publish only after approval — NOT VERIFIED (Project UI is not exposed; package remains DRAFT).
+- [ ] Read back Project Sources and Project Instructions — NOT VERIFIED (Project UI is not exposed).
+- [x] If the UI is inaccessible, record the exact manual publication/settings requirement and mark publication/readback NOT VERIFIED.
 
 ### Task 7: Final review
 
-- [ ] Review package content, links, metadata, security and diff.
-- [ ] Record validator results and all NOT RUN checks.
-- [ ] Keep merge/deployment separate and unauthorized.
+- [x] Perform a source/diff review of package content, links, metadata and security boundaries; no secrets/customer/payroll data found in reviewed package.
+- [x] Record static checks and all NOT RUN checks; executable validator/unit tests remain NOT RUN.
+- [x] Keep merge/deployment separate and unauthorized.
