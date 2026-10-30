@@ -1684,3 +1684,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Localized customer statement event names in Arabic/English, including invoice issued, payment allocation, currency mismatch and unapplied receipt. Unknown event types retain their raw value for forward compatibility.
 - Added `frontend/src/app/customer-statement-regressions.spec.ts` to assert the template uses the localized label mapper and that all current event types have both language labels.
 - Source review only; exact-head frontend tests/build/browser smoke remain NOT RUN pending an authorized runner. No financial mutation or date/timezone semantics changed.
+
+### T38 statement integrity regression follow-up — 2026-10-30
+
+- Added `test_customer_statement_suppresses_unapplied_remainder_for_currency_mismatch`: a corrupt/mismatched allocation is shown as informational, is excluded from same-currency remainder arithmetic, and does not affect either currency balance.
+- Added `test_customer_statement_rejects_foreign_customer_and_never_lists_foreign_receipts`: verifies business/customer scoping and 404 for a foreign customer identifier while preserving the foreign payment row.
+- These are source-authored integration regressions using the existing isolated SQLite test fixture. They are NOT RUN; PostgreSQL/concurrency and full exact-head validation remain outstanding.

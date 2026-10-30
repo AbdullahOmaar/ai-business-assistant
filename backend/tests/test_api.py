@@ -1696,3 +1696,105 @@ def test_customer_statement_shows_unapplied_receipt_remainders_without_reducing_
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_customer_statement_suppresses_unapplied_remainder_for_currency_mismatch():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        customer_id = invoice.customer_id
+        payment = Payment(
+            business_id=business_id,
+            customer_id=customer_id,
+            amount=Decimal("5.00"),
+            currency_code="USD",
+            idempotency_key="statement-currency-mismatch",
+            reference="MISMATCH",
+        )
+        session.add(payment)
+        session.flush()
+        session.add(PaymentAllocation(
+            business_id=business_id,
+            payment_id=payment.id,
+            invoice_id=invoice_id,
+            amount=Decimal("2.00"),
+        ))
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    try:
+        response = TestClient(app).get(
+            f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement"
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        mismatch_events = [
+            event for event in payload["items"]
+            if event["event_type"] == "currency_mismatch_allocation"
+        ]
+        assert len(mismatch_events) == 1
+        assert mismatch_events[0]["reference"] == "MISMATCH"
+        assert mismatch_events[0]["currency_code"] == "USD"
+        assert mismatch_events[0]["credit"] == "2.00"
+        assert mismatch_events[0]["affects_balance"] is False
+        assert mismatch_events[0]["balance"] == "0"
+        assert not any(
+            event["event_type"] == "unapplied_receipt"
+            and event["reference"] == "MISMATCH"
+            for event in payload["items"]
+        )
+        assert payload["balances_by_currency"]["EGP"] == "10.00"
+        assert payload["balances_by_currency"]["USD"] == "0"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_customer_statement_rejects_foreign_customer_and_never_lists_foreign_receipts():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        own_customer_id = invoice.customer_id
+        foreign_business = Business(name="Foreign statement shop", currency_code="USD")
+        session.add(foreign_business)
+        session.flush()
+        foreign_customer = Customer(
+            business_id=foreign_business.id,
+            name="Foreign statement customer",
+        )
+        session.add(foreign_customer)
+        session.flush()
+        foreign_payment = Payment(
+            business_id=foreign_business.id,
+            customer_id=foreign_customer.id,
+            amount=Decimal("99.00"),
+            currency_code="USD",
+            idempotency_key="foreign-statement-receipt",
+            reference="FOREIGN-ONLY",
+        )
+        session.add(foreign_payment)
+        foreign_customer_id = foreign_customer.id
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        own_response = client.get(
+            f"/api/v1/businesses/{business_id}/customers/{own_customer_id}/statement"
+        )
+        assert own_response.status_code == 200, own_response.text
+        assert all(
+            event["reference"] != "FOREIGN-ONLY"
+            for event in own_response.json()["items"]
+        )
+
+        foreign_response = client.get(
+            f"/api/v1/businesses/{business_id}/customers/{foreign_customer_id}/statement"
+        )
+        assert foreign_response.status_code == 404
+        assert foreign_response.json()["detail"] == "Customer not found"
+
+        with Session(engine) as session:
+            assert session.get(Payment, foreign_payment.id) is not None
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
