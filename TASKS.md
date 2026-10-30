@@ -1611,3 +1611,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added Node regression coverage for persistent listener lifetime, later user-state updates, timeout/error cleanup and explicit sign-out clearing.
 - This is client auth-session synchronization only; backend Firebase token verification with `check_revoked=True` remains authoritative. No backend authorization, membership, database schema, financial data or production configuration changed.
 - Tests/build/browser cross-tab smoke: NOT RUN in this connector-only environment. Exact-head CircleCI status pending; no CI rerun requested. PR will remain Draft until exact-head checks and independent review pass.
+
+
+## T43 auth observer regression hardening — 2026-10-30
+
+- Refactored the Firebase auth-state lifecycle into frontend/src/app/auth-state-observer.ts so listener lifetime and recovery behavior can be tested without Firebase/Angular runtime setup.
+- AuthService.initialize() now delegates initial readiness, persistent state updates, terminal observer error handling, timeout cleanup and retry-state reset to the helper. Backend ID-token verification and server-side membership/role authorization remain unchanged.
+- Replaced regex-only source assertions with five behavioral Node tests covering: initial readiness plus subsequent user/sign-out changes; terminal observer error clearing and unsubscribe; initial observer error rejection/cleanup; timeout rejection/cleanup; and synchronous initial callback registration.
+- Exact current branch head before this ledger update: d115057242cb5527e95a4eb43264a570abd4a07c; base main: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f; branch is 10 commits ahead / 0 behind.
+- Exact-head combined status on d115057242cb5527e95a4eb43264a570abd4a07c: empty (NOT PASS; no checks reported). This commit and the follow-up ledger commit use [skip ci]; CircleCI remains frozen and was not triggered/retried.
+- Node tests, frontend build, browser cross-tab smoke and independent security review: NOT RUN. Desktop Commander remains OFFLINE; no local checkout/runtime available.
+- PR #316 remains OPEN / DRAFT / UNMERGED. No merge, deployment, production configuration, backend authorization, schema or data change.
