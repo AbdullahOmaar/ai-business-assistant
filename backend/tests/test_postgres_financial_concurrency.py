@@ -575,7 +575,8 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
 ):
     """Concurrent recorded /pay requests must create one linked expense and audit."""
     business_id = pg_workspace["business_id"]
-    principal = pg_workspace["principal"]
+    creator = pg_workspace["principal"]
+    approver = AuthenticatedPrincipal(subject="pg-concurrency-payroll-approver")
     with Session(postgres_engine) as session:
         employee = Employee(
             business_id=business_id,
@@ -585,11 +586,17 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
             is_active=True,
         )
         session.add(employee)
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject=approver.subject,
+            role=MembershipRole.OWNER,
+        ))
         session.commit()
         employee_id = employee.id
 
     previous_factory = getattr(app.state, "session_factory", None)
     previous_resolver = getattr(app.state, "principal_resolver", None)
+    principal_ref = {"value": creator}
     monkeypatch.setattr(
         app.state, "session_factory",
         sessionmaker(bind=postgres_engine, expire_on_commit=False),
@@ -597,7 +604,7 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
     )
     monkeypatch.setattr(
         app.state, "principal_resolver",
-        lambda request: principal,
+        lambda request: principal_ref["value"],
         raising=False,
     )
 
@@ -608,7 +615,10 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
         json={"period": "2026-12"},
     )
     assert created.status_code == 201, created.text
-    payroll_id = created.json()["id"]
+    payroll_id = UUID(created.json()["id"])
+
+    # A different OWNER must approve the payroll created by the first OWNER.
+    principal_ref["value"] = approver
     approved = client.post(f"{base}/payroll/{payroll_id}/approve", json={})
     assert approved.status_code == 200, approved.text
 
@@ -630,6 +640,9 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
                 Expense.id == record.expense_id,
             )).all()
             assert record.status == "paid"
+            assert record.created_by_subject == creator.subject
+            assert record.approved_by_subject == approver.subject
+            assert record.paid_by_subject == approver.subject
             assert record.expense_id is not None
             assert len(expenses) == 1
             assert expenses[0].amount == record.net_pay
