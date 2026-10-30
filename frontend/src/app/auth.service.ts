@@ -31,7 +31,7 @@ export class AuthService {
       this.configPromise = fetch('/runtime-config.json', { cache: 'no-store', signal: controller.signal })
         .then(async response => {
           if (!response.ok) throw new Error('Runtime configuration could not be loaded.');
-          return await response.json() as RuntimeConfig;
+          return this.validateRuntimeConfig(await response.json());
         })
         .catch(error => {
           this.configPromise = undefined;
@@ -43,6 +43,31 @@ export class AuthService {
         .finally(() => clearTimeout(timeoutId));
     }
     return this.configPromise;
+  }
+
+  private validateRuntimeConfig(value: unknown): RuntimeConfig {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error('Runtime configuration is invalid.');
+    }
+    const config = value as Record<string, unknown>;
+    const apiBaseUrl = config['apiBaseUrl'];
+    if (apiBaseUrl !== undefined && apiBaseUrl !== null && typeof apiBaseUrl !== 'string') {
+      throw new Error('Runtime configuration is invalid.');
+    }
+    const firebase = config['firebase'];
+    if (firebase !== undefined && firebase !== null) {
+      if (typeof firebase !== 'object' || Array.isArray(firebase)) {
+        throw new Error('Runtime configuration is invalid.');
+      }
+      const fields = firebase as Record<string, unknown>;
+      for (const key of ['apiKey', 'authDomain', 'projectId', 'appId']) {
+        const field = fields[key];
+        if (field !== undefined && field !== null && typeof field !== 'string') {
+          throw new Error('Runtime configuration is invalid.');
+        }
+      }
+    }
+    return value as RuntimeConfig;
   }
 
   async isConfigured(): Promise<boolean> {
