@@ -138,3 +138,14 @@ The CSV `GET /exports/{entity_type}.csv` route explicitly requests OWNER-only au
 - No runtime, schema, permission, report formula, or financial lifecycle changes were made.
 - Static source review only. Runtime exploit/regression test, full route-role matrix, frontend/AI consumer review, and exact-head CI are NOT RUN.
 - Preserve existing PR #308 and its Draft/Open/Unmerged state. No merge or deployment.
+
+### Frontend exposure confirmed
+
+The STAFF-facing application navigation includes the Expenses tab without an OWNER-only condition. The expense tab renders each returned expense's category, amount, description, vendor_name and reference. `ApiService.expenses()` calls the member-readable `GET /expenses` endpoint. Therefore, this is not merely an API-only theoretical path: a STAFF user who opens Expenses can see payroll employee name, net pay and payroll reference in the normal UI. By contrast, the Employees & Payroll navigation/component is OWNER-gated in `app.component.ts`, and the payroll component's own explanatory text says salary data is owner-only. The generic expense list contradicts that privacy promise.
+
+Reviewed frontend sources:
+- `frontend/src/app/app.component.ts` (Expenses tab and employee/payroll OWNER gate; expense list renders description/vendor/reference).
+- `frontend/src/app/api.service.ts` (`expenses()` calls the business `/expenses?limit=100&offset=0` endpoint).
+- `frontend/src/app/employee-payroll.component.ts` (payroll UI text states salary data is restricted to workspace owners).
+
+This frontend review confirms the presentation path statically. An authenticated STAFF browser session, API response capture and UI smoke test are still NOT RUN.
