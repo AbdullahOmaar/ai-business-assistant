@@ -1,3 +1,20 @@
+# Chat 1 — T38 current execution checkpoint — 2026-10-30 21:32 UTC
+
+This is the latest Chat 1 ledger checkpoint. The following older Master checkpoint and historical T38 notes are preserved; this block supersedes their older live branch/PR/validation snapshots.
+
+- **Owner/scope:** Chat 1 — Sales, Invoices & Payments only. Reused existing PR #305 and branch `test/t38-cross-tenant-payment-allocation-20261029`.
+- **Current main:** `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- **Current code/test head before this ledger-only checkpoint:** `e9f9cd8fc99dbdbc7744aa6b92b3efa074134292`. PR #305 is OPEN / DRAFT / UNMERGED; branch is 42 ahead / 0 behind main; merge base is main. Main sync merge commit `90a41cf75cb237905bfb6faf12ed5a151e5928c1` preserves both main-only task-ledger additions and Chat 1's work. This checkpoint changes only `TASKS.md`.
+- **Code slices on the branch:** persisted issued-invoice print guard/escaping and workspace snapshot; manual invoice lines; multi-invoice allocation/idempotency guardrails; pending-payment form lock; read-only unapplied-receipt statement event (`affects_balance=false`); same-currency remainder calculation with mismatch suppression; Arabic/English statement event labels.
+- **New statement regressions:** unallocated/partial/full receipts and no read side effects; currency-mismatch suppression; foreign-customer 404 and foreign receipt isolation. Tests are authored but NOT RUN.
+- **Related PRs:** #311 remains OPEN/DRAFT at `f1eb49540b9fd8839fe55c8c5e994cc25071fdc4` on old base `c464398e0a6ace77eba32aabfbdbd09091f53999`; preserve its date filters after #305 validation. Its backend statement date filtering still uses UTC `.date()`; business-local midnight/DST behavior is handed to Chat 3/T40. #312 remains OPEN/DRAFT and T37-gated at `564dfacd5b518006468deb7d53fde16a38896c27`; it contains credit-note/refund and unrelated cross-feature migrations outside Chat 1's safe edit scope. #310 is superseded by #305.
+- **Financial/stock gate:** latest Master Task Plan and latest Master handover treat T37 as PARTIALLY COMPLETE / NOT APPROVED; historical approval wording conflicts. No credit-note/refund posting, shared financial schema, migration, tax, AP, COGS, FX, GL, or new stock-posting behavior was changed. Existing invoice-sale/void/return stock behavior and its existing tests were source-reviewed only; T39 waits for Master approval of the shared T38/T39 stock-event boundary.
+- **Validation:** GitGuardian SUCCESS on exact code head `e9f9cd8fc99dbdbc7744aa6b92b3efa074134292`; GitHub combined status is empty and no workflow runs exist (NOT PASS). CircleCI is frozen and was not triggered. GitLab project `88276557` is marked for deletion on 2026-10-30; its T38 branch is stale at `7f7e9b0352a1202d2d5159c6c8f88250bc6664b8`; exact-head pipeline lookup is empty. Desktop Commander is OFFLINE. Backend/frontend tests, builds, browser smoke, PostgreSQL concurrency/migration validation and full security review are NOT RUN.
+- **Status:** BLOCKED for full acceptance; implemented slices are PARTIALLY COMPLETE, not VERIFIED. No independent review, PR merge, production deployment, migration or production write.
+- **Next exact action:** Master resolves T37 and confirms T38/T39 sale/return stock-event boundary; restore/provide an authorized exact-SHA runner; run the targeted statement/payment/print tests plus full backend/frontend suites, Angular build, browser smoke and security audit; obtain independent review; then reconcile PR #311 with #305 and Chat 3/T40 date semantics.
+
+---
+
 # T38 current branch reconciliation override — 2026-10-30 21:24 UTC
 
 This dated T38 checkpoint supersedes only the older PR #305 base/head snapshot in the Master execution checkpoint below. The historical checkpoint itself is preserved.
