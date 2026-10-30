@@ -9,7 +9,7 @@ Status: **PARTIALLY COMPLETE**. This document records the current implementation
 | Dashboard `invoiced_sales` | `Invoice.total` where `status = issued` | `Invoice.issue_date`, filtered using business-local calendar dates converted to a UTC half-open interval | Grouped by invoice currency; no FX conversion | Not cash collected; stored invoice total includes saved tax |
 | Dashboard `collected_payments` | Recorded `Payment.amount` | `Payment.received_at` | Grouped by payment currency; no FX conversion | Not invoice revenue; allocation links are not a second receipt |
 | Dashboard `expenses` | `Expense.amount` | `Expense.incurred_at` | Grouped by expense currency; no FX conversion | Not proof that cash was paid; current Expense model does not represent settlement |
-| Dashboard `outstanding_balances` | Issued invoice totals minus current matching invoice allocations | Invoice issue date determines which invoices enter the selected period; allocation totals are current and are not filtered by payment date | Grouped by invoice currency; no FX conversion | Not historical receivables as-of the period end; not necessarily cash due on that date |
+| Dashboard `outstanding_balances` | Issued invoice totals minus current `PaymentAllocation` totals grouped by invoice currency | Invoice issue date determines which invoices enter the selected period; allocation totals are current and are not filtered by payment date | Grouped by invoice currency; no FX conversion | **Known integrity gap:** dashboard aggregation does not join the allocation to its `Payment` to verify currency match; it can subtract a foreign-currency allocation. Negative results are silently clamped to zero. Both behaviors require T37-approved semantics and regression coverage before code changes. Not historical receivables as-of period end. |
 | `GET /reports/tax-summary` | Saved `Invoice.tax_total` for issued invoices | Optional inclusive `start_date` / `end_date` in business timezone, converted to UTC half-open bounds | Grouped by invoice currency | Not a jurisdiction-specific tax filing; does not recalculate historical tax |
 | `GET /reports/receivables-aging` | Issued invoices less payment allocations whose currency matches the invoice currency | Explicit `as_of` is used as supplied; absent `as_of`, report date is business-local today. Aging uses invoice due date and the report date | Separate per-currency totals. Currency-mismatched allocations are warnings and are not added to invoice-currency totals | Not a full historical ledger; overallocated invoices are excluded from positive aging buckets and reported as data-quality warnings |
 | `GET /profit-loss` | Issued invoice totals and recorded expenses; approved returns are disclosed separately | Selected period is based on invoice issue date and expense incurred date, with business-local date boundaries | Grouped by currency; no FX conversion | **Not net profit**: COGS / complete stock valuation and full tax/credit/refund treatment are not represented in the calculation |
@@ -39,6 +39,28 @@ Status: **PARTIALLY COMPLETE**. This document records the current implementation
 6. **FX, rounding and currency policy:** no conversion is performed. Any FX rate source, effective timestamp, and rounding policy requires explicit approval.
 7. **Tax compliance:** saved tax totals are operational reporting only; do not label them a jurisdiction-specific filing.
 
+## Acceptance test matrix and current coverage
+
+The matrix below separates already-authored tests from missing coverage and contract-gated expected behavior. It is a test plan, not evidence that tests have executed.
+
+| Area | Existing authored coverage | Remaining test cases / decision gate |
+| --- | --- | --- |
+| Expense date filters | Inclusive business-local bounds, one-sided filters, reversed range, invalid timezone, unrepresentable calendar extremes, DST transition, deterministic timestamp tie-break pagination, currency grouping, non-member denial, same-principal cross-business isolation | Run the existing focused suite; add supported-PostgreSQL date-boundary coverage after an authorized runner is available. |
+| Tax summary | Inclusive local-day bounds, one-sided filters, invalid timezone, unfiltered compatibility, currency separation, non-member denial, calendar extremes | Add PostgreSQL-backed query parity and verify empty-period behavior on the supported database. |
+| Receivables aging | Business-local default as_of, explicit as_of preservation; existing related suite includes membership coverage | Add explicit tests for mismatched-payment-currency warnings, over-allocation data-quality warnings, and same-principal cross-business isolation. Preserve current-vs-historical basis as unresolved until Master decides. |
+| Dashboard | Invoice-only/draft exclusion, no inferred cash, partial/full payment and currency-separated metrics, reversed date range are covered across T40/related suites | Add non-member and cross-business report isolation tests. Payment-currency mismatch and over-allocation expected behavior are T37-gated; do not encode a new expected response until Master records the versioned decision. |
+| Profit/loss | Invoiced revenue vs incurred expense separation, gross-before-returns disclosure in related suite, non-member denial, reversed range, DST and unrepresentable calendar bounds | Add STAFF/OWNER route-access matrix and cross-business isolation; retain explicit gross-before-returns / before-COGS / not-net-profit disclosure. |
+| Shared report security | Individual membership checks and some non-member denial tests exist | Build route x role x action x tenant matrix for dashboard, expenses, tax summary, receivables aging and P&L; verify denied reads disclose no other tenant's data. No invented role policy: confirm the T37 authorization matrix first. |
+| Financial integrity | Current receivables-aging implementation warns on currency mismatch and over-allocation | Dashboard allocation currency matching and over-allocation handling need a T37 decision. The draft contract says only valid matching-currency allocations reduce receivables and negative balances are integrity errors, but that draft is NOT APPROVED. |
+
+### Test execution gate
+
+- T40-authored regression tests: 20 total across `test_financial_report_date_boundaries.py` (13) and `test_financial_report_reconciliation.py` (7). Source-reviewed only; **NOT RUN**.
+- Related existing suites: `test_business_timezone_reporting.py` (6) and `test_core_features_api.py` (20). Inspected/source-reviewed only; **NOT RUN**.
+- CircleCI execution/retry is prohibited by the current Operating Model. Do not run it.
+- GitHub Actions must not be introduced as a replacement CI. No Actions run was triggered.
+- GitLab mirror is not synchronized to the current GitHub PR head: GitLab main is `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`; mirrored T40 branch is `e76e659106c541c118588046b0313158cac7675c`; GitLab cannot resolve PR head `018a38ce867a60697ee228fc3dfa2b73c91dca46`; no pipeline exists for the mirror head. Therefore GitLab cannot currently provide exact-SHA validation.
+- Current safe alternative: source review, acceptance-matrix maintenance and local test execution only if an authorized local runner becomes available. Do not claim runtime verification.
 ## Validation and release status
 
 - Source changes are on the existing T40 branch and PR #304; this document does not authorize merge or deployment.
