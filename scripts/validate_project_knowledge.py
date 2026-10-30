@@ -37,14 +37,26 @@ def frontmatter(text: str) -> dict[str, str]:
     parts = text.split("---", 2)
     if len(parts) != 3:
         raise ValueError("unterminated YAML frontmatter")
+
     values: dict[str, str] = {}
+    in_sources = False
     for line in parts[1].splitlines():
         if not line.strip():
             continue
-        if line.startswith("  - "):
-            if line[4:].strip():
-                values["canonical_sources"] = "present"
+        if line.startswith("canonical_sources:"):
+            if "canonical_sources" in values:
+                raise ValueError("duplicate metadata key: canonical_sources")
+            raw_value = line.split(":", 1)[1].strip()
+            values["canonical_sources"] = raw_value
+            in_sources = True
             continue
+        if in_sources and line.startswith("  - "):
+            item = line[4:].strip()
+            values["canonical_sources"] += ("\n" if values["canonical_sources"] else "") + item
+            continue
+        if line.startswith(" ") and in_sources:
+            continue
+        in_sources = False
         match = re.match(r"^([a-z_]+):\s*(.*)$", line)
         if match:
             key, value = match.group(1), match.group(2).strip()
@@ -59,13 +71,14 @@ def validate() -> list[str]:
     if not PACKAGE.is_dir():
         return [f"missing package directory: {PACKAGE}"]
 
-    files = {p.name for p in PACKAGE.iterdir() if p.is_file()}
     expected_files = set(EXPECTED)
-    if files != expected_files:
+    entries = {p.relative_to(PACKAGE).as_posix() for p in PACKAGE.rglob("*")}
+    if entries != expected_files:
         errors.append(
-            f"package file set mismatch: missing={sorted(expected_files - files)}, "
-            f"extra={sorted(files - expected_files)}"
+            f"package entry set mismatch: missing={sorted(expected_files - entries)}, "
+            f"extra={sorted(entries - expected_files)}"
         )
+    files = {entry for entry in entries if entry in expected_files}
 
     ids: dict[str, str] = {}
     versions: set[str] = set()
@@ -84,6 +97,9 @@ def validate() -> list[str]:
         missing = sorted(REQUIRED - set(meta))
         if missing:
             errors.append(f"{name}: missing metadata: {', '.join(missing)}")
+        unexpected = sorted(set(meta) - REQUIRED)
+        if unexpected:
+            errors.append(f"{name}: unexpected metadata: {', '.join(unexpected)}")
 
         for key in REQUIRED - {"canonical_sources"}:
             if key in meta and not meta[key]:
@@ -126,13 +142,25 @@ def validate() -> list[str]:
 
         review_due = meta.get("review_due", "")
         try:
-            if date.fromisoformat(review_due).isoformat() != review_due:
+            parsed_review_due = date.fromisoformat(review_due)
+            if parsed_review_due.isoformat() != review_due:
                 raise ValueError
+            if verified_at and parsed_review_due < parsed.date():
+                errors.append(f"{name}: review_due must not precede last_verified_at")
         except ValueError:
             errors.append(f"{name}: review_due must be a valid YYYY-MM-DD date")
 
-        if meta.get("canonical_sources") != "present":
+        source_items = [
+            item.strip()
+            for item in meta.get("canonical_sources", "").splitlines()
+            if item.strip()
+        ]
+        if not source_items:
             errors.append(f"{name}: canonical_sources must contain at least one list item")
+        for source in source_items:
+            parsed_source = urlparse(source)
+            if parsed_source.scheme not in {"http", "https"} or not parsed_source.netloc:
+                errors.append(f"{name}: canonical source must be an absolute HTTP(S) URL: {source!r}")
 
         sha = meta.get("related_github_sha", "")
         if sha.lower() != sha or not SHA_RE.fullmatch(sha):
