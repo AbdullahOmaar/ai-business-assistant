@@ -141,7 +141,7 @@ Run:
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
-- Independent reviewer: a reviewer who did not author the changed content, when available.
+- Independent reviewer: a reviewer who did not author the changed content, when available. A Project Master self-review is supplementary maintainer review only; it is not independent and does not satisfy a gate that requires independent review.
 - Stable documents: review every 90 days or on relevant scope/identity/source-authority event.
 - Controlled documents: review every 30 days or immediately on relevant policy/ADR/security/release change.
 - The review schedule is a proposed maintenance default until explicitly approved by the owner.
@@ -166,6 +166,16 @@ These scenarios define expected behavior of the shared knowledge layer. They are
 | S11 | An agent attempts an unauthorized action | Refuses the protected action, records the blocker and verifies no unauthorized branch, PR, database, financial or deployment side effect |
 
 For every scenario, record the fixture/input, canonical source references, package version, observed output, forbidden side effects, pass/fail, runner/tool context, timestamp and reviewer disposition. Until such execution evidence exists, every scenario remains NOT RUN.
+
+
+## 12. Maintainer self-review record — 2026-10-30
+
+- Project Master completed a maintainer self-review of the five documents, canonical source references, validator, regression tests, T37 fail-closed treatment and publication gates.
+- Review findings fixed in the candidate: recursive package inventory now rejects unexpected nested content and symlinked documents; metadata parsing rejects duplicate/unexpected keys; canonical sources require credential-free absolute HTTP(S) URLs; review dates cannot precede verification dates; Markdown links reject unsafe schemes and decoded paths escaping the repository.
+- The validator regression suite was expanded from 7 to 17 cases to cover these boundaries, invalid timestamps, malformed source URLs, duplicate metadata, broken links, owner/version consistency and package shape.
+- A limited static secret-pattern scan found no matches for common private-key/token/credential URL patterns. This is not a full security audit.
+- Validator execution, all 17 unit tests and S01–S11 E2E execution remain NOT RUN. CircleCI remains frozen; no CI result is claimed.
+- This review was performed by the same Project Master maintainer who authored the candidate. It is not an independent review and does not satisfy the independent-review gate. The five documents remain DRAFT pending the required review/approval decision.
 
 ## 11. Changelog
 
