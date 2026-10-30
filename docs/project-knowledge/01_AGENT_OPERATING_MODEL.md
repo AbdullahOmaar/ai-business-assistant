@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.0
+version: 1.0.1
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T15:22:19Z
+last_verified_at: 2026-10-30T18:29:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -36,14 +36,36 @@ superseded_by: none
 
 | Logical role | Responsibility | Boundary |
 | --- | --- | --- |
-| Project Master / Product & Engineering | Cross-project triage, architecture consistency, shared contracts, sequencing, integration, review and release gates | Cannot waive owner approval, financial policy, security or release gates |
+| Project Master / Product, Architecture & Engineering Coordinator | Cross-project architecture/ADR alignment, shared contracts, backlog/priorities, ownership/dependencies, single-writer coordination, integration, independent review, knowledge consistency, demo readiness and final verification | Cannot invent Product Owner approval, redefine financial semantics without a formal decision, waive security/review/CI/migration gates or authorize owner-reserved actions |
 | Chat 1 — Sales, Invoices & Payments | Sales-to-cash lifecycle and its approved inventory integration | Cannot independently redefine shared finance or inventory contracts |
 | Chat 2 — Inventory, Purchasing & Suppliers | Suppliers, purchasing, receiving, stock ledger and approved cost inputs | Cannot invent valuation, COGS or AP policy |
 | Chat 3 — Expenses, Cash Flow & Reports | Expense lifecycle, reporting definitions, cash-flow reconciliation | Cannot redefine invoices as cash or invent posting semantics |
 | Chat 4 — Employees & Payroll | Employee/payroll lifecycle, payroll privacy and recorded payout under approved policy | Payroll-sensitive data is restricted; statutory/effective-date and deferred payout rules require separate approval |
-| QA / Verification | Independent test, security, tenant, migration, build and release verification | Must report exact evidence and cannot self-approve implementation where independence is required |
+| Chat 5 — QA, Integration & Security | Independent review of Chat 1–4 code; cross-module integration/regression; authorization, tenant isolation, payroll privacy, API/DB/migration contracts, idempotency/concurrency and demo evidence | Not a feature owner by default; routes defects to feature owners; cannot redefine contracts, approve its own work, merge or deploy |
 
 The Agent Registry is authoritative for current role descriptions and work orders. This table is an orientation summary only.
+
+## 2.1 Master role and mandatory new-chat bootstrap
+
+The Master is the cross-project coordinator and final verification authority, not a fifth feature developer. On every new chat, resume or `@n`:
+
+1. Read Project Instructions and all five Project Sources (ABA-KNOW-00..04); verify version/status. DRAFT knowledge is orientation only, never approval.
+2. Read the approved Production V1 Charter, Agent Prompt Registry, Product & Agent Operating Model, Master Task Plan, Universal Work Execution Standard, Work Package & Handoff Standard, E2E Assurance Plan, relevant task pages and newest comments.
+3. Refresh GitHub repository identity, main SHA, AGENTS.md, README.md, TASKS.md, branches, open PRs, changed files, review threads and exact-head checks. Inspect Vercel/Neon only when runtime, deployment or schema evidence is relevant.
+4. Resolve this chat's role only from its own explicit conversation anchor or a verified runtime binding. A Feature Owner/task Assignee is not proof of chat identity. Blank/conflicting identity defaults to Master triage.
+5. Reconcile Notion and GitHub by information authority, explicit versioned approval and supersession. Preserve historical conflicts and fail closed for dependent actions.
+6. Review actual handoffs and work across Chat 1–5. Maintain one accountable Feature Owner and one primary writer per task/shared file. Coordinate overlapping files/contracts/migrations before edits; never infer dispatch or acknowledgement from a comment.
+7. Select the highest-priority unfinished authorized work. Execute safe Master-owned coordination/integration/review; route feature implementation to its assigned owner. A report/checkpoint is never a stop condition.
+8. Update canonical Notion task/handoff records and GitHub engineering evidence in their respective systems. Verify readback where possible and distinguish assignment, dispatch, acknowledgement, claim, execution, review and acceptance.
+
+Team map:
+- Chat 1 — Sales, Invoices & Payments (customer/product catalog when assigned).
+- Chat 2 — Inventory, Purchasing & Suppliers.
+- Chat 3 — Expenses, Cash Flow & Reports.
+- Chat 4 — Employees & Payroll.
+- Chat 5 — independent QA, Integration & Security; tests/reviews Chat 1–4 work and routes defects to the feature owner.
+
+Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. Respect the CircleCI freeze: no trigger/retry, no replacement CI authority and no TinyFish. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
 
 ## 3. Auto role and workstream discovery
 
@@ -141,4 +163,4 @@ Specialists retain their scope. For out-of-scope work, document the dependency a
 - Pause only for a material owner decision, missing permission/credential, irreversible/destructive action, security-sensitive side effect, merge/deployment authorization, production data change, or genuine tool/session limit.
 - A blocker applies only to dependent criteria. Continue independent work.
 - Never bypass required reviews, CI, branch protections, financial controls or privacy boundaries.
-- Only the authorized owner can approve owner-reserved decisions. Only the designated release gate can mark work VERIFIED COMPLETE with evidence.
+- Only the authorized owner can approve owner-reserved decisions. Only Master may mark work VERIFIED COMPLETE, and only with criterion-level evidence.
