@@ -1071,3 +1071,80 @@ def test_tax_summary_rejects_reversed_date_range():
         assert "start_date must not be after end_date" in response.json()["detail"]
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+def test_receivables_aging_pagination_preserves_report_wide_totals():
+    """Pagination slices invoice rows without shrinking full-report aggregates."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Receivables Pagination Shop",
+                "currency_code": "EGP",
+                "timezone": "Africa/Cairo",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+        issue_date = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
+
+        with Session(engine) as session:
+            session.add_all(
+                [
+                    Invoice(
+                        business_id=business_id,
+                        invoice_number=f"PAGE-{index}",
+                        status="issued",
+                        currency_code="EGP",
+                        issue_date=issue_date,
+                        due_date=datetime(2026, 1, 20 + index, 12, 0, tzinfo=timezone.utc),
+                        subtotal=Decimal(f"{index * 10}.00"),
+                        discount_total=Decimal("0.00"),
+                        tax_total=Decimal("0.00"),
+                        total=Decimal(f"{index * 10}.00"),
+                    )
+                    for index in range(1, 4)
+                ]
+            )
+            session.commit()
+
+        path = f"/api/v1/businesses/{business_id}/reports/receivables-aging"
+        full = client.get(path, params={"as_of": "2026-01-31"})
+        first = client.get(path, params={"as_of": "2026-01-31", "limit": 2, "offset": 0})
+        second = client.get(path, params={"as_of": "2026-01-31", "limit": 2, "offset": 2})
+        invalid = client.get(path, params={"as_of": "2026-01-31", "offset": 1})
+
+        assert full.status_code == 200, full.text
+        assert first.status_code == 200, first.text
+        assert second.status_code == 200, second.text
+        assert invalid.status_code == 422, invalid.text
+
+        full_payload = full.json()
+        first_payload = first.json()
+        second_payload = second.json()
+        assert full_payload["invoice_count"] == 3
+        assert first_payload["invoice_count"] == second_payload["invoice_count"] == 3
+        assert first_payload["pagination"] == {
+            "limit": 2, "offset": 0, "total_count": 3,
+            "has_more": True, "next_offset": 2,
+        }
+        assert second_payload["pagination"] == {
+            "limit": 2, "offset": 2, "total_count": 3,
+            "has_more": False, "next_offset": None,
+        }
+        assert [row["invoice_id"] for row in first_payload["invoices"] + second_payload["invoices"]] == [
+            row["invoice_id"] for row in full_payload["invoices"]
+        ]
+        assert first_payload["by_currency"] == second_payload["by_currency"] == full_payload["by_currency"]
+        assert first_payload["data_quality_warnings"] == second_payload["data_quality_warnings"] == full_payload["data_quality_warnings"]
+        assert first_payload["by_currency"] == [
+            {
+                "currency_code": "EGP",
+                "buckets": [
+                    {"bucket": "1_30_days", "outstanding_amount": "60.00"}
+                ],
+                "total_outstanding": "60.00",
+            }
+        ]
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
