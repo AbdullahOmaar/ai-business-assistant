@@ -442,9 +442,19 @@ export class ApiService {
   expenses(businessId: string): Promise<Expense[]> {
     return this.request<Expense[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/expenses?limit=100&offset=0`);
   }
-  employees(businessId: string): Promise<EmployeeRecord[]> {
+  employees(
+    businessId: string,
+    options: { limit?: number; offset?: number; activeOnly?: boolean; search?: string } = {},
+  ): Promise<EmployeeRecord[]> {
+    const params = new URLSearchParams({
+      limit: String(options.limit ?? 200),
+      offset: String(options.offset ?? 0),
+    });
+    if (options.activeOnly) params.set('active_only', 'true');
+    const search = options.search?.trim();
+    if (search) params.set('search', search);
     return this.request<EmployeeRecord[]>(
-      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees?limit=200&offset=0`
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees?${params.toString()}`
     );
   }
   createEmployee(businessId: string, body: {
@@ -463,8 +473,13 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}`, 'PATCH', body
     );
   }
-  payroll(businessId: string, period?: string): Promise<EmployeePayrollRecord[]> {
-    const params = new URLSearchParams({ limit: '200', offset: '0' });
+  payroll(
+    businessId: string,
+    period?: string,
+    limit = 200,
+    offset = 0,
+  ): Promise<EmployeePayrollRecord[]> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (period) params.set('period', period);
     return this.request<EmployeePayrollRecord[]>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll?${params.toString()}`
