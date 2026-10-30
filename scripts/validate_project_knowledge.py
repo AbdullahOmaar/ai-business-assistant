@@ -68,6 +68,8 @@ def frontmatter(text: str) -> dict[str, str]:
 
 def validate() -> list[str]:
     errors: list[str] = []
+    if PACKAGE.is_symlink():
+        return [f"package directory must not be a symlink: {PACKAGE}"]
     if not PACKAGE.is_dir():
         return [f"missing package directory: {PACKAGE}"]
 
