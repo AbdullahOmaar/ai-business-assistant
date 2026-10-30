@@ -149,3 +149,16 @@ Reviewed frontend sources:
 - `frontend/src/app/employee-payroll.component.ts` (payroll UI text states salary data is restricted to workspace owners).
 
 This frontend review confirms the presentation path statically. An authenticated STAFF browser session, API response capture and UI smoke test are still NOT RUN.
+
+
+## Payroll-derived expense privacy remediation — 2026-10-30
+
+**Implementation candidate on this existing T41 branch (not yet runtime-verified):**
+- The privacy boundary uses the authoritative PayrollRecord.expense_id relationship, not mutable Expense category/description text.
+- Added a shared query helper in backend/app/security.py; OWNER keeps full visibility, while STAFF/member read surfaces exclude payroll-linked Expense rows.
+- Applied to GET /expenses, report summary, deterministic assistant insights, dashboard expenses, profit/loss expense totals, and the AI chat's recent-expense context before it is sent to the external provider or used by local fallback.
+- CSV expense export was already OWNER-only. Employee/payroll endpoints remain OWNER-only.
+- Added test_staff_cannot_read_payroll_expense_through_broad_surfaces to create a paid payroll and a normal expense, then verify STAFF sees the normal expense but not employee name/net pay/payroll reference across list, summary, dashboard, P&L, deterministic insights and AI chat. The test also verifies OWNER retains payroll expense visibility and aggregate totals.
+- No migration, stored row, payroll state, posting calculation, expense amount, or OWNER report semantics changed. No shared financial contract was redefined.
+
+**Verification:** authored and source-reviewed only; pytest, full backend suite, PostgreSQL, frontend build, browser E2E and security scans remain NOT RUN. Do not mark this privacy fix VERIFIED until exact-head tests and independent security review pass.
