@@ -220,3 +220,33 @@ The expense CSV export remains OWNER-only. A route inventory of the current T40 
 The current T41 payroll test file has 28 authored test functions. The broad privacy regression covers STAFF list with limit=1 (predicate-before-pagination), report summary, dashboard, P&L, deterministic insights, internal summary, CSV denial, AI chat without a provider key, and a mocked provider outbound payload. The T40 date-boundary test file has 14 authored test functions for local inclusive dates, start/end filters, stable ordering, invalid timezone, tenant isolation, calendar extremes and Cairo DST.
 
 **Remaining regression gap:** the broad payroll-privacy test does not yet combine payroll-linked visibility with T40 start-only, end-only and combined date filters. The T40 date tests exercise date filtering separately, but not the intersection. Add those cases to the consolidated integration test before declaring the cross-module contract fully covered. Tests/build/PostgreSQL/browser/security remain NOT RUN on these exact heads; source review is not execution evidence.
+
+
+## Live reconciliation — 2026-10-30 18:14 UTC (authoritative addendum)
+
+This section supersedes the historical SHA, T37-approval, validation-count and “remaining privacy/date intersection” statements above wherever they conflict with this readback.
+
+### Exact delivery state
+- Live GitHub `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- PR #304: OPEN / DRAFT / UNMERGED; existing branch `task/t40-fin-report-003-current-main-20261029`; exact HEAD `7fcb24526e768949c87c6a0538115510f4c802a1`; base and merge base `c464398e0a6ace77eba32aabfbdbd09091f53999`.
+- Live compare: 101 commits ahead / 2 behind; diverged. GitHub reports `mergeable=false`. Changed files: 12 — `TASKS.md`, `backend/app/assistant_api.py`, `backend/app/core_features_api.py`, `backend/app/extended_api.py`, `backend/app/operations.py`, `backend/app/security.py`, `backend/tests/test_employee_payroll_api.py`, `backend/tests/test_financial_report_date_boundaries.py`, `backend/tests/test_financial_report_reconciliation.py`, `docs/EXPENSE_SETTLEMENT_CASHBOX_DESIGN.md`, `docs/FINANCIAL_REPORTS_METRIC_MAP.md`, `docs/T40_T41_EXPENSE_VISIBILITY_INTEGRATION.md`.
+- PR #304 has no submitted formal reviews or review threads. Its exact-head status list is empty because the latest commit uses `[skip ci]`; empty status is NOT PASS.
+- Live main status still contains six CircleCI FAILURE contexts and two Vercel success contexts. CircleCI is frozen; no run/retry/rerun was initiated. Vercel status is not authenticated application E2E evidence.
+- No merge, rebase, production migration/write or deployment is authorized or performed.
+
+### Current authority
+- Effective Master correction at PR #304 comment `https://github.com/AbdullahOmaar/ai-business-assistant/pull/304#issuecomment-6530108102` (2026-10-30 18:11:59 UTC) explicitly supersedes older broad T37 approval wording: **T37 is Draft / NOT APPROVED overall** due the canonical decision conflict.
+- The only separate approval to preserve is the narrow AUTH-T41 payroll-privacy policy: business-scoped `PayrollRecord.expense_id` filtering across expense list, report summary, dashboard/P&L, internal financial summary and AI/provider context; OWNER sees payroll-linked rows, STAFF retains ordinary expenses only; existing OWNER-only CSV/payroll controls remain. This does not approve allocation/as-of/settlement/cashflow/tax/credit/AP/COGS/FX/GL/posting/schema behavior.
+- Chat 4's explicit handoff at `https://github.com/AbdullahOmaar/ai-business-assistant/pull/304#issuecomment-6528944262` (2026-10-30 17:21:52 UTC) confirms the privacy predicate is already present on this exact T40 branch. No separate acknowledgement is implied.
+
+### Source and regression readback
+- The current T40 branch contains the handed-off privacy predicate in `backend/app/security.py`; call sites are present in `extended_api.py`, `core_features_api.py`, `operations.py` and `assistant_api.py`. The expense-list predicate is applied before date filtering, stable ordering and offset/limit. The predicate uses the business-scoped PayrollRecord foreign-key relation, not mutable category/description strings.
+- Current PR #304 regression inventory: 14 date-boundary tests, 10 report-reconciliation tests and 3 payroll-privacy/date-pagination tests = 27 targeted tests; 26 related existing tests. These are authored/source-reviewed, **all NOT RUN**. The privacy/date intersection is now represented by `test_payroll_visibility_composes_with_local_date_filters_and_offset_pagination` and `test_staff_expense_date_filters_hide_payroll_before_offset_pagination`; the older “remaining regression gap” paragraph above is superseded.
+- Backend pytest, PostgreSQL integration/concurrency, build/type/lint, browser/E2E and security/dependency checks are NOT RUN. Desktop Commander remains OFFLINE and no authorized non-CircleCI runner is connected.
+- The PR contains allocation-integrity and historical-as-of candidate code, but those financial semantics remain **NOT APPROVED / not merge-authorized** under the latest Master correction. Expense settlement/cashbox is design-only. Tax/credit-note, supplier AP/payment, valuation/COGS, FX and GL remain deferred.
+
+### Integration and ownership constraints
+- Keep PR #304 and its existing branch; do not create a duplicate branch/PR.
+- Do not modify `TASKS.md`; Master is its primary writer. Do not rebase/merge the two-behind main commits or rewrite shared branch history. The compare is diverged and mergeable=false.
+- Keep the payroll-privacy implementation intact; Chat 4 has handed off the source review, but all runtime tests remain NOT RUN.
+- **Next Master action:** resolve the T37 approval conflict and the shared TASKS.md ancestry/integration sequence, then provide an approved non-CircleCI exact-SHA validation route and independent review. Keep PR #304 Draft/unmerged until those gates are met.
