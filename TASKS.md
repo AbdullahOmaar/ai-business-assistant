@@ -1681,3 +1681,8 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Membership-list requests are versioned and discarded if they resolve after the active UID/session changes. Existing workspace-load generation guard continues to reject late data from a previous selected workspace.
 - Existing current-main behavior already includes membership-scoped workspace listing/selection/switching, WorkspaceLoadGuard, owner-only membership listing/role changes/removal, last-owner protection, audit events, and OWNER/STAFF only. Invitation flows are not present in current API and are not invented by this change.
 - Validation on this follow-up source: NOT RUN yet. Next: exact GitLab test-branch sync and full 8-job pipeline; then review cross-tab sign-out/account-switch races and request independent Chat 5 security review. No merge, version bump, production deploy, backend contract/schema/financial change, or production data mutation.
+
+### Auth transition race follow-up — 2026-10-30
+- Auth snapshots observed while startup or a local sign-in/sign-out flow is in progress are queued; after the flow finishes, the latest snapshot is reconciled against the current UID/email. This prevents a remote sign-out/account switch racing initialization or a local auth action from being silently ignored.
+- Sign-up now uses the same auth-state broadcaster as sign-in and the Firebase observer.
+- This follow-up source still requires the full GitLab 8-job pipeline and independent review; no production release action.

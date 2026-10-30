@@ -933,6 +933,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private currentAuthEmail: string | null = null;
   private businessListRequestVersion = 0;
   private authTransitionVersion = 0;
+  private pendingAuthSnapshot: AuthUserSnapshot | null | undefined;
   tab: Tab = 'overview';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
@@ -1152,7 +1153,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.authStateUnsubscribe = this.auth.subscribeToAuthState(user => {
-      if (this.authFlowInProgress || !this.initialized) return;
+      if (this.authFlowInProgress || !this.initialized) {
+        this.pendingAuthSnapshot = user;
+        return;
+      }
       void this.handleExternalAuthState(user);
     });
     void this.loadApiVersion();
@@ -1203,6 +1207,14 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       if (transitionVersion === this.authTransitionVersion) this.loading = false;
     }
+  }
+
+  private applyPendingAuthSnapshot(): void {
+    const pending = this.pendingAuthSnapshot;
+    this.pendingAuthSnapshot = undefined;
+    if (pending === undefined) return;
+    if (pending?.uid === this.currentAuthUid && pending?.email === this.currentAuthEmail) return;
+    void this.handleExternalAuthState(pending);
   }
 
   private resetSignedOutState(): void {
@@ -1278,6 +1290,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.authFlowInProgress = false;
       this.loading = false;
       this.initialized = true;
+      this.applyPendingAuthSnapshot();
     }
   }
 
@@ -1442,6 +1455,7 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       this.authFlowInProgress = false;
       this.loading = false;
+      this.applyPendingAuthSnapshot();
     }
   }
 
@@ -1459,6 +1473,7 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       this.authFlowInProgress = false;
       this.loading = false;
+      this.applyPendingAuthSnapshot();
     }
   }
 

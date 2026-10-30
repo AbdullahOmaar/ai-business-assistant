@@ -118,7 +118,7 @@ export class AuthService {
   async signUp(email: string, password: string): Promise<User> {
     await this.initialize();
     const credential = await createUserWithEmailAndPassword(this.auth!, email.trim(), password);
-    this.user = credential.user;
+    this.updateUser(credential.user);
     return credential.user;
   }
 
