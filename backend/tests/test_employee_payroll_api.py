@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -1046,3 +1047,87 @@ def test_invalid_employee_updates_do_not_change_profile_or_audit(employee_enviro
             )
         ).all()
         assert actions == ["employee.created"]
+
+
+
+def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_environment, monkeypatch):
+    """Payroll-linked expenses stay OWNER-only across list, reports and AI context."""
+    env = employee_environment
+    employee = _create_employee(env, name="Confidential Payroll Employee").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-10"},
+    )
+    assert payroll.status_code == 201, payroll.text
+
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
+    env["subject"]["value"] = OWNER
+    paid = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/pay", json={})
+    assert paid.status_code == 200, paid.text
+
+    ordinary_expense = env["client"].post(
+        f"{base}/expenses",
+        json={
+            "category": "Office",
+            "description": "Office supplies",
+            "amount": "100.00",
+            "currency_code": "EGP",
+            "incurred_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    assert ordinary_expense.status_code == 201, ordinary_expense.text
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    env["subject"]["value"] = STAFF
+    staff_expenses = env["client"].get(f"{base}/expenses")
+    assert staff_expenses.status_code == 200, staff_expenses.text
+    assert len(staff_expenses.json()) == 1
+    assert staff_expenses.json()[0]["description"] == "Office supplies"
+    assert all("Confidential Payroll Employee" not in str(row) for row in staff_expenses.json())
+
+    summary = env["client"].get(f"{base}/reports/summary")
+    dashboard = env["client"].get(f"{base}/dashboard")
+    profit_loss = env["client"].get(f"{base}/profit-loss", params={"period": "all"})
+    insights = env["client"].get(f"{base}/assistant/insights")
+    chat = env["client"].post(
+        f"{base}/assistant/chat",
+        json={"message": "Show me my expenses."},
+    )
+    for response in (summary, dashboard, profit_loss, insights, chat):
+        assert response.status_code == 200, response.text
+
+    assert summary.json()["expenses_by_currency"] == [
+        {"currency_code": "EGP", "count": 1, "total": "100.00"}
+    ]
+    assert dashboard.json()["expenses"] == [
+        {"currency_code": "EGP", "count": 1, "total": "100.00"}
+    ]
+    profit_currency = next(
+        row for row in profit_loss.json()["currencies"]
+        if row["currency_code"] == "EGP"
+    )
+    assert profit_currency["expenses"] == "100.00"
+    assert profit_currency["expense_count"] == 1
+    assert insights.json()["expenses_by_currency"] == [
+        {"currency_code": "EGP", "count": 1, "total": "100.00"}
+    ]
+    assert "Confidential Payroll Employee" not in chat.text
+    assert "5000.00" not in chat.text
+    assert "payroll:" not in chat.text
+
+    # OWNER retains access to the linked payroll expense and its totals.
+    env["subject"]["value"] = OWNER
+    owner_expenses = env["client"].get(f"{base}/expenses")
+    assert owner_expenses.status_code == 200, owner_expenses.text
+    assert len(owner_expenses.json()) == 2
+    payroll_rows = [row for row in owner_expenses.json() if row["category"] == "Payroll"]
+    assert len(payroll_rows) == 1
+    assert payroll_rows[0]["vendor_name"] == "Confidential Payroll Employee"
+    owner_summary = env["client"].get(f"{base}/reports/summary")
+    assert owner_summary.status_code == 200, owner_summary.text
+    assert owner_summary.json()["expenses_by_currency"] == [
+        {"currency_code": "EGP", "count": 2, "total": "5100.00"}
+    ]
