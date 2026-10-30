@@ -79,17 +79,18 @@ def receive_purchase_order(
         ).with_for_update()).one_or_none()
         if product is None:
             raise WorkflowError("Purchase order product not found in this business")
+        if not product.is_stock_tracked:
+            raise WorkflowError("Purchase order product is not stock-tracked")
         prepared_receipts.append((line, product, quantity))
 
     for line, product, quantity in prepared_receipts:
         line.received_quantity += quantity
-        if product.is_stock_tracked:
-            record_stock_movement(
-                session, principal=principal, business_id=business_id,
-                product_id=product.id, movement_type="receipt",
-                quantity_delta=quantity, reason=f"Received on {order.order_number}",
-                reference_type="purchase_order", reference_id=order.id,
-            )
+        record_stock_movement(
+            session, principal=principal, business_id=business_id,
+            product_id=product.id, movement_type="receipt",
+            quantity_delta=quantity, reason=f"Received on {order.order_number}",
+            reference_type="purchase_order", reference_id=order.id,
+        )
     session.flush()
     order.status = (
         "received" if all(line.received_quantity == line.quantity for line in lines)
