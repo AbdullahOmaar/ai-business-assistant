@@ -229,3 +229,10 @@ Source review of `GET /api/v1/businesses/{business_id}/exports/{entity_type}.csv
 - The regression covers the Africa/Cairo 2026 fall-back day, whose UTC half-open interval is 2026-10-28 21:00Z through (exclusive) 2026-10-29 22:00Z. It asserts that expenses and issued-invoice tax totals include the exact local-day start and final microsecond, while excluding the immediately preceding and following records.
 - Date-boundary test functions: 15 (previously 14). T40 targeted inventory: 33 (previously 32), plus 26 related tests = 59 authored tests total. All runtime tests remain **NOT RUN**; this commit uses `[skip ci]` and no CI was triggered.
 - This adds coverage only; it does not change financial formulas, posting, schema, settlement, currency policy or permissions.
+
+### Reversed date-range validation — 2026-10-31
+
+- Added `test_dashboard_and_tax_summary_reject_reversed_date_ranges` to the T40-owned report-reconciliation suite.
+- The regression sends a start date later than the end date to the business dashboard and saved-tax summary; both must return HTTP 422 with their explicit validation detail rather than aggregating a misleading empty report.
+- This is validation-only coverage. No report formula, tax policy, cash semantics, currency behavior, schema, permissions or production data changed.
+- Report-reconciliation test functions: 16 (previously 15). T40 targeted inventory: 34 (15 date-boundary + 16 reconciliation + 3 payroll privacy/date-pagination) = **34 targeted tests**; plus 26 related = **60 authored tests total**. Runtime execution remains **NOT RUN**; commit uses `[skip ci]`.
