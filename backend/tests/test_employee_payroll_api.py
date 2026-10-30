@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
+from app.operations import financial_summary
 
 OWNER = "employee-payroll-test-owner"
 APPROVER = "employee-payroll-test-approver"
@@ -392,3 +394,136 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
     assert response.status_code == 422
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(PayrollRecord)) == 0
+
+
+
+def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_environment, monkeypatch):
+    """Payroll-linked expenses stay OWNER-only across list, reports and AI context."""
+    env = employee_environment
+    employee = _create_employee(env, name="Confidential Payroll Employee").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-10"},
+    )
+    assert payroll.status_code == 201, payroll.text
+
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
+    env["subject"]["value"] = OWNER
+    paid = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/pay", json={})
+    assert paid.status_code == 200, paid.text
+
+    ordinary_expense = env["client"].post(
+        f"{base}/expenses",
+        json={
+            "category": "Office",
+            "description": "Office supplies",
+            "amount": "100.00",
+            "currency_code": "EGP",
+            "incurred_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+        },
+    )
+    assert ordinary_expense.status_code == 201, ordinary_expense.text
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    env["subject"]["value"] = STAFF
+    # The payroll expense is newer. Hiding it must happen before LIMIT/OFFSET,
+    # otherwise STAFF receives an empty first page instead of the ordinary row.
+    staff_expenses = env["client"].get(f"{base}/expenses", params={"limit": 1})
+    assert staff_expenses.status_code == 200, staff_expenses.text
+    assert len(staff_expenses.json()) == 1
+    assert staff_expenses.json()[0]["description"] == "Office supplies"
+    assert all("Confidential Payroll Employee" not in str(row) for row in staff_expenses.json())
+
+    staff_export = env["client"].get(f"{base}/exports/expenses.csv")
+    assert staff_export.status_code == 403
+    with app.state.session_factory() as session:
+        staff_internal_summary = financial_summary(
+            session,
+            principal=AuthenticatedPrincipal(STAFF),
+            business_id=UUID(env["business_id"]),
+        )
+    assert staff_internal_summary["expenses"] == {"EGP": Decimal("100.00")}
+
+    summary = env["client"].get(f"{base}/reports/summary")
+    dashboard = env["client"].get(f"{base}/dashboard")
+    profit_loss = env["client"].get(f"{base}/profit-loss", params={"period": "all"})
+    insights = env["client"].get(f"{base}/assistant/insights")
+    chat = env["client"].post(
+        f"{base}/assistant/chat",
+        json={"message": "Show me my expenses."},
+    )
+    for response in (summary, dashboard, profit_loss, insights, chat):
+        assert response.status_code == 200, response.text
+
+    assert summary.json()["expenses_by_currency"] == [
+        {"currency_code": "EGP", "count": 1, "total": "100.00"}
+    ]
+    assert dashboard.json()["expenses"] == [
+        {"currency_code": "EGP", "count": 1, "total": "100.00"}
+    ]
+    profit_currency = next(
+        row for row in profit_loss.json()["currencies"]
+        if row["currency_code"] == "EGP"
+    )
+    assert profit_currency["expenses"] == "100.00"
+    assert profit_currency["expense_count"] == 1
+    assert insights.json()["expenses_by_currency"] == [
+        {"currency_code": "EGP", "count": 1, "total": "100.00"}
+    ]
+    assert "Confidential Payroll Employee" not in chat.text
+    assert "5000.00" not in chat.text
+    assert "payroll:" not in chat.text
+
+    # OWNER retains access to the linked payroll expense and its totals.
+    env["subject"]["value"] = OWNER
+    owner_expenses = env["client"].get(f"{base}/expenses")
+    assert owner_expenses.status_code == 200, owner_expenses.text
+    assert len(owner_expenses.json()) == 2
+    payroll_rows = [row for row in owner_expenses.json() if row["category"] == "Payroll"]
+    assert len(payroll_rows) == 1
+    assert payroll_rows[0]["vendor_name"] == "Confidential Payroll Employee"
+    owner_summary = env["client"].get(f"{base}/reports/summary")
+    assert owner_summary.status_code == 200, owner_summary.text
+    assert owner_summary.json()["expenses_by_currency"] == [
+        {"currency_code": "EGP", "count": 2, "total": "5100.00"}
+    ]
+    owner_export = env["client"].get(f"{base}/exports/expenses.csv")
+    assert owner_export.status_code == 200
+    assert "Confidential Payroll Employee" in owner_export.text
+
+    # A payroll link in business A must not suppress ordinary expenses in business B.
+    other_business = env["client"].post(
+        "/api/v1/businesses",
+        json={"name": "Second workspace", "currency_code": "EGP"},
+    )
+    assert other_business.status_code == 201, other_business.text
+    other_business_id = other_business.json()["id"]
+    with app.state.session_factory() as session:
+        session.add(BusinessMembership(
+            business_id=UUID(other_business_id),
+            user_subject=STAFF,
+            role=MembershipRole.STAFF,
+        ))
+        session.commit()
+    other_expense = env["client"].post(
+        f"/api/v1/businesses/{other_business_id}/expenses",
+        json={
+            "category": "Office",
+            "description": "Second business supplies",
+            "amount": "25.00",
+            "currency_code": "EGP",
+            "incurred_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    assert other_expense.status_code == 201, other_expense.text
+    env["subject"]["value"] = STAFF
+    other_staff_expenses = env["client"].get(
+        f"/api/v1/businesses/{other_business_id}/expenses"
+    )
+    assert other_staff_expenses.status_code == 200, other_staff_expenses.text
+    assert [row["description"] for row in other_staff_expenses.json()] == [
+        "Second business supplies"
+    ]
