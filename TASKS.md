@@ -1707,7 +1707,7 @@ Additional implementation/test commits (all [skip ci]):
 - Related existing suites: 26 tests.
 - Total authored/targeted: 25 T40/integration + 26 related. All are source-reviewed only; **NOT RUN**.
 - Build, PostgreSQL integration, frontend/browser, security scans and exact-head runtime validation: **NOT RUN**.
-- Latest PR #304 head after the final docs checkpoint: 5b9bcf04d1a6e956be9d1947624d806920dafef3; 74 ahead / 2 behind live main d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f; OPEN/DRAFT/UNMERGED, mergeable=true; exact-head status empty due [skip ci] (NOT a pass).
+- Pre-TASKS-refresh PR #304 checkpoint: 5b9bcf04d1a6e956be9d1947624d806920dafef3; 74 ahead / 2 behind live main d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f; OPEN/DRAFT/UNMERGED, mergeable=true; exact-head status empty due [skip ci] (NOT a pass). This TASKS refresh is another docs-only [skip ci] commit; read back PR metadata for the resulting final exact head.
 - CircleCI execution/retries remain prohibited; GitHub Actions is not a replacement. Desktop Commander is OFFLINE; no authorized local runner. No merge/rebase/deployment/migration/production write.
 
 ### Remaining
