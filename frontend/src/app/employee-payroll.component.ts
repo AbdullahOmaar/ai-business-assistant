@@ -292,8 +292,8 @@ export class EmployeePayrollComponent implements OnChanges {
   constructor(private readonly api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['businessId'] && this.businessId) {
-      // Clear every workspace-scoped salary value before loading the next workspace.
+    if (changes['businessId']) {
+      // Clear workspace-scoped salary state on every transition, including an empty selection.
       this.loadSequence++;
       this.pickerLoadSequence++;
       this.pickerBusy = false;
@@ -317,7 +317,7 @@ export class EmployeePayrollComponent implements OnChanges {
       this.busy = false;
       this.error = '';
       this.message = '';
-      void this.loadEmployeesAndPayroll();
+      if (this.businessId) void this.loadEmployeesAndPayroll();
     }
   }
 
