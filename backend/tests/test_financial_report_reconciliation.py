@@ -654,3 +654,76 @@ def test_receivables_aging_uses_persisted_event_timestamps_for_historical_as_of(
         assert after_allocation.json()["by_currency"][0]["total_outstanding"] == "60.00"
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+def test_payment_overallocation_is_reported_and_never_reduces_receivables():
+    """Allocations exceeding a payment amount are all excluded from historical AR."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Payment Overallocation Shop", "currency_code": "EGP", "timezone": "Africa/Cairo"},
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+        recorded_at = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
+
+        with Session(engine) as session:
+            customer = Customer(business_id=business_id, name="Payment Customer")
+            session.add(customer)
+            session.flush()
+            invoices = [
+                Invoice(
+                    business_id=business_id, customer_id=customer.id,
+                    invoice_number=f"PAYMENT-OVERALLOC-{index}", status="issued",
+                    currency_code="EGP", issue_date=recorded_at,
+                    due_date=datetime(2026, 2, 10, 12, 0, tzinfo=timezone.utc),
+                    subtotal=Decimal("100.00"), discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"), total=Decimal("100.00"),
+                )
+                for index in (1, 2)
+            ]
+            session.add_all(invoices)
+            session.flush()
+            payment = Payment(
+                business_id=business_id, customer_id=customer.id,
+                amount=Decimal("30.00"), currency_code="EGP",
+                received_at=recorded_at, method="cash",
+                idempotency_key="payment-overallocated-across-invoices",
+            )
+            session.add(payment)
+            session.flush()
+            session.add_all([
+                PaymentAllocation(
+                    business_id=business_id, payment_id=payment.id, invoice_id=invoice.id,
+                    amount=Decimal("20.00"), created_at=recorded_at,
+                )
+                for invoice in invoices
+            ])
+            session.commit()
+
+        dashboard = client.get(
+            f"/api/v1/businesses/{business_id}/dashboard",
+            params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
+        )
+        assert dashboard.status_code == 200, dashboard.text
+        assert dashboard.json()["outstanding_balances"] == [
+            {"currency_code": "EGP", "total": "200.00"}
+        ]
+        assert any(
+            item["type"] == "allocations_exceed_payment_amount"
+            for item in dashboard.json()["data_quality_warnings"]
+        )
+
+        aging = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+            params={"as_of": "2026-01-15"},
+        )
+        assert aging.status_code == 200, aging.text
+        assert aging.json()["by_currency"][0]["total_outstanding"] == "200.00"
+        assert any(
+            item["type"] == "allocations_exceed_payment_amount"
+            for item in aging.json()["data_quality_warnings"]
+        )
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
