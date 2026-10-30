@@ -1961,7 +1961,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const requestContext = {
       workspaceId: businessId,
       userId: this.currentAuthUid,
-      role: this.business.role,
+      role: this.business.role ?? null,
       signedIn: this.signedIn,
     };
     const isCurrentRequest = (): boolean => isCurrentTenantRequest(
@@ -2042,7 +2042,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const requestContext = {
       workspaceId: businessId,
       userId: this.currentAuthUid,
-      role: this.business.role,
+      role: this.business.role ?? null,
       signedIn: this.signedIn,
       customerId: requestedCustomerId,
     };
