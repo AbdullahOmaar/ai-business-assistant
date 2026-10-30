@@ -1598,3 +1598,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Fix on existing PR #305 branch: snapshot business/businessId before the request; fetch by captured ID; after await, close the temporary print window and return if the active business ID changed; render captured business name.
 - Added static regression in invoice-print-regressions.spec.ts for captured ID, post-fetch workspace guard and business-name snapshot. Updated INVOICE_PRINTING.md.
 - No backend payment/posting behavior or financial data changed. Test/build/browser smoke remain NOT RUN; exact-head CI contexts fail and Actions job logs are unavailable. PR remains Draft/open/unmerged; no merge/deploy.
+
+
+## T38 payment/workspace-switch idempotency safety — 2026-10-30
+
+- Source review found that a user could switch workspaces while `createPayment()` was awaiting the backend. `switchBusiness()` clears the form and `paymentIdempotencyKey`; if the network result was uncertain, returning to the original workspace could require a new key and risk duplicate payment submission.
+- Added a dedicated `paymentSaving` single-flight flag, disabled the workspace selector during the mutation, and guarded `switchBusiness()` / duplicate `createPayment()` calls until the request settles. The original request key remains in the form through the in-flight period; existing catch behavior preserves the entered payload/key when the outcome is uncertain.
+- Added static Node regression coverage for the disabled selector, workspace-switch guard, single-flight submission, and key use.
+- No backend payment allocation/posting semantics, schema, or production data changed. Tests/build/browser race simulation NOT RUN; exact-head CI/review pending. PR #305 remains Draft/unmerged.
