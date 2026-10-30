@@ -1592,3 +1592,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added `test_expense_and_tax_filters_reject_unrepresentable_calendar_extremes` in `backend/tests/test_financial_report_date_boundaries.py`.
 - Commits: implementation `c2bcd7f66d7a9df18f5f6df51feb813fe8c288af`; regression test `2f16f421e40f7c4afe229d6336b2c9580ebf64b3`.
 - Validation: pytest/build/security **NOT RUN**; behavior is not runtime-verified. No accounting formulas, schemas, migrations, or shared T37 contract changed. PR #304 remains Draft/open; no merge or deployment.
+
+
+## T40 — Profit/loss date-boundary hardening — 2026-10-30
+
+- Continued on the existing T40 branch `task/t40-fin-report-003-current-main-20261029` and PR #304; no duplicate branch/PR created.
+- Source review found `backend/app/core_features_api.py::_day_bounds` still performed local-midnight UTC conversion and inclusive `end_date + 1 day` without handling `OverflowError` / `ValueError`. This left `GET /api/v1/businesses/{business_id}/profit-loss?period=custom` able to raise an unhandled 500 for extreme valid ISO dates/timezones.
+- Updated `_day_bounds` to map unrepresentable date/timezone boundaries to HTTP 422 with a stable, non-sensitive message. Normal date ranges and financial metric semantics are unchanged.
+- Added `test_profit_loss_rejects_unrepresentable_custom_date_bounds` to `backend/tests/test_financial_report_reconciliation.py`; it covers lower-bound underflow at `date.min` in `Etc/GMT-12` and inclusive upper-bound overflow at `date.max`, expecting HTTP 422 in both cases.
+- Commits: implementation `949963038a9deecba6da1cf33f3a7b1f0a43b3c9`; regression `e8c4c5697b961398da0eec328260a7d169d1065c`.
+- Validation: source-level patch review completed; pytest, build, browser E2E, and CI **NOT RUN**. CircleCI was not invoked. No schema/migration, report formula, production data, or deployment changed.
+- T37 shared financial contract remains Draft / NOT APPROVED. This is date input hardening only; no accounting semantics were changed.
+
+**Next action:** run the focused reconciliation test file and the backend suite on a clean exact-head checkout once an authorized non-CircleCI runner/runtime is available; keep PR #304 Draft/unmerged until then.
