@@ -1677,3 +1677,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Scope:** no migration, schema, stored financial row, posting amount/state, or OWNER report semantics changed. No T37/T40 financial contract redefinition.
 - **Validation:** source reviewed; test and full suite NOT RUN. PostgreSQL, frontend build, browser E2E and security scans NOT RUN. Independent security review NOT RUN. Do not mark VERIFIED until exact-head checks pass.
 - **Delivery:** existing PR #308 remains Draft/Open/Unmerged; no merge/deployment. CircleCI was not triggered or retried.
+
+
+## T41 — Payroll privacy hardening implementation candidate (2026-10-30)
+
+- **Status: PARTIALLY COMPLETE — implementation and regression are present on the existing branch; execution and policy sign-off are NOT COMPLETE.**
+- **Current PR head at ledger update:** 6d1ff412514a5a06ec2f50e6593a84eaf2d5887f. PR #308 remains OPEN / DRAFT / UNMERGED. Branch `feat/t41-salary-history-effective-dates` is 70 commits ahead and 2 commits behind current main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; reconcile those two main commits before merge/release.
+- **Privacy behavior implemented:** `apply_expense_visibility` in `backend/app/security.py` uses the authoritative `PayrollRecord.expense_id` relation to exclude linked payroll expenses from non-OWNER expense read surfaces. OWNER keeps existing visibility. It does not rely on mutable category/description text.
+- **Read surfaces covered:** `GET /expenses`, `GET /reports/summary`, `GET /assistant/insights`, dashboard expense aggregates, profit/loss expense totals, and the AI chat's bounded recent-expense context. CSV expense export and Employee/Payroll endpoints were already OWNER-only.
+- **Regression:** `test_staff_cannot_read_payroll_expense_through_broad_surfaces` seeds a paid payroll plus ordinary expense; checks STAFF sees ordinary expense only and no payroll employee name/net pay/reference through list, summary, dashboard, P&L, insights and AI chat; checks OWNER retains payroll list/summary access.
+- **No financial lifecycle change:** no schema/migration, salary calculation, payroll status, expense creation, amount, posting formula, or owner-facing financial report semantics changed. No production data touched.
+- **Policy gate:** this branch implements the narrow least-privilege candidate policy: STAFF retains access to ordinary expenses, while payroll-linked rows and payroll-derived aggregates remain OWNER-only. This must be explicitly confirmed in T37/permission matrix before PR is marked ready or merged; until confirmation, preserve Draft/Open and do not release.
+- **Verification:** source diff reviewed; pytest, full backend suite, PostgreSQL test, frontend build/browser smoke, dependency/security scan and independent security review are NOT RUN. Exact-head CircleCI has six FAILURE contexts; no rerun because of the quota freeze. GitHub Actions run jobs expose no steps and log download returns 404 BlobNotFound; this does not diagnose app test failures.
+- **Next action:** obtain explicit Product Owner confirmation of the STAFF payroll-visibility policy, then run the focused privacy test on the exact head using an approved runner and obtain independent security review. No merge/deployment.
