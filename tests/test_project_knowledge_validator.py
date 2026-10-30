@@ -179,5 +179,13 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
         self.assertTrue(any("symlinks" in e for e in self.run_validation()))
 
 
+    def test_rejects_expected_filename_replaced_by_directory(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        path = self.package / filename
+        path.unlink()
+        path.mkdir()
+        self.assertTrue(any("missing_files" in e for e in self.run_validation()))
+
+
 if __name__ == "__main__":
     unittest.main()
