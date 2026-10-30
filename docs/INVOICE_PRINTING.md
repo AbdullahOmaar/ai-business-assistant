@@ -18,3 +18,10 @@ This is a browser print view, not a server-generated or cryptographically signed
 ## Validation status
 
 The print-details implementation is consolidated into PR #305 alongside invoice total breakdown and sales-to-cash UI changes. Static source checks passed for the issued-state guard, persisted totals, issue/due dates, optional notes, and the InvoiceDetail type. Automated tests/builds and manual browser print-to-PDF smoke are **NOT RUN** because exact-head CI failures are not yet classified. Keep the PR unmerged until required checks are observable and pass.
+
+
+## Workspace-switch safety — 2026-10-30
+
+The print action snapshots the active business ID/name before the asynchronous invoice-detail request. After the request returns, it verifies that the same business is still selected; if the user switched workspaces while the request was in flight, the temporary print window is closed and no previous-workspace invoice is rendered under the new workspace header. This is a UI consistency/tenant-context guard only; the API still scopes invoice detail by the captured business ID and persisted invoice status remains authoritative.
+
+A static regression was added for the captured business ID, post-fetch workspace guard and business-name snapshot. Test execution remains NOT RUN on the exact candidate head.
