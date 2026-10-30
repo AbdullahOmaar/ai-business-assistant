@@ -2442,6 +2442,8 @@ export class AppComponent implements OnInit {
 
   async printInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || invoice.status !== 'issued') return;
+    const business = this.business;
+    const businessId = business.id;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       this.error = this.t('اسمح بفتح نافذة الطباعة من المتصفح ثم حاول مرة أخرى.', 'Allow pop-ups for printing, then try again.');
@@ -2450,7 +2452,12 @@ export class AppComponent implements OnInit {
     this.loading = true;
     this.error = '';
     try {
-      const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      const detail = await this.api.invoiceDetail(businessId, invoice.id);
+      // Do not render a previous workspace's invoice after the active workspace changes.
+      if (this.business?.id !== businessId) {
+        printWindow.close();
+        return;
+      }
       // Print only the persisted invoice state, not a stale list snapshot.
       if (detail.status !== 'issued') {
         throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
@@ -2494,7 +2501,7 @@ export class AppComponent implements OnInit {
         '.actions{margin-top:24px;display:flex;gap:8px}button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
         '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.total{break-inside:avoid}}</style></head><body>' +
         '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p><p>' + labels.status + ': ' + labels.issued + '</p></div>' +
-        '<div><strong>' + this.escapePrintHtml(this.business.name) + '</strong><p>' + this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
+        '<div><strong>' + this.escapePrintHtml(business.name) + '</strong><p>' + this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
         '<section class="meta"><div><span class="muted">' + labels.issueDate + '</span><strong>' + issueDate + '</strong></div>' +
         '<div><span class="muted">' + labels.dueDate + '</span><strong>' + dueDate + '</strong></div></section>' +
         '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
