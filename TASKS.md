@@ -1825,3 +1825,8 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - T40 PR #304 latest exact head at this snapshot: `71edd2efcad5c1808019dec5da19a9e24e3112fa`, OPEN/DRAFT/UNMERGED, 100 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, mergeable=false.
 - Re-fetched exact current T40 branch source confirms `apply_expense_visibility` remains in `security.py`, expense list/report/insights, dashboard/P&L, assistant context and internal summary; broad payroll privacy regression remains present. Source only; tests NOT RUN. Chat 3 retains T40 branch ownership; T41 made no changes to PR #304.
 - The two main-only commits remain unreconciled in shared branch history. T41's relevant production schema blocker (`employees` / `payroll_records`, migration 0005 unverified) is documented, but the full main `TASKS.md` changes and shared history still require an authorized Git runner. Do not merge while 2 commits behind.
+
+
+## Last T40 exact-head source recheck — 2026-10-30
+- T40 PR #304 latest head at this recheck: `7fcb24526e768949c87c6a0538115510f4c802a1`, OPEN/DRAFT/UNMERGED, 101 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, mergeable=false.
+- Re-fetched the current T40 branch at this exact head. The payroll visibility helper remains in `security.py`, with call sites in expense list/report/insights, dashboard/P&L, assistant context and internal financial summary; the broad privacy regression remains in `test_employee_payroll_api.py`. Source only; runtime tests NOT RUN. Chat 3 retains PR #304 ownership; T41 made no changes to T40.
