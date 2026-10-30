@@ -37,10 +37,12 @@ test('employee/payroll styles are component-local and responsive instead of rely
 });
 
 test('employee and payroll client methods use business-scoped API paths and never accept a client net-pay value', () => {
-  assert.match(api, /employees\(businessId: string\): Promise<EmployeeRecord\[]>/);
+  assert.match(api, /employees\(\s*businessId: string,\s*options: \{[^}]*search\?: string/);
+  assert.match(api, /active_only/);
+  assert.match(api, /params\.set\('search', search\)/);
   assert.match(api, /createEmployee\(businessId: string/);
   assert.match(api, /updateEmployee\(businessId: string, employeeId: string/);
-  assert.match(api, /payroll\(businessId: string, period\?: string\)/);
+  assert.match(api, /payroll\(\s*businessId: string,\s*period\?: string,\s*limit = 200,\s*offset = 0/);
   assert.match(api, /createPayroll\(businessId: string, employeeId: string/);
   assert.match(api, /approvePayroll\(businessId: string, payrollId: string\)/);
   assert.match(api, /payPayroll\(businessId: string, payrollId: string\)/);
@@ -82,9 +84,24 @@ test('a successful payroll payment refreshes the workspace expense list and dash
 });
 
 
-test('employee and payroll screens explicitly disclose the current 200-record UI cap', () => {
-  assert.match(component, /تعرض أول 200 موظف فقط حاليًا/);
-  assert.match(component, /shows only the first 200 employees/);
-  assert.match(component, /تعرض أول 200 سجل مرتب فقط للفترة المحددة/);
-  assert.match(component, /shows only the first 200 payroll records for the selected period/);
+test('employee and payroll lists use independent server-side offset pagination', () => {
+  assert.match(component, /employeePageSize = 25/);
+  assert.match(component, /payrollPageSize = 25/);
+  assert.match(component, /search: this.employeeSearchApplied/);
+  assert.match(component, /changeEmployeePage\(direction: number\)/);
+  assert.match(component, /changePayrollPage\(direction: number\)/);
+  assert.match(component, /onPayrollPeriodChange\(\)/);
+  assert.match(component, /this\.employeeOffset = 0/);
+  assert.match(component, /this\.payrollOffset = 0/);
+  assert.match(component, /employeeHasNext/);
+  assert.match(component, /payrollHasNext/);
+});
+
+test('payroll employee picker searches the complete active directory independently of the visible page', () => {
+  assert.match(component, /activeOnly: true/);
+  assert.match(component, /search: this\.payrollEmployeeSearch\.trim\(\)/);
+  assert.match(component, /payrollEmployeeOptions/);
+  assert.match(component, /selectedPayrollEmployeeFallback/);
+  assert.match(component, /pickerLoadSequence/);
+  assert.match(component, /searchPayrollEmployees\(\)/);
 });
