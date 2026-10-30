@@ -94,7 +94,7 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
 
     def test_rejects_extra_package_file(self) -> None:
         (self.package / "UNTRACKED.md").write_text("# extra", encoding="utf-8")
-        self.assertTrue(any("package file set mismatch" in e for e in self.run_validation()))
+        self.assertTrue(any("package entry set mismatch" in e for e in self.run_validation()))
 
     def test_rejects_missing_canonical_source(self) -> None:
         filename = "01_AGENT_OPERATING_MODEL.md"
