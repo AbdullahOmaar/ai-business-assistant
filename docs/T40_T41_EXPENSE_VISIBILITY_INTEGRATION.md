@@ -82,3 +82,17 @@ This is a candidate only. T37's route × role × action × tenant matrix remains
 2. T40 and T41 owners coordinate one source integration preserving both date semantics and visibility behavior; reconcile both branches' two-behind relationship against live main before final review.
 3. Add/extend the cross-surface regression matrix, then run all relevant exact-head tests, PostgreSQL integration, build and security checks through an authorized runner.
 4. Keep both PRs Draft / unmerged until policy approval, exact-head validation and independent security review pass.
+
+
+## Additional T40 / T38-Feature 31 report integration gate — PR #312
+
+A broader open Draft PR #312 was inspected because it changes the same report surfaces and financial sources:
+
+- PR #312 head: `564dfacd5b518006468deb7d53fde16a38896c27`; 191 ahead / 2 behind live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; OPEN / DRAFT / UNMERGED; latest metadata says mergeable=true. Exact head has six CircleCI FAILURE contexts. No retry or manual CI run was made.
+- It changes `backend/app/core_features_api.py`, `backend/app/extended_api.py`, `backend/app/models.py`, services/domain rules and adds migrations `0006`–`0011`.
+- `core_features_api.py`: adds CreditNote tax/total aggregates to P&L and subtracts issued credit-note totals from revenue activity. This is a new report formula / financial semantic and remains T37-gated.
+- `extended_api.py::report_tax_summary`: adds credit-note tax reversals, but the PR patch constructs date bounds at UTC midnight. That conflicts with T40's business-IANA-timezone inclusive local-day semantics for tax summary. Integration must preserve T40's business-local half-open UTC bounds for both invoice tax and credit-note tax, after the policy for credit-note issuance-date treatment is approved.
+- `extended_api.py::receivables_aging`: subtracts applied CreditApplication amounts from receivables and adds credit-note warning behavior. This changes the receivables source basis and must not be accepted until T37 approves credit application/receivable treatment and current-vs-historical as-of semantics.
+- The same branch adds bank reconciliation, pricing-rule effective dates and several other migrations outside the PR's stated credit-note lifecycle scope. Master has already recorded a source review requiring scope separation, migration/backfill review and T37 approval.
+
+**Integration rule:** do not cherry-pick or merge PR #312 wholesale into T40. First obtain T37 approval and coordinate with T38/Feature 31. Then reconcile only the approved, scoped report behavior while preserving T40 date-boundary semantics and T41 payroll visibility. The six migration chain and its dependencies require independent migration review and isolated PostgreSQL upgrade/recovery validation; they are not part of T40's current authorized changes.
