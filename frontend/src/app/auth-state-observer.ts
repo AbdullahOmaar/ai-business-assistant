@@ -92,7 +92,7 @@ export function observeAuthState<T>(
       if (!settled) {
         settled = true;
         clearPendingTimer(timeoutId);
-        onError(error);
+        notifyError(error);
         reject(error);
       }
     }
