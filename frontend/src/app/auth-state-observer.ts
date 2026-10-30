@@ -67,7 +67,7 @@ export function observeAuthState<T>(
       );
       subscriptionReady = true;
       if (cleanupPending) unsubscribe();
-      if (readyPending) onReady(unsubscribe);
+      if (readyPending && !cleanupPending) onReady(unsubscribe);
     } catch (error) {
       if (!settled) {
         settled = true;
