@@ -162,3 +162,30 @@ This frontend review confirms the presentation path statically. An authenticated
 - No migration, stored row, payroll state, posting calculation, expense amount, or OWNER report semantics changed. No shared financial contract was redefined.
 
 **Verification:** authored and source-reviewed only; pytest, full backend suite, PostgreSQL, frontend build, browser E2E and security scans remain NOT RUN. Do not mark this privacy fix VERIFIED until exact-head tests and independent security review pass.
+
+## Exact-head source and cross-PR integration review — 2026-10-30 02:55 UTC
+
+**Review basis:** PR #308 live metadata at the start of this review: `b35ce019a4de19d32750bea15261757a51482077` (OPEN / DRAFT / UNMERGED; base SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`; main checkpoint `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; 78 commits ahead / 2 behind; GitHub reports mergeable=true). No review submissions were present in the fetched PR metadata. This is a static source review, not runtime verification.
+
+### Source findings revalidated
+
+- `backend/app/security.py`: `apply_expense_visibility` uses `PayrollRecord.expense_id` scoped to the same business; it does not infer sensitivity from mutable category/description text.
+- PR #308 applies the predicate to the expense list **after business scoping and before ordering/offset/limit**, report-summary and dashboard aggregates, P&L expense totals, deterministic assistant insights, `operations.financial_summary`, and the recent-expense context assembled by `assistant_api` before either provider or local fallback. CSV remains OWNER-only.
+- `backend/app/employee_payroll_api.py`: employee/payroll endpoints remain OWNER-only. Payroll payment currently locks the approved record, creates one linked Expense, sets status to paid, and writes the audit event in the same transaction. This is not evidence of a cash-disbursement/Payment record.
+- `backend/app/models.py` and migration `0005_employee_payroll`: Employee has mutable `monthly_salary`; PayrollRecord snapshots base salary/allowances/bonuses/deductions/net pay and stores a unique expense link. Status constraint is only `draft/approved/paid`. No effective-dated salary/contract history table, linked Payment ID, or failed/partial/reversed/corrected lifecycle was found in this migration/model slice.
+- `backend/tests/test_employee_payroll_api.py`: privacy regression is authored and asserts STAFF ordinary-expense visibility, payroll-linked row/aggregate redaction across broad read surfaces, CSV denial, and OWNER positive access. It is **NOT RUN** on the reviewed head. It disables the provider key and therefore does not execute a provider-backed request/payload assertion.
+- Remaining privacy test gaps: explicit cross-tenant assertions on the broad expense/report/chat surfaces; provider-backed payload capture proving payroll fields are absent before outbound request; pagination-boundary checks where payroll rows would otherwise occupy a page; and no-side-effect assertions for denied export/read paths. Existing general payroll API tenant tests do not substitute for these specific surface-level cases.
+
+### Cross-PR integration gate — T40 PR #304
+
+Live PR #304 is OPEN / DRAFT / UNMERGED on `task/t40-fin-report-003-current-main-20261029`, head `c46370a64ddb157a621a7de44084d070835875c2`. Its current `backend/app/extended_api.py` expense handler adds business-timezone date filters and deterministic ordering, but the exact-head source does **not** import or call `apply_expense_visibility`. The current PR #308 version does. This is a confirmed integration conflict, not a hypothetical risk.
+
+Before PR #304 is reconciled or merged, preserve the T41 visibility predicate in its date-filtered expense statement after `Expense.business_id == business_id` and before ordering/offset/limit. The existing GitHub handoff comment on PR #304 records this requirement. No edits were made to PR #304.
+
+### Decisions and verification gates unchanged
+
+- T37 remains PARTIALLY COMPLETE / NOT APPROVED; no versioned role/permission decision authorizes the STAFF payroll-visibility candidate. T40 payroll expense vs settled/cash-disbursement semantics also remain unapproved. No salary-history schema/backfill, shared permission change, payroll payout/payment, expense-posting or reversal lifecycle implementation is authorized by this review.
+- Current-head tests/build/security/browser/migration checks: NOT RUN. Historical passing tests are not evidence for this head. CircleCI execution/retry is prohibited by the current Operating Model; no retry was attempted. No GitHub Actions replacement CI was introduced.
+- No runtime source, schema, migration, financial data, permissions, merge or deployment changed in this review.
+
+**Next independent action:** once an authorized non-CircleCI runner and disposable PostgreSQL target are available, run the focused suite and concurrency test on the then-current exact SHA; before that, keep the PR Draft and reconcile the PR #304 expense-handler integration conflict.
