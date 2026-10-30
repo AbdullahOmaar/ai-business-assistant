@@ -372,3 +372,50 @@ The `/pay` endpoint locks the PayrollRecord, accepts only approved/unpaid record
 ### Current handoff
 
 Preserve PR #308 as Draft/Open/Unmerged. Master should triage the first-200 UI limitation against demo volume. Keep salary history/effective dates/backfill/proration, payslip versioning and advanced payout lifecycle deferred. Exact-head runner, disposable PostgreSQL database, independent security review and main-only `TASKS.md` ancestry reconciliation remain outstanding.
+
+## Permission and synthetic acceptance matrix — 2026-10-30
+
+This section records expected outcomes for the existing narrow AUTH-T41 privacy boundary and the currently implemented employee/recorded-pay scope. It is a test-design artifact, not evidence of execution or approval for wider accounting behavior.
+
+### Permission × action matrix
+
+| Principal / scope | Employee directory and payroll management | Payroll-linked Expense / aggregate visibility | Ordinary Expense visibility | Cross-business identifiers |
+| --- | --- | --- | --- | --- |
+| OWNER, same business | Allow within business scope; mutations audited | Allow within business scope | Allow | Deny / not-found; no side effects |
+| STAFF, same business | Deny employee/payroll management and payroll exports | Deny payroll-linked rows and aggregates before pagination, grouping, totals, report and AI/provider serialization | Preserve ordinary expense access | Deny / not-found; no side effects |
+| Anonymous or non-member | Deny protected employee/payroll routes | Deny | Existing expense authorization contract applies | Deny / not-found; no side effects |
+| Any principal, foreign business/employee/payroll/expense ID | Deny / not-found | Deny / no inference | Deny according to the existing business scope | No read, mutation, audit, or provider-context side effect |
+
+The payroll privacy predicate must use the business-scoped `PayrollRecord.expense_id` relationship. Do not infer payroll linkage from mutable category, description, note, or reference text. Do not change ordinary expense access or add roles.
+
+### Synthetic acceptance outcomes
+
+1. **Employee normalization and duplicate atomicity:** accepted canonicalized fields persist; a duplicate business-scoped code/email update conflicts; the original row and audit history remain unchanged.
+2. **Employee directory pagination:** ordering is deterministic with a stable tie-break; active-only filtering excludes inactive employees; offset/limit pages do not duplicate or skip rows under a stable fixture.
+3. **Payroll period filtering:** period filters are business-scoped and deterministic; pagination preserves stable ordering; foreign-business records never appear.
+4. **Approval separation:** creator cannot approve own payroll; a distinct OWNER approver can approve; repeated approval is rejected without a second audit or state mutation.
+5. **Recorded payout atomicity:** only an approved/unpaid payroll can transition; one explicit record operation creates one linked Expense, sets paid state and writes one paid audit in the same transaction. Exact retry/concurrent request cannot create another Expense or audit. This is recorded in-app paid status, not external bank/provider confirmation.
+6. **Failure rollback:** injected Expense insert or paid-audit failure leaves payroll state unpaid/approved as appropriate and creates no orphan Expense or paid audit.
+7. **Payroll privacy:** STAFF cannot infer payroll rows/amounts from expense lists, summaries, dashboard/P&L, insights, CSV or assistant/provider context; ordinary non-payroll expenses remain visible.
+8. **Tenant isolation:** foreign employee/payroll/linked expense identifiers cannot read or mutate another business's data and produce no audit or AI-context side effects.
+9. **Owner positive controls:** OWNER can see payroll-linked expense and payroll data for their own business; no cross-business access is implied.
+10. **UI pagination:** if employee/payroll volume exceeds 200, the current screen must expose subsequent pages or explicitly disclose the cap before demo sign-off. The current source does neither; follow-up implementation is pending Master triage.
+
+### Migration and deferred-domain risks
+
+| Area | Current evidence | Required safe disposition |
+| --- | --- | --- |
+| Existing employee/payroll schema | Branch migration `0005_employee_payroll.py` follows `0004_platform_user_roles`; Master production evidence says production application is unverified | No production migration. Require backup/restore evidence and isolated restored-database upgrade/recovery rehearsal |
+| Salary history/effective dates | Model stores mutable `monthly_salary`; no effective-dated salary history or payslip-version history table in inspected source | Deferred; no schema/backfill/proration implementation without a separate approved decision |
+| Historical payroll snapshots | Existing payroll record contains base/net snapshots; source test protects an existing record from later employee salary edits | Preserve immutable existing record values; do not invent retroactive correction or recalculation semantics |
+| Payout lifecycle | Current status constraint is draft/approved/paid; `/pay` records an in-app paid transition and linked Expense | No failed/partial/reversed/corrected state expansion or claim of bank/provider execution |
+| Expense/settlement semantics | T40/T37 contract and settlement source-event questions remain open | Do not add cash-disbursement, Payment, settlement, GL, AP, tax, FX or COGS semantics in T41 |
+| Payroll privacy | Narrow OWNER-only payroll-linked visibility boundary is carried by the current Master T41 work order | Preserve exactly this boundary; do not generalize into broader T37 role or finance policy |
+
+### Evidence status
+
+- Matrix and scenarios: documented test design; **NOT RUN**.
+- API pytest, PostgreSQL concurrency, full backend suite, frontend build/tests, browser E2E, independent security review and isolated migration rehearsal: **NOT RUN / NOT VERIFIED**.
+- AST syntax check for the added PostgreSQL payout concurrency test: **PASS (syntax only)**.
+- Exact-head GitHub status is empty and no workflow runs are present: **NOT PASS**. CircleCI remains frozen.
+- No runtime API, schema/migration, financial semantics, shared T40 file, production data, merge or deployment was changed by this documentation update.
