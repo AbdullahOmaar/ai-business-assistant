@@ -148,3 +148,75 @@ The API/persistence scenario:
 ## Progress reporting
 
 Use the weighted acceptance model in `TASKS.md`: Core ERP 25, Accounting Engine 25, Reconciliation/Reports 15, Inventory Valuation/COGS 10, Tax/Localization 10, Security/Tenant/Audit 10, Release/Operations 5. Award points only for implemented and verified criteria. Report the evidence SHA, category scores, overall percentage, blocked criteria, and tests not run. Do not infer progress from PR count or UI completion.
+
+
+## Cross-feature regression matrix — T22 execution map
+
+The matrix maps existing automated coverage to workflows. A listed test is source-level coverage, not proof of a pass on the current PR head. The ERP scenario suite additionally rejects malformed invoice quantities without creating a row and reads invoice, payment, allocation, and expense values back from persisted records before reconciling reports.
+
+| Workflow / risk | Primary automated coverage | Assessment |
+|---|---|---|
+| Firebase identity and fail-closed behavior | `test_firebase_auth.py`, `test_security.py`, `test_main.py` | Backend source coverage present; exact-head execution pending |
+| Business creation, membership and workspace isolation | `test_core_features_api.py`, `test_membership_management_api.py`, `test_business_tenant_boundaries.py` | API coverage present; real Firebase browser sign-in E2E not established |
+| OWNER / STAFF permissions and denied side effects | `test_api.py`, `test_purchase_order_approval_api.py`, `test_employee_payroll_api.py`, `test_membership_management_api.py` | Targeted role matrix present; not every route × role pair is claimed exhaustive |
+| Customers and products | `test_core_features_api.py`, `test_erp_v1_business_cycle.py` | CRUD and persisted sale workflow coverage |
+| Invoice draft, edit, issue and invalid-input handling | `test_core_features_api.py`, `test_invoice_lifecycle_edges.py`, `test_erp_v1_business_cycle.py` | API/persistence coverage |
+| Payment allocation, replay, changed-payload rejection and duplicate side effects | `test_core_features_api.py`, `test_postgres_financial_concurrency.py`, `test_erp_v1_business_cycle.py` | Replay/persistence covered; PostgreSQL races require disposable PostgreSQL |
+| Inventory, purchasing, partial receipt and over-receipt | `test_erp_v1_business_cycle.py`, `test_foreign_business_workflows.py`, `test_purchase_order_approval_api.py` | Quantity and tenant safety covered; AP/valuation intentionally not claimed |
+| Expenses and reports / currency and date boundaries | `test_erp_v1_business_cycle.py`, `test_receivables_aging.py`, `test_business_timezone_reporting.py`, `test_operations.py` | Report values reconciled to saved records; no full GL/P&L claim |
+| Employees/payroll privacy and role denial | `test_employee_payroll_api.py`, `employee-payroll-ui.spec.ts` | Backend privacy/role coverage; lifecycle remains contract-gated |
+| AI success, invalid input, provider failure/timeout and safe errors | `test_assistant_security.py`, `test_assistant_resilience.py`, `test_core_features_api.py` | Backend provider/fallback safety coverage |
+| Frontend unit regression | `frontend/src/app/*.spec.ts` | Node test suite is repeatable; exact-head run pending |
+| Browser E2E | `frontend/e2e/startup.spec.ts`, `frontend/e2e/platform-admin.spec.ts` | Startup/admin only; authenticated full ERP journey remains NOT IMPLEMENTED / NOT RUN |
+
+### Exact repeatable commands
+
+Run from a clean checkout of the candidate SHA in an isolated environment only.
+
+**Backend API/domain suite:**
+
+```bash
+cd backend
+mkdir -p test-results
+python -m pytest -q --junitxml=test-results/pytest.xml
+```
+
+**Disposable PostgreSQL schema/concurrency gate (CI-provided disposable service only):**
+
+```bash
+cd backend
+python -m alembic upgrade head
+python -m alembic current
+python -m alembic check
+python -m pytest -q --junitxml=test-results/pytest.xml
+python -m alembic upgrade head --sql > test-results/alembic-upgrade.sql
+test -s test-results/alembic-upgrade.sql
+```
+
+Set `DATABASE_URL`, `TEST_DATABASE_URL`, and `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` only for the disposable PostgreSQL service. Never point these commands at production.
+
+**Frontend unit tests and production compilation:**
+
+```bash
+cd frontend
+npm ci --no-audit --no-fund
+npm test
+npm run prebuild
+npx ng build
+```
+
+**Chromium browser suite:**
+
+```bash
+cd frontend
+npm ci --no-audit --no-fund
+npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
+npx playwright --version
+npx playwright test
+```
+
+Retain backend JUnit at `backend/test-results/pytest.xml`, Playwright JUnit at `frontend/test-results/e2e-junit.xml`, traces/screenshots on failure, migration SQL, and `git rev-parse HEAD`. Report PASS / FAIL / NOT RUN against that exact SHA; stale results do not count.
+
+### Current execution boundary
+
+Backend/frontend suites, PostgreSQL migration/concurrency checks, browser E2E, Docker build/import, and dependency audits have **NOT RUN** on the current PR head. CircleCI is prohibited and has not been triggered. GitLab remains the intended validation-only runner but exact GitHub SHA synchronization/status association is not demonstrated. The lack of an authenticated full ERP browser journey is a concrete remaining automation gap.

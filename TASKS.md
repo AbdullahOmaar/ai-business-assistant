@@ -1732,3 +1732,13 @@ This checkpoint supplements the ordered register above; it does not supersede pr
 - No code/runtime changes, branch rewrites, merge, production deployment, or production DB mutation were performed in this checkpoint. Existing PR #302/#306/#312/#313 received review comments; Notion T01/T03/T07/T22/T37/T39/T40/T41/T44 pages received evidence comments.
 - Next action: restore owner-authorized GitHub→GitLab exact-SHA synchronization; separately obtain T37 owner/accountant approval and safe non-production runner/restore target. Keep all affected PRs Draft/unmerged until exact-head checks and independent reviews pass.
 
+
+
+## T22 cross-feature regression execution — 2026-10-30
+
+- Resumed existing PR #315 branch `ci/gitlab-fallback-canonical-20261030`; no duplicate branch/PR. Verified baseline GitHub `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`. PR head before this change: `61a4bb580d4d615690d74bd78873a72c841173ef` (the branch received a concurrent master checkpoint while this work was being prepared; latest ref was re-read before this update).
+- Source audit: backend pytest API/domain/tenant/security/financial modules; frontend Node built-in tests under `src/app/*.spec.ts`; Playwright startup and platform-admin specs. Existing backend coverage includes Firebase auth, OWNER/STAFF denials, foreign-business workflows, invoices/payments/idempotency, purchasing, expenses/reports, payroll restrictions, and AI provider safety.
+- Strengthened `backend/tests/test_erp_v1_business_cycle.py`: malformed invoice quantity must return 422 with no invoice row; issued invoice total, payment amount/allocation and expense amount/currency are read back from persisted SQLAlchemy records.
+- Expanded `docs/PRODUCTION_V1_ERP_QUALITY_GATES.md` with workflow-to-test matrix, exact backend/PostgreSQL/frontend/Playwright commands, artifact expectations, and gaps (no authenticated full ERP browser journey; no complete GL/AP/COGS/refund lifecycle).
+- Validation: **NOT RUN**. GitHub connector environment has no local checkout/test runner. CircleCI was not triggered/retried/rerun. GitLab exact-SHA runner remains blocked pending supported one-way sync. No production data, migrations, deployment or financial contracts changed.
+- Status: **PARTIALLY COMPLETE / VALIDATION BLOCKED**. Next action: restore supported exact-SHA GitHub→GitLab synchronization, execute the documented suites once on the resulting exact PR head, inspect artifacts, fix genuine failures without weakening assertions, and obtain independent review. Keep PR #315 Draft and unmerged.

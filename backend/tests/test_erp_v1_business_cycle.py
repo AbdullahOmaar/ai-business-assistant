@@ -19,6 +19,8 @@ from app.main import app
 from app.models import (
     AuditEvent,
     Base,
+    Expense,
+    Invoice,
     Payment,
     InvoiceLine,
     PaymentAllocation,
@@ -96,6 +98,24 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     assert product_response.status_code == 201, product_response.text
     product_id = product_response.json()["id"]
     product_uuid = UUID(product_id)
+
+    # Invalid decimal input must be rejected before any invoice is persisted.
+    invalid_invoice = client.post(
+        f"/api/v1/businesses/{business_id}/invoices",
+        json={
+            "invoice_number": "ERP-V1-INVALID-001",
+            "currency_code": "EGP",
+            "customer_id": customer_id,
+            "lines": [{"product_id": product_id, "quantity": "not-a-number"}],
+        },
+    )
+    assert invalid_invoice.status_code == 422, invalid_invoice.text
+    with Session(engine) as session:
+        assert session.scalar(
+            select(func.count()).select_from(Invoice).where(
+                Invoice.business_id == business_uuid
+            )
+        ) == 0
 
     # 3. Draft invoice: 3 × EGP 200 = 600; 10% discount = 60;
     #    tax 14% on 540 = 75.60; total = EGP 615.60.
@@ -192,6 +212,21 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
                 AuditEvent.action == "payment.recorded",
             )
         ) == 1
+        persisted_invoice = session.get(Invoice, UUID(invoice_id))
+        persisted_payment = session.get(Payment, UUID(payment_id))
+        persisted_allocation = session.scalar(
+            select(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_uuid,
+                PaymentAllocation.payment_id == UUID(payment_id),
+            )
+        )
+        assert persisted_invoice is not None
+        assert persisted_invoice.status == "issued"
+        assert Decimal(str(persisted_invoice.total)) == Decimal("615.60")
+        assert persisted_payment is not None
+        assert Decimal(str(persisted_payment.amount)) == Decimal("400.00")
+        assert persisted_allocation is not None
+        assert Decimal(str(persisted_allocation.amount)) == Decimal("400.00")
 
     # 6. Dashboard must distinguish invoiced sales, collected cash, and receivable.
     dashboard_response = client.get(
@@ -258,6 +293,13 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
         },
     )
     assert expense_response.status_code == 201, expense_response.text
+    expense_id = expense_response.json()["id"]
+    with Session(engine) as session:
+        persisted_expense = session.get(Expense, UUID(expense_id))
+        assert persisted_expense is not None
+        assert persisted_expense.business_id == business_uuid
+        assert Decimal(str(persisted_expense.amount)) == Decimal("100.00")
+        assert persisted_expense.currency_code == "EGP"
 
     report_response = client.get(
         f"/api/v1/businesses/{business_id}/profit-loss",
