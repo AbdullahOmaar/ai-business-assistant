@@ -10,11 +10,11 @@ This note reconciles the existing T40 Expenses & Reports PR #304 with T41 Employ
 ## Verified repository evidence
 
 - Live `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
-- T40 PR #304 branch: `task/t40-fin-report-003-current-main-20261029`; source-level code reviewed at `c46370a64ddb157a621a7de44084d070835875c2`; latest documentation checkpoint / current PR head `5ef93cea54cb39e036ca2e21f73da2e29718d383`.
+- T40 PR #304 branch: `task/t40-fin-report-003-current-main-20261029`; source-level code reviewed at `c46370a64ddb157a621a7de44084d070835875c2`; documentation checkpoints `5ef93cea54cb39e036ca2e21f73da2e29718d383` and `757a07649cc27ec7a15e96901c1af0babe2a2896`; latest exact PR head at this review is `757a07649cc27ec7a15e96901c1af0babe2a2896`.
 - T41 PR #308 branch: `feat/t41-salary-history-effective-dates`, head `f89380722efb580be79a2d46013df7f29a3e3f9c`.
 - Both branches diverge from live main by two commits; their merge base is `c464398e0a6ace77eba32aabfbdbd09091f53999`.
 - PR #304 is OPEN / DRAFT / UNMERGED (49 ahead / 2 behind); latest GitHub metadata says `mergeable=true`. PR #308 is OPEN / DRAFT / UNMERGED (80 ahead / 2 behind). Neither metadata value constitutes validation or permission to merge.
-- Current T40 exact head `5ef93cea54cb39e036ca2e21f73da2e29718d383` returns six CircleCI FAILURE contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke). Current T41 exact head `f89380722efb580be79a2d46013df7f29a3e3f9c` returned no status contexts. Neither is a pass.
+- Current T40 exact head `757a07649cc27ec7a15e96901c1af0babe2a2896` returns six CircleCI FAILURE contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke). Current T41 exact head `f89380722efb580be79a2d46013df7f29a3e3f9c` returned no status contexts. Neither is a pass.
 - T37 remains PARTIALLY COMPLETE / NOT APPROVED. Master has requested an explicit decision on payroll-linked expense visibility; no versioned APPROVED decision is present.
 
 ## Source-level integration finding
@@ -72,7 +72,7 @@ This is a candidate only. T37's route × role × action × tenant matrix remains
 
 - T40-authored tests on PR #304: 21; related existing suites: 26. All source-reviewed only, **NOT RUN**.
 - T41 privacy regression on PR #308: authored/source-inspected; current exact head **NOT RUN**. Historical test results on older commits do not validate current PR heads.
-- T40 current exact-head GitHub status: six CircleCI FAILURE contexts. CircleCI execution/retries are prohibited; no retry was made and no job logs/root cause were verified. T41 current exact-head status query returned no contexts; that is not a pass.
+- T40 current exact-head GitHub status: six CircleCI FAILURE contexts on `757a07649cc27ec7a15e96901c1af0babe2a2896`. The documentation correction commit that produced this head omitted `[skip ci]`, so CircleCI contexts appeared automatically; this was unintended and contrary to the Operating Model. No manual run or retry was initiated; no job logs/root cause were verified. Future documentation-only commits must include `[skip ci]`. T41 current exact-head status query returned no contexts; that is not a pass.
 - CircleCI execution/retries are prohibited by the Operating Model; GitHub Actions must not be used as replacement CI. GitLab mirror is stale and cannot validate either GitHub head. Desktop Commander device is OFFLINE.
 - No code, schema, migration, payroll calculation, posting, permission behavior, merge or deployment was changed by this review.
 
