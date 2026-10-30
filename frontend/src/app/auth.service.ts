@@ -80,7 +80,7 @@ export class AuthService {
       this.authReady = observeAuthState<User>(
         (onUser, onError) => onAuthStateChanged(this.auth!, onUser, onError),
         user => { this.user = user ?? null; },
-        error => {
+        _error => {
           this.user = null;
           this.authStateUnsubscribe = undefined;
           this.authReady = undefined;
