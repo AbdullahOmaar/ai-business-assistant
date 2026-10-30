@@ -1732,3 +1732,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Expense recognition/account mapping, statutory tax/ETA, supplier AP, inventory valuation/COGS, FX, GL/journal and reconciliation remain deferred. T40 owns incurred-vs-settled/cash-outflow metric mapping.
 - PR #304 current head `2a05f19ad608bdbdad5586f7927796ad244ed152` still lacks `apply_expense_visibility` in `GET /expenses`; Chat 3 owns integration on its existing branch. No changes made to PR #304.
 - Current branch documentation update is docs-only `[skip ci]`; no tests/build/security/migration/browser checks run. CircleCI prohibited; no retries. No merge/deployment/production migration/write.
+
+
+## T40/T41 integration source completion — 2026-10-30
+
+- T40 PR #304 advanced to `6cfb8155f12e42ee6719226af49e9f9b5b34406d`. Source review confirms the approved `apply_expense_visibility` predicate is now integrated across expense list (before date filters/order/pagination), report summary, deterministic insights, dashboard, P&L, internal financial summary and AI chat context.
+- T40 PR #304 includes the broad STAFF/OWNER privacy regression in `backend/tests/test_employee_payroll_api.py`, including STAFF first-page behavior, OWNER positives, CSV controls and business-B ordinary-expense non-suppression.
+- This supersedes the earlier statement that PR #304 still lacked the predicate. The cross-PR source integration dependency is now closed; tests and independent security review remain open.
+- PR #304 remains OPEN/DRAFT/UNMERGED, 58 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; no exact-head status contexts (NOT a pass). Privacy regression, all T40 tests/build/PostgreSQL/browser/security NOT RUN. CircleCI prohibited; no retry.
+- T41 PR #308 remains on this existing branch; no duplicate PR. No merge/deploy/production migration/write.
