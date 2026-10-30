@@ -6,6 +6,7 @@ import {
   InvoiceDraftLine,
   InvoiceDraftPayload,
   InvoiceDraftProduct,
+  moveInvoiceDraftLine,
   toInvoiceDraftPayload,
   validateInvoiceDraft,
 } from './invoice-draft';
@@ -148,11 +149,8 @@ export class InvoiceDraftEditorComponent {
     if (!this.busy && this.lines.length > 1) this.lines = this.lines.filter((_, i) => i !== index);
   }
   moveLine(index: number, direction: -1 | 1): void {
-    const target = index + direction;
-    if (this.busy || target < 0 || target >= this.lines.length) return;
-    const next = [...this.lines];
-    [next[index], next[target]] = [next[target], next[index]];
-    this.lines = next;
+    if (this.busy) return;
+    this.lines = moveInvoiceDraftLine(this.lines, index, direction);
   }
   resetLine(line: InvoiceDraftLine): void {
     line.product_id = '';
