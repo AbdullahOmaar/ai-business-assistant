@@ -60,7 +60,7 @@ A feature is complete only when it works end-to-end and expected versus actual p
 - Scenario test implementation source commit before subsequent documentation-only commits: `35e22d053e5fd0122a409eca3ae96bcd2706f69e`; PR base at that point was `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
 - Added `docs/PRODUCTION_V1_ERP_QUALITY_GATES.md`: strict ERP V1 acceptance gates, scenario evidence requirements, test layers, known accounting blockers, weighted progress, and limitations.
 - Added three API + persistence scenarios in `backend/tests/test_erp_v1_business_cycle.py`:
-  1. Customer → stock-tracked product → 10%-discounted/14%-taxed invoice → issue → partial collection → idempotent replay/changed-payload rejection → dashboard → expense → preliminary P&L.
+  1. Customer → stock-tracked product → 10%-discounted/14%-taxed invoice → issue → partial collection → idempotent replay/changed-payload rejection → product stock read model → customer statement → receivables aging → invoice allocation/outstanding list → tax summary → dashboard → expense → preliminary P&L.
   2. Supplier → purchase order → owner approval → partial receiving → over-receipt rejection/no side effects → final receiving; validates PO status, received quantity, stock and audit movements.
   3. Sale → linked one-unit approved return → stock restoration → report shows approved return separately; asserts no refund/payment row is created by approval.
 - Expected sale scenario: subtotal EGP 600.00; discount EGP 60.00; taxable EGP 540.00; tax EGP 75.60; invoice EGP 615.60; stock 10→7; payment EGP 400.00; outstanding EGP 215.60; expense EGP 100.00; operational result before COGS EGP 515.60.
