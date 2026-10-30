@@ -49,11 +49,13 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 ## CI provider and required status
 
-- The repository's tested alternate CI path is CircleCI. The workflow `verify-all-changes` runs `backend-accounting` (disposable PostgreSQL migrations/schema check, backend/financial tests, offline migration SQL, Python dependency audit), `frontend-quality` (frontend test/build and npm audit), `frontend-browser-smoke` (Playwright Chromium), and `backend-container` (backup/restore safety checks and container build/import).
-- The aggregate `all-checks-passed` job has a GitHub status context observed as `ci/circleci: verify-all-changes/all-checks-passed`. It is a no-op aggregation job and requires all four underlying jobs; it must not replace them.
-- Before relying on this aggregate as a merge gate, the repository owner must independently confirm/configure the exact required status in GitHub's branch protection/rules. The connected integration has returned HTTP 403 when reading these settings, so their current values are **UNVERIFIED**.
-- GitHub Actions jobs have reported fast failures with no executable step logs accessible; the root cause and whether those contexts are required remain **UNVERIFIED**. Do not disable those workflows or merge around any required status until an owner confirms the repository rules. Keep CI configuration and branch-protection changes separate from production deployment.
-- Re-run and verify all applicable statuses on the exact final candidate SHA; a previous commit's green status is not sufficient.
+- **GitLab CI is the sole approved CI provider** for tests, builds, browser checks and dependency/security audits. The canonical pipeline is `.gitlab-ci.yml`.
+- GitHub remains canonical for source code, branches, commits, PRs and release SHAs. GitLab is the validation runner, not a second source of truth.
+- The pipeline must run backend pytest plus Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container smoke, backup/restore safety tests, and Python/npm dependency audits.
+- CircleCI and Semaphore are retired/non-authoritative. Their status contexts are not required release checks and must not be triggered, retried, or used to block a release. The repository's obsolete CircleCI config is removed. No Semaphore config exists in the repository; disconnecting its GitHub App is an external account setting.
+- Do not introduce GitHub Actions as a replacement test/build CI. A sync-only workflow may mirror exact GitHub refs to GitLab, but it must not execute tests or deploy.
+- Prefer exact GitHub SHA mirroring. If a GitLab mirror commit SHA differs, compare and record the GitHub blob SHA for every changed source file before treating the GitLab run as candidate validation. A GitLab PASS on unrelated or older source is not release evidence.
+- Verify GitLab pipeline success and all required jobs on the final candidate before merge. Do not infer success from pipeline creation or a subset of completed jobs.
 
 ## Release gates
 
