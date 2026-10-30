@@ -1053,7 +1053,7 @@ def test_invalid_employee_updates_do_not_change_profile_or_audit(employee_enviro
 
 
 
-def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_environment, monkeypatch):
+def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_environment, monkeypatch, caplog):
     """Payroll-linked expenses stay OWNER-only across list, reports and AI context."""
     env = employee_environment
     employee = _create_employee(env, name="Confidential Payroll Employee").json()
@@ -1074,32 +1074,60 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     ordinary_expense = env["client"].post(
         f"{base}/expenses",
         json={
-            "category": "Office",
-            "description": "Office supplies",
+            # These mutable strings intentionally look payroll-related. The
+            # authoritative PayrollRecord.expense_id relation, not text, defines
+            # whether an expense is private payroll data.
+            "category": "Payroll",
+            "description": "Payroll-tagged office supplies",
+            "reference": "payroll:spoofed-reference",
             "amount": "100.00",
             "currency_code": "EGP",
-            # Older than the payroll expense so limit=1 proves the privacy
-            # predicate is applied before ordering/pagination, not afterwards.
+            # Older than the linked payroll expense so limit=1 proves the
+            # privacy predicate runs before ordering/pagination.
             "incurred_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
         },
     )
     assert ordinary_expense.status_code == 201, ordinary_expense.text
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
+    def business_state():
+        with app.state.session_factory() as session:
+            business_uuid = UUID(env["business_id"])
+            return (
+                session.scalar(select(func.count()).select_from(Employee).where(
+                    Employee.business_id == business_uuid
+                )),
+                session.scalar(select(func.count()).select_from(PayrollRecord).where(
+                    PayrollRecord.business_id == business_uuid
+                )),
+                session.scalar(select(func.count()).select_from(Expense).where(
+                    Expense.business_id == business_uuid
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_uuid
+                )),
+            )
+
+    before_staff_reads = business_state()
+    caplog.clear()
     env["subject"]["value"] = STAFF
     first_expense_page = env["client"].get(f"{base}/expenses", params={"limit": 1})
     assert first_expense_page.status_code == 200, first_expense_page.text
     assert len(first_expense_page.json()) == 1
-    assert first_expense_page.json()[0]["description"] == "Office supplies"
+    assert first_expense_page.json()[0]["description"] == "Payroll-tagged office supplies"
+    assert first_expense_page.json()[0]["reference"] == "payroll:spoofed-reference"
 
     staff_expenses = env["client"].get(f"{base}/expenses")
     assert staff_expenses.status_code == 200, staff_expenses.text
     assert len(staff_expenses.json()) == 1
-    assert staff_expenses.json()[0]["description"] == "Office supplies"
+    assert staff_expenses.json()[0]["description"] == "Payroll-tagged office supplies"
+    assert staff_expenses.json()[0]["reference"] == "payroll:spoofed-reference"
     assert all("Confidential Payroll Employee" not in str(row) for row in staff_expenses.json())
 
     staff_export = env["client"].get(f"{base}/exports/expenses.csv")
     assert staff_export.status_code == 403
+    for sensitive_value in ("Confidential Payroll Employee", "5000.00", "payroll:"):
+        assert sensitive_value not in staff_export.text
     with app.state.session_factory() as session:
         staff_internal_summary = financial_summary(
             session,
@@ -1167,17 +1195,29 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     )
     assert provider_chat.status_code == 200, provider_chat.text
     outbound = json.dumps(captured["payload"], ensure_ascii=False)
-    assert "Office supplies" in outbound
+    assert "Payroll-tagged office supplies" in outbound
     assert "Confidential Payroll Employee" not in outbound
     assert "5000.00" not in outbound
     assert "payroll:" not in outbound
+
+    # Read/denied-export paths must not mutate business records or audit state,
+    # and application logs must not contain payroll-sensitive values.
+    assert business_state() == before_staff_reads
+    captured_logs = caplog.text
+    for sensitive_value in (
+        "Confidential Payroll Employee", "5000.00", payroll.json()["id"],
+    ):
+        assert sensitive_value not in captured_logs
 
     # OWNER retains access to the linked payroll expense and its totals.
     env["subject"]["value"] = OWNER
     owner_expenses = env["client"].get(f"{base}/expenses")
     assert owner_expenses.status_code == 200, owner_expenses.text
     assert len(owner_expenses.json()) == 2
-    payroll_rows = [row for row in owner_expenses.json() if row["category"] == "Payroll"]
+    payroll_rows = [
+        row for row in owner_expenses.json()
+        if row["vendor_name"] == "Confidential Payroll Employee"
+    ]
     assert len(payroll_rows) == 1
     assert payroll_rows[0]["vendor_name"] == "Confidential Payroll Employee"
     owner_summary = env["client"].get(f"{base}/reports/summary")
