@@ -1,48 +1,57 @@
-# Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
+# Master execution checkpoint — 2026-10-30 (Production V1 ERP quality / CI reconciliation)
 
 ## User directive
-- Do NOT trigger, rerun, retry, or otherwise execute CircleCI jobs; user confirmed the CircleCI quota is exhausted.
-- Continue repository work and prepare a production release without consuming CircleCI quota.
-- This directive does not waive security, data-integrity, required-review, or production migration safeguards.
+- Production V1 is the product we intend to operate. Require real end-to-end ERP business-scenario evidence, not just HTTP success or code-level tests.
+- Validate code, accounting calculations, persisted balances, inventory, reports, authorization, tenant isolation, audit effects, migrations, and release operations.
+- Do NOT trigger, rerun, retry, or otherwise execute CircleCI. The owner explicitly prohibited it due quota exhaustion.
+- GitHub is the canonical source of code/history. GitLab is validation-only and is trusted only when it runs the exact GitHub commit SHA. Do not introduce a new GitHub Actions CI solution.
+- No merge, production deployment, production migration, or production financial-data mutation is authorized by this checkpoint.
 
-## Verified source and delivery state
-- GitHub canonical repository: `AbdullahOmaar/ai-business-assistant`.
-- Main at inspection: `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`.
-- Frontend package: `1.3.4`; backend package: `1.3.4`; FastAPI app version: `1.3.4`. Version remains aligned; no version bump has been made.
-- Existing Vercel production deployments for Web and API are READY on the same main SHA `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`. No new deployment was triggered in this checkpoint.
-- Vercel runtime inspection (API, last 24h window) reports 7 exceptions across 1 user, including PostgreSQL UndefinedTable for both `employees` and `payroll_records`; Web runtime inspection reports no runtime errors in that window.
-- The API error is a database schema/migration mismatch, not something a redeploy of unchanged application code can repair. Migration `0005_employee_payroll` adds these tables but has not been verified/applied to production. No production SQL, migration, snapshot, or restore operation was run.
-- The release runbook requires backup/restore evidence, schema revision verification, migration rehearsal, and exact candidate checks before applying production migrations.
+## Current source and delivery evidence
+- GitHub repository: `AbdullahOmaar/ai-business-assistant`; current `main` SHA: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- Existing PR #315 is OPEN / DRAFT / UNMERGED on `ci/gitlab-fallback-canonical-20261030`, head `583bf2b8851bec3427a657585d8230c29357bec4`, base SHA `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`. GitHub reported `mergeable=false`; reconcile safely without force-push.
+- GitLab project `abdullahomarrefaat/ai-business-assistant` (ID `88276557`) is accessible. GitLab `main` is still at `ae7a34b884d86e0ed26ffd64c528c1d488b956ef` and has no `.gitlab-ci.yml`.
+- GitLab branch `ci/gitlab-native-pipeline` is at GitLab-only SHA `f397dbbca2d0f5c88c966bd8daaf6ff2d34886aa`. Pipeline #3006306398 passed 7/7 jobs; its JUnit report recorded backend 253 passed, 0 failed, 0 skipped. This is not the current GitHub main or PR head.
+- GitLab has zero pipelines for GitHub main SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; GitLab cannot resolve that commit object (404). Exact GitHub→GitLab synchronization and status association are BLOCKED / NOT VERIFIED. Do not treat the old GitLab success as current validation.
+- GitHub combined status on current main includes failed CircleCI contexts (prohibited; do not rerun) and successful Vercel contexts. Those statuses do not prove accounting behavior or full ERP readiness.
+- No hosted pipeline was triggered in this checkpoint. Local pytest/build, Docker build, browser E2E, and isolated restore rehearsal are NOT RUN.
 
-## PR reconciliation
-- PR #313: OPEN, non-draft, mergeable=true; adds a delegated platform-viewer no-mutation/no-audit regression. No independent review; exact-head CircleCI contexts are failure (not rerun); GitHub Actions also reported failures with unavailable step logs. Not merged.
-- PR #314: OPEN, draft, mergeable=true; adds OWNER-only read-only pricing-rule listing and focused tests. Branch notes report 2 passed in an assembled sandbox, but full exact checkout / CI / review are not verified. It is explicitly PARTIALLY COMPLETE and does not implement effective dates or invoice calculation integration. Not merged.
-- PR #315: OPEN, draft, mergeable=true; adds GitLab CI fallback and repository-boundary docs. Exact-SHA GitLab pipeline/status integration remains unverified. GitLab project inspection returned HTTP 403; no GitLab pipeline was triggered. Not merged.
-- PRs #302, #304–#312 remain based on older base SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`; do not merge wholesale. Reconcile/rebase and review individually.
-- CircleCI statuses remain recorded as unavailable/failing due quota; do not rerun. No required status or branch-protection settings were changed.
+## Production V1 quality gate
+A feature is complete only when it works end-to-end and expected versus actual persisted results reconcile. Release acceptance requires:
+1. Core workflows: customer/supplier/product setup; sales/invoice issuance; collections and payment allocation; purchasing/receiving/payables; expenses; returns/refunds; employee/payroll only under approved policy.
+2. Accounting engine: approved chart of accounts; immutable balanced double-entry journal; trusted source-to-journal posting; per-source idempotency; reversals/corrections; fiscal periods and close locks.
+3. Reconciliation/reports: customer and supplier subledgers; cash/bank; inventory; trial balance; P&L; balance sheet; cash flow; aging; per-currency reconciliation.
+4. Inventory: stock movement ledger, approved costing method, receipt/return costing, inventory valuation and COGS; no silent quantity overwrite or negative stock.
+5. Tax/localization: effective-dated jurisdiction rules, approved inclusive/exclusive tax policy, tax and return allocation, required local compliance only after reviewed specification.
+6. Security: route × role × action authorization, cross-tenant isolation, no-side-effect denial tests, audit trail, sensitive-data redaction, approval separation.
+7. Release/operations: exact-SHA CI, migration upgrade/check/rollback plan, backup and restore evidence, monitoring, deployment SHA/version and authenticated safe smoke.
+8. Scenario evidence: every critical scenario has synthetic input data, expected-results worksheet, observed API/UI and DB results, and explicit PASS/FAIL. A green pipeline alone is insufficient.
 
-## Actions and outcomes
-- Inspected current main, package/app version alignment, release history/runbook, PR #313–#315 diffs, Vercel projects/deployments, and recent API/Web runtime errors.
-- NOT RUN: CircleCI (per user directive), GitLab pipeline (GitLab returned 403), local full test/build, production database backup/restore, production migration, new Vercel deployment.
-- BLOCKED: production release that claims employee/payroll functionality until migration `0005_employee_payroll` is rehearsed against an isolated restored database and production schema/backup gates are satisfied.
-- Next highest-value action: obtain authorized, cost-safe database backup/restore and schema-revision evidence; then rehearse migration `0005_employee_payroll` in isolation. Keep CircleCI untouched and use an independently verified alternative CI path when GitLab access is restored.
+### Progress measurement (100 weighted points)
+- Core ERP workflows 25; accounting engine 25; reconciliation/reports 15; inventory valuation/COGS 10; tax/localization 10; security/tenant/audit 10; release/operations 5.
+- Award points only for implemented AND verified acceptance criteria. Planned, untested, stale-SHA, skipped, or blocked work earns no VERIFIED credit. Report category scores, total percentage, evidence SHA, and blockers whenever asked.
+- Current full ERP accounting cycle: NOT RUN / BLOCKED; do not claim a verified percentage until the criteria have been audited and weighted against evidence.
 
+## Current accounting gaps (source-verified)
+- Existing tests cover Decimal invoice arithmetic, HALF_UP rounding, discount-before-tax, invalid rate bounds, payment allocation limits/idempotency, invoice lifecycle, stock movements, sales-return caps, timezone/reporting, tenant boundaries, and PostgreSQL concurrency.
+- Current profit/loss is explicitly preliminary: gross issued invoice totals include stored tax; approved returns are shown separately and not netted; recorded expenses are subtracted; COGS is excluded because purchase costs are not linked to sales. This is not net profit.
+- The accounting integrity audit and source tree show no general ledger/chart of accounts, balanced journal posting service, fiscal-period locks, inventory valuation/COGS, or bank reconciliation. Jurisdiction-aware tax reporting and complete credit-note/refund lifecycle are also incomplete.
+- `docs/ACCOUNTING_LEDGER_DESIGN.md` is a proposal, not implemented functionality. T37 shared financial contracts remain PARTIALLY COMPLETE / Draft / NOT APPROVED. Do not change shared financial semantics, posting, COGS, refunds, payroll integration, or authorization contracts until required approval is recorded.
+- Therefore Production V1 is NOT VERIFIED COMPLETE and full ERP accounting-cycle acceptance remains BLOCKED by product capability gaps, not just test automation.
 
-## Active CI governance work — PR #315 (2026-10-30)
+## Automation strategy
+- Keep one existing GitLab pipeline; the current PR #315 adds the missing backend container build/import smoke job to the existing suite. Its backend job runs the full pytest collection, so new scenario tests are discovered without a duplicate full-suite job.
+- Test layers: domain/unit; API + disposable PostgreSQL integration; PostgreSQL concurrency/idempotency; browser E2E; end-to-end ERP scenarios with expected-versus-actual comparisons; negative/failure/retry/recovery; migration and security.
+- Use synthetic isolated test data only. Never run destructive fixtures or financial mutations against production.
+- Run a hosted pipeline once only after exact GitHub-SHA sync and runner availability are proven. Inspect every job log. Keep PR Draft until exact-head checks and independent review pass.
 
-- Canonical source: GitHub `AbdullahOmaar/ai-business-assistant`; GitLab project `abdullahomarrefaat/ai-business-assistant` (ID `88276557`) is validation-only. Do not author changes directly in GitLab.
-- Existing PR: [#315 — GitLab fallback validation pipeline](https://github.com/AbdullahOmaar/ai-business-assistant/pull/315), branch `ci/gitlab-fallback-canonical-20261030`, kept Draft and unmerged.
-- Current GitHub `main` at latest inspection: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`. Latest verified GitLab pipeline #3006306398 passed 7/7 jobs and backend pytest 253/253 on older SHA `f397dbbca2d0f5c88c966bd8daaf6ff2d34886aa`; this is not exact-SHA proof for current main or PR head.
-- Added `backend-container-smoke` to `.gitlab-ci.yml`: pinned Docker CLI/daemon, waits for daemon, builds `backend/Dockerfile`, then imports `app.main` inside the image. Local static YAML validation passed with 8 jobs / 3 stages and confirmed no deploy command or literal PostgreSQL password variable.
-- Actual Docker build/import and full tests for the current PR head remain **NOT RUN**: Docker/Podman are unavailable in the execution container; Desktop Commander is offline; no new hosted pipeline was triggered. The commit uses `[skip ci]` to avoid CircleCI per owner directive.
-- GitLab main-pipeline lookup returned HTTP 403; GitHub→GitLab source/ref synchronization and exact-SHA status reporting remain **BLOCKED / NOT VERIFIED**. The older GitLab branch YAML differs from the canonical GitHub PR file, so do not trust its pipeline for the current PR.
-- The PR needs branch/base reconciliation and re-check of GitHub mergeability before review; keep Draft. Do not merge, deploy, run CircleCI, or change production data as part of this workstream.
+## Next execution order
+1. Reconcile PR #315 with current main without force-push or losing either side's TASKS.md evidence.
+2. Add a synthetic API-level scenario: business/customer → stock-tracked product → discounted/taxed invoice → issue → partial payment/idempotent replay → dashboard and preliminary P&L; assert all expected amounts, stock, balances, and explicit report limitations.
+3. Expand T22 with purchasing/receiving/payables, approved returns/refunds, expenses, payroll under approved policy, and future GL/reconciliation tests only when contracts are approved.
+4. Restore exact GitHub→GitLab SHA synchronization/status association; do not run stale GitLab branches or CircleCI.
+5. Run the exact candidate suite once when synchronization and runner availability are confirmed; review results and update T22/TASKS/Notion with evidence.
 
-### Next actions (in order)
-1. Re-read PR #315 head/base/mergeability and current main after this handoff update; safely reconcile any conflict without force-pushing or losing current `TASKS.md` changes.
-2. Restore/verify one-way GitHub→GitLab synchronization for the exact PR SHA and its CI status association.
-3. When the exact candidate is synchronized and runner availability is confirmed, run the candidate suite once, including the new container smoke job; inspect all job logs.
-4. Obtain independent review; keep PR Draft until acceptance gates pass.
 
 ---
 
