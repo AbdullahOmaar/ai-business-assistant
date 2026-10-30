@@ -134,3 +134,54 @@ The Product Owner explicitly approved the bounded policy recommendations. The ca
 3. Implement historical as-of receivables only where persisted allocation/credit event timestamps support the requested cutoff; otherwise return an explicit unavailable basis, not an approximation from current allocations.
 4. Keep credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX conversion and GL posting deferred.
 5. Reconcile the two commits behind main after reviewing their changes, then exact-SHA validation through an authorized non-CircleCI runner and independent review. Keep Draft/unmerged.
+
+
+## T37 v1.0.1 — allocation integrity and historical as-of implementation update (2026-10-30)
+
+This section supersedes the earlier "Next T40 implementation order" items 2–3 where they are now implemented on this branch.
+
+### Implemented
+
+- Dashboard outstanding balances are calculated as-of the selected report end date (or business-local today), not as a period-only invoice cohort.
+- Only allocations with the same business, non-null matching customer and matching currency reduce an invoice balance.
+- Payment-level over-allocation is detected using all allocation events created before the as-of cutoff; every allocation from an over-allocated payment is excluded from receivables.
+- Invoice-level over-allocation is surfaced as a data-quality warning and excluded from positive receivable totals; negative balances are not clamped.
+- Currency/customer mismatches, missing invoice issue timestamps, payment-level excess and invoice-level excess are exposed in data_quality_warnings.
+- Receivables aging is now explicitly historical-as-of: issued invoices must have Invoice.issue_date before the business-local cutoff; allocations count only when PaymentAllocation.created_at is before that cutoff. Missing invoice issue dates are warnings and excluded. Due dates are converted to the business-local date.
+- Credit applications/credit notes remain excluded until their separate source-event and tax/receivable contract is approved and implemented.
+
+### Additional commits (all [skip ci])
+
+- `2527a090f05429a934babb7fe3b3bfcdc866c3a9` — dashboard valid allocation/customer/currency matching and integrity warnings.
+- `a0efc44a582e7b3d5ce47d1f723ee6aeeb8852ea` — historical receivables as-of using invoice issue and allocation creation timestamps.
+- `f74feefb994be23b2460d47fa6fb82e96364501c` — dashboard invalid-allocation and historical as-of tests.
+- `8dfbe51b2b7a22dd87e9e9b4a97a919daa03cad6` — existing reconciliation fixtures now use real matching customer references and allocation event dates.
+- `3cee40e8ccd1d4abb2fb72bf9958c20d303fe0eb` — dashboard outstanding cutoff date and period-end basis.
+- `476c8978d380a30b7a3b4f292f29e0eb48fa74a7` — missing invoice issue-date warnings.
+- `c0a555896dd122039d880072ef4134a40db14ddf` — dashboard payment-level over-allocation detection/exclusion.
+- `6c163eabbeb6cdab0a48a2045eae1576801c553c` — payment-level over-allocation detection in historical aging.
+- `e9ed52816469cf439b1b66b92bf04c97b011617b` — payment-level over-allocation regression across dashboard and aging.
+
+### Updated regression inventory
+
+- T40 date-boundary tests: 14.
+- T40 report-reconciliation tests: 10 (7 prior + 3 new allocation/as-of cases).
+- Payroll privacy integration regression: 1.
+- Related existing suites: 26.
+- Total targeted/authored tests: **25 + 26 related**; all **NOT RUN**.
+
+### Current delivery evidence
+
+- PR #304 exact head: `e9ed52816469cf439b1b66b92bf04c97b011617b`.
+- Live main: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; compare 70 ahead / 2 behind; branch remains diverged from merge base `c464398e0a6ace77eba32aabfbdbd09091f53999`.
+- PR #304 OPEN / DRAFT / UNMERGED; GitHub reports mergeable=true. Exact-head status has no contexts due [skip ci]; empty status is NOT a pass.
+- CircleCI remains prohibited; no run/retry. Desktop Commander is OFFLINE. No authorized runner; tests/build/PostgreSQL/browser/security checks NOT RUN.
+- No merge, rebase, deployment, production migration or production financial-data mutation.
+
+### Remaining T40 work
+
+1. Add STAFF/OWNER date-filter matrix coverage for start-only, end-only and combined local-day filters with offset pages; add no-side-effect assertions for denied paths.
+2. Review the two commits behind live main and reconcile the base only after source review; do not assume mergeable metadata is a release gate.
+3. Design and implement the separate Expense settlement/disbursement and cashbox lifecycle only after model/API idempotency, migration and PostgreSQL recovery tests are specified; the policy is approved, but schema and runtime are still absent.
+4. Keep credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
+5. Obtain an authorized non-CircleCI runner and execute all 25 targeted + 26 related tests, PostgreSQL integration, build and security checks on the exact SHA; obtain independent review before any readiness decision.
