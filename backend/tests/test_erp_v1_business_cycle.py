@@ -205,6 +205,48 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     assert Decimal(dashboard["outstanding_balances"][0]["total"]) == Decimal("215.60")
     assert any("does not claim net profit" in item for item in dashboard["limitations"])
 
+    # The product read model must expose the same persisted stock balance.
+    product_read = client.get(
+        f"/api/v1/businesses/{business_id}/products/{product_id}"
+    )
+    assert product_read.status_code == 200, product_read.text
+    assert Decimal(product_read.json()["stock_quantity"]) == Decimal("7.000")
+
+    # Customer statement and receivables aging must reconcile to the same EGP balance.
+    statement_response = client.get(
+        f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement"
+    )
+    assert statement_response.status_code == 200, statement_response.text
+    statement = statement_response.json()
+    assert Decimal(statement["balances_by_currency"]["EGP"]) == Decimal("215.60")
+    assert any("not a double-entry general ledger" in item for item in statement["limitations"])
+
+    aging_response = client.get(
+        f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+        params={"as_of": datetime.now(timezone.utc).date().isoformat()},
+    )
+    assert aging_response.status_code == 200, aging_response.text
+    aging = aging_response.json()
+    assert aging["invoice_count"] == 1
+    assert Decimal(aging["by_currency"][0]["total_outstanding"]) == Decimal("215.60")
+    assert aging["by_currency"][0]["currency_code"] == "EGP"
+
+    tax_summary_response = client.get(
+        f"/api/v1/businesses/{business_id}/reports/tax-summary"
+    )
+    assert tax_summary_response.status_code == 200, tax_summary_response.text
+    tax_summary = tax_summary_response.json()
+    assert Decimal(tax_summary["currencies"][0]["tax_total"]) == Decimal("75.60")
+    assert any("not a jurisdiction-specific tax filing" in item for item in tax_summary["limitations"])
+
+    invoice_list_response = client.get(
+        f"/api/v1/businesses/{business_id}/invoices"
+    )
+    assert invoice_list_response.status_code == 200, invoice_list_response.text
+    listed_invoice = invoice_list_response.json()[0]
+    assert Decimal(listed_invoice["allocated_payments"]) == Decimal("400.00")
+    assert Decimal(listed_invoice["outstanding_amount"]) == Decimal("215.60")
+
     # 7. Record a synthetic operating expense and reconcile the preliminary report.
     expense_response = client.post(
         f"/api/v1/businesses/{business_id}/expenses",
