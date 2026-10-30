@@ -1690,3 +1690,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Policy gate:** this branch implements the narrow least-privilege candidate policy: STAFF retains access to ordinary expenses, while payroll-linked rows and payroll-derived aggregates remain OWNER-only. This must be explicitly confirmed in T37/permission matrix before PR is marked ready or merged; until confirmation, preserve Draft/Open and do not release.
 - **Verification:** source diff reviewed; pytest, full backend suite, PostgreSQL test, frontend build/browser smoke, dependency/security scan and independent security review are NOT RUN. Exact-head CircleCI has six FAILURE contexts; no rerun because of the quota freeze. GitHub Actions run jobs expose no steps and log download returns 404 BlobNotFound; this does not diagnose app test failures.
 - **Next action:** obtain explicit Product Owner confirmation of the STAFF payroll-visibility policy, then run the focused privacy test on the exact head using an approved runner and obtain independent security review. No merge/deployment.
+
+
+## T41 — Privacy regression strengthening checkpoint (2026-10-30)
+
+- Follow-up commit `613ba6b7c79a30efaa6b63111b258d571c35bc5e` strengthened the payroll privacy regression: STAFF must receive 403 for expense CSV export; direct internal `financial_summary` now proves payroll-linked amounts are excluded; OWNER can still export the payroll employee details. This covers the already OWNER-only CSV boundary and the internal summary helper in addition to the public APIs/chat tested in the preceding checkpoint.
+- Exact PR head before this documentation addendum: `613ba6b7c79a30efaa6b63111b258d571c35bc5e`. PR #308 remains Draft/Open/Unmerged. The branch is 76 ahead / 2 behind current main.
+- Test source is authored and reviewed only; NOT RUN. No CircleCI retry. Current exact-head CI contexts remain FAILURE and GitHub Actions logs remain unavailable (404 BlobNotFound). No independent security review, merge or deployment.
