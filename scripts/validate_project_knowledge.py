@@ -182,9 +182,11 @@ def validate() -> list[str]:
 
         for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", content):
             target = target.split("#", 1)[0]
-            if not target or target.startswith(("#", "http://", "https://", "mailto:")):
+            if not target or target.startswith("#"):
                 continue
             parsed_target = urlparse(target)
+            if parsed_target.scheme in {"http", "https", "mailto"}:
+                continue
             if parsed_target.scheme:
                 errors.append(f"{name}: unsupported local-link scheme: {parsed_target.scheme}")
                 continue
