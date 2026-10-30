@@ -514,3 +514,118 @@ def test_expense_and_tax_filters_reject_unrepresentable_calendar_extremes():
         assert "supported business-timezone range" in tax_end_overflow.json()["detail"]
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+
+def test_cairo_dst_start_date_filters_use_the_23_hour_local_day():
+    """Cairo's 2026 spring-forward date starts at 22:00 UTC and ends at 21:00 UTC."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with Session(engine) as session:
+            session.add_all(
+                [
+                    Expense(
+                        business_id=business_id,
+                        category="ops",
+                        description="Before Cairo DST local day",
+                        amount=Decimal("90.00"),
+                        currency_code="EGP",
+                        incurred_at=datetime(2026, 4, 23, 21, 59, 59, tzinfo=timezone.utc),
+                    ),
+                    Expense(
+                        business_id=business_id,
+                        category="ops",
+                        description="At Cairo DST local-day start",
+                        amount=Decimal("10.00"),
+                        currency_code="EGP",
+                        incurred_at=datetime(2026, 4, 23, 22, 0, tzinfo=timezone.utc),
+                    ),
+                    Expense(
+                        business_id=business_id,
+                        category="ops",
+                        description="Inside Cairo DST local day",
+                        amount=Decimal("20.00"),
+                        currency_code="EGP",
+                        incurred_at=datetime(2026, 4, 24, 20, 59, 59, tzinfo=timezone.utc),
+                    ),
+                    Expense(
+                        business_id=business_id,
+                        category="ops",
+                        description="At next Cairo local day",
+                        amount=Decimal("80.00"),
+                        currency_code="EGP",
+                        incurred_at=datetime(2026, 4, 24, 21, 0, tzinfo=timezone.utc),
+                    ),
+                ]
+            )
+            session.add_all(
+                [
+                    Invoice(
+                        business_id=business_id,
+                        invoice_number="CAIRO-DST-BEFORE",
+                        status="issued",
+                        currency_code="EGP",
+                        issue_date=datetime(2026, 4, 23, 21, 59, 59, tzinfo=timezone.utc),
+                        subtotal=Decimal("10.00"),
+                        discount_total=Decimal("0.00"),
+                        tax_total=Decimal("1.00"),
+                        total=Decimal("11.00"),
+                    ),
+                    Invoice(
+                        business_id=business_id,
+                        invoice_number="CAIRO-DST-START",
+                        status="issued",
+                        currency_code="EGP",
+                        issue_date=datetime(2026, 4, 23, 22, 0, tzinfo=timezone.utc),
+                        subtotal=Decimal("20.00"),
+                        discount_total=Decimal("0.00"),
+                        tax_total=Decimal("2.00"),
+                        total=Decimal("22.00"),
+                    ),
+                    Invoice(
+                        business_id=business_id,
+                        invoice_number="CAIRO-DST-END",
+                        status="issued",
+                        currency_code="EGP",
+                        issue_date=datetime(2026, 4, 24, 20, 59, 59, tzinfo=timezone.utc),
+                        subtotal=Decimal("30.00"),
+                        discount_total=Decimal("0.00"),
+                        tax_total=Decimal("3.00"),
+                        total=Decimal("33.00"),
+                    ),
+                    Invoice(
+                        business_id=business_id,
+                        invoice_number="CAIRO-DST-NEXT",
+                        status="issued",
+                        currency_code="EGP",
+                        issue_date=datetime(2026, 4, 24, 21, 0, tzinfo=timezone.utc),
+                        subtotal=Decimal("40.00"),
+                        discount_total=Decimal("0.00"),
+                        tax_total=Decimal("4.00"),
+                        total=Decimal("44.00"),
+                    ),
+                ]
+            )
+            session.commit()
+
+        expenses = client.get(
+            f"/api/v1/businesses/{business_id}/expenses",
+            params={"start_date": "2026-04-24", "end_date": "2026-04-24"},
+        )
+        assert expenses.status_code == 200, expenses.text
+        assert {item["description"] for item in expenses.json()} == {
+            "At Cairo DST local-day start",
+            "Inside Cairo DST local day",
+        }
+
+        tax_summary = client.get(
+            f"/api/v1/businesses/{business_id}/reports/tax-summary",
+            params={"start_date": "2026-04-24", "end_date": "2026-04-24"},
+        )
+        assert tax_summary.status_code == 200, tax_summary.text
+        assert tax_summary.json()["currencies"] == [
+            {"currency_code": "EGP", "tax_total": "5.00", "invoice_count": 2}
+        ]
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
