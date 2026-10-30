@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { observeAuthState } from './auth-state-observer.ts';
+import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer.ts';
 
 test('initial auth state resolves readiness and later cross-tab changes update the cached user', async () => {
   let emitUser: ((user: string | null) => void) | undefined;
@@ -194,4 +194,55 @@ test('an onReady callback failure rejects readiness and unsubscribes the observe
   await assert.rejects(ready, /ready callback failed/);
   assert.equal(cachedUser, null);
   assert.equal(unsubscribeCalls, 1);
+});
+
+
+test('auth-state broadcaster replays the latest verified snapshot to late subscribers', () => {
+  const broadcaster = new AuthStateBroadcaster<{ uid: string; email: string | null }>();
+  const first: Array<{ uid: string; email: string | null } | null> = [];
+  const second: Array<{ uid: string; email: string | null } | null> = [];
+
+  const unsubscribeFirst = broadcaster.subscribe(value => first.push(value));
+  broadcaster.publish({ uid: 'owner-user', email: 'owner@example.test' });
+  const unsubscribeSecond = broadcaster.subscribe(value => second.push(value));
+  broadcaster.publish(null);
+
+  assert.deepEqual(first, [
+    { uid: 'owner-user', email: 'owner@example.test' },
+    null,
+  ]);
+  assert.deepEqual(second, [
+    { uid: 'owner-user', email: 'owner@example.test' },
+    null,
+  ]);
+  unsubscribeFirst();
+  unsubscribeSecond();
+});
+
+test('auth-state broadcaster does not emit before the first Firebase state is known', () => {
+  const broadcaster = new AuthStateBroadcaster<string>();
+  const values: Array<string | null> = [];
+  broadcaster.subscribe(value => values.push(value));
+  assert.deepEqual(values, []);
+  broadcaster.publish(null);
+  assert.deepEqual(values, [null]);
+});
+
+test('auth-state broadcaster unsubscribe prevents future state notifications', () => {
+  const broadcaster = new AuthStateBroadcaster<string>();
+  const values: Array<string | null> = [];
+  const unsubscribe = broadcaster.subscribe(value => values.push(value));
+  broadcaster.publish('owner-user');
+  unsubscribe();
+  broadcaster.publish(null);
+  assert.deepEqual(values, ['owner-user']);
+});
+
+test('a throwing auth-state subscriber cannot block other subscribers', () => {
+  const broadcaster = new AuthStateBroadcaster<string>();
+  const values: Array<string | null> = [];
+  broadcaster.subscribe(() => { throw new Error('view handler failed'); });
+  broadcaster.subscribe(value => values.push(value));
+  broadcaster.publish('owner-user');
+  assert.deepEqual(values, ['owner-user']);
 });

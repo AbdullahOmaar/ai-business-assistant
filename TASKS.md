@@ -1671,3 +1671,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - GitLab pipeline SHA differs from the GitHub source commit because the GitLab clone used an equivalent commit and the isolated CI config is an additional file. Source code blob identities are exact; do not represent the GitLab commit SHA as the GitHub PR SHA.
 - GitHub PR #316 remains OPEN / DRAFT / UNMERGED. GitHub combined status on source commit `f6168b95...` remains empty; independent security review remains NOT RUN. This GitLab run is strong exact-source-file validation, but not GitHub-native required-check evidence or independent approval.
 - No merge, version bump, production deployment, production DB write, or GitLab original feature-branch mutation occurred.
+
+## T43 cross-tab session-to-shell propagation — 2026-10-30
+
+- Follow-up source review found the Firebase observer updated AuthService's cached user after cross-tab sign-in/sign-out, but AppComponent did not subscribe to those changes. A remote sign-out could therefore leave the old workspace shell and sensitive records rendered until refresh.
+- Added a safe replayable AuthStateBroadcaster with subscriber exception isolation and tests for initial replay, no pre-initial emission, unsubscribe and listener-failure isolation.
+- AuthService now publishes a minimal {uid,email} snapshot whenever verified Firebase auth identity changes; Firebase User internals are not exposed to the app shell. Same-UID duplicate observer/sign-in updates are suppressed.
+- AppComponent subscribes during its lifecycle, clears all workspace-scoped state on remote sign-out/account change, rechecks platform-admin/workspace access on remote sign-in, and unsubscribes on destroy. Local sign-in/out transitions are fenced to avoid duplicate loading.
+- Membership-list requests are versioned and discarded if they resolve after the active UID/session changes. Existing workspace-load generation guard continues to reject late data from a previous selected workspace.
+- Existing current-main behavior already includes membership-scoped workspace listing/selection/switching, WorkspaceLoadGuard, owner-only membership listing/role changes/removal, last-owner protection, audit events, and OWNER/STAFF only. Invitation flows are not present in current API and are not invented by this change.
+- Validation on this follow-up source: NOT RUN yet. Next: exact GitLab test-branch sync and full 8-job pipeline; then review cross-tab sign-out/account-switch races and request independent Chat 5 security review. No merge, version bump, production deploy, backend contract/schema/financial change, or production data mutation.

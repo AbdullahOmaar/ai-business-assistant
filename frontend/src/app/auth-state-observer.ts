@@ -105,3 +105,31 @@ export function observeAuthState<T>(
     }
   });
 }
+
+
+/** Publishes verified auth snapshots to app-shell subscribers without exposing Firebase internals. */
+export class AuthStateBroadcaster<T> {
+  private readonly listeners = new Set<(value: T | null) => void>();
+  private hasValue = false;
+  private currentValue: T | null = null;
+
+  subscribe(listener: (value: T | null) => void): () => void {
+    this.listeners.add(listener);
+    if (this.hasValue) this.notify(listener, this.currentValue);
+    return () => this.listeners.delete(listener);
+  }
+
+  publish(value: T | null): void {
+    this.currentValue = value;
+    this.hasValue = true;
+    for (const listener of [...this.listeners]) this.notify(listener, value);
+  }
+
+  private notify(listener: (value: T | null) => void, value: T | null): void {
+    try {
+      listener(value);
+    } catch {
+      // A view subscriber must never interrupt Firebase auth-state propagation.
+    }
+  }
+}

@@ -6,7 +6,9 @@ import {
   signInWithEmailAndPassword, signOut
 } from '@firebase/auth';
 import type { Auth, User } from '@firebase/auth';
-import { observeAuthState } from './auth-state-observer';
+import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer';
+
+export interface AuthUserSnapshot { uid: string; email: string | null; }
 
 export interface RuntimeConfig {
   apiBaseUrl: string;
@@ -25,6 +27,8 @@ export class AuthService {
   private authReady?: Promise<void>;
   private authStateUnsubscribe?: () => void;
   private user: User | null = null;
+  private authStateKnown = false;
+  private readonly authState = new AuthStateBroadcaster<AuthUserSnapshot>();
 
   getRuntimeConfig(): Promise<RuntimeConfig> {
     if (!this.configPromise) {
@@ -79,9 +83,9 @@ export class AuthService {
     if (!this.authReady) {
       this.authReady = observeAuthState<User>(
         (onUser, onError) => onAuthStateChanged(this.auth!, onUser, onError),
-        user => { this.user = user ?? null; },
+        user => { this.updateUser(user ?? null); },
         _error => {
-          this.user = null;
+          this.updateUser(null);
           this.authStateUnsubscribe = undefined;
           this.authReady = undefined;
         },
@@ -91,7 +95,7 @@ export class AuthService {
     try {
       await this.authReady;
     } catch (error) {
-      this.user = null;
+      this.updateUser(null);
       this.authReady = undefined;
       this.authStateUnsubscribe?.();
       this.authStateUnsubscribe = undefined;
@@ -107,7 +111,7 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<User> {
     await this.initialize();
     const credential = await signInWithEmailAndPassword(this.auth!, email.trim(), password);
-    this.user = credential.user;
+    this.updateUser(credential.user);
     return credential.user;
   }
 
@@ -127,6 +131,21 @@ export class AuthService {
   async signOut(): Promise<void> {
     await this.initialize();
     await signOut(this.auth!);
-    this.user = null;
+    this.updateUser(null);
+  }
+
+  subscribeToAuthState(listener: (user: AuthUserSnapshot | null) => void): () => void {
+    return this.authState.subscribe(listener);
+  }
+
+  private updateUser(user: User | null): void {
+    const changed = !this.authStateKnown ||
+      this.user?.uid !== user?.uid ||
+      (this.user?.email ?? null) !== (user?.email ?? null);
+    this.user = user;
+    this.authStateKnown = true;
+    if (changed) {
+      this.authState.publish(user ? { uid: user.uid, email: user.email } : null);
+    }
   }
 }

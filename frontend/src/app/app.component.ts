@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
-import { AuthService } from './auth.service';
+import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
@@ -908,7 +908,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
     }
   `]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
   readonly featureCatalog = FEATURE_CATALOG;
   readonly releaseHistory = RELEASE_HISTORY;
@@ -927,6 +927,12 @@ export class AppComponent implements OnInit {
   email = '';
   password = '';
   userEmail = '';
+  private authStateUnsubscribe?: () => void;
+  private authFlowInProgress = false;
+  private currentAuthUid: string | null = null;
+  private currentAuthEmail: string | null = null;
+  private businessListRequestVersion = 0;
+  private authTransitionVersion = 0;
   tab: Tab = 'overview';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
@@ -1145,6 +1151,10 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.authStateUnsubscribe = this.auth.subscribeToAuthState(user => {
+      if (this.authFlowInProgress || !this.initialized) return;
+      void this.handleExternalAuthState(user);
+    });
     void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -1154,6 +1164,58 @@ export class AppComponent implements OnInit {
       if (document.readyState === 'complete') void registerWorker();
       else window.addEventListener('load', () => { void registerWorker(); }, { once: true });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.authStateUnsubscribe?.();
+    this.authStateUnsubscribe = undefined;
+  }
+
+  private async handleExternalAuthState(user: AuthUserSnapshot | null): Promise<void> {
+    const nextUid = user?.uid ?? null;
+    const nextEmail = user?.email ?? null;
+    if (nextUid === this.currentAuthUid && nextEmail === this.currentAuthEmail) return;
+
+    this.currentAuthUid = nextUid;
+    this.currentAuthEmail = nextEmail;
+    const transitionVersion = ++this.authTransitionVersion;
+    this.businessListRequestVersion++;
+    this.businesses = [];
+    this.business = null;
+    this.selectedBusinessId = '';
+    this.clearWorkspaceData();
+    this.error = '';
+
+    if (!user) {
+      this.resetSignedOutState();
+      return;
+    }
+
+    this.signedIn = true;
+    this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+    this.loading = true;
+    try {
+      await this.checkPlatformAdminAccess();
+      if (transitionVersion !== this.authTransitionVersion) return;
+      await this.loadBusinesses();
+    } catch (error) {
+      if (transitionVersion === this.authTransitionVersion) this.error = this.message(error, 'auth');
+    } finally {
+      if (transitionVersion === this.authTransitionVersion) this.loading = false;
+    }
+  }
+
+  private resetSignedOutState(): void {
+    this.businessListRequestVersion++;
+    this.signedIn = false;
+    this.userEmail = '';
+    this.platformAdminAvailable = false;
+    this.tab = 'overview';
+    this.businesses = [];
+    this.business = null;
+    this.selectedBusinessId = '';
+    this.clearWorkspaceData();
+    this.loading = false;
   }
 
   private async loadApiVersion(): Promise<void> {
@@ -1189,6 +1251,7 @@ export class AppComponent implements OnInit {
   }
 
   async initializeApp(): Promise<void> {
+    this.authFlowInProgress = true;
     this.initialized = false;
     this.loading = true;
     this.error = '';
@@ -1201,6 +1264,8 @@ export class AppComponent implements OnInit {
         !config.firebase?.projectId || !config.firebase?.appId;
       if (this.setupNeeded) return;
       const user = await this.auth.currentUser();
+      this.currentAuthUid = user?.uid ?? null;
+      this.currentAuthEmail = user?.email ?? null;
       if (user) {
         this.signedIn = true;
         this.userEmail = user.email || 'مستخدم مسجّل الدخول';
@@ -1210,6 +1275,7 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.error = this.message(error);
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
       this.initialized = true;
     }
@@ -1358,12 +1424,15 @@ export class AppComponent implements OnInit {
   }
 
   async submitAuth(): Promise<void> {
+    this.authFlowInProgress = true;
     this.loading = true;
     this.error = '';
     try {
       const user = this.signingUp
         ? await this.auth.signUp(this.email, this.password)
         : await this.auth.signIn(this.email, this.password);
+      this.currentAuthUid = user.uid;
+      this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
       this.userEmail = user.email || 'مستخدم مسجّل الدخول';
       await this.checkPlatformAdminAccess();
@@ -1371,61 +1440,24 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.error = this.message(error, 'auth');
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
     }
   }
 
   async logout(): Promise<void> {
+    this.authFlowInProgress = true;
     this.loading = true;
     try {
       await this.auth.signOut();
-      this.signedIn = false;
-      this.platformAdminAvailable = false;
-      this.tab = 'overview';
-      this.businesses = [];
-      this.business = null;
-      this.dashboard = null;
-      this.customers = [];
-      this.products = [];
-      this.invoices = [];
-      this.payments = [];
-    this.expenses = [];
-    this.expenseMessage = '';
-    this.suppliers = [];
-    this.purchaseOrders = [];
-    this.recurringSchedules = [];
-    this.notifications = [];
-    this.operationalHealth = null;
-    this.operationsError = '';
-    this.healthError = '';
-    this.notificationTitle = '';
-    this.notificationBody = '';
-    this.supplierName = '';
-    this.purchaseOrderNumber = '';
-    this.purchaseSupplierId = '';
-    this.purchaseProductId = '';
-    this.recurringCustomerId = '';
-    this.supplierEmail = '';
-    this.supplierPhone = '';
-    this.supplierAddress = '';
-    this.purchaseQuantity = '1';
-    this.purchaseUnitCost = '0';
-    this.recurringIntervalDays = '30';
-    this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    this.recurringTimezone = 'UTC';
-    this.notificationScheduledAt = '';
-    this.notificationDeduplicationKey = 'manual-' + Date.now();
-    this.suppliersLoading = false;
-    this.purchasesLoading = false;
-    this.recurringLoading = false;
-    this.notificationsLoading = false;
-    this.healthLoading = false;
-    this.expenseSubmissionUncertain = false;
-      this.chatMessages = [];
+      this.currentAuthUid = null;
+      this.currentAuthEmail = null;
+      this.resetSignedOutState();
       this.error = '';
     } catch (error) {
       this.error = this.message(error);
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
     }
   }
@@ -1439,10 +1471,15 @@ export class AppComponent implements OnInit {
   }
 
   async loadBusinesses(): Promise<void> {
+    const requestVersion = ++this.businessListRequestVersion;
+    const requestUid = this.currentAuthUid;
     this.loading = true;
     this.error = '';
     try {
-      this.businesses = await this.api.listBusinesses();
+      const businesses = await this.api.listBusinesses();
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
+      this.businesses = businesses;
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
@@ -1458,12 +1495,14 @@ export class AppComponent implements OnInit {
       if (workspaceChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
       this.business = null;
       this.selectedBusinessId = '';
       this.clearWorkspaceData();
       this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (requestVersion === this.businessListRequestVersion) this.loading = false;
     }
   }
 
