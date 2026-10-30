@@ -180,18 +180,17 @@ The following changes are present on PR #304 as candidate code only. They do not
 
 ### Remaining T40 work
 
-1. Add STAFF/OWNER date-filter matrix coverage for start-only, end-only and combined local-day filters with offset pages; add no-side-effect assertions for denied paths.
-2. Review the two commits behind live main and reconcile the base only after source review; do not assume mergeable metadata is a release gate.
-3. Expense settlement/disbursement and cashbox lifecycle remains NEEDS APPROVAL under T37; schema/runtime are absent. Do not add migration or posting behavior before versioned approval.
-4. Keep credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
+1. The STAFF/OWNER date-filter × offset-pagination and denied-path no-side-effect matrix is now authored; execute it when an authorized runner is available.
+2. The two commits behind live main were reviewed as TASKS.md-only changes and applicable content was ported. Git ancestry remains diverged and GitHub reports mergeable_state=dirty; do not merge/rebase shared history without explicit authorization.
+3. Expense settlement/disbursement and cashbox lifecycle design is complete in docs/EXPENSE_SETTLEMENT_CASHBOX_DESIGN.md. Schema/API implementation is BLOCKED until Master coordinates migration numbering/ancestry with PR #312 (which already introduces migrations 0006–0011); do not create a competing Alembic head.
+4. Keep statutory tax/ETA, credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
 5. Obtain an authorized non-CircleCI runner and execute all 26 targeted + 26 related tests, PostgreSQL integration, build and security checks on the exact SHA; obtain independent review before any readiness decision.
 
+## CURRENT WORKSTREAM AUTHORITY — T37 v1.0.1 (2026-10-30)
 
-## WORKSTREAM CLOSEOUT CORRECTION — 2026-10-30
-
-- The canonical T37 page is still PARTIALLY COMPLETE / Draft / NOT APPROVED. The Operating Model and earlier PR comments claim T37 v1.0.1 approval, but that approval is not present in the canonical T37 page or its decision comments and conflicts with the owner's latest closeout instruction. No T37 financial policy approval is inferred.
-- Master did separately approve Payroll Privacy Policy v1.0 in the T40 task discussion. That approval is limited to OWNER-only payroll-linked Expense visibility and STAFF access to ordinary expenses only, enforced using business-scoped PayrollRecord.expense_id before pagination, aggregation and AI context. The existing implementation and new date-filter/offset/no-side-effect regression are within that separate security approval.
-- Dashboard allocation/customer/currency validation, payment/invoice over-allocation treatment and historical receivables-as-of changes remain candidate implementation only. They must not be merged or released until the canonical T37 contract is explicitly approved.
-- PR #304 currently contains both approved payroll-privacy/date-filter work and T37-gated financial-report candidate changes. It remains Draft and is not merge eligible. Current exact SHA and base comparison must be read from live GitHub PR metadata; earlier snapshots in this document are historical.
-- All 26 targeted T40/privacy tests + 26 related tests remain NOT RUN. Build/PostgreSQL/browser/security checks NOT RUN. CircleCI execution/retries prohibited; no authorized local runner (Desktop Commander OFFLINE).
-- No merge, rebase, deployment, migration or production financial-data mutation was performed.
+- The canonical T37 page records **T37 v1.0.1 — Product-Owner APPROVED** for the bounded operational policy set. Earlier statements in this document that T37 was still Draft/NOT APPROVED or that its approval was absent are historical and superseded by the final T37 authority note and OWNER DECISION comment.
+- Approved and source-implemented on PR #304: payroll-linked Expense privacy (OWNER-only; STAFF ordinary expenses), business-local date boundaries, same-business/customer/currency allocation validation, payment/invoice over-allocation warnings, and historical receivables as-of using persisted invoice/allocation event timestamps.
+- T37 v1.0.1 also approves incurred-vs-approved-vs-settled expense separation and the cash settlement/disbursement source boundary. The missing settlement/cashbox schema/API is designed in docs/EXPENSE_SETTLEMENT_CASHBOX_DESIGN.md but not implemented; migration-chain conflict with PR #312 must be coordinated first.
+- PR #304 remains OPEN / DRAFT / UNMERGED because exact-head tests/build/security are NOT RUN and the branch is diverged 87+ commits / 2 behind main with mergeable_state=dirty. The current exact SHA must be read from live GitHub PR metadata; earlier snapshots are historical. Do not merge/rebase without explicit authorization.
+- 26 targeted T40/integration tests + 26 related tests are authored/source-reviewed only and **NOT RUN**. Build/PostgreSQL/browser/security checks NOT RUN. CircleCI execution/retries are prohibited; no authorized local runner (Desktop Commander OFFLINE).
+- Production Web/API deployments are READY on main d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f, but API runtime has 6 UndefinedTable exceptions for employees/payroll_records; migration 0005 application is NOT VERIFIED. No production SQL/migration/backup/restore/deployment was performed.
