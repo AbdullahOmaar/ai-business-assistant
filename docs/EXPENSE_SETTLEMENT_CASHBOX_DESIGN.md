@@ -1,8 +1,8 @@
 # Expense Approval, Settlement and Cashbox — T40 Design
 
 Date: 2026-10-30  
-Status: **DESIGN PROPOSAL ONLY / T37 NOT APPROVED / IMPLEMENTATION BLOCKED**  
-Policy authority: T37 canonical page remains PARTIALLY COMPLETE / Draft / NOT APPROVED. This document is a proposal for Master + qualified accountant review, not an approved policy.
+Status: **DESIGN PROPOSAL ONLY / CASHBOX-SETTLEMENT POLICY NOT APPROVED / IMPLEMENTATION BLOCKED**  
+Policy authority: T37 v1.0.1 bounded operational policy set is Product-Owner APPROVED; overall T37 remains PARTIALLY COMPLETE. This specific cashbox/expense-settlement design remains a proposal for Master + qualified accountant review and is NOT APPROVED.
 
 ## 1. Current source baseline
 
@@ -21,7 +21,7 @@ The existing repository migration head is 0005_employee_payroll. A separate open
 - Existing Expense rows have no settlement evidence. Never backfill them as paid/settled from amount, category, age or vendor text. Their historical settlement state is unknown until evidence is supplied.
 - A reversal is a new linked event and opposite cash movement; never delete or rewrite the original settlement.
 - Cash-account balances are derived from immutable movements, not maintained as client-editable balance fields.
-- Proposed access boundary: OWNER-only cash account management, expense approval, settlement, reversal and cash movement exports. STAFF may create/view ordinary expenses within current policy. Payroll-linked rows/aggregates remain OWNER-only under the separately approved Payroll Privacy Policy v1.0 recorded on the T40 task discussion; this is not T37 approval.
+- Proposed access boundary: OWNER-only cash account management, expense approval, settlement, reversal and cash movement exports. STAFF may create/view ordinary expenses within current policy. Payroll-linked rows/aggregates remain OWNER-only under T37 v1.0.1's separately approved bounded payroll privacy policy; this does not approve any cashbox/expense-settlement design or the broader T37 financial contract.
 
 ## 3. Proposed v1 data model
 
@@ -122,3 +122,10 @@ V1 excludes bank-provider integrations, transfers between accounts, supplier pay
 - BLOCKED: production employee/payroll schema mismatch is verified in Vercel runtime (employees/payroll_records missing); migration 0005 application status is NOT VERIFIED. No production SQL/migration/deploy.
 - T37 remains Draft / NOT APPROVED. None of the proposed operational semantics above are authorized for implementation until Master publishes a versioned T37 decision. This design does not authorize migration, merge, deployment, supplier AP/COGS, tax, FX or GL posting.
 - Continue design, source review, tests and documentation on the existing T40 branch. Implement schema/API only after migration-chain coordination; keep PR #304 Draft and unmerged.
+
+
+## Authority clarification — 2026-10-30
+
+T37 v1.0.1 approval is limited to its explicitly bounded operational policy set. The cashbox, approval, settlement, reversal and cash-movement semantics in this document remain DESIGN PROPOSAL ONLY / NOT APPROVED. No cashbox models, settlement states, API routes, migrations, financial calculations or production changes may be implemented from this proposal until separate Master and qualified accounting/controller approval is recorded. The payroll privacy rule referenced above is approved only within the bounded T37 v1.0.1 scope.
+
+No runtime code or schema changed in this documentation correction. Tests/build/PostgreSQL/browser/security are NOT RUN. [skip ci] was used; no CI was triggered.
