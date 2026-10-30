@@ -85,3 +85,34 @@ The matrix below separates already-authored tests from missing coverage and cont
 - Latest exact-head checkpoint before this documentation-only refresh: `9c13209ed0e1cc33ba7458e68b56d4d12b37af33`. GitHub combined-status returned five CircleCI contexts in FAILURE (backend-accounting, backend-container, frontend-production-build, frontend-unit-tests, frontend-browser-smoke); the sixth expected context was not present in that response. CircleCI execution/retry is prohibited by the current Operating Model; no job logs were inspected and root cause is **NOT VERIFIED**.
 - PR #304 remains OPEN/DRAFT/UNMERGED on the existing branch. Against live GitHub main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, compare is 41 ahead / 2 behind; GitHub currently reports mergeable=true, but the base is stale and the exact-head checks/review gates are incomplete. Do not rebase/merge without reviewing the two behind commits and resolving the required checks.
 - Do not mark T40 VERIFIED COMPLETE or merge until the shared financial contract is approved, feature review is complete, and required exact-head checks pass.
+
+
+## T37 v1.0.1 approval and T40/T41 integration update — 2026-10-30
+
+The Product Owner approved the bounded operational policy set in T37 v1.0.1: https://app.notion.com/p/4089320b90fb81708c5cc14a1b74580b. This section supersedes earlier table notes that the related policy was still awaiting approval.
+
+### Approved behavior now enforced on the T40 branch
+
+- Payroll-linked Expense rows and payroll-derived totals are OWNER-only. STAFF retains ordinary expenses. The predicate uses business-scoped PayrollRecord.expense_id and runs before expense pagination or report/AI aggregation.
+- Applied across GET /expenses, report summary, deterministic insights, dashboard, P&L, internal financial_summary and AI chat context. Existing OWNER-only CSV export and payroll management remain unchanged.
+- T40's business-local date filters, deterministic ordering and pagination are preserved in GET /expenses.
+- Regression added for STAFF/OWNER, first-page pagination, report surfaces, AI context and cross-business non-suppression. It is authored/source-reviewed only and NOT RUN.
+
+### Approved but not yet fully implemented
+
+- Dashboard receivables must only subtract allocations that match the invoice/payment business, customer and currency. Mismatched and over-allocated data must be surfaced as integrity warnings; negative balances must never be silently clamped.
+- Current outstanding and historical as-of balances are distinct. Historical as-of requires persisted source-event timestamps and business-local cutoff. If the event history is insufficient, historical as-of must be labelled unavailable rather than inferred from current state.
+- Expense incurred/approved/settled remain distinct. An Expense row is not cash outflow; only a linked confirmed settlement/disbursement is cash outflow. Current source schema still lacks a complete expense settlement/cashbox lifecycle.
+
+### Deferred domains remain unchanged
+
+Statutory tax/ETA, credit-note tax allocation/reversal, supplier AP/bills/payments, inventory valuation/landed cost/COGS, FX conversion/revaluation, GL/COA/journal posting, fiscal periods/opening balances, payroll statutory/effective-date and failed/partial/reversed payout policies remain deferred pending qualified professional review and separate versioned approval.
+
+### Test inventory and current evidence
+
+- T40 date-boundary tests: 14.
+- T40 reconciliation tests: 7.
+- New payroll visibility integration regression: 1.
+- Related existing suites: 26 (6 business timezone + 20 core feature tests).
+- Total targeted/authored coverage on this branch: 22 T40/T40-integration tests plus 26 related tests. **All NOT RUN.**
+- Current T40 branch head at this doc checkpoint is recorded separately in PR #304 / TASKS.md. The exact [skip ci] head has no status contexts; this is NOT a pass. CircleCI is prohibited; no manual run/retry; GitHub Actions is not a replacement. No authorized local runner is available.
