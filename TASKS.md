@@ -1700,3 +1700,35 @@ This is the current execution order, reconciled against GitHub open PRs/issues, 
 - CircleCI is explicitly prohibited: do not trigger, retry, rerun, or use its contexts as a validation plan. GitHub Actions are not to be introduced as a replacement. GitLab remains validation-only and must test the exact GitHub SHA after supported sync is restored.
 - All local tests/builds/E2E/Docker not executed in this session remain **NOT RUN**; prior/stale pipeline results must not be credited to a different SHA.
 - Overall Production V1 percentage remains **NOT MEASURED** until each weighted acceptance category is audited against exact-current-main implementation and runtime evidence.
+
+
+---
+
+## Master execution continuation checkpoint — 2026-10-30 02:35 UTC
+
+This checkpoint supplements the ordered register above; it does not supersede prior history or authorize merge/deploy.
+
+### Repository / PR / CI evidence
+- Canonical GitHub `main` is verified by the GitHub branch endpoint at `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`. The branch currently reports `protected=false` and required status-check enforcement off. Production Web/API were previously READY on this SHA; this is deployment evidence, not authenticated workflow acceptance.
+- GitLab project `abdullahomarrefaat/ai-business-assistant` (88276557) remains on `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`. Current PR #315 head `61a4bb580d4d615690d74bd78873a72c841173ef` is absent from GitLab (commit lookup 404; candidate branch absent; zero pipelines). GitLab also has zero pipelines for current GitHub main. Exact-SHA synchronization is BLOCKED; do not create a pipeline against a different SHA.
+- GitHub open-PR search returned 12 open PRs: #315, #314, #313, #312, #311, #309, #308, #307, #306, #305, #304, #302. All are unmerged; 11 Draft and #313 is Ready for Review. #306 reports mergeable=false. The others fetched in this checkpoint report mergeable=true.
+- CircleCI is prohibited by owner instruction. No CircleCI jobs were triggered/retried/rerun. GitHub Actions on previous candidate heads often fail before executable steps and logs return BlobNotFound; those are failures with unverified platform root cause, not application pass/fail evidence. Empty status on a [skip ci] commit is NOT a pass.
+
+### T03 security / platform administration
+- Current main source has a duplicate `POST /api/v1/businesses/{business_id}/suppliers` decorator across `api.py` and `extended_api.py`; 77 route decorators across six business routers collapse to 76 unique method/path pairs. `main.py` registers the core router before extended router, shadowing the later duplicate.
+- Current-main `docs/SECURITY_ROUTE_INVENTORY.md` has 43 route-table rows and is incomplete against source. Existing PR #302 at head `a144f84a9573859a95be3de2058e0ba03a97f0a1` removes the duplicate, adds a route uniqueness regression, and contains 79 unique inventory rows. It remains OPEN / DRAFT / UNMERGED; all six CircleCI contexts fail; base is two commits behind main. Review findings were added to the existing PR and T03 Notion page. Do not create a duplicate branch.
+- PR #313 adds a focused test-only platform_viewer regression: overview/audit reads allowed, workspace deactivation and platform role grant denied, and workspace/business/platform audit state unchanged. It is OPEN / READY FOR REVIEW / UNMERGED; all six CircleCI contexts fail; local tests and independent review NOT RUN.
+
+### Financial integrity / dependencies
+- T37 shared financial contract remains Draft / NOT APPROVED. No credit/refund, tax/rounding, supplier AP, COGS, payroll payout, or period-close semantics may be treated as approved.
+- PR #312 at head `564dfacd5b518006468deb7d53fde16a38896c27` bundles migrations 0006–0011: credit notes, credit applications, cash refunds, invoice tax snapshots, bank reconciliation, and pricing-rule effective dates. This exceeds the stated Feature 31 scope. CashRefund records are not balanced GL postings or bank-confirmed disbursement evidence. Exact head has six failed CircleCI contexts; current tests and PostgreSQL migration/rollback/restore rehearsals NOT RUN. Review findings were added to PR #312 and T37/T44 Notion pages. Keep Draft/unmerged; no production migration.
+- PR #306 receiving safety source prevalidates all lines/products under row locks before writes, enforces OWNER, rejects duplicate line IDs, invalid/non-finite quantities, foreign resources and over-receipt; authored tests assert no stock/audit side effects. Replay idempotency and PostgreSQL concurrency remain T37-gated. PR is OPEN / DRAFT, mergeable=false, 107 commits ahead / 2 behind, six CircleCI failures; no tests run in this session.
+- PR #304 contains business-local date-boundary and report-source regression coverage; current exact head `018a38ce867a60697ee228fc3dfa2b73c91dca46`, 39 ahead / 2 behind, mergeable=true. Combined status empty; tests/build/E2E NOT RUN.
+- PR #308 changes tests/docs only; fetched current head `b58f7a78cbb01df843617961484fd87b3fdea81a`, 59 ahead / 2 behind, six CircleCI failures. Prior passing evidence cited in its body belongs to an earlier head, not this one.
+
+### Execution and release gates
+- Local pytest, PostgreSQL concurrency/migration, frontend unit/build, browser E2E, Docker, security scans and authenticated production smoke remain NOT RUN in this connector-only session.
+- Production Neon main remains at `0005_employee_payroll`; no production migration or data write performed. Existing pre-migration backup branch at `0003_business_workflows` is not an equivalent current-schema restore point.
+- No code/runtime changes, branch rewrites, merge, production deployment, or production DB mutation were performed in this checkpoint. Existing PR #302/#306/#312/#313 received review comments; Notion T01/T03/T07/T22/T37/T39/T40/T41/T44 pages received evidence comments.
+- Next action: restore owner-authorized GitHub→GitLab exact-SHA synchronization; separately obtain T37 owner/accountant approval and safe non-production runner/restore target. Keep all affected PRs Draft/unmerged until exact-head checks and independent reviews pass.
+
