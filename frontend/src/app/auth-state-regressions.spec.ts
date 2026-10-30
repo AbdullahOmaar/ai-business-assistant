@@ -150,3 +150,48 @@ test('observer teardown and consumer error-handler exceptions do not mask the au
   emitError?.(failure);
   await assert.rejects(ready, /original auth failure/);
 });
+
+
+test('subscription setup failure after a synchronous initial callback rejects readiness and fences late events', async () => {
+  let emitUser: ((user: string | null) => void) | undefined;
+  let cachedUser: string | null | undefined;
+
+  const ready = observeAuthState<string>(
+    onUser => {
+      emitUser = onUser;
+      onUser('owner-user');
+      throw new Error('subscription failed after initial callback');
+    },
+    user => { cachedUser = user; },
+    () => {},
+    () => {},
+    100
+  );
+
+  await assert.rejects(ready, /subscription failed after initial callback/);
+  assert.equal(cachedUser, null);
+  emitUser?.('late-user');
+  assert.equal(cachedUser, null);
+});
+
+test('an onReady callback failure rejects readiness and unsubscribes the observer', async () => {
+  let emitUser: ((user: string | null) => void) | undefined;
+  let cachedUser: string | null | undefined;
+  let unsubscribeCalls = 0;
+
+  const ready = observeAuthState<string>(
+    onUser => {
+      emitUser = onUser;
+      return () => { unsubscribeCalls += 1; };
+    },
+    user => { cachedUser = user; },
+    () => {},
+    () => { throw new Error('ready callback failed'); },
+    100
+  );
+
+  emitUser?.('owner-user');
+  await assert.rejects(ready, /ready callback failed/);
+  assert.equal(cachedUser, null);
+  assert.equal(unsubscribeCalls, 1);
+});
