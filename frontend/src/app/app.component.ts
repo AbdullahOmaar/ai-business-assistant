@@ -137,7 +137,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           } @else {
             <section class="workspace-bar">
               <div class="workspace-current"><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
-              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
+              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)" [disabled]="paymentSaving">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
               <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('إصدار التطبيق ووقت النشر', 'App version and deployment time')">
@@ -1063,6 +1063,7 @@ export class AppComponent implements OnInit {
   paymentMethod = 'cash';
   paymentReference = '';
   paymentIdempotencyKey = '';
+  paymentSaving = false;
   chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
   chatSending = false;
@@ -1729,6 +1730,8 @@ export class AppComponent implements OnInit {
   }
 
   async switchBusiness(id: string): Promise<void> {
+    // Do not clear the active idempotency key while a payment outcome is pending.
+    if (this.paymentSaving) return;
     this.statementRequestVersion++;
     this.statementVisible = false;
     this.customerStatement = null;
@@ -2728,6 +2731,7 @@ export class AppComponent implements OnInit {
   }
 
   async createPayment(): Promise<void> {
+    if (this.paymentSaving) return;
     if (!this.business || !this.paymentAmount.trim() || !this.paymentCustomerId) {
       this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
       return;
@@ -2744,6 +2748,7 @@ export class AppComponent implements OnInit {
       invoice_id: allocation.invoiceId,
       amount: allocation.amount.trim(),
     }));
+    this.paymentSaving = true;
     this.loading = true;
     this.error = '';
     this.paymentMessage = '';
@@ -2797,6 +2802,7 @@ export class AppComponent implements OnInit {
         this.paymentError = true;
       }
     } finally {
+      this.paymentSaving = false;
       this.loading = false;
     }
   }
