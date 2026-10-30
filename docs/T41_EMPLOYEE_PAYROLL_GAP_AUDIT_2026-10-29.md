@@ -399,7 +399,7 @@ The payroll privacy predicate must use the business-scoped `PayrollRecord.expens
 7. **Payroll privacy:** STAFF cannot infer payroll rows/amounts from expense lists, summaries, dashboard/P&L, insights, CSV or assistant/provider context; ordinary non-payroll expenses remain visible.
 8. **Tenant isolation:** foreign employee/payroll/linked expense identifiers cannot read or mutate another business's data and produce no audit or AI-context side effects.
 9. **Owner positive controls:** OWNER can see payroll-linked expense and payroll data for their own business; no cross-business access is implied.
-10. **UI pagination:** if employee/payroll volume exceeds 200, the current screen must expose subsequent pages or explicitly disclose the cap before demo sign-off. The current source does neither; follow-up implementation is pending Master triage.
+10. **UI pagination:** if employee/payroll volume exceeds 200, the current screen must expose subsequent pages or explicitly disclose the cap before demo sign-off. Before the 2026-10-30 Chat 4 UI disclosure update, the current source did neither; the T41 branch now explicitly discloses the 200-record cap in both employee and payroll screens. Full UI pagination remains a separate follow-up; the new disclosure test is authored but NOT RUN.
 
 ### Migration and deferred-domain risks
 
@@ -472,3 +472,13 @@ The two PostgreSQL-only T41 cases in `backend/tests/test_postgres_financial_conc
 - This was read-only source/test review plus a T41-owned documentation update; no application code, schema, migration, financial rule, production data or shared T40 file changed.
 - Focused pytest, PostgreSQL concurrency, full backend suite, migration rehearsal, frontend/build/browser, dependency/security scans and independent security review: NOT RUN.
 - The T41 test inventory above is source presence, not test execution. Master-controlled integration into #304 and exact-head validation remain outstanding.
+
+
+## Safe UI acceptance follow-up — explicit record-cap disclosure — 2026-10-30
+
+- Implemented on the existing T41 branch `feat/t41-salary-history-effective-dates` (no new branch/PR):
+  - `frontend/src/app/employee-payroll.component.ts` now displays Arabic/English notes that the employee screen currently shows only the first 200 employees and the payroll screen only the first 200 records for the selected period.
+  - `frontend/src/app/employee-payroll-ui.spec.ts` now asserts all four localized disclosure strings.
+- Commits: component `e5e7f422a556f181396e03212d73427d03d80`; UI regression `332c516de3664269421cf0973493bc2d5e1dbce2` (current branch HEAD at this checkpoint).
+- This satisfies the current T41 acceptance alternative to disclose the 200-record cap; it does not implement subsequent-page navigation. API paging parameters already exist, but the UI still requests `limit=200&offset=0` for each list.
+- Source readback confirms both notes and the static UI assertions are present. Frontend test/build/browser execution: NOT RUN. No API contract, backend runtime, payroll calculation, schema, financial policy, shared T40 path, production data or deployment changed.
