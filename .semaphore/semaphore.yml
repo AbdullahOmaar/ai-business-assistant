@@ -4,7 +4,7 @@ version: v1.0
 name: AI Business Assistant - CI
 agent:
   machine:
-    type: e1-standard-2
+    type: f1-standard-2
     os_image: ubuntu2404
 execution_time_limit:
   hours: 2
