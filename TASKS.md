@@ -53,6 +53,25 @@ A feature is complete only when it works end-to-end and expected versus actual p
 5. Run the exact candidate suite once when synchronization and runner availability are confirmed; review results and update T22/TASKS/Notion with evidence.
 
 
+
+## Production V1 scenario implementation update — 2026-10-30
+
+- Branch: `ci/gitlab-fallback-canonical-20261030`; PR #315 remains OPEN / DRAFT / UNMERGED. The branch was reconciled with current main using a normal merge commit; no force-push was used. GitHub last reported mergeable=true before this documentation update.
+- Added `docs/PRODUCTION_V1_ERP_QUALITY_GATES.md`: strict V1 acceptance gates, scenario evidence requirements, test layers, known accounting blockers, and progress model.
+- Added `backend/tests/test_erp_v1_business_cycle.py`: isolated API + persistence scenario for business/customer, opening stock, 10%-discounted/14%-taxed invoice, issue, partial payment, exact idempotent replay, changed-payload rejection, dashboard, and preliminary P&L.
+- Independently calculated scenario expectations: subtotal EGP 600.00; discount EGP 60.00; taxable EGP 540.00; tax EGP 75.60; invoice total EGP 615.60; stock 10→7; payment EGP 400.00; outstanding EGP 215.60; expense EGP 100.00; operational result before COGS EGP 515.60.
+- Test assertions verify only one payment, one allocation and one payment-recorded audit event after replay; dashboard separates invoiced, collected and outstanding; P&L explicitly reports tax inclusion and COGS exclusion. EGP 515.60 is not asserted as net profit.
+- Test source was reviewed against current API request models, service contracts, response fields, and existing fixtures. Local pytest, frontend tests/build, browser E2E, Docker build/import are **NOT RUN**. No exact-head GitLab pipeline exists.
+- GitLab main remains `ae7a34b884d86e0ed26ffd64c528c1d488b956ef` without `.gitlab-ci.yml`; GitLab CI branch `ci/gitlab-native-pipeline` is GitLab-only SHA `f397dbbca2d0f5c88c966bd8daaf6ff2d34886aa`. Its 7/7 pass and 253 backend tests are stale relative to this PR and cannot be counted.
+- CircleCI remains prohibited and was NOT RUN. No merge, production deploy, migration, or production-data write occurred.
+- Full ERP accounting cycle remains **NOT RUN / BLOCKED** because general ledger, chart of accounts, balanced immutable journals, period locks, inventory valuation/COGS, bank reconciliation, and complete tax/credit-note/refund posting are not implemented; T37 shared financial contracts remain NOT APPROVED.
+
+### Updated next actions
+1. Establish a supported one-way GitHub→GitLab mirror and exact-SHA pipeline/status association; do not create or run a GitLab-only copy.
+2. After exact sync, run the existing pipeline once on the exact PR head and inspect every job; never run CircleCI.
+3. Fix any genuine scenario or CI failures without weakening assertions; expand purchase/receiving/payable, returns/refunds and payroll scenarios only against approved shared contracts.
+4. Keep PR Draft until exact-head checks and independent review pass; no merge/deploy without explicit authorization.
+
 ---
 
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
