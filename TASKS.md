@@ -1631,3 +1631,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Updated `docs/FINANCIAL_REPORTS_METRIC_MAP.md` on the same branch to record the M06/M08 scope gaps and future acceptance tests for cashbox movements, expense settlement lifecycle, GL-backed statements, subledger reconciliation, tenant/role access, idempotency and reversals. These are test-design/scope notes only; no financial model or posting behavior was invented.
 - M06/M08 remaining acceptance is therefore broader than the currently implemented incurred-expense and operational-summary endpoints. No cash-flow statement, Balance Sheet, Trial Balance, GL, payable ledger, or actual paid-expense lifecycle is currently evidenced by source. Keep the current operational P&L preliminary / before COGS and not net profit.
 - T37 remains PARTIALLY COMPLETE / NOT APPROVED; T44 remains PARTIALLY COMPLETE / design-only. No financial schema/formula/settlement/posting change is authorized. Tests/build/security remain NOT RUN under the current execution constraints. No merge/deploy.
+
+## T40 — Regression inventory update (2026-10-30)
+
+- Added `test_cairo_dst_start_date_filters_use_the_23_hour_local_day` to `backend/tests/test_financial_report_date_boundaries.py`, covering the Africa/Cairo 2026 spring-forward local-day boundaries for both expense and tax-summary filters. Commit: `47a9d37c2d8c3b0eb46dfd366ebdc9220777cb49`.
+- T40-authored regression inventory is now 21 tests (14 date-boundary + 7 reconciliation); related existing suites remain 26 tests. All are source-reviewed only; **NOT RUN**. No CircleCI/GitHub Actions run; no test/build/security pass is claimed.
+- Date-filter test only; no financial formulas, currency-allocation rules, schema, settlement, or posting behavior changed.
