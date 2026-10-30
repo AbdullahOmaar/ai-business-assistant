@@ -143,3 +143,37 @@ test('fails closed when runtime configuration returns an invalid JSON shape', as
   })).toBeVisible({ timeout: 20_000 });
   expect(configRequests).toBe(2);
 });
+
+for (const [label, invalidConfig] of [
+  ['non-string API base URL', { apiBaseUrl: 42, firebase: {} }],
+  ['non-object Firebase settings', { apiBaseUrl: '', firebase: [] }],
+  ['non-string Firebase field', { apiBaseUrl: '', firebase: { apiKey: 42 } }],
+] as const) {
+  test(`fails closed for malformed runtime config: ${label}`, async ({ page }) => {
+    let configRequests = 0;
+    await page.route('**/runtime-config.json', async (route) => {
+      configRequests += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(configRequests === 1 ? invalidConfig : {
+          apiBaseUrl: '',
+          firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+        }),
+      });
+    });
+
+    await page.goto('/');
+    await expect(page.getByRole('heading', {
+      name: /تعذر تحميل إعدادات التطبيق|Unable to load app configuration/,
+    })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('alert')).toContainText('Runtime configuration is invalid.');
+    await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
+
+    await page.getByRole('button', { name: /إعادة المحاولة|Retry startup/ }).click();
+    await expect(page.getByRole('heading', {
+      name: /اربط مساحة عملك الآمنة|Connect your secure workspace/,
+    })).toBeVisible({ timeout: 20_000 });
+    expect(configRequests).toBe(2);
+  });
+}
