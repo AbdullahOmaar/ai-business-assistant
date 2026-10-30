@@ -1767,7 +1767,7 @@ Additional implementation/test commits (all [skip ci]):
 - Live main: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
 - Existing PR #304 is OPEN / DRAFT / UNMERGED. It is based on `c464398e0a6ace77eba32aabfbdbd09091f53999`, diverged from main by two documentation-only commits (`ae7a34b884d86e0ed26ffd64c528c1d488b956ef`, `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f)); GitHub currently reports mergeable=false. The main-vs-merge-base compare changes only TASKS.md (50 additions). Branch TASKS.md contains related prior checkpoint text but does not contain all 50 lines verbatim. No rebase/merge-branch API or online local runner is available; Desktop Commander is OFFLINE. Do not rewrite shared history.
 - PR #304 has 12 changed files including `docs/EXPENSE_SETTLEMENT_CASHBOX_DESIGN.md` (proposal only). Formal PR reviews: none. Exact-head combined status: empty because [skip ci] commits; empty is NOT a pass. CircleCI execution/retries prohibited; GitHub Actions not used.
-- Latest PR #304 exact head at the last readback is maintained in the canonical T40 Notion property and live PR metadata; do not reuse historical SHA snapshots embedded in prior comments.
+- Pre-closeout PR #304 exact head: `010393cdec055b7520f9ce372953c5af8b1911ec`; this final TASKS.md-only `[skip ci]` closeout checkpoint becomes the new branch head. Read back the returned commit SHA and update the canonical T40 Notion property and PR metadata; do not reuse historical SHA snapshots embedded in prior comments.
 - Related dependency PRs remain Draft: #305 T38 OPEN/DRAFT, #306 T39 OPEN/DRAFT (mergeable=false), #308 T41 OPEN/DRAFT, #312 credit-note lifecycle OPEN/DRAFT. No wholesale cherry-pick or merge.
 
 ### Implementation classification
