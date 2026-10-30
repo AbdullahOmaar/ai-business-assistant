@@ -12,6 +12,7 @@ from app.main import app
 import app.employee_payroll_api as employee_payroll_api
 from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
+from app.operations import financial_summary
 
 OWNER = "employee-payroll-test-owner"
 APPROVER = "employee-payroll-test-approver"
@@ -1088,6 +1089,16 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert staff_expenses.json()[0]["description"] == "Office supplies"
     assert all("Confidential Payroll Employee" not in str(row) for row in staff_expenses.json())
 
+    staff_export = env["client"].get(f"{base}/exports/expenses.csv")
+    assert staff_export.status_code == 403
+    with Session(app.state.session_factory()) as session:
+        staff_internal_summary = financial_summary(
+            session,
+            principal=AuthenticatedPrincipal(STAFF),
+            business_id=UUID(env["business_id"]),
+        )
+    assert staff_internal_summary["expenses"] == {"EGP": Decimal("100.00")}
+
     summary = env["client"].get(f"{base}/reports/summary")
     dashboard = env["client"].get(f"{base}/dashboard")
     profit_loss = env["client"].get(f"{base}/profit-loss", params={"period": "all"})
@@ -1131,3 +1142,6 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert owner_summary.json()["expenses_by_currency"] == [
         {"currency_code": "EGP", "count": 2, "total": "5100.00"}
     ]
+    owner_export = env["client"].get(f"{base}/exports/expenses.csv")
+    assert owner_export.status_code == 200
+    assert "Confidential Payroll Employee" in owner_export.text
