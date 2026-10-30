@@ -7,7 +7,7 @@ import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "docs" / "project-knowledge"
@@ -141,9 +141,10 @@ def validate() -> list[str]:
             errors.append(f"{name}: knowledge_class must be STABLE or CONTROLLED")
 
         verified_at = meta.get("last_verified_at", "")
+        parsed_verified_at = None
         try:
-            parsed = datetime.strptime(verified_at, "%Y-%m-%dT%H:%M:%SZ")
-            if parsed.strftime("%Y-%m-%dT%H:%M:%SZ") != verified_at:
+            parsed_verified_at = datetime.strptime(verified_at, "%Y-%m-%dT%H:%M:%SZ")
+            if parsed_verified_at.strftime("%Y-%m-%dT%H:%M:%SZ") != verified_at:
                 raise ValueError
         except ValueError:
             errors.append(f"{name}: last_verified_at must be a valid UTC ISO-8601 timestamp")
@@ -153,7 +154,7 @@ def validate() -> list[str]:
             parsed_review_due = date.fromisoformat(review_due)
             if parsed_review_due.isoformat() != review_due:
                 raise ValueError
-            if verified_at and parsed_review_due < parsed.date():
+            if parsed_verified_at is not None and parsed_review_due < parsed_verified_at.date():
                 errors.append(f"{name}: review_due must not precede last_verified_at")
         except ValueError:
             errors.append(f"{name}: review_due must be a valid YYYY-MM-DD date")
@@ -167,8 +168,13 @@ def validate() -> list[str]:
             errors.append(f"{name}: canonical_sources must contain at least one list item")
         for source in source_items:
             parsed_source = urlparse(source)
-            if parsed_source.scheme not in {"http", "https"} or not parsed_source.netloc:
-                errors.append(f"{name}: canonical source must be an absolute HTTP(S) URL: {source!r}")
+            if (
+                parsed_source.scheme not in {"http", "https"}
+                or not parsed_source.netloc
+                or parsed_source.username is not None
+                or parsed_source.password is not None
+            ):
+                errors.append(f"{name}: canonical source must be an absolute credential-free HTTP(S) URL: {source!r}")
 
         sha = meta.get("related_github_sha", "")
         if sha.lower() != sha or not SHA_RE.fullmatch(sha):
@@ -176,12 +182,14 @@ def validate() -> list[str]:
 
         for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", content):
             target = target.split("#", 1)[0]
-            if not target or target.startswith(("http://", "https://", "mailto:", "#")):
+            if not target or target.startswith(("#", "http://", "https://", "mailto:")):
                 continue
             parsed_target = urlparse(target)
             if parsed_target.scheme:
+                errors.append(f"{name}: unsupported local-link scheme: {parsed_target.scheme}")
                 continue
-            resolved = (path.parent / target).resolve()
+            decoded_target = unquote(target)
+            resolved = (path.parent / decoded_target).resolve()
             try:
                 resolved.relative_to(ROOT.resolve())
             except ValueError:
