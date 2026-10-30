@@ -1709,3 +1709,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - T37 remains PARTIALLY COMPLETE / NOT APPROVED; T40 payroll expense vs settled/cash-disbursement contract remains unresolved. Salary-history/backfill, shared permission, payout/payment, posting and reversal work remain BLOCKED.
 - Current PR head after documentation update: `6bea76df697801f195d68f349ee1e10c81b6baa6`; OPEN / DRAFT / UNMERGED; GitHub mergeable=true. Compare to live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`: 79 ahead / 2 behind (diverged). No reviews found.
 - Tests/build/security/migrations/PostgreSQL concurrency/frontend/browser: NOT RUN. CircleCI execution/retry prohibited; none attempted. No merge/deploy.
+
+
+## T41 Master decision and @n sync — 2026-10-30
+
+- Product Owner explicitly delegated the choices to Master and approved the recommendations. Master approved the narrow T41 payroll privacy policy AUTH-T41 v1.0; see `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md` and Notion T37/T41 decisions.
+- OWNER-only: employee/payroll sensitive data and payroll-linked Expense rows/aggregates. STAFF retains ordinary expense access only. Apply server-side via authoritative `PayrollRecord.expense_id` after tenant/business scope and before pagination/aggregation/AI context; CSV remains OWNER-only. Cross-tenant access denied; no new role grants.
+- Salary technical direction: effective intervals `[effective_from, effective_to)`, non-overlap, immutable salary revisions/snapshots, no silent recalculation of approved/paid payroll, no automatic proration where multiple revisions intersect a period. Salary-history schema/backfill remains gated for qualified accountant review and verified legacy provenance.
+- Payment invariant: approved payroll is not paid payroll; Expense creation is not proof of cash disbursement. Future paid state requires explicit uniquely linked idempotent payment/disbursement record; manual records must not be labelled bank-confirmed. Payment schema, expense-recognition timing, accounting mappings, partial/failed/reversed lifecycle and posting remain deferred pending qualified accountant/controller review.
+- T37 overall remains PARTIALLY COMPLETE / NOT APPROVED. Only the T41 privacy sub-decision is approved; no broad shared financial contract approval.
+- Existing PR #304 latest head at sync: `2a05f19ad608bdbdad5586f7927796ad244ed152`; `GET /expenses` still lacks the approved predicate. Chat 3 retains branch ownership and must integrate on existing PR #304, preserving business-local date filters and deterministic pagination. GitHub handoff comment #6514182115.
+- Existing PR #308 docs update commit: `30fa181d9a8237b28008c481235a6c11160375ec`; documentation-only `[skip ci]`. No runtime/test source changed. Keep PR Draft pending T40 integration, exact-head tests, independent security review and main-base reconciliation.
+- Main remains `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; branch was 80 ahead / 2 behind before the docs commit. No merge, deployment, production migration or financial write. Tests/build/security/migration/browser NOT RUN; CircleCI prohibited, no retry.
