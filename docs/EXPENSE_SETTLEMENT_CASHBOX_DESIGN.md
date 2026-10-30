@@ -1,8 +1,8 @@
 # Expense Approval, Settlement and Cashbox — T40 Design
 
 Date: 2026-10-30  
-Status: **DESIGN COMPLETE / IMPLEMENTATION BLOCKED ON MIGRATION-CHAIN COORDINATION AND EXACT-SHA VALIDATION**  
-Policy authority: T37 v1.0.1 (Product-Owner approved): https://app.notion.com/p/4089320b90fb81708c5cc14a1b74580b
+Status: **DESIGN PROPOSAL ONLY / T37 NOT APPROVED / IMPLEMENTATION BLOCKED**  
+Policy authority: T37 canonical page remains PARTIALLY COMPLETE / Draft / NOT APPROVED. This document is a proposal for Master + qualified accountant review, not an approved policy.
 
 ## 1. Current source baseline
 
@@ -10,7 +10,7 @@ The current Expense model stores business, category, description, amount, curren
 
 The existing repository migration head is 0005_employee_payroll. A separate open Draft PR #312 already introduces migrations 0006–0011 for a deferred credit-note/bank-reconciliation/pricing workstream. T40 must not independently allocate migration 0006 or create a competing Alembic head until Master coordinates a single migration sequence and PR #312 is split/re-scoped. This is a real dependency, not a reason to create duplicate migration IDs.
 
-## 2. Approved business semantics
+## 2. Proposed business semantics — NOT APPROVED
 
 - Expense.incurred_at records when the cost was incurred. It is not proof of approval or settlement.
 - Approval is a separate OWNER workflow decision. Approval/rejection does not rewrite the incurred event.
@@ -21,7 +21,7 @@ The existing repository migration head is 0005_employee_payroll. A separate open
 - Existing Expense rows have no settlement evidence. Never backfill them as paid/settled from amount, category, age or vendor text. Their historical settlement state is unknown until evidence is supplied.
 - A reversal is a new linked event and opposite cash movement; never delete or rewrite the original settlement.
 - Cash-account balances are derived from immutable movements, not maintained as client-editable balance fields.
-- OWNER-only cash account management, expense approval, settlement, reversal and cash movement exports. STAFF may create/view ordinary expenses within current policy; payroll-linked rows/aggregates remain OWNER-only under T37 v1.0.1.
+- Proposed access boundary: OWNER-only cash account management, expense approval, settlement, reversal and cash movement exports. STAFF may create/view ordinary expenses within current policy. Payroll-linked rows/aggregates remain OWNER-only under the separately approved Payroll Privacy Policy v1.0 recorded on the T40 task discussion; this is not T37 approval.
 
 ## 3. Proposed v1 data model
 
@@ -120,5 +120,5 @@ V1 excludes bank-provider integrations, transfers between accounts, supplier pay
 - BLOCKED: migration numbering/ancestry coordination with PR #312 (0006–0011) is unresolved. Master must designate the canonical migration chain before a new migration is created.
 - BLOCKED: exact-SHA executable validation is unavailable. CircleCI is prohibited by owner directive; GitHub Actions is not a substitute; Desktop Commander is OFFLINE.
 - BLOCKED: production employee/payroll schema mismatch is verified in Vercel runtime (employees/payroll_records missing); migration 0005 application status is NOT VERIFIED. No production SQL/migration/deploy.
-- T37 v1.0.1 approves the operational semantics above but does not authorize production migration, merge, deployment, supplier AP/COGS, tax, FX or GL posting.
+- T37 remains Draft / NOT APPROVED. None of the proposed operational semantics above are authorized for implementation until Master publishes a versioned T37 decision. This design does not authorize migration, merge, deployment, supplier AP/COGS, tax, FX or GL posting.
 - Continue design, source review, tests and documentation on the existing T40 branch. Implement schema/API only after migration-chain coordination; keep PR #304 Draft and unmerged.
