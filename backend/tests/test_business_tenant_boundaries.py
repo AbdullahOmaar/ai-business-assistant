@@ -163,6 +163,9 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
         for path in protected_reads:
             response = client.get(path)
             assert response.status_code == 403, f"Expected 403 for GET {path}, got {response.status_code}"
+            assert resource_snapshot() == resource_snapshot_before, (
+                f"Denied GET {path} changed protected rows or audit events"
+            )
 
         protected_writes = [
             ("post", f"/api/v1/businesses/{business_id}/customers", {"name": "Injected Customer"}),
@@ -194,6 +197,9 @@ def test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payme
         for method, path, payload in protected_writes:
             response = getattr(client, method)(path, json=payload) if payload is not None else getattr(client, method)(path)
             assert response.status_code == 403, f"Expected 403 for {method.upper()} {path}, got {response.status_code}"
+            assert resource_snapshot() == resource_snapshot_before, (
+                f"Denied {method.upper()} {path} changed protected rows or audit events"
+            )
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("resource-owner")
         assert resource_snapshot() == resource_snapshot_before, (
