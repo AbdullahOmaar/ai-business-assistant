@@ -137,3 +137,35 @@ Updated coverage:
 - 26 related existing tests.
 - 27 targeted/authored + 26 related tests total. All **NOT RUN**.
 - Exact current PR #304 head is tracked in live GitHub metadata; historical SHA snapshots in this document are not current. Empty status on [skip ci] commits is NOT a pass. No CircleCI run/retry, no GitHub Actions, no authorized local runner.
+
+
+## Live source-vs-candidate reconciliation — 2026-10-30 18:14 UTC
+
+This addendum clarifies that the earlier metric table describes the baseline implementation observed on main; it must not be read as a current description of every candidate change present on PR #304.
+
+### Current source authority
+- Live `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- Current T40 candidate: PR #304, branch `task/t40-fin-report-003-current-main-20261029`, HEAD `7fcb24526e768949c87c6a0538115510f4c802a1`, base/merge base `c464398e0a6ace77eba32aabfbdbd09091f53999`, 101 ahead / 2 behind, diverged, OPEN/DRAFT/UNMERGED, GitHub `mergeable=false`.
+- Latest Master authority correction (PR #304 comment `https://github.com/AbdullahOmaar/ai-business-assistant/pull/304#issuecomment-6530108102`) says **T37 remains Draft / NOT APPROVED overall**. Only the narrow AUTH-T41 payroll-privacy access policy is separately approved. Earlier PR/Operating Model text asserting broader T37 v1.0.1 financial approval is superseded.
+
+### Candidate delta — present in PR #304, not approved for merge
+The candidate branch has moved beyond the main-baseline behavior described in the table above:
+- Dashboard receivables candidate uses a business-local as-of cutoff and filters allocation candidates by same business, non-null matching customer and currency.
+- Payment-level over-allocation is detected and allocations from an over-allocated payment are excluded; invoice-level over-allocation and invalid/missing source data are surfaced as warnings rather than silently clamped.
+- Receivables aging candidate uses persisted invoice issue and allocation creation timestamps before the business-local cutoff.
+- These are **candidate financial semantics only**. They must not be treated as accepted policy, merged or released while T37 is Draft / NOT APPROVED. The table's earlier “current allocation” row is a main-baseline description, not an assertion that the candidate code is unchanged.
+
+### Approved privacy boundary only
+The separately approved AUTH-T41 privacy policy is implemented on the current T40 branch: business-scoped `PayrollRecord.expense_id` excludes payroll-linked Expense rows and derived aggregates from STAFF/non-OWNER views before pagination, aggregation and AI/provider context; OWNER retains access to payroll-linked rows; ordinary expenses remain available to STAFF. This approval is limited to access control and does not approve payroll calculations, cash settlement or accounting formulas.
+
+### Cash and report limitations remain
+- `Expense.incurred_at` is a cost-incurrence date, not a payment/settlement timestamp. Expense records alone are not cash outflow.
+- A recorded `Payment` is a receipt source event; allocation is not a second receipt and issued invoice totals are not cash.
+- The current model inventory has no complete cashbox/cash movement/expense settlement or supplier payable/payment lifecycle. Payroll's in-app `paid` transition is not external bank/provider confirmation.
+- No implicit FX conversion or cross-currency summation. Operational dashboard/P&L output is not a GL-backed Cash Flow statement, Balance Sheet, Trial Balance or net profit. COGS/valuation and complete tax/credit/return treatment remain absent/deferred.
+- Expense settlement/cashbox, statutory tax/credit-note treatment, supplier AP/payment, valuation/COGS, FX, GL and posting remain deferred pending explicit versioned approval and qualified review.
+
+### Validation evidence
+- PR #304 contains 14 date-boundary tests, 10 report-reconciliation tests and 3 payroll-privacy/date-pagination tests (27 targeted) plus 26 related existing tests. All are authored/source-reviewed only and **NOT RUN**.
+- Current PR exact-head status list is empty due `[skip ci]`; empty status is NOT PASS. Live main still has six CircleCI FAILURE contexts. CircleCI is frozen and must not be triggered/retried. No authorized non-CircleCI runner is connected; PostgreSQL, build, browser and security checks are NOT RUN.
+- PR #304 has no formal review, is diverged from main and GitHub reports mergeable=false. No merge, rebase, migration, production write or deployment is authorized or performed.
