@@ -236,3 +236,12 @@ The later canonical T37 v1.0.1 decision supersedes earlier notes in this documen
 - Expense recognition/account mapping, statutory tax/ETA, supplier AP, inventory valuation/COGS, FX, GL/journal and reconciliation remain deferred. T40 owns the report mapping of incurred expenses vs recorded/settled cash outflow.
 - PR #304 current head remains `2a05f19ad608bdbdad5586f7927796ad244ed152` and its `GET /expenses` handler still lacks the approved predicate. Chat 3 owns integration on the existing PR #304 branch; T41 does not edit that branch.
 - No tests/build/security/migration/browser checks were run. CircleCI prohibited; no retries. No merge/deployment/production migration/write.
+
+
+## T40 integration completion — latest live source checkpoint — 2026-10-30
+
+- T40 PR #304 advanced to `6cfb8155f12e42ee6719226af49e9f9b5b34406d` on its existing branch. This supersedes the earlier statement in this audit that PR #304's `GET /expenses` lacked the predicate.
+- Exact source review confirms `apply_expense_visibility` is now applied in PR #304 across `extended_api.py` (expense list before date filters/order/pagination, report summary and insights), `core_features_api.py` (dashboard/P&L), `assistant_api.py` (chat context), and `operations.py` (internal financial summary). `security.py` uses the authoritative business-scoped `PayrollRecord.expense_id` relation.
+- T40 branch also carries `test_staff_cannot_read_payroll_expense_through_broad_surfaces` in `backend/tests/test_employee_payroll_api.py`, covering STAFF first-page behavior, OWNER positives, OWNER-only CSV and business-B ordinary-expense non-suppression.
+- PR #304 remains OPEN/DRAFT/UNMERGED, 58 ahead / 2 behind live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; exact-head status has no contexts (NOT a pass). The privacy regression, T40 tests, build, PostgreSQL, browser and security checks remain NOT RUN. CircleCI prohibited; no retry.
+- The source-level integration dependency is closed; executable validation and independent security review remain open. No merge/deployment.
