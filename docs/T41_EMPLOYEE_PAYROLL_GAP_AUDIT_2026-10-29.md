@@ -223,3 +223,16 @@ Before PR #304 is reconciled or merged, preserve the T41 visibility predicate in
 - T40 PR #304 current head: `2a05f19ad608bdbdad5586f7927796ad244ed152`; its `GET /expenses` handler still lacks the approved predicate. Chat 3 retains ownership and must integrate on the existing PR #304 branch, preserving business-local date filters and deterministic pagination.
 - Tests/build/security/migration/browser checks remain NOT RUN on current exact heads. No status contexts on current docs heads is NOT a pass. CircleCI is prohibited; no retries. No merge/deployment/production migration/write.
 - Qualified accountant/controller is not currently staffed per Agent Registry; this remains a real blocker for financial semantics, not for the approved privacy slice.
+
+
+## T37 v1.0.1 authoritative alignment correction — 2026-10-30
+
+The later canonical T37 v1.0.1 decision supersedes earlier notes in this document that described the entire bounded contract as unapproved or treated salary interval/payment-schema suggestions as approved.
+
+- T37 v1.0.1 is APPROVED by Product Owner for the bounded operational policy set; T37 overall remains PARTIALLY COMPLETE, not VERIFIED COMPLETE. See canonical T37 current authority/supersession note.
+- T41 privacy policy is approved: OWNER-only employee/payroll sensitive data and payroll-linked Expense rows/aggregates; STAFF retains ordinary expense access; enforce server-side using business-scoped `PayrollRecord.expense_id` before pagination/aggregation/AI context; CSV and employee/payroll management OWNER-only; cross-tenant denial.
+- Payroll payout contract: approved payroll is not paid; exactly one linked Expense is created atomically on explicit recorded paid/payout transition with source state and audit; exact retries cannot duplicate effects. Source review of `pay_payroll` confirms row lock on approved unpaid PayrollRecord, one linked Expense, status/paid_at/paid_by_subject update, `payroll.paid` audit, and commit/rollback through `_commit`. This is recorded in-app payout, not external bank/provider confirmation. Do not add a separate Payment schema or new payout states under the bounded contract.
+- Salary effective-date/backfill/proration and failed/partial/reversed/corrected payout lifecycle are explicitly DEFERRED by T37 v1.0.1. The earlier `[effective_from, effective_to)` interval suggestion is not approved. No salary-history schema/backfill or automatic proration until a separate versioned decision and qualified accountant/controller review.
+- Expense recognition/account mapping, statutory tax/ETA, supplier AP, inventory valuation/COGS, FX, GL/journal and reconciliation remain deferred. T40 owns the report mapping of incurred expenses vs recorded/settled cash outflow.
+- PR #304 current head remains `2a05f19ad608bdbdad5586f7927796ad244ed152` and its `GET /expenses` handler still lacks the approved predicate. Chat 3 owns integration on the existing PR #304 branch; T41 does not edit that branch.
+- No tests/build/security/migration/browser checks were run. CircleCI prohibited; no retries. No merge/deployment/production migration/write.
