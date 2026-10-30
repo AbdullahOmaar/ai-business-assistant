@@ -64,7 +64,7 @@ test('an observer error after initialization clears identity and releases the ob
 
   assert.equal(cachedUser, null);
   assert.deepEqual(observedErrors, [failure]);
-  assert.equal(unsubscribeCalls, 0);
+  assert.equal(unsubscribeCalls, 1);
 });
 
 test('an initial observer error rejects readiness and unsubscribes', async () => {
