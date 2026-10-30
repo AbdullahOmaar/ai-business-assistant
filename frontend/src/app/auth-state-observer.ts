@@ -16,6 +16,7 @@ export function observeAuthState<T>(
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let settled = false;
+    let terminated = false;
     let unsubscribe: () => void = () => {};
     let subscriptionReady = false;
     let readyPending = false;
@@ -25,6 +26,7 @@ export function observeAuthState<T>(
     const timeoutId = setTimeout(() => {
       if (settled) return;
       settled = true;
+      terminated = true;
       if (subscriptionReady) unsubscribe();
       else cleanupPending = true;
       const error = new Error('Firebase sign-in session check timed out. Retry when your connection is stable.');
@@ -38,6 +40,8 @@ export function observeAuthState<T>(
     };
 
     const handleError = (error: unknown) => {
+      if (terminated) return;
+      terminated = true;
       setUser(null);
       if (!settled) {
         settled = true;
@@ -56,6 +60,7 @@ export function observeAuthState<T>(
     try {
       unsubscribe = subscribe(
         user => {
+          if (terminated) return;
           setUser(user);
           if (settled) return;
           settled = true;
