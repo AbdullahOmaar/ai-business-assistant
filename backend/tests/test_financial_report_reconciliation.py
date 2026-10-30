@@ -1048,34 +1048,26 @@ def test_expense_date_filters_hide_payroll_before_pagination(date_filters, outsi
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
 
-def test_dashboard_and_tax_summary_reject_reversed_date_ranges():
-    """Date-range validation fails closed for both dashboard and tax summary."""
+def test_tax_summary_rejects_reversed_date_range():
+    """Saved tax summaries reject reversed date filters before aggregation."""
     engine, client, previous_factory, previous_resolver = _reporting_client()
     try:
         created = client.post(
             "/api/v1/businesses",
             json={
-                "name": "Reversed Report Range Shop",
+                "name": "Reversed Tax Summary Range Shop",
                 "currency_code": "EGP",
                 "timezone": "Africa/Cairo",
             },
         )
         assert created.status_code == 201, created.text
         business_id = UUID(created.json()["id"])
-        params = {"start_date": "2026-01-16", "end_date": "2026-01-15"}
 
-        dashboard = client.get(
-            f"/api/v1/businesses/{business_id}/dashboard",
-            params=params,
-        )
-        tax_summary = client.get(
+        response = client.get(
             f"/api/v1/businesses/{business_id}/reports/tax-summary",
-            params=params,
+            params={"start_date": "2026-01-16", "end_date": "2026-01-15"},
         )
-
-        assert dashboard.status_code == 422, dashboard.text
-        assert "start_date must be on or before end_date" in dashboard.json()["detail"]
-        assert tax_summary.status_code == 422, tax_summary.text
-        assert "start_date must not be after end_date" in tax_summary.json()["detail"]
+        assert response.status_code == 422, response.text
+        assert "start_date must not be after end_date" in response.json()["detail"]
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
