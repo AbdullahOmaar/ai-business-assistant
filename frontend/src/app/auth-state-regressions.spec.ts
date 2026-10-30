@@ -65,6 +65,8 @@ test('an observer error after initialization clears identity and releases the ob
   assert.equal(cachedUser, null);
   assert.deepEqual(observedErrors, [failure]);
   assert.equal(unsubscribeCalls, 1);
+  emitUser?.('late-user');
+  assert.equal(cachedUser, null);
 });
 
 test('an initial observer error rejects readiness and unsubscribes', async () => {
@@ -88,19 +90,26 @@ test('an initial observer error rejects readiness and unsubscribes', async () =>
   assert.equal(unsubscribeCalls, 1);
 });
 
-test('an initial auth-state timeout rejects readiness and unsubscribes', async () => {
+test('an initial auth-state timeout rejects readiness, unsubscribes and ignores late callbacks', async () => {
   let unsubscribeCalls = 0;
+  let emitUser: ((user: string | null) => void) | undefined;
+  let cachedUser: string | null = null;
 
   const ready = observeAuthState<string>(
-    () => () => { unsubscribeCalls += 1; },
-    () => {},
-    () => {},
+    onUser => {
+      emitUser = onUser;
+      return () => { unsubscribeCalls += 1; };
+    },
+    user => { cachedUser = user; },
+    () => { cachedUser = null; },
     () => {},
     1
   );
 
   await assert.rejects(ready, /session check timed out/);
   assert.equal(unsubscribeCalls, 1);
+  emitUser?.('late-user');
+  assert.equal(cachedUser, null);
 });
 
 test('a synchronous initial callback still registers the returned unsubscribe function', async () => {
