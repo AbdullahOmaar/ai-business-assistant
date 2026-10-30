@@ -1653,3 +1653,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+## Automation handoff update — 2026-10-30 (exact-SHA sync recheck)
+
+- GitHub canonical main remains `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (confirmed from the latest repository commit listing). Existing PR #315 remains OPEN / DRAFT / UNMERGED / mergeable, branch `ci/gitlab-fallback-canonical-20261030`, candidate head before this documentation update `2d9c09dc451243a6abdac9182b1481625c254e06`; no independent PR review is recorded and the candidate has no GitHub status contexts.
+- GitLab validation project is `abdullahomarrefaat/ai-business-assistant` (ID `88276557`). Its protected `main` is still `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`; the candidate branch does not exist there. GitLab returned zero pipelines for the exact GitHub candidate SHA, and its commit lookup returned 404 for both the candidate and current GitHub main. Exact GitHub→GitLab commit synchronization/status association remains **BLOCKED / NOT VERIFIED**. Do not run a pipeline on the stale GitLab main or unrelated branches.
+- GitGuardian commented on PR #315 about a Generic Password in historical commit `90994dfcb64598b1c36f68f70bf26d3ce74466df`. Diff review shows it was a hardcoded password/DSN for the disposable CI PostgreSQL service, not a production credential; the current `.gitlab-ci.yml` has removed the password and uses the isolated test service with `POSTGRES_HOST_AUTH_METHOD: trust`. Treat this as a historical CI-test credential finding, not evidence of production-secret exposure. Keep the alert visible; do not claim the scanner incident is closed or rotate unrelated production credentials.
+- Local test execution remains **NOT RUN**: Desktop Commander has no online device, and this session has no checked-out repository runtime. Local pytest, frontend tests/build, browser E2E, Docker build/import, and exact-head GitLab pipeline remain NOT RUN.
+- CircleCI remains explicitly prohibited. This documentation commit uses `[skip ci]`; verify that no CircleCI context is created for its resulting SHA.
+- T37 shared financial contracts remain Draft / NOT APPROVED. Do not implement or merge credit-note/tax/refund, AP, payroll, COGS, GL posting, or other shared financial semantics until the required approval is recorded.
+
+**Next action:** restore supported one-way GitHub→GitLab exact-SHA synchronization (without authoring source in GitLab), then run the existing validation pipeline once on the synchronized PR head and inspect all job logs. Keep PR #315 Draft and unmerged until exact-head checks and independent review pass.
