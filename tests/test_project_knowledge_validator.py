@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import validate_project_knowledge as validator
 
 
-def document(name: str, doc_id: str, *, link: str = "../README.md") -> str:
+def document(name: str, doc_id: str, *, link: str = "../../README.md") -> str:
     return f"""---
 document_id: {doc_id}
 title: Test document
@@ -84,6 +84,17 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertTrue(any("escapes repository" in e for e in self.run_validation()))
+
+    def test_rejects_empty_canonical_source(self) -> None:
+        filename = "01_AGENT_OPERATING_MODEL.md"
+        content = (self.package / filename).read_text(encoding="utf-8")
+        content = content.replace("  - https://example.com/canonical", "  - ")
+        (self.package / filename).write_text(content, encoding="utf-8")
+        self.assertTrue(any("canonical_sources" in e for e in self.run_validation()))
+
+    def test_rejects_extra_package_file(self) -> None:
+        (self.package / "UNTRACKED.md").write_text("# extra", encoding="utf-8")
+        self.assertTrue(any("package file set mismatch" in e for e in self.run_validation()))
 
     def test_rejects_missing_canonical_source(self) -> None:
         filename = "01_AGENT_OPERATING_MODEL.md"
