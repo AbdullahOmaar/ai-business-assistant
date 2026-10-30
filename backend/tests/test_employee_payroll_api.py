@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 import app.assistant_api as assistant_api
 import app.employee_payroll_api as employee_payroll_api
+import app.assistant_api as assistant_api
 from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
 from app.operations import financial_summary
@@ -1188,3 +1189,71 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     owner_export = env["client"].get(f"{base}/exports/expenses.csv")
     assert owner_export.status_code == 200
     assert "Confidential Payroll Employee" in owner_export.text
+
+
+
+def test_staff_provider_chat_payload_excludes_payroll_expenses_and_filters_before_pagination(
+    employee_environment, monkeypatch,
+):
+    """A hidden payroll row cannot consume page slots or enter outbound provider context."""
+    env = employee_environment
+    employee = _create_employee(env, name="Provider Confidential Payroll Employee").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11"},
+    )
+    assert payroll.status_code == 201, payroll.text
+
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
+    env["subject"]["value"] = OWNER
+    paid = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/pay", json={})
+    assert paid.status_code == 200, paid.text
+
+    # Make the ordinary expense older than the payroll expense. If visibility is
+    # applied after LIMIT 1, the payroll row consumes the page and STAFF sees none.
+    ordinary = env["client"].post(
+        f"{base}/expenses",
+        json={
+            "category": "Office",
+            "description": "Older ordinary expense",
+            "amount": "75.00",
+            "currency_code": "EGP",
+            "incurred_at": "2020-01-01T00:00:00+00:00",
+        },
+    )
+    assert ordinary.status_code == 201, ordinary.text
+
+    captured = {}
+
+    class FakeProviderResponse:
+        def json(self):
+            return {"choices": [{"message": {"content": '{"answer":"Safe summary","source_ids":[]}'}}]}
+
+    async def fake_provider_post(_client, *, headers, payload):
+        captured["headers"] = headers
+        captured["payload"] = payload
+        return FakeProviderResponse()
+
+    monkeypatch.setattr(assistant_api, "_provider_post", fake_provider_post)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    env["subject"]["value"] = STAFF
+
+    first_page = env["client"].get(f"{base}/expenses", params={"limit": 1, "offset": 0})
+    assert first_page.status_code == 200, first_page.text
+    assert len(first_page.json()) == 1
+    assert first_page.json()[0]["description"] == "Older ordinary expense"
+
+    chat = env["client"].post(
+        f"{base}/assistant/chat",
+        json={"message": "Summarize my expenses."},
+    )
+    assert chat.status_code == 200, chat.text
+    assert captured["headers"]["Authorization"] == "Bearer test-provider-key"
+    provider_context = captured["payload"]["messages"][0]["content"]
+    assert "Older ordinary expense" in provider_context
+    assert "Provider Confidential Payroll Employee" not in provider_context
+    assert "5000.00" not in provider_context
+    assert "payroll:" not in provider_context
