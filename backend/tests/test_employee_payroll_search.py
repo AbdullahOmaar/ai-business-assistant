@@ -168,3 +168,75 @@ def test_rejected_duplicate_and_invalid_employee_creates_have_no_audit_side_effe
         ).all()
     assert [employee.id for employee in employees] == [UUID(created.json()["id"])]
     assert audit_actions == ["employee.created"]
+
+
+def test_rejected_duplicate_employee_updates_preserve_profile_and_audit_history(employee_search_environment):
+    env = employee_search_environment
+    first = _create_employee(
+        env,
+        name="Update Target",
+        code="EMP-TARGET",
+        email="target@example.test",
+        department="Operations",
+        job_title="Associate",
+    )
+    second = _create_employee(
+        env,
+        name="Existing Employee",
+        code="EMP-EXISTING",
+        email="existing@example.test",
+        department="Finance",
+        job_title="Manager",
+    )
+    assert first.status_code == second.status_code == 201
+
+    base = f"/api/v1/businesses/{env['business_id']}"
+    target_id = first.json()["id"]
+
+    def snapshot():
+        with app.state.session_factory() as session:
+            employees = session.execute(
+                select(
+                    Employee.id,
+                    Employee.name,
+                    Employee.employee_code,
+                    Employee.email,
+                    Employee.department,
+                    Employee.job_title,
+                    Employee.monthly_salary,
+                    Employee.is_active,
+                )
+                .where(Employee.business_id == UUID(env["business_id"]))
+                .order_by(Employee.id)
+            ).all()
+            audits = session.execute(
+                select(
+                    AuditEvent.id,
+                    AuditEvent.action,
+                    AuditEvent.target_type,
+                    AuditEvent.target_id,
+                    AuditEvent.change_summary,
+                )
+                .where(
+                    AuditEvent.business_id == UUID(env["business_id"]),
+                    AuditEvent.target_type == "employee",
+                )
+                .order_by(AuditEvent.id)
+            ).all()
+            return employees, audits
+
+    before_code_conflict = snapshot()
+    duplicate_code = env["client"].patch(
+        f"{base}/employees/{target_id}",
+        json={"employee_code": "emp-existing"},
+    )
+    assert duplicate_code.status_code == 409
+    assert snapshot() == before_code_conflict
+
+    before_email_conflict = snapshot()
+    duplicate_email = env["client"].patch(
+        f"{base}/employees/{target_id}",
+        json={"email": "EXISTING@example.test"},
+    )
+    assert duplicate_email.status_code == 409
+    assert snapshot() == before_email_conflict
