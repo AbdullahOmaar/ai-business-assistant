@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
+from app.models import AuditEvent, Base, Business, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
 from app.operations import financial_summary
 
@@ -527,3 +527,122 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert [row["description"] for row in other_staff_expenses.json()] == [
         "Second business supplies"
     ]
+
+
+
+def test_payroll_visibility_composes_with_local_date_filters_and_offset_pagination(employee_environment):
+    """Visibility is applied before every local-date filter and offset/limit page."""
+    env = employee_environment
+    employee = _create_employee(env, name="Date Filter Payroll Employee").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-10"},
+    )
+    assert payroll.status_code == 201, payroll.text
+
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/approve", json={})
+    assert approved.status_code == 200, approved.text
+    env["subject"]["value"] = OWNER
+    paid = env["client"].post(f"{base}/payroll/{payroll.json()['id']}/pay", json={})
+    assert paid.status_code == 200, paid.text
+
+    with app.state.session_factory() as session:
+        business = session.get(Business, UUID(env["business_id"]))
+        business.timezone = "Africa/Cairo"
+        payroll_record = session.get(PayrollRecord, UUID(payroll.json()["id"]))
+        payroll_expense = session.get(Expense, payroll_record.expense_id)
+        payroll_expense.incurred_at = datetime(2026, 1, 16, 22, 30, tzinfo=timezone.utc)
+        session.commit()
+
+    ordinary_expenses = [
+        ("Ordinary Jan 14 late", datetime(2026, 1, 14, 21, 0, tzinfo=timezone.utc)),
+        ("Ordinary Jan 15 noon", datetime(2026, 1, 15, 10, 0, tzinfo=timezone.utc)),
+        ("Ordinary Jan 16 early", datetime(2026, 1, 15, 22, 30, tzinfo=timezone.utc)),
+        ("Ordinary Jan 16 noon", datetime(2026, 1, 16, 10, 0, tzinfo=timezone.utc)),
+    ]
+    for description, incurred_at in ordinary_expenses:
+        response = env["client"].post(
+            f"{base}/expenses",
+            json={
+                "category": "Office",
+                "description": description,
+                "amount": "10.00",
+                "currency_code": "EGP",
+                "incurred_at": incurred_at.isoformat(),
+            },
+        )
+        assert response.status_code == 201, response.text
+
+    env["subject"]["value"] = STAFF
+    # Start-only includes Jan 15 onward. Payroll Jan 17 is newer than every
+    # ordinary row, so limit=1 proves the visibility predicate precedes pagination.
+    staff_start_only = env["client"].get(
+        f"{base}/expenses", params={"start_date": "2026-01-15", "limit": 1},
+    )
+    assert staff_start_only.status_code == 200, staff_start_only.text
+    assert [row["description"] for row in staff_start_only.json()] == ["Ordinary Jan 16 noon"]
+
+    # End-only includes dates through the Cairo-local Jan 15 half-open boundary.
+    staff_end_only = env["client"].get(
+        f"{base}/expenses",
+        params={"end_date": "2026-01-15", "offset": 1, "limit": 1},
+    )
+    assert staff_end_only.status_code == 200, staff_end_only.text
+    assert [row["description"] for row in staff_end_only.json()] == ["Ordinary Jan 14 late"]
+
+    # Combined range plus a later offset must still page only visible ordinary rows.
+    staff_combined = env["client"].get(
+        f"{base}/expenses",
+        params={
+            "start_date": "2026-01-15",
+            "end_date": "2026-01-16",
+            "offset": 2,
+            "limit": 1,
+        },
+    )
+    assert staff_combined.status_code == 200, staff_combined.text
+    assert [row["description"] for row in staff_combined.json()] == ["Ordinary Jan 15 noon"]
+
+    staff_pay_attempt = env["client"].post(
+        f"{base}/payroll/{payroll.json()['id']}/pay", json={},
+    )
+    assert staff_pay_attempt.status_code == 403
+    staff_export_attempt = env["client"].get(f"{base}/exports/expenses.csv")
+    assert staff_export_attempt.status_code == 403
+
+    with app.state.session_factory() as session:
+        before_expenses = session.scalar(
+            select(func.count(Expense.id)).where(Expense.business_id == UUID(env["business_id"]))
+        )
+        before_audits = session.scalar(
+            select(func.count(AuditEvent.id)).where(AuditEvent.business_id == UUID(env["business_id"]))
+        )
+        payroll_status = session.get(PayrollRecord, UUID(payroll.json()["id"])).status
+    assert payroll_status == "paid"
+
+    env["subject"]["value"] = OWNER
+    owner_start_only = env["client"].get(
+        f"{base}/expenses", params={"start_date": "2026-01-15", "limit": 1},
+    )
+    assert owner_start_only.status_code == 200, owner_start_only.text
+    assert owner_start_only.json()[0]["category"] == "Payroll"
+    owner_payroll_day = env["client"].get(
+        f"{base}/expenses",
+        params={"start_date": "2026-01-17", "end_date": "2026-01-17"},
+    )
+    assert owner_payroll_day.status_code == 200, owner_payroll_day.text
+    assert [row["category"] for row in owner_payroll_day.json()] == ["Payroll"]
+
+    with app.state.session_factory() as session:
+        after_expenses = session.scalar(
+            select(func.count(Expense.id)).where(Expense.business_id == UUID(env["business_id"]))
+        )
+        after_audits = session.scalar(
+            select(func.count(AuditEvent.id)).where(AuditEvent.business_id == UUID(env["business_id"]))
+        )
+        after_status = session.get(PayrollRecord, UUID(payroll.json()["id"])).status
+    assert after_expenses == before_expenses
+    assert after_audits == before_audits
+    assert after_status == payroll_status
