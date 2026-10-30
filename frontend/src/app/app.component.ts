@@ -356,7 +356,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     @if (customerStatement) {
                       <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
                       <div class="table-wrap audit-table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
-                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ event.event_type }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
+                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ statementEventLabel(event.event_type) }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
                       </tbody></table></div>
                       <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
@@ -2069,6 +2069,17 @@ export class AppComponent implements OnInit {
     if (tab === 'recurring') void this.loadRecurringSchedules();
     if (tab === 'notifications') void this.loadNotifications();
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
+  }
+
+  statementEventLabel(eventType: string): string {
+    const labels: Record<string, { arabic: string; english: string }> = {
+      invoice_issued: { arabic: 'فاتورة صادرة', english: 'Invoice issued' },
+      payment_allocation: { arabic: 'تخصيص دفعة', english: 'Payment allocation' },
+      currency_mismatch_allocation: { arabic: 'تخصيص بعملة مختلفة', english: 'Currency-mismatch allocation' },
+      unapplied_receipt: { arabic: 'دفعة غير مخصصة', english: 'Unapplied receipt' },
+    };
+    const label = labels[eventType];
+    return label ? this.t(label.arabic, label.english) : eventType;
   }
 
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {

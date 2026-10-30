@@ -5,6 +5,7 @@ The customer statement now includes a read-only `unapplied_receipt` event when a
 - A fully unallocated receipt is shown in full.
 - A partially allocated receipt shows only its positive remainder.
 - A fully allocated receipt does not produce an unapplied-receipt event.
+- Arabic and English event labels are localized in the statement table, including `unapplied_receipt`.
 - The event is displayed in the statement's credit column for visibility, but `affects_balance=false`; it never reduces invoice receivables or changes the running customer balance.
 - A payment with any currency-mismatched allocation is excluded from remainder calculation until the data anomaly is reconciled. The existing mismatch allocation event remains informational and does not affect balances.
 - Payments and allocations are filtered by the authenticated business and selected customer. No records are created or modified by statement reads.

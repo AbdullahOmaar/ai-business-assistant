@@ -1614,3 +1614,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added `backend/tests/test_api.py::test_customer_statement_shows_unapplied_receipt_remainders_without_reducing_receivables` for unallocated/partial/full allocation cases, unchanged balance, and no Payment/PaymentAllocation/AuditEvent side effects.
 - Added `docs/CUSTOMER_STATEMENT_UNAPPLIED_RECEIPTS.md`. Existing date-filter timestamp semantics are unchanged; business-local timezone/DST boundaries remain a Chat 3/T40 coordination item.
 - Source review only. Exact-head tests/build/browser/security remain NOT RUN; CircleCI is frozen, Desktop Commander is offline, and GitLab does not contain this exact SHA. No merge/deployment or production data change.
+
+### T38 statement presentation follow-up — 2026-10-30
+
+- Localized customer statement event names in Arabic/English, including invoice issued, payment allocation, currency mismatch and unapplied receipt. Unknown event types retain their raw value for forward compatibility.
+- Added `frontend/src/app/customer-statement-regressions.spec.ts` to assert the template uses the localized label mapper and that all current event types have both language labels.
+- Source review only; exact-head frontend tests/build/browser smoke remain NOT RUN pending an authorized runner. No financial mutation or date/timezone semantics changed.
