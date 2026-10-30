@@ -1631,3 +1631,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Latest code head before this ledger update: 02538f6e512cacbd272368640c708de94290e043. Tests remain authored but NOT RUN; no test result is inferred from source readback.
 - This is still client session-cache lifecycle only. Server-side Firebase token verification and membership/role authorization remain authoritative and unchanged.
 - Follow-up commits use [skip ci]; exact-head status is not treated as PASS, CircleCI remains frozen, and no workflow was triggered/retried.
+
+
+## GitHub Actions execution probe — 2026-10-30 (owner-requested)
+
+- Inspected existing workflows on main: .github/workflows/ci.yml (pull_request/push frontend+backend paths), backend-tests.yml (pull_request + workflow_dispatch), backend-container.yml (pull_request/push backend paths), dependency-security.yml (pull_request/push frontend+backend paths + schedule + workflow_dispatch). No new workflow or replacement CI was introduced.
+- A normal frontend-path commit on this existing PR successfully triggered GitHub Actions. Branch runs API currently reports 11 recent workflow runs, all with conclusion=failure. Probe commits: 9ab975a772b2c1b190c861ec741797bb8dd3fd94, 71c1c52ad6ccf02808ac5f311375c15934c88d80, d5582110bbcd895ad808f9979dd3a611d8643843.
+- Latest exact-head runs on d5582110bbcd895ad808f9979dd3a611d8643843: Verify backend and frontend #41079091825 (failure); Dependency security scan #41079082874 (push, failure) and #41079091918 (pull_request, failure). Earlier probe runs on 9ab975a772b2c1b190c861ec741797bb8dd3fd94: #41078791281, #41078805019, #41078805102 (all failure).
+- Latest jobs completed in approximately 3 seconds with zero steps, empty runner_name and runner_group_name. Workflow-job log retrieval returns 404 BlobNotFound; no runner log is available. Trigger/orchestration is accepted, but jobs do not reach the first step. Root cause (runner provisioning, repository/organization Actions policy, or another platform-side condition) is NOT VERIFIED; do not claim quota/billing as the cause.
+- No GHA rerun requested: initial attempts failed before any step and no logs were available, so blind retries would not isolate the cause.
+- Exact PR head: d5582110bbcd895ad808f9979dd3a611d8643843. PR #316 OPEN / DRAFT / UNMERGED. Combined status also reports SemaphoreCI and six CircleCI contexts as FAILURE; CircleCI remains frozen per owner instruction and was not retried.
+- Auth helper additionally isolates teardown and consumer error-handler exceptions; a sixth behavioral Node regression test covers both without masking the original auth failure. All six Node tests remain authored, NOT RUN locally; frontend build, browser smoke and independent security review remain NOT RUN.
+- Next: inspect repository/organization Actions policy and runner availability in GitHub UI with an owner/admin, or obtain runner logs/annotations from GitHub Support. Do not add/replace CI workflows; keep PR Draft and unmerged.
