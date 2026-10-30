@@ -1606,3 +1606,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added a dedicated `paymentSaving` single-flight flag, disabled the workspace selector during the mutation, and guarded `switchBusiness()` / duplicate `createPayment()` calls until the request settles. The original request key remains in the form through the in-flight period; existing catch behavior preserves the entered payload/key when the outcome is uncertain.
 - Added static Node regression coverage for the disabled selector, workspace-switch guard, single-flight submission, and key use.
 - No backend payment allocation/posting semantics, schema, or production data changed. Tests/build/browser race simulation NOT RUN; exact-head CI/review pending. PR #305 remains Draft/unmerged.
+
+## T38 unapplied receipt statement visibility — 2026-10-30
+
+- Added a read-only `unapplied_receipt` statement event on the existing T38 branch/PR #305. It displays the positive remainder of a customer's recorded receipt after same-currency allocations; the event is informational (`affects_balance=false`) and does not reduce invoice receivables.
+- Fully unallocated and partially allocated receipts are represented; fully allocated receipts produce no remainder event. Payments with currency-mismatched allocations are excluded from remainder calculation and remain subject to existing mismatch visibility.
+- Added `backend/tests/test_api.py::test_customer_statement_shows_unapplied_receipt_remainders_without_reducing_receivables` for unallocated/partial/full allocation cases, unchanged balance, and no Payment/PaymentAllocation/AuditEvent side effects.
+- Added `docs/CUSTOMER_STATEMENT_UNAPPLIED_RECEIPTS.md`. Existing date-filter timestamp semantics are unchanged; business-local timezone/DST boundaries remain a Chat 3/T40 coordination item.
+- Source review only. Exact-head tests/build/browser/security remain NOT RUN; CircleCI is frozen, Desktop Commander is offline, and GitLab does not contain this exact SHA. No merge/deployment or production data change.

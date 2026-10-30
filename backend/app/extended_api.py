@@ -1616,6 +1616,67 @@ def customer_statement(
                     "affects_balance": same_currency,
                 })
 
+        # A recorded receipt can exceed its invoice allocations. Surface only the
+        # positive, same-currency remainder as informational history; it must not
+        # reduce receivables until a valid invoice allocation exists.
+        customer_payments = session.scalars(select(Payment).where(
+            Payment.business_id == business_id,
+            Payment.customer_id == customer_id,
+        )).all()
+        if customer_payments:
+            payment_ids = [payment.id for payment in customer_payments]
+            allocation_rows = session.execute(
+                select(
+                    PaymentAllocation.payment_id,
+                    PaymentAllocation.amount,
+                    Payment.currency_code,
+                    Invoice.currency_code,
+                )
+                .join(Payment, Payment.id == PaymentAllocation.payment_id)
+                .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
+                .where(
+                    PaymentAllocation.business_id == business_id,
+                    Payment.business_id == business_id,
+                    Invoice.business_id == business_id,
+                    Payment.id.in_(payment_ids),
+                )
+            ).all()
+            allocated_by_payment: dict[UUID, Decimal] = {}
+            currency_mismatch_payments: set[UUID] = set()
+            for payment_id, allocation_amount, payment_currency, invoice_currency in allocation_rows:
+                if payment_currency != invoice_currency:
+                    currency_mismatch_payments.add(payment_id)
+                    continue
+                allocated_by_payment[payment_id] = (
+                    allocated_by_payment.get(payment_id, ZERO) + allocation_amount
+                )
+
+            for payment in customer_payments:
+                # Do not derive a remainder from a payment with a currency anomaly.
+                if payment.id in currency_mismatch_payments:
+                    continue
+                unapplied_amount = payment.amount - allocated_by_payment.get(payment.id, ZERO)
+                if unapplied_amount <= ZERO:
+                    continue
+                occurred_at = payment.received_at
+                if occurred_at is None:
+                    continue
+                occurred_date = occurred_at.date()
+                if from_date is not None and occurred_date < from_date:
+                    continue
+                if to_date is not None and occurred_date > to_date:
+                    continue
+                events.append({
+                    "occurred_at": occurred_at,
+                    "event_type": "unapplied_receipt",
+                    "source_id": str(payment.id),
+                    "reference": payment.reference,
+                    "currency_code": payment.currency_code,
+                    "debit": ZERO,
+                    "credit": unapplied_amount,
+                    "affects_balance": False,
+                })
+
         events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
         running: dict[str, Decimal] = {}
         for event in events:
@@ -1640,6 +1701,8 @@ def customer_statement(
                 "Credit notes are not implemented in the current data model and are excluded.",
                 "Approved sales returns are not treated as receivable credits until a credit-note ledger exists.",
                 "Allocations with a currency mismatch are shown but do not change the running balance.",
+                "Unapplied receipt remainders are informational credits and do not reduce invoice receivables until allocated.",
+                "Payments with currency-mismatched allocations are excluded from unapplied-receipt remainder display.",
                 "Balances represent issued invoices less matching-currency allocations, not a double-entry general ledger.",
             ],
         }

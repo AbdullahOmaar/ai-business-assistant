@@ -1610,3 +1610,89 @@ def test_payment_api_rejects_idempotency_key_reuse_with_changed_payload_without_
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_customer_statement_shows_unapplied_receipt_remainders_without_reducing_receivables():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        customer_id = invoice.customer_id
+        unallocated = Payment(
+            business_id=business_id,
+            customer_id=customer_id,
+            amount=Decimal("5.00"),
+            currency_code="EGP",
+            idempotency_key="statement-unallocated-receipt",
+            reference="UNALLOCATED",
+        )
+        partial = Payment(
+            business_id=business_id,
+            customer_id=customer_id,
+            amount=Decimal("10.00"),
+            currency_code="EGP",
+            idempotency_key="statement-partial-receipt",
+            reference="PARTIAL",
+        )
+        fully_allocated = Payment(
+            business_id=business_id,
+            customer_id=customer_id,
+            amount=Decimal("2.00"),
+            currency_code="EGP",
+            idempotency_key="statement-fully-allocated-receipt",
+            reference="FULL",
+        )
+        session.add_all([unallocated, partial, fully_allocated])
+        session.flush()
+        session.add_all([
+            PaymentAllocation(
+                business_id=business_id, payment_id=partial.id,
+                invoice_id=invoice_id, amount=Decimal("4.00"),
+            ),
+            PaymentAllocation(
+                business_id=business_id, payment_id=fully_allocated.id,
+                invoice_id=invoice_id, amount=Decimal("2.00"),
+            ),
+        ])
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        with Session(engine) as session:
+            before = (
+                session.scalar(select(func.count()).select_from(Payment)),
+                session.scalar(select(func.count()).select_from(PaymentAllocation)),
+                session.scalar(select(func.count()).select_from(AuditEvent)),
+            )
+
+        response = client.get(f"{base}/customers/{customer_id}/statement")
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        unapplied = {
+            event["reference"]: event
+            for event in payload["items"]
+            if event["event_type"] == "unapplied_receipt"
+        }
+        assert {key: value["credit"] for key, value in unapplied.items()} == {
+            "UNALLOCATED": "5.00",
+            "PARTIAL": "6.00",
+        }
+        assert "FULL" not in unapplied
+        assert all(event["debit"] == "0" for event in unapplied.values())
+        assert all(event["affects_balance"] is False for event in unapplied.values())
+        assert all(event["balance"] == "4.00" for event in unapplied.values())
+        assert payload["balances_by_currency"] == {"EGP": "4.00"}
+        assert payload["total"] == 5
+        assert any("do not reduce invoice receivables until allocated" in item
+                   for item in payload["limitations"])
+
+        with Session(engine) as session:
+            after = (
+                session.scalar(select(func.count()).select_from(Payment)),
+                session.scalar(select(func.count()).select_from(PaymentAllocation)),
+                session.scalar(select(func.count()).select_from(AuditEvent)),
+            )
+        assert after == before, "statement read must not mutate payment, allocation, or audit records"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
