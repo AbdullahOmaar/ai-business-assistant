@@ -1,6 +1,6 @@
 # Shared Project Knowledge System Implementation Plan
 
- > **Execution record:** User-authorized implementation and verification handoff; this plan records actual execution and outstanding gates. The five published knowledge documents remain the only files inside `docs/project-knowledge/`.
+> **Execution record:** User-authorized implementation and verification handoff; this plan records actual execution and outstanding gates. The five canonical knowledge documents remain the only files inside `docs/project-knowledge/`.
 
 **Goal:** Create a versioned, evidence-backed five-document knowledge package for ChatGPT Project Sources, with repository validation and a governed Notion closeout workflow.
 
