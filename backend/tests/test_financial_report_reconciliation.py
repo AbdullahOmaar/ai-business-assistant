@@ -1112,16 +1112,19 @@ def test_receivables_aging_pagination_preserves_report_wide_totals():
         full = client.get(path, params={"as_of": "2026-01-31"})
         first = client.get(path, params={"as_of": "2026-01-31", "limit": 2, "offset": 0})
         second = client.get(path, params={"as_of": "2026-01-31", "limit": 2, "offset": 2})
+        empty = client.get(path, params={"as_of": "2026-01-31", "limit": 2, "offset": 4})
         invalid = client.get(path, params={"as_of": "2026-01-31", "offset": 1})
 
         assert full.status_code == 200, full.text
         assert first.status_code == 200, first.text
         assert second.status_code == 200, second.text
+        assert empty.status_code == 200, empty.text
         assert invalid.status_code == 422, invalid.text
 
         full_payload = full.json()
         first_payload = first.json()
         second_payload = second.json()
+        empty_payload = empty.json()
         assert full_payload["invoice_count"] == 3
         assert first_payload["invoice_count"] == second_payload["invoice_count"] == 3
         assert first_payload["pagination"] == {
@@ -1130,6 +1133,11 @@ def test_receivables_aging_pagination_preserves_report_wide_totals():
         }
         assert second_payload["pagination"] == {
             "limit": 2, "offset": 2, "total_count": 3,
+            "has_more": False, "next_offset": None,
+        }
+        assert empty_payload["invoices"] == []
+        assert empty_payload["pagination"] == {
+            "limit": 2, "offset": 4, "total_count": 3,
             "has_more": False, "next_offset": None,
         }
         assert [row["invoice_id"] for row in first_payload["invoices"] + second_payload["invoices"]] == [
