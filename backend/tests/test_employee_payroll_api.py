@@ -605,13 +605,6 @@ def test_payroll_visibility_composes_with_local_date_filters_and_offset_paginati
     assert staff_combined.status_code == 200, staff_combined.text
     assert [row["description"] for row in staff_combined.json()] == ["Ordinary Jan 15 noon"]
 
-    staff_pay_attempt = env["client"].post(
-        f"{base}/payroll/{payroll.json()['id']}/pay", json={},
-    )
-    assert staff_pay_attempt.status_code == 403
-    staff_export_attempt = env["client"].get(f"{base}/exports/expenses.csv")
-    assert staff_export_attempt.status_code == 403
-
     with app.state.session_factory() as session:
         before_expenses = session.scalar(
             select(func.count(Expense.id)).where(Expense.business_id == UUID(env["business_id"]))
@@ -621,6 +614,13 @@ def test_payroll_visibility_composes_with_local_date_filters_and_offset_paginati
         )
         payroll_status = session.get(PayrollRecord, UUID(payroll.json()["id"])).status
     assert payroll_status == "paid"
+
+    staff_pay_attempt = env["client"].post(
+        f"{base}/payroll/{payroll.json()['id']}/pay", json={},
+    )
+    assert staff_pay_attempt.status_code == 403
+    staff_export_attempt = env["client"].get(f"{base}/exports/expenses.csv")
+    assert staff_export_attempt.status_code == 403
 
     env["subject"]["value"] = OWNER
     owner_start_only = env["client"].get(
