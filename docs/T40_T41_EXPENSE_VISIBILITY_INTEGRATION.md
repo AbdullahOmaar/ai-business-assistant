@@ -1,7 +1,7 @@
 # T40 / T41 Expense Visibility Integration Review
 
 Date: 2026-10-30  
-Status: **BLOCKED — integration contract decision required; no runtime changes made.**
+Status: **PARTIALLY COMPLETE — T37 v1.0.1 bounded payroll privacy/payout policy APPROVED; exact-head integration validation and PR consolidation remain BLOCKED.**
 
 ## Scope
 
@@ -15,7 +15,7 @@ This note reconciles the existing T40 Expenses & Reports PR #304 with T41 Employ
 - Both branches diverge from live main by two commits; their merge base is `c464398e0a6ace77eba32aabfbdbd09091f53999`.
 - PR #304 is OPEN / DRAFT / UNMERGED (49 ahead / 2 behind); latest GitHub metadata says `mergeable=true`. PR #308 is OPEN / DRAFT / UNMERGED (80 ahead / 2 behind). Neither metadata value constitutes validation or permission to merge.
 - Current T40 exact head `757a07649cc27ec7a15e96901c1af0babe2a2896` returns six CircleCI FAILURE contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke). Current T41 exact head `f89380722efb580be79a2d46013df7f29a3e3f9c` returned no status contexts. Neither is a pass.
-- T37 remains PARTIALLY COMPLETE / NOT APPROVED. Master has requested an explicit decision on payroll-linked expense visibility; no versioned APPROVED decision is present.
+- T37 v1.0.1 is Product-Owner APPROVED for the bounded operational policy set; overall T37 remains PARTIALLY COMPLETE, not VERIFIED COMPLETE. The T41 payroll privacy/recorded-payout policy below is approved only within that versioned scope. Salary effective-date/backfill/proration and advanced payout states remain deferred.
 
 ## Source-level integration finding
 
@@ -54,7 +54,7 @@ T41's candidate policy is:
 - STAFF and other non-OWNER members can continue reading ordinary business expenses but cannot read payroll-linked rows or their derived totals/counts across expenses, dashboard, P&L, report summary, deterministic insights, internal financial summary or AI chat context.
 - CSV export and employee/payroll management remain OWNER-only.
 
-This is a candidate only. T37's route × role × action × tenant matrix remains unapproved. Master must explicitly APPROVE this exact policy or publish an alternative before code/permission behavior is integrated or either PR is marked ready.
+The bounded payroll privacy/recorded-payout policy is approved by T37 v1.0.1. This is not approval of the full T37 financial contract or deferred salary/payout lifecycle. Implementation may proceed only for these exact access and recorded-payout semantics. Any expansion of the role matrix, salary history, payout states, GL, tax, settlement or cashbox behavior requires separate approval.
 
 ## Required regression coverage after approval
 
@@ -78,10 +78,10 @@ This is a candidate only. T37's route × role × action × tenant matrix remains
 
 ## Next actions
 
-1. Master records a versioned APPROVED/DEFERRED decision for the payroll visibility policy in T37.
+1. The versioned T37 v1.0.1 bounded approval is recorded in Product & Agent Operating Model; preserve its exact scope and explicit deferrals.
 2. T40 and T41 owners coordinate one source integration preserving both date semantics and visibility behavior; reconcile both branches' two-behind relationship against live main before final review.
 3. Add/extend the cross-surface regression matrix, then run all relevant exact-head tests, PostgreSQL integration, build and security checks through an authorized runner.
-4. Keep both PRs Draft / unmerged until policy approval, exact-head validation and independent security review pass.
+4. Keep both PRs Draft / unmerged until exact-head validation and independent security review pass.
 
 
 ## Additional T40 / T38-Feature 31 report integration gate — PR #312
@@ -195,3 +195,12 @@ The following changes are present on PR #304 as candidate code only. They do not
 - PR #304 remains OPEN / DRAFT / UNMERGED; exact-head tests/build/security are NOT RUN; branch is diverged from main and GitHub reports mergeable=false. The current exact SHA must be read from live GitHub PR metadata; earlier snapshots are historical. No formal PR reviews exist.
 - 27 targeted T40/integration tests + 26 related tests are authored/source-reviewed only and **NOT RUN**. Build/PostgreSQL/browser/security checks NOT RUN. CircleCI execution/retries are prohibited; no authorized local runner (Desktop Commander OFFLINE).
 - Production Web/API deployments are READY on main d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f, but API runtime has 6 UndefinedTable exceptions for employees/payroll_records; migration 0005 application is NOT VERIFIED. No production SQL/migration/backup/restore/deployment was performed.
+
+
+## Authority correction — 2026-10-30
+
+This addendum supersedes older T37 status statements in this review. Product & Agent Operating Model now records T37 v1.0.1 as Product-Owner APPROVED for the bounded operational policy set, including OWNER-only payroll-sensitive data and payroll-linked Expense rows/aggregates, STAFF access to ordinary expenses, and exactly-once atomic payroll Expense linking on the explicit recorded paid/payout transition with audit and exact-retry idempotency. The existing /pay action remains an in-app recorded payout, not external bank/provider confirmation.
+
+The following remain deferred: salary effective-date/history/backfill/proration; failed/partial/reversed/corrected payout lifecycle; broader T37 financial contracts; cashbox/expense settlement; tax/FX/AP/COGS/GL and accounting posting. This approval does not authorize merge, production migration, production financial write or deployment.
+
+The exact-head and CI checkpoint earlier in this document is historical. Refresh live PR metadata before any integration decision. Current live heads at the time this correction began were #304 0e013da87d925c3e31a5da868c425e1cbfaa6079 and #308 a300fa5fbb818c8f0b5e2b83e9cf263b76ba98c4; both were two commits behind main, with empty status lists and no independent reviews. No tests/build/PostgreSQL/browser/security checks were run by this documentation correction. [skip ci] was used; no CI was triggered.
