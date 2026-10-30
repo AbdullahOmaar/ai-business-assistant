@@ -220,3 +220,8 @@ Retain backend JUnit at `backend/test-results/pytest.xml`, Playwright JUnit at `
 ### Current execution boundary
 
 Backend/frontend suites, PostgreSQL migration/concurrency checks, browser E2E, Docker build/import, and dependency audits have **NOT RUN** on the current PR head. CircleCI is prohibited and has not been triggered. GitLab remains the intended validation-only runner but exact GitHub SHA synchronization/status association is not demonstrated. The lack of an authenticated full ERP browser journey is a concrete remaining automation gap.
+
+
+### T22 follow-up — AI malformed upstream response safety
+
+Added `test_assistant_malformed_provider_responses_return_safe_error` in `backend/tests/test_assistant_security.py`. It exercises three upstream failure shapes (invalid JSON content, missing provider response envelope, and empty answer) through the real authenticated assistant API route. Each must return the same safe HTTP 502 contract and must not expose provider payload details or the test API key. This is source-level test coverage only; execution on the current SHA remains NOT RUN.
