@@ -1,11 +1,11 @@
 # T40 / T41 Expense Visibility Integration Review
 
 Date: 2026-10-30  
-Status: **PARTIALLY COMPLETE — T37 v1.0.1 bounded payroll privacy/payout policy APPROVED; exact-head integration validation and PR consolidation remain BLOCKED.**
+Status: **PARTIALLY COMPLETE — narrow AUTH-T41 Payroll Privacy Policy v1.0 separately approved for visibility only; T37 financial contract remains Draft / NOT APPROVED; exact-head validation and PR consolidation remain BLOCKED.**
 
 ## Scope
 
-This note reconciles the existing T40 Expenses & Reports PR #304 with T41 Employee/Payroll PR #308. It records a concrete privacy integration requirement and the source-level changes needed to preserve both workstreams. It does not approve the proposed role policy or authorize a merge.
+This note reconciles the existing T40 Expenses & Reports PR #304 with T41 Employee/Payroll PR #308. It records the separately approved narrow payroll-privacy visibility boundary and the source-level changes needed to preserve both workstreams. It does not approve the overall T37 financial contract or authorize a merge.
 
 ## Verified repository evidence
 
@@ -15,7 +15,7 @@ This note reconciles the existing T40 Expenses & Reports PR #304 with T41 Employ
 - Both branches diverge from live main by two commits; their merge base is `c464398e0a6ace77eba32aabfbdbd09091f53999`.
 - PR #304 is OPEN / DRAFT / UNMERGED (49 ahead / 2 behind); latest GitHub metadata says `mergeable=true`. PR #308 is OPEN / DRAFT / UNMERGED (80 ahead / 2 behind). Neither metadata value constitutes validation or permission to merge.
 - Current T40 exact head `757a07649cc27ec7a15e96901c1af0babe2a2896` returns six CircleCI FAILURE contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke). Current T41 exact head `f89380722efb580be79a2d46013df7f29a3e3f9c` returned no status contexts. Neither is a pass.
-- T37 v1.0.1 is Product-Owner APPROVED for the bounded operational policy set; overall T37 remains PARTIALLY COMPLETE, not VERIFIED COMPLETE. The T41 payroll privacy/recorded-payout policy below is approved only within that versioned scope. Salary effective-date/backfill/proration and advanced payout states remain deferred.
+- T37 overall remains PARTIALLY COMPLETE / Draft / NOT APPROVED. Separately, the narrow Payroll Privacy Policy v1.0 was approved in the T40 task discussion for payroll-linked expense visibility only. This does not approve payout, settlement, allocation, receivables, tax, COGS, FX, GL or schema semantics. Salary effective-date/backfill/proration and advanced payout states remain deferred.
 
 ## Source-level integration finding
 
@@ -54,7 +54,7 @@ T41's candidate policy is:
 - STAFF and other non-OWNER members can continue reading ordinary business expenses but cannot read payroll-linked rows or their derived totals/counts across expenses, dashboard, P&L, report summary, deterministic insights, internal financial summary or AI chat context.
 - CSV export and employee/payroll management remain OWNER-only.
 
-The bounded payroll privacy/recorded-payout policy is approved by T37 v1.0.1. This is not approval of the full T37 financial contract or deferred salary/payout lifecycle. Implementation may proceed only for these exact access and recorded-payout semantics. Any expansion of the role matrix, salary history, payout states, GL, tax, settlement or cashbox behavior requires separate approval.
+The separate Payroll Privacy Policy v1.0 approval covers only OWNER visibility to payroll-linked Expense rows/aggregates and STAFF visibility to ordinary expenses. It is not a T37 v1.0.1 approval and does not authorize recorded-payout semantics. Any expansion of the role matrix, salary history, payout states, GL, tax, settlement or cashbox behavior requires separate approval.
 
 ## Required regression coverage after approval
 
@@ -78,7 +78,7 @@ The bounded payroll privacy/recorded-payout policy is approved by T37 v1.0.1. Th
 
 ## Next actions
 
-1. The versioned T37 v1.0.1 bounded approval is recorded in Product & Agent Operating Model; preserve its exact scope and explicit deferrals.
+1. Preserve the narrow Payroll Privacy Policy v1.0 approval separately; the canonical T37 page remains Draft / NOT APPROVED overall, so no broader financial-policy approval may be inferred.
 2. T40 and T41 owners coordinate one source integration preserving both date semantics and visibility behavior; reconcile both branches' two-behind relationship against live main before final review.
 3. Add/extend the cross-surface regression matrix, then run all relevant exact-head tests, PostgreSQL integration, build and security checks through an authorized runner.
 4. Keep both PRs Draft / unmerged until exact-head validation and independent security review pass.
@@ -250,3 +250,17 @@ This section supersedes the historical SHA, T37-approval, validation-count and �
 - Do not modify `TASKS.md`; Master is its primary writer. Do not rebase/merge the two-behind main commits or rewrite shared branch history. The compare is diverged and mergeable=false.
 - Keep the payroll-privacy implementation intact; Chat 4 has handed off the source review, but all runtime tests remain NOT RUN.
 - **Next Master action:** resolve the T37 approval conflict and the shared TASKS.md ancestry/integration sequence, then provide an approved non-CircleCI exact-SHA validation route and independent review. Keep PR #304 Draft/unmerged until those gates are met.
+
+
+## Current T40 status and regression follow-up — 2026-10-31
+
+This section is the latest source-level checkpoint and supersedes older exact-head, test-count and UI-gap snapshots above. Historical sections remain for audit trail only.
+
+- T37 remains Draft / NOT APPROVED overall. The only separate approval is narrow AUTH-T41 Payroll Privacy Policy v1.0 for OWNER payroll-linked Expense visibility and STAFF ordinary-expense-only visibility. It does not approve payout/posting or any broader financial semantics.
+- Added `test_expense_date_filters_hide_payroll_before_pagination` to `backend/tests/test_financial_report_reconciliation.py`, parameterized for start-only, end-only and combined filters. OWNER-positive assertions preserve payroll-row visibility. STAFF assertions prove the predicate runs before LIMIT/OFFSET, ordinary expense remains on page one, page two is empty, out-of-range rows are excluded, and employee name/salary/reference are absent.
+- Updated `docs/FINANCIAL_REPORTS_METRIC_MAP.md` with the regression and operational-limit mapping. Commits: `e574730b8fc0757cd5359223b29954aecfed1234` and `27175134b2728cede12d1d26ec4817079178af8c`; this documentation correction follows on the same branch.
+- Test inventory: 14 date-boundary + 15 report-reconciliation cases (including 3 parameterized date-filter variants) + 3 payroll-privacy/date-pagination = 32 targeted; plus 26 related = 58 total. All 58 remain **NOT RUN**. AST syntax check passed for the newly added test snippet only; this is not pytest execution.
+- Current pre-correction PR #304 head was `27175134b2728cede12d1d26ec4817079178af8c`; compare to main was 113 ahead / 2 behind, diverged, mergeable=false; OPEN / DRAFT / UNMERGED. Exact-head status empty is NOT PASS. No GitHub Actions runs were associated with that SHA.
+- Runner investigation: GitLab mirror has no root `.gitlab-ci.yml`, no pipeline on main/T40/exact SHA, and zero running/pending jobs. Shared/group runner flags are enabled but actual runner online status is UNKNOWN. CircleCI remains frozen; no trigger/retry or replacement CI was created. Desktop Commander remains OFFLINE.
+- Reports UI audit: custom P&L date filters already exist in the Reports tab. The view is embedded in `frontend/src/app/app.component.ts`; `api.service.ts` exposes P&L date filters but no paginated report/aging API method; no dedicated Reports component exists. Canonical T40 single-writer boundaries reserve `app.component.ts` and `api.service.ts` to Master / Chat 5. Chat 3 did not modify those protected paths. Report pagination UI is therefore BLOCKED pending a valid single-writer handoff and an approved/current pagination contract.
+- No schema, migration, financial formula, production data, CI state, merge or deployment changed in this checkpoint. Keep PR #304 Draft/unmerged until main ancestry reconciliation, exact-SHA runtime checks and independent review pass.
