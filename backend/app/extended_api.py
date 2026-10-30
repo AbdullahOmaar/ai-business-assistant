@@ -1417,6 +1417,11 @@ def receivables_aging(
     """Return historical as-of receivables using persisted invoice/allocation event dates."""
     try:
         _authorized(session, principal, business_id)
+        if limit is None and offset:
+            raise HTTPException(
+                status_code=422,
+                detail="offset requires limit for receivables-aging pagination.",
+            )
         business = session.scalars(select(Business).where(
             Business.id == business_id, Business.is_active.is_(True),
         )).one_or_none()
@@ -1629,11 +1634,6 @@ def receivables_aging(
                 ],
                 "total_outstanding": str(sum(buckets.values(), ZERO)),
             })
-        if limit is None and offset:
-            raise HTTPException(
-                status_code=422,
-                detail="offset requires limit for receivables-aging pagination.",
-            )
         page_invoices = invoice_rows if limit is None else invoice_rows[offset:offset + limit]
         pagination = {
             "limit": limit,
