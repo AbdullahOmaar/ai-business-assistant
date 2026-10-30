@@ -1,0 +1,106 @@
+# Semaphore CI replacement candidate for the existing CircleCI verification suite.
+# Test/build/security only. No deployment, production DB, or release credentials.
+version: v1.0
+name: AI Business Assistant - CI
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2404
+execution_time_limit:
+  hours: 2
+blocks:
+  - name: Backend accounting and migration safety
+    dependencies: []
+    task:
+      env_vars:
+        - name: DATABASE_URL
+          value: postgresql+psycopg://postgres@localhost:5432/ai_business_assistant_test
+        - name: TEST_DATABASE_URL
+          value: postgresql+psycopg://postgres@localhost:5432/ai_business_assistant_test
+        - name: CI_ALLOW_DATABASE_SCHEMA_TESTS
+          value: "true"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+      jobs:
+        - name: Backend tests, migrations, and Python dependency audit
+          commands:
+            - checkout
+            - sem-version python 3.12.0
+            - sem-service start postgres 16 --db=ai_business_assistant_test
+            - python -m pip install --upgrade pip
+            - python -m pip install -r backend/requirements.txt pip-audit
+            - cd backend
+            - python -m alembic upgrade head
+            - python -m alembic current
+            - python -m alembic check
+            - python -m pytest -q
+            - python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
+            - test -s /tmp/alembic-upgrade.sql
+            - pip-audit -r requirements.txt
+
+  - name: Frontend unit tests
+    dependencies: []
+    task:
+      jobs:
+        - name: Angular unit and source regression tests
+          commands:
+            - checkout
+            - sem-version node 22.12.0
+            - cd frontend
+            - npm ci --no-audit --no-fund
+            - npm test
+
+  - name: Frontend production build
+    dependencies: []
+    task:
+      jobs:
+        - name: Optimized Angular production build
+          commands:
+            - checkout
+            - sem-version node 22.12.0
+            - cd frontend
+            - npm ci --no-audit --no-fund
+            - npm run prebuild
+            - npx ng build
+
+  - name: Frontend dependency security audit
+    dependencies: []
+    task:
+      jobs:
+        - name: npm audit high severity and above
+          commands:
+            - checkout
+            - sem-version node 22.12.0
+            - cd frontend
+            - npm ci --no-audit --no-fund
+            - npm audit --audit-level=high
+
+  - name: Backup safety and backend container smoke
+    dependencies: []
+    task:
+      jobs:
+        - name: Shell guards and disposable backend image
+          commands:
+            - checkout
+            - bash -n scripts/backup-restore-drill.sh
+            - bash -n scripts/backup-restore-drill.test.sh
+            - bash scripts/backup-restore-drill.test.sh
+            - docker build --pull --tag ai-business-assistant-backend:ci ./backend
+            - docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
+
+  - name: Frontend Chromium browser E2E
+    dependencies: []
+    task:
+      jobs:
+        - name: Playwright browser smoke
+          commands:
+            - checkout
+            - sem-version node 22.12.0
+            - cd frontend
+            - npm ci --no-audit --no-fund
+            - npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
+            - npx playwright install --with-deps chromium
+            - npx playwright --version
+            - npx playwright test
