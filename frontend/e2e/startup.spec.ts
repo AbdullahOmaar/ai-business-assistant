@@ -106,3 +106,40 @@ test('keeps the safe setup screen usable at a narrow mobile viewport', async ({ 
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   await assertNoHorizontalOverflow();
 });
+
+test('fails closed when runtime configuration returns an invalid JSON shape', async ({ page }) => {
+  let configRequests = 0;
+  await page.route('**/runtime-config.json', async (route) => {
+    configRequests += 1;
+    if (configRequests === 1) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(null),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        apiBaseUrl: '',
+        firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', {
+    name: /تعذر تحميل إعدادات التطبيق|Unable to load app configuration/,
+  })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('alert')).toContainText('Runtime configuration is invalid.');
+  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /إعادة المحاولة|Retry startup/ }).click();
+  await expect(page.getByRole('heading', {
+    name: /اربط مساحة عملك الآمنة|Connect your secure workspace/,
+  })).toBeVisible({ timeout: 20_000 });
+  expect(configRequests).toBe(2);
+});
