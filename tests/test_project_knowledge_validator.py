@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import validate_project_knowledge as validator
 
 
@@ -44,7 +46,7 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
             (self.package / filename).write_text(
                 document(filename, doc_id), encoding="utf-8"
             )
-        (self.root / "README.md").write_text("# test\\n", encoding="utf-8")
+        (self.root / "README.md").write_text("# test\n", encoding="utf-8")
 
     def tearDown(self) -> None:
         self.temp.cleanup()
@@ -86,7 +88,7 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
     def test_rejects_missing_canonical_source(self) -> None:
         filename = "01_AGENT_OPERATING_MODEL.md"
         content = (self.package / filename).read_text(encoding="utf-8")
-        content = content.replace("  - https://example.com/canonical\\n", "")
+        content = content.replace("  - https://example.com/canonical\n", "")
         (self.package / filename).write_text(content, encoding="utf-8")
         self.assertTrue(any("canonical_sources" in e for e in self.run_validation()))
 
