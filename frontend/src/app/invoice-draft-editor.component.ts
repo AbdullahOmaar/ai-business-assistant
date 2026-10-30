@@ -28,10 +28,10 @@ export interface InvoiceDraftServerSummary {
     <form class="invoice-draft-editor" (ngSubmit)="submit()" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       <div class="grid">
         <label>{{ language === 'ar' ? 'رقم الفاتورة' : 'Invoice number' }}
-          <input name="invoiceNumber" maxlength="80" [(ngModel)]="invoiceNumber">
+          <input name="invoiceNumber" maxlength="80" [(ngModel)]="invoiceNumber" [disabled]="busy">
         </label>
         <label>{{ language === 'ar' ? 'العميل' : 'Customer' }}
-          <select name="customerId" required [(ngModel)]="customerId">
+          <select name="customerId" required [(ngModel)]="customerId" [disabled]="busy">
             <option value="" disabled>{{ language === 'ar' ? 'اختر العميل' : 'Choose a customer' }}</option>
             @for (customer of customers; track customer.id) {
               <option [value]="customer.id">{{ customer.name }}</option>
@@ -49,14 +49,14 @@ export interface InvoiceDraftServerSummary {
       @for (line of lines; track line.id; let index = $index) {
         <section class="line">
           <label>{{ language === 'ar' ? 'النوع' : 'Type' }}
-            <select [name]="'kind-' + line.id" [(ngModel)]="line.kind" (ngModelChange)="resetLine(line)">
+            <select [name]="'kind-' + line.id" [(ngModel)]="line.kind" [disabled]="busy" (ngModelChange)="resetLine(line)">
               <option value="product">{{ language === 'ar' ? 'منتج' : 'Product' }}</option>
               <option value="manual">{{ language === 'ar' ? 'خدمة / بند يدوي' : 'Service / manual' }}</option>
             </select>
           </label>
           @if (line.kind === 'product') {
             <label>{{ language === 'ar' ? 'المنتج' : 'Product' }}
-              <select [name]="'product-' + line.id" [(ngModel)]="line.product_id">
+              <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" [disabled]="busy">
                 <option value="" disabled>{{ language === 'ar' ? 'اختر منتجًا' : 'Choose a product' }}</option>
                 @for (product of products; track product.id) {
                   <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ currencyCode }}</option>
@@ -65,14 +65,14 @@ export interface InvoiceDraftServerSummary {
             </label>
           } @else {
             <label>{{ language === 'ar' ? 'الوصف' : 'Description' }}
-              <input [name]="'description-' + line.id" maxlength="500" [(ngModel)]="line.description">
+              <input [name]="'description-' + line.id" maxlength="500" [(ngModel)]="line.description" [disabled]="busy">
             </label>
             <label>{{ language === 'ar' ? 'سعر الوحدة' : 'Unit price' }}
-              <input [name]="'price-' + line.id" type="number" min="0" step="0.01" [(ngModel)]="line.unit_price">
+              <input [name]="'price-' + line.id" type="number" min="0" step="0.01" [(ngModel)]="line.unit_price" [disabled]="busy">
             </label>
           }
           <label>{{ language === 'ar' ? 'الكمية' : 'Quantity' }}
-            <input [name]="'quantity-' + line.id" type="number" min="0.001" step="0.001" [(ngModel)]="line.quantity">
+            <input [name]="'quantity-' + line.id" type="number" min="0.001" step="0.001" [(ngModel)]="line.quantity" [disabled]="busy">
           </label>
           <div class="line-actions">
             <button type="button" [disabled]="busy || index === 0" (click)="moveLine(index, -1)" [attr.aria-label]="language === 'ar' ? 'تحريك لأعلى' : 'Move up'">↑</button>
@@ -84,10 +84,10 @@ export interface InvoiceDraftServerSummary {
 
       <div class="grid rates">
         <label>{{ language === 'ar' ? 'الخصم (%)' : 'Discount (%)' }}
-          <input name="discountRate" type="number" min="0" max="100" step="any" [(ngModel)]="discountRate">
+          <input name="discountRate" type="number" min="0" max="100" step="any" [(ngModel)]="discountRate" [disabled]="busy">
         </label>
         <label>{{ language === 'ar' ? 'الضريبة (%)' : 'Tax (%)' }}
-          <input name="taxRate" type="number" min="0" max="100" step="any" [(ngModel)]="taxRate">
+          <input name="taxRate" type="number" min="0" max="100" step="any" [(ngModel)]="taxRate" [disabled]="busy">
         </label>
       </div>
 
@@ -138,9 +138,9 @@ export class InvoiceDraftEditorComponent {
   customerId = '';
   discountRate = '0';
   taxRate = '0';
+  private nextId = 1;
   lines: InvoiceDraftLine[] = [this.newLine('product')];
   validationMessage = '';
-  private nextId = 1;
 
   addProductLine(): void { if (!this.busy) this.lines = [...this.lines, this.newLine('product')]; }
   addManualLine(): void { if (!this.busy) this.lines = [...this.lines, this.newLine('manual')]; }
