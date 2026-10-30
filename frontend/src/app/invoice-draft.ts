@@ -33,8 +33,8 @@ export interface InvoiceDraftPayload {
   lines: Array<{ product_id: string; quantity: string; description?: string } | { description: string; quantity: string; unit_price: string }>;
 }
 
-const DECIMAL_QUANTITY = /^\d+(?:\\.\d{1,3})?$/;
-const DECIMAL_PRICE = /^\d+(?:\\.\d{1,2})?$/;
+const DECIMAL_QUANTITY = /^\d+(?:\.\d{1,3})?$/;
+const DECIMAL_PRICE = /^\d+(?:\.\d{1,2})?$/;
 
 function isRate(value: string): boolean {
   if (!value.trim()) return false;
