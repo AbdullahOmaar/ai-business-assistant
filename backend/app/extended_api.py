@@ -1412,36 +1412,45 @@ def receivables_aging(
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
-    """Return open issued-invoice balances by currency without cross-currency netting."""
+    """Return historical as-of receivables using persisted invoice/allocation event dates."""
     try:
         _authorized(session, principal, business_id)
-        if as_of is not None:
-            report_date = as_of
-        else:
-            business = session.scalars(select(Business).where(
-                Business.id == business_id, Business.is_active.is_(True),
-            )).one_or_none()
-            if business is None:
-                raise HTTPException(status_code=404, detail="Business not found")
-            try:
-                business_zone = ZoneInfo(business.timezone.strip())
-            except (ZoneInfoNotFoundError, ValueError) as exc:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Business timezone must be a valid IANA timezone.",
-                ) from exc
-            report_date = datetime.now(timezone.utc).astimezone(business_zone).date()
+        business = session.scalars(select(Business).where(
+            Business.id == business_id, Business.is_active.is_(True),
+        )).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        try:
+            business_zone = ZoneInfo(business.timezone.strip())
+        except (ZoneInfoNotFoundError, ValueError) as exc:
+            raise HTTPException(
+                status_code=422,
+                detail="Business timezone must be a valid IANA timezone.",
+            ) from exc
+
+        report_date = as_of or datetime.now(timezone.utc).astimezone(business_zone).date()
+        cutoff_end = _local_date_end_exclusive_utc(report_date, business_zone)
+
+        # Historical receivables include only invoices issued by the cutoff.
+        # Missing issue dates cannot be reconstructed and are reported separately.
         invoices = session.scalars(
             select(Invoice).where(
                 Invoice.business_id == business_id,
                 Invoice.status == "issued",
+                Invoice.issue_date < cutoff_end,
             ).order_by(
                 Invoice.currency_code, Invoice.due_date, Invoice.invoice_number
             )
         ).all()
+        missing_issue_dates = session.execute(
+            select(Invoice.id, Invoice.invoice_number).where(
+                Invoice.business_id == business_id,
+                Invoice.status == "issued",
+                Invoice.issue_date.is_(None),
+            )
+        ).all()
 
-        # Join on both record IDs and workspace IDs so corrupt cross-workspace links
-        # cannot influence this business's balances.
+        # Allocation history is bounded by its immutable persisted creation event.
         allocation_rows = session.execute(
             select(PaymentAllocation, Payment, Invoice)
             .join(
@@ -1459,43 +1468,66 @@ def receivables_aging(
                 Payment.business_id == business_id,
                 Invoice.business_id == business_id,
                 Invoice.status == "issued",
+                Invoice.issue_date < cutoff_end,
+                PaymentAllocation.created_at < cutoff_end,
             )
         ).all()
         allocated_by_invoice: dict[UUID, Decimal] = {}
-        mismatched_by_invoice: dict[UUID, dict[str, Decimal]] = {}
+        invalid_by_invoice: dict[UUID, list[dict]] = {}
         for allocation, payment, invoice in allocation_rows:
             payment_currency = payment.currency_code.strip().upper()
             invoice_currency = invoice.currency_code.strip().upper()
+            reasons = []
+            if payment_currency != invoice_currency:
+                reasons.append("currency_mismatch")
+            if (
+                payment.customer_id is None
+                or invoice.customer_id is None
+                or payment.customer_id != invoice.customer_id
+            ):
+                reasons.append("customer_mismatch_or_missing")
             amount = Decimal(str(allocation.amount))
-            if payment_currency == invoice_currency:
-                allocated_by_invoice[invoice.id] = (
-                    allocated_by_invoice.get(invoice.id, ZERO) + amount
-                )
-            else:
-                # Never add values in different currencies into one numeric total.
-                currency_totals = mismatched_by_invoice.setdefault(invoice.id, {})
-                currency_totals[payment_currency] = currency_totals.get(
-                    payment_currency, ZERO
-                ) + amount
+            if reasons:
+                invalid_by_invoice.setdefault(invoice.id, []).append({
+                    "reasons": reasons,
+                    "payment_currency": payment_currency,
+                    "invoice_currency": invoice_currency,
+                    "amount": amount,
+                })
+                continue
+            allocated_by_invoice[invoice.id] = (
+                allocated_by_invoice.get(invoice.id, ZERO) + amount
+            )
 
         bucket_totals: dict[str, dict[str, Decimal]] = {}
         invoice_rows = []
-        data_quality_warnings = []
+        data_quality_warnings = [
+            {
+                "invoice_id": str(invoice_id),
+                "invoice_number": invoice_number,
+                "type": "missing_invoice_issue_date",
+                "message": "Historical as-of inclusion cannot be determined without an issue timestamp.",
+            }
+            for invoice_id, invoice_number in missing_issue_dates
+        ]
         for invoice in invoices:
             total = Decimal(str(invoice.total or ZERO))
             paid = allocated_by_invoice.get(invoice.id, ZERO)
-            mismatched = mismatched_by_invoice.get(invoice.id, {})
-            if mismatched:
-                mismatch_details = "; ".join(
-                    f"{amount} {currency}"
-                    for currency, amount in sorted(mismatched.items())
-                )
+            for invalid in invalid_by_invoice.get(invoice.id, []):
+                if invalid["reasons"] == ["currency_mismatch"]:
+                    warning_type = "payment_currency_mismatch"
+                elif invalid["reasons"] == ["customer_mismatch_or_missing"]:
+                    warning_type = "payment_customer_mismatch"
+                else:
+                    warning_type = "invalid_payment_allocation"
                 data_quality_warnings.append({
                     "invoice_id": str(invoice.id),
                     "invoice_number": invoice.invoice_number,
-                    "type": "payment_currency_mismatch",
-                    "invoice_currency": invoice.currency_code,
-                    "mismatched_allocations_amount": mismatch_details,
+                    "type": warning_type,
+                    "reasons": invalid["reasons"],
+                    "invoice_currency": invalid["invoice_currency"],
+                    "payment_currency": invalid["payment_currency"],
+                    "mismatched_allocations_amount": str(invalid["amount"]),
                 })
 
             outstanding, overallocated = _receivable_outstanding(total, paid)
@@ -1509,16 +1541,21 @@ def receivables_aging(
                     "allocated_payments": str(paid),
                     "excess_allocated": str(abs(outstanding)),
                 })
-                # A credit/excess allocation is a data-quality issue, not a negative
-                # receivable. Keep it out of all positive aging-bucket totals.
+                # An over-allocation is an integrity exception, never a negative
+                # receivable or a silently clamped zero balance.
                 continue
             if outstanding <= ZERO:
-                # Fully settled invoices do not contribute to open receivables aging.
                 continue
 
-            due_day = invoice.due_date.date() if invoice.due_date is not None else None
+            due_at = invoice.due_date
+            if due_at is None:
+                due_day = None
+            else:
+                if due_at.tzinfo is None:
+                    due_at = due_at.replace(tzinfo=timezone.utc)
+                due_day = due_at.astimezone(business_zone).date()
             bucket, days_overdue = _receivable_aging_bucket(due_day, report_date)
-            currency = invoice.currency_code
+            currency = invoice.currency_code.strip().upper()
             bucket_totals.setdefault(currency, {})
             bucket_totals[currency][bucket] = (
                 bucket_totals[currency].get(bucket, ZERO) + outstanding
@@ -1552,23 +1589,25 @@ def receivables_aging(
                 "total_outstanding": str(sum(buckets.values(), ZERO)),
             })
         return {
+            "basis": "historical_as_of",
             "as_of_date": report_date.isoformat(),
-            "source": "issued invoices minus matching-currency payment allocations",
+            "as_of_cutoff_exclusive_utc": cutoff_end.isoformat(),
+            "source": "issued invoices by issue_date minus matching-currency/customer allocations created before the business-local cutoff",
             "currency_policy": (
-                "Payment allocations reduce an invoice only when their currency matches; "
-                "different currencies are never combined."
+                "Payment allocations reduce an invoice only when business, customer and currency match; "
+                "invalid allocations are warnings and never reduce receivables."
             ),
             "invoice_count": len(invoice_rows),
             "by_currency": summaries,
             "invoices": invoice_rows,
             "data_quality_warnings": data_quality_warnings,
             "limitations": [
-                "Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.",
-                "Fully settled invoices are excluded from open receivables aging.",
+                "Only issued invoices with a positive valid remaining balance appear in aging buckets; drafts and void invoices are excluded.",
+                "Historical as-of uses Invoice.issue_date and PaymentAllocation.created_at; allocations created after the cutoff are excluded.",
+                "Invoices missing issue timestamps are reported as data-quality warnings and excluded from historical as-of totals.",
+                "Credit applications/credit notes are not included until their source-event and tax/receivable contract is separately approved and implemented.",
                 "Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.",
                 "Invoices without due dates are reported separately and are not assumed current.",
-                "Legacy invoices without customer links are flagged for review, not auto-corrected.",
-                "Currency-mismatched allocations are listed as warnings and never reduce receivables.",
                 "This is an accounts-receivable aging report, not net profit or a full general ledger.",
             ],
         }
