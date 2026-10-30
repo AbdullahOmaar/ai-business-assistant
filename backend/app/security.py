@@ -9,7 +9,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Business, BusinessMembership, MembershipRole
+from app.models import Business, BusinessMembership, Expense, MembershipRole, PayrollRecord
 
 
 @dataclass(frozen=True)
@@ -54,3 +54,19 @@ def authorize_membership(
     if allowed_roles is not None and membership.role not in allowed_roles:
         raise AuthorizationError("Business role is not permitted for this operation")
     return membership
+
+
+
+def apply_expense_visibility(statement, *, business_id: UUID, role: MembershipRole):
+    """Hide payroll-linked expenses from non-OWNER members across all read surfaces.
+
+    PayrollRecord.expense_id is the authoritative link; category/description text
+    is deliberately not used as a privacy boundary because those fields are mutable.
+    """
+    if role == MembershipRole.OWNER:
+        return statement
+    payroll_expense_ids = select(PayrollRecord.expense_id).where(
+        PayrollRecord.business_id == business_id,
+        PayrollRecord.expense_id.is_not(None),
+    )
+    return statement.where(~Expense.id.in_(payroll_expense_ids))
