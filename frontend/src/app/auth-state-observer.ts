@@ -48,6 +48,8 @@ export function observeAuthState<T>(
         reject(error);
         return;
       }
+      if (subscriptionReady) unsubscribe();
+      else cleanupPending = true;
       onError(error);
     };
 
