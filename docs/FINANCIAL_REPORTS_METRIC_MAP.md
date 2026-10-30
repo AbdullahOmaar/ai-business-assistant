@@ -169,3 +169,18 @@ The separately approved AUTH-T41 privacy policy is implemented on the current T4
 - PR #304 contains 14 date-boundary tests, 10 report-reconciliation tests and 3 payroll-privacy/date-pagination tests (27 targeted) plus 26 related existing tests. All are authored/source-reviewed only and **NOT RUN**.
 - Current PR exact-head status list is empty due `[skip ci]`; empty status is NOT PASS. Live main still has six CircleCI FAILURE contexts. CircleCI is frozen and must not be triggered/retried. No authorized non-CircleCI runner is connected; PostgreSQL, build, browser and security checks are NOT RUN.
 - PR #304 has no formal review, is diverged from main and GitHub reports mergeable=false. No merge, rebase, migration, production write or deployment is authorized or performed.
+
+
+## Remaining T40 source-audit findings — 2026-10-30 18:19 UTC
+
+### Expense and cash feature coverage (existing issues; no duplicate work item)
+- **Issue #83 — Expense management with categories and evidence (OPEN):** main `Expense` supports a required free-text `category`, description, Decimal amount, currency, incurred timestamp, optional vendor/reference and created timestamp. There is no configurable category entity, receipt attachment metadata or attachment-storage workflow in the inspected model/API. The create endpoint records an incurred cost only; there is no approval, settlement or reversal state. Do not add storage or a migration in this T40 pass.
+- **Issue #82 — Receivables aging (OPEN):** read-only aging functionality is already present on main; earlier PR #92 is MERGED, while PR #118 is CLOSED / UNMERGED. The current PR #304 adds candidate historical-as-of/allocation-integrity behavior, but those changes remain T37-gated and not merge-authorized.
+- **Issue #85 — Tax configuration/reporting (OPEN):** current tax summary reads saved `Invoice.tax_total` from issued invoices and groups by currency. It does not implement a jurisdiction/tax-settings workflow, inclusive/exclusive tax configuration, exemption rules or statutory filing. Do not infer Egypt/ETA compliance or change tax semantics.
+- **Issue #86 — Bank and cash reconciliation (OPEN):** the inspected source has no cashbox/cash-transaction/bank-statement/import/matching/reconciliation model or route. `docs/EXPENSE_SETTLEMENT_CASHBOX_DESIGN.md` remains a proposal only; no direct bank integration, paid API or new schema is authorized.
+
+### Concrete source inconsistency requiring Master decision
+On PR #304, the dashboard query computes `outstanding_as_of_date` from the selected `end_date` (or business-local today) and filters both invoice issue timestamps and allocation creation timestamps against that cutoff. However, the returned `limitations` array still says: “Outstanding balances are current balances; use the receivables-aging as-of date for a historical cutoff.” This response text contradicts the candidate query's historical-as-of behavior. Because the intended receivables basis is part of the disputed T37 contract, do not change either the formula or response wording independently. Master must decide the authoritative basis, then require a regression asserting that the response's stated basis matches the actual calculation.
+
+### Safe next action
+Master to reconcile T37's effective receivables decision and explicitly disposition issues #83/#85/#86; until then keep the candidate receivables behavior and expense-settlement/cashbox/tax work gated. Continue only source mapping, non-semantic documentation and test design. No new issue/branch/PR was created.
