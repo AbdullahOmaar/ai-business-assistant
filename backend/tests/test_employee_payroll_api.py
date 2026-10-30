@@ -647,3 +647,119 @@ def test_payroll_visibility_composes_with_local_date_filters_and_offset_paginati
     assert owner_payroll_day.status_code == 200, owner_payroll_day.text
     assert [row["category"] for row in owner_payroll_day.json()] == ["Payroll"]
 
+
+
+def test_staff_expense_date_filters_hide_payroll_before_offset_pagination(employee_environment):
+    """Approved payroll privacy remains correct for each date-filter shape and page."""
+    env = employee_environment
+    employee = _create_employee(env, name="Date Filter Payroll Employee").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-10"},
+    )
+    assert payroll.status_code == 201, payroll.text
+    env["subject"]["value"] = APPROVER
+    approved = env["client"].post(
+        f"{base}/payroll/{payroll.json()['id']}/approve", json={}
+    )
+    assert approved.status_code == 200, approved.text
+    env["subject"]["value"] = OWNER
+    paid = env["client"].post(
+        f"{base}/payroll/{payroll.json()['id']}/pay", json={}
+    )
+    assert paid.status_code == 200, paid.text
+
+    with app.state.session_factory() as session:
+        payroll_expense = session.get(Expense, UUID(paid.json()["expense_id"]))
+        assert payroll_expense is not None
+        payroll_day = payroll_expense.incurred_at.date()
+
+    ordinary_rows = [
+        ("Earlier ordinary expense", payroll_day - timedelta(days=2)),
+        ("Later ordinary expense", payroll_day - timedelta(days=1)),
+    ]
+    for description, day in ordinary_rows:
+        response = env["client"].post(
+            f"{base}/expenses",
+            json={
+                "category": "Office",
+                "description": description,
+                "amount": "25.00",
+                "currency_code": "EGP",
+                "incurred_at": datetime(
+                    day.year, day.month, day.day, 12, 0, tzinfo=timezone.utc
+                ).isoformat(),
+            },
+        )
+        assert response.status_code == 201, response.text
+
+    def read_only_snapshot():
+        with app.state.session_factory() as session:
+            record = session.scalar(select(PayrollRecord))
+            return (
+                session.scalar(select(func.count()).select_from(Expense)),
+                session.scalar(select(func.count()).select_from(PayrollRecord)),
+                session.scalar(select(func.count()).select_from(AuditEvent)),
+                record.status,
+                record.expense_id,
+            )
+
+    env["subject"]["value"] = STAFF
+    before = read_only_snapshot()
+
+    # Start-only: payroll is newer than the lower bound but must be removed
+    # before the first page is selected.
+    start_only = env["client"].get(
+        f"{base}/expenses",
+        params={"start_date": (payroll_day - timedelta(days=1)).isoformat(), "limit": 1},
+    )
+    assert start_only.status_code == 200, start_only.text
+    assert [row["description"] for row in start_only.json()] == [
+        "Later ordinary expense"
+    ]
+
+    # End-only: the ordinary rows remain pageable without a hidden payroll row
+    # shifting OFFSET.
+    end_only = env["client"].get(
+        f"{base}/expenses",
+        params={
+            "end_date": (payroll_day - timedelta(days=1)).isoformat(),
+            "limit": 1,
+            "offset": 1,
+        },
+    )
+    assert end_only.status_code == 200, end_only.text
+    assert [row["description"] for row in end_only.json()] == [
+        "Earlier ordinary expense"
+    ]
+
+    # Combined bounds exercise the same role/date/pagination contract.
+    combined = env["client"].get(
+        f"{base}/expenses",
+        params={
+            "start_date": (payroll_day - timedelta(days=2)).isoformat(),
+            "end_date": (payroll_day - timedelta(days=1)).isoformat(),
+            "limit": 1,
+            "offset": 1,
+        },
+    )
+    assert combined.status_code == 200, combined.text
+    assert [row["description"] for row in combined.json()] == [
+        "Earlier ordinary expense"
+    ]
+    assert read_only_snapshot() == before
+
+    # OWNER retains positive access to the payroll row under the same lower bound.
+    env["subject"]["value"] = OWNER
+    owner_start_only = env["client"].get(
+        f"{base}/expenses",
+        params={"start_date": (payroll_day - timedelta(days=1)).isoformat()},
+    )
+    assert owner_start_only.status_code == 200, owner_start_only.text
+    assert any(row["category"] == "Payroll" for row in owner_start_only.json())
+    assert any(
+        row["description"] == "Later ordinary expense"
+        for row in owner_start_only.json()
+    )
