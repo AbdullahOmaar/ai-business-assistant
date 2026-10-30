@@ -129,8 +129,8 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     with Session(engine) as session:
         stock_balance = session.scalar(
             select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
-                StockMovement.business_id == business_id,
-                StockMovement.product_id == product_id,
+                StockMovement.business_id == business_uuid,
+                StockMovement.product_id == product_uuid,
             )
         )
         assert Decimal(str(stock_balance)) == Decimal("7.000")
