@@ -1654,3 +1654,20 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Official repository Node test command, Angular build, browser cross-tab smoke, and exact-head GitLab validation: NOT RUN in this environment. CircleCI remains frozen; the GitLab mirror is not modified/pushed to; existing GitHub Actions runner failures remain unresolved.
 - Backend Firebase token verification and server-side membership/role authorization are unchanged. No schema, finance, payroll, production data/configuration, merge or deployment changes.
 - Next: run the official frontend tests/build and browser cross-tab smoke on this exact source commit through an authorized runner, obtain independent T43/security review, then proceed through the remaining release gates.
+
+
+## T43 GitLab validation addendum — 2026-10-30
+
+- User explicitly authorized syncing the current T43 auth source snapshot to the GitLab clone for an isolated test run.
+- GitLab test branch: `test/firebase-auth-state-sync-20261030`.
+- GitHub source commit tested: `f6168b95ae8c0c264249de2d5c29ad0e4c19b255`.
+- The GitLab connector did not expose a raw Git push/ref-update operation. The three source files were therefore transferred as a content-equivalent GitLab commit `9dc70786784a523608e67b2ce1bf597b3afe6c10` (parent exactly the original GitHub source parent `eb528e91833cf9187ce696b9bbc26f221b25799a`). All three Git blob SHAs were read back and matched the GitHub source commit exactly:
+  - `auth-state-observer.ts`: `62f0733bb3f3c7c3bc251906266dbfd2f10b646c`
+  - `auth-state-regressions.spec.ts`: `a9c03376b1b78c5cd317a3fd8efa04dfa93b6f4b`
+  - `TASKS.md`: `5319ee1bf09b4867b9b86cffa2abca980ab40ebb`
+- Added the existing, previously validated GitLab-only test config `.gitlab-ci.yml` on the isolated test branch (no deployment or production-write jobs). Final GitLab test commit: `96586cd4a708fb3a828887fbd994ae1193593136`.
+- Pipeline `3010237745`: **8/8 jobs PASS**, duration 203 seconds. Backend pytest: **253 passed, 0 failed**. Frontend Node test command: PASS. Playwright: **4 passed**. Angular build: PASS. Backend container smoke: PASS (`FastAPI import OK`). Backup/restore safety script: PASS. `pip-audit`: no known vulnerabilities. `npm audit --audit-level=high`: 0 vulnerabilities.
+- Non-failing warnings: `@firebase/auth@1.13.8` declares Node `>=24.12.0`, while the current GitLab Node test/build/audit jobs use Node 22.12 (browser image Node 22.18); `npm` reports EBADENGINE warnings. Angular emits existing NG8107 optional-chain warnings. These warnings did not fail the jobs and should be reconciled in CI runtime/toolchain follow-up.
+- GitLab pipeline SHA differs from the GitHub source commit because the GitLab clone used an equivalent commit and the isolated CI config is an additional file. Source code blob identities are exact; do not represent the GitLab commit SHA as the GitHub PR SHA.
+- GitHub PR #316 remains OPEN / DRAFT / UNMERGED. GitHub combined status on source commit `f6168b95...` remains empty; independent security review remains NOT RUN. This GitLab run is strong exact-source-file validation, but not GitHub-native required-check evidence or independent approval.
+- No merge, version bump, production deployment, production DB write, or GitLab original feature-branch mutation occurred.

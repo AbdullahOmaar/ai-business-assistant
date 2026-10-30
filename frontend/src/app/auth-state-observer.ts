@@ -15,14 +15,14 @@ export function observeAuthState<T>(
   timeoutMs = 10_000
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    let initialStateReceived = false;
-    let promiseSettled = false;
+    let settled = false;
     let terminated = false;
     let unsubscribe: () => void = () => {};
     let subscriptionReady = false;
     let readyPending = false;
     let cleanupPending = false;
 
+    const clearPendingTimer = (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer);
     const releaseObserver = () => {
       if (!subscriptionReady) {
         cleanupPending = true;
@@ -42,66 +42,59 @@ export function observeAuthState<T>(
       }
     };
     const timeoutId = setTimeout(() => {
-      if (promiseSettled) return;
-      fail(new Error('Firebase sign-in session check timed out. Retry when your connection is stable.'));
+      if (settled) return;
+      settled = true;
+      terminated = true;
+      releaseObserver();
+      const error = new Error('Firebase sign-in session check timed out. Retry when your connection is stable.');
+      notifyError(error);
+      reject(error);
     }, timeoutMs);
 
-    const fail = (error: unknown) => {
+    const markReady = () => {
+      if (subscriptionReady) onReady(unsubscribe);
+      else readyPending = true;
+    };
+
+    const handleError = (error: unknown) => {
       if (terminated) return;
       terminated = true;
-      try {
-        setUser(null);
-      } catch {
-        // The original observer/setup error remains authoritative.
-      }
-      releaseObserver();
-      if (!promiseSettled) {
-        promiseSettled = true;
-        clearTimeout(timeoutId);
+      setUser(null);
+      if (!settled) {
+        settled = true;
+        clearPendingTimer(timeoutId);
+        releaseObserver();
         notifyError(error);
         reject(error);
         return;
       }
+      releaseObserver();
       notifyError(error);
-    };
-
-    const finishReady = () => {
-      if (promiseSettled || terminated) return;
-      try {
-        onReady(unsubscribe);
-      } catch (error) {
-        fail(error);
-        return;
-      }
-      promiseSettled = true;
-      resolve();
     };
 
     try {
       unsubscribe = subscribe(
         user => {
           if (terminated) return;
-          try {
-            setUser(user);
-          } catch (error) {
-            fail(error);
-            return;
-          }
-          if (initialStateReceived) return;
-          initialStateReceived = true;
-          clearTimeout(timeoutId);
-          if (subscriptionReady) finishReady();
-          else readyPending = true;
+          setUser(user);
+          if (settled) return;
+          settled = true;
+          clearPendingTimer(timeoutId);
+          markReady();
+          resolve();
         },
-        fail
+        handleError
       );
       subscriptionReady = true;
       if (cleanupPending) releaseObserver();
-      if (readyPending && !cleanupPending) finishReady();
+      if (readyPending && !cleanupPending) onReady(unsubscribe);
     } catch (error) {
-      // Do not resolve readiness until subscribe() has returned successfully.
-      // A synchronous first callback followed by a thrown setup error is still a failure.
-      fail(error);
+      if (!settled) {
+        settled = true;
+        clearPendingTimer(timeoutId);
+        notifyError(error);
+        reject(error);
+      }
     }
   });
 }
