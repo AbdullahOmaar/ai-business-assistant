@@ -475,6 +475,13 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         Invoice.issue_date < outstanding_cutoff_end,
     )).all()
 
+    missing_issue_date_rows = session.execute(select(
+        Invoice.id, Invoice.invoice_number
+    ).where(
+        Invoice.business_id == business_id,
+        Invoice.status == "issued",
+        Invoice.issue_date.is_(None),
+    )).all()
     invalid_allocation_rows = session.execute(select(
         PaymentAllocation.invoice_id,
         Invoice.invoice_number,
@@ -514,7 +521,15 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
     )).all()
 
     outstanding_totals: dict[str, Decimal] = {}
-    data_quality_warnings = []
+    data_quality_warnings = [
+        {
+            "invoice_id": str(invoice_id),
+            "invoice_number": invoice_number,
+            "type": "missing_invoice_issue_date",
+            "message": "Historical as-of inclusion cannot be determined without an issue timestamp.",
+        }
+        for invoice_id, invoice_number in missing_issue_date_rows
+    ]
     for invoice_id, invoice_number, currency, invoice_total, allocated_total in outstanding_invoice_rows:
         currency = currency.strip().upper()
         total = Decimal(str(invoice_total or 0))
