@@ -323,18 +323,34 @@ def test_erp_v1_purchase_receiving_reconciles_order_and_stock(erp_environment):
         assert Decimal(str(partial_stock)) == Decimal("13.000")
         assert Decimal(str(received)) == Decimal("3.000")
 
+    # A request above the remaining 2 units must fail without changing stock.
+    over_receipt = client.post(
+        f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
+        json={"lines": [{"line_id": line_id, "quantity": "3.000"}]},
+    )
+    assert over_receipt.status_code == 422, over_receipt.text
+    with Session(engine) as session:
+        unchanged_stock = session.scalar(
+            select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
+                StockMovement.business_id == business_uuid,
+                StockMovement.product_id == product_uuid,
+            )
+        )
+        unchanged_received = session.scalar(
+            select(PurchaseOrderLine.received_quantity).where(
+                PurchaseOrderLine.business_id == business_uuid,
+                PurchaseOrderLine.purchase_order_id == order_uuid,
+            )
+        )
+        assert Decimal(str(unchanged_stock)) == Decimal("13.000")
+        assert Decimal(str(unchanged_received)) == Decimal("3.000")
+
     final = client.post(
         f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
         json={"lines": [{"line_id": line_id, "quantity": "2.000"}]},
     )
     assert final.status_code == 200, final.text
     assert final.json()["status"] == "received"
-
-    over_receipt = client.post(
-        f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
-        json={"lines": [{"line_id": line_id, "quantity": "1.000"}]},
-    )
-    assert over_receipt.status_code == 422, over_receipt.text
 
     with Session(engine) as session:
         final_stock = session.scalar(
