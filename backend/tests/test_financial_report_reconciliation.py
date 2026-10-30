@@ -1,6 +1,8 @@
 """Regression tests for financial report source separation and reconciliation."""
 
 from datetime import datetime, timezone
+
+import pytest
 from decimal import Decimal
 from uuid import UUID
 
@@ -11,8 +13,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.models import (
-    Base, Business, BusinessMembership, Customer, Expense, Invoice,
-    MembershipRole, Payment, PaymentAllocation, SalesReturn,
+    Base, Business, BusinessMembership, Customer, Employee, Expense, Invoice,
+    MembershipRole, Payment, PaymentAllocation, PayrollRecord, SalesReturn,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -914,3 +916,134 @@ def test_expense_csv_export_is_owner_only_tenant_scoped_and_formula_safe():
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
 
+
+
+@pytest.mark.parametrize(
+    ("date_filters", "outside_dates"),
+    [
+        ({"start_date": "2026-01-15"}, [datetime(2026, 1, 14, 12, tzinfo=timezone.utc)]),
+        ({"end_date": "2026-01-16"}, [datetime(2026, 1, 17, 12, tzinfo=timezone.utc)]),
+        (
+            {"start_date": "2026-01-15", "end_date": "2026-01-16"},
+            [
+                datetime(2026, 1, 14, 12, tzinfo=timezone.utc),
+                datetime(2026, 1, 17, 12, tzinfo=timezone.utc),
+            ],
+        ),
+    ],
+    ids=["start-only", "end-only", "combined"],
+)
+def test_expense_date_filters_hide_payroll_before_pagination(date_filters, outside_dates):
+    """STAFF date-filtered pages omit payroll rows before LIMIT/OFFSET; OWNER retains access."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Payroll Date Filter Privacy Shop",
+                "currency_code": "EGP",
+                "timezone": "UTC",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+        payroll_time = datetime(2026, 1, 16, 12, 0, tzinfo=timezone.utc)
+        ordinary_time = datetime(2026, 1, 16, 11, 0, tzinfo=timezone.utc)
+
+        with Session(engine) as session:
+            employee = Employee(
+                business_id=business_id,
+                name="Private Payroll Employee",
+                monthly_salary=Decimal("5000.00"),
+            )
+            payroll_expense = Expense(
+                business_id=business_id,
+                category="Payroll",
+                description="Confidential salary payment",
+                amount=Decimal("5000.00"),
+                currency_code="EGP",
+                incurred_at=payroll_time,
+                vendor_name="Private Payroll Employee",
+                reference="PAYROLL-PRIVATE-2026-01",
+            )
+            ordinary_expense = Expense(
+                business_id=business_id,
+                category="Office",
+                description="Office supplies",
+                amount=Decimal("100.00"),
+                currency_code="EGP",
+                incurred_at=ordinary_time,
+                vendor_name="Office vendor",
+            )
+            session.add_all([employee, payroll_expense, ordinary_expense])
+            session.flush()
+            payroll = PayrollRecord(
+                business_id=business_id,
+                employee_id=employee.id,
+                period="2026-01",
+                base_salary=Decimal("5000.00"),
+                allowances=Decimal("0.00"),
+                bonuses=Decimal("0.00"),
+                deductions=Decimal("0.00"),
+                net_pay=Decimal("5000.00"),
+                status="paid",
+                expense_id=payroll_expense.id,
+                created_by_subject="financial-report-owner",
+                approved_by_subject="financial-report-owner",
+                approved_at=payroll_time,
+                paid_by_subject="financial-report-owner",
+                paid_at=payroll_time,
+            )
+            session.add(payroll)
+            for index, outside_at in enumerate(outside_dates):
+                session.add(
+                    Expense(
+                        business_id=business_id,
+                        category="Office",
+                        description=f"Out of range {index}",
+                        amount=Decimal("1.00"),
+                        currency_code="EGP",
+                        incurred_at=outside_at,
+                    )
+                )
+            session.add(
+                BusinessMembership(
+                    business_id=business_id,
+                    user_subject="financial-report-staff",
+                    role=MembershipRole.STAFF,
+                )
+            )
+            session.commit()
+
+        endpoint = f"/api/v1/businesses/{business_id}/expenses"
+        owner_page = client.get(endpoint, params={**date_filters, "limit": 1})
+        owner_all = client.get(endpoint, params={**date_filters, "limit": 10})
+        assert owner_page.status_code == 200, owner_page.text
+        assert owner_all.status_code == 200, owner_all.text
+        assert owner_page.json()[0]["description"] == "Confidential salary payment"
+        owner_rows = owner_all.json()
+        assert {row["description"] for row in owner_rows} == {
+            "Confidential salary payment",
+            "Office supplies",
+        }
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            "financial-report-staff"
+        )
+        staff_page = client.get(endpoint, params={**date_filters, "limit": 1})
+        staff_all = client.get(endpoint, params={**date_filters, "limit": 10})
+        staff_second_page = client.get(
+            endpoint, params={**date_filters, "limit": 1, "offset": 1}
+        )
+        assert staff_page.status_code == 200, staff_page.text
+        assert staff_all.status_code == 200, staff_all.text
+        assert staff_second_page.status_code == 200, staff_second_page.text
+        assert len(staff_page.json()) == 1
+        assert staff_page.json()[0]["description"] == "Office supplies"
+        assert [row["description"] for row in staff_all.json()] == ["Office supplies"]
+        assert staff_second_page.json() == []
+        assert "Private Payroll Employee" not in staff_page.text
+        assert "5000.00" not in staff_page.text
+        assert "PAYROLL-PRIVATE-2026-01" not in staff_page.text
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
