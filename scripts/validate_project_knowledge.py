@@ -72,13 +72,21 @@ def validate() -> list[str]:
         return [f"missing package directory: {PACKAGE}"]
 
     expected_files = set(EXPECTED)
-    entries = {p.relative_to(PACKAGE).as_posix() for p in PACKAGE.rglob("*")}
-    if entries != expected_files:
+    paths = list(PACKAGE.rglob("*"))
+    entries = {p.relative_to(PACKAGE).as_posix() for p in paths}
+    files = {
+        p.relative_to(PACKAGE).as_posix()
+        for p in paths
+        if p.is_file() and not p.is_symlink()
+    }
+    symlinks = sorted(
+        p.relative_to(PACKAGE).as_posix() for p in paths if p.is_symlink()
+    )
+    if entries != expected_files or files != expected_files or symlinks:
         errors.append(
-            f"package entry set mismatch: missing={sorted(expected_files - entries)}, "
-            f"extra={sorted(entries - expected_files)}"
+            f"package entry set mismatch: missing_files={sorted(expected_files - files)}, "
+            f"extra={sorted(entries - expected_files)}, symlinks={symlinks}"
         )
-    files = {entry for entry in entries if entry in expected_files}
 
     ids: dict[str, str] = {}
     versions: set[str] = set()
