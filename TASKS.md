@@ -1,3 +1,39 @@
+# Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / production migration hold)
+
+## User directive
+- Do NOT trigger, rerun, retry, or otherwise execute CircleCI jobs; the CircleCI quota is exhausted.
+- Continue repository work without consuming CircleCI quota. Do not substitute GitHub Actions.
+- This does not waive security, data-integrity, required-review, production migration, backup/restore or deployment safeguards.
+
+## Verified current main and production evidence
+- GitHub main: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f.
+- Vercel production Web and API deployments are both READY on this same main SHA (latest observed API deployment dpl_9hEDAJbd62MA6huu1ejsR5Wu6o6V; Web deployment dpl_8Z8edRFeqEe5DtWzdAYnQ8FfNHJ8). This chat did not trigger a deployment.
+- Vercel API runtime errors in the queried 24h window: one error group, 6 occurrences, 1 user, route /fastapi. PostgreSQL raises UndefinedTable for both employees and payroll_records during employee/payroll list reads. Vercel Web runtime errors: none in the queried 24h window.
+- The production runtime evidence proves those tables are absent at query time. Whether migration 0005_employee_payroll has been applied is NOT VERIFIED; do not run production SQL/migration or assume redeploying unchanged code fixes the schema mismatch.
+- Production release that claims employee/payroll functionality remains BLOCKED until authorized backup/restore evidence, production schema-revision verification, isolated migration rehearsal and exact candidate validation are satisfied. No production DB backup, restore, migration or SQL operation was run.
+
+## PR / base reconciliation
+- PR #304 and PRs #305–#312 remain based on merge base c464398e0a6ace77eba32aabfbdbd09091f53999; review and reconcile individually, never merge wholesale.
+- The two commits from merge base to current main are documentation-only changes in TASKS.md: ae7a34b884d86e0ed26ffd64c528c1d488b956ef (parallel staff assignments + Notion-first protocol) and d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f (CircleCI quota freeze + production release hold). The T40 branch has manually ported the applicable checkpoint/coordination content while preserving its own work; ancestry remains diverged until an independently reviewed base reconciliation.
+- PR #304 remains OPEN / DRAFT / UNMERGED. Latest exact head is tracked in live PR metadata and Notion T40; current comparison is 76 ahead / 2 behind main. Empty status contexts on [skip ci] commits are NOT a pass.
+- CircleCI remains prohibited; no manual run/retry. GitHub Actions was not used. Desktop Commander is OFFLINE; no authorized local runner. GitLab exact-SHA validation is not available.
+
+## Master parallel staff assignments — 2026-10-29 (reconciled)
+
+These are execution assignments on existing Notion tasks, not duplicate tasks. The canonical task-page comments contain detailed handoffs.
+
+1. **Staff 1 — Security & tenant isolation (T03):** Continue route × role × tenant coverage; preserve no-read/no-write/no-audit assertions; coordinate shared files and update the existing T03 page.
+2. **Staff 2 — Functional regression & automation (T22):** Map critical workflows to tests, run only through an authorized non-CircleCI path, and add missing failure/idempotency coverage. T37 v1.0.1 is approved for bounded operational policies; explicitly deferred domains remain gated.
+3. **Staff 3 — Repository / PR / CI reconciliation (T01; T07 when relevant):** Re-verify main SHA, open PR heads/bases/checks and branch inventory; classify code vs infrastructure failures; update canonical T01/T07 pages with exact evidence.
+
+Shared controls: one existing task/branch/PR per workstream; keep Notion and TASKS.md aligned; use VERIFIED COMPLETE / PARTIALLY COMPLETE / NOT RUN / BLOCKED accurately; no branch deletion, merge or deployment is authorized by these assignments.
+
+## Notion-first inter-agent communication — @n
+
+The canonical communication contract is in the Notion Agent Prompt Registry, section “Mandatory Notion-to-Notion Agent Communication Protocol — @n”. Master and specialists must read and reply on existing task-page discussions; the user is not a relay. Each operational comment identifies sender/receiver, canonical task, checkpoint, status, evidence, next action/owner and conflicts/dependencies. A specialist acknowledgment is not assumed until posted by that chat. Notion is not a guaranteed push channel: resumed chats must poll/read comments; never claim a separate chat was notified or woke automatically. Notion is coordination source of truth; GitHub is engineering evidence source. No merge/deploy authorization is implied.
+
+---
+
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
