@@ -10,7 +10,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -206,6 +206,7 @@ def list_employees(
     limit: int = Query(default=100, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     active_only: bool = False,
+    search: str | None = Query(default=None, max_length=100),
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
@@ -213,6 +214,16 @@ def list_employees(
     query = select(Employee).where(Employee.business_id == business_id)
     if active_only:
         query = query.where(Employee.is_active.is_(True))
+    term = " ".join((search or "").split())
+    if term:
+        pattern = f"%{term}%"
+        query = query.where(or_(
+            Employee.name.ilike(pattern),
+            Employee.employee_code.ilike(pattern),
+            Employee.email.ilike(pattern),
+            Employee.department.ilike(pattern),
+            Employee.job_title.ilike(pattern),
+        ))
     rows = session.scalars(query.order_by(Employee.name, Employee.id).offset(offset).limit(limit)).all()
     return [_employee_dict(row) for row in rows]
 
