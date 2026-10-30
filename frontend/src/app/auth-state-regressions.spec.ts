@@ -131,3 +131,22 @@ test('a synchronous initial callback still registers the returned unsubscribe fu
   readyUnsubscribe?.();
   assert.equal(unsubscribeCalls, 1);
 });
+
+test('observer teardown and consumer error-handler exceptions do not mask the auth failure', async () => {
+  let emitError: ((error: unknown) => void) | undefined;
+  const failure = new Error('original auth failure');
+
+  const ready = observeAuthState<string>(
+    (_onUser, onError) => {
+      emitError = onError;
+      return () => { throw new Error('teardown failure'); };
+    },
+    () => {},
+    () => { throw new Error('consumer handler failure'); },
+    () => {},
+    100
+  );
+
+  emitError?.(failure);
+  await assert.rejects(ready, /original auth failure/);
+});
