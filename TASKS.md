@@ -1590,3 +1590,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Updated `InvoiceDetail` typing for persisted `issue_date`, `due_date`, and `notes`.
 - Static source checks: print guard, totals, date fields, notes escaping, and interface fields present. **Automated tests/build and browser print smoke: NOT RUN** because exact-head CI failures remain unclassified.
 - PR #310 is now functionally overlapping; keep it open until PR #305 has passing required checks and is accepted as the canonical combined implementation. Do not merge either while CI is red.
+
+
+## T38 invoice print workspace-switch regression — 2026-10-30
+
+- Source review found that printInvoice re-fetched invoice detail using the active business ID but later rendered the header from this.business after await. If the user switched workspaces while the request was pending, the old invoice could be printed under the new business header.
+- Fix on existing PR #305 branch: snapshot business/businessId before the request; fetch by captured ID; after await, close the temporary print window and return if the active business ID changed; render captured business name.
+- Added static regression in invoice-print-regressions.spec.ts for captured ID, post-fetch workspace guard and business-name snapshot. Updated INVOICE_PRINTING.md.
+- No backend payment/posting behavior or financial data changed. Test/build/browser smoke remain NOT RUN; exact-head CI contexts fail and Actions job logs are unavailable. PR remains Draft/open/unmerged; no merge/deploy.
