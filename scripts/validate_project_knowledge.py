@@ -42,7 +42,8 @@ def frontmatter(text: str) -> dict[str, str]:
         if not line.strip():
             continue
         if line.startswith("  - "):
-            values["canonical_sources"] = "present"
+            if line[4:].strip():
+                values["canonical_sources"] = "present"
             continue
         match = re.match(r"^([a-z_]+):\s*(.*)$", line)
         if match:
@@ -58,7 +59,7 @@ def validate() -> list[str]:
     if not PACKAGE.is_dir():
         return [f"missing package directory: {PACKAGE}"]
 
-    files = {p.name for p in PACKAGE.glob("*.md")}
+    files = {p.name for p in PACKAGE.iterdir() if p.is_file()}
     expected_files = set(EXPECTED)
     if files != expected_files:
         errors.append(
