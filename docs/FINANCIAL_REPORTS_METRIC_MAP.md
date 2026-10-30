@@ -230,9 +230,9 @@ Source review of `GET /api/v1/businesses/{business_id}/exports/{entity_type}.csv
 - Date-boundary test functions: 15 (previously 14). T40 targeted inventory: 33 (previously 32), plus 26 related tests = 59 authored tests total. All runtime tests remain **NOT RUN**; this commit uses `[skip ci]` and no CI was triggered.
 - This adds coverage only; it does not change financial formulas, posting, schema, settlement, currency policy or permissions.
 
-### Reversed date-range validation — 2026-10-31
+### Reversed tax-summary date-range validation — 2026-10-31
 
-- Added `test_dashboard_and_tax_summary_reject_reversed_date_ranges` to the T40-owned report-reconciliation suite.
-- The regression sends a start date later than the end date to the business dashboard and saved-tax summary; both must return HTTP 422 with their explicit validation detail rather than aggregating a misleading empty report.
+- Added `test_tax_summary_rejects_reversed_date_range` to the T40-owned report-reconciliation suite. The Dashboard reversed-range behavior is already covered by `test_dashboard_rejects_inverted_date_range` in `backend/tests/test_core_features_api.py`; no duplicate Dashboard assertion was retained.
+- The tax-summary regression sends a start date later than the end date and requires HTTP 422 with the explicit validation detail before returning an aggregate.
 - This is validation-only coverage. No report formula, tax policy, cash semantics, currency behavior, schema, permissions or production data changed.
-- Report-reconciliation test functions: 16 (previously 15). T40 targeted inventory: 34 (15 date-boundary + 16 reconciliation + 3 payroll privacy/date-pagination) = **34 targeted tests**; plus 26 related = **60 authored tests total**. Runtime execution remains **NOT RUN**; commit uses `[skip ci]`.
+- Report-reconciliation cases: 16 (14 test functions plus two additional parameter cases). T40 targeted inventory: 34 (15 date-boundary + 16 reconciliation + 3 payroll privacy/date-pagination) = **34 targeted cases**; plus 26 related = **60 authored cases total**. Runtime execution remains **NOT RUN**; commit uses `[skip ci]`.
