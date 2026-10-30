@@ -1796,3 +1796,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact-head tests, PostgreSQL concurrency, migrations, full backend, frontend/build, browser, dependency/security scans and independent security review: NOT RUN. CircleCI prohibited; no CircleCI or GitHub Actions run triggered. Desktop Commander device OFFLINE; no authorized non-CircleCI runner available.
 - Production/demo gate: main has not received PR #308. The main release checkpoint records employee/payroll API `UndefinedTable` errors for `employees` and `payroll_records`; migration `0005_employee_payroll` is not verified as applied/rehearsed. Employees/Payroll is therefore NOT demo-ready against production. No production database write/migration/deployment.
 - Keep PR #308 Draft. Reconcile the two main-only commits on an authorized Git runner, execute exact-head validation, obtain independent security review, and verify migration 0005 on an isolated restored database before any merge/readiness decision.
+
+
+## T41 final cross-workstream source refresh — 2026-10-30
+
+- T40 PR #304 has advanced to exact head `52975db19553a1b168c30c0710074068a939f1b8`; OPEN/DRAFT/UNMERGED, 88 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, mergeable=false, no status contexts/reviews. Re-fetched source on the current T40 branch confirms the visibility helper remains in `security.py`, expense list/report/insights, dashboard/P&L, AI chat context and internal financial summary; the broad privacy regression remains present. T41 did not modify T40 files.
+- This supersedes the earlier T40 head `68e2cca2f738c2b266935ed12a71ccb10bb72e7c` recorded in this closeout. Chat 3 retains ownership.
+- T41 PR #308 remains at `4a628a5ab422e2d3e58c275afb158171fb2fb30a`; OPEN/DRAFT/UNMERGED, 93 ahead / 2 behind main, mergeable=true, no reviews/status contexts. Tests remain NOT RUN; no merge/deploy.
