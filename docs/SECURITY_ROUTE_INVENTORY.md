@@ -1,6 +1,6 @@
 # Authenticated API Route Inventory
 
-**Reviewed:** 2026-10-29  
+**Reviewed:** 2026-10-31  
 **Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, `assistant_api.py`, `platform_admin_api.py`, and `employee_payroll_api.py`.  
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
@@ -236,3 +236,12 @@ The route inventory is broader than current negative integration tests. Add expl
 - It also includes `test_staff_owner_only_route_matrix_and_allowed_read_reports`: STAFF is denied owner-only operations-health, CSV-preview, audit-events, and data-integrity endpoints; STAFF can read tax summary, receivables aging, and a same-business customer statement. All requests assert unchanged business audit counts.
 - These tests are **implemented but not yet verified**. Exact-head CircleCI is currently not visible from the GitHub combined-status endpoint; local pytest/build are NOT RUN in this connector-only environment. Do not treat the regressions as passing until exact-head CI completes.
 - This is targeted denial coverage, not proof that every role × route × tenant combination or production behavior is verified. Authenticated production smoke remains NOT RUN.
+
+
+## Supplier creation membership and tenant regression — 2026-10-31
+
+- Added `backend/tests/test_business_tenant_boundaries.py::test_supplier_create_denies_non_members_without_side_effects_and_allows_members` on the existing PR #302 branch.
+- A non-member attempts `POST /api/v1/businesses/{business_id}/suppliers`; the API must return HTTP 403 and the test compares every business-scoped persisted row (including AuditEvent) before and after the denied request.
+- OWNER and STAFF controls then create suppliers successfully; names are normalized and exactly two `supplier.created` audit events and two tenant-owned Supplier rows are asserted.
+- The existing route uniqueness test independently checks that no HTTP method/path pair is registered more than once, protecting the canonical supplier-create route from duplicate registration.
+- **Status: IMPLEMENTED, NOT YET VERIFIED.** No local pytest runner is connected and no CI pipeline was triggered; project QA policy prohibits CI triggers/retries. Do not treat this test as PASS until an authorized exact-head test execution is available.
