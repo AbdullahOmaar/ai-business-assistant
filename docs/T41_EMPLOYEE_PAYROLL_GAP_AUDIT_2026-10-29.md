@@ -278,3 +278,52 @@ Approved T41 scope: payroll-sensitive data and payroll-linked Expense rows/aggre
 Still DEFERRED: salary effective-date/history, backfill, automatic proration, failed/partial/reversed/corrected payout lifecycle, and any expansion of financial posting semantics. Do not implement salary-history schema/backfill or new payout states on the strength of the bounded v1.0.1 approval. Qualified accounting/controller review remains required for deferred domains. No merge, deployment, production migration or production financial write is authorized.
 
 The branch name feat/t41-salary-history-effective-dates is historical and does not authorize implementing salary-history behavior. Current PR #308 is still OPEN/DRAFT/UNMERGED; its exact current head must be refreshed before validation. This addendum is documentation-only. Tests/build/PostgreSQL/browser/security are NOT RUN. [skip ci] was used; no CI was triggered.
+
+
+## Payroll privacy implementation re-review — 2026-10-30 (Chat 4)
+
+**Outcome: PARTIALLY COMPLETE — source-level privacy implementation reviewed; regression source strengthened; exact-head runtime validation remains NOT RUN.**
+
+### Live baseline and delivery
+- Current `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (re-read from the latest GitHub main commit).
+- Existing branch: `feat/t41-salary-history-effective-dates`.
+- Existing PR: [#308](https://github.com/AbdullahOmaar/ai-business-assistant/pull/308), OPEN / DRAFT / UNMERGED.
+- Reviewed pre-change HEAD: `8338f92d2a5cfcc9e8efc039051d693ecbaec34d`.
+- Test-only commit: `8e2776e8855c246d25dfa3740b369df501441737` (`test(t41): harden payroll privacy redaction regressions`).
+- PR base remains `c464398e0a6ace77eba32aabfbdbd09091f53999`; main is two documentation-only commits ahead of that base. No rebase/merge was attempted.
+
+### Source-level privacy review
+- `backend/app/security.py`: `apply_expense_visibility` uses the authoritative `PayrollRecord.expense_id` relation and scopes the subquery to the requested business; non-OWNER queries exclude linked expense IDs; OWNER queries are unchanged.
+- `backend/app/extended_api.py`: `GET /expenses` applies the predicate before ordering/offset/limit; `GET /reports/summary` applies it before currency aggregation. Expense CSV remains OWNER-only.
+- `backend/app/core_features_api.py`: dashboard expense aggregation and P&L expense aggregation apply the predicate before grouping/summing.
+- `backend/app/extended_api.py`: deterministic assistant insights apply the predicate before grouping/counting/summing.
+- `backend/app/assistant_api.py`: recent expense records are filtered before limiting, source-record construction, fallback aggregation, and provider payload serialization.
+- Internal `financial_summary` integration exists in the current PR source under `backend/app/operations.py`; this file is outside Chat 4's current write allowlist and was not modified in this pass.
+- No payroll privacy inference from category, description, or reference strings was found in the shared predicate. The source review found no missing call site among the permitted integration points listed above.
+
+### Regression hardening committed
+Only `backend/tests/test_employee_payroll_api.py` changed in this pass. The existing broad-surface privacy regression now:
+- Creates a synthetic ordinary expense with misleading mutable metadata (`category=Payroll`, payroll-like description, and `payroll:` reference) but no `PayrollRecord.expense_id` link, and asserts STAFF still sees it.
+- Retains the limit=1 ordering case proving linked payroll rows are filtered before pagination.
+- Checks the denied STAFF CSV response contains no employee name, net-pay value, or payroll reference.
+- Snapshots employee, payroll, expense, and audit row counts before STAFF read/denied-export calls and asserts no side effects.
+- Checks captured application logs for absence of employee name, net pay, and payroll ID.
+- Retains mocked provider-payload assertions that linked payroll employee identity, net pay, and payroll reference are absent while ordinary expense context remains.
+- Retains OWNER positive controls for linked expense detail, aggregate totals and CSV export.
+- Existing separate regressions cover cross-business payroll IDs returning 404 without state changes and payroll listings remaining business-scoped.
+
+The test source remains 28 test functions. A Python `compile()` syntax check of the modified test source passed in the source-review workbench; this is not pytest execution.
+
+### T40 overlap / single-writer boundary
+- Live PR #304 is OPEN / DRAFT / UNMERGED at HEAD `7fcb24526e768949c87c6a0538115510f4c802a1`, base `c464398e0a6ace77eba32aabfbdbd09091f53999`, `mergeable=false` / `dirty`.
+- PR #304 overlaps T41 on `backend/app/security.py`, `backend/app/extended_api.py`, `backend/app/core_features_api.py`, `backend/app/assistant_api.py`, `backend/app/operations.py`, and `backend/tests/test_employee_payroll_api.py`.
+- Chat 4 remains the primary writer for the approved payroll-visibility integration boundary. Chat 3 must not edit these overlapping files until a recorded handoff changes ownership. This pass changed only the T41 test file on PR #308; no T40 branch was changed.
+
+### Validation and gates
+- Exact-head pytest, full backend suite, PostgreSQL concurrency, frontend checks, migration rehearsal, provider integration, and independent security review: **NOT RUN**.
+- Desktop Commander device recheck: OFFLINE (last seen 1143 hours ago); no authorized local Git/test runner is available in this session.
+- CircleCI remains frozen by owner instruction; no trigger/retry/rerun. No GitHub Actions replacement CI was introduced or run.
+- Exact-head empty status contexts remain NOT PASS. No merge, deployment, production DB operation, migration, schema change, payroll calculation, or payout lifecycle change was made.
+- Salary effective-date/history schema, backfill, proration/statutory rules, and failed/partial/reversed/corrected payout lifecycle remain deferred.
+
+**Next action for Master:** obtain an authorized non-CircleCI exact-SHA runner, run the focused payroll privacy regression and relevant backend/PostgreSQL checks on the updated PR #308 HEAD, then obtain independent security review and reconcile the two main-only documentation commits without changing shared-file ownership. Keep PR #308 Draft/Open/Unmerged until all gates are satisfied.
