@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -423,18 +423,124 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         Payment.currency_code, func.count(Payment.id), func.coalesce(func.sum(Payment.amount), 0)
     ).where(*payment_clauses).group_by(Payment.currency_code)).all()
 
-    allocated = select(
-        PaymentAllocation.invoice_id.label("invoice_id"),
-        func.coalesce(func.sum(PaymentAllocation.amount), 0).label("allocated_total"),
-    ).where(PaymentAllocation.business_id == business_id).group_by(
-        PaymentAllocation.invoice_id
-    ).subquery()
-    outstanding_rows = session.execute(select(
+    allocation_joins = (
+        select(
+            PaymentAllocation.invoice_id.label("invoice_id"),
+            func.coalesce(func.sum(PaymentAllocation.amount), 0).label("allocated_total"),
+        )
+        .join(
+            Payment,
+            (Payment.id == PaymentAllocation.payment_id)
+            & (Payment.business_id == PaymentAllocation.business_id),
+        )
+        .join(
+            Invoice,
+            (Invoice.id == PaymentAllocation.invoice_id)
+            & (Invoice.business_id == PaymentAllocation.business_id),
+        )
+        .where(
+            PaymentAllocation.business_id == business_id,
+            Payment.business_id == business_id,
+            Invoice.business_id == business_id,
+            func.upper(Payment.currency_code) == func.upper(Invoice.currency_code),
+            Payment.customer_id.is_not(None),
+            Invoice.customer_id.is_not(None),
+            Payment.customer_id == Invoice.customer_id,
+        )
+        .group_by(PaymentAllocation.invoice_id)
+        .subquery()
+    )
+    # Current outstanding is independent of the selected sales period. Only
+    # valid same-business/customer/currency allocations reduce an invoice.
+    outstanding_invoice_rows = session.execute(select(
+        Invoice.id,
+        Invoice.invoice_number,
         Invoice.currency_code,
-        func.coalesce(func.sum(Invoice.total - func.coalesce(allocated.c.allocated_total, 0)), 0),
-    ).outerjoin(allocated, allocated.c.invoice_id == Invoice.id).where(
-        *invoice_clauses
-    ).group_by(Invoice.currency_code)).all()
+        Invoice.total,
+        func.coalesce(allocation_joins.c.allocated_total, 0),
+    ).outerjoin(
+        allocation_joins, allocation_joins.c.invoice_id == Invoice.id
+    ).where(
+        Invoice.business_id == business_id,
+        Invoice.status == "issued",
+    )).all()
+
+    invalid_allocation_rows = session.execute(select(
+        PaymentAllocation.invoice_id,
+        Invoice.invoice_number,
+        Invoice.currency_code,
+        Payment.currency_code,
+        Payment.customer_id,
+        Invoice.customer_id,
+        func.coalesce(func.sum(PaymentAllocation.amount), 0),
+    ).join(
+        Payment,
+        (Payment.id == PaymentAllocation.payment_id)
+        & (Payment.business_id == PaymentAllocation.business_id),
+    ).join(
+        Invoice,
+        (Invoice.id == PaymentAllocation.invoice_id)
+        & (Invoice.business_id == PaymentAllocation.business_id),
+    ).where(
+        PaymentAllocation.business_id == business_id,
+        Payment.business_id == business_id,
+        Invoice.business_id == business_id,
+        or_(
+            func.upper(Payment.currency_code) != func.upper(Invoice.currency_code),
+            Payment.customer_id.is_(None),
+            Invoice.customer_id.is_(None),
+            Payment.customer_id != Invoice.customer_id,
+        ),
+    ).group_by(
+        PaymentAllocation.invoice_id,
+        Invoice.invoice_number,
+        Invoice.currency_code,
+        Payment.currency_code,
+        Payment.customer_id,
+        Invoice.customer_id,
+    )).all()
+
+    outstanding_totals: dict[str, Decimal] = {}
+    data_quality_warnings = []
+    for invoice_id, invoice_number, currency, invoice_total, allocated_total in outstanding_invoice_rows:
+        currency = currency.strip().upper()
+        total = Decimal(str(invoice_total or 0))
+        allocated_amount = Decimal(str(allocated_total or 0))
+        outstanding_totals.setdefault(currency, ZERO)
+        outstanding = total - allocated_amount
+        if outstanding < ZERO:
+            data_quality_warnings.append({
+                "invoice_id": str(invoice_id),
+                "invoice_number": invoice_number,
+                "type": "allocations_exceed_invoice_total",
+                "currency_code": currency,
+                "invoice_total": str(total),
+                "valid_allocated_amount": str(allocated_amount),
+                "excess_allocated": str(abs(outstanding)),
+            })
+            continue
+        outstanding_totals[currency] += outstanding
+
+    for (invoice_id, invoice_number, invoice_currency, payment_currency,
+         payment_customer_id, invoice_customer_id, allocated_amount) in invalid_allocation_rows:
+        reasons = []
+        if payment_currency.strip().upper() != invoice_currency.strip().upper():
+            reasons.append("currency_mismatch")
+        if (
+            payment_customer_id is None
+            or invoice_customer_id is None
+            or payment_customer_id != invoice_customer_id
+        ):
+            reasons.append("customer_mismatch_or_missing")
+        data_quality_warnings.append({
+            "invoice_id": str(invoice_id),
+            "invoice_number": invoice_number,
+            "type": "invalid_payment_allocation",
+            "reasons": reasons,
+            "payment_currency": payment_currency,
+            "invoice_currency": invoice_currency,
+            "allocated_amount": str(allocated_amount),
+        })
 
     def amounts(rows):
         return [{"currency_code": currency, "count": int(count), "total": str(total)}
@@ -448,12 +554,15 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         "collected_payments": amounts(collected),
         "expenses": amounts(expenses),
         "outstanding_balances": [
-            {"currency_code": currency, "total": str(max(Decimal("0"), Decimal(str(total))))}
-            for currency, total in outstanding_rows
+            {"currency_code": currency, "total": str(total)}
+            for currency, total in sorted(outstanding_totals.items())
         ],
+        "data_quality_warnings": data_quality_warnings,
         "limitations": [
             "Currency totals are kept separate and are never converted.",
-            "Outstanding balances are derived from issued invoices less recorded allocations.",
+            "Current outstanding uses only allocations matching the invoice business, customer and currency.",
+            "Invalid allocations and over-allocated invoices are surfaced in data_quality_warnings and are not silently clamped.",
+            "Outstanding balances are current balances; use the receivables-aging as-of date for a historical cutoff.",
             "This dashboard does not claim net profit; product cost and other cost data may be incomplete.",
         ],
     }
