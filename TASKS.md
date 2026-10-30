@@ -1643,3 +1643,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact PR head: d5582110bbcd895ad808f9979dd3a611d8643843. PR #316 OPEN / DRAFT / UNMERGED. Combined status also reports SemaphoreCI and six CircleCI contexts as FAILURE; CircleCI remains frozen per owner instruction and was not retried.
 - Auth helper additionally isolates teardown and consumer error-handler exceptions; a sixth behavioral Node regression test covers both without masking the original auth failure. All six Node tests remain authored, NOT RUN locally; frontend build, browser smoke and independent security review remain NOT RUN.
 - Next: inspect repository/organization Actions policy and runner availability in GitHub UI with an owner/admin, or obtain runner logs/annotations from GitHub Support. Do not add/replace CI workflows; keep PR Draft and unmerged.
+
+## T43 auth observer synchronous setup failure hardening — 2026-10-30
+
+- Continued the existing Master-owned T43 / PR #316 branch; no new branch or PR.
+- Source review at prior head `eb528e91833cf9187ce696b9bbc26f221b25799a` found a setup race: the helper resolved readiness inside the first callback before `subscribe()` returned. If subscription setup then threw after a synchronous first callback, the catch block saw readiness as settled and silently discarded the setup error.
+- Updated `frontend/src/app/auth-state-observer.ts` to defer readiness resolution until subscription setup returns and the `onReady` callback succeeds; setup/ready failures now clear cached identity, set a terminal fence, release the observer when an unsubscribe handle exists, notify the error callback, and reject readiness.
+- Added two behavioral regressions in `frontend/src/app/auth-state-regressions.spec.ts`: synchronous initial callback followed by subscription setup failure; and `onReady` failure with observer cleanup.
+- Supplementary isolated local Node 22.16 harness for the helper: **7/7 scenarios PASS** (cross-tab updates, terminal error, timeout/late-event fencing, synchronous setup failure, `onReady` failure, initial error, teardown/consumer-error exception handling). This is not the repository's full frontend test command or a build.
+- Official repository Node test command, Angular build, browser cross-tab smoke, and exact-head GitLab validation: NOT RUN in this environment. CircleCI remains frozen; the GitLab mirror is not modified/pushed to; existing GitHub Actions runner failures remain unresolved.
+- Backend Firebase token verification and server-side membership/role authorization are unchanged. No schema, finance, payroll, production data/configuration, merge or deployment changes.
+- Next: run the official frontend tests/build and browser cross-tab smoke on this exact source commit through an authorized runner, obtain independent T43/security review, then proceed through the remaining release gates.
