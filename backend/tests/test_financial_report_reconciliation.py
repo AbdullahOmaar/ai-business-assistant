@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import Base, Business, Customer, Expense, Invoice, Payment, PaymentAllocation, SalesReturn
+from app.models import (
+    Base, Business, BusinessMembership, Customer, Expense, Invoice,
+    MembershipRole, Payment, PaymentAllocation, SalesReturn,
+)
 from app.security import AuthenticatedPrincipal
 
 
@@ -831,6 +834,70 @@ def test_dashboard_and_profit_loss_are_isolated_from_another_business():
             params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
         )
         assert denied.status_code == 403
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+def test_expense_csv_export_is_owner_only_tenant_scoped_and_formula_safe():
+    """The existing CSV export must not leak other tenants or spreadsheet formulas."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        business_id = UUID(client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "CSV Export Primary Tenant",
+                "currency_code": "EGP",
+                "timezone": "Africa/Cairo",
+            },
+        ).json()["id"])
+        with Session(engine) as session:
+            unrelated_business = Business(
+                name="CSV Export Unrelated Tenant",
+                currency_code="EGP",
+                timezone="Africa/Cairo",
+            )
+            session.add(unrelated_business)
+            session.flush()
+            session.add_all([
+                Expense(
+                    business_id=business_id,
+                    category="operations",
+                    description='=HYPERLINK("https://example.invalid","open")',
+                    amount=Decimal("12.50"),
+                    currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                ),
+                Expense(
+                    business_id=unrelated_business.id,
+                    category="operations",
+                    description="Must not leak into primary export",
+                    amount=Decimal("999.00"),
+                    currency_code="EGP",
+                    incurred_at=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                ),
+                BusinessMembership(
+                    business_id=business_id,
+                    user_subject="financial-report-staff",
+                    role=MembershipRole.STAFF,
+                ),
+            ])
+            session.commit()
+
+        owner_export = client.get(
+            f"/api/v1/businesses/{business_id}/exports/expenses.csv"
+        )
+        assert owner_export.status_code == 200, owner_export.text
+        assert owner_export.headers["content-type"].startswith("text/csv")
+        assert "'=HYPERLINK(" in owner_export.text
+        assert "Must not leak into primary export" not in owner_export.text
+        assert "999.00" not in owner_export.text
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            "financial-report-staff"
+        )
+        staff_export = client.get(
+            f"/api/v1/businesses/{business_id}/exports/expenses.csv"
+        )
+        assert staff_export.status_code == 403
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
 
