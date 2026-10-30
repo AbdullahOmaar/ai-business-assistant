@@ -1552,3 +1552,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+## Startup runtime-config fail-closed validation — 2026-10-30
+
+- Source review found a malformed but valid JSON payload such as null/array could pass fetch/JSON parsing, then throw while reading config.apiBaseUrl. The outer auth/API catch left startupFailed=false and could render the sign-in form despite invalid configuration.
+- Existing PR #309 now validates the runtime-config payload shape before treating it as RuntimeConfig: top-level object required; apiBaseUrl must be string/null/missing; firebase must be object/null/missing; present firebase fields must be strings. Missing fields remain a safe setup-needed state, not a load error. Error messages do not echo payload values.
+- Added Playwright regression: first runtime-config response is HTTP 200 with JSON null; UI must show recoverable startup error and no email/password inputs; retry returns safe setup screen.
+- Existing 503 retry test remains. No Firebase API call or production API call is made by these mocked tests.
+- Exact PR head before this ledger update: b30e2e73b5163990debd9c7c870d67d8917fcf47. Source reviewed; Playwright/unit/build NOT RUN. Exact-head CircleCI six FAILURE contexts; GitHub Actions jobs have steps=null and log retrieval returns 404 BlobNotFound. No retries/reruns.
+- PR remains Draft/open/unmerged; no deployment.
