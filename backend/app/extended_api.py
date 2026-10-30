@@ -25,7 +25,7 @@ from app.models import (
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
-from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
+from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, apply_expense_visibility, authorize_membership
 from app.domain_rules import discounted_return_line_total, money, validate_return_amount
 from app.services import WorkflowError, create_expense
 
@@ -194,8 +194,8 @@ class NotificationInput(BaseModel):
 def _authorized(
     session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
     *, owner_only: bool = False,
-) -> None:
-    authorize_membership(
+):
+    return authorize_membership(
         session, principal=principal, business_id=business_id,
         allowed_roles={MembershipRole.OWNER} if owner_only else None,
     )
@@ -807,15 +807,22 @@ def report_summary(business_id: UUID,
                    session: Session = Depends(get_session),
                    principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
-        _authorized(session, principal, business_id)
+        membership = _authorized(session, principal, business_id)
+
         invoices = session.execute(select(Invoice.currency_code, func.count(Invoice.id),
             func.coalesce(func.sum(Invoice.total), 0)).where(
             Invoice.business_id == business_id, Invoice.status == "issued"
         ).group_by(Invoice.currency_code)).all()
-        expenses = session.execute(select(Expense.currency_code, func.count(Expense.id),
+        expense_statement = select(Expense.currency_code, func.count(Expense.id),
             func.coalesce(func.sum(Expense.amount), 0)).where(
             Expense.business_id == business_id
-        ).group_by(Expense.currency_code)).all()
+        )
+        expense_statement = apply_expense_visibility(
+            expense_statement, business_id=business_id, role=membership.role
+        )
+        expenses = session.execute(
+            expense_statement.group_by(Expense.currency_code)
+        ).all()
         return {
             "issued_invoices_by_currency": [
                 {"currency_code": currency, "count": count, "total": str(total)}
@@ -1298,7 +1305,8 @@ def list_expenses(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
     try:
-        _authorized(session, principal, business_id)
+        membership = _authorized(session, principal, business_id)
+
         if start_date and end_date and start_date > end_date:
             raise HTTPException(
                 status_code=422,
@@ -1306,6 +1314,9 @@ def list_expenses(
             )
 
         statement = select(Expense).where(Expense.business_id == business_id)
+        statement = apply_expense_visibility(
+            statement, business_id=business_id, role=membership.role
+        )
         if start_date or end_date:
             business = session.scalars(select(Business).where(
                 Business.id == business_id, Business.is_active.is_(True),
@@ -1571,14 +1582,21 @@ def assistant_insights(business_id: UUID,
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Deterministic, read-only insights grounded in stored data; no external AI call."""
     try:
-        _authorized(session, principal, business_id)
+        membership = _authorized(session, principal, business_id)
+
         invoice_rows = session.execute(select(
             Invoice.currency_code, func.count(Invoice.id), func.coalesce(func.sum(Invoice.total), 0)
         ).where(Invoice.business_id == business_id, Invoice.status == "issued")
          .group_by(Invoice.currency_code)).all()
-        expense_rows = session.execute(select(
+        expense_statement = select(
             Expense.currency_code, func.count(Expense.id), func.coalesce(func.sum(Expense.amount), 0)
-        ).where(Expense.business_id == business_id).group_by(Expense.currency_code)).all()
+        ).where(Expense.business_id == business_id)
+        expense_statement = apply_expense_visibility(
+            expense_statement, business_id=business_id, role=membership.role
+        )
+        expense_rows = session.execute(
+            expense_statement.group_by(Expense.currency_code)
+        ).all()
         low_stock = []
         tracked = session.scalars(select(Product).where(
             Product.business_id == business_id, Product.is_active.is_(True),
