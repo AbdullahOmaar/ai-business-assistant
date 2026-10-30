@@ -1681,3 +1681,109 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_supplier_create_denies_non_members_without_side_effects_and_allows_members():
+    """The canonical supplier-create route must preserve tenant and membership boundaries."""
+    from uuid import uuid4
+    from app.models import Business, Supplier
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    owner_subject, staff_subject = "supplier-route-owner", "supplier-route-staff"
+    business_id = uuid4()
+
+    try:
+        with app.state.session_factory() as session:
+            session.add(Business(
+                id=business_id, name="Supplier Route Workspace", currency_code="EGP"
+            ))
+            session.flush()
+            session.add_all([
+                BusinessMembership(
+                    business_id=business_id, user_subject=owner_subject,
+                    role=MembershipRole.OWNER,
+                ),
+                BusinessMembership(
+                    business_id=business_id, user_subject=staff_subject,
+                    role=MembershipRole.STAFF,
+                ),
+            ])
+            session.commit()
+
+        def business_row_snapshot():
+            with app.state.session_factory() as session:
+                snapshot = []
+                for table in Base.metadata.sorted_tables:
+                    if "business_id" not in table.c:
+                        continue
+                    statement = table.select().where(
+                        table.c.business_id == business_id
+                    )
+                    primary_key = list(table.primary_key.columns)
+                    if primary_key:
+                        statement = statement.order_by(*primary_key)
+                    rows = session.execute(statement).all()
+                    snapshot.append((table.name, tuple(tuple(row) for row in rows)))
+                return tuple(snapshot)
+
+        client = TestClient(app)
+        base = f"/api/v1/businesses/{business_id}/suppliers"
+        before_denied_request = business_row_snapshot()
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            "supplier-route-outsider"
+        )
+        denied = client.post(
+            base,
+            json={"name": "Unauthorized Supplier", "email": "outside@example.com"},
+        )
+        assert denied.status_code == 403, denied.text
+        assert business_row_snapshot() == before_denied_request
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(owner_subject)
+        owner_created = client.post(
+            base,
+            json={"name": "  Owner Supplier  ", "email": "owner@example.com"},
+        )
+        assert owner_created.status_code == 201, owner_created.text
+        assert owner_created.json()["name"] == "Owner Supplier"
+
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(staff_subject)
+        staff_created = client.post(
+            base,
+            json={"name": "  Staff Supplier  ", "email": "staff@example.com"},
+        )
+        assert staff_created.status_code == 201, staff_created.text
+        assert staff_created.json()["name"] == "Staff Supplier"
+
+        with app.state.session_factory() as session:
+            suppliers = session.query(Supplier).filter_by(business_id=business_id).order_by(
+                Supplier.name
+            ).all()
+            assert [supplier.name for supplier in suppliers] == [
+                "Owner Supplier", "Staff Supplier"
+            ]
+            events = session.query(AuditEvent).filter_by(
+                business_id=business_id, action="supplier.created"
+            ).all()
+            assert len(events) == 2
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
