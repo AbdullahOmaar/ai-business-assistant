@@ -157,6 +157,7 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
             )
             paid = Invoice(
                 business_id=business_id,
+                customer_id=customer.id,
                 invoice_number="FIN-EGP-PAID",
                 status="issued",
                 currency_code="EGP",
@@ -168,6 +169,7 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
             )
             usd = Invoice(
                 business_id=business_id,
+                customer_id=customer.id,
                 invoice_number="FIN-USD-PAID",
                 status="issued",
                 currency_code="USD",
@@ -191,6 +193,7 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
                 ),
                 Payment(
                     business_id=business_id,
+                    customer_id=customer.id,
                     amount=Decimal("50.00"),
                     currency_code="EGP",
                     received_at=recorded_at,
@@ -199,6 +202,7 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
                 ),
                 Payment(
                     business_id=business_id,
+                    customer_id=customer.id,
                     amount=Decimal("40.00"),
                     currency_code="USD",
                     received_at=recorded_at,
