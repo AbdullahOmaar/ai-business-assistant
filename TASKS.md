@@ -1602,3 +1602,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - All 109 closed-unmerged PRs have semantic dispositions. No branch deletion, PR reopening, stale wholesale merge, production data change, or production deployment was performed as part of reconciliation.
 - Remaining gate: exact-head CircleCI + security checks on PR #264. Do not merge until they pass; no production deployment is authorized for the docs/test-only reconciliation PR.
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
+
+
+## T43 Firebase auth state synchronization — 2026-10-30
+
+- Source review found `AuthService.initialize()` used `onAuthStateChanged` only as a one-shot initial-session barrier, then unsubscribed immediately. This left the cached `User` reference stale when Firebase sign-out/auth-state changes occurred in another tab.
+- Implemented a persistent observer: initial callback resolves the startup promise but keeps the listener; every later auth-state callback updates the cached user; timeout/error paths clear cached identity, unsubscribe and allow a retry.
+- Added Node regression coverage for persistent listener lifetime, later user-state updates, timeout/error cleanup and explicit sign-out clearing.
+- This is client auth-session synchronization only; backend Firebase token verification with `check_revoked=True` remains authoritative. No backend authorization, membership, database schema, financial data or production configuration changed.
+- Tests/build/browser cross-tab smoke: NOT RUN in this connector-only environment. Exact-head CircleCI status pending; no CI rerun requested. PR will remain Draft until exact-head checks and independent review pass.
