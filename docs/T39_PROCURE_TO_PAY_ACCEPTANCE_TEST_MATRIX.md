@@ -2,7 +2,7 @@
 
 **Status:** specification only; not executable test evidence.  
 **Baseline inspected:** `main` / `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (2026-10-30).  
-**Approved boundary:** T37 v1.0.1 authorizes bounded operational invariants for OWNER-controlled PO approval/receiving and append-only stock movements. A PO receipt is stock receipt only; it does not create supplier bills, payables, expenses, supplier payments, cash outflow or COGS.
+**Authority state:** T37 is Draft / NOT APPROVED for shared financial semantics pending Master reconciliation. The specific 2026-10-30 17:52 Master handoff authorized only narrow OWNER-controlled PO/receiving/stock-movement source-safety fixes on PR #306. A PO receipt is stock receipt only; it does not create supplier bills, payables, expenses, supplier payments, cash outflow or COGS. This narrow authorization is not a T37 approval.
 
 ## Current baseline and observed gaps
 
@@ -16,7 +16,7 @@ Source review indicates the following still require proof or implementation:
 - Explicit reconciliation preventing inventory procurement from also being posted as a duplicate operating expense.
 - Full role × tenant × lifecycle matrix with protected-state and audit no-side-effect assertions.
 
-Explicitly deferred by the current T37 v1.0.1 boundary: supplier bills/AP/payables/payments, supplier returns/reversals, inventory valuation, landed cost, COGS, FX, tax, GL/posting and production financial mutations. Receipt idempotency semantics remain deferred until a separate source-event contract is approved.
+Explicitly deferred while T37 remains Draft / NOT APPROVED: supplier bills/AP/payables/payments, supplier returns/reversals, inventory valuation, landed cost, COGS, FX, tax, GL/posting and production financial mutations. Receipt idempotency semantics remain deferred until a separate source-event contract is approved.
 
 These are source-review findings, not runtime test results.
 
@@ -66,7 +66,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-34 | OWNER downloads purchase-order CSV from the Purchasing UI; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells (including leading tab/carriage-return characters) are escaped | Data portability and spreadsheet injection safety |
 | T39-35 | OWNER downloads supplier-directory CSV from the Suppliers UI including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
 | T39-36 | OWNER disables stock tracking while a draft, approved, or partially received PO line references the product | Reject before product mutation/audit; retain tracking and all stock state. Positive control: allow disabling when no non-terminal PO line or stock movement references the product | Contract-independent stock-ledger integrity |
-| T39-37 | Receipt includes a legacy/non-stock-tracked product after a valid line | Reject the entire receipt during prevalidation; no received quantity, StockMovement, PO status, or audit changes | T37 v1.0.1 stock-only receiving invariant |
+| T39-37 | Receipt includes a legacy/non-stock-tracked product after a valid line | Reject the entire receipt during prevalidation; no received quantity, StockMovement, PO status, or audit changes | Master-authorized stock-only receiving invariant (not a T37 financial approval) |
 | T39-38 | PO create/edit races with stock-tracking disable for the same product | Product row locks serialize both operations; committed state cannot contain a non-terminal PO line referencing a product whose stock tracking was disabled | PostgreSQL concurrency validation required |
 
 ## Stock-tracking / receiving integrity follow-up — 2026-10-30
