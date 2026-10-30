@@ -118,6 +118,43 @@ def test_employee_search_covers_profile_fields_and_paginates_after_filtering(emp
     assert exhausted_page.json() == []
 
 
+def test_employee_search_treats_sql_wildcards_as_literal_characters(employee_search_environment):
+    env = employee_search_environment
+    percent = _create_employee(
+        env,
+        name="Percent 50% Sales",
+        code="EMP-PERCENT",
+        email="percent@example.test",
+        department="Sales",
+        job_title="Associate",
+    )
+    underscore = _create_employee(
+        env,
+        name="Underscore Operations",
+        code="EMP-UNDERSCORE_01",
+        email="underscore@example.test",
+        department="Operations",
+        job_title="Store Manager",
+    )
+    ordinary = _create_employee(
+        env,
+        name="Ordinary Finance",
+        code="EMP-ORDINARY",
+        email="ordinary@example.test",
+        department="Finance",
+        job_title="Accountant",
+    )
+    assert percent.status_code == underscore.status_code == ordinary.status_code == 201
+
+    base = f"/api/v1/businesses/{env['business_id']}/employees"
+    percent_matches = env["client"].get(base, params={"search": "%"})
+    underscore_matches = env["client"].get(base, params={"search": "_"})
+
+    assert percent_matches.status_code == underscore_matches.status_code == 200
+    assert [row["id"] for row in percent_matches.json()] == [percent.json()["id"]]
+    assert [row["id"] for row in underscore_matches.json()] == [underscore.json()["id"]]
+
+
 def test_rejected_duplicate_and_invalid_employee_creates_have_no_audit_side_effects(employee_search_environment):
     env = employee_search_environment
     created = _create_employee(
