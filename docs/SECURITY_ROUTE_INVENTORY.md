@@ -225,6 +225,7 @@ The route inventory is broader than current negative integration tests. Add expl
 - Added `backend/tests/test_business_tenant_boundaries.py::test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects`.
 - A tenant-A OWNER attempts GET/PATCH/DELETE against tenant-B customer/product IDs and GET/PATCH/void against a tenant-B invoice through tenant-A routes. Foreign customer/product and invoice reads plus customer/product mutations must return 404; invoice edit/void must return 422 from the scoped workflow validation.
 - The test snapshots both tenants' audit-event totals and confirms no audit writes occur; tenant B's customer/product data and issued invoice state/number remain unchanged and readable by tenant B's OWNER.
+- The same regression seeds an unlinked issued invoice only in tenant B: tenant A's OWNER data-integrity report must not disclose its ID, while tenant B's OWNER report must include it. Both tenant row snapshots are compared after all reads and denied foreign-PO operations.
 - This closes a direct foreign-resource read/update/delete test gap for customer/product/invoice routes. It does not complete the entire route × role × tenant matrix; other routes and authenticated production smoke remain outstanding.
 - Exact-head CI and test execution are pending on the dedicated branch. Local pytest/build were not run in this connector session.
 
