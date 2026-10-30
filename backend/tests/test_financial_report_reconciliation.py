@@ -809,6 +809,15 @@ def test_dashboard_and_profit_loss_are_isolated_from_another_business():
             {"currency_code": "EGP", "count": 1, "total": "10.00"}
         ]
 
+        summary = client.get(f"/api/v1/businesses/{business_id}/reports/summary")
+        assert summary.status_code == 200, summary.text
+        assert summary.json()["issued_invoices_by_currency"] == [
+            {"currency_code": "EGP", "count": 1, "total": "100.00"}
+        ]
+        assert summary.json()["expenses_by_currency"] == [
+            {"currency_code": "EGP", "count": 1, "total": "10.00"}
+        ]
+
         report = client.get(
             f"/api/v1/businesses/{business_id}/profit-loss",
             params={
