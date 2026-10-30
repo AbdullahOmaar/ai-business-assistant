@@ -1772,7 +1772,9 @@ def test_customer_statement_rejects_foreign_customer_and_never_lists_foreign_rec
             reference="FOREIGN-ONLY",
         )
         session.add(foreign_payment)
+        session.flush()
         foreign_customer_id = foreign_customer.id
+        foreign_payment_id = foreign_payment.id
         session.commit()
 
     previous_factory, previous_resolver = _configure_test_identity(engine)
@@ -1794,7 +1796,7 @@ def test_customer_statement_rejects_foreign_customer_and_never_lists_foreign_rec
         assert foreign_response.json()["detail"] == "Customer not found"
 
         with Session(engine) as session:
-            assert session.get(Payment, foreign_payment.id) is not None
+            assert session.get(Payment, foreign_payment_id) is not None
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
