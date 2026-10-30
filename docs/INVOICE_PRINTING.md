@@ -8,7 +8,7 @@ The printable document uses the following sources:
 
 - **Persisted invoice detail:** invoice number, status, currency code, issue/due dates, notes, line descriptions, quantities, unit prices, line totals, subtotal, discount, tax, and final total come from the freshly fetched `InvoiceDetail` response. Totals are not recalculated in the browser.
 - **Customer display name:** the response currently contains `customer_id`, not a persisted customer-name snapshot. The UI resolves the label through the currently loaded in-memory customer directory (`customerNameForInvoice`). If that cache is stale or incomplete, the printout can show an old name or the “customer not in current list” fallback. This label is therefore **not** a historical customer-name snapshot.
-- **Business header:** business name and header currency are taken from the selected in-memory Business object captured before the request. The amount rows use the invoice detail's persisted `currency_code`.
+- **Business header:** business name is taken from the selected in-memory Business object captured before the request; header currency is read from the active in-memory Business object after the same-business guard. The amount rows use the invoice detail's persisted `currency_code`.
 
 This distinction matters: the invoice amounts and lines are freshly persisted data, but the current customer/business labels are UI directory/profile values, not immutable invoice snapshots.
 
