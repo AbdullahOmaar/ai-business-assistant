@@ -622,6 +622,18 @@ def test_payroll_visibility_composes_with_local_date_filters_and_offset_paginati
     staff_export_attempt = env["client"].get(f"{base}/exports/expenses.csv")
     assert staff_export_attempt.status_code == 403
 
+    with app.state.session_factory() as session:
+        after_denied_expenses = session.scalar(
+            select(func.count(Expense.id)).where(Expense.business_id == UUID(env["business_id"]))
+        )
+        after_denied_audits = session.scalar(
+            select(func.count(AuditEvent.id)).where(AuditEvent.business_id == UUID(env["business_id"]))
+        )
+        after_denied_status = session.get(PayrollRecord, UUID(payroll.json()["id"])).status
+    assert after_denied_expenses == before_expenses
+    assert after_denied_audits == before_audits
+    assert after_denied_status == payroll_status
+
     env["subject"]["value"] = OWNER
     owner_start_only = env["client"].get(
         f"{base}/expenses", params={"start_date": "2026-01-15", "limit": 1},
@@ -635,14 +647,3 @@ def test_payroll_visibility_composes_with_local_date_filters_and_offset_paginati
     assert owner_payroll_day.status_code == 200, owner_payroll_day.text
     assert [row["category"] for row in owner_payroll_day.json()] == ["Payroll"]
 
-    with app.state.session_factory() as session:
-        after_expenses = session.scalar(
-            select(func.count(Expense.id)).where(Expense.business_id == UUID(env["business_id"]))
-        )
-        after_audits = session.scalar(
-            select(func.count(AuditEvent.id)).where(AuditEvent.business_id == UUID(env["business_id"]))
-        )
-        after_status = session.get(PayrollRecord, UUID(payroll.json()["id"])).status
-    assert after_expenses == before_expenses
-    assert after_audits == before_audits
-    assert after_status == payroll_status
