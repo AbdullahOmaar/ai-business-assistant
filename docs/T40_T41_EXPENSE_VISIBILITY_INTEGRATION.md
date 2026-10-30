@@ -166,9 +166,9 @@ This section supersedes the earlier "Next T40 implementation order" items 2–3 
 
 - T40 date-boundary tests: 14.
 - T40 report-reconciliation tests: 10 (7 prior + 3 new allocation/as-of cases).
-- Payroll privacy integration regression: 1.
+- Payroll privacy integration regressions: 2 (broad-surface visibility + date-filter/offset/no-side-effect matrix).
 - Related existing suites: 26.
-- Total targeted/authored tests: **25 + 26 related**; all **NOT RUN**.
+- Total targeted/authored tests: **26 + 26 related**; all **NOT RUN**.
 
 ### Current delivery evidence
 
@@ -184,4 +184,4 @@ This section supersedes the earlier "Next T40 implementation order" items 2–3 
 2. Review the two commits behind live main and reconcile the base only after source review; do not assume mergeable metadata is a release gate.
 3. Design and implement the separate Expense settlement/disbursement and cashbox lifecycle only after model/API idempotency, migration and PostgreSQL recovery tests are specified; the policy is approved, but schema and runtime are still absent.
 4. Keep credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
-5. Obtain an authorized non-CircleCI runner and execute all 25 targeted + 26 related tests, PostgreSQL integration, build and security checks on the exact SHA; obtain independent review before any readiness decision.
+5. Obtain an authorized non-CircleCI runner and execute all 26 targeted + 26 related tests, PostgreSQL integration, build and security checks on the exact SHA; obtain independent review before any readiness decision.
