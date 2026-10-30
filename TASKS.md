@@ -57,7 +57,7 @@ A feature is complete only when it works end-to-end and expected versus actual p
 ## Production V1 scenario implementation update — 2026-10-30
 
 - Branch: `ci/gitlab-fallback-canonical-20261030`; PR #315 remains OPEN / DRAFT / UNMERGED. The branch was reconciled with current main using a normal merge commit; no force-push was used. GitHub last reported mergeable=true.
-- Latest PR head after the three-scenario test review: `35e22d053e5fd0122a409eca3ae96bcd2706f69e`; base `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; GitHub currently reports mergeable=true.
+- Scenario test implementation source commit before subsequent documentation-only commits: `35e22d053e5fd0122a409eca3ae96bcd2706f69e`; PR base at that point was `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
 - Added `docs/PRODUCTION_V1_ERP_QUALITY_GATES.md`: strict ERP V1 acceptance gates, scenario evidence requirements, test layers, known accounting blockers, weighted progress, and limitations.
 - Added three API + persistence scenarios in `backend/tests/test_erp_v1_business_cycle.py`:
   1. Customer → stock-tracked product → 10%-discounted/14%-taxed invoice → issue → partial collection → idempotent replay/changed-payload rejection → dashboard → expense → preliminary P&L.
