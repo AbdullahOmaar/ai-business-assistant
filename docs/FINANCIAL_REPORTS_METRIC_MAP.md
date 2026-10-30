@@ -235,7 +235,7 @@ Source review of `GET /api/v1/businesses/{business_id}/exports/{entity_type}.csv
 - Added `test_tax_summary_rejects_reversed_date_range` to the T40-owned report-reconciliation suite. The Dashboard reversed-range behavior is already covered by `test_dashboard_rejects_inverted_date_range` in `backend/tests/test_core_features_api.py`; no duplicate Dashboard assertion was retained.
 - The tax-summary regression sends a start date later than the end date and requires HTTP 422 with the explicit validation detail before returning an aggregate.
 - This is validation-only coverage. No report formula, tax policy, cash semantics, currency behavior, schema, permissions or production data changed.
-- Report-reconciliation cases: 16 (14 test functions plus two additional parameter cases). T40 targeted inventory: 34 (15 date-boundary + 16 reconciliation + 3 payroll privacy/date-pagination) = **34 targeted cases**; plus 26 related = **60 authored cases total**. Runtime execution remains **NOT RUN**; commit uses `[skip ci]`.
+- Report-reconciliation cases: 17 (15 test functions plus two additional parameter cases). T40 targeted inventory: 35 (15 date-boundary + 17 reconciliation + 3 payroll privacy/date-pagination) = **35 targeted cases**; plus 26 related = **61 authored cases total**. Runtime execution remains **NOT RUN**; commit uses `[skip ci]`.
 
 
 ### Candidate receivables semantics — explicit T37 hold — 2026-10-31
