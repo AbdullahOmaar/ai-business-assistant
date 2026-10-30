@@ -23,14 +23,31 @@ export function observeAuthState<T>(
     let cleanupPending = false;
 
     const clearPendingTimer = (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer);
+    const releaseObserver = () => {
+      if (!subscriptionReady) {
+        cleanupPending = true;
+        return;
+      }
+      try {
+        unsubscribe();
+      } catch {
+        // Teardown failures must not prevent auth readiness from settling.
+      }
+    };
+    const notifyError = (error: unknown) => {
+      try {
+        onError(error);
+      } catch {
+        // Consumer error handlers must not prevent the original auth error propagating.
+      }
+    };
     const timeoutId = setTimeout(() => {
       if (settled) return;
       settled = true;
       terminated = true;
-      if (subscriptionReady) unsubscribe();
-      else cleanupPending = true;
+      releaseObserver();
       const error = new Error('Firebase sign-in session check timed out. Retry when your connection is stable.');
-      onError(error);
+      notifyError(error);
       reject(error);
     }, timeoutMs);
 
@@ -46,15 +63,13 @@ export function observeAuthState<T>(
       if (!settled) {
         settled = true;
         clearPendingTimer(timeoutId);
-        if (subscriptionReady) unsubscribe();
-        else cleanupPending = true;
-        onError(error);
+        releaseObserver();
+        notifyError(error);
         reject(error);
         return;
       }
-      if (subscriptionReady) unsubscribe();
-      else cleanupPending = true;
-      onError(error);
+      releaseObserver();
+      notifyError(error);
     };
 
     try {
@@ -71,7 +86,7 @@ export function observeAuthState<T>(
         handleError
       );
       subscriptionReady = true;
-      if (cleanupPending) unsubscribe();
+      if (cleanupPending) releaseObserver();
       if (readyPending && !cleanupPending) onReady(unsubscribe);
     } catch (error) {
       if (!settled) {
