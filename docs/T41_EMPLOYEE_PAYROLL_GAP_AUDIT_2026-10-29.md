@@ -189,3 +189,37 @@ Before PR #304 is reconciled or merged, preserve the T41 visibility predicate in
 - No runtime source, schema, migration, financial data, permissions, merge or deployment changed in this review.
 
 **Next independent action:** once an authorized non-CircleCI runner and disposable PostgreSQL target are available, run the focused suite and concurrency test on the then-current exact SHA; before that, keep the PR Draft and reconcile the PR #304 expense-handler integration conflict.
+
+## Master decision — T41 payroll privacy and bounded payroll invariants — 2026-10-30
+
+**Owner authority:** the Product Owner explicitly delegated the policy choices to the active Master role and approved the recommendations. The following is a narrow Master decision, not blanket approval of T37.
+
+### AUTH-T41 v1.0 — APPROVED
+
+- OWNER-only: employee management/sensitive employee data, salary and salary history, payroll runs/calculations, payslips, approval/payment actions and payment references.
+- STAFF/non-OWNER: no employee/payroll endpoint or salary/payslip/payment-reference access. Existing ordinary-expense access remains.
+- Payroll-linked Expense rows and payroll-derived aggregates/counts are OWNER-only across expense lists, dashboards, reports/P&L, insights, internal summaries, AI/provider context and exports. CSV remains OWNER-only.
+- Enforce server-side from authoritative `PayrollRecord.expense_id`, after business/tenant scoping and before pagination, aggregation, serialization or outbound AI context. OWNER retains full visibility; cross-tenant access is denied; no new role privileges are granted.
+- This decision authorizes the narrow privacy/security implementation and regression work. It does not approve unrelated accounting formulas, shared money/currency/rounding/tax/refund/COGS rules, expense posting, payment lifecycle, production migrations, merge or deployment.
+
+### Salary-history design direction — Master-approved technical constraints; financial calculation still gated
+
+- Effective intervals are `[effective_from, effective_to)`; no overlapping intervals per employee.
+- Salary revisions and payroll calculation snapshots are immutable/auditable; do not overwrite history.
+- Retroactive salary changes must not silently recalculate approved/paid payroll. Use a separately audited adjustment/correction path.
+- If a payroll period intersects multiple salary revisions, do not invent automatic proration; block calculation until a qualified accountant-approved rule exists.
+- Schema/backfill implementation remains gated pending qualified accounting review and approved legacy baseline/provenance handling.
+
+### Payment/expense direction — application invariant approved; accounting details deferred
+
+- Approved payroll is not paid payroll. Creating an Expense is not evidence of cash disbursement.
+- A payroll record must not become paid solely because an Expense row was created. A future paid transition requires an explicit, uniquely linked, idempotent payment/disbursement record.
+- A manually entered payment is labelled recorded, not bank/provider-confirmed absent external confirmation.
+- Expense recognition timing, account mapping, partial/failed/reversed lifecycle, journal posting and reconciliation remain DEFERRED pending qualified accountant/controller review and T37/T40/T44 alignment. No Payment schema or lifecycle implementation is authorized by this decision.
+
+### Current release gates
+
+- PR #308 remains OPEN/DRAFT/UNMERGED. Exact current branch head before this decision: `f89380722efb580be79a2d46013df7f29a3e3f9c`; main: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; branch 80 ahead / 2 behind.
+- T40 PR #304 current head: `2a05f19ad608bdbdad5586f7927796ad244ed152`; its `GET /expenses` handler still lacks the approved predicate. Chat 3 retains ownership and must integrate on the existing PR #304 branch, preserving business-local date filters and deterministic pagination.
+- Tests/build/security/migration/browser checks remain NOT RUN on current exact heads. No status contexts on current docs heads is NOT a pass. CircleCI is prohibited; no retries. No merge/deployment/production migration/write.
+- Qualified accountant/controller is not currently staffed per Agent Registry; this remains a real blocker for financial semantics, not for the approved privacy slice.
