@@ -1091,7 +1091,7 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
 
     staff_export = env["client"].get(f"{base}/exports/expenses.csv")
     assert staff_export.status_code == 403
-    with Session(app.state.session_factory()) as session:
+    with app.state.session_factory() as session:
         staff_internal_summary = financial_summary(
             session,
             principal=AuthenticatedPrincipal(STAFF),
