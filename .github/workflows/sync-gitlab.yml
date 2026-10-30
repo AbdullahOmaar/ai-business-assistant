@@ -1,0 +1,80 @@
+name: Sync GitHub refs to GitLab
+
+# GitHub remains the canonical source repository.
+# This workflow only transports refs; GitLab remains the CI validation platform.
+# It deliberately does not force-push, delete refs, or run build/test jobs.
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitlab-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Push exact GitHub ref to GitLab
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact source commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate target ref and credentials
+        shell: bash
+        env:
+          GITLAB_SYNC_USERNAME: ${{ secrets.GITLAB_SYNC_USERNAME }}
+          GITLAB_SYNC_TOKEN: ${{ secrets.GITLAB_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+          case "$GITHUB_REF" in
+            refs/heads/*|refs/tags/*) ;;
+            *)
+              echo "Unsupported ref type: $GITHUB_REF" >&2
+              exit 1
+              ;;
+          esac
+          test -n "$GITLAB_SYNC_USERNAME" || {
+            echo "Missing GitHub Actions secret: GITLAB_SYNC_USERNAME" >&2
+            exit 1
+          }
+          test -n "$GITLAB_SYNC_TOKEN" || {
+            echo "Missing GitHub Actions secret: GITLAB_SYNC_TOKEN" >&2
+            exit 1
+          }
+
+      - name: Push exact commit without force or pruning
+        shell: bash
+        env:
+          GITLAB_SYNC_USERNAME: ${{ secrets.GITLAB_SYNC_USERNAME }}
+          GITLAB_SYNC_TOKEN: ${{ secrets.GITLAB_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+          askpass="$RUNNER_TEMP/gitlab-askpass.sh"
+          cat > "$askpass" <<'ASKPASS'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\\n' "$GITLAB_SYNC_USERNAME" ;;
+            *Password*) printf '%s\\n' "$GITLAB_SYNC_TOKEN" ;;
+            *) exit 1 ;;
+          esac
+          ASKPASS
+          chmod 700 "$askpass"
+          export GIT_ASKPASS="$askpass"
+          export GIT_TERMINAL_PROMPT=0
+
+          git push --porcelain \
+            "https://gitlab.com/abdullahomarrefaat/ai-business-assistant.git" \
+            "$GITHUB_SHA:$GITHUB_REF"
+
+          echo "Synced $GITHUB_REF at $GITHUB_SHA to GitLab."
