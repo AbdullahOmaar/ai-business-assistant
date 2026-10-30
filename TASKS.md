@@ -1741,3 +1741,46 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - This supersedes the earlier statement that PR #304 still lacked the predicate. The cross-PR source integration dependency is now closed; tests and independent security review remain open.
 - PR #304 remains OPEN/DRAFT/UNMERGED, 58 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; no exact-head status contexts (NOT a pass). Privacy regression, all T40 tests/build/PostgreSQL/browser/security NOT RUN. CircleCI prohibited; no retry.
 - T41 PR #308 remains on this existing branch; no duplicate PR. No merge/deploy/production migration/write.
+
+
+## T41 workstream closeout — 2026-10-30 04:00 UTC
+
+**Status: PARTIALLY COMPLETE; handoff to Master for independent verification. No VERIFIED COMPLETE claim.**
+
+### Scope and decisions
+- Workstream: T41 Employees & Payroll only; existing branch/PR #308 reused. No new feature or branch opened.
+- T37 v1.0.1 is documented Product-Owner approved for its bounded operational policy set; T37 overall remains PARTIALLY COMPLETE / NOT APPROVED as a complete accounting contract. T41 may implement only approved OWNER-only payroll privacy and recorded in-app payout invariants.
+- Salary effective-date/history schema, legacy backfill, proration, statutory payroll, payslip version history, and failed/partial/reversed/corrected payout lifecycle remain explicitly DEFERRED. No migration or financial lifecycle expansion performed.
+
+### Source/test work in this closeout
+- Existing source uses business-scoped `PayrollRecord.expense_id` as the authoritative privacy relation and applies it to expenses, report summary/insights, dashboard/P&L, internal financial summary and AI chat context before pagination/aggregation/provider serialization.
+- Existing regression covers STAFF denial/redaction across those surfaces, OWNER-positive access and OWNER-only CSV.
+- Added to `backend/tests/test_employee_payroll_api.py` in commit `fff7331ccb2e0fc1db095e170745eee3b9135329`: a `limit=1` assertion where the hidden payroll expense is newer than the ordinary expense, proving filtering must occur before pagination; a mocked provider-backed chat call that inspects the exact outbound payload and asserts employee name, salary and payroll reference are absent while ordinary expense context remains.
+- Existing tests also cover employee/payroll tenant boundaries, invalid inputs/no side effects, duplicate payroll period, approval separation, payment rollback, paid replay/immutability, audit redaction and PostgreSQL concurrent payroll creation. All are authored source; exact-head runtime execution remains NOT RUN.
+- No schema/model/migration or payroll calculation/financial lifecycle change in this closeout.
+
+### Live delivery baseline
+- Main: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- Branch: `feat/t41-salary-history-effective-dates`.
+- PR #308 HEAD: `fff7331ccb2e0fc1db095e170745eee3b9135329`; OPEN / DRAFT / UNMERGED; 87 ahead / 2 behind main; GitHub mergeable=true. Base SHA remains `c464398e0a6ace77eba32aabfbdbd09091f53999`.
+- PR #308 has no submitted reviews, no review threads, no combined status contexts and no associated GitHub Actions PR runs on this exact HEAD. Empty checks are NOT a pass.
+- Cross-workstream T40 PR #304 current head at refresh: `38ea8c80e1ca4c3d2534ca45ddc731df2b6a35ff`, OPEN / DRAFT / UNMERGED, 76 ahead / 2 behind main, mergeable=true. Re-fetched source confirms the payroll visibility predicate remains in its expense list, reports, dashboard/P&L, AI context and internal summary, with the broad privacy regression present. T40 branch ownership remains with Chat 3.
+
+### Validation and environment
+- Exact-head pytest, PostgreSQL concurrency, migration upgrade/downgrade/rehearsal, frontend tests/build, authenticated browser smoke, dependency/security scan and independent security review: NOT RUN.
+- CircleCI execution/retry is prohibited; none was attempted. No new GitHub Actions CI was introduced or triggered.
+- Desktop Commander device is OFFLINE (last seen 1129h ago); no local repository checkout is available in this runtime. GitHub source/diff and Notion evidence were accessible, but no approved non-CircleCI execution runner was found.
+- Historical passing test results belong to earlier SHAs and are not evidence for this exact HEAD.
+
+### Merge/demo decision
+- Do NOT merge PR #308 yet: exact-head checks are absent, independent review is absent, and branch is 2 commits behind main. GitHub mergeable=true is not a release gate.
+- No safe branch synchronization was performed: no local Git checkout/runner or verified update-branch capability is available. The two commits behind main are documented as TASKS.md-only changes; reconcile them on an authorized Git runner, then re-review the exact merged head.
+- No production migration, data write, merge or deployment performed.
+- Demo readiness: source-level happy-path and privacy behavior is prepared, but Employees/Payroll is NOT demo-ready against production until migration `0005_employee_payroll` is rehearsed against an isolated restored DB and deployed schema revision is verified. No production DB access/migration was attempted. Authenticated UI/browser workflow also remains NOT RUN.
+
+### Remaining in-scope items / next action
+1. Run focused T41 API tests and PostgreSQL concurrency on exact HEAD using an authorized non-CircleCI runner; capture logs/results.
+2. Reconcile main's two TASKS.md-only commits into the existing branch, resolve/review the resulting TASKS diff and all 9 changed files.
+3. Obtain independent security review for route × role × tenant × pagination × provider payload.
+4. Rehearse migration 0005 on an isolated restored database and verify schema revision before claiming employee/payroll demo readiness; production migration requires separate explicit authorization.
+5. Keep salary history/backfill/proration and advanced payout states as deferred follow-ups, not active closeout work.
