@@ -61,6 +61,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         </label>
         <span class="count">{{ filteredEmployees.length }} {{ t('نتيجة', 'results') }}</span>
       </div>
+      <p class="muted" role="note">{{ t('تنبيه: الواجهة تعرض أول 200 موظف فقط حاليًا؛ إذا كان العدد أكبر فباقي الموظفين غير ظاهرين.', 'Note: this screen currently shows only the first 200 employees; additional employees are not visible here.') }}</p>
 
       @if (busy) { <p class="muted" role="status">{{ t('جارٍ تحميل البيانات…', 'Loading employee and payroll data…') }}</p> }
       <div class="list">
@@ -135,6 +136,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </div>
           <span class="count">{{ payrollRecords.length }} {{ t('سجل', 'records') }}</span>
         </div>
+        <p class="muted" role="note">{{ t('تنبيه: الواجهة تعرض أول 200 سجل مرتب فقط للفترة المحددة؛ السجلات الإضافية غير ظاهرة حاليًا.', 'Note: this screen currently shows only the first 200 payroll records for the selected period; additional records are not visible here.') }}</p>
         <div class="list">
           @for (payroll of payrollRecords; track payroll.id) {
             <article class="list-row payroll-row">
