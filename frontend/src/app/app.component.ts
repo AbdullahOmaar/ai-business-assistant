@@ -1660,7 +1660,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async switchBusiness(id: string): Promise<void> {
-    this.statementRequestVersion++;
     this.statementVisible = false;
     this.customerStatement = null;
     this.statementCustomerId = '';
