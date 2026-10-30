@@ -1,8 +1,8 @@
 # T39 — Procure-to-Pay Acceptance Test Matrix
 
 **Status:** specification only; not executable test evidence.  
-**Baseline inspected:** `main` / `c464398e0a6ace77eba32aabfbdbd09091f53999` (2026-10-29).  
-**Dependency gate:** T37 shared financial contract and T38 stock/payment event boundaries are not approved. This matrix deliberately does not define money rounding, stock valuation/COGS, expense/cash-flow posting, supplier-return accounting, or final lifecycle enums.
+**Baseline inspected:** `main` / `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (2026-10-30).  
+**Approved boundary:** T37 v1.0.1 authorizes bounded operational invariants for OWNER-controlled PO approval/receiving and append-only stock movements. A PO receipt is stock receipt only; it does not create supplier bills, payables, expenses, supplier payments, cash outflow or COGS.
 
 ## Current baseline and observed gaps
 
@@ -15,6 +15,8 @@ Source review indicates the following still require proof or implementation:
 - Cost/valuation snapshots and approved COGS integration.
 - Explicit reconciliation preventing inventory procurement from also being posted as a duplicate operating expense.
 - Full role × tenant × lifecycle matrix with protected-state and audit no-side-effect assertions.
+
+Explicitly deferred by the current T37 v1.0.1 boundary: supplier bills/AP/payables/payments, supplier returns/reversals, inventory valuation, landed cost, COGS, FX, tax, GL/posting and production financial mutations. Receipt idempotency semantics remain deferred until a separate source-event contract is approved.
 
 These are source-review findings, not runtime test results.
 
@@ -63,6 +65,17 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-33 | API regression for duplicate PO number on create and draft edit | Same-business duplicate create/edit returns validation error with order/line/audit snapshots unchanged; another business may use the same number | Contract-independent API regression; execution pending |
 | T39-34 | OWNER downloads purchase-order CSV from the Purchasing UI; workbook opens rows containing formula-like supplier/product names | Export contains one row per PO line with supplier/product labels, currency, ordered/received/remaining quantities; tenant scope and owner-only authorization hold; formula-like cells (including leading tab/carriage-return characters) are escaped | Data portability and spreadsheet injection safety |
 | T39-35 | OWNER downloads supplier-directory CSV from the Suppliers UI including inactive suppliers | Export contains supplier contact fields and active state, remains business-scoped and owner-only, and uses the shared CSV formula-injection escaping | Supplier directory portability and access control |
+| T39-36 | OWNER disables stock tracking while a draft, approved, or partially received PO line references the product | Reject before product mutation/audit; retain tracking and all stock state. Positive control: allow disabling when no non-terminal PO line or stock movement references the product | Contract-independent stock-ledger integrity |
+| T39-37 | Receipt includes a legacy/non-stock-tracked product after a valid line | Reject the entire receipt during prevalidation; no received quantity, StockMovement, PO status, or audit changes | T37 v1.0.1 stock-only receiving invariant |
+| T39-38 | PO create/edit races with stock-tracking disable for the same product | Product row locks serialize both operations; committed state cannot contain a non-terminal PO line referencing a product whose stock tracking was disabled | PostgreSQL concurrency validation required |
+
+## Stock-tracking / receiving integrity follow-up — 2026-10-30
+
+- Added a fail-closed guard preventing OWNER from disabling stock tracking while a draft, approved, or partially received PO references the product; the existing stock-movement guard remains.
+- PO create and draft-edit paths now lock referenced products in stable ID order before accepting PO lines. The product PATCH path already locks the product row, so the shared row lock serializes both operations on PostgreSQL.
+- Receiving now rejects a product that is not stock-tracked during the all-lines prevalidation phase. Once validation succeeds, every accepted receipt unconditionally appends its stock movement; the former silent skip is removed.
+- Regression tests were added for draft/approved PO tracking-disable rejection, the no-open-PO positive control, and an invalid later untracked line causing no earlier receipt mutation.
+- Source changes are committed on existing PR #306. Tests, PostgreSQL concurrency, builds and CI remain NOT RUN; authored tests are not execution evidence.
 
 ## Execution plan after contract approval
 
