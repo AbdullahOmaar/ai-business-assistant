@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import Base, Business, Expense, Invoice, Payment, PaymentAllocation, SalesReturn
+from app.models import Base, Business, Customer, Expense, Invoice, Payment, PaymentAllocation, SalesReturn
 from app.security import AuthenticatedPrincipal
 
 
@@ -140,8 +140,12 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
         recorded_at = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
 
         with Session(engine) as session:
+            customer = Customer(business_id=business_id, name="Report Customer")
+            session.add(customer)
+            session.flush()
             partial = Invoice(
                 business_id=business_id,
+                customer_id=customer.id,
                 invoice_number="FIN-EGP-PARTIAL",
                 status="issued",
                 currency_code="EGP",
@@ -178,6 +182,7 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
             payments = [
                 Payment(
                     business_id=business_id,
+                    customer_id=customer.id,
                     amount=Decimal("25.00"),
                     currency_code="EGP",
                     received_at=recorded_at,
@@ -210,18 +215,21 @@ def test_partial_full_payments_and_expenses_remain_currency_separated():
                         payment_id=payments[0].id,
                         invoice_id=partial.id,
                         amount=Decimal("25.00"),
+                        created_at=recorded_at,
                     ),
                     PaymentAllocation(
                         business_id=business_id,
                         payment_id=payments[1].id,
                         invoice_id=paid.id,
                         amount=Decimal("50.00"),
+                        created_at=recorded_at,
                     ),
                     PaymentAllocation(
                         business_id=business_id,
                         payment_id=payments[2].id,
                         invoice_id=usd.id,
                         amount=Decimal("40.00"),
+                        created_at=recorded_at,
                     ),
                     Expense(
                         business_id=business_id,
@@ -484,5 +492,161 @@ def test_profit_loss_rejects_unrepresentable_custom_date_bounds():
         expected_detail = "Date is outside the supported business-timezone range."
         assert start_underflow.json()["detail"] == expected_detail
         assert end_overflow.json()["detail"] == expected_detail
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+
+def test_dashboard_surfaces_invalid_allocations_and_overallocation():
+    """Invalid customer/currency allocations never reduce AR and overallocations are warnings."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Allocation Integrity Shop", "currency_code": "EGP", "timezone": "Africa/Cairo"},
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+        recorded_at = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
+
+        with Session(engine) as session:
+            customer_a = Customer(business_id=business_id, name="Customer A")
+            customer_b = Customer(business_id=business_id, name="Customer B")
+            session.add_all([customer_a, customer_b])
+            session.flush()
+            invoice_a = Invoice(
+                business_id=business_id, customer_id=customer_a.id,
+                invoice_number="INTEGRITY-EGP-100", status="issued", currency_code="EGP",
+                issue_date=recorded_at, subtotal=Decimal("100.00"),
+                discount_total=Decimal("0.00"), tax_total=Decimal("0.00"),
+                total=Decimal("100.00"),
+            )
+            invoice_over = Invoice(
+                business_id=business_id, customer_id=customer_a.id,
+                invoice_number="INTEGRITY-EGP-50", status="issued", currency_code="EGP",
+                issue_date=recorded_at, subtotal=Decimal("50.00"),
+                discount_total=Decimal("0.00"), tax_total=Decimal("0.00"),
+                total=Decimal("50.00"),
+            )
+            session.add_all([invoice_a, invoice_over])
+            session.flush()
+            payments = [
+                Payment(
+                    business_id=business_id, customer_id=customer_a.id,
+                    amount=Decimal("20.00"), currency_code="USD", received_at=recorded_at,
+                    method="bank", idempotency_key="integrity-currency-mismatch",
+                ),
+                Payment(
+                    business_id=business_id, customer_id=customer_b.id,
+                    amount=Decimal("25.00"), currency_code="EGP", received_at=recorded_at,
+                    method="cash", idempotency_key="integrity-customer-mismatch",
+                ),
+                Payment(
+                    business_id=business_id, customer_id=customer_a.id,
+                    amount=Decimal("60.00"), currency_code="EGP", received_at=recorded_at,
+                    method="cash", idempotency_key="integrity-overallocation",
+                ),
+            ]
+            session.add_all(payments)
+            session.flush()
+            session.add_all([
+                PaymentAllocation(
+                    business_id=business_id, payment_id=payments[0].id,
+                    invoice_id=invoice_a.id, amount=Decimal("20.00"), created_at=recorded_at,
+                ),
+                PaymentAllocation(
+                    business_id=business_id, payment_id=payments[1].id,
+                    invoice_id=invoice_a.id, amount=Decimal("25.00"), created_at=recorded_at,
+                ),
+                PaymentAllocation(
+                    business_id=business_id, payment_id=payments[2].id,
+                    invoice_id=invoice_over.id, amount=Decimal("60.00"), created_at=recorded_at,
+                ),
+            ])
+            session.commit()
+
+        dashboard = client.get(
+            f"/api/v1/businesses/{business_id}/dashboard",
+            params={"start_date": "2026-01-15", "end_date": "2026-01-15"},
+        )
+        assert dashboard.status_code == 200, dashboard.text
+        payload = dashboard.json()
+        assert payload["outstanding_balances"] == [
+            {"currency_code": "EGP", "total": "100.00"}
+        ]
+        warnings = payload["data_quality_warnings"]
+        assert any(
+            item["type"] == "invalid_payment_allocation"
+            and "currency_mismatch" in item["reasons"]
+            for item in warnings
+        )
+        assert any(
+            item["type"] == "invalid_payment_allocation"
+            and "customer_mismatch_or_missing" in item["reasons"]
+            for item in warnings
+        )
+        assert any(item["type"] == "allocations_exceed_invoice_total" for item in warnings)
+        assert payload["outstanding_as_of_date"] == "2026-01-15"
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+def test_receivables_aging_uses_persisted_event_timestamps_for_historical_as_of():
+    """Allocations recorded after the cutoff must not rewrite historical receivables."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={"name": "Historical Receivables Shop", "currency_code": "EGP", "timezone": "Africa/Cairo"},
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+        invoice_issued_at = datetime(2026, 1, 10, 12, 0, tzinfo=timezone.utc)
+        allocation_created_at = datetime(2026, 1, 20, 12, 0, tzinfo=timezone.utc)
+
+        with Session(engine) as session:
+            customer = Customer(business_id=business_id, name="Historical Customer")
+            session.add(customer)
+            session.flush()
+            invoice = Invoice(
+                business_id=business_id, customer_id=customer.id,
+                invoice_number="HISTORICAL-AR-001", status="issued", currency_code="EGP",
+                issue_date=invoice_issued_at,
+                due_date=datetime(2026, 2, 10, 12, 0, tzinfo=timezone.utc),
+                subtotal=Decimal("100.00"), discount_total=Decimal("0.00"),
+                tax_total=Decimal("0.00"), total=Decimal("100.00"),
+            )
+            session.add(invoice)
+            session.flush()
+            payment = Payment(
+                business_id=business_id, customer_id=customer.id,
+                amount=Decimal("40.00"), currency_code="EGP",
+                received_at=allocation_created_at, method="cash",
+                idempotency_key="historical-ar-payment",
+            )
+            session.add(payment)
+            session.flush()
+            session.add(PaymentAllocation(
+                business_id=business_id, payment_id=payment.id, invoice_id=invoice.id,
+                amount=Decimal("40.00"), created_at=allocation_created_at,
+            ))
+            session.commit()
+
+        before_allocation = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+            params={"as_of": "2026-01-15"},
+        )
+        assert before_allocation.status_code == 200, before_allocation.text
+        assert before_allocation.json()["basis"] == "historical_as_of"
+        assert before_allocation.json()["invoices"][0]["allocated_payments"] == "0"
+        assert before_allocation.json()["by_currency"][0]["total_outstanding"] == "100.00"
+
+        after_allocation = client.get(
+            f"/api/v1/businesses/{business_id}/reports/receivables-aging",
+            params={"as_of": "2026-01-25"},
+        )
+        assert after_allocation.status_code == 200, after_allocation.text
+        assert after_allocation.json()["invoices"][0]["allocated_payments"] == "40.00"
+        assert after_allocation.json()["by_currency"][0]["total_outstanding"] == "60.00"
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
