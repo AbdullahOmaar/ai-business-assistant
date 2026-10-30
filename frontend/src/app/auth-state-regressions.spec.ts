@@ -1,22 +1,124 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { observeAuthState } from './auth-state-observer.ts';
 
-const authSource = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
+test('initial auth state resolves readiness and later cross-tab changes update the cached user', async () => {
+  let emitUser: ((user: string | null) => void) | undefined;
+  let emitError: ((error: unknown) => void) | undefined;
+  let cachedUser: string | null | undefined;
+  let unsubscribeCalls = 0;
+  let readyUnsubscribe: (() => void) | undefined;
 
-test('Firebase auth observer stays subscribed after initial session resolution', () => {
-  assert.match(authSource, /private authStateUnsubscribe\?: \(\) => void/);
-  assert.match(authSource, /unsubscribe = onAuthStateChanged\([\s\S]*?user => \{\s*this\.user = user \?\? null;\s*if \(!settled\)/);
-  assert.match(authSource, /this\.authStateUnsubscribe = unsubscribe;\s*resolve\(\);/);
-  assert.doesNotMatch(authSource, /clearTimeout\(timeoutId\);\s*unsubscribe\(\);\s*this\.authStateUnsubscribe = unsubscribe/);
+  const ready = observeAuthState<string>(
+    (onUser, onError) => {
+      emitUser = onUser;
+      emitError = onError;
+      return () => { unsubscribeCalls += 1; };
+    },
+    user => { cachedUser = user; },
+    () => { cachedUser = null; },
+    unsubscribe => { readyUnsubscribe = unsubscribe; },
+    100
+  );
+
+  emitUser?.('owner-user');
+  await ready;
+
+  assert.equal(cachedUser, 'owner-user');
+  assert.equal(unsubscribeCalls, 0);
+  assert.equal(typeof readyUnsubscribe, 'function');
+
+  emitUser?.(null);
+  assert.equal(cachedUser, null);
+  assert.equal(unsubscribeCalls, 0);
+
+  emitUser?.('staff-user');
+  assert.equal(cachedUser, 'staff-user');
+  assert.equal(unsubscribeCalls, 0);
+  assert.equal(typeof emitError, 'function');
 });
 
-test('Firebase observer errors and startup timeouts clear cached identity and allow retry', () => {
-  assert.match(authSource, /this\.user = null;[\s\S]*?this\.authStateUnsubscribe = undefined;[\s\S]*?this\.authReady = undefined/);
-  assert.match(authSource, /Firebase sign-in session check timed out/);
-  assert.match(authSource, /this\.authStateUnsubscribe\?\.\(\);/);
+test('an observer error after initialization clears identity and releases the observer', async () => {
+  let emitUser: ((user: string | null) => void) | undefined;
+  let emitError: ((error: unknown) => void) | undefined;
+  let cachedUser: string | null | undefined;
+  let unsubscribeCalls = 0;
+  const observedErrors: unknown[] = [];
+
+  const ready = observeAuthState<string>(
+    (onUser, onError) => {
+      emitUser = onUser;
+      emitError = onError;
+      return () => { unsubscribeCalls += 1; };
+    },
+    user => { cachedUser = user; },
+    error => { observedErrors.push(error); },
+    () => {},
+    100
+  );
+
+  emitUser?.('owner-user');
+  await ready;
+  const failure = new Error('observer stopped');
+  emitError?.(failure);
+
+  assert.equal(cachedUser, null);
+  assert.deepEqual(observedErrors, [failure]);
+  assert.equal(unsubscribeCalls, 0);
 });
 
-test('explicit sign-out clears the cached Firebase user', () => {
-  assert.match(authSource, /async signOut\(\): Promise<void> \{[\s\S]*?await signOut\(this\.auth!\);\s*this\.user = null;/);
+test('an initial observer error rejects readiness and unsubscribes', async () => {
+  let emitError: ((error: unknown) => void) | undefined;
+  let unsubscribeCalls = 0;
+  const failure = new Error('initial observer failure');
+
+  const ready = observeAuthState<string>(
+    (_onUser, onError) => {
+      emitError = onError;
+      return () => { unsubscribeCalls += 1; };
+    },
+    () => {},
+    () => {},
+    () => {},
+    100
+  );
+
+  emitError?.(failure);
+  await assert.rejects(ready, /initial observer failure/);
+  assert.equal(unsubscribeCalls, 1);
+});
+
+test('an initial auth-state timeout rejects readiness and unsubscribes', async () => {
+  let unsubscribeCalls = 0;
+
+  const ready = observeAuthState<string>(
+    () => () => { unsubscribeCalls += 1; },
+    () => {},
+    () => {},
+    () => {},
+    1
+  );
+
+  await assert.rejects(ready, /session check timed out/);
+  assert.equal(unsubscribeCalls, 1);
+});
+
+test('a synchronous initial callback still registers the returned unsubscribe function', async () => {
+  let readyUnsubscribe: (() => void) | undefined;
+  let unsubscribeCalls = 0;
+
+  await observeAuthState<string>(
+    onUser => {
+      onUser('synchronous-user');
+      return () => { unsubscribeCalls += 1; };
+    },
+    () => {},
+    () => {},
+    unsubscribe => { readyUnsubscribe = unsubscribe; },
+    100
+  );
+
+  assert.equal(typeof readyUnsubscribe, 'function');
+  readyUnsubscribe?.();
+  assert.equal(unsubscribeCalls, 1);
 });
