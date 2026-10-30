@@ -64,8 +64,8 @@ jobs:
           cat > "$askpass" <<'ASKPASS'
           #!/bin/sh
           case "$1" in
-            *Username*) printf '%s\\n' "$GITLAB_SYNC_USERNAME" ;;
-            *Password*) printf '%s\\n' "$GITLAB_SYNC_TOKEN" ;;
+            *Username*) printf '%s\n' "$GITLAB_SYNC_USERNAME" ;;
+            *Password*) printf '%s\n' "$GITLAB_SYNC_TOKEN" ;;
             *) exit 1 ;;
           esac
           ASKPASS
