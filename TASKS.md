@@ -1,3 +1,16 @@
+# T38 current branch reconciliation override — 2026-10-30 21:24 UTC
+
+This dated T38 checkpoint supersedes only the older PR #305 base/head snapshot in the Master execution checkpoint below. The historical checkpoint itself is preserved.
+
+- **PR #305 / Chat 1:** existing branch `test/t38-cross-tenant-payment-allocation-20261029` was synced with current main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` by merge commit `90a41cf75cb237905bfb6faf12ed5a151e5928c1`. Both main-only `TASKS.md` additions were preserved alongside Chat 1's T38 ledger notes. No application code changed in that sync commit. Keep PR OPEN/DRAFT/UNMERGED.
+- **PR #311 / Feature 23:** remains a separate OPEN/DRAFT customer-statement date-filter increment at `f1eb49540b9fd8839fe55c8c5e994cc25071fdc4`, based on `c464398e0a6ace77eba32aabfbdbd09091f53999`. Its date filter currently uses UTC `.date()` semantics in the existing backend. It must be reconciled after #305 validation so the date controls coexist with the unapplied-receipt event and localized labels. Business-local midnight/DST semantics are handed to Chat 3/T40; no date rule was changed here.
+- **PR #312 / Feature 31:** remains OPEN/DRAFT and T37-gated at `564dfacd5b518006468deb7d53fde16a38896c27`. Its current branch also contains migrations and work for bank reconciliation, pricing effective dates and other features outside Chat 1's authorized scope. Chat 1 made no changes to #312.
+- **T37:** latest Master Task Plan and latest Master handover remain PARTIALLY COMPLETE / NOT APPROVED. Older approval wording conflicts; no shared financial contract, credit-note/refund posting, tax, COGS, AP, FX, GL or schema/migration expansion is authorized.
+- **Validation:** GitGuardian succeeded on code head `475fb4ddfb9362fefab9592e068d43cf42fb50cf` and main-sync head `90a41cf75cb237905bfb6faf12ed5a151e5928c1`. The sync head has no GitHub workflow runs and an empty combined status; this is NOT PASS. CircleCI remains frozen. GitLab mirror project `88276557` is named `deletion_scheduled`, marked for deletion on 2026-10-30, its T38 branch is stale at `7f7e9b0352a1202d2d5159c6c8f88250bc6664b8`, and no pipeline exists for the exact T38 SHA. Desktop Commander remains OFFLINE. Backend/frontend tests, build, browser smoke and full security review are NOT RUN.
+- **Next:** obtain an authorized exact-SHA runner and Master resolution of T37; run the targeted and full suites; obtain independent review; then reconcile PR #311 and T40 timezone behavior. No merge, deployment, production migration or production write.
+
+---
+
 # Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
 
 ## User directive
