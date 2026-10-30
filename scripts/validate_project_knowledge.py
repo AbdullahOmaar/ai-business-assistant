@@ -5,17 +5,18 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "docs" / "project-knowledge"
 EXPECTED = {
-    "00_PROJECT_CHARTER_AND_SOURCE_MAP.md",
-    "01_AGENT_OPERATING_MODEL.md",
-    "02_ARCHITECTURE_AND_ENGINEERING_STANDARDS.md",
-    "03_SECURITY_POLICY_AND_RELEASE_GATES.md",
-    "04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md",
+    "00_PROJECT_CHARTER_AND_SOURCE_MAP.md": "ABA-KNOW-00",
+    "01_AGENT_OPERATING_MODEL.md": "ABA-KNOW-01",
+    "02_ARCHITECTURE_AND_ENGINEERING_STANDARDS.md": "ABA-KNOW-02",
+    "03_SECURITY_POLICY_AND_RELEASE_GATES.md": "ABA-KNOW-03",
+    "04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md": "ABA-KNOW-04",
 }
 REQUIRED = {
     "document_id", "title", "version", "status", "owner",
@@ -24,21 +25,31 @@ REQUIRED = {
     "supersedes", "superseded_by",
 }
 ALLOWED_STATUS = {"DRAFT", "APPROVED", "SUPERSEDED"}
+ALLOWED_CLASSES = {"STABLE", "CONTROLLED"}
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+SEMVER_RE = re.compile(r"^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
 
 
 def frontmatter(text: str) -> dict[str, str]:
-    if not text.startswith("---\n"):
+    """Parse the deliberately small scalar/list-subset YAML metadata contract."""
+    if not text.startswith("---\\n"):
         raise ValueError("missing YAML frontmatter")
     parts = text.split("---", 2)
     if len(parts) != 3:
         raise ValueError("unterminated YAML frontmatter")
     values: dict[str, str] = {}
     for line in parts[1].splitlines():
-        if not line or line.startswith("  - "):
+        if not line.strip():
             continue
-        match = re.match(r"^([a-z_]+):\s*(.*)$", line)
+        if line.startswith("  - "):
+            values["canonical_sources"] = "present"
+            continue
+        match = re.match(r"^([a-z_]+):\\s*(.*)$", line)
         if match:
-            values[match.group(1)] = match.group(2).strip()
+            key, value = match.group(1), match.group(2).strip()
+            if key in values:
+                raise ValueError(f"duplicate metadata key: {key}")
+            values[key] = value
     return values
 
 
@@ -48,14 +59,19 @@ def validate() -> list[str]:
         return [f"missing package directory: {PACKAGE}"]
 
     files = {p.name for p in PACKAGE.glob("*.md")}
-    if files != EXPECTED:
+    expected_files = set(EXPECTED)
+    if files != expected_files:
         errors.append(
-            f"package file set mismatch: missing={sorted(EXPECTED - files)}, "
-            f"extra={sorted(files - EXPECTED)}"
+            f"package file set mismatch: missing={sorted(expected_files - files)}, "
+            f"extra={sorted(files - expected_files)}"
         )
 
     ids: dict[str, str] = {}
-    for name in sorted(EXPECTED & files):
+    versions: set[str] = set()
+    statuses: set[str] = set()
+    owners: set[str] = set()
+
+    for name in sorted(expected_files & files):
         path = PACKAGE / name
         content = path.read_text(encoding="utf-8")
         try:
@@ -67,31 +83,84 @@ def validate() -> list[str]:
         missing = sorted(REQUIRED - set(meta))
         if missing:
             errors.append(f"{name}: missing metadata: {', '.join(missing)}")
+
+        for key in REQUIRED - {"canonical_sources"}:
+            if key in meta and not meta[key]:
+                errors.append(f"{name}: {key} must not be empty")
+
         doc_id = meta.get("document_id", "")
+        if doc_id != EXPECTED[name]:
+            errors.append(f"{name}: document_id must be {EXPECTED[name]}")
         if doc_id in ids:
             errors.append(f"{name}: duplicate document_id {doc_id} also in {ids[doc_id]}")
         elif doc_id:
             ids[doc_id] = name
 
-        if meta.get("status") not in ALLOWED_STATUS:
-            errors.append(f"{name}: invalid status {meta.get('status')!r}")
-        if not re.fullmatch(r"\d+\.\d+\.\d+", meta.get("version", "")):
-            errors.append(f"{name}: version must be semantic x.y.z")
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", meta.get("last_verified_at", "")):
-            errors.append(f"{name}: last_verified_at must be UTC ISO-8601")
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", meta.get("review_due", "")):
-            errors.append(f"{name}: review_due must be YYYY-MM-DD")
+        status = meta.get("status", "")
+        if status not in ALLOWED_STATUS:
+            errors.append(f"{name}: invalid status {status!r}")
+        elif status:
+            statuses.add(status)
 
-        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", content):
+        version = meta.get("version", "")
+        if not SEMVER_RE.fullmatch(version):
+            errors.append(f"{name}: version must be semantic x.y.z")
+        elif version:
+            versions.add(version)
+
+        owner = meta.get("owner", "")
+        if owner:
+            owners.add(owner)
+
+        if meta.get("knowledge_class") not in ALLOWED_CLASSES:
+            errors.append(f"{name}: knowledge_class must be STABLE or CONTROLLED")
+
+        verified_at = meta.get("last_verified_at", "")
+        try:
+            parsed = datetime.strptime(verified_at, "%Y-%m-%dT%H:%M:%SZ")
+            if parsed.strftime("%Y-%m-%dT%H:%M:%SZ") != verified_at:
+                raise ValueError
+        except ValueError:
+            errors.append(f"{name}: last_verified_at must be a valid UTC ISO-8601 timestamp")
+
+        review_due = meta.get("review_due", "")
+        try:
+            if date.fromisoformat(review_due).isoformat() != review_due:
+                raise ValueError
+        except ValueError:
+            errors.append(f"{name}: review_due must be a valid YYYY-MM-DD date")
+
+        if meta.get("canonical_sources") != "present":
+            errors.append(f"{name}: canonical_sources must contain at least one list item")
+
+        sha = meta.get("related_github_sha", "")
+        if sha.lower() != sha or not SHA_RE.fullmatch(sha):
+            errors.append(f"{name}: related_github_sha must be a lowercase 40-character SHA")
+
+        for target in re.findall(r"\\[[^\\]]+\\]\\(([^)]+)\\)", content):
             target = target.split("#", 1)[0]
             if not target or target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
-            parsed = urlparse(target)
-            if parsed.scheme:
+            parsed_target = urlparse(target)
+            if parsed_target.scheme:
                 continue
             resolved = (path.parent / target).resolve()
+            try:
+                resolved.relative_to(ROOT.resolve())
+            except ValueError:
+                errors.append(f"{name}: local link escapes repository: {target}")
+                continue
             if not resolved.exists():
                 errors.append(f"{name}: broken local link: {target}")
+
+    if len(ids) != len(EXPECTED):
+        errors.append(f"expected {len(EXPECTED)} unique document IDs, found {len(ids)}")
+    if len(versions) > 1:
+        errors.append(f"package versions are inconsistent: {sorted(versions)}")
+    if len(statuses) > 1:
+        errors.append(f"package statuses are inconsistent: {sorted(statuses)}")
+    if len(owners) > 1:
+        errors.append(f"package owners are inconsistent: {sorted(owners)}")
 
     return errors
 
@@ -102,4 +171,4 @@ if __name__ == "__main__":
         for problem in problems:
             print(f"FAIL: {problem}")
         sys.exit(1)
-    print(f"PASS: {len(EXPECTED)} knowledge files; metadata, unique IDs and local links valid.")
+    print(f"PASS: {len(EXPECTED)} knowledge files; metadata, package consistency and local links valid.")
