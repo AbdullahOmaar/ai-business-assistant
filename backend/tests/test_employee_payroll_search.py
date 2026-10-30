@@ -136,6 +136,14 @@ def test_employee_search_treats_sql_wildcards_as_literal_characters(employee_sea
         department="Operations",
         job_title="Store Manager",
     )
+    backslash = _create_employee(
+        env,
+        name="Backslash Operations",
+        code="EMP-BACK\\SLASH",
+        email="backslash@example.test",
+        department="Operations",
+        job_title="Technician",
+    )
     ordinary = _create_employee(
         env,
         name="Ordinary Finance",
@@ -144,15 +152,17 @@ def test_employee_search_treats_sql_wildcards_as_literal_characters(employee_sea
         department="Finance",
         job_title="Accountant",
     )
-    assert percent.status_code == underscore.status_code == ordinary.status_code == 201
+    assert percent.status_code == underscore.status_code == backslash.status_code == ordinary.status_code == 201
 
     base = f"/api/v1/businesses/{env['business_id']}/employees"
     percent_matches = env["client"].get(base, params={"search": "%"})
     underscore_matches = env["client"].get(base, params={"search": "_"})
+    backslash_matches = env["client"].get(base, params={"search": "\\"})
 
-    assert percent_matches.status_code == underscore_matches.status_code == 200
+    assert percent_matches.status_code == underscore_matches.status_code == backslash_matches.status_code == 200
     assert [row["id"] for row in percent_matches.json()] == [percent.json()["id"]]
     assert [row["id"] for row in underscore_matches.json()] == [underscore.json()["id"]]
+    assert [row["id"] for row in backslash_matches.json()] == [backslash.json()["id"]]
 
 
 def test_rejected_duplicate_and_invalid_employee_creates_have_no_audit_side_effects(employee_search_environment):
