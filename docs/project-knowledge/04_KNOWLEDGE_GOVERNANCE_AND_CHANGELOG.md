@@ -183,7 +183,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Clarified the Project Master as the cross-project architecture, coordination, integration, review and final-verification authority, with a mandatory bootstrap for every new/resumed Master chat and `@n`.
 - Aligned the logical team map to Chat 1–5; Chat 5 is independent QA, Integration & Security and does not become a feature owner by default. T22 remains unassigned until separately reconciled.
 - Synced the candidate role wording with the canonical Notion Agent Prompt Registry and Product & Agent Operating Model.
-- Updated the copy-ready Project Instructions draft in Notion to 1,497 characters, including safe Master fallback and the five-chat role map. Actual ChatGPT Project Instructions UI save/readback remains NOT VERIFIED.
+- Updated the copy-ready Project Instructions draft in Notion to 1,496 characters, including safe Master fallback and the five-chat role map. Actual ChatGPT Project Instructions UI save/readback remains NOT VERIFIED.
 - Notion role/operating-model edits were read back. Independent review and Product Owner approval of this controlled knowledge candidate remain NOT RECEIVED; this package remains DRAFT and must not be published as approved.
 - Validator, unit tests and S01–S11 E2E remain NOT RUN. No CircleCI trigger/retry, merge, deployment, production write or migration.
 
