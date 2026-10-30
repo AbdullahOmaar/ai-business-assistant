@@ -369,7 +369,7 @@ export class EmployeePayrollComponent implements OnChanges {
     this.busy = true;
     this.error = '';
     try {
-      const [employeeRows, payrollRows, pickerRows] = await Promise.all([
+      const [employeeRows, payrollRows] = await Promise.all([
         this.api.employees(businessId, {
           limit: this.employeePageSize + 1,
           offset: this.employeeOffset,
@@ -381,32 +381,47 @@ export class EmployeePayrollComponent implements OnChanges {
           this.payrollPageSize + 1,
           this.payrollOffset,
         ),
-        this.api.employees(businessId, {
-          limit: 25,
-          offset: 0,
-          activeOnly: true,
-          search: this.payrollEmployeeSearch,
-        }),
       ]);
       if (sequence !== this.loadSequence || this.businessId !== businessId) return;
       this.employeeHasNext = employeeRows.length > this.employeePageSize;
       this.employees = employeeRows.slice(0, this.employeePageSize);
       this.payrollHasNext = payrollRows.length > this.payrollPageSize;
       this.payrollRecords = payrollRows.slice(0, this.payrollPageSize);
+
+      // The optional payroll picker must not hide the employee directory or payroll
+      // history when its independent search request fails.
       if (pickerSequence === this.pickerLoadSequence) {
-        const previouslySelected = this.payrollEmployeeOptions.find(
-          employee => employee.id === this.payrollEmployeeId && employee.is_active,
-        );
-        this.payrollEmployeeOptions = pickerRows;
-        if (previouslySelected && !this.payrollEmployeeOptions.some(item => item.id === previouslySelected.id)) {
-          this.payrollEmployeeOptions = [previouslySelected, ...this.payrollEmployeeOptions];
-        }
-        if (this.hasSelectedPayrollEmployeeOption) {
-          this.selectedPayrollEmployeeFallback = '';
-        } else if (!this.editingPayrollId) {
-          const firstActive = this.payrollEmployeeOptions[0];
-          this.payrollEmployeeId = firstActive?.id || '';
-          this.selectedPayrollEmployeeFallback = firstActive?.name || '';
+        this.pickerBusy = true;
+        try {
+          const pickerRows = await this.api.employees(businessId, {
+            limit: 25,
+            offset: 0,
+            activeOnly: true,
+            search: this.payrollEmployeeSearch,
+          });
+          if (pickerSequence !== this.pickerLoadSequence || this.businessId !== businessId) return;
+          const previouslySelected = this.payrollEmployeeOptions.find(
+            employee => employee.id === this.payrollEmployeeId && employee.is_active,
+          );
+          this.payrollEmployeeOptions = pickerRows;
+          if (previouslySelected && !this.payrollEmployeeOptions.some(item => item.id === previouslySelected.id)) {
+            this.payrollEmployeeOptions = [previouslySelected, ...this.payrollEmployeeOptions];
+          }
+          if (this.hasSelectedPayrollEmployeeOption) {
+            this.selectedPayrollEmployeeFallback = '';
+          } else if (!this.editingPayrollId) {
+            const firstActive = this.payrollEmployeeOptions[0];
+            this.payrollEmployeeId = firstActive?.id || '';
+            this.selectedPayrollEmployeeFallback = firstActive?.name || '';
+          }
+        } catch (error) {
+          if (pickerSequence === this.pickerLoadSequence && this.businessId === businessId) {
+            this.error = this.errorMessage(error);
+          }
+        } finally {
+          if (pickerSequence === this.pickerLoadSequence && this.businessId === businessId) {
+            this.pickerBusy = false;
+          }
         }
       }
     } catch (error) {
