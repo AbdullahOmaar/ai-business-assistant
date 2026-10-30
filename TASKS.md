@@ -1637,3 +1637,41 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added `test_cairo_dst_start_date_filters_use_the_23_hour_local_day` to `backend/tests/test_financial_report_date_boundaries.py`, covering the Africa/Cairo 2026 spring-forward local-day boundaries for both expense and tax-summary filters. Commit: `47a9d37c2d8c3b0eb46dfd366ebdc9220777cb49`.
 - T40-authored regression inventory is now 21 tests (14 date-boundary + 7 reconciliation); related existing suites remain 26 tests. All are source-reviewed only; **NOT RUN**. No CircleCI/GitHub Actions run; no test/build/security pass is claimed.
 - Date-filter test only; no financial formulas, currency-allocation rules, schema, settlement, or posting behavior changed.
+
+
+## T40 / T41 — T37 v1.0.1 approved policy integration (2026-10-30)
+
+**Current policy authority:** Product Owner approved the bounded operational policy set in T37 v1.0.1: https://app.notion.com/p/4089320b90fb81708c5cc14c1a1b74580b. This supersedes older T40 checkpoint statements that T37 remained unapproved; those remain historical only. Explicitly deferred domains (statutory tax/ETA, supplier AP/payment, inventory valuation/landed cost/COGS, FX, GL/COA/journal posting, payroll statutory/effective-date and failed/partial/reversed payout semantics) remain gated pending qualified review and separate versioned approval.
+
+### Implemented on the existing branch / PR #304
+
+- `backend/app/security.py`: added business-scoped `apply_expense_visibility` based on authoritative `PayrollRecord.expense_id`.
+- `backend/app/extended_api.py`: `_authorized` now returns membership; payroll-linked expenses are filtered before date filtering/pagination on `GET /expenses`, and before aggregation on `/reports/summary` and `/assistant/insights`.
+- `backend/app/core_features_api.py`: `_authorize` now returns membership; dashboard and P&L apply payroll visibility before expense aggregation while retaining the T40 business-local date boundaries.
+- `backend/app/operations.py`: internal `financial_summary` applies the payroll visibility predicate.
+- `backend/app/assistant_api.py`: AI chat context applies the predicate before selecting recent expense records.
+- `backend/tests/test_employee_payroll_api.py`: added `test_staff_cannot_read_payroll_expense_through_broad_surfaces`, covering STAFF list with `limit=1` (visibility before pagination), summary, dashboard, P&L, insights, internal summary, AI context, OWNER access/export, and cross-business non-suppression.
+
+### Commits (each used `[skip ci]`)
+
+- `8833761e0ef8207138dc662cc1922eb9e534b109` security predicate.
+- `eeb253c9a7301fc49e2a5f0817af7d8692e8606b` expense list / report summary / insights.
+- `ed3a4b3347f4c38b3754952feb2064042fa6aeac` dashboard / P&L.
+- `ded9b146f0b969a6556196544aba88cc2bfabe6f` internal financial summary.
+- `b78c6a63657550c3c16fc17da278889e564337ad` AI chat context.
+- `6cfb8155f12e42ee6719226af49e9f9b5b34406d` payroll privacy regression.
+
+### Validation / delivery
+
+- Current exact T40 PR #304 head before this documentation checkpoint: `6cfb8155f12e42ee6719226af49e9f9b5b34406d`; after this docs commit the branch head will be refreshed and recorded in the PR/Notion readback.
+- The privacy regression is authored/source-reviewed only: **NOT RUN**. The 21 existing T40 tests + 26 related tests also remain **NOT RUN**. Build, PostgreSQL, frontend, browser, security and exact-head executable checks **NOT RUN**.
+- No status contexts on a `[skip ci]` head are not a pass. CircleCI is prohibited; no retries or manual runs. GitHub Actions was not used; authorized local runner unavailable.
+- No rebase, merge, deployment, migration or production financial-data mutation. PR #304 remains Draft.
+
+### Next
+
+1. Add date-filter × role × pagination and cross-tenant payroll-link regressions.
+2. Fix dashboard allocation currency matching and negative outstanding integrity reporting; never silently clamp.
+3. Implement historical receivables as-of only from persisted source-event timestamps; otherwise report unavailable.
+4. Keep tax/credit-note, supplier AP/payment, valuation/COGS, FX and GL deferred.
+5. Review the two commits behind live main before reconciling the base; then validate exact SHA via authorized non-CircleCI runner and independent review.
