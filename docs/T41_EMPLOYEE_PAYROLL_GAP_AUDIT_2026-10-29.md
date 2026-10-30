@@ -336,3 +336,39 @@ The test source remains 28 test functions. A Python `compile()` syntax check of 
 - Commits: `5fd16b911e9f1bb1b98f07cfa63846771f29173e` (initial test) and `3e751a9188df70faa135da3f3a2af5f03c2d0ba8` (assert no orphan duplicate Expense rows); both test-only and include `[skip ci]`.
 - A Python AST syntax check of the new function passed. PostgreSQL execution remains **NOT RUN**: it requires `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and an authorized disposable PostgreSQL `TEST_DATABASE_URL`. CircleCI remains frozen; no retry or replacement CI was triggered.
 - No runtime code, schema, migration, financial formula, payout state, production data, merge or deployment changed.
+
+## Fresh source inventory and UI boundary review — 2026-10-30 (Chat 4 @n)
+
+Static source review against the existing T41 branch. This is source inspection, not runtime verification. Blob SHAs are intentionally omitted here; the exact branch/commit is recorded in the T41 task and PR.
+
+### Route / model / migration / UI inventory
+
+- `backend/app/employee_payroll_api.py`: OWNER-only employee and payroll management routes. Source includes employee normalization and business-scoped duplicate checks; deterministic employee listing; active filtering; payroll period filtering and pagination; creator/approver separation; and row-locked recorded `/pay` transaction.
+- `backend/app/models.py`: business-scoped employee/payroll relations, per-business employee code/email uniqueness, employee-period payroll uniqueness, unique payroll expense linkage, positive/nonnegative amount checks and status constraint.
+- `backend/migrations/versions/0005_employee_payroll.py`: revision `0005_employee_payroll` follows `0004_platform_user_roles`; creates employee/payroll tables and constraints. No effective-dated salary-history or payslip-version table is present. Status constraint is limited to draft/approved/paid.
+- `backend/app/security.py`: non-OWNER expense visibility uses the business-scoped `PayrollRecord.expense_id` relation; OWNER query is unchanged.
+- `backend/tests/test_employee_payroll_api.py`: source inventory contains 28 test functions covering employee normalization/duplicate updates, active filtering and deterministic pagination, payroll period filtering/pagination, tenant isolation, approval separation/replay, payment rollback/immutability and broad payroll privacy surfaces.
+- `backend/tests/test_postgres_financial_concurrency.py`: contains T41-specific concurrent same-employee/period creation and concurrent recorded `/pay` regressions. Runtime requires explicit opt-in and a disposable PostgreSQL `TEST_DATABASE_URL`.
+- `frontend/src/app/employee-payroll.component.ts`: Arabic/English RTL/LTR employee and payroll workflow. UI wording reports payment as recorded and linked to one Payroll expense, not a bank/provider confirmation.
+- `frontend/src/app/api.service.ts`: employee and payroll reads hardcode `limit=200&offset=0`; the component loads a single result page and provides local search/filtering, with no next/previous page controls or total-count handling.
+
+### Additional UI finding
+
+The backend supports deterministic offset/limit pagination, but the current UI API client requests only the first 200 employees and first 200 payroll rows. The inspected component does not expose page navigation or total-count handling. Records beyond the first 200 are therefore not reachable through this screen. This is a source-level usability gap, not a test failure. No UI changes were made because the current Master handoff prioritizes T41-unique tests/docs and prohibits scope expansion into shared files without coordination.
+
+### Recorded payout boundary
+
+The `/pay` endpoint locks the PayrollRecord, accepts only approved/unpaid records, creates one linked Expense, changes the record to paid, and writes the paid audit event in the same database transaction. The UI success message says the payment was recorded and linked. This is an in-app recorded-paid operation only; no bank transfer/provider confirmation or separate cash-disbursement record is evidenced by this implementation. Do not describe it as an external transfer.
+
+### Validation and production evidence boundary
+
+- Source review above: COMPLETE for the listed branch files.
+- API test source inventory: 28 test functions; PostgreSQL concurrency source includes T41 creation and payout race cases.
+- Python AST syntax check for the newly added payout concurrency test: PASS (syntax only).
+- Focused pytest, PostgreSQL runtime, full backend suite, frontend tests/build, browser E2E, migration rehearsal and independent security review: NOT RUN.
+- Latest Master production checkpoint reports Neon default main at revision `0005_employee_payroll` with employee/payroll tables present; Chat 4 did not independently query Neon. Isolated restored-database migration rehearsal remains NOT VERIFIED and authenticated employee/payroll E2E remains NOT RUN.
+- No runtime code, schema, migration, financial rule, permissions, shared T40 file, production data, merge or deployment changed in this source/UI review.
+
+### Current handoff
+
+Preserve PR #308 as Draft/Open/Unmerged. Master should triage the first-200 UI limitation against demo volume. Keep salary history/effective dates/backfill/proration, payslip versioning and advanced payout lifecycle deferred. Exact-head runner, disposable PostgreSQL database, independent security review and main-only `TASKS.md` ancestry reconciliation remain outstanding.
