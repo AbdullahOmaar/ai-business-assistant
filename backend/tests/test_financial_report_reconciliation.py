@@ -1,10 +1,10 @@
 """Regression tests for financial report source separation and reconciliation."""
 
 from datetime import datetime, timezone
-
-import pytest
 from decimal import Decimal
 from uuid import UUID
+
+import pytest
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

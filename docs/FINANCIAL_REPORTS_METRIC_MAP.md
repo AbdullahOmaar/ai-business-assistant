@@ -212,3 +212,12 @@ Source review of `GET /api/v1/businesses/{business_id}/exports/{entity_type}.csv
 - Payroll-linked expenses are not a STAFF export path: the export route is OWNER-only, consistent with the separately approved OWNER visibility boundary.
 - The new T40 regression covers the existing owner/tenant/formula-safety behavior. Large-volume/streaming, configurable export filters, PDF and scheduled delivery remain successor T47 work and must reuse approved report definitions without inventing financial formulas.
 
+
+
+### Payroll visibility × expense date-filter regression — 2026-10-31
+
+- Added a parametrized backend regression for start-only, end-only and combined inclusive business-local date filters on the existing T40 branch.
+- Each variant seeds a payroll-linked Expense through the authoritative business-scoped `PayrollRecord.expense_id` relationship and an ordinary Expense in the same business.
+- OWNER-positive controls confirm the payroll row remains visible and is the newest first-page row. STAFF controls confirm the payroll row is removed before LIMIT/OFFSET, the ordinary row remains on page one, page two is empty, out-of-range rows stay excluded, and the payroll employee name, salary amount and payroll reference are absent from the response.
+- This extends the existing T41 broad-surface regression (summary/dashboard/P&L/insights/internal summary/AI context) without editing T41-owned test files or shared backend paths.
+- Current source-authored test inventory: 14 date-boundary + 15 report-reconciliation (including 3 parameter cases) + 3 payroll privacy/date-pagination = 32 targeted; 26 related = 58 total. **All 58 remain NOT RUN** until an authorized exact-SHA runner is available.
