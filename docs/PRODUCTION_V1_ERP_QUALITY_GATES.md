@@ -98,7 +98,7 @@ The first API/persistence scenario is implemented in `backend/tests/test_erp_v1_
 | Record operating expense | EGP 100.00 |
 | Preliminary operating result before COGS | **EGP 515.60** |
 
-The scenario also verifies exact payment replay returns the same record, changed payload under the same idempotency key is rejected, and only one payment/allocation/audit event is persisted.
+The scenario also verifies exact payment replay returns the same record, changed payload under the same idempotency key is rejected, and only one payment/allocation/audit event is persisted. It then reconciles the product stock read model, customer statement, receivables aging, invoice list allocation/outstanding, and saved-tax summary against the same invoice and payment.
 
 **Important limitation:** the current report explicitly includes stored tax in gross invoice revenue and excludes COGS because product purchase costs are not linked to sales. EGP 515.60 is therefore an operational result *before cost of goods sold*, not net profit. The test asserts this limitation instead of presenting it as a complete P&L.
 
