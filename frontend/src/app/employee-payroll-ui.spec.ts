@@ -105,3 +105,16 @@ test('payroll employee picker searches the complete active directory independent
   assert.match(component, /pickerLoadSequence/);
   assert.match(component, /searchPayrollEmployees\(\)/);
 });
+
+
+test('employee directory and payroll history remain available when the optional payroll picker request fails', () => {
+  const loadStart = component.indexOf('async loadEmployeesAndPayroll(): Promise<void>');
+  const loadEnd = component.indexOf('\\n  searchEmployees(): void', loadStart);
+  assert.ok(loadStart >= 0 && loadEnd > loadStart, 'Expected employee/payroll loader');
+  const loader = component.slice(loadStart, loadEnd);
+  assert.match(loader, /const \\[employeeRows, payrollRows\\] = await Promise\\.all\\(\\[/);
+  assert.doesNotMatch(loader, /const \\[employeeRows, payrollRows, pickerRows\\]/);
+  assert.match(loader, /const pickerRows = await this\\.api\\.employees/);
+  assert.match(loader, /catch \\(error\\) \\{[\\s\\S]*this\\.error = this\\.errorMessage\\(error\\)/);
+  assert.match(loader, /finally \\{[\\s\\S]*this\\.pickerBusy = false/);
+});
