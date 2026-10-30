@@ -39,6 +39,23 @@ Status: **PARTIALLY COMPLETE**. This document records the current implementation
 6. **FX, rounding and currency policy:** no conversion is performed. Any FX rate source, effective timestamp, and rounding policy requires explicit approval.
 7. **Tax compliance:** saved tax totals are operational reporting only; do not label them a jurisdiction-specific filing.
 
+## Production V1 M06/M08 scope gaps
+
+The Production V1 ERP Charter expands T40 beyond the currently implemented expense/report endpoints:
+
+- **M06 Expenses & Cash:** expense categories/evidence, cashboxes/cash transactions, collections/disbursements, payment methods, approval/settlement, cash balances and movement reports. Current `backend/app/models.py` at GitHub main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` defines `Expense` but no Cashbox, CashTransaction, CashMovement, settlement, payable or bank-transaction model. The current Expense record is an incurred-cost source only; it is not proof of cash payment.
+- **M08 Financial Reports & Dashboard:** General Ledger, Trial Balance, P&L, Balance Sheet, Cash Flow, sales/purchasing, AR/AP aging, inventory valuation, tax reports and KPIs grounded in verified accounting data. The current main model inventory contains no Chart of Accounts, JournalEntry or JournalLine models. T44's canonical task confirms no COA/journal/ledger tables exist at production revision `0005_employee_payroll`; T44 is design-only and gated by T37 plus qualified accounting review.
+- The existing dashboard and P&L are operational source-record summaries, not GL-backed statements. Do not relabel them as a full cash-flow statement, net profit, Balance Sheet or Trial Balance. AP aging, cash/bank reconciliation, inventory valuation/COGS, payroll posting and tax compliance remain dependent on T37/T39/T41/T44 and the relevant specialist/owner decisions.
+
+These are acceptance gaps, not authorization to invent new financial models or posting behavior. Continue source mapping and test design only until the shared contract and T44 accounting design are approved.
+
+### Additional M06/M08 acceptance tests (future, contract-gated)
+
+- Cashbox/cash movement: opening balance, receipt, disbursement, transfer, void/reversal, payment-method mapping, currency separation, tenant/role authorization, idempotent retries, and reconciliation to actual Payment/settlement source events.
+- Expense lifecycle: incurred vs submitted/approved vs settled/paid vs rejected/cancelled/reversed; approval separation; cash outflow must derive from a valid settlement/disbursement event, not `Expense.incurred_at`.
+- GL-backed reporting: every posted source event is traceable to a balanced journal; Trial Balance balances per currency; P&L/Balance Sheet/Cash Flow reconcile to subledgers and fiscal period; reversals/corrections preserve immutable history.
+- Cross-module reconciliation: AR, AP, cash/bank, inventory, tax, expense and payroll subledgers reconcile to the GL without double-counting purchase cost, COGS, expenses, refunds or payroll.
+- These expected behaviors depend on T37 approval and T44's approved COA/posting/reversal/period-lock design; tests must not be implemented against draft recommendations alone.
 ## Acceptance test matrix and current coverage
 
 The matrix below separates already-authored tests from missing coverage and contract-gated expected behavior. It is a test plan, not evidence that tests have executed.
