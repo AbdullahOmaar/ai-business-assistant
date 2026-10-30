@@ -1696,3 +1696,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Follow-up commit `613ba6b7c79a30efaa6b63111b258d571c35bc5e` strengthened the payroll privacy regression: STAFF must receive 403 for expense CSV export; direct internal `financial_summary` now proves payroll-linked amounts are excluded; OWNER can still export the payroll employee details. This covers the already OWNER-only CSV boundary and the internal summary helper in addition to the public APIs/chat tested in the preceding checkpoint.
 - Exact PR head before this documentation addendum: `613ba6b7c79a30efaa6b63111b258d571c35bc5e`. PR #308 remains Draft/Open/Unmerged. The branch is 76 ahead / 2 behind current main.
 - Test source is authored and reviewed only; NOT RUN. No CircleCI retry. Current exact-head CI contexts remain FAILURE and GitHub Actions logs remain unavailable (404 BlobNotFound). No independent security review, merge or deployment.
+
+
+## T41 exact-head source/integration checkpoint — 2026-10-30 02:57 UTC
+
+- Reused existing PR #308 / `feat/t41-salary-history-effective-dates`; no duplicate branch/PR.
+- Static review was performed against code head `b35ce019a4de19d32750bea15261757a51482077`. Source findings and exact cross-PR dependency are documented in `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md`; docs-only commit `6bea76df697801f195d68f349ee1e10c81b6baa6`.
+- Revalidated the authoritative `PayrollRecord.expense_id` visibility filter across expense list, report summary, dashboard, P&L, assistant insights, internal financial summary, and AI recent-expense context. OWNER-only CSV and employee/payroll routes remain as before.
+- Model/migration review: mutable `Employee.monthly_salary`; PayrollRecord stores calculation snapshots and unique expense link; migration 0005 permits only draft/approved/paid. No effective-dated salary history table, Payment ID link, or failed/partial/reversed/corrected payroll lifecycle was found in this slice.
+- **Cross-PR security dependency:** PR #304 head `c46370a64ddb157a621a7de44084d070835875c2` changes `GET /expenses` but omits `apply_expense_visibility`. Existing PR #304 comment #6513712980 requires preserving the filter after business scope and before ordering/offset/limit. No PR #304 files changed.
+- Privacy regression is authored but NOT RUN. Gaps: explicit cross-tenant tests on broad read surfaces, provider-backed outbound payload assertion, pagination-boundary behavior, and denied-read/export no-side-effect checks.
+- T37 remains PARTIALLY COMPLETE / NOT APPROVED; T40 payroll expense vs settled/cash-disbursement contract remains unresolved. Salary-history/backfill, shared permission, payout/payment, posting and reversal work remain BLOCKED.
+- Current PR head after documentation update: `6bea76df697801f195d68f349ee1e10c81b6baa6`; OPEN / DRAFT / UNMERGED; GitHub mergeable=true. Compare to live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`: 79 ahead / 2 behind (diverged). No reviews found.
+- Tests/build/security/migrations/PostgreSQL concurrency/frontend/browser: NOT RUN. CircleCI execution/retry prohibited; none attempted. No merge/deploy.
