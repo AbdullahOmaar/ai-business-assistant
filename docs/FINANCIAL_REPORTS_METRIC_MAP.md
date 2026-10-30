@@ -87,18 +87,18 @@ The matrix below separates already-authored tests from missing coverage and cont
 - Do not mark T40 VERIFIED COMPLETE or merge until the shared financial contract is approved, feature review is complete, and required exact-head checks pass.
 
 
-## T37 v1.0.1 approval and T40/T41 integration update — 2026-10-30
+## Payroll privacy v1.0 approval; T37 financial contract remains NOT APPROVED — 2026-10-30
 
-The Product Owner approved the bounded operational policy set in T37 v1.0.1: https://app.notion.com/p/4089320b90fb81708c5cc14a1b74580b. This section supersedes earlier table notes that the related policy was still awaiting approval.
+Master separately approved Payroll Privacy Policy v1.0 on the canonical T40 task discussion. This narrow approval covers OWNER-only payroll-linked Expense rows/aggregates and STAFF access to ordinary expenses only, with business-scoped PayrollRecord.expense_id filtering before pagination/aggregation/AI context. The canonical T37 page remains PARTIALLY COMPLETE / Draft / NOT APPROVED. Earlier Operating Model/PR statements claiming T37 v1.0.1 approval conflict with the canonical T37 record and the owner's latest closeout instruction; do not treat those statements as approval.
 
-### Approved behavior now enforced on the T40 branch
+### Separately approved payroll privacy behavior present on the T40 branch
 
 - Payroll-linked Expense rows and payroll-derived totals are OWNER-only. STAFF retains ordinary expenses. The predicate uses business-scoped PayrollRecord.expense_id and runs before expense pagination or report/AI aggregation.
 - Applied across GET /expenses, report summary, deterministic insights, dashboard, P&L, internal financial_summary and AI chat context. Existing OWNER-only CSV export and payroll management remain unchanged.
 - T40's business-local date filters, deterministic ordering and pagination are preserved in GET /expenses.
 - Regression added for STAFF/OWNER, first-page pagination, report surfaces, AI context and cross-business non-suppression. It is authored/source-reviewed only and NOT RUN.
 
-### Approved but not yet fully implemented
+### T37-gated candidate financial behavior — NOT APPROVED
 
 - Dashboard receivables must only subtract allocations that match the invoice/payment business, customer and currency. Mismatched and over-allocated data must be surfaced as integrity warnings; negative balances must never be silently clamped.
 - Current outstanding and historical as-of balances are distinct. Historical as-of requires persisted source-event timestamps and business-local cutoff. If the event history is insufficient, historical as-of must be labelled unavailable rather than inferred from current state.
@@ -118,9 +118,9 @@ Statutory tax/ETA, credit-note tax allocation/reversal, supplier AP/bills/paymen
 - Current T40 branch head at this doc checkpoint is recorded separately in PR #304 / TASKS.md. The exact [skip ci] head has no status contexts; this is NOT a pass. CircleCI is prohibited; no manual run/retry; GitHub Actions is not a replacement. No authorized local runner is available.
 
 
-## Follow-up implementation after T37 v1.0.1 — 2026-10-30
+## Candidate allocation-integrity and historical-as-of implementation (T37 NOT APPROVED) — 2026-10-30
 
-This update supersedes the previous "Approved but not yet fully implemented" bullets for dashboard allocation integrity and historical receivables as-of:
+The following changes are present on PR #304 as candidate code only. They must not be merged or released until Master records a versioned T37 decision; they do not supersede the approval gate:
 
 - Dashboard outstanding balances now use the selected period end as a business-local as-of cutoff (or business-local today when no end date is supplied).
 - Only same-business, same non-null customer and same-currency allocations created before the cutoff reduce receivables.
@@ -128,7 +128,7 @@ This update supersedes the previous "Approved but not yet fully implemented" bul
 - Invoice-level over-allocation is reported and excluded from positive receivable totals. No negative balance is silently clamped.
 - Invalid currency/customer allocations and missing invoice issue timestamps are explicit warnings.
 - Receivables aging is historical as-of using Invoice.issue_date and PaymentAllocation.created_at before the business-local cutoff; due dates are converted to business-local dates. Credit applications/notes are not included while their tax/receivable treatment remains deferred.
-- Expense settlement/disbursement and cashbox lifecycle remains approved in policy but NOT IMPLEMENTED in the current schema.
+- Expense settlement/disbursement and cashbox lifecycle remains NEEDS APPROVAL under T37 and is NOT IMPLEMENTED in the current schema.
 
 Updated coverage:
 - 14 date-boundary tests.
@@ -136,4 +136,4 @@ Updated coverage:
 - 2 payroll privacy integration tests (broad-surface visibility + date-filter/offset/no-side-effect matrix).
 - 26 related existing tests.
 - 26 targeted/authored + 26 related tests total. All **NOT RUN**.
-- Current exact PR #304 head at the last code checkpoint: e9ed52816469cf439b1b66b92bf04c97b011617b; latest docs checkpoints follow on the same branch. Empty status on [skip ci] commits is NOT a pass. No CircleCI run/retry, no GitHub Actions, no authorized local runner.
+- Exact current PR #304 head is tracked in live GitHub metadata; historical SHA snapshots in this document are not current. Empty status on [skip ci] commits is NOT a pass. No CircleCI run/retry, no GitHub Actions, no authorized local runner.
