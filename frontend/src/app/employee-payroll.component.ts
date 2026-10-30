@@ -14,7 +14,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           <h2>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</h2>
           <p>{{ t('إدارة ملفات الموظفين وتجهيز المرتبات واعتمادها وصرفها. بيانات الرواتب متاحة لمالك مساحة العمل فقط.', 'Manage employee profiles, prepare payroll, approve it and mark it paid. Salary data is restricted to workspace owners.') }}</p>
         </div>
-        <span class="count">{{ employees.length }} {{ t('موظف', 'employees') }}</span>
+        <span class="count">{{ employees.length }} / {{ employeePageSize }} {{ t('في الصفحة', 'on this page') }}</span>
       </div>
 
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
@@ -53,15 +53,19 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       </form>
 
       <div class="employee-tools">
-        <label>{{ t('البحث عن موظف', 'Search employees') }}
-          <input name="employeeSearch" [placeholder]="t('الاسم أو الكود أو القسم أو البريد', 'Name, code, department or email')" [(ngModel)]="employeeSearch">
+        <label>{{ t('البحث عن موظف', 'Search all employees') }}
+          <input name="employeeSearch" maxlength="100" [placeholder]="t('الاسم أو الكود أو القسم أو البريد أو الوظيفة', 'Name, code, department, email or job title')" [(ngModel)]="employeeSearch" (keyup.enter)="searchEmployees()">
         </label>
+        <div class="actions">
+          <button class="primary" type="button" (click)="searchEmployees()" [disabled]="busy">{{ t('بحث', 'Search') }}</button>
+          <button class="secondary" type="button" (click)="clearEmployeeSearch()" [disabled]="busy || !employeeSearch && !employeeSearchApplied">{{ t('مسح', 'Clear') }}</button>
+        </div>
         <label>{{ t('فترة المرتبات', 'Payroll period') }}
-          <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
+          <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="onPayrollPeriodChange()">
         </label>
-        <span class="count">{{ filteredEmployees.length }} {{ t('نتيجة', 'results') }}</span>
+        <span class="count">{{ filteredEmployees.length }} {{ t('نتيجة في الصفحة', 'results on page') }}</span>
       </div>
-      <p class="muted" role="note">{{ t('تنبيه: الواجهة تعرض أول 200 موظف فقط حاليًا؛ إذا كان العدد أكبر فباقي الموظفين غير ظاهرين.', 'Note: this screen currently shows only the first 200 employees; additional employees are not visible here.') }}</p>
+      <p class="muted" role="note">{{ t('البحث يشمل جميع الموظفين داخل مساحة العمل، والتنقل يعرض النتائج على صفحات.', 'Search covers the full workspace directory; use the page controls to browse results.') }}</p>
 
       @if (busy) { <p class="muted" role="status">{{ t('جارٍ تحميل البيانات…', 'Loading employee and payroll data…') }}</p> }
       <div class="list">
@@ -85,6 +89,11 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           <p class="empty">{{ t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') }}</p>
         }
       </div>
+      <div class="pagination" [attr.aria-label]="t('صفحات الموظفين', 'Employee pages')">
+        <button class="secondary" type="button" (click)="changeEmployeePage(-1)" [disabled]="busy || employeeOffset === 0">{{ t('السابق', 'Previous') }}</button>
+        <span class="muted" aria-live="polite">{{ t('صفحة', 'Page') }} {{ employeePageNumber }}</span>
+        <button class="secondary" type="button" (click)="changeEmployeePage(1)" [disabled]="busy || !employeeHasNext">{{ t('التالي', 'Next') }}</button>
+      </div>
 
       <section class="payroll-section">
         <div class="section-head">
@@ -94,11 +103,20 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </div>
         </div>
         <form class="payroll-form" (ngSubmit)="savePayroll()">
+          <div class="payroll-employee-picker">
+            <label>{{ t('ابحث في دليل الموظفين النشطين', 'Search the active employee directory') }}
+              <input name="payrollEmployeeSearch" maxlength="100" [(ngModel)]="payrollEmployeeSearch" (keyup.enter)="searchPayrollEmployees" [disabled]="busy || !!editingPayrollId">
+            </label>
+            <button class="secondary" type="button" (click)="searchPayrollEmployees()" [disabled]="busy || pickerBusy || !!editingPayrollId">{{ pickerBusy ? t('جارٍ البحث…', 'Searching…') : t('بحث عن موظف', 'Find employee') }}</button>
+          </div>
           <label>{{ t('الموظف', 'Employee') }}
-            <select name="payrollEmployeeId" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollEmployeeId">
+            <select name="payrollEmployeeId" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollEmployeeId" (ngModelChange)="onPayrollEmployeeChange($event)">
               <option value="">{{ t('اختر موظفًا', 'Select an employee') }}</option>
-              @for (employee of employees; track employee.id) {
-                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }} · {{ employee.employee_code || employee.monthly_salary }}</option>
+              @if (selectedPayrollEmployeeFallback && !hasSelectedPayrollEmployeeOption) {
+                <option [value]="payrollEmployeeId">{{ selectedPayrollEmployeeFallback }}</option>
+              }
+              @for (employee of payrollEmployeeOptions; track employee.id) {
+                <option [value]="employee.id">{{ employee.name }} · {{ employee.employee_code || employee.monthly_salary }}</option>
               }
             </select>
           </label>
@@ -136,7 +154,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </div>
           <span class="count">{{ payrollRecords.length }} {{ t('سجل', 'records') }}</span>
         </div>
-        <p class="muted" role="note">{{ t('تنبيه: الواجهة تعرض أول 200 سجل مرتب فقط للفترة المحددة؛ السجلات الإضافية غير ظاهرة حاليًا.', 'Note: this screen currently shows only the first 200 payroll records for the selected period; additional records are not visible here.') }}</p>
+        <p class="muted" role="note">{{ t('استخدم أزرار التنقل لعرض بقية سجلات الفترة المحددة.', 'Use the page controls to browse the remaining records for this period.') }}</p>
         <div class="list">
           @for (payroll of payrollRecords; track payroll.id) {
             <article class="list-row payroll-row">
@@ -161,6 +179,11 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           @if (!payrollRecords.length && !busy && !error) {
             <p class="empty">{{ t('لا توجد مرتبات في الفترة المحددة.', 'No payroll records for this period.') }}</p>
           }
+        </div>
+        <div class="pagination" [attr.aria-label]="t('صفحات المرتبات', 'Payroll pages')">
+          <button class="secondary" type="button" (click)="changePayrollPage(-1)" [disabled]="busy || payrollOffset === 0">{{ t('السابق', 'Previous') }}</button>
+          <span class="muted" aria-live="polite">{{ t('صفحة', 'Page') }} {{ payrollPageNumber }}</span>
+          <button class="secondary" type="button" (click)="changePayrollPage(1)" [disabled]="busy || !payrollHasNext">{{ t('التالي', 'Next') }}</button>
         </div>
       </section>
     </section>
@@ -194,8 +217,12 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:#334155}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
-    .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
+    .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(150px,220px) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
     .employee-tools .count{justify-self:end}
+    .payroll-employee-picker{display:flex;align-items:end;gap:8px;min-width:0}
+    .payroll-employee-picker label{display:grid;gap:5px;flex:1;min-width:0;font-size:12px;font-weight:700;color:#334155}
+    .pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0 4px}
+    .pagination .muted{margin:0;min-width:70px;text-align:center}
     .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid #e5e7eb;min-width:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
     .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:#e0f2fe;color:#075985;border-radius:11px;font-weight:800}
@@ -211,6 +238,8 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       .list-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
       .employee-tools{grid-template-columns:minmax(0,1fr)}
       .employee-tools .count{justify-self:start}
+      .payroll-employee-picker{align-items:stretch;flex-direction:column}
+      .pagination{justify-content:space-between}
       .employee-form,.payroll-form{grid-template-columns:minmax(0,1fr)}
       .employee-row,.payroll-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
       .actions{grid-column:1/-1;justify-content:stretch}
@@ -225,11 +254,22 @@ export class EmployeePayrollComponent implements OnChanges {
   @Output() payrollPaid = new EventEmitter<void>();
 
   employees: EmployeeRecord[] = [];
+  payrollEmployeeOptions: EmployeeRecord[] = [];
   payrollRecords: EmployeePayrollRecord[] = [];
+  readonly employeePageSize = 25;
+  readonly payrollPageSize = 25;
+  employeeOffset = 0;
+  payrollOffset = 0;
+  employeeHasNext = false;
+  payrollHasNext = false;
   busy = false;
   error = '';
   message = '';
   employeeSearch = '';
+  employeeSearchApplied = '';
+  payrollEmployeeSearch = '';
+  selectedPayrollEmployeeFallback = '';
+  pickerBusy = false;
   editingEmployeeId: string | null = null;
   employeeName = '';
   employeeCode = '';
@@ -247,6 +287,7 @@ export class EmployeePayrollComponent implements OnChanges {
   editingPayrollId: string | null = null;
   operationId = '';
   private loadSequence = 0;
+  private pickerLoadSequence = 0;
 
   constructor(private readonly api: ApiService) {}
 
@@ -254,11 +295,20 @@ export class EmployeePayrollComponent implements OnChanges {
     if (changes['businessId'] && this.businessId) {
       // Clear every workspace-scoped salary value before loading the next workspace.
       this.loadSequence++;
+      this.pickerLoadSequence++;
       this.employees = [];
+      this.payrollEmployeeOptions = [];
       this.payrollRecords = [];
+      this.employeeOffset = 0;
+      this.payrollOffset = 0;
+      this.employeeHasNext = false;
+      this.payrollHasNext = false;
       this.clearEmployeeForm();
       this.cancelPayrollEdit();
       this.employeeSearch = '';
+      this.employeeSearchApplied = '';
+      this.payrollEmployeeSearch = '';
+      this.selectedPayrollEmployeeFallback = '';
       this.payrollEmployeeId = '';
       this.payrollFilterPeriod = '';
       this.payrollPeriod = this.currentPeriod();
@@ -285,12 +335,19 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   get filteredEmployees(): EmployeeRecord[] {
-    const query = this.employeeSearch.trim().toLocaleLowerCase();
-    if (!query) return this.employees;
-    return this.employees.filter(employee =>
-      [employee.name, employee.employee_code, employee.email, employee.department, employee.job_title]
-        .some(value => (value || '').toLocaleLowerCase().includes(query))
-    );
+    return this.employees;
+  }
+
+  get employeePageNumber(): number {
+    return Math.floor(this.employeeOffset / this.employeePageSize) + 1;
+  }
+
+  get payrollPageNumber(): number {
+    return Math.floor(this.payrollOffset / this.payrollPageSize) + 1;
+  }
+
+  get hasSelectedPayrollEmployeeOption(): boolean {
+    return this.payrollEmployeeOptions.some(employee => employee.id === this.payrollEmployeeId);
   }
 
   payrollStatusLabel(status: EmployeePayrollRecord['status']): string {
@@ -306,24 +363,127 @@ export class EmployeePayrollComponent implements OnChanges {
     if (!this.businessId) return;
     const businessId = this.businessId;
     const sequence = ++this.loadSequence;
+    const pickerSequence = ++this.pickerLoadSequence;
     this.busy = true;
     this.error = '';
     try {
-      const [employees, payrollRecords] = await Promise.all([
-        this.api.employees(businessId),
-        this.api.payroll(businessId, this.payrollFilterPeriod || undefined)
+      const [employeeRows, payrollRows, pickerRows] = await Promise.all([
+        this.api.employees(businessId, {
+          limit: this.employeePageSize + 1,
+          offset: this.employeeOffset,
+          search: this.employeeSearchApplied,
+        }),
+        this.api.payroll(
+          businessId,
+          this.payrollFilterPeriod || undefined,
+          this.payrollPageSize + 1,
+          this.payrollOffset,
+        ),
+        this.api.employees(businessId, {
+          limit: 25,
+          offset: 0,
+          activeOnly: true,
+          search: this.payrollEmployeeSearch,
+        }),
       ]);
       if (sequence !== this.loadSequence || this.businessId !== businessId) return;
-      this.employees = employees;
-      this.payrollRecords = payrollRecords;
-      if (!this.employees.some(item => item.id === this.payrollEmployeeId && item.is_active)) {
-        this.payrollEmployeeId = this.employees.find(item => item.is_active)?.id || '';
+      this.employeeHasNext = employeeRows.length > this.employeePageSize;
+      this.employees = employeeRows.slice(0, this.employeePageSize);
+      this.payrollHasNext = payrollRows.length > this.payrollPageSize;
+      this.payrollRecords = payrollRows.slice(0, this.payrollPageSize);
+      if (pickerSequence === this.pickerLoadSequence) {
+        const previouslySelected = this.payrollEmployeeOptions.find(
+          employee => employee.id === this.payrollEmployeeId && employee.is_active,
+        );
+        this.payrollEmployeeOptions = pickerRows;
+        if (previouslySelected && !this.payrollEmployeeOptions.some(item => item.id === previouslySelected.id)) {
+          this.payrollEmployeeOptions = [previouslySelected, ...this.payrollEmployeeOptions];
+        }
+        if (this.hasSelectedPayrollEmployeeOption) {
+          this.selectedPayrollEmployeeFallback = '';
+        } else if (!this.editingPayrollId) {
+          const firstActive = this.payrollEmployeeOptions[0];
+          this.payrollEmployeeId = firstActive?.id || '';
+          this.selectedPayrollEmployeeFallback = firstActive?.name || '';
+        }
       }
     } catch (error) {
       if (sequence === this.loadSequence && this.businessId === businessId) this.error = this.errorMessage(error);
     } finally {
       if (sequence === this.loadSequence && this.businessId === businessId) this.busy = false;
     }
+  }
+
+  searchEmployees(): void {
+    this.employeeSearchApplied = this.employeeSearch.trim();
+    this.employeeOffset = 0;
+    void this.loadEmployeesAndPayroll();
+  }
+
+  clearEmployeeSearch(): void {
+    this.employeeSearch = '';
+    this.employeeSearchApplied = '';
+    this.employeeOffset = 0;
+    void this.loadEmployeesAndPayroll();
+  }
+
+  onPayrollPeriodChange(): void {
+    this.payrollOffset = 0;
+    void this.loadEmployeesAndPayroll();
+  }
+
+  changeEmployeePage(direction: number): void {
+    this.employeeOffset = Math.max(0, this.employeeOffset + direction * this.employeePageSize);
+    void this.loadEmployeesAndPayroll();
+  }
+
+  changePayrollPage(direction: number): void {
+    this.payrollOffset = Math.max(0, this.payrollOffset + direction * this.payrollPageSize);
+    void this.loadEmployeesAndPayroll();
+  }
+
+  async searchPayrollEmployees(): Promise<void> {
+    if (!this.businessId) return;
+    const businessId = this.businessId;
+    const sequence = ++this.pickerLoadSequence;
+    this.pickerBusy = true;
+    this.error = '';
+    try {
+      const options = await this.api.employees(businessId, {
+        limit: 25,
+        offset: 0,
+        activeOnly: true,
+        search: this.payrollEmployeeSearch.trim(),
+      });
+      if (sequence !== this.pickerLoadSequence || this.businessId !== businessId) return;
+      const previouslySelected = this.payrollEmployeeOptions.find(
+        employee => employee.id === this.payrollEmployeeId && employee.is_active,
+      );
+      this.payrollEmployeeOptions = options;
+      if (previouslySelected && !this.payrollEmployeeOptions.some(item => item.id === previouslySelected.id)) {
+        this.payrollEmployeeOptions = [previouslySelected, ...this.payrollEmployeeOptions];
+      }
+      if (this.hasSelectedPayrollEmployeeOption) {
+        this.selectedPayrollEmployeeFallback = '';
+      } else if (!this.editingPayrollId) {
+        const firstActive = this.payrollEmployeeOptions[0];
+        this.payrollEmployeeId = firstActive?.id || '';
+        this.selectedPayrollEmployeeFallback = firstActive?.name || '';
+      }
+    } catch (error) {
+      if (sequence === this.pickerLoadSequence && this.businessId === businessId) {
+        this.error = this.errorMessage(error);
+      }
+    } finally {
+      if (sequence === this.pickerLoadSequence && this.businessId === businessId) {
+        this.pickerBusy = false;
+      }
+    }
+  }
+
+  onPayrollEmployeeChange(employeeId: string): void {
+    this.payrollEmployeeId = employeeId;
+    this.selectedPayrollEmployeeFallback = '';
   }
 
   private errorMessage(error: unknown): string {
@@ -394,6 +554,11 @@ export class EmployeePayrollComponent implements OnChanges {
       }
       if (this.businessId !== businessId) return;
       this.clearEmployeeForm();
+      if (!employeeId) {
+        this.employeeSearch = '';
+        this.employeeSearchApplied = '';
+        this.employeeOffset = 0;
+      }
       this.message = this.t('تم حفظ بيانات الموظف بنجاح.', 'Employee details saved successfully.');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
@@ -425,6 +590,10 @@ export class EmployeePayrollComponent implements OnChanges {
   preparePayroll(employee: EmployeeRecord): void {
     if (!employee.is_active) return;
     this.payrollEmployeeId = employee.id;
+    this.selectedPayrollEmployeeFallback = '';
+    if (!this.payrollEmployeeOptions.some(item => item.id === employee.id)) {
+      this.payrollEmployeeOptions = [employee, ...this.payrollEmployeeOptions];
+    }
     this.editingPayrollId = null;
     this.payrollPeriod = this.currentPeriod();
     this.payrollAllowances = '0.00';
@@ -438,6 +607,7 @@ export class EmployeePayrollComponent implements OnChanges {
     if (record.status !== 'draft') return;
     this.editingPayrollId = record.id;
     this.payrollEmployeeId = record.employee_id;
+    this.selectedPayrollEmployeeFallback = record.employee_name;
     this.payrollPeriod = record.period;
     this.payrollAllowances = record.allowances;
     this.payrollBonuses = record.bonuses;
@@ -448,6 +618,10 @@ export class EmployeePayrollComponent implements OnChanges {
 
   cancelPayrollEdit(): void {
     this.editingPayrollId = null;
+    if (!this.hasSelectedPayrollEmployeeOption) {
+      this.payrollEmployeeId = '';
+      this.selectedPayrollEmployeeFallback = '';
+    }
     this.payrollAllowances = '0.00';
     this.payrollBonuses = '0.00';
     this.payrollDeductions = '0.00';
