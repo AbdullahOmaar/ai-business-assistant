@@ -988,6 +988,111 @@ def test_owner_can_change_product_price_and_create_schedules_and_notifications()
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+@pytest.mark.parametrize("approve_order", [False, True], ids=["draft-po", "approved-po"])
+def test_owner_cannot_disable_stock_tracking_while_open_purchase_order_references_product(approve_order):
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="Open PO tracking supplier")
+        product = Product(
+            business_id=business_id,
+            name="Open PO tracked product",
+            unit_price=Decimal("8.00"),
+            is_stock_tracked=True,
+        )
+        session.add_all([supplier, product])
+        session.commit()
+        supplier_id, product_id = supplier.id, product.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}"
+    try:
+        created = client.post(
+            f"{base}/purchase-orders",
+            json={
+                "supplier_id": str(supplier_id),
+                "order_number": "PO-TRACKING-DRAFT" if not approve_order else "PO-TRACKING-APPROVED",
+                "currency_code": "EGP",
+                "lines": [{"product_id": str(product_id), "quantity": "4.000", "unit_cost": "5.00"}],
+            },
+        )
+        assert created.status_code == 201, created.text
+        order_id = UUID(created.json()["id"])
+        if approve_order:
+            approved = client.post(f"{base}/purchase-orders/{order_id}/approve")
+            assert approved.status_code == 200, approved.text
+
+        with Session(engine) as session:
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            movement_count_before = session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.product_id == product_id,
+                )
+            )
+
+        rejected = client.patch(
+            f"{base}/products/{product_id}",
+            json={"is_stock_tracked": False},
+        )
+        assert rejected.status_code == 422, rejected.text
+        assert "open purchase order" in rejected.json()["detail"].lower()
+
+        with Session(engine) as session:
+            persisted_product = session.get(Product, product_id)
+            assert persisted_product.is_stock_tracked is True
+            assert session.get(PurchaseOrder, order_id).status == (
+                "approved" if approve_order else "draft"
+            )
+            assert session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.product_id == product_id,
+                )
+            ) == movement_count_before
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            ) == audit_count_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_owner_can_disable_stock_tracking_without_open_purchase_orders_or_movements():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        product = Product(
+            business_id=business_id,
+            name="Unreferenced tracked product",
+            unit_price=Decimal("8.00"),
+            is_stock_tracked=True,
+        )
+        session.add(product)
+        session.commit()
+        product_id = product.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        response = client.patch(
+            f"/api/v1/businesses/{business_id}/products/{product_id}",
+            json={"is_stock_tracked": False},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["is_stock_tracked"] is False
+        with Session(engine) as session:
+            assert session.get(Product, product_id).is_stock_tracked is False
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_owner_can_receive_purchase_order_and_records_stock_movement():
     engine, business_id, _, _ = _sales_return_fixture()
     with Session(engine) as session:
