@@ -267,3 +267,14 @@ The later canonical T37 v1.0.1 decision supersedes earlier notes in this documen
 - Exact-head runtime tests, PostgreSQL concurrency, migrations, frontend/build, browser, dependency/security scans and independent security review remain NOT RUN. CircleCI prohibited; no new GitHub Actions CI or runs. Desktop Commander offline; no authorized runner.
 - Production Employees/Payroll demo is NOT READY: main release checkpoint reports API `UndefinedTable` errors for `employees` / `payroll_records`, and migration `0005_employee_payroll` is not verified as applied/rehearsed. No production migration/write/deploy.
 - Next: authorized runner for exact-head validation; safe main-base reconciliation; independent security review; isolated restored-database migration rehearsal.
+
+
+## Authority supersession — 2026-10-30
+
+This audit contains historical statements that T37 was Draft/NOT APPROVED and that all payroll/expense integration must wait for a general T37 approval. Those statements are superseded by the current Product & Agent Operating Model decision: T37 v1.0.1 is Product-Owner APPROVED for the bounded operational policy set; overall T37 remains PARTIALLY COMPLETE, not VERIFIED COMPLETE.
+
+Approved T41 scope: payroll-sensitive data and payroll-linked Expense rows/aggregates are OWNER-only; STAFF retains ordinary expense access. Payroll Expense linking is exactly once and atomic with the explicit recorded paid/payout transition, payroll state and audit; exact retries cannot duplicate effects. The existing /pay operation means an in-app recorded payout, not external bank/provider confirmation.
+
+Still DEFERRED: salary effective-date/history, backfill, automatic proration, failed/partial/reversed/corrected payout lifecycle, and any expansion of financial posting semantics. Do not implement salary-history schema/backfill or new payout states on the strength of the bounded v1.0.1 approval. Qualified accounting/controller review remains required for deferred domains. No merge, deployment, production migration or production financial write is authorized.
+
+The branch name feat/t41-salary-history-effective-dates is historical and does not authorize implementing salary-history behavior. Current PR #308 is still OPEN/DRAFT/UNMERGED; its exact current head must be refreshed before validation. This addendum is documentation-only. Tests/build/PostgreSQL/browser/security are NOT RUN. [skip ci] was used; no CI was triggered.
