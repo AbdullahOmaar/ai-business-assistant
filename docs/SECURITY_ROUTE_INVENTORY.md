@@ -59,7 +59,7 @@
 | GET | `/api/v1/businesses` | Trusted principal; return only memberships for that user |
 | POST | `/api/v1/businesses` | Trusted principal; create workspace and owner membership transactionally |
 | GET | `/api/v1/businesses/{business_id}` | Active membership required |
-| PATCH | `/api/v1/businesses/{business_id}` | Active membership/role policy required |
+| PATCH | `/api/v1/businesses/{business_id}` | OWNER only; business must be active |
 | GET | `/api/v1/businesses/{business_id}/dashboard` | Active membership required; aggregates scoped to business |
 | GET | `/api/v1/businesses/{business_id}/memberships` | OWNER only; list roles within the requested business |
 | PATCH | `/api/v1/businesses/{business_id}/memberships/{membership_id}` | OWNER only; target membership must belong to business; never demote/remove the last owner |
@@ -75,15 +75,15 @@
 | POST | `/api/v1/businesses/{business_id}/products` | Membership required |
 | POST | `/api/v1/businesses/{business_id}/invoices` | Membership required; customer/product IDs must belong to same business |
 | POST | `/api/v1/businesses/{business_id}/invoices/issue` | OWNER only; create and issue atomically; customer/product IDs must belong to same business |
-| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue` | Membership and invoice ownership required |
+| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue` | OWNER only; invoice must belong to the requested business and satisfy issue lifecycle rules |
 | PATCH | `/api/v1/businesses/{business_id}/invoices/{invoice_id}` | Membership, same-business invoice, and draft-state checks required |
-| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/void` | Membership, same-business invoice, and lifecycle rules required |
-| POST | `/api/v1/businesses/{business_id}/stock-movements` | Membership and same-business product required |
-| POST | `/api/v1/businesses/{business_id}/payments` | Membership; allocations must target issued invoices in the same business |
+| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/void` | OWNER only; same-business invoice and void lifecycle rules required |
+| POST | `/api/v1/businesses/{business_id}/stock-movements` | OWNER only; product must belong to the requested business |
+| POST | `/api/v1/businesses/{business_id}/payments` | OWNER only; customer and invoice allocations must belong to the requested business; idempotency key enforced |
 
 ### Extended business workflows — `backend/app/extended_api.py` (prefix `/api/v1/businesses/{business_id}`)
 
-All paths below inherit the business ID in the prefix and require a trusted principal plus membership authorization.
+All paths below inherit the business ID and require a trusted principal plus active business membership. Rows marked OWNER additionally enforce the OWNER role server-side.
 
 | Method | Path suffix | Access expectation |
 |---|---|---|
@@ -100,32 +100,32 @@ All paths below inherit the business ID in the prefix and require a trusted prin
 | GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
 | GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |
-| POST | `/purchase-orders/{order_id}/receive` | Membership and same-business order/lines |
+| POST | `/purchase-orders/{order_id}/receive` | OWNER only; order, lines, and products must belong to the requested business |
 | POST | `/sales-returns` | Membership; invoice and invoice lines must be same-business |
-| POST | `/sales-returns/{return_id}/approve` | Membership and same-business return |
+| POST | `/sales-returns/{return_id}/approve` | OWNER only; same-business return and invoice/line references; lifecycle and cumulative quantity/amount checks |
 | GET | `/recurring-invoices` | Membership required; schedules scoped to the requested business |
-| POST | `/recurring-invoices` | Membership; customer reference must be same-business |
-| POST | `/pricing-rules` | Membership required |
-| POST | `/notifications` | Membership required |
+| POST | `/recurring-invoices` | OWNER only; any customer reference must belong to the requested business |
+| POST | `/pricing-rules` | OWNER only |
+| POST | `/notifications` | OWNER only; creation may trigger downstream delivery |
 | GET | `/notifications` | Membership required; filter by business |
-| PUT | `/settings/{setting_key}` | Membership/role policy required |
+| PUT | `/settings/{setting_key}` | OWNER only; setting key validated; business audit-event gap remains under review |
 | GET | `/reports/summary` | Membership required; aggregates scoped by business and currency |
-| GET | `/exports/{entity_type}.csv` | Membership required; export data scoped by business |
-| POST | `/imports/{entity_type}.csv` | Membership required; imported references must not cross businesses |
+| GET | `/exports/{entity_type}.csv` | OWNER only; supported export data scoped by business and CSV cells formula-neutralized |
+| POST | `/imports/{entity_type}.csv` | OWNER only; bounded CSV input, schema/row validation, business-scoped writes |
 | GET | `/customers` | Membership required; filter by business |
 | GET | `/customers/{customer_id}` | Membership and same-business customer |
 | PATCH | `/customers/{customer_id}` | Membership and same-business customer |
-| DELETE | `/customers/{customer_id}` | Membership and same-business customer |
+| DELETE | `/customers/{customer_id}` | OWNER only; same-business customer; soft-deactivate and audit |
 | GET | `/products` | Membership required; filter by business |
 | GET | `/products/{product_id}` | Membership and same-business product |
-| PATCH | `/products/{product_id}` | Membership and same-business product |
-| DELETE | `/products/{product_id}` | Membership and same-business product |
+| PATCH | `/products/{product_id}` | Same-business product; ordinary metadata is member-level, but price/stock-sensitive fields require OWNER |
+| DELETE | `/products/{product_id}` | OWNER only; same-business product; soft-deactivate and audit |
 | GET | `/payments` | Membership required; payments and allocations scoped by business |
 | GET | `/invoices/{invoice_id}` | Membership and same-business invoice/lines |
 | GET | `/invoices` | Membership required; filter by business |
 | GET | `/assistant/insights` | Membership required; read-only aggregates scoped by business |
 
-### AI assistant — `backend/app/assistant_api.py` (prefix `/api/v1/businesses/{business_id}/assistant`)
+#**Sensitive derived-data note:** `GET /expenses` currently allows any active business member and returns payroll-created Expense description, amount, vendor name, and reference. `GET /reports/summary` and `GET /assistant/insights` also include payroll expense totals. This exposes employee-identifying salary information to STAFF unless the approved OWNER/STAFF policy explicitly permits it. Treat visibility as an unresolved HIGH finding; do not infer the intended policy from the generic expense permission. See Issue #110 for reproduction and remediation requirements.\n\n## AI assistant — `backend/app/assistant_api.py` (prefix `/api/v1/businesses/{business_id}/assistant`)
 
 | Method | Path | Access expectation |
 |---|---|---|
