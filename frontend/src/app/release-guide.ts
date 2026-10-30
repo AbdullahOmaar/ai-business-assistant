@@ -229,6 +229,21 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.5',
+    titleAr: 'مزامنة الجلسة وحماية بيانات مساحة العمل',
+    titleEn: 'Session synchronization and workspace data protection',
+    changesAr: [
+      'مزامنة تسجيل الدخول والخروج وتبديل الحساب بين علامات التبويب.',
+      'مسح بيانات مساحة العمل القديمة ومنع نتائج الطلبات المتأخرة من الظهور بعد تغيير الحساب أو الصلاحيات.',
+      'توحيد رقم الإصدار بين الواجهة وواجهة API إلى 1.3.5.',
+    ],
+    changesEn: [
+      'Synchronizes sign-in, sign-out, and account changes across browser tabs.',
+      'Clears stale workspace data and rejects delayed responses after account or role changes.',
+      'Aligned frontend and API release metadata at version 1.3.5.',
+    ],
+  },
+  {
     version: '1.3.4',
     titleAr: 'توحيد بيانات الإصدار وتحديث التطبيق المثبّت',
     titleEn: 'Release metadata alignment and installed-app updates',

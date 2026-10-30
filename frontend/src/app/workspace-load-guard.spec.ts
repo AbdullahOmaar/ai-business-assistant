@@ -45,3 +45,24 @@ test('invalidates a pending request when workspace state is cleared', () => {
   assert.equal(guard.isLatest(request), false);
   assert.equal(guard.isCurrent(request, 'workspace-a', 'workspace-a'), false);
 });
+
+
+test('invalidates a pending same-workspace request when the authenticated identity changes', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
+
+  // Auth identity transitions clear workspace state even when both users share a business.
+  guard.invalidate();
+
+  assert.equal(guard.isCurrent(request, 'shared-business', 'shared-business'), false);
+});
+
+test('invalidates a pending same-workspace request when owner access is revoked', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
+
+  // Role transitions invalidate requests before the refreshed membership is applied.
+  guard.invalidate();
+
+  assert.equal(guard.isCurrent(request, 'business-a', 'business-a'), false);
+});
