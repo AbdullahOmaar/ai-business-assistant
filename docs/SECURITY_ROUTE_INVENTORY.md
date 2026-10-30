@@ -241,7 +241,8 @@ The route inventory is broader than current negative integration tests. Add expl
 ## Supplier creation membership and tenant regression — 2026-10-31
 
 - Added `backend/tests/test_business_tenant_boundaries.py::test_supplier_create_denies_non_members_without_side_effects_and_allows_members` on the existing PR #302 branch.
-- A non-member attempts `POST /api/v1/businesses/{business_id}/suppliers`; the API must return HTTP 403 and the test compares every business-scoped persisted row (including AuditEvent) before and after the denied request.
-- OWNER and STAFF controls then create suppliers successfully; names are normalized and exactly two `supplier.created` audit events and two tenant-owned Supplier rows are asserted.
+- This complements the existing `backend/tests/test_api.py::test_nonmember_cannot_create_supplier_without_writes_or_audit_events` count-only regression; it is not a replacement or duplicate assertion.
+- A non-member attempts `POST /api/v1/businesses/{business_id}/suppliers`; the API must return HTTP 403 and the new test compares every business-scoped persisted row (including AuditEvent) before and after the denied request.
+- OWNER and STAFF positive controls then create suppliers successfully; names are normalized and exactly two `supplier.created` audit events and two tenant-owned Supplier rows are asserted.
 - The existing route uniqueness test independently checks that no HTTP method/path pair is registered more than once, protecting the canonical supplier-create route from duplicate registration.
 - **Status: IMPLEMENTED, NOT YET VERIFIED.** No local pytest runner is connected and no CI pipeline was triggered; project QA policy prohibits CI triggers/retries. Do not treat this test as PASS until an authorized exact-head test execution is available.
