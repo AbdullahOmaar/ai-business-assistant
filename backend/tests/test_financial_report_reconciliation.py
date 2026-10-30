@@ -735,14 +735,16 @@ def test_dashboard_and_profit_loss_are_isolated_from_another_business():
     """Report aggregates must never include rows from an unrelated tenant."""
     engine, client, previous_factory, previous_resolver = _reporting_client()
     try:
-        business_id = UUID(client.post(
+        created = client.post(
             "/api/v1/businesses",
             json={
                 "name": "Primary Reporting Tenant",
                 "currency_code": "EGP",
                 "timezone": "Africa/Cairo",
             },
-        ).json()["id"])
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
         recorded_at = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
 
         with Session(engine) as session:
@@ -850,14 +852,16 @@ def test_expense_csv_export_is_owner_only_tenant_scoped_and_formula_safe():
     """The existing CSV export must not leak other tenants or spreadsheet formulas."""
     engine, client, previous_factory, previous_resolver = _reporting_client()
     try:
-        business_id = UUID(client.post(
+        created = client.post(
             "/api/v1/businesses",
             json={
                 "name": "CSV Export Primary Tenant",
                 "currency_code": "EGP",
                 "timezone": "Africa/Cairo",
             },
-        ).json()["id"])
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
         with Session(engine) as session:
             unrelated_business = Business(
                 name="CSV Export Unrelated Tenant",
