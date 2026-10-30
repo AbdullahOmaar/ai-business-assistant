@@ -19,11 +19,8 @@ from app.main import app
 from app.models import (
     AuditEvent,
     Base,
-    BusinessMembership,
-    MembershipRole,
     Payment,
     PaymentAllocation,
-    Product,
     StockMovement,
 )
 from app.security import AuthenticatedPrincipal
