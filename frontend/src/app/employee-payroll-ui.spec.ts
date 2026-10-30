@@ -126,8 +126,8 @@ test('clears all workspace-scoped employee and payroll state when the workspace 
   const changeEnd = component.indexOf('\n  t(arabic: string', changeStart);
   assert.ok(changeStart >= 0 && changeEnd > changeStart, 'Expected workspace change handler');
   const handler = component.slice(changeStart, changeEnd);
-  assert.match(handler, /if \\(changes\\['businessId'\\]\\)/);
-  assert.doesNotMatch(handler, /if \\(changes\\['businessId'\\] && this\\.businessId\\)/);
+  assert.ok(handler.includes("if (changes['businessId'])"));
+  assert.ok(!handler.includes("if (changes['businessId'] && this.businessId)"));
   for (const state of [
     'this.employees = []',
     'this.payrollEmployeeOptions = []',
@@ -138,5 +138,5 @@ test('clears all workspace-scoped employee and payroll state when the workspace 
   ]) {
     assert.ok(handler.includes(state), `Workspace change must clear ${state}`);
   }
-  assert.match(handler, /if \\(this\\.businessId\\) void this\\.loadEmployeesAndPayroll\\(\\)/);
+  assert.ok(handler.includes('if (this.businessId) void this.loadEmployeesAndPayroll()'));
 });
