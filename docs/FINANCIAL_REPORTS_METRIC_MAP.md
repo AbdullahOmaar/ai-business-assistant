@@ -221,3 +221,11 @@ Source review of `GET /api/v1/businesses/{business_id}/exports/{entity_type}.csv
 - OWNER-positive controls confirm the payroll row remains visible and is the newest first-page row. STAFF controls confirm the payroll row is removed before LIMIT/OFFSET, the ordinary row remains on page one, page two is empty, out-of-range rows stay excluded, and the payroll employee name, salary amount and payroll reference are absent from the response.
 - This extends the existing T41 broad-surface regression (summary/dashboard/P&L/insights/internal summary/AI context) without editing T41-owned test files or shared backend paths.
 - Current source-authored test inventory: 14 date-boundary + 15 report-reconciliation (including 3 parameter cases) + 3 payroll privacy/date-pagination = 32 targeted; 26 related = 58 total. **All 58 remain NOT RUN** until an authorized exact-SHA runner is available.
+
+
+### Cairo fall-back date-boundary regression — 2026-10-31
+
+- Added `test_cairo_dst_end_date_filters_use_the_25_hour_local_day` to `backend/tests/test_financial_report_date_boundaries.py`.
+- The regression covers the Africa/Cairo 2026 fall-back day, whose UTC half-open interval is 2026-10-28 21:00Z through (exclusive) 2026-10-29 22:00Z. It asserts that expenses and issued-invoice tax totals include the exact local-day start and final microsecond, while excluding the immediately preceding and following records.
+- Date-boundary test functions: 15 (previously 14). T40 targeted inventory: 33 (previously 32), plus 26 related tests = 59 authored tests total. All runtime tests remain **NOT RUN**; this commit uses `[skip ci]` and no CI was triggered.
+- This adds coverage only; it does not change financial formulas, posting, schema, settlement, currency policy or permissions.
