@@ -6,7 +6,7 @@ const componentSource = readFileSync(new URL('./app.component.ts', import.meta.u
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('invoice print re-fetches persisted detail and refuses invoices no longer issued', () => {
-  assert.match(componentSource, /async printInvoice\(invoice: Invoice\): Promise<void> \{[\s\S]*?invoice\.status !== 'issued'[\s\S]*?this\.api\.invoiceDetail\(this\.business\.id, invoice\.id\)/);
+  assert.match(componentSource, /async printInvoice\(invoice: Invoice\): Promise<void> \{[\s\S]*?invoice\.status !== 'issued'[\s\S]*?const businessId = business\.id[\s\S]*?this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
   assert.match(componentSource, /if \(detail\.status !== 'issued'\) \{[\s\S]*?throw new Error/);
 });
 
@@ -33,4 +33,10 @@ test('dynamic invoice print values are HTML-escaped before document insertion', 
 test('invoice print uses the current language direction and excludes action controls from printed output', () => {
   assert.match(componentSource, /const direction = this\.language === 'ar' \? 'rtl' : 'ltr'/);
   assert.match(componentSource, /@media print\{body\{padding:0\}\.actions\{display:none\}/);
+});
+
+test('invoice print closes instead of rendering a previous workspace after a workspace switch', () => {
+  assert.match(componentSource, /const business = this\.business;[\s\S]*?const businessId = business\.id/);
+  assert.match(componentSource, /this\.api\.invoiceDetail\(businessId, invoice\.id\)[\s\S]*?if \(this\.business\?\.id !== businessId\) \{[\s\S]*?printWindow\.close\(\);[\s\S]*?return;/);
+  assert.match(componentSource, /this\.escapePrintHtml\(business\.name\)/);
 });
