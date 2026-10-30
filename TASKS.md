@@ -1,5 +1,17 @@
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
+
+## T41 — Cross-feature payroll privacy finding (2026-10-30)
+
+- **Status:** SECURITY FINDING / POLICY DECISION REQUIRED; permission/runtime implementation BLOCKED by T37.
+- **Source evidence:** payroll payment creates an Expense containing employee name in description/vendor_name, net_pay in amount, and `payroll:{id}` reference. The generic `GET /expenses` uses default member authorization and serializes all four fields. `GET /reports/summary` and `GET /assistant/insights` also include payroll expenses in aggregate count/total by currency. CSV `GET /exports/{entity_type}.csv` explicitly opts into OWNER-only authorization.
+- **Impact:** STAFF with ordinary business membership can read employee-identifying payroll expense details and net salary through the generic expense list; summary/assistant insights expose payroll-derived aggregate totals/counts. This is source-level evidence; authenticated runtime exploitation is NOT RUN.
+- **Files reviewed:** `backend/app/employee_payroll_api.py` (blob `6efccc6632d01a8ab8f138017d95af0b402e481b`), `backend/app/extended_api.py` (main SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`), `backend/tests/test_employee_payroll_api.py` (27 focused test functions; no regression yet for this cross-feature path).
+- **Required decision:** Master/T37 must define STAFF visibility for Payroll-category expense rows and payroll-derived aggregates across expenses list, reports summary, assistant insights, CSV/export and any detail/chat consumers. Do not change shared authorization or report semantics before approval.
+- **Post-approval acceptance:** seed a synthetic payroll expense and an ordinary expense; assert STAFF cannot retrieve employee name, net_pay, payroll reference or restricted payroll aggregates, while approved ordinary-expense access remains correct; OWNER retains authorized access; include tenant isolation and no-side-effect checks.
+- **Verification:** static source review complete; runtime STAFF/OWNER API tests, frontend/AI consumer review, complete route-role matrix and exact-head CI NOT RUN. No runtime/schema/permission change.
+- **Delivery:** continue on existing branch `feat/t41-salary-history-effective-dates` / PR #308; preserve Draft/Open/Unmerged. No merge/deployment.
+
 ## T41 — Employees & Payroll regression checkpoint (2026-10-29)
 
 - **Status:** PARTIALLY COMPLETE — seven focused API regressions are implemented; current branch's `backend/tests/test_employee_payroll_api.py` ran **16 passed** in the available sandbox after fixing a brittle audit-event ordering assertion. This is focused local evidence, not a full CI pass.
