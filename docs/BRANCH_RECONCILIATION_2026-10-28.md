@@ -994,3 +994,28 @@ Together with PR #264's original **109/109** dispositions, these two closures br
 - Historical #298 backend-accounting failed on its earlier head. The connected tools could not retrieve the CircleCI job log, so the exact runtime failure was not directly confirmed. Source inspection found missing OWNER identity setup and double-escaped newlines; both were corrected in #301 and require exact-head CI verification.
 - The prior inventory documented 120/120 closed-unmerged PR dispositions. #298 is an additional closure with a documented supersession disposition; a fresh full paginated inventory has **NOT RUN**, so the current repository-wide total is **NOT VERIFIED**.
 - No stale branch was merged wholesale, no remote branch was deleted, and no deployment was performed.
+
+
+## Closed-unmerged PR refresh — 2026-10-31
+
+A fresh GitHub search was partitioned into non-overlapping creation-date ranges (`2026-10-29..2026-10-31`, `2026-10-27..2026-10-28`, `2026-10-25..2026-10-26`, and before `2026-10-25`). It returned **123 closed-unmerged PRs** after the owner-directed closure of #319. The 109 historical dispositions above remain the baseline; the following 14 later closures are reconciled here.
+
+| PR | Current disposition | Successor / evidence |
+|---|---|---|
+| #249 | Historical branch-reconciliation checkpoint; no application code. Its inventory and audit purpose was superseded by the later authoritative #264 reconciliation and subsequent task checkpoints. | #264 / current refresh |
+| #261 | Superseded foreign-tenant test matrix; no wholesale merge. | #267 merged; current security tests retain broader foreign-ID/no-side-effect coverage |
+| #270 | Superseded partial (20/109) audit snapshot. | #264 merged; do not merge stale snapshot |
+| #280 | Superseded stale 44-commit payroll refresh branch. | #287 merged |
+| #283 | Redundant reconciliation snapshot. | #282 merged |
+| #285 | Payroll refresh replacement superseded after stale TASKS conflict. | #287 merged |
+| #286 | Duplicate payroll refresh implementation and stale task checkpoint. | #287 merged |
+| #289 | Duplicate TASKS reconciliation. | #288 merged |
+| #291 | Narrower non-member workflow tests diverged after shared test/task changes. | #294 merged with broader protected-state/no-write/no-audit coverage |
+| #293 | Deferred documentation-only checkpoint; no unique application code. Its closure findings are reconciled by this refresh. | Current ledger refresh |
+| #295 | Narrower duplicate non-member workflow test. | #294 merged with broader coverage |
+| #298 | OWNER-positive CSV test branch closed after divergence; intended behavior was rebuilt on a current-main branch. | #301 merged |
+| #310 | Invoice print detail increment consolidated into the active sales-to-cash PR; no separate merge. | #305 remains OPEN / DRAFT; invoice-print changes are not yet verified on main |
+| #319 | Closed by owner direction because Semaphore conflicts with the GitLab-only CI policy. Branch retained for audit; no Semaphore run. | GitLab-only `.gitlab-ci.yml`; GitLab main pipeline #3010621725 |
+
+No stale branch was merged wholesale or deleted during this refresh. A GitLab mirror listing returned 282 branch refs, but that is not a canonical GitHub branch inventory; full GitHub branch-ref pagination remains NOT VERIFIED. The closed-unmerged PR search is not a substitute for a full remote branch-ref inventory.
+
