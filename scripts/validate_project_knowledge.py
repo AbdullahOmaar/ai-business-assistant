@@ -27,12 +27,12 @@ REQUIRED = {
 ALLOWED_STATUS = {"DRAFT", "APPROVED", "SUPERSEDED"}
 ALLOWED_CLASSES = {"STABLE", "CONTROLLED"}
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-SEMVER_RE = re.compile(r"^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
+SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
 
 def frontmatter(text: str) -> dict[str, str]:
     """Parse the deliberately small scalar/list-subset YAML metadata contract."""
-    if not text.startswith("---\\n"):
+    if not text.startswith("---\n"):
         raise ValueError("missing YAML frontmatter")
     parts = text.split("---", 2)
     if len(parts) != 3:
@@ -44,7 +44,7 @@ def frontmatter(text: str) -> dict[str, str]:
         if line.startswith("  - "):
             values["canonical_sources"] = "present"
             continue
-        match = re.match(r"^([a-z_]+):\\s*(.*)$", line)
+        match = re.match(r"^([a-z_]+):\s*(.*)$", line)
         if match:
             key, value = match.group(1), match.group(2).strip()
             if key in values:
@@ -137,7 +137,7 @@ def validate() -> list[str]:
         if sha.lower() != sha or not SHA_RE.fullmatch(sha):
             errors.append(f"{name}: related_github_sha must be a lowercase 40-character SHA")
 
-        for target in re.findall(r"\\[[^\\]]+\\]\\(([^)]+)\\)", content):
+        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", content):
             target = target.split("#", 1)[0]
             if not target or target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
