@@ -1742,3 +1742,30 @@ This checkpoint supplements the ordered register above; it does not supersede pr
 - Expanded `docs/PRODUCTION_V1_ERP_QUALITY_GATES.md` with workflow-to-test matrix, exact backend/PostgreSQL/frontend/Playwright commands, artifact expectations, and gaps (no authenticated full ERP browser journey; no complete GL/AP/COGS/refund lifecycle).
 - Validation: **NOT RUN**. GitHub connector environment has no local checkout/test runner. CircleCI was not triggered/retried/rerun. GitLab exact-SHA runner remains blocked pending supported one-way sync. No production data, migrations, deployment or financial contracts changed.
 - Status: **PARTIALLY COMPLETE / VALIDATION BLOCKED**. Next action: restore supported exact-SHA GitHub→GitLab synchronization, execute the documented suites once on the resulting exact PR head, inspect artifacts, fix genuine failures without weakening assertions, and obtain independent review. Keep PR #315 Draft and unmerged.
+
+
+## Master execution continuation checkpoint — 2026-10-30 02:37 UTC
+
+This is an evidence addendum to the existing live queue. It does not authorize merge, production deployment, production DB mutation, or financial-contract changes.
+
+### T03 — security and route inventory (PR #302)
+- Re-reviewed exact PR head `a144f84a9573859a95be3de2058e0ba03a97f0a1`. The previously identified PATCH/VOID ambiguity is addressed: Tenant A OWNER uses a valid Tenant A customer while targeting Tenant B's issued invoice, asserts the exact foreign-invoice lookup rejection, snapshots all invoice columns and child invoice lines, and verifies both tenants' audit counts are unchanged.
+- Reconciled six registered routers: 76 unique method/path decorators, zero duplicates; plus 3 operational routes = 79. PR #302's inventory has 79 unique entries; source-to-inventory comparison (respecting module-prefix grouping) has zero missing, extra, or duplicate entries.
+- PR #302 remains OPEN/DRAFT/UNMERGED; six CircleCI contexts fail, no retry; local tests NOT RUN; independent security review NOT RUN.
+
+### T07 — database backup / restore gate (read-only Neon inspection)
+- Neon main branch is at Alembic `0005_employee_payroll`, with `employees` and `payroll_records` tables.
+- `pre-prod-migration-backup-20261030` and `release-drill-restored-snapshot-20261027` are both at `0003_business_workflows` and lack those two tables.
+- Only one snapshot is listed: `pre-release-readonly-restore-drill-2026-10-27`, created 2026-10-26T23:54:40Z, before migration 0005. Automatic snapshot schedules for main and the pre-prod backup branch are empty.
+- Therefore no current-schema backup/restore proof exists. No snapshot, schedule, restore, migration, or production data mutation was initiated.
+
+### T01 — GitHub/GitLab exact-SHA CI gate (PR #315)
+- Current PR head at this checkpoint: `e432a5e315963050cd96c9e75fccf3010be46891`, message `[skip ci] test(erp): strengthen persisted regression evidence and matrix`.
+- GitHub combined status and commit-associated workflow list are empty (NOT PASS). GitLab project 88276557 main is `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`; exact PR head lookup returns 404 Commit Not Found; latest GitLab main pipeline lookup returns 403 Forbidden.
+- GitLab project main is protected. Available GitLab connector has no mirror-settings action. Repository policy prohibits creating source branches/commits directly in GitLab. No pipeline or GitLab branch was created.
+- CircleCI remains explicitly frozen; no retry/rerun.
+
+### Delivery / quality
+- No merge, branch rewrite, production deployment, production DB mutation, or migration.
+- Backend pytest, PostgreSQL concurrency/migration/restore, frontend unit/build, browser E2E, Docker, and dependency/security scans remain NOT RUN on the exact candidate heads.
+- Highest-value next actions: owner/admin repairs one-way GitHub→GitLab mirror; owner approves cost-safe current-schema backup/restore drill; T37 receives explicit Product Owner + qualified accountant approval before shared financial implementation.
