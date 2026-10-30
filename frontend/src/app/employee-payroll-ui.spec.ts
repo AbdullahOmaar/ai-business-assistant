@@ -119,3 +119,24 @@ test('employee directory and payroll history remain available when the optional 
   assert.match(loader, /catch \(error\) \{[\s\S]*this\.error = this\.errorMessage\(error\)/);
   assert.match(loader, /finally \{[\s\S]*this\.pickerBusy = false/);
 });
+
+
+test('clears all workspace-scoped employee and payroll state when the workspace selection is removed', () => {
+  const changeStart = component.indexOf('ngOnChanges(changes: SimpleChanges): void');
+  const changeEnd = component.indexOf('\n  t(arabic: string', changeStart);
+  assert.ok(changeStart >= 0 && changeEnd > changeStart, 'Expected workspace change handler');
+  const handler = component.slice(changeStart, changeEnd);
+  assert.match(handler, /if \\(changes\\['businessId'\\]\\)/);
+  assert.doesNotMatch(handler, /if \\(changes\\['businessId'\\] && this\\.businessId\\)/);
+  for (const state of [
+    'this.employees = []',
+    'this.payrollEmployeeOptions = []',
+    'this.payrollRecords = []',
+    "this.payrollEmployeeId = ''",
+    "this.payrollEmployeeSearch = ''",
+    "this.employeeSearchApplied = ''",
+  ]) {
+    assert.ok(handler.includes(state), `Workspace change must clear ${state}`);
+  }
+  assert.match(handler, /if \\(this\\.businessId\\) void this\\.loadEmployeesAndPayroll\\(\\)/);
+});
