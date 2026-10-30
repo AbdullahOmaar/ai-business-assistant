@@ -1409,6 +1409,8 @@ def list_invoices(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
 def receivables_aging(
     business_id: UUID,
     as_of: date | None = Query(default=None),
+    limit: int | None = Query(default=None, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
@@ -1439,7 +1441,7 @@ def receivables_aging(
                 Invoice.status == "issued",
                 Invoice.issue_date < cutoff_end,
             ).order_by(
-                Invoice.currency_code, Invoice.due_date, Invoice.invoice_number
+                Invoice.currency_code, Invoice.due_date, Invoice.invoice_number, Invoice.id
             )
         ).all()
         missing_issue_dates = session.execute(
@@ -1627,6 +1629,23 @@ def receivables_aging(
                 ],
                 "total_outstanding": str(sum(buckets.values(), ZERO)),
             })
+        if limit is None and offset:
+            raise HTTPException(
+                status_code=422,
+                detail="offset requires limit for receivables-aging pagination.",
+            )
+        page_invoices = invoice_rows if limit is None else invoice_rows[offset:offset + limit]
+        pagination = {
+            "limit": limit,
+            "offset": offset,
+            "total_count": len(invoice_rows),
+            "has_more": limit is not None and offset + len(page_invoices) < len(invoice_rows),
+            "next_offset": (
+                offset + len(page_invoices)
+                if limit is not None and offset + len(page_invoices) < len(invoice_rows)
+                else None
+            ),
+        }
         return {
             "basis": "historical_as_of",
             "as_of_date": report_date.isoformat(),
@@ -1637,8 +1656,9 @@ def receivables_aging(
                 "invalid allocations are warnings and never reduce receivables."
             ),
             "invoice_count": len(invoice_rows),
+            "pagination": pagination,
             "by_currency": summaries,
-            "invoices": invoice_rows,
+            "invoices": page_invoices,
             "data_quality_warnings": data_quality_warnings,
             "limitations": [
                 "Only issued invoices with a positive valid remaining balance appear in aging buckets; drafts and void invoices are excluded.",
