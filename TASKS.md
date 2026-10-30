@@ -4,9 +4,10 @@
 - Workstream: Shared Project Knowledge System v1.0; docs-only.
 - Canonical repository: `AbdullahOmaar/ai-business-assistant`.
 - Verified base `main` SHA: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (rechecked current).
-- Current work branch: `docs/shared-project-knowledge-v1-20261030`.
+- Current branch: `docs/shared-project-knowledge-v1-20261030`.
 - Canonical integration PR: [#317](https://github.com/AbdullahOmaar/ai-business-assistant/pull/317), OPEN / DRAFT / UNMERGED.
-- Package content head before this ledger refresh: `b2b5e58791889efa00e0d5bf555f98a8f874d2f9`; 24 commits ahead / 0 behind main; GitHub mergeable=true.
+- Candidate head at this checkpoint: `075ba4a68f7e2cab9f1eb47752487152e7d6f766`; 37 commits ahead / 0 behind main; GitHub reports mergeable=true, mergeable_state=unstable.
+- Historical branch `docs/project-sources-knowledge-pack-20261030` remains at `4e5d5bc603c4fc0484caf368baa5572a4ff9b437`; comparison is 37 ahead / 9 behind. It is retained as historical DRAFT evidence, not deleted or merged.
 
 ## Implemented candidate
 - Exactly five canonical knowledge documents under `docs/project-knowledge/`:
@@ -16,36 +17,38 @@
   - `03_SECURITY_POLICY_AND_RELEASE_GATES.md`
   - `04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`
 - Standard-library validator: `scripts/validate_project_knowledge.py`.
-- Seven standard-library `unittest` regression cases: `tests/test_project_knowledge_validator.py`.
+- Seventeen standard-library `unittest` regression cases: `tests/test_project_knowledge_validator.py`.
 - Implementation plan: `docs/superpowers/plans/2026-10-30-shared-project-knowledge.md`.
-- All five docs use unique IDs `ABA-KNOW-00..04`, consistent version `1.0.0`, status `DRAFT`, and refreshed `last_verified_at: 2026-10-30T15:22:19Z`.
-- Governance doc retains all eleven S01–S11 shared-knowledge E2E acceptance scenarios. These are criteria only; execution is NOT RUN.
-- Earlier 0.1.0 DRAFT branch `docs/project-sources-knowledge-pack-20261030` remains at `4e5d5bc603c4fc0484caf368baa5572a4ff9b437`. It diverges from this candidate (18 ahead / 9 behind when compared to the current v1 branch). It is retained as historical draft evidence; not merged, deleted or rewritten.
+- All five docs use unique IDs `ABA-KNOW-00..04`, consistent version `1.0.0`, status `DRAFT`, owner `Project Master / Repository Owner`, and source baseline SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- Governance doc retains all eleven S01–S11 shared-knowledge E2E acceptance scenarios. Execution is NOT RUN.
+- Self-review record is documented in the Governance file. It explicitly states that maintainer self-review is not independent review and does not waive that gate.
 
-## Source reconciliation and static checks
-- Re-read canonical Notion Product Charter, Master Task Plan, Agent Registry, Operating Model, E2E Assurance Plan and T37 record.
-- Re-read main README, AGENTS, TASKS, CONTRIBUTING, Architecture Baseline, ADR-001 and Production Deployment Runbook.
-- Static exact-head readback: five expected docs present; IDs unique; version/status consistent; required metadata present; 21 repository-local Markdown links resolved against the candidate tree; 0 missing.
+## Master technical review findings
+- Reviewed all five knowledge documents, canonical references, cross-document policy consistency, validator, 17 test cases, plan and historical branch lineage.
+- Hardened validator against unexpected nested package entries, symlinked package files/root, duplicate or unexpected metadata keys, malformed/credential-bearing canonical URLs, invalid review-date ordering, unsafe Markdown URL schemes and URL-decoded repository path traversal.
+- Expanded unit tests from 7 to 17 to cover those validation boundaries, invalid timestamps, broken links, package shape, metadata identity/version/owner consistency and unsafe URL handling.
+- Static exact-head readback: five expected docs present; IDs unique; version/status/owner consistent; required metadata present; 21 repository-local Markdown links resolved; 0 missing.
+- Limited static secret-pattern scan found no common private-key/token/AWS/OpenAI/credential-URL matches. This is not a full security audit.
 - T37 remains fail-closed / Draft / NOT APPROVED for shared financial semantics; no financial policy is promoted.
-- The Notion Project Instructions copy-ready text now references the current IDs `ABA-KNOW-00..04`; actual ChatGPT Project Instructions save/readback remains NOT VERIFIED.
 
 ## Validation and publication gates
-- Python validator execution and seven unit tests: NOT RUN (no available local checkout/runtime; Desktop Commander was previously confirmed OFFLINE).
+- Python validator execution and all 17 unit tests: NOT RUN (no available local checkout/runtime; Desktop Commander was previously confirmed OFFLINE).
 - S01–S11 E2E execution: NOT RUN.
-- Exact-head combined status at package content head `b2b5e58791889efa00e0d5bf555f98a8f874d2f9`: empty (NOT PASS; no checks reported).
-- CircleCI remains frozen by owner instruction; no run, rerun or retry. Historical six CircleCI failures on earlier package head `4b1c3a7c70bb83ddb7f2c2f8d9c180c3e1a0998f` remain root-cause NOT VERIFIED.
-- Independent human review: NOT RECEIVED. Product Owner approval of the exact v1.0.0 package: NOT RECEIVED.
-- Project Sources UI inventory/upload/readback: NOT VERIFIED. The current tools expose no Project Sources UI operation; an empty conversation Project Files list is not proof of the actual Project UI contents.
-- Project Instructions save/readback: NOT VERIFIED; separate ChatGPT Project UI operation.
+- Exact-head GitHub status at `075ba4a68f7e2cab9f1eb47752487152e7d6f766`: six CircleCI contexts FAILURE and one SemaphoreCI push Pipeline FAILURE. Root cause NOT VERIFIED. No manual dispatch/rerun/retry was issued; these contexts appeared after branch commits. CircleCI owner freeze remains in force; avoid further CI-triggering pushes and use `[skip ci]` where a documentation-only ledger commit is unavoidable.
+- Independent human review: NOT AVAILABLE. Project Master self-review is supplementary only and does not satisfy an independent-review requirement.
+- Product Owner approval of the exact v1.0.0 package: NOT RECEIVED.
+- Project Sources UI inventory/upload/readback: NOT VERIFIED. Current tools expose no Project Sources UI operation; an empty conversation Project Files list is not proof of actual Project UI contents.
+- Project Instructions copy-ready text in Notion now references `ABA-KNOW-00..04`; actual ChatGPT Project Instructions UI save/readback remains NOT VERIFIED.
 - No merge, deployment, production write, migration, snapshot or branch deletion.
 
 ## Open risks / next gates
-1. Obtain an independent human review of PR #317's exact head and resolve findings.
-2. Obtain explicit Product Owner approval for the exact five-file v1.0.0 package before changing any document to APPROVED.
-3. Inventory the actual ChatGPT Project Sources list in the Project UI; reconcile duplicates before publication.
-4. Publish only the five approved exact versions, then read back every saved file's name/version/content.
-5. Separately save the copy-ready Project Instructions and read them back in actual Project settings.
-6. Record approval references, publication/readback evidence and final handoff. Keep this package DRAFT and unpublished until gates pass.
+1. Owner must decide whether to retain the independent-review requirement or authorize a documented exception for this documentation-only package; maintainer self-review cannot be relabelled independent.
+2. Run the package validator and all 17 unit tests in an approved local runtime when one is available; do not use frozen CI.
+3. Obtain explicit Product Owner approval for the exact five-file v1.0.0 package before changing any document to APPROVED.
+4. Inventory the actual ChatGPT Project Sources list in the Project UI; reconcile duplicates before publication.
+5. Publish only the five approved exact versions, then read back every saved file's name/version/content.
+6. Separately save the copy-ready Project Instructions and read them back in actual Project settings.
+7. Record approval references, publication/readback evidence and final handoff. Keep this package DRAFT and unpublished until gates pass.
 
 ---
 
