@@ -102,6 +102,17 @@ The scenario also verifies exact payment replay returns the same record, changed
 
 **Important limitation:** the current report explicitly includes stored tax in gross invoice revenue and excludes COGS because product purchase costs are not linked to sales. EGP 515.60 is therefore an operational result *before cost of goods sold*, not net profit. The test asserts this limitation instead of presenting it as a complete P&L.
 
+## Initial procurement scenario: purchase order + partial receiving
+
+A second API/persistence scenario is implemented in `backend/tests/test_erp_v1_business_cycle.py`:
+- Create a supplier and a stock-tracked product with opening quantity 10.
+- Create a purchase order for 5 units × EGP 100 = EGP 500 and approve it.
+- Receive 3 units: order becomes partially_received and stock becomes 13.
+- Attempt to receive 3 more units while only 2 remain: request is rejected and both received quantity and stock remain unchanged.
+- Receive the remaining 2 units: order becomes received, received quantity is 5, stock becomes 15, and exactly two receipt movements / receipt audit events exist.
+
+**Important limitation:** purchase-order line unit costs are stored, but supplier bill/payable/settlement and inventory valuation/COGS linkage are not implemented as a complete accounting workflow. This scenario verifies PO approval and quantity receiving only; it does not claim AP recognition, inventory value, or COGS correctness.
+
 ## Known blockers to full ERP acceptance
 
 - No implemented chart of accounts/general ledger/journal posting engine.
