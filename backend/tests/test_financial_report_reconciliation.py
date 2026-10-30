@@ -1126,7 +1126,12 @@ def test_receivables_aging_pagination_preserves_report_wide_totals():
         second_payload = second.json()
         empty_payload = empty.json()
         assert full_payload["invoice_count"] == 3
-        assert first_payload["invoice_count"] == second_payload["invoice_count"] == 3
+        assert len(full_payload["invoices"]) == 3
+        assert full_payload["pagination"] == {
+            "limit": None, "offset": 0, "total_count": 3,
+            "has_more": False, "next_offset": None,
+        }
+        assert first_payload["invoice_count"] == second_payload["invoice_count"] == empty_payload["invoice_count"] == 3
         assert first_payload["pagination"] == {
             "limit": 2, "offset": 0, "total_count": 3,
             "has_more": True, "next_offset": 2,
@@ -1143,8 +1148,8 @@ def test_receivables_aging_pagination_preserves_report_wide_totals():
         assert [row["invoice_id"] for row in first_payload["invoices"] + second_payload["invoices"]] == [
             row["invoice_id"] for row in full_payload["invoices"]
         ]
-        assert first_payload["by_currency"] == second_payload["by_currency"] == full_payload["by_currency"]
-        assert first_payload["data_quality_warnings"] == second_payload["data_quality_warnings"] == full_payload["data_quality_warnings"]
+        assert first_payload["by_currency"] == second_payload["by_currency"] == empty_payload["by_currency"] == full_payload["by_currency"]
+        assert first_payload["data_quality_warnings"] == second_payload["data_quality_warnings"] == empty_payload["data_quality_warnings"] == full_payload["data_quality_warnings"]
         assert first_payload["by_currency"] == [
             {
                 "currency_code": "EGP",
