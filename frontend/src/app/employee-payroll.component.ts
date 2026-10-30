@@ -365,6 +365,7 @@ export class EmployeePayrollComponent implements OnChanges {
     const businessId = this.businessId;
     const sequence = ++this.loadSequence;
     const pickerSequence = ++this.pickerLoadSequence;
+    this.pickerBusy = false;
     this.busy = true;
     this.error = '';
     try {
