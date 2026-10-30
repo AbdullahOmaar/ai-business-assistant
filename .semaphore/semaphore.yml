@@ -27,7 +27,7 @@ blocks:
         - name: Backend tests, migrations, and Python dependency audit
           commands:
             - checkout
-            - sem-version python 3.12.0
+            - sem-version python 3.12
             - sem-service start postgres 16 --db=ai_business_assistant_test
             - python -m pip install --upgrade pip
             - python -m pip install -r backend/requirements.txt pip-audit
