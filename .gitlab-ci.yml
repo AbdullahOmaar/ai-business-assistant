@@ -67,6 +67,31 @@ frontend-tests:
     - npm ci --no-audit --no-fund
     - npm test
 
+backend-container-smoke:
+  stage: build
+  image: docker:27.5.1-cli
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: "overlay2"
+  before_script:
+    - |
+      attempt=0
+      until docker info >/dev/null 2>&1; do
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge 30 ]; then
+          echo "Docker daemon did not become ready within 60 seconds." >&2
+          exit 1
+        fi
+        sleep 2
+      done
+  script:
+    - docker build --pull --file backend/Dockerfile --tag "ai-business-assistant-backend-ci:${CI_COMMIT_SHA}" backend
+    - docker run --rm --entrypoint python "ai-business-assistant-backend-ci:${CI_COMMIT_SHA}" -c "import app.main; print('FastAPI import OK')"
+
 frontend-build:
   stage: build
   image: node:22.12-bookworm
