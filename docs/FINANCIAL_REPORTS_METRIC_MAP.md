@@ -65,5 +65,6 @@ The matrix below separates already-authored tests from missing coverage and cont
 
 - Source changes are on the existing T40 branch and PR #304; this document does not authorize merge or deployment.
 - Regression tests are authored but **NOT RUN**. Local tests, frontend build, container build, and security scans are **NOT RUN** per owner instruction.
-- Latest exact-head SHA recorded at the last check: `c6fa0f6e23d3fd5544cc57166775e93a430eb46e`. All six CircleCI contexts reported failure; logs were not available and root cause is **NOT VERIFIED**.
+- Latest exact-head checkpoint before this documentation-only refresh: `9c13209ed0e1cc33ba7458e68b56d4d12b37af33`. GitHub combined-status returned five CircleCI contexts in FAILURE (backend-accounting, backend-container, frontend-production-build, frontend-unit-tests, frontend-browser-smoke); the sixth expected context was not present in that response. CircleCI execution/retry is prohibited by the current Operating Model; no job logs were inspected and root cause is **NOT VERIFIED**.
+- PR #304 remains OPEN/DRAFT/UNMERGED on the existing branch. Against live GitHub main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, compare is 41 ahead / 2 behind; GitHub currently reports mergeable=true, but the base is stale and the exact-head checks/review gates are incomplete. Do not rebase/merge without reviewing the two behind commits and resolving the required checks.
 - Do not mark T40 VERIFIED COMPLETE or merge until the shared financial contract is approved, feature review is complete, and required exact-head checks pass.
