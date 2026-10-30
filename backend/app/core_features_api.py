@@ -107,14 +107,20 @@ def _day_bounds(
     if start_date and end_date and start_date > end_date:
         raise HTTPException(status_code=422, detail="start_date must be on or before end_date")
     zone = _timezone_zone(timezone_name)
-    start = (
-        datetime.combine(start_date, time.min, tzinfo=zone).astimezone(timezone.utc)
-        if start_date else None
-    )
-    end = (
-        datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=zone).astimezone(timezone.utc)
-        if end_date else None
-    )
+    try:
+        start = (
+            datetime.combine(start_date, time.min, tzinfo=zone).astimezone(timezone.utc)
+            if start_date else None
+        )
+        end = (
+            datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=zone).astimezone(timezone.utc)
+            if end_date else None
+        )
+    except (OverflowError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="Date is outside the supported business-timezone range.",
+        ) from exc
     return start, end
 
 
