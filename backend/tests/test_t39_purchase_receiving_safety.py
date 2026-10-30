@@ -11,6 +11,7 @@ from app.models import (
     Business,
     BusinessMembership,
     MembershipRole,
+    Product,
     PurchaseOrder,
     PurchaseOrderLine,
     StockMovement,
@@ -117,6 +118,73 @@ def test_partial_receipts_create_exact_stock_ledger_effects(purchasing_workspace
         assert sum((movement.quantity_delta for movement in movements), Decimal("0")) == Decimal("10.000")
         session.refresh(line)
         assert line.received_quantity == Decimal("10.000")
+
+
+def test_non_stock_tracked_po_product_is_rejected_before_any_receipt_mutation(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, tracked_line, tracked_product = _approved_order(session, business_id, principal)
+        untracked_product = Product(
+            business_id=business_id,
+            name="Untracked PO Item",
+            unit_price=Decimal("5"),
+            is_stock_tracked=False,
+        )
+        session.add(untracked_product)
+        session.flush()
+        untracked_line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=untracked_product.id,
+            quantity=Decimal("3"),
+            unit_cost=Decimal("5"),
+            received_quantity=Decimal("0"),
+        )
+        order.total += Decimal("15")
+        session.add(untracked_line)
+        session.commit()
+
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+
+        # The first line is valid. The later untracked product must reject the
+        # whole receipt before any line quantity, movement, or audit is staged.
+        with pytest.raises(WorkflowError, match="product is not stock-tracked"):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={
+                    tracked_line.id: Decimal("2"),
+                    untracked_line.id: Decimal("1"),
+                },
+            )
+
+        session.expire_all()
+        assert session.get(PurchaseOrder, order.id).status == "approved"
+        assert session.get(PurchaseOrderLine, tracked_line.id).received_quantity == Decimal("0.000")
+        assert session.get(PurchaseOrderLine, untracked_line.id).received_quantity == Decimal("0.000")
+        assert session.get(Product, tracked_product.id).is_stock_tracked is True
+        assert session.get(Product, untracked_product.id).is_stock_tracked is False
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
 
 
 def test_staff_receipt_denial_has_no_business_side_effects(purchasing_workspace):
