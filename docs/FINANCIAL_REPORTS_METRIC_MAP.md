@@ -62,7 +62,7 @@ The matrix below separates already-authored tests from missing coverage and cont
 
 | Area | Existing authored coverage | Remaining test cases / decision gate |
 | --- | --- | --- |
-| Expense date filters | Inclusive business-local bounds, one-sided filters, reversed range, invalid timezone, unrepresentable calendar extremes, DST transition, deterministic timestamp tie-break pagination, currency grouping, non-member denial, same-principal cross-business isolation | Run the existing focused suite; add supported-PostgreSQL date-boundary coverage after an authorized runner is available. |
+| Expense date filters | Inclusive business-local bounds, one-sided filters, reversed range, invalid timezone, unrepresentable calendar extremes, New York DST transition and Cairo 2026 spring-forward boundary, deterministic timestamp tie-break pagination, currency grouping, non-member denial, same-principal cross-business isolation | Run the existing focused suite; add supported-PostgreSQL date-boundary coverage after an authorized runner is available. |
 | Tax summary | Inclusive local-day bounds, one-sided filters, invalid timezone, unfiltered compatibility, currency separation, non-member denial, calendar extremes | Add PostgreSQL-backed query parity and verify empty-period behavior on the supported database. |
 | Receivables aging | Business-local default as_of, explicit as_of preservation; existing related suite includes membership coverage | Add explicit tests for mismatched-payment-currency warnings, over-allocation data-quality warnings, and same-principal cross-business isolation. Preserve current-vs-historical basis as unresolved until Master decides. |
 | Dashboard | Invoice-only/draft exclusion, no inferred cash, partial/full payment and currency-separated metrics, reversed date range are covered across T40/related suites | Add non-member and cross-business report isolation tests. Payment-currency mismatch and over-allocation expected behavior are T37-gated; do not encode a new expected response until Master records the versioned decision. |
@@ -72,7 +72,7 @@ The matrix below separates already-authored tests from missing coverage and cont
 
 ### Test execution gate
 
-- T40-authored regression tests: 20 total across `test_financial_report_date_boundaries.py` (13) and `test_financial_report_reconciliation.py` (7). Source-reviewed only; **NOT RUN**.
+- T40-authored regression tests: 21 total across `test_financial_report_date_boundaries.py` (14) and `test_financial_report_reconciliation.py` (7), including a new Cairo 2026 spring-forward boundary case for expense and tax-summary filters. Source-reviewed only; **NOT RUN**.
 - Related existing suites: `test_business_timezone_reporting.py` (6) and `test_core_features_api.py` (20). Inspected/source-reviewed only; **NOT RUN**.
 - CircleCI execution/retry is prohibited by the current Operating Model. Do not run it.
 - GitHub Actions must not be introduced as a replacement CI. No Actions run was triggered.
