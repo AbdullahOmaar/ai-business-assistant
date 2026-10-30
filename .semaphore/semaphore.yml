@@ -8,6 +8,13 @@ agent:
     os_image: ubuntu2404
 execution_time_limit:
   hours: 2
+global_job_config:
+  epilogue:
+    always:
+      commands:
+        - 'if [[ -f "$SEMAPHORE_GIT_DIR/backend/test-results/pytest.xml" ]]; then test-results publish "$SEMAPHORE_GIT_DIR/backend/test-results/pytest.xml"; fi'
+        - 'if [[ -f "$SEMAPHORE_GIT_DIR/frontend/test-results/frontend-unit.xml" ]]; then test-results publish "$SEMAPHORE_GIT_DIR/frontend/test-results/frontend-unit.xml"; fi'
+        - 'if [[ -f "$SEMAPHORE_GIT_DIR/frontend/test-results/e2e-junit.xml" ]]; then test-results publish "$SEMAPHORE_GIT_DIR/frontend/test-results/e2e-junit.xml"; fi'
 blocks:
   - name: Backend accounting and migration safety
     dependencies: []
@@ -40,10 +47,6 @@ blocks:
             - python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
             - test -s /tmp/alembic-upgrade.sql
             - pip-audit -r requirements.txt
-      epilogue:
-        always:
-          commands:
-            - test-results publish "$SEMAPHORE_GIT_DIR/backend/test-results"
 
   - name: Frontend unit tests
     dependencies: []
@@ -57,10 +60,6 @@ blocks:
             - npm ci --no-audit --no-fund
             - mkdir -p test-results
             - node --experimental-strip-types --test --test-reporter=tap --test-reporter=junit --test-reporter-destination=stdout --test-reporter-destination=test-results/frontend-unit.xml src/app/*.spec.ts
-      epilogue:
-        always:
-          commands:
-            - test-results publish "$SEMAPHORE_GIT_DIR/frontend/test-results"
 
   - name: Frontend production build
     dependencies: []
@@ -114,10 +113,6 @@ blocks:
             - npx playwright install --with-deps chromium
             - npx playwright --version
             - npx playwright test
-      epilogue:
-        always:
-          commands:
-            - test-results publish "$SEMAPHORE_GIT_DIR/frontend/test-results"
 
 after_pipeline:
   task:
