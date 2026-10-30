@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.0
+version: 1.0.1
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T15:22:19Z
+last_verified_at: 2026-10-30T18:32:27Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
