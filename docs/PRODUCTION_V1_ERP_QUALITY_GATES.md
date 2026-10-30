@@ -113,6 +113,28 @@ A second API/persistence scenario is implemented in `backend/tests/test_erp_v1_b
 
 **Important limitation:** purchase-order line unit costs are stored, but supplier bill/payable/settlement and inventory valuation/COGS linkage are not implemented as a complete accounting workflow. This scenario verifies PO approval and quantity receiving only; it does not claim AP recognition, inventory value, or COGS correctness.
 
+## Initial procurement scenario: purchase order + partial receiving
+
+The API/persistence scenario in `backend/tests/test_erp_v1_business_cycle.py`:
+- Creates a supplier and stock-tracked product with opening quantity 10.
+- Creates and approves a purchase order for 5 units × EGP 100 = EGP 500.
+- Receives 3 units: order becomes partially_received and stock becomes 13.
+- Attempts to receive 3 more units when only 2 remain: request is rejected and both received quantity and stock remain unchanged.
+- Receives the remaining 2 units: order becomes received, received quantity is 5, stock becomes 15, and exactly two receipt movements / receipt audit events exist.
+
+**Important limitation:** purchase-order line unit costs are stored, but supplier bill/payable/settlement and inventory valuation/COGS linkage are not implemented as a complete accounting workflow. This scenario verifies PO approval and quantity receiving only; it does not claim AP recognition, inventory value, or COGS correctness.
+
+## Initial returns scenario: approved return + stock restoration
+
+The API/persistence scenario:
+- Issues a 3-unit invoice at EGP 200/unit with 10% discount and 14% tax.
+- Creates and approves a one-unit return linked to the original invoice line.
+- Verifies the return amount is EGP 180 (discounted line value before tax allocation), stock returns from 7 to 8, and the approved return is stored.
+- Verifies the preliminary report still shows gross invoice revenue EGP 615.60 and separately shows approved returns EGP 180; it does not silently net the return.
+- Verifies no cash refund/payment row is created by return approval.
+
+**Important limitation:** tax allocation to returns and the cash refund/credit-note settlement lifecycle are not complete. The scenario validates the implemented quantity/discount return behavior and exposes the gap; it does not claim that the customer refund or tax liability is complete.
+
 ## Known blockers to full ERP acceptance
 
 - No implemented chart of accounts/general ledger/journal posting engine.
