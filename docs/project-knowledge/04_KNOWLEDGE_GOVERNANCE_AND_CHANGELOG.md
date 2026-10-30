@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.0
+version: 1.0.1
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T15:22:19Z
+last_verified_at: 2026-10-30T18:30:01Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -178,6 +178,14 @@ For every scenario, record the fixture/input, canonical source references, packa
 - This review was performed by the same Project Master maintainer who authored the candidate. It is not an independent review and does not satisfy the independent-review gate. The five documents remain DRAFT pending the required review/approval decision.
 
 ## 11. Changelog
+
+### 1.0.1 — 2026-10-30 — DRAFT
+- Clarified the Project Master as the cross-project architecture, coordination, integration, review and final-verification authority, with a mandatory bootstrap for every new/resumed Master chat and `@n`.
+- Aligned the logical team map to Chat 1–5; Chat 5 is independent QA, Integration & Security and does not become a feature owner by default. T22 remains unassigned until separately reconciled.
+- Synced the candidate role wording with the canonical Notion Agent Prompt Registry and Product & Agent Operating Model.
+- Updated the copy-ready Project Instructions draft in Notion to 1,492 characters, including safe Master fallback and the five-chat role map. Actual ChatGPT Project Instructions UI save/readback remains NOT VERIFIED.
+- Notion role/operating-model edits were read back. Independent review and Product Owner approval of this controlled knowledge candidate remain NOT RECEIVED; this package remains DRAFT and must not be published as approved.
+- Validator, unit tests and S01–S11 E2E remain NOT RUN. No CircleCI trigger/retry, merge, deployment, production write or migration.
 
 ### 1.0.0 — 2026-10-30 — DRAFT
 - Consolidated iteration of the earlier 0.1.0 DRAFT package on `docs/project-sources-knowledge-pack-20261030`; that branch remains unmerged and is retained as historical draft evidence, not an approved predecessor.
