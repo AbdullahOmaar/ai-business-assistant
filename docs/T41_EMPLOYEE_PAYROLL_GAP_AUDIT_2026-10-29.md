@@ -103,3 +103,38 @@ Implementation evidence: commit `1daf5f9f73de2ecd1bbe5674bda5a4c23f28d355` in `b
 ## Regression refinement — 2026-10-30
 
 The tenant-isolation regression now creates payroll records in both businesses and checks that each listing returns only the matching record ID and business_id. The invalid employee-update regression additionally checks persisted database fields, not only the response payload, and confirms no audit event was added. The foreign employee is created through the foreign business endpoint to avoid reusing a fixture helper scoped to the primary business. Commits: `babbe6c282372d350963f4955a59de345cfe7deb`, `bc7462416c5043cd9d0dd96821cbbde0fa3ec451`. Tests remain NOT RUN pending a usable runner; current CircleCI jobs are blocked before execution by the no-credits plan limit. No runtime behavior, schema, or payroll policy changed.
+
+
+## Cross-feature payroll privacy finding — 2026-10-30
+
+### Source evidence (static review; runtime exploit test NOT RUN)
+
+Reviewed `backend/app/employee_payroll_api.py` (PR branch blob `6efccc6632d01a8ab8f138017d95af0b402e481b`) and `backend/app/extended_api.py` on main (source reviewed at main SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`). The employee/payroll API applies OWNER-only membership checks to employee and payroll routes. The generic extended API uses `_authorized(..., owner_only=False)` by default, which calls `authorize_membership(..., allowed_roles=None)` and therefore allows ordinary business members unless a route explicitly opts into OWNER-only access.
+
+When `POST /api/v1/businesses/{business_id}/payroll/{payroll_id}/pay` succeeds, it creates an Expense with:
+- `category="Payroll"`
+- `description="Payroll payment — {employee.name} — {period}"`
+- `amount=record.net_pay`
+- `vendor_name=employee.name`
+- `reference="payroll:{record.id}"`
+
+The same payroll action changes the PayrollRecord to `paid` and links `expense_id`. The following generic member-readable surfaces currently include this data:
+- `GET /expenses` returns description, amount, vendor_name and reference for every business expense.
+- `GET /reports/summary` returns expenses_by_currency count and total, including payroll expenses.
+- `GET /assistant/insights` returns expenses_by_currency count and total, including payroll expenses.
+
+The CSV `GET /exports/{entity_type}.csv` route explicitly requests OWNER-only authorization; it is not the same exposure path in this review. The finding is that STAFF access to the generic expenses list can disclose the employee name, net salary and payroll reference, while summary/insights disclose aggregate payroll expense totals/counts. This is source-level evidence; an authenticated runtime STAFF request has NOT RUN.
+
+### Required policy-independent follow-up
+
+1. Master/T37 must decide whether STAFF may read ordinary expenses while Payroll-category rows and payroll-derived aggregates remain restricted/redacted, or whether the broader expense surfaces are OWNER-only. Do not silently choose a policy in T41.
+2. T37's route × role × action matrix must include `GET /expenses`, `GET /reports/summary`, `GET /assistant/insights`, CSV export, pagination, and any future expense detail/report/chat surfaces.
+3. After the policy is approved, add positive OWNER and negative STAFF/non-member regressions. Seed one Payroll expense containing a synthetic employee name, unique net amount and payroll reference plus an ordinary expense. Assert STAFF cannot recover the sensitive payroll row/fields or payroll-only aggregate, while the approved ordinary-expense behavior remains intact; OWNER retains the authorized payroll view. Include no-side-effect assertions and tenant isolation.
+4. Verify all surfaces from API responses and any frontend/AI context consumer; do not infer privacy from OWNER-only payroll routes alone.
+
+### Gate and status
+
+- Status: SECURITY FINDING / POLICY DECISION REQUIRED; implementation BLOCKED by T37 shared authorization contract.
+- No runtime, schema, permission, report formula, or financial lifecycle changes were made.
+- Static source review only. Runtime exploit/regression test, full route-role matrix, frontend/AI consumer review, and exact-head CI are NOT RUN.
+- Preserve existing PR #308 and its Draft/Open/Unmerged state. No merge or deployment.
