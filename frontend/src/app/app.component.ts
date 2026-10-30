@@ -973,7 +973,8 @@ export class AppComponent implements OnInit, OnDestroy {
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;
-  private statementRequestVersion = 0;
+  private readonly auditLoadGuard = new WorkspaceLoadGuard();
+  private readonly statementLoadGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1526,6 +1527,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private clearWorkspaceData(): void {
     this.profitLossLoadGuard.invalidate();
+    this.auditLoadGuard.invalidate();
+    this.statementLoadGuard.invalidate();
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+    this.auditAction = '';
+    this.auditTargetType = '';
+    this.customerStatement = null;
+    this.statementLoading = false;
+    this.statementError = '';
+    this.statementVisible = false;
+    this.statementCustomerName = '';
+    this.statementCustomerId = '';
+    this.statementOffset = 0;
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.profitLoss = null;
@@ -1937,23 +1954,34 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async loadAuditEvents(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
+    const requestVersion = this.auditLoadGuard.begin();
+    const businessId = this.business.id;
+    const requestUid = this.currentAuthUid;
+    const isCurrentRequest = (): boolean =>
+      this.auditLoadGuard.isCurrent(requestVersion, this.business?.id, businessId) &&
+      this.signedIn &&
+      this.currentAuthUid === requestUid &&
+      this.business?.role === 'owner';
+
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(businessId, {
         limit: 50, offset,
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
+      if (!isCurrentRequest()) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
     } catch (error) {
+      if (!isCurrentRequest()) return;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditError = this.message(error);
     } finally {
-      this.auditLoading = false;
+      if (this.auditLoadGuard.isLatest(requestVersion)) this.auditLoading = false;
     }
   }
 
@@ -1995,22 +2023,29 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async loadCustomerStatementPage(offset: number): Promise<void> {
     if (!this.business || !this.statementCustomerId) return;
-    const requestVersion = ++this.statementRequestVersion;
+    const requestVersion = this.statementLoadGuard.begin();
     const requestedCustomerId = this.statementCustomerId;
     const businessId = this.business.id;
+    const requestUid = this.currentAuthUid;
+    const isCurrentRequest = (): boolean =>
+      this.statementLoadGuard.isCurrent(requestVersion, this.business?.id, businessId) &&
+      requestedCustomerId === this.statementCustomerId &&
+      this.currentAuthUid === requestUid &&
+      this.signedIn;
+
     this.customerStatement = null;
     this.statementOffset = offset;
     this.statementLoading = true;
     this.statementError = '';
     try {
       const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.customerStatement = result;
     } catch (error) {
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.statementError = this.message(error);
     } finally {
-      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
+      if (this.statementLoadGuard.isLatest(requestVersion)) this.statementLoading = false;
     }
   }
 
