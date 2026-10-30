@@ -84,7 +84,7 @@ test('v1.3.0 release notes cover invoice payments, opening stock, and the featur
 test('current frontend release metadata is consistent in the configured project root', () => {
   const packageLock = JSON.parse(readFileSync(resolve(frontendRoot, 'package-lock.json'), 'utf8'));
   const escapedVersion = frontendPackage.version.replaceAll('.', '\\.');
-  assert.match(frontendPackage.version, /^\\d+\\.\\d+\\.\\d+$/);
+  assert.match(frontendPackage.version, /^\d+\.\d+\.\d+$/);
   assert.equal(frontendPackage.name, 'ai-business-assistant-frontend');
   assert.equal(packageLock.version, frontendPackage.version);
   assert.equal(packageLock.packages[''].version, frontendPackage.version);
@@ -108,7 +108,7 @@ if (hasBackendPackage) {
     const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
     const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
 
-    assert.match(backendPackage, new RegExp("^version = \\"" + frontendPackage.version + "\\"$", "m"));
-    assert.match(backendApp, new RegExp("version=\\"" + frontendPackage.version + "\\""));
+    assert.match(backendPackage, new RegExp('^version = "' + frontendPackage.version + '"$', 'm'));
+    assert.match(backendApp, new RegExp('version="' + frontendPackage.version + '"'));
   });
 }
