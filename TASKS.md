@@ -1665,3 +1665,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - T37 shared financial contracts remain Draft / NOT APPROVED. Do not implement or merge credit-note/tax/refund, AP, payroll, COGS, GL posting, or other shared financial semantics until the required approval is recorded.
 
 **Next action:** restore supported one-way GitHub→GitLab exact-SHA synchronization (without authoring source in GitLab), then run the existing validation pipeline once on the synchronized PR head and inspect all job logs. Keep PR #315 Draft and unmerged until exact-head checks and independent review pass.
+
+
+## Production schema and runtime recheck — 2026-10-30
+
+- Read-only Neon inspection of production branch `main` (`br-hidden-surf-b97btfdh`) and database `ai_business_assistant` returned Alembic revision `0005_employee_payroll`; both `employees` and `payroll_records` tables exist. No production SQL write or migration was executed in this review.
+- The isolated branch `pre-prod-migration-backup-20261030` (`br-winter-frost-b9ikfj3c`) is at revision `0003_business_workflows` and lacks those two tables. This is a pre-migration snapshot branch, not evidence of the current production schema; preserve it as the rollback/rehearsal baseline and do not point production traffic at it.
+- Vercel Web and API production deployments are both READY on exact GitHub main SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (Web `dpl_8Z8edRFeqEe5DtWzdAYnQ8FfNHJ8`; API `dpl_9hEDAJbd62MA6huu1ejsR5Wu6o6V`). This confirms deployment identity/state, not full authenticated workflow acceptance.
+- Vercel's grouped API runtime-error report over 24h still shows the historical payroll query failure (7 occurrences / 1 user), last seen `2026-10-29T16:03:20Z` on older deployment `dpl_H4NGZVqRGFCdVpKAF15wKZP9eiZT`. It is not a new error attributed to the current `d99b71b` deployment. Raw runtime logs for the requested hour could not be retrieved because the Hobby plan does not retain that window; do not claim a full zero-error smoke from this.
+- The old task note saying production is missing `employees` / `payroll_records` is stale relative to this read-only production schema query. The current main schema is at `0005_employee_payroll`; the older runtime incident remains historical evidence and should not be described as fixed solely from table existence.
+
+**Remaining:** exact-SHA CI synchronization and all current candidate tests remain BLOCKED / NOT RUN; production migration was not needed or performed in this review. Keep all financial migrations and production writes gated by explicit approval.
