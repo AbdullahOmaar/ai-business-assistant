@@ -1809,3 +1809,8 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - T40 PR #304 current head at this final cross-workstream read: `08fbc4d5bf67a2aba2fb07b672f44249d4550d59`, OPEN/DRAFT/UNMERGED, 91 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, mergeable=false, no status contexts/reviews.
 - Re-fetched the current T40 branch at this head. `apply_expense_visibility` remains present in `security.py`, expense list/report/insights, dashboard/P&L, AI chat context and internal financial summary; the broad privacy regression remains present in `test_employee_payroll_api.py`. Source integration is confirmed only; no runtime tests were run. Chat 3 retains ownership; T41 did not modify PR #304.
 - This supersedes earlier T40 head references in this closeout. No merge/deployment.
+
+
+## Closeout snapshot — latest T40 live ref — 2026-10-30
+- T40 PR #304 current exact head at this snapshot: `0e013da87d925c3e31a5da868c425e1cbfaa6079`; OPEN/DRAFT/UNMERGED, 95 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`, GitHub mergeable=false, no status contexts/reviews.
+- Exact-branch source re-fetch confirms `apply_expense_visibility` remains in `security.py`, expense list/report/insights, dashboard/P&L, assistant chat context and internal financial summary; T40's broad payroll privacy regression remains present. Source only; no test execution. T41 made no T40 branch edits; Chat 3 owns it.
