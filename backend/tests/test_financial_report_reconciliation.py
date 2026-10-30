@@ -444,3 +444,45 @@ def test_expense_date_filter_respects_dst_transition_in_business_timezone():
         assert descriptions == {"start-inclusive", "end-exclusive-local-day"}
     finally:
         _restore_reporting_client(engine, previous_factory, previous_resolver)
+
+
+
+def test_profit_loss_rejects_unrepresentable_custom_date_bounds():
+    """Calendar extremes must return a controlled 422 rather than an API 500."""
+    engine, client, previous_factory, previous_resolver = _reporting_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Profit Loss Date Boundary Shop",
+                "currency_code": "EGP",
+                "timezone": "Etc/GMT-12",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+
+        start_underflow = client.get(
+            f"/api/v1/businesses/{business_id}/profit-loss",
+            params={
+                "period": "custom",
+                "start_date": date.min.isoformat(),
+                "end_date": date.min.isoformat(),
+            },
+        )
+        end_overflow = client.get(
+            f"/api/v1/businesses/{business_id}/profit-loss",
+            params={
+                "period": "custom",
+                "start_date": date.max.isoformat(),
+                "end_date": date.max.isoformat(),
+            },
+        )
+
+        assert start_underflow.status_code == 422, start_underflow.text
+        assert end_overflow.status_code == 422, end_overflow.text
+        expected_detail = "Date is outside the supported business-timezone range."
+        assert start_underflow.json()["detail"] == expected_detail
+        assert end_overflow.json()["detail"] == expected_detail
+    finally:
+        _restore_reporting_client(engine, previous_factory, previous_resolver)
