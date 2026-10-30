@@ -73,7 +73,7 @@
 **Files:** existing canonical Operating Model page only.
 
 - [x] Append a bounded knowledge-publication/closeout procedure and GitHub package link to the existing canonical Operating Model.
-- [ ] Preserve existing text and conflicting history; do not mark T37 approved.
+- [x] Preserve existing text and conflicting history; do not mark T37 approved.
 
 ### Task 6: Publication and UI verification
 
@@ -87,4 +87,7 @@
 
 - [x] Perform a source/diff review of package content, links, metadata and security boundaries; no secrets/customer/payroll data found in reviewed package.
 - [x] Record static checks and all NOT RUN checks; executable validator/unit tests remain NOT RUN.
+- [x] Complete a Project Master maintainer self-review of the five documents, validator, tests and source lineage; fix validator boundary/date/link-scheme gaps found during review.
+- [ ] Independent human review — NOT AVAILABLE. The maintainer self-review is explicitly non-independent and does not satisfy this gate.
+- [ ] Run the expanded 17-case validator unit suite and package validator — NOT RUN (approved local runtime remains unavailable; CI is frozen).
 - [x] Keep merge/deployment separate and unauthorized.
