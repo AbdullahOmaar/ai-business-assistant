@@ -156,7 +156,7 @@ This frontend review confirms the presentation path statically. An authenticated
 **Implementation candidate on this existing T41 branch (not yet runtime-verified):**
 - The privacy boundary uses the authoritative PayrollRecord.expense_id relationship, not mutable Expense category/description text.
 - Added a shared query helper in backend/app/security.py; OWNER keeps full visibility, while STAFF/member read surfaces exclude payroll-linked Expense rows.
-- Applied to GET /expenses, report summary, deterministic assistant insights, dashboard expenses, profit/loss expense totals, and the AI chat's recent-expense context before it is sent to the external provider or used by local fallback.
+- Applied to GET /expenses, report summary, deterministic assistant insights, dashboard expenses, profit/loss expense totals, the internal financial_summary helper, and the AI chat's recent-expense context before it is sent to the external provider or used by local fallback.
 - CSV expense export was already OWNER-only. Employee/payroll endpoints remain OWNER-only.
 - Added test_staff_cannot_read_payroll_expense_through_broad_surfaces to create a paid payroll and a normal expense, then verify STAFF sees the normal expense but not employee name/net pay/payroll reference across list, summary, dashboard, P&L, deterministic insights and AI chat. The test also verifies OWNER retains payroll expense visibility and aggregate totals.
 - No migration, stored row, payroll state, posting calculation, expense amount, or OWNER report semantics changed. No shared financial contract was redefined.
