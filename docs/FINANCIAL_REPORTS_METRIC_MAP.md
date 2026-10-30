@@ -202,3 +202,13 @@ No report formula, receivable basis, cash settlement, tax, AP, COGS, FX, GL, sch
 - The T40 report-reconciliation suite remains 12 tests (the existing tenant-isolation test now covers Dashboard, report summary and P&L); total targeted inventory remains 29 plus 26 related tests = 55, all NOT RUN.
 - This is a regression assertion for existing tenant scoping only. No new report formula or authorization rule was introduced.
 
+### Existing CSV export contract and operational limits
+
+Source review of `GET /api/v1/businesses/{business_id}/exports/{entity_type}.csv` confirms:
+
+- OWNER-only authorization; supported entity types are `customers`, `products`, and `expenses`.
+- Rows are filtered by the requested `business_id`; formula-like cell values beginning with `=`, `+`, `-`, `@`, tab or carriage return are prefixed with an apostrophe before CSV serialization.
+- The current route loads the full matching result set into memory. It has no date filter, pagination/streaming, PDF export, saved-view support or scheduled delivery.
+- Payroll-linked expenses are not a STAFF export path: the export route is OWNER-only, consistent with the separately approved OWNER visibility boundary.
+- The new T40 regression covers the existing owner/tenant/formula-safety behavior. Large-volume/streaming, configurable export filters, PDF and scheduled delivery remain successor T47 work and must reuse approved report definitions without inventing financial formulas.
+
