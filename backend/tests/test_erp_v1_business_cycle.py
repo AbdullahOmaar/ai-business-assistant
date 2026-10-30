@@ -122,7 +122,6 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
     # 4. Issue invoice and verify the stock movement was persisted.
     issued_response = client.post(
         f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue",
-        json={},
     )
     assert issued_response.status_code == 200, issued_response.text
     assert issued_response.json()["status"] == "issued"
@@ -477,7 +476,6 @@ def test_erp_v1_approved_sales_return_restores_stock_and_discloses_report_gap(er
 
     issued = client.post(
         f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue",
-        json={},
     )
     assert issued.status_code == 200, issued.text
 
