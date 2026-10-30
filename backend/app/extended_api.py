@@ -699,7 +699,10 @@ def list_pricing_rules(business_id: UUID, limit: int = Query(default=50, ge=1, l
                        session: Session = Depends(get_session),
                        principal: AuthenticatedPrincipal = Depends(get_principal)):
     """List configured tax/discount rules for owners; listing does not apply rules to invoices."""
-    _authorized(session, principal, business_id, owner_only=True)
+    try:
+        _authorized(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     statement = select(PricingRule).where(PricingRule.business_id == business_id)
     if rule_type is not None:
         statement = statement.where(PricingRule.rule_type == rule_type)
