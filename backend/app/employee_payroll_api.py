@@ -216,13 +216,14 @@ def list_employees(
         query = query.where(Employee.is_active.is_(True))
     term = " ".join((search or "").split())
     if term:
-        pattern = f"%{term}%"
+        escaped_term = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        pattern = f"%{escaped_term}%"
         query = query.where(or_(
-            Employee.name.ilike(pattern),
-            Employee.employee_code.ilike(pattern),
-            Employee.email.ilike(pattern),
-            Employee.department.ilike(pattern),
-            Employee.job_title.ilike(pattern),
+            Employee.name.ilike(pattern, escape="\\"),
+            Employee.employee_code.ilike(pattern, escape="\\"),
+            Employee.email.ilike(pattern, escape="\\"),
+            Employee.department.ilike(pattern, escape="\\"),
+            Employee.job_title.ilike(pattern, escape="\\"),
         ))
     rows = session.scalars(query.order_by(Employee.name, Employee.id).offset(offset).limit(limit)).all()
     return [_employee_dict(row) for row in rows]
