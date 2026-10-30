@@ -255,3 +255,15 @@ The later canonical T37 v1.0.1 decision supersedes earlier notes in this documen
 - T40 PR #304 source integration rechecked at head `38ea8c80e1ca4c3d2534ca45ddc731df2b6a35ff`: payroll visibility remains present across expense list, report summary, dashboard/P&L, assistant context and internal summary, and broad privacy regression remains present. Chat 3 owns that PR.
 - Exact-head pytest, PostgreSQL concurrency, migration rehearsal, frontend tests/build, authenticated browser smoke, security scan and independent review remain NOT RUN. CircleCI prohibited; Desktop Commander device OFFLINE and no approved non-CircleCI runner found.
 - Do not merge: no exact-head checks/review and branch remains 2 behind main. No merge, deployment, production migration or data write. Demo readiness remains blocked for production employee/payroll by migration 0005 restore/rehearsal/schema verification and authenticated UI smoke.
+
+
+## Final T41 closeout evidence refresh — 2026-10-30
+
+- Existing PR #308 latest head before this documentation checkpoint: `ca6c6cf26d08e508ef3cda7e71fbf42369416aa5`; branch remains OPEN/DRAFT/UNMERGED and 91 ahead / 2 behind main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`. No reviews/status contexts; no merge.
+- The broad privacy regression now covers the first visible expense page when the newer payroll row must be filtered before pagination, and the provider-backed AI chat path with a mocked transport. The exact outbound payload is asserted not to contain employee name, net salary or payroll reference. Test file has 28 functions; all current-head tests remain NOT RUN.
+- Duplicate test/import from a concurrent overlapping edit was removed; one consolidated test remains. No runtime/schema/migration behavior changed.
+- T40 PR #304 latest observed head `68e2cca2f738c2b266935ed12a71ccb10bb72e7c` remains OPEN/DRAFT/UNMERGED, 79 ahead / 2 behind main, GitHub mergeable=false. Current T40 source still contains the privacy predicate across expenses, report/insights, dashboard/P&L, AI context and internal financial summary. Chat 3 owns that branch; T41 made no changes to it.
+- T37 overall remains PARTIALLY COMPLETE / NOT APPROVED; the canonical page separately records bounded Product-Owner-delegated AUTH-T41 privacy approval only. Salary history/backfill/proration, statutory payroll and advanced payout states remain deferred.
+- Exact-head runtime tests, PostgreSQL concurrency, migrations, frontend/build, browser, dependency/security scans and independent security review remain NOT RUN. CircleCI prohibited; no new GitHub Actions CI or runs. Desktop Commander offline; no authorized runner.
+- Production Employees/Payroll demo is NOT READY: main release checkpoint reports API `UndefinedTable` errors for `employees` / `payroll_records`, and migration `0005_employee_payroll` is not verified as applied/rehearsed. No production migration/write/deploy.
+- Next: authorized runner for exact-head validation; safe main-base reconciliation; independent security review; isolated restored-database migration rehearsal.
