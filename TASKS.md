@@ -1687,3 +1687,18 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Sign-up now uses the same auth-state broadcaster as sign-in and the Firebase observer.
 - This follow-up source still requires the full GitLab 8-job pipeline and independent review; no production release action.
 - Added a UID guard to platform-admin access resolution so a slow response from a previous signed-in identity cannot overwrite the current account's platform-admin visibility.
+
+
+## T43 tenant-scoped audit and customer-statement response fencing — 2026-10-30
+
+- QA/security review of PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` found that `clearWorkspaceData()` did not clear audit events/totals/filters or customer-statement state, and `loadAuditEvents()` accepted late responses without a tenant/identity/request-generation fence.
+- Added independent request generations for audit and customer-statement reads. Clearing workspace state now invalidates both generations and clears every displayed audit/statement field.
+- Audit responses are accepted only when request generation, business ID, authenticated UID, signed-in state, and current owner role still match the captured request.
+- Customer-statement responses are accepted only when request generation, business ID, authenticated UID, selected customer, and signed-in state still match.
+- Workspace state is also cleared when membership role changes for the same business, not only when the business ID changes.
+- Added focused request-generation regressions for same-business identity and role transitions.
+- Follow-up branch: `fix/tenant-audit-statement-fence-20261030`; stacked Draft PR #320 targets PR #316's branch. No changes were made to PR #316's branch or main.
+- GitLab isolated mirror pipeline #3010472807: **SUCCESS, 8/8 jobs**, 301 seconds, final source mirror commit `e2f38b95f28625a4e1807b060a1936682cd1518c`. Results: backend pytest 253/253; frontend Node tests 80/80; existing Playwright 4/4; Angular production build, backend container smoke, backup/restore safety, npm audit (0 vulnerabilities), and pip-audit (no known vulnerabilities) PASS. Exact GitHub source blobs for the three transferred files were read back from GitLab and matched. This remains external GitLab validation, not GitHub-native exact-head required-check evidence.
+- Full authenticated cross-tab Firebase browser journeys and independent review remain NOT RUN. No merge, version bump, production deploy, database write, or production configuration change.
+
+- Latest GitHub exact-head status read: PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` reports six CircleCI contexts FAILURE; PR #320 head `b695eaea26724193df4e4453d625440ad9f4abe9` reports six CircleCI contexts FAILURE plus SemaphoreCI FAILURE. CircleCI remains frozen; no retry/trigger was issued. GitLab pipeline success is not GitHub-native required-check evidence. Independent review and authenticated Firebase cross-tab/account-switch browser journeys remain NOT RUN.

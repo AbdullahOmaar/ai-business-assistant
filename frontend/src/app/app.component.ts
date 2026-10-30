@@ -3,7 +3,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
-import { WorkspaceLoadGuard } from './workspace-load-guard';
+import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
@@ -973,7 +973,8 @@ export class AppComponent implements OnInit, OnDestroy {
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;
-  private statementRequestVersion = 0;
+  private readonly auditLoadGuard = new WorkspaceLoadGuard();
+  private readonly statementLoadGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1507,10 +1508,10 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
-      const workspaceChanged = this.business?.id !== chosen.id;
+      const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      if (workspaceChanged) this.clearWorkspaceData();
+      if (workspaceAccessChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
       if (requestVersion !== this.businessListRequestVersion ||
@@ -1525,7 +1526,26 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    // Invalidate the top-level workspace load too; otherwise an old load's finally
+    // block can still mutate loading state while a new identity is being resolved.
+    this.workspaceLoadGuard.invalidate();
     this.profitLossLoadGuard.invalidate();
+    this.auditLoadGuard.invalidate();
+    this.statementLoadGuard.invalidate();
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+    this.auditAction = '';
+    this.auditTargetType = '';
+    this.customerStatement = null;
+    this.statementLoading = false;
+    this.statementError = '';
+    this.statementVisible = false;
+    this.statementCustomerName = '';
+    this.statementCustomerId = '';
+    this.statementOffset = 0;
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.profitLoss = null;
@@ -1643,7 +1663,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async switchBusiness(id: string): Promise<void> {
-    this.statementRequestVersion++;
     this.statementVisible = false;
     this.customerStatement = null;
     this.statementCustomerId = '';
@@ -1936,24 +1955,46 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async loadAuditEvents(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.auditLoadGuard.begin();
+    const businessId = this.business.id;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role ?? null,
+      signedIn: this.signedIn,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.auditLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+      },
+    );
+
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(businessId, {
         limit: 50, offset,
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
+      if (!isCurrentRequest()) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
     } catch (error) {
+      if (!isCurrentRequest()) return;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditError = this.message(error);
     } finally {
-      this.auditLoading = false;
+      if (this.auditLoadGuard.isLatest(requestVersion)) this.auditLoading = false;
     }
   }
 
@@ -1994,23 +2035,43 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async loadCustomerStatementPage(offset: number): Promise<void> {
-    if (!this.business || !this.statementCustomerId) return;
-    const requestVersion = ++this.statementRequestVersion;
+    if (!this.business || !this.statementCustomerId || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.statementLoadGuard.begin();
     const requestedCustomerId = this.statementCustomerId;
     const businessId = this.business.id;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role ?? null,
+      signedIn: this.signedIn,
+      customerId: requestedCustomerId,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.statementLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+        customerId: this.statementCustomerId,
+      },
+    );
+
     this.customerStatement = null;
     this.statementOffset = offset;
     this.statementLoading = true;
     this.statementError = '';
     try {
       const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.customerStatement = result;
     } catch (error) {
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.statementError = this.message(error);
     } finally {
-      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
+      if (this.statementLoadGuard.isLatest(requestVersion)) this.statementLoading = false;
     }
   }
 

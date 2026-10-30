@@ -38,3 +38,11 @@ Only the version embedded in the deployed build identifies what users have actua
 - Aligned the frontend package, lockfile root metadata, backend package, and FastAPI `/version` metadata at `1.3.4`.
 - Updated the local build-info fallback, service-worker cache fallback, bilingual in-app release history, and release consistency regression tests.
 - Production status: NOT DEPLOYED until exact-main CircleCI and release gates pass and the deployment SHA/version is verified.
+
+
+## 1.3.5 — Session and tenant-state security (release candidate)
+
+- Align frontend package, lockfile root metadata, backend package, FastAPI API metadata, local build-info fallback, and PWA service-worker fallback at `1.3.5`.
+- Synchronize Firebase sign-in/sign-out/account changes across tabs; clear workspace-scoped state on identity transitions; fence delayed Audit and Customer Statement responses against stale workspace, UID, role, and selected-customer context.
+- Add regression coverage for observer lifecycle and tenant request-context transitions.
+- **Production status: NOT DEPLOYED.** This is a release candidate until GitLab exact-source validation, required review/merge gates, and Vercel deployment verification complete.
