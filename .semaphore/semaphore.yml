@@ -55,7 +55,12 @@ blocks:
             - sem-version node 22.12.0
             - cd frontend
             - npm ci --no-audit --no-fund
-            - npm test
+            - mkdir -p test-results
+            - node --experimental-strip-types --test --test-reporter=tap --test-reporter=junit --test-reporter-destination=stdout --test-reporter-destination=test-results/frontend-unit.xml src/app/*.spec.ts
+      epilogue:
+        always:
+          commands:
+            - test-results publish "$SEMAPHORE_GIT_DIR/frontend/test-results"
 
   - name: Frontend production build
     dependencies: []
