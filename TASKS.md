@@ -1562,3 +1562,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Existing 503 retry test remains. No Firebase API call or production API call is made by these mocked tests.
 - Exact PR head before this ledger update: b30e2e73b5163990debd9c7c870d67d8917fcf47. Source reviewed; Playwright/unit/build NOT RUN. Exact-head CircleCI six FAILURE contexts; GitHub Actions jobs have steps=null and log retrieval returns 404 BlobNotFound. No retries/reruns.
 - PR remains Draft/open/unmerged; no deployment.
+
+
+## Startup runtime-config nested type regression — 2026-10-30
+
+- Extended the existing PR #309 Playwright startup suite beyond JSON `null` to cover: numeric `apiBaseUrl`, array-valued `firebase`, and numeric `firebase.apiKey`.
+- Each scenario expects the recoverable invalid-configuration screen, no email/password inputs, and a successful retry into the safe setup screen. Responses are intercepted locally; no Firebase/API/production calls are made by these tests.
+- Validation remains NOT RUN on the new exact head. Six CircleCI contexts still fail; GitHub Actions dependency/security and verify workflows are failing, and their job logs are unavailable through the current connector. No retries/reruns.
+- PR #309 remains Draft/open/unmerged. No production deployment or config change.
