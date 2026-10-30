@@ -1675,3 +1675,45 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 3. Implement historical receivables as-of only from persisted source-event timestamps; otherwise report unavailable.
 4. Keep tax/credit-note, supplier AP/payment, valuation/COGS, FX and GL deferred.
 5. Review the two commits behind live main before reconciling the base; then validate exact SHA via authorized non-CircleCI runner and independent review.
+
+
+## T40 — T37 v1.0.1 allocation integrity + historical as-of completion checkpoint (2026-10-30)
+
+The Product Owner-approved T37 v1.0.1 contract now has further implementation on the existing PR #304 branch:
+
+- Dashboard outstanding balances use the selected report end date as a business-local historical as-of cutoff (or local today when no end date is supplied); this is distinct from the period-filtered sales/collection/expense movements.
+- Valid receivable allocations must match business, non-null customer and currency. Invalid currency/customer allocations are reported and do not reduce invoice balances.
+- Payment-level over-allocation is detected across all allocation events before the cutoff; all allocations from an over-allocated payment are excluded from receivables and reported.
+- Invoice-level over-allocation is reported and excluded from positive receivable totals; negative balances are not silently clamped.
+- Historical receivables aging includes issued invoices with issue_date before the business-local cutoff and only allocations with created_at before the cutoff. Missing issue timestamps are surfaced and excluded. Due dates are converted to the business-local date.
+- Credit applications/credit notes remain excluded until their separate source-event and tax/receivable contract is approved and implemented.
+
+Additional implementation/test commits (all [skip ci]):
+- 2527a090f05429a934babb7fe3b3bfcdc866c3a9 dashboard allocation integrity and warnings.
+- a0efc44a582e7b3d5ce47d1f723ee6aeeb8852ea historical as-of aging.
+- f74feefb994be23b2460d47fa6fb82e96364501c dashboard mismatch/over-allocation and historical cutoff tests.
+- 8dfbe51b2b7a22dd87e9e9b4a97a919daa03cad6 customer-linked fixtures and allocation event timestamps.
+- 3cee40e8ccd1d4abb2fb72bf9958c20d303fe0eb dashboard as-of cutoff semantics.
+- 476c8978d380a30b7a3b4f292f29e0eb48fa74a7 missing invoice issue-date warnings.
+- c0a555896dd122039d880072ef4134a40db14ddf payment-level over-allocation detection on dashboard.
+- 6c163eabbeb6cdab0a48a2045eae1576801c553c payment-level over-allocation detection on historical aging.
+- e9ed52816469cf439b1b66b92bf04c97b011617b payment-level over-allocation regression.
+
+### Current T40 validation inventory
+
+- Date-boundary suite: 14 tests.
+- Report-reconciliation suite: 10 tests.
+- Payroll visibility integration: 1 test.
+- Related existing suites: 26 tests.
+- Total authored/targeted: 25 T40/integration + 26 related. All are source-reviewed only; **NOT RUN**.
+- Build, PostgreSQL integration, frontend/browser, security scans and exact-head runtime validation: **NOT RUN**.
+- Current PR #304 head before this docs update: e9ed52816469cf439b1b66b92bf04c97b011617b; 70 ahead / 2 behind live main d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f; OPEN/DRAFT/UNMERGED, mergeable=true; exact-head status empty due [skip ci] (NOT a pass).
+- CircleCI execution/retries remain prohibited; GitHub Actions is not a replacement. Desktop Commander is OFFLINE; no authorized local runner. No merge/rebase/deployment/migration/production write.
+
+### Remaining
+
+1. Add date-filter × role × offset pagination and denied-path no-side-effect regression coverage.
+2. Review the two commits behind main before reconciling the base.
+3. Design and implement the separate Expense settlement/disbursement/cashbox lifecycle with idempotency, reversal, audit and PostgreSQL migration/recovery tests; policy is approved, but the schema/runtime are absent.
+4. Keep tax/credit-note, supplier AP/payment, inventory valuation/COGS, FX and GL deferred.
+5. Run 25 targeted + 26 related tests, PostgreSQL integration, build and security checks on an exact SHA via an authorized non-CircleCI runner; obtain independent review.
