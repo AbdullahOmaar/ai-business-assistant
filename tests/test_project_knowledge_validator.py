@@ -150,5 +150,34 @@ class ProjectKnowledgeValidatorTests(unittest.TestCase):
         self.assertTrue(any("owners are inconsistent" in e for e in self.run_validation()))
 
 
+    def test_invalid_verification_timestamp_returns_validation_error(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        content = (self.package / filename).read_text(encoding="utf-8")
+        content = content.replace(
+            "last_verified_at: 2026-10-30T05:30:00Z",
+            "last_verified_at: not-a-timestamp",
+        )
+        (self.package / filename).write_text(content, encoding="utf-8")
+        errors = self.run_validation()
+        self.assertTrue(any("last_verified_at must be a valid" in e for e in errors))
+
+    def test_rejects_unsafe_markdown_link_scheme(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        (self.package / filename).write_text(
+            document(filename, "ABA-KNOW-00", link="javascript:alert(1)"),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("unsupported local-link scheme" in e for e in self.run_validation()))
+
+    def test_rejects_symlinked_package_document(self) -> None:
+        filename = "00_PROJECT_CHARTER_AND_SOURCE_MAP.md"
+        path = self.package / filename
+        path.unlink()
+        outside = self.root / "outside.md"
+        outside.write_text(document(filename, "ABA-KNOW-00"), encoding="utf-8")
+        path.symlink_to(outside)
+        self.assertTrue(any("symlinks" in e for e in self.run_validation()))
+
+
 if __name__ == "__main__":
     unittest.main()
