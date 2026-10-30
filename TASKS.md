@@ -1687,3 +1687,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Sign-up now uses the same auth-state broadcaster as sign-in and the Firebase observer.
 - This follow-up source still requires the full GitLab 8-job pipeline and independent review; no production release action.
 - Added a UID guard to platform-admin access resolution so a slow response from a previous signed-in identity cannot overwrite the current account's platform-admin visibility.
+
+
+## T43 tenant-scoped audit and customer-statement response fencing — 2026-10-30
+
+- QA/security review of PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` found that `clearWorkspaceData()` did not clear audit events/totals/filters or customer-statement state, and `loadAuditEvents()` accepted late responses without a tenant/identity/request-generation fence.
+- Added independent request generations for audit and customer-statement reads. Clearing workspace state now invalidates both generations and clears every displayed audit/statement field.
+- Audit responses are accepted only when request generation, business ID, authenticated UID, signed-in state, and current owner role still match the captured request.
+- Customer-statement responses are accepted only when request generation, business ID, authenticated UID, selected customer, and signed-in state still match.
+- Workspace state is also cleared when membership role changes for the same business, not only when the business ID changes.
+- Added focused request-generation regressions for same-business identity and role transitions.
+- Follow-up branch: `fix/tenant-audit-statement-fence-20261030`; stacked Draft PR #320 targets PR #316's branch. No changes were made to PR #316's branch or main.
+- GitLab isolated mirror pipeline #3010466868 is running against source snapshot commit `2068719e52542aee5307a72dabb2a8c407e22b44`; this is not GitHub-native CI evidence. A subsequent pipeline will be required for the final role-change comparison commit.
+- Full authenticated cross-tab Firebase browser journeys and independent review remain NOT RUN. No merge, version bump, production deploy, database write, or production configuration change.
