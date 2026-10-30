@@ -1,45 +1,51 @@
 # Shared Project Knowledge System checkpoint — 2026-10-30
 
 ## Scope and baseline
-- Workstream: Shared Project Knowledge System v1.0.
+- Workstream: Shared Project Knowledge System v1.0; docs-only.
 - Canonical repository: `AbdullahOmaar/ai-business-assistant`.
-- Verified base `main` SHA: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
-- Work branch: `docs/shared-project-knowledge-v1-20261030`.
-- The prior checkpoint below records `ae7a34b884d86e0ed26ffd64c528c1d488b956ef` as main. A fresh GitHub commit search now confirms `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` as the latest main commit; the older value is historical and must not be reused as current.
+- Verified base `main` SHA: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f` (rechecked current).
+- Current work branch: `docs/shared-project-knowledge-v1-20261030`.
+- Canonical integration PR: [#317](https://github.com/AbdullahOmaar/ai-business-assistant/pull/317), OPEN / DRAFT / UNMERGED.
+- Package content head before this ledger refresh: `b2b5e58791889efa00e0d5bf555f98a8f874d2f9`; 24 commits ahead / 0 behind main; GitHub mergeable=true.
 
-## Implemented on this branch
-- Added exactly five canonical knowledge documents under `docs/project-knowledge/`:
+## Implemented candidate
+- Exactly five canonical knowledge documents under `docs/project-knowledge/`:
   - `00_PROJECT_CHARTER_AND_SOURCE_MAP.md`
   - `01_AGENT_OPERATING_MODEL.md`
   - `02_ARCHITECTURE_AND_ENGINEERING_STANDARDS.md`
   - `03_SECURITY_POLICY_AND_RELEASE_GATES.md`
   - `04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`
-- Added `scripts/validate_project_knowledge.py` with strict five-file/ID checks, required/non-empty metadata, package-wide version/status/owner consistency, semantic versions, valid UTC/date metadata, lowercase 40-char SHA and repository-confined local Markdown links.
-- Added `tests/test_project_knowledge_validator.py` with seven focused standard-library `unittest` cases (valid package, wrong/duplicate ID, version mismatch, path escape, empty/missing source and extra file).
-- Added the implementation plan at `docs/superpowers/plans/2026-10-30-shared-project-knowledge.md`.
-- All five knowledge documents are intentionally `DRAFT` pending independent review and owner approval. They are not approved for Project Sources publication.
-- The package records the current Notion T37 conflict as fail-closed / Draft / NOT APPROVED; it does not copy the conflicting historical approval paragraph as current policy.
+- Standard-library validator: `scripts/validate_project_knowledge.py`.
+- Seven standard-library `unittest` regression cases: `tests/test_project_knowledge_validator.py`.
+- Implementation plan: `docs/superpowers/plans/2026-10-30-shared-project-knowledge.md`.
+- All five docs use unique IDs `ABA-KNOW-00..04`, consistent version `1.0.0`, status `DRAFT`, and refreshed `last_verified_at: 2026-10-30T15:22:19Z`.
+- Governance doc retains all eleven S01–S11 shared-knowledge E2E acceptance scenarios. These are criteria only; execution is NOT RUN.
+- Earlier 0.1.0 DRAFT branch `docs/project-sources-knowledge-pack-20261030` remains at `4e5d5bc603c4fc0484caf368baa5572a4ff9b437`. It diverges from this candidate (18 ahead / 9 behind when compared to the current v1 branch). It is retained as historical draft evidence; not merged, deleted or rewritten.
 
-## Evidence and validation
-- GitHub repository identity/default branch and current main SHA: verified.
-- Canonical Notion Registry, Operating Model, Master Task Plan, Universal Work Execution Standard, Work Package & Handoff Standard, E2E Assurance Plan, Product Charter and T37 page: read.
-- Five package files and validator were read back from this branch.
-- Static metadata/unique-ID check: PASS (5 documents; IDs ABA-KNOW-00 through ABA-KNOW-04; all required metadata present).
-- Validator hardening and regression-test source review: PASS by readback; executable Python validator and unit tests: NOT RUN (Desktop Commander device `8fccca5f-1564-4815-88f3-a626e1bb9a7f` is OFFLINE; last seen 1131h ago).
-- Local Markdown link resolution by repository file readback: PASS (all referenced repository files exist).
-- Python validator execution: NOT RUN (no local repository checkout/runtime is available through the current GitHub connector-only path).
-- Unit/integration/build/security checks: NOT RUN (documentation-only work; no local checkout).
-- CircleCI: no manual run/rerun/retry was initiated by this session; exact-head combined-status readback at the then-current PR head `f5c01369c8f052256bcf4b69ccc9737cc861def8` reports six CircleCI contexts as FAILURE. Root cause is NOT VERIFIED. The quota freeze was respected; no retry or rerun was attempted.
-- Project Sources inventory/upload/readback: NOT VERIFIED; current tools cannot inspect or edit the ChatGPT Project Sources UI.
-- Project Instructions UI state/readback: NOT VERIFIED; current tools cannot inspect or save the ChatGPT Project settings UI.
-- No merge, deployment, production write, migration, snapshot or branch deletion performed.
+## Source reconciliation and static checks
+- Re-read canonical Notion Product Charter, Master Task Plan, Agent Registry, Operating Model, E2E Assurance Plan and T37 record.
+- Re-read main README, AGENTS, TASKS, CONTRIBUTING, Architecture Baseline, ADR-001 and Production Deployment Runbook.
+- Static exact-head readback: five expected docs present; IDs unique; version/status consistent; required metadata present; 21 repository-local Markdown links resolved against the candidate tree; 0 missing.
+- T37 remains fail-closed / Draft / NOT APPROVED for shared financial semantics; no financial policy is promoted.
+- The Notion Project Instructions copy-ready text now references the current IDs `ABA-KNOW-00..04`; actual ChatGPT Project Instructions save/readback remains NOT VERIFIED.
+
+## Validation and publication gates
+- Python validator execution and seven unit tests: NOT RUN (no available local checkout/runtime; Desktop Commander was previously confirmed OFFLINE).
+- S01–S11 E2E execution: NOT RUN.
+- Exact-head combined status at package content head `b2b5e58791889efa00e0d5bf555f98a8f874d2f9`: empty (NOT PASS; no checks reported).
+- CircleCI remains frozen by owner instruction; no run, rerun or retry. Historical six CircleCI failures on earlier package head `4b1c3a7c70bb83ddb7f2c2f8d9c180c3e1a0998f` remain root-cause NOT VERIFIED.
+- Independent human review: NOT RECEIVED. Product Owner approval of the exact v1.0.0 package: NOT RECEIVED.
+- Project Sources UI inventory/upload/readback: NOT VERIFIED. The current tools expose no Project Sources UI operation; an empty conversation Project Files list is not proof of the actual Project UI contents.
+- Project Instructions save/readback: NOT VERIFIED; separate ChatGPT Project UI operation.
+- No merge, deployment, production write, migration, snapshot or branch deletion.
 
 ## Open risks / next gates
-- Notion Operating Model contains conflicting historical T37 statements; the later owner handover and current Master Plan/E2E records treat T37 as Draft / NOT APPROVED. This package fails closed; canonical decision reconciliation remains outside this documentation workstream.
-- Existing PR #307 is a separate Notion migration package and was not reused.
-- Independent review and owner approval are still required before changing document status to APPROVED.
-- Project Sources upload and Project Instructions save/readback require manual ChatGPT Project UI access.
-- Next action: obtain an independent human review/owner approval, then publish the approved package and save/read back Project Instructions through the actual ChatGPT Project UI.
+1. Obtain an independent human review of PR #317's exact head and resolve findings.
+2. Obtain explicit Product Owner approval for the exact five-file v1.0.0 package before changing any document to APPROVED.
+3. Inventory the actual ChatGPT Project Sources list in the Project UI; reconcile duplicates before publication.
+4. Publish only the five approved exact versions, then read back every saved file's name/version/content.
+5. Separately save the copy-ready Project Instructions and read them back in actual Project settings.
+6. Record approval references, publication/readback evidence and final handoff. Keep this package DRAFT and unpublished until gates pass.
 
 ---
 
