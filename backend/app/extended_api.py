@@ -96,13 +96,6 @@ class PurchaseLineInput(BaseModel):
     unit_cost: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
 
 
-class SupplierInput(BaseModel):
-    name: str = Field(min_length=1, max_length=160)
-    email: str | None = Field(default=None, max_length=254)
-    phone: str | None = Field(default=None, max_length=32)
-    address: str | None = Field(default=None, max_length=500)
-
-
 class SupplierPatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=160)
     email: str | None = Field(default=None, max_length=254)
@@ -249,28 +242,6 @@ def list_suppliers(business_id: UUID, limit: int = Query(default=100, ge=1, le=2
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
-
-@router.post("/suppliers", status_code=201)
-def post_supplier(business_id: UUID, body: SupplierInput,
-                  session: Session = Depends(get_session),
-                  principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id)
-        name = body.name.strip()
-        if not name:
-            raise WorkflowError("Supplier name is required")
-        item = Supplier(business_id=business_id, name=name,
-                        email=body.email.strip() if body.email else None,
-                        phone=body.phone.strip() if body.phone else None,
-                        address=body.address.strip() if body.address else None,
-                        is_active=True)
-        session.add(item)
-        session.flush()
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="supplier.created", target_type="supplier", target_id=str(item.id)))
-        return item
-    item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "name", "email", "phone", "address", "is_active", "created_at"))
 
 @router.get("/purchase-orders/summary")
 def purchase_order_summary(business_id: UUID,
@@ -545,7 +516,7 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                 Product.business_id == business_id,
                 Product.is_active.is_(True),
                 Product.is_stock_tracked.is_(True),
-            )).all()
+            ).order_by(Product.id).with_for_update()).all()
         } if product_ids else {}
         if len(products) != len(product_ids):
             raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
@@ -622,7 +593,7 @@ def update_purchase_order(business_id: UUID, order_id: UUID, body: PurchaseOrder
                 Product.business_id == business_id,
                 Product.is_active.is_(True),
                 Product.is_stock_tracked.is_(True),
-            )).all()
+            ).order_by(Product.id).with_for_update()).all()
         } if product_ids else {}
         if len(products) != len(product_ids):
             raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
@@ -1634,6 +1605,24 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
         if item is None:
             raise HTTPException(status_code=404, detail="Product not found")
         if changes.get("is_stock_tracked") is False and item.is_stock_tracked:
+            open_purchase_order_lines = session.scalar(
+                select(func.count())
+                .select_from(PurchaseOrderLine)
+                .join(
+                    PurchaseOrder,
+                    (PurchaseOrder.id == PurchaseOrderLine.purchase_order_id)
+                    & (PurchaseOrder.business_id == PurchaseOrderLine.business_id),
+                )
+                .where(
+                    PurchaseOrderLine.business_id == business_id,
+                    PurchaseOrderLine.product_id == item.id,
+                    PurchaseOrder.status.in_(("draft", "approved", "partially_received")),
+                )
+            )
+            if open_purchase_order_lines:
+                raise WorkflowError(
+                    "Stock tracking cannot be disabled while an open purchase order references this product"
+                )
             movement_count = session.scalar(select(func.count()).select_from(StockMovement).where(
                 StockMovement.business_id == business_id, StockMovement.product_id == item.id
             ))
