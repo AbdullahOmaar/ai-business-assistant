@@ -1666,3 +1666,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Full backend suite:** NOT RUN to completion. Collection stopped on two ImportErrors because the assembled sandbox lacks `issue_credit_note_for_return` and `list_pricing_rules` in its `app.extended_api` module; this is an incomplete sandbox source set, not evidence that those tests failed.
 - **Exact-head CI:** at pre-checkpoint head `e81cc1955b61c0f26f6ff98cb880aabbeffc3d57`, all six CircleCI contexts reported FAILURE: backend-accounting, backend-container, frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke. The branch's canonical T41 checkpoint records `free-plan-no-credits-available`; executor did not run. No passing CI claim is made.
 - **Next:** restore an authorized CircleCI runner/credits, run exact-head backend-accounting, backend-container, frontend tests/build, dependency audit and browser smoke. Keep salary-history effective-date/schema/backfill work blocked pending T37/T40 Master approval. No merge/deploy.
+
+
+## T41 payroll privacy hardening — 2026-10-30
+
+- **Finding:** Payroll payment creates an Expense containing employee name, net pay, and payroll reference. Member-readable expense list, summary/dashboard/P&L/assistant insights and AI chat context exposed payroll-derived data to STAFF despite employee/payroll APIs being OWNER-only.
+- **Fix candidate on existing PR #308 branch:** centralized payroll-expense visibility in backend/app/security.py using PayrollRecord.expense_id as the authoritative relationship. OWNER retains full visibility; non-OWNER member queries exclude only payroll-linked expenses.
+- **Surfaces covered:** GET /expenses; GET /reports/summary; GET /assistant/insights; dashboard expense totals; profit/loss expense totals; recent-expense context for external AI and deterministic fallback. Expense CSV export was already OWNER-only.
+- **Regression authored:** test_staff_cannot_read_payroll_expense_through_broad_surfaces creates a paid payroll and normal expense, checks STAFF cannot read employee name/net pay/reference across all listed surfaces while ordinary expense remains visible, and checks OWNER still sees payroll expense and totals.
+- **Scope:** no migration, schema, stored financial row, posting amount/state, or OWNER report semantics changed. No T37/T40 financial contract redefinition.
+- **Validation:** source reviewed; test and full suite NOT RUN. PostgreSQL, frontend build, browser E2E and security scans NOT RUN. Independent security review NOT RUN. Do not mark VERIFIED until exact-head checks pass.
+- **Delivery:** existing PR #308 remains Draft/Open/Unmerged; no merge/deployment. CircleCI was not triggered or retried.
