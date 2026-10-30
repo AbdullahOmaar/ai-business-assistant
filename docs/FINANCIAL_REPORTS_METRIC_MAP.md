@@ -196,3 +196,9 @@ The report-reconciliation suite now contains 12 tests (previously 10). The targe
 
 No report formula, receivable basis, cash settlement, tax, AP, COGS, FX, GL, schema, role policy, or production behavior was changed. The two tests are on the T40-unique test file and do not modify the seven shared T40/T41 integration paths. PR #304 remains OPEN/DRAFT/UNMERGED and still requires the Master-controlled ancestry/shared-path sequence, authorized exact-SHA runner, and independent review.
 
+### Follow-up coverage — report summary tenant boundary
+
+- Extended `test_dashboard_and_profit_loss_are_isolated_from_another_business` to also call `GET /reports/summary` and assert both issued-invoice and expense aggregates remain scoped to the requested business.
+- The T40 report-reconciliation suite remains 12 tests (the existing tenant-isolation test now covers Dashboard, report summary and P&L); total targeted inventory remains 29 plus 26 related tests = 55, all NOT RUN.
+- This is a regression assertion for existing tenant scoping only. No new report formula or authorization rule was introduced.
+
