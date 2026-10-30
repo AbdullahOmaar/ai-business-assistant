@@ -1450,6 +1450,37 @@ def receivables_aging(
             )
         ).all()
 
+        # A payment whose total allocations exceed its recorded amount is invalid;
+        # none of its allocations reduce receivables at this as-of cutoff.
+        payment_allocation_totals = (
+            select(
+                PaymentAllocation.payment_id.label("payment_id"),
+                func.coalesce(func.sum(PaymentAllocation.amount), 0).label("allocated_total"),
+            )
+            .where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.created_at < cutoff_end,
+            )
+            .group_by(PaymentAllocation.payment_id)
+            .subquery()
+        )
+        overallocated_payment_ids = select(Payment.id).join(
+            payment_allocation_totals,
+            payment_allocation_totals.c.payment_id == Payment.id,
+        ).where(
+            Payment.business_id == business_id,
+            payment_allocation_totals.c.allocated_total > Payment.amount,
+        )
+        overallocated_payment_rows = session.execute(select(
+            Payment.id, Payment.amount, payment_allocation_totals.c.allocated_total
+        ).join(
+            payment_allocation_totals,
+            payment_allocation_totals.c.payment_id == Payment.id,
+        ).where(
+            Payment.business_id == business_id,
+            payment_allocation_totals.c.allocated_total > Payment.amount,
+        )).all()
+
         # Allocation history is bounded by its immutable persisted creation event.
         allocation_rows = session.execute(
             select(PaymentAllocation, Payment, Invoice)
@@ -1470,6 +1501,7 @@ def receivables_aging(
                 Invoice.status == "issued",
                 Invoice.issue_date < cutoff_end,
                 PaymentAllocation.created_at < cutoff_end,
+                ~Payment.id.in_(overallocated_payment_ids),
             )
         ).all()
         allocated_by_invoice: dict[UUID, Decimal] = {}
@@ -1510,6 +1542,13 @@ def receivables_aging(
             }
             for invoice_id, invoice_number in missing_issue_dates
         ]
+        data_quality_warnings.extend({
+            "payment_id": str(payment_id),
+            "type": "allocations_exceed_payment_amount",
+            "payment_amount": str(payment_amount),
+            "allocated_amount": str(allocated_amount),
+            "excess_allocated": str(Decimal(str(allocated_amount)) - Decimal(str(payment_amount))),
+        } for payment_id, payment_amount, allocated_amount in overallocated_payment_rows)
         for invoice in invoices:
             total = Decimal(str(invoice.total or ZERO))
             paid = allocated_by_invoice.get(invoice.id, ZERO)
