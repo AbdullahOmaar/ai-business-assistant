@@ -479,6 +479,6 @@ The two PostgreSQL-only T41 cases in `backend/tests/test_postgres_financial_conc
 - Implemented on the existing T41 branch `feat/t41-salary-history-effective-dates` (no new branch/PR):
   - `frontend/src/app/employee-payroll.component.ts` now displays Arabic/English notes that the employee screen currently shows only the first 200 employees and the payroll screen only the first 200 records for the selected period.
   - `frontend/src/app/employee-payroll-ui.spec.ts` now asserts all four localized disclosure strings.
-- Commits: component `e5e7f422a556f181396e03212d73427d03d80`; UI regression `332c516de3664269421cf0973493bc2d5e1dbce2` (current branch HEAD at this checkpoint).
+- Commits: component `e5e7f422a556f181341396e03212d73427d03d80`; UI regression `332c516de3664269421cf0973493bc2d5e1dbce2` (current branch HEAD at this checkpoint).
 - This satisfies the current T41 acceptance alternative to disclose the 200-record cap; it does not implement subsequent-page navigation. API paging parameters already exist, but the UI still requests `limit=200&offset=0` for each list.
 - Source readback confirms both notes and the static UI assertions are present. Frontend test/build/browser execution: NOT RUN. No API contract, backend runtime, payroll calculation, schema, financial policy, shared T40 path, production data or deployment changed.
