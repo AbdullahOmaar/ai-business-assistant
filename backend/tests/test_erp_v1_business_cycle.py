@@ -137,8 +137,8 @@ def test_erp_v1_customer_sale_partial_collection_and_report_reconcile(erp_enviro
         assert Decimal(str(stock_balance)) == Decimal("7.000")
         assert session.scalar(
             select(func.count()).select_from(StockMovement).where(
-                StockMovement.business_id == business_id,
-                StockMovement.product_id == product_id,
+                StockMovement.business_id == business_uuid,
+                StockMovement.product_id == product_uuid,
                 StockMovement.movement_type == "sale",
             )
         ) == 1
