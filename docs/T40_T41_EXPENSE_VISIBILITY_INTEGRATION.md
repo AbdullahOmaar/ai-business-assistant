@@ -172,7 +172,7 @@ This section supersedes the earlier "Next T40 implementation order" items 2–3 
 
 ### Current delivery evidence
 
-- PR #304 latest exact head after the documentation checkpoints: `719351f2244ee3f79dde9e7b88450f2333beec47`.
+- PR #304 head at the time of this section's update: `719351f2244ee3f79dde9e7b88450f2333beec47`; subsequent TASKS.md-only sync commits are reflected in live PR metadata and the canonical T40 Notion page.
 - Live main: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; compare 70 ahead / 2 behind; branch remains diverged from merge base `c464398e0a6ace77eba32aabfbdbd09091f53999`.
 - PR #304 OPEN / DRAFT / UNMERGED; GitHub reports mergeable=true. Exact-head status has no contexts due [skip ci]; empty status is NOT a pass.
 - CircleCI remains prohibited; no run/retry. Desktop Commander is OFFLINE. No authorized runner; tests/build/PostgreSQL/browser/security checks NOT RUN.
