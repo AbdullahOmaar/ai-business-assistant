@@ -419,3 +419,56 @@ The payroll privacy predicate must use the business-scoped `PayrollRecord.expens
 - AST syntax check for the added PostgreSQL payout concurrency test: **PASS (syntax only)**.
 - Exact-head GitHub status is empty and no workflow runs are present: **NOT PASS**. CircleCI remains frozen.
 - No runtime API, schema/migration, financial semantics, shared T40 file, production data, merge or deployment was changed by this documentation update.
+
+
+## Chat 4 live @n source/test review — 2026-10-30
+
+### Exact delivery snapshot
+
+- Live main: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
+- T41 PR #308: OPEN / DRAFT / UNMERGED; branch `feat/t41-salary-history-effective-dates`; reviewed head before this documentation-only update: `35599f36e30f10394c962f09d84ec03bc6b7c90d`; base SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`; 109 ahead / 2 behind.
+- T40 PR #304: OPEN / DRAFT / UNMERGED; branch `task/t40-fin-report-003-current-main-20261029`; head `e6554c57f9f4c1c4593f7a3e95cc54283879641a`; same base; GitHub reports mergeable=false.
+- T41 exact-head combined status is empty; formal reviews and review threads are empty. Empty checks are NOT PASS. Desktop Commander is OFFLINE; CircleCI is frozen and must not be triggered/retried. Runtime tests remain NOT RUN.
+
+### Controlled T40 integration inventory
+
+The live T41 test file has 28 test functions; the current T40 branch's copy has 12. Ten tests are common, 18 test intents are T41-only, and two date-filter/pagination tests are T40-only. Preserve the T41-only tests when Master integrates the existing work into the single-writer T40 branch:
+
+1. `test_duplicate_payroll_period_rejected_without_side_effects`
+2. `test_employee_payroll_audit_summaries_exclude_sensitive_values`
+3. `test_approved_payroll_cannot_be_edited_without_side_effects`
+4. `test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects`
+5. `test_invalid_payroll_components_and_period_have_no_side_effects`
+6. `test_inactive_employee_cannot_create_payroll_without_side_effects`
+7. `test_active_only_listing_excludes_deactivated_employees`
+8. `test_employee_update_duplicate_code_and_email_are_rejected_without_side_effects`
+9. `test_employee_listing_pagination_is_stable_and_respects_active_filter`
+10. `test_payroll_listing_period_filter_and_pagination_are_deterministic`
+11. `test_payroll_approval_is_separated_and_repeated_approval_has_no_side_effects`
+12. `test_payroll_payment_rolls_back_when_paid_audit_write_fails`
+13. `test_employee_profile_normalization_and_duplicate_update_are_atomic`
+14. `test_payroll_expense_insert_failure_rolls_back_paid_transition`
+15. `test_paid_payroll_is_immutable_and_payment_replay_has_no_side_effects`
+16. `test_salary_change_does_not_rewrite_existing_payroll_snapshot`
+17. `test_payroll_listing_does_not_expose_another_business_records`
+18. `test_invalid_employee_updates_do_not_change_profile_or_audit`
+
+The two PostgreSQL-only T41 cases in `backend/tests/test_postgres_financial_concurrency.py` must also be preserved: `test_concurrent_payroll_creation_for_same_employee_period_commits_once` and `test_concurrent_payroll_payment_records_one_expense_and_paid_audit`. The broad payroll-privacy regression and its date-filter/offset variants belong to the T40 single-writer integration, not a second copy.
+
+### Additional test-quality gaps found
+
+- `test_employee_profile_normalization_and_duplicate_update_are_atomic` proves normalization, duplicate rejection, unchanged persisted employee fields and unchanged employee row count, but it does not snapshot/assert the relevant `AuditEvent` count/actions after the duplicate update and invalid create. The separate invalid-update test does assert no extra employee audit event for its invalid update cases; it does not close this duplicate-update case. Add the no-audit-side-effect assertion when Master integrates this test intent.
+- The broad `test_staff_cannot_read_payroll_expense_through_broad_surfaces` fixture creates the payroll and ordinary expense in one business. The separate two-business payroll-list test proves payroll-list isolation, not payroll-expense privacy isolation. Add a synthetic two-business privacy regression to prove a foreign business's linked payroll expense neither leaks into this business's read surfaces nor changes this business's filtered aggregates/pagination.
+
+### Source review and ownership boundary
+
+- T40 branch source contains `apply_expense_visibility` using the business-scoped `PayrollRecord.expense_id` relation. Source call sites were confirmed in expense list/report summary/insights, dashboard/P&L, AI chat context and internal `financial_summary`; filtering is applied before pagination, aggregation or provider serialization. Existing payroll and CSV management routes remain OWNER-only.
+- No missing expense-detail route was identified in the inspected `extended_api.py` and `api.py` route declarations; this is not a claim of a complete repository-wide route inventory.
+- Master’s single-writer decision remains binding: T40 / PR #304 owns shared expense/report/security/provider paths. Chat 4 must not edit the seven overlapping shared paths, `TASKS.md`, rebase or merge either branch wholesale. This document is T41-owned and this update is documentation-only.
+- Authority remains fail-closed for T37 shared financial semantics. Preserve only the separately approved narrow Payroll Privacy v1.0 boundary; salary history/backfill/proration, new payout states and broader posting/accounting semantics remain deferred/gated.
+
+### Validation status
+
+- This was read-only source/test review plus a T41-owned documentation update; no application code, schema, migration, financial rule, production data or shared T40 file changed.
+- Focused pytest, PostgreSQL concurrency, full backend suite, migration rehearsal, frontend/build/browser, dependency/security scans and independent security review: NOT RUN.
+- The T41 test inventory above is source presence, not test execution. Master-controlled integration into #304 and exact-head validation remain outstanding.
