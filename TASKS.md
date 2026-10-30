@@ -14,7 +14,8 @@
   - `02_ARCHITECTURE_AND_ENGINEERING_STANDARDS.md`
   - `03_SECURITY_POLICY_AND_RELEASE_GATES.md`
   - `04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`
-- Added `scripts/validate_project_knowledge.py` for package count, metadata, unique IDs, status, semantic version, UTC timestamp and local-link validation.
+- Added `scripts/validate_project_knowledge.py` with strict five-file/ID checks, required/non-empty metadata, package-wide version/status/owner consistency, semantic versions, valid UTC/date metadata, lowercase 40-char SHA and repository-confined local Markdown links.
+- Added `tests/test_project_knowledge_validator.py` with seven focused standard-library `unittest` cases (valid package, wrong/duplicate ID, version mismatch, path escape, empty/missing source and extra file).
 - Added the implementation plan at `docs/superpowers/plans/2026-10-30-shared-project-knowledge.md`.
 - All five knowledge documents are intentionally `DRAFT` pending independent review and owner approval. They are not approved for Project Sources publication.
 - The package records the current Notion T37 conflict as fail-closed / Draft / NOT APPROVED; it does not copy the conflicting historical approval paragraph as current policy.
@@ -24,10 +25,11 @@
 - Canonical Notion Registry, Operating Model, Master Task Plan, Universal Work Execution Standard, Work Package & Handoff Standard, E2E Assurance Plan, Product Charter and T37 page: read.
 - Five package files and validator were read back from this branch.
 - Static metadata/unique-ID check: PASS (5 documents; IDs ABA-KNOW-00 through ABA-KNOW-04; all required metadata present).
+- Validator hardening and regression-test source review: PASS by readback; executable Python validator and unit tests: NOT RUN (Desktop Commander device `8fccca5f-1564-4815-88f3-a626e1bb9a7f` is OFFLINE; last seen 1131h ago).
 - Local Markdown link resolution by repository file readback: PASS (all referenced repository files exist).
 - Python validator execution: NOT RUN (no local repository checkout/runtime is available through the current GitHub connector-only path).
 - Unit/integration/build/security checks: NOT RUN (documentation-only work; no local checkout).
-- CircleCI: no manual run/rerun/retry was initiated by this session; exact-head combined-status readback at the PR head `652070cd5f54e3dba73c2211530ede123d22a2fe` reports six CircleCI contexts as FAILURE. Root cause is NOT VERIFIED. The quota freeze was respected; no retry or rerun was attempted.
+- CircleCI: no manual run/rerun/retry was initiated by this session; exact-head combined-status readback at the then-current PR head `f5c01369c8f052256bcf4b69ccc9737cc861def8` reports six CircleCI contexts as FAILURE. Root cause is NOT VERIFIED. The quota freeze was respected; no retry or rerun was attempted.
 - Project Sources inventory/upload/readback: NOT VERIFIED; current tools cannot inspect or edit the ChatGPT Project Sources UI.
 - Project Instructions UI state/readback: NOT VERIFIED; current tools cannot inspect or save the ChatGPT Project settings UI.
 - No merge, deployment, production write, migration, snapshot or branch deletion performed.
@@ -37,7 +39,7 @@
 - Existing PR #307 is a separate Notion migration package and was not reused.
 - Independent review and owner approval are still required before changing document status to APPROVED.
 - Project Sources upload and Project Instructions save/readback require manual ChatGPT Project UI access.
-- Next action: finish PR review/readback and append the closeout-to-knowledge workflow to the existing canonical Notion Operating Model page.
+- Next action: obtain an independent human review/owner approval, then publish the approved package and save/read back Project Instructions through the actual ChatGPT Project UI.
 
 ---
 
