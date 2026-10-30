@@ -1622,3 +1622,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact-head combined status on d115057242cb5527e95a4eb43264a570abd4a07c: empty (NOT PASS; no checks reported). This commit and the follow-up ledger commit use [skip ci]; CircleCI remains frozen and was not triggered/retried.
 - Node tests, frontend build, browser cross-tab smoke and independent security review: NOT RUN. Desktop Commander remains OFFLINE; no local checkout/runtime available.
 - PR #316 remains OPEN / DRAFT / UNMERGED. No merge, deployment, production configuration, backend authorization, schema or data change.
+
+
+## T43 auth observer terminal-event fencing — 2026-10-30
+
+- Hardened frontend/src/app/auth-state-observer.ts with a terminal-state fence: callbacks arriving after timeout or observer error are ignored, so a queued late event cannot repopulate a signed-out/stale cached identity.
+- Extended behavioral Node coverage to assert late user callbacks remain ignored after a terminal observer error and after the initial auth timeout.
+- Latest code head before this ledger update: 02538f6e512cacbd272368640c708de94290e043. Tests remain authored but NOT RUN; no test result is inferred from source readback.
+- This is still client session-cache lifecycle only. Server-side Firebase token verification and membership/role authorization remain authoritative and unchanged.
+- Follow-up commits use [skip ci]; exact-head status is not treated as PASS, CircleCI remains frozen, and no workflow was triggered/retried.
