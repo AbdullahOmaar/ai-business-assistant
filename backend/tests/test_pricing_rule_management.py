@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.extended_api import PricingRuleInput, list_pricing_rules, post_pricing_rule
 from app.models import AuditEvent, Base, Business, BusinessMembership, MembershipRole, PricingRule
-from app.security import AuthenticatedPrincipal, AuthorizationError
+from app.security import AuthenticatedPrincipal
 
 
 @pytest.fixture()
