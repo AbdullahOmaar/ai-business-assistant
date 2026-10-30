@@ -423,6 +423,12 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         Payment.currency_code, func.count(Payment.id), func.coalesce(func.sum(Payment.amount), 0)
     ).where(*payment_clauses).group_by(Payment.currency_code)).all()
 
+    outstanding_as_of_date = end_date or datetime.now(
+        _timezone_zone(timezone_name)
+    ).date()
+    _, outstanding_cutoff_end = _day_bounds(
+        outstanding_as_of_date, outstanding_as_of_date, timezone_name
+    )
     allocation_joins = (
         select(
             PaymentAllocation.invoice_id.label("invoice_id"),
@@ -442,6 +448,9 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
             PaymentAllocation.business_id == business_id,
             Payment.business_id == business_id,
             Invoice.business_id == business_id,
+            Invoice.status == "issued",
+            Invoice.issue_date < outstanding_cutoff_end,
+            PaymentAllocation.created_at < outstanding_cutoff_end,
             func.upper(Payment.currency_code) == func.upper(Invoice.currency_code),
             Payment.customer_id.is_not(None),
             Invoice.customer_id.is_not(None),
@@ -450,8 +459,8 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         .group_by(PaymentAllocation.invoice_id)
         .subquery()
     )
-    # Current outstanding is independent of the selected sales period. Only
-    # valid same-business/customer/currency allocations reduce an invoice.
+    # The dashboard balance is historical as-of the selected period end (or
+    # business-local today when no end date is supplied), not a period-only cohort.
     outstanding_invoice_rows = session.execute(select(
         Invoice.id,
         Invoice.invoice_number,
@@ -463,6 +472,7 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
     ).where(
         Invoice.business_id == business_id,
         Invoice.status == "issued",
+        Invoice.issue_date < outstanding_cutoff_end,
     )).all()
 
     invalid_allocation_rows = session.execute(select(
@@ -485,6 +495,9 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         PaymentAllocation.business_id == business_id,
         Payment.business_id == business_id,
         Invoice.business_id == business_id,
+        Invoice.status == "issued",
+        Invoice.issue_date < outstanding_cutoff_end,
+        PaymentAllocation.created_at < outstanding_cutoff_end,
         or_(
             func.upper(Payment.currency_code) != func.upper(Invoice.currency_code),
             Payment.customer_id.is_(None),
@@ -553,6 +566,7 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         "invoiced_sales": amounts(sales),
         "collected_payments": amounts(collected),
         "expenses": amounts(expenses),
+        "outstanding_as_of_date": outstanding_as_of_date.isoformat(),
         "outstanding_balances": [
             {"currency_code": currency, "total": str(total)}
             for currency, total in sorted(outstanding_totals.items())
