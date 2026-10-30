@@ -184,3 +184,15 @@ On PR #304, the dashboard query computes `outstanding_as_of_date` from the selec
 
 ### Safe next action
 Master to reconcile T37's effective receivables decision and explicitly disposition issues #83/#85/#86; until then keep the candidate receivables behavior and expense-settlement/cashbox/tax work gated. Continue only source mapping, non-semantic documentation and test design. No new issue/branch/PR was created.
+
+## T40 feature-only regression additions — 2026-10-30 21:58 UTC
+
+Two contract-preserving tests were added to the T40-owned reconciliation suite:
+
+- `test_dashboard_and_profit_loss_are_isolated_from_another_business`: seeds an unrelated tenant's issued invoice and expense, asserts the requested tenant's Dashboard and P&L totals remain tenant-scoped, and verifies that a non-member cannot read the unrelated tenant's Dashboard.
+- `test_expense_csv_export_is_owner_only_tenant_scoped_and_formula_safe`: verifies the existing OWNER-only expense CSV route, business-scoped export rows, spreadsheet formula prefix escaping, and STAFF denial. This tests the existing export contract; it does not add export formats or broaden permissions.
+
+The report-reconciliation suite now contains 12 tests (previously 10). The targeted T40 inventory is now 14 date-boundary + 12 report-reconciliation + 3 payroll-privacy/date-pagination = **29 tests**, plus 26 related existing tests. All 55 remain **NOT RUN**; this commit is authored/source-reviewed only.
+
+No report formula, receivable basis, cash settlement, tax, AP, COGS, FX, GL, schema, role policy, or production behavior was changed. The two tests are on the T40-unique test file and do not modify the seven shared T40/T41 integration paths. PR #304 remains OPEN/DRAFT/UNMERGED and still requires the Master-controlled ancestry/shared-path sequence, authorized exact-SHA runner, and independent review.
+
