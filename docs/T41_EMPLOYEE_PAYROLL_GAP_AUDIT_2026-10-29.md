@@ -245,3 +245,13 @@ The later canonical T37 v1.0.1 decision supersedes earlier notes in this documen
 - T40 branch also carries `test_staff_cannot_read_payroll_expense_through_broad_surfaces` in `backend/tests/test_employee_payroll_api.py`, covering STAFF first-page behavior, OWNER positives, OWNER-only CSV and business-B ordinary-expense non-suppression.
 - PR #304 remains OPEN/DRAFT/UNMERGED, 58 ahead / 2 behind live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; exact-head status has no contexts (NOT a pass). The privacy regression, T40 tests, build, PostgreSQL, browser and security checks remain NOT RUN. CircleCI prohibited; no retry.
 - The source-level integration dependency is closed; executable validation and independent security review remain open. No merge/deployment.
+
+
+## Workstream closeout — 2026-10-30
+
+- T41 reused PR #308 / branch `feat/t41-salary-history-effective-dates`; no duplicate branch/PR. Current source-level scope is limited to employee/payroll baseline and the approved payroll privacy boundary. Salary effective-date/history schema, backfill, proration, statutory payroll, advanced payout states and separate Payment schema remain deferred under T37 v1.0.1.
+- Added regression coverage in code commit `da6857e9ada1b79d243ca08e12a2e69d1a4f58a2` (file `backend/tests/test_employee_payroll_api.py`): limit=1 proves payroll privacy filtering precedes pagination; mocked provider-backed chat asserts payroll employee name, net pay and reference are absent from the exact outbound provider payload while ordinary expense context remains. Test source only; NOT RUN.
+- PR #308 closeout ledger is recorded in TASKS.md. The current PR remains OPEN/DRAFT/UNMERGED; branch is 2 commits behind main; no submitted review, review threads, status contexts or exact-head GitHub Actions PR runs. Empty checks are NOT a pass.
+- T40 PR #304 source integration rechecked at head `38ea8c80e1ca4c3d2534ca45ddc731df2b6a35ff`: payroll visibility remains present across expense list, report summary, dashboard/P&L, assistant context and internal summary, and broad privacy regression remains present. Chat 3 owns that PR.
+- Exact-head pytest, PostgreSQL concurrency, migration rehearsal, frontend tests/build, authenticated browser smoke, security scan and independent review remain NOT RUN. CircleCI prohibited; Desktop Commander device OFFLINE and no approved non-CircleCI runner found.
+- Do not merge: no exact-head checks/review and branch remains 2 behind main. No merge, deployment, production migration or data write. Demo readiness remains blocked for production employee/payroll by migration 0005 restore/rehearsal/schema verification and authenticated UI smoke.
