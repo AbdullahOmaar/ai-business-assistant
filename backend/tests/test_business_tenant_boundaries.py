@@ -1576,8 +1576,28 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         business_b = create_business("tenant-b-owner", "Tenant B Feature Scope", "USD")
         resources_b = create_resources(business_b, "B", "USD", approve_po=True)
 
-        # Snapshot the foreign PO, line, stock movements and audit rows before
-        # attempting to access or mutate it through Business A.
+        # Capture every business-scoped persisted row, not just selected PO fields
+        # and row counts. Reads and denied foreign-ID operations below must not
+        # mutate either tenant's domain records, stock ledger, or audit trail.
+        def business_row_snapshot(business_id: str):
+            business_uuid = UUID(business_id)
+            with app.state.session_factory() as session:
+                snapshot = []
+                for table in Base.metadata.sorted_tables:
+                    if "business_id" not in table.c:
+                        continue
+                    statement = table.select().where(
+                        table.c.business_id == business_uuid
+                    )
+                    primary_key = list(table.primary_key.columns)
+                    if primary_key:
+                        statement = statement.order_by(*primary_key)
+                    rows = session.execute(statement).all()
+                    snapshot.append((table.name, tuple(tuple(row) for row in rows)))
+                return tuple(snapshot)
+
+        tenant_a_before = business_row_snapshot(business_a)
+        tenant_b_before = business_row_snapshot(business_b)
         with app.state.session_factory() as session:
             foreign_order = session.get(PurchaseOrder, UUID(resources_b["order_id"]))
             assert foreign_order is not None
@@ -1585,13 +1605,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
                 purchase_order_id=UUID(resources_b["order_id"]),
                 business_id=UUID(business_b),
             ).one()
-            foreign_before = (
-                foreign_order.status,
-                foreign_order.total,
-                foreign_line.received_quantity,
-                session.query(StockMovement).filter_by(business_id=UUID(business_b)).count(),
-                session.query(AuditEvent).filter_by(business_id=UUID(business_b)).count(),
-            )
+            foreign_line_id = foreign_line.id
 
         use_owner("tenant-a-owner")
         base_a = f"/api/v1/businesses/{business_a}"
@@ -1644,7 +1658,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
             f"{base_a}/purchase-orders/{resources_b['order_id']}/receive",
             json={
                 "lines": [{
-                    "line_id": str(foreign_line.id),
+                    "line_id": str(foreign_line_id),
                     "quantity": "1.000",
                 }]
             },
@@ -1652,20 +1666,8 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         assert foreign_receive.status_code == 422, foreign_receive.text
         assert foreign_receive.json()["detail"] == "Purchase order is not available for receiving"
 
-        with app.state.session_factory() as session:
-            foreign_order_after = session.get(PurchaseOrder, UUID(resources_b["order_id"]))
-            foreign_line_after = session.query(PurchaseOrderLine).filter_by(
-                purchase_order_id=UUID(resources_b["order_id"]),
-                business_id=UUID(business_b),
-            ).one()
-            foreign_after = (
-                foreign_order_after.status,
-                foreign_order_after.total,
-                foreign_line_after.received_quantity,
-                session.query(StockMovement).filter_by(business_id=UUID(business_b)).count(),
-                session.query(AuditEvent).filter_by(business_id=UUID(business_b)).count(),
-            )
-        assert foreign_after == foreign_before
+        assert business_row_snapshot(business_a) == tenant_a_before
+        assert business_row_snapshot(business_b) == tenant_b_before
 
     finally:
         if previous_factory is None:
