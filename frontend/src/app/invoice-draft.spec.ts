@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { toInvoiceDraftPayload, validateInvoiceDraft, type InvoiceDraftInput, type InvoiceDraftProduct } from './invoice-draft';
+import { moveInvoiceDraftLine, toInvoiceDraftPayload, validateInvoiceDraft, type InvoiceDraftInput, type InvoiceDraftProduct } from './invoice-draft';
 
 const products: InvoiceDraftProduct[] = [
   { id: 'p-1', name: 'Product 1', unit_price: '12.50' },
@@ -69,4 +69,12 @@ test('payload keeps server calculation authority and never adds client totals', 
 
 test('payload builder throws instead of serializing invalid input', () => {
   assert.throws(() => toInvoiceDraftPayload(input({ customer_id: '' }), products), RangeError);
+});
+
+test('line reorder preserves each line and does not move beyond either boundary', () => {
+  const lines = ['first', 'second', 'third'];
+  assert.deepEqual(moveInvoiceDraftLine(lines, 1, -1), ['second', 'first', 'third']);
+  assert.deepEqual(moveInvoiceDraftLine(lines, 1, 1), ['first', 'third', 'second']);
+  assert.deepEqual(moveInvoiceDraftLine(lines, 0, -1), lines);
+  assert.deepEqual(moveInvoiceDraftLine(lines, 2, 1), lines);
 });
