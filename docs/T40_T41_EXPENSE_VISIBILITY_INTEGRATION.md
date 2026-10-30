@@ -10,11 +10,11 @@ This note reconciles the existing T40 Expenses & Reports PR #304 with T41 Employ
 ## Verified repository evidence
 
 - Live `main`: `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`.
-- T40 PR #304 branch: `task/t40-fin-report-003-current-main-20261029`, head `c46370a64ddb157a621a7de44084d070835875c2`.
+- T40 PR #304 branch: `task/t40-fin-report-003-current-main-20261029`; source-level code reviewed at `c46370a64ddb157a621a7de44084d070835875c2`; latest documentation checkpoint / current PR head `5ef93cea54cb39e036ca2e21f73da2e29718d383`.
 - T41 PR #308 branch: `feat/t41-salary-history-effective-dates`, head `f89380722efb580be79a2d46013df7f29a3e3f9c`.
 - Both branches diverge from live main by two commits; their merge base is `c464398e0a6ace77eba32aabfbdbd09091f53999`.
-- PR #304 is OPEN / DRAFT / UNMERGED (48 ahead / 2 behind); latest GitHub metadata says `mergeable=true`. PR #308 is OPEN / DRAFT / UNMERGED (80 ahead / 2 behind). Neither metadata value constitutes validation or permission to merge.
-- Combined status queries for both exact heads returned no contexts. This is **NOT a pass**.
+- PR #304 is OPEN / DRAFT / UNMERGED (49 ahead / 2 behind); latest GitHub metadata says `mergeable=true`. PR #308 is OPEN / DRAFT / UNMERGED (80 ahead / 2 behind). Neither metadata value constitutes validation or permission to merge.
+- Current T40 exact head `5ef93cea54cb39e036ca2e21f73da2e29718d383` returns six CircleCI FAILURE contexts (backend-accounting, backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke). Current T41 exact head `f89380722efb580be79a2d46013df7f29a3e3f9c` returned no status contexts. Neither is a pass.
 - T37 remains PARTIALLY COMPLETE / NOT APPROVED. Master has requested an explicit decision on payroll-linked expense visibility; no versioned APPROVED decision is present.
 
 ## Source-level integration finding
@@ -42,7 +42,7 @@ On PR #308:
 ### Required integration — do not overwrite either side
 
 1. The final `GET /expenses` query must start with the business-scoped Expense query, apply `apply_expense_visibility(..., business_id=business_id, role=membership.role)`, then apply T40's date predicates, stable ordering and pagination. The privacy predicate must run before offset/limit so hidden payroll rows do not affect visible page contents.
-2. The current T40 `_authorized` helper returns `None`; T41's candidate requires retaining the returned membership role. If Master approves the candidate, update the helper to return `authorize_membership(...) ` and pass `membership.role` to the visibility predicate. Do not hardcode role assumptions independently in route handlers.
+2. The current T40 `_authorized` helper returns `None`; T41's candidate requires retaining the returned membership role. If Master approves the candidate, update the helper to return `authorize_membership(...)` and pass `membership.role` to the visibility predicate. Do not hardcode role assumptions independently in route handlers.
 3. Reconcile `core_features_api.py` as well: T40's `_day_bounds` overflow handling and report date behavior must survive while the T41 visibility predicate is applied to dashboard and P&L expense aggregates.
 4. Preserve the T41 predicate on report summary, insights, internal financial summary and AI chat context. Preserve existing OWNER-only CSV export and employee/payroll management controls.
 5. Keep all tenant scoping in the predicate itself (`PayrollRecord.business_id == business_id`) and in the base Expense query. Never rely on mutable category/description text as the privacy boundary.
@@ -72,7 +72,7 @@ This is a candidate only. T37's route × role × action × tenant matrix remains
 
 - T40-authored tests on PR #304: 21; related existing suites: 26. All source-reviewed only, **NOT RUN**.
 - T41 privacy regression on PR #308: authored/source-inspected; current exact head **NOT RUN**. Historical test results on older commits do not validate current PR heads.
-- Exact-head status contexts: none returned for either current head; **NOT RUN / no status evidence**.
+- T40 current exact-head GitHub status: six CircleCI FAILURE contexts. CircleCI execution/retries are prohibited; no retry was made and no job logs/root cause were verified. T41 current exact-head status query returned no contexts; that is not a pass.
 - CircleCI execution/retries are prohibited by the Operating Model; GitHub Actions must not be used as replacement CI. GitLab mirror is stale and cannot validate either GitHub head. Desktop Commander device is OFFLINE.
 - No code, schema, migration, payroll calculation, posting, permission behavior, merge or deployment was changed by this review.
 
