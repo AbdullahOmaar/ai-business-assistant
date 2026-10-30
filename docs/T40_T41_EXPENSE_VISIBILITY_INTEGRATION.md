@@ -96,3 +96,41 @@ A broader open Draft PR #312 was inspected because it changes the same report su
 - The same branch adds bank reconciliation, pricing-rule effective dates and several other migrations outside the PR's stated credit-note lifecycle scope. Master has already recorded a source review requiring scope separation, migration/backfill review and T37 approval.
 
 **Integration rule:** do not cherry-pick or merge PR #312 wholesale into T40. First obtain T37 approval and coordinate with T38/Feature 31. Then reconcile only the approved, scoped report behavior while preserving T40 date-boundary semantics and T41 payroll visibility. The six migration chain and its dependencies require independent migration review and isolated PostgreSQL upgrade/recovery validation; they are not part of T40's current authorized changes.
+
+
+## OWNER APPROVAL + IMPLEMENTATION CHECKPOINT — T37 v1.0.1 (2026-10-30)
+
+The Product Owner explicitly approved the bounded policy recommendations. The canonical versioned record is T37 v1.0.1: https://app.notion.com/p/4089320b90fb81708c5cc14a1b74580b. This section supersedes the earlier "Decision gate" and "no code changed" status above; those statements remain historical for their original checkpoint only.
+
+### Implemented on the existing T40 PR #304 branch
+
+- `backend/app/security.py`: added `apply_expense_visibility`, using the business-scoped authoritative `PayrollRecord.expense_id` relation; OWNER keeps access, non-OWNER roles exclude payroll-linked Expense IDs.
+- `backend/app/extended_api.py`: `_authorized` now returns the authorized membership; `GET /expenses` applies payroll visibility before business-local date filters, deterministic ordering and pagination; `/reports/summary` and `/assistant/insights` apply the predicate before aggregation.
+- `backend/app/core_features_api.py`: `_authorize` returns membership; dashboard and P&L filter payroll-linked expenses before aggregation while preserving T40's local-date boundary logic.
+- `backend/app/operations.py`: internal `financial_summary` filters payroll-linked expense aggregates.
+- `backend/app/assistant_api.py`: AI chat context excludes payroll-linked Expense records for non-OWNER members before selecting the recent context window.
+- `backend/tests/test_employee_payroll_api.py`: added `test_staff_cannot_read_payroll_expense_through_broad_surfaces`, covering STAFF list pagination, report summary, dashboard, P&L, deterministic insights, internal summary, AI chat context, OWNER positive access, OWNER-only CSV and cross-business non-suppression.
+
+### Exact commits (all documentation/code commits used `[skip ci]`)
+
+- `8833761e0ef8207138dc662cc1922eb9e534b109` — security predicate.
+- `eeb253c9a7301fc49e2a5f0817af7d8692e8606b` — expense list, report summary and insights.
+- `ed3a4b3347f4c38b3754952feb2064042fa6aeac` — dashboard and P&L.
+- `ded9b146f0b969a6556196544aba88cc2bfabe6f` — internal financial summary.
+- `b78c6a63657550c3c16fc17da278889e564337ad` — AI chat context.
+- `6cfb8155f12e42ee6719226af49e9f9b5b34406d` — cross-surface privacy regression.
+
+### Review findings / remaining work
+
+- Source-level review confirms visibility is applied before expense pagination and aggregate queries on the changed surfaces. OWNER-only CSV/export and payroll management guards remain unchanged.
+- The new test is authored but **NOT RUN**. All prior T40 tests and the 26 related suites remain **NOT RUN**. Build, PostgreSQL, browser, security and exact-head executable checks are **NOT RUN**.
+- Latest PR #304 head at this checkpoint: `6cfb8155f12e42ee6719226af49e9f9b5b34406d`; OPEN / DRAFT / UNMERGED; 58 commits ahead / 2 behind live main `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; GitHub reports mergeable=true, but the base is diverged and no exact-head status contexts exist. Empty status is NOT a pass.
+- CircleCI remains prohibited; no retry/run was initiated. GitHub Actions was not used. No authorized local runner is available. No merge, rebase, deployment, schema migration or production financial-data write occurred.
+
+### Next T40 implementation order
+
+1. Add/extend regressions for OWNER/STAFF visibility with all date-filter variants and offset pages; cross-tenant PayrollRecord link isolation; no-side-effect assertions.
+2. Complete dashboard allocation integrity: only same-currency Payment/Invoice allocations reduce receivables; expose mismatched/over-allocated records as explicit data-quality warnings; remove silent negative-balance clamping. Preserve the existing aging warning behavior.
+3. Implement historical as-of receivables only where persisted allocation/credit event timestamps support the requested cutoff; otherwise return an explicit unavailable basis, not an approximation from current allocations.
+4. Keep credit-note tax/reversal, supplier AP/payment, inventory valuation/COGS, FX conversion and GL posting deferred.
+5. Reconcile the two commits behind main after reviewing their changes, then exact-SHA validation through an authorized non-CircleCI runner and independent review. Keep Draft/unmerged.
