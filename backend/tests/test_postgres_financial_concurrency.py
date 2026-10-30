@@ -637,7 +637,6 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
             )).one()
             expenses = session.scalars(select(Expense).where(
                 Expense.business_id == business_id,
-                Expense.id == record.expense_id,
             )).all()
             assert record.status == "paid"
             assert record.created_by_subject == creator.subject
@@ -645,6 +644,7 @@ def test_concurrent_payroll_payment_records_one_expense_and_paid_audit(
             assert record.paid_by_subject == approver.subject
             assert record.expense_id is not None
             assert len(expenses) == 1
+            assert expenses[0].id == record.expense_id
             assert expenses[0].amount == record.net_pay
             assert expenses[0].reference == f"payroll:{record.id}"
 
