@@ -1520,6 +1520,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
     """An OWNER sees only resources belonging to the business in the route path."""
     from datetime import datetime, timezone
     from decimal import Decimal
+    from uuid import uuid4
     from app.models import (
         AuditEvent, Invoice, PurchaseOrder, PurchaseOrderLine,
         RecurringInvoiceSchedule, Supplier,
