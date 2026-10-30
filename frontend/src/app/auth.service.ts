@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword, signOut
 } from '@firebase/auth';
 import type { Auth, User } from '@firebase/auth';
+import { observeAuthState } from './auth-state-observer';
 
 export interface RuntimeConfig {
   apiBaseUrl: string;
@@ -73,54 +74,24 @@ export class AuthService {
         : initializeApp(config.firebase, appName);
       this.auth = getAuth(app);
     }
-    // Keep the observer subscribed after the initial auth check. Firebase persists
-    // sign-out/auth changes across tabs; a one-shot observer leaves this cached User
-    // stale and can keep sending an ID token after the user signs out elsewhere.
+    // Keep the Firebase observer alive so cross-tab sign-in/sign-out changes
+    // update the cached user after the initial session check.
     if (!this.authReady) {
-      this.authReady = new Promise<void>((resolve, reject) => {
-        let settled = false;
-        let unsubscribe: () => void = () => {};
-        const timeoutId = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          unsubscribe();
+      this.authReady = observeAuthState<User>(
+        (onUser, onError) => onAuthStateChanged(this.auth!, onUser, onError),
+        user => { this.user = user ?? null; },
+        error => {
+          this.user = null;
           this.authStateUnsubscribe = undefined;
           this.authReady = undefined;
-          reject(new Error('Firebase sign-in session check timed out. Retry when your connection is stable.'));
-        }, 10_000);
-        unsubscribe = onAuthStateChanged(
-          this.auth!,
-          user => {
-            this.user = user ?? null;
-            if (!settled) {
-              settled = true;
-              clearTimeout(timeoutId);
-              this.authStateUnsubscribe = unsubscribe;
-              resolve();
-            }
-          },
-          error => {
-            this.user = null;
-            if (!settled) {
-              settled = true;
-              clearTimeout(timeoutId);
-              unsubscribe();
-              this.authStateUnsubscribe = undefined;
-              this.authReady = undefined;
-              reject(error);
-            } else {
-              // The SDK terminates an observer after an error. Allow a later
-              // initialize() call to establish a fresh observer.
-              this.authStateUnsubscribe = undefined;
-              this.authReady = undefined;
-            }
-          }
-        );
-      });
+        },
+        unsubscribe => { this.authStateUnsubscribe = unsubscribe; }
+      );
     }
     try {
       await this.authReady;
     } catch (error) {
+      this.user = null;
       this.authReady = undefined;
       this.authStateUnsubscribe?.();
       this.authStateUnsubscribe = undefined;
