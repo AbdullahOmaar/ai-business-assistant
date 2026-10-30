@@ -1769,3 +1769,18 @@ This is an evidence addendum to the existing live queue. It does not authorize m
 - No merge, branch rewrite, production deployment, production DB mutation, or migration.
 - Backend pytest, PostgreSQL concurrency/migration/restore, frontend unit/build, browser E2E, Docker, and dependency/security scans remain NOT RUN on the exact candidate heads.
 - Highest-value next actions: owner/admin repairs one-way GitHub→GitLab mirror; owner approves cost-safe current-schema backup/restore drill; T37 receives explicit Product Owner + qualified accountant approval before shared financial implementation.
+
+
+### T22 execution breakdown — follow-up tasks
+
+| Subtask | Scope / evidence | Status |
+|---|---|---|
+| T22.1 OWNER / STAFF authorization | `backend/tests/test_api.py::test_staff_is_denied_sensitive_business_routes`, `backend/tests/test_employee_payroll_api.py::test_staff_cannot_read_or_change_employees_or_payroll_and_no_rows_are_written`; denied writes snapshot protected rows and audit counts | SOURCE AUDIT COMPLETE; exact-head execution NOT RUN |
+| T22.2 tenant isolation | `backend/tests/test_business_tenant_boundaries.py`, `backend/tests/test_employee_payroll_api.py::test_payroll_records_and_employee_ids_cannot_cross_business_boundaries`; cross-tenant reads/writes and no-side-effect assertions | SOURCE AUDIT COMPLETE; exact-head execution NOT RUN |
+| T22.3 payment idempotency | `backend/tests/test_core_features_api.py::test_payment_recording_is_idempotent_and_allocates_to_issued_invoice`, PostgreSQL concurrency module, and T22 persisted scenario | SOURCE AUDIT COMPLETE; PostgreSQL execution NOT RUN |
+| T22.4 AI safe failure | Added malformed provider JSON/envelope/empty-answer API regression in `backend/tests/test_assistant_security.py`; complements timeout and retry tests | CODE ADDED; exact-head execution NOT RUN |
+| T22.5 authenticated ERP browser journey | OWNER/STAFF login, workspace selection, invoice/payment, inventory, expenses and denied action | BLOCKED / NOT IMPLEMENTED; current E2E only startup/platform-admin |
+| T22.6 shared fixtures | Audit fixture duplication; introduce shared fixtures only where a low-risk refactor can preserve isolation | PENDING |
+| T22.7 exact-head validation and independent review | Backend, PostgreSQL, frontend, Playwright, Docker and audits with retained artifacts | BLOCKED pending non-CircleCI runner and exact-SHA mirror/status |
+
+Do not mark any source-audited item PASS until its test command has actually run against the reported SHA.
