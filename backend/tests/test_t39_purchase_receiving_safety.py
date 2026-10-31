@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.extended_api import (
     PurchaseLineInput,
+    approve_purchase_order,
     PurchaseOrderInput,
     SupplierPatch,
     cancel_purchase_order,
@@ -1110,4 +1111,97 @@ def test_owner_can_replace_draft_purchase_order_with_multiple_lines_without_stoc
             )
         ).all()
         assert len(update_audits) == 1
+        assert stock_movements == []
+
+
+def test_purchase_order_approval_is_owner_only_and_has_no_stock_posting_side_effects(
+    purchasing_workspace,
+):
+    engine, business_id, owner_principal = purchasing_workspace
+    staff_principal = AuthenticatedPrincipal(subject="t39-staff-approver")
+
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject=staff_principal.subject,
+            role=MembershipRole.STAFF,
+        ))
+        supplier = Supplier(business_id=business_id, name="T39 Approval Supplier")
+        session.add(supplier)
+        session.flush()
+        product = create_product(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            name="T39 Approval Product",
+            unit_price=Decimal("7.00"),
+            is_stock_tracked=True,
+        )
+        staff_order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier.id,
+            order_number="PO-T39-STAFF-APPROVAL",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("7.00"),
+        )
+        owner_order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier.id,
+            order_number="PO-T39-OWNER-APPROVAL",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("7.00"),
+        )
+        session.add_all([staff_order, owner_order])
+        session.flush()
+        for order in (staff_order, owner_order):
+            session.add(PurchaseOrderLine(
+                business_id=business_id,
+                purchase_order_id=order.id,
+                product_id=product.id,
+                quantity=Decimal("1.000"),
+                unit_cost=Decimal("7.00"),
+                received_quantity=Decimal("0.000"),
+            ))
+        staff_order_id, owner_order_id = staff_order.id, owner_order.id
+        session.commit()
+
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as denied:
+            approve_purchase_order(
+                business_id=business_id,
+                order_id=staff_order_id,
+                session=session,
+                principal=staff_principal,
+            )
+        assert denied.value.status_code == 403
+
+    with Session(engine) as session:
+        approved = approve_purchase_order(
+            business_id=business_id,
+            order_id=owner_order_id,
+            session=session,
+            principal=owner_principal,
+        )
+        assert approved["status"] == "approved"
+
+    with Session(engine) as session:
+        saved_staff_order = session.get(PurchaseOrder, staff_order_id)
+        saved_owner_order = session.get(PurchaseOrder, owner_order_id)
+        approval_audits = session.scalars(
+            select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.approved",
+            )
+        ).all()
+        stock_movements = session.scalars(
+            select(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_type == "purchase_order",
+            )
+        ).all()
+        assert saved_staff_order.status == "draft"
+        assert saved_owner_order.status == "approved"
+        assert len(approval_audits) == 1
         assert stock_movements == []
