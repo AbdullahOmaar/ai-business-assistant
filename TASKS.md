@@ -1,3 +1,14 @@
+## Runtime/provider refresh — 2026-10-31 12:44 EET
+
+- Vercel production Web deployment: `dpl_F4CDmFLXug9aRqkU2TQerP4XzRDy`, READY, production target, exact GitHub SHA `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`; alias `ai-business-assistant-web.vercel.app` attached.
+- Vercel production API deployment: `dpl_6E9bZUkucaBM2og1s7eFNBbk7QH4`, READY, production target, same exact GitHub SHA; alias `ai-business-assistant-api.vercel.app` attached.
+- Vercel API and Web error/fatal runtime logs over the latest 30 minutes: no records found.
+- Direct `/version`, `/readyz`, and `/health` HTTP probes via available browser access were inaccessible; endpoint verification remains NOT RUN. Authenticated Firebase browser smoke remains NOT RUN.
+- Neon production main branch `br-winter-boat-b99zgtx4`, database `ai_business_assistant`: Alembic `0005_employee_payroll`; employees row count 0; payroll_records row count 0. Read-only query only; no personal row data read; no writes/migrations.
+- GitLab canonical project 88314921 main remains mirror SHA `843751f396b6b6d308d9c833666d848c42c909ca`; pipeline #3010621725 is SUCCESS on that mirror SHA. This is not a new candidate pipeline and not the exact GitHub main SHA.
+- No CI was triggered in this @n session. Effective Master policy prohibits CI triggers/retries; GitLab exact-source sync is not yet permitted through the unresolved #318 trust boundary.
+- No production deployment was triggered; v1.3.5 remains the last release.
+
 ## T40/T41 Master integration self-review — 2026-10-31 12:29 EET
 
 ### Payroll privacy source review
