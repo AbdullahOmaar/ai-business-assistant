@@ -1439,3 +1439,97 @@ def test_purchase_order_edit_rejects_approved_and_foreign_orders_without_side_ef
                 StockMovement.business_id.in_([business_id, foreign_business_id])
             )
         ) == movement_count_before
+
+
+@pytest.mark.parametrize("inactive_reference", ["supplier", "product"])
+def test_approval_rejects_deactivated_supplier_or_product_without_side_effects(
+    purchasing_workspace, inactive_reference
+):
+    """A draft cannot be approved after a referenced supplier/product is deactivated."""
+    engine, business_id, owner_principal = purchasing_workspace
+
+    with Session(engine) as session:
+        supplier = Supplier(
+            business_id=business_id,
+            name="T39 Revalidation Supplier",
+        )
+        session.add(supplier)
+        session.flush()
+        product = create_product(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            name="T39 Revalidation Product",
+            unit_price=Decimal("9.00"),
+            is_stock_tracked=True,
+        )
+        order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier.id,
+            order_number=f"PO-T39-REVALIDATE-{inactive_reference.upper()}",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("9.00"),
+        )
+        session.add(order)
+        session.flush()
+        session.add(PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=product.id,
+            quantity=Decimal("1.000"),
+            unit_cost=Decimal("9.00"),
+            received_quantity=Decimal("0.000"),
+        ))
+        supplier_id, product_id, order_id = supplier.id, product.id, order.id
+        session.commit()
+
+    with Session(engine) as session:
+        if inactive_reference == "supplier":
+            session.get(Supplier, supplier_id).is_active = False
+        else:
+            session.get(Product, product_id).is_active = False
+        session.commit()
+
+    with Session(engine) as session:
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as rejected:
+            approve_purchase_order(
+                business_id=business_id,
+                order_id=order_id,
+                session=session,
+                principal=owner_principal,
+            )
+        assert rejected.value.status_code == 422
+
+    with Session(engine) as session:
+        saved_order = session.get(PurchaseOrder, order_id)
+        assert saved_order.status == "draft"
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.approved",
+                AuditEvent.target_id == str(order_id),
+            )
+        ) == 0
