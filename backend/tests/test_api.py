@@ -1991,3 +1991,41 @@ def test_owner_payment_rejects_invoice_for_another_customer_without_writes():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_staff_cannot_record_payment_via_api_without_writes_or_audit_events():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    _set_test_membership_role(engine, MembershipRole.STAFF)
+    payload = {
+        "amount": "4.00",
+        "currency_code": "EGP",
+        "idempotency_key": "staff-payment-must-be-denied",
+        "customer_id": str(customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "4.00"}],
+        "method": "cash",
+    }
+    try:
+        response = TestClient(app).post(
+            f"/api/v1/businesses/{business_id}/payments",
+            json=payload,
+        )
+        assert response.status_code == 403, response.text
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Payment).where(
+                Payment.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "payment.recorded",
+            )) == 0
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
