@@ -92,8 +92,23 @@ test('moves and removes draft rows without mutating the original collection', ()
   assert.deepEqual(removeInvoiceDraftLine([productLine], 0), [productLine]);
 });
 
+test('matches the API maximum of 500 invoice lines', () => {
+  const lines = Array.from({ length: 501 }, (_, index) => ({
+    ...productLine, id: 'line-' + index,
+  }));
+  assert.match(validateInvoiceDraft(validInput(lines), products, customers) ?? '', /500 lines/i);
+});
+
+test('rejects whole-number precision beyond the API decimal limits', () => {
+  assert.ok(validateInvoiceDraft(validInput([{ ...productLine, quantity: '100000000000' }]), products, customers));
+  assert.ok(validateInvoiceDraft(validInput([{ ...manualLine, unit_price: '1000000000000' }]), products, customers));
+  assert.equal(validateInvoiceDraft(validInput([{ ...productLine, quantity: '99999999999.999' }]), products, customers), null);
+  assert.equal(validateInvoiceDraft(validInput([{ ...manualLine, unit_price: '999999999999.99' }]), products, customers), null);
+});
+
 test('localizes known validation feedback and preserves unknown fallback', () => {
   assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'ar'), 'اختَر عميلًا صحيحًا.');
+  assert.equal(localizeInvoiceDraftValidationMessage('An invoice cannot contain more than 500 lines.', 'ar'), 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.');
   assert.equal(localizeInvoiceDraftValidationMessage('unknown', 'ar'), 'unknown');
   assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'en'), 'Choose a valid customer.');
 });

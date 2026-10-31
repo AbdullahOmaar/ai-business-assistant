@@ -48,6 +48,11 @@ export interface InvoiceDraftServerSummary {
 const DECIMAL_QUANTITY = /^\d+(?:\.\d{1,3})?$/;
 const DECIMAL_PRICE = /^\d+(?:\.\d{1,2})?$/;
 
+function exceedsInvoiceDecimalPrecision(value: string, maximumWholeDigits: number): boolean {
+  const [whole = ''] = value.split('.');
+  return whole.replace(/^0+/, '').length > maximumWholeDigits;
+}
+
 export function validateInvoiceDraft(
   input: InvoiceDraftInput,
   products: readonly InvoiceDraftProduct[],
@@ -63,10 +68,12 @@ export function validateInvoiceDraft(
     return 'Enter a valid three-letter currency code.';
   }
   if (!input.lines.length) return 'Add at least one invoice line.';
+  if (input.lines.length > 500) return 'An invoice cannot contain more than 500 lines.';
 
   for (const line of input.lines) {
     const quantity = line.quantity.trim();
-    if (!DECIMAL_QUANTITY.test(quantity) || !Number.isFinite(Number(quantity)) || Number(quantity) <= 0) {
+    if (!DECIMAL_QUANTITY.test(quantity) || !Number.isFinite(Number(quantity)) || Number(quantity) <= 0 ||
+        exceedsInvoiceDecimalPrecision(quantity, 11)) {
       return 'Every line needs a positive quantity with at most three decimal places.';
     }
     if (line.kind === 'product') {
@@ -80,7 +87,8 @@ export function validateInvoiceDraft(
       return 'Every manual line needs a description of 1 to 500 characters.';
     }
     const price = line.unit_price.trim();
-    if (!DECIMAL_PRICE.test(price) || !Number.isFinite(Number(price)) || Number(price) < 0) {
+    if (!DECIMAL_PRICE.test(price) || !Number.isFinite(Number(price)) || Number(price) < 0 ||
+        exceedsInvoiceDecimalPrecision(price, 12)) {
       return 'Every manual line needs a non-negative unit price with at most two decimal places.';
     }
   }
@@ -120,6 +128,7 @@ export function localizeInvoiceDraftValidationMessage(message: string, language:
     'Choose a valid customer.': 'اختَر عميلًا صحيحًا.',
     'Enter a valid three-letter currency code.': 'أدخل رمز عملة صحيحًا من ثلاثة أحرف.',
     'Add at least one invoice line.': 'أضف بندًا واحدًا على الأقل للفاتورة.',
+    'An invoice cannot contain more than 500 lines.': 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.',
     'Every line needs a positive quantity with at most three decimal places.': 'يجب أن تكون كمية كل بند أكبر من صفر وبحد أقصى 3 خانات عشرية.',
     'Choose a valid catalog product for every product line.': 'اختَر منتجًا صحيحًا من قائمة المنتجات لكل بند.',
     'A line description cannot exceed 500 characters.': 'لا يمكن أن يتجاوز وصف البند 500 حرف.',
