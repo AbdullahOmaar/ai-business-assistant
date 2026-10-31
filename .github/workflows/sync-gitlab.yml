@@ -1,8 +1,7 @@
 name: Sync GitHub refs to GitLab
 
-# This workflow is deliberately dispatch-only. The workflow definition must be
-# selected from protected main; candidate branches cannot run secret-bearing code.
-# It transports exact refs only. GitLab remains the sole CI validation provider.
+# Dispatch-only: the workflow definition must be selected from protected main.
+# It transports exact branch refs only. GitLab remains the sole CI provider.
 
 on:
   workflow_dispatch:
@@ -66,7 +65,7 @@ jobs:
           git init source
           cd source
           git remote add github "https://github.com/$GITHUB_REPOSITORY.git"
-          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" fetch --no-tags --depth=1 github "$SOURCE_REF"
+          git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" fetch --no-tags github "$SOURCE_REF"
           ACTUAL_SHA="$(git rev-parse FETCH_HEAD)"
           test "$ACTUAL_SHA" = "$EXPECTED_SHA" || {
             echo "Source ref moved: expected $EXPECTED_SHA, fetched $ACTUAL_SHA." >&2
