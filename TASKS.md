@@ -1,3 +1,25 @@
+## Master demo UI checkpoint — 2026-11-01
+
+- Current production baseline: GitHub main `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`, release `v1.3.5`. Vercel Web and API production deployments are both READY on this exact SHA. Vercel runtime errors: none in the last 24 hours; error/fatal runtime logs: none in the last 30 minutes. T50's prior direct probes on this same deployment recorded `/version`, `/readyz`, `/health` and Web root HTTP 200. These checks do not replace authenticated UX acceptance.
+- Current Angular source has 19 tab destinations. Desktop exposes the sidebar; mobile uses Home / Invoices / Customers / More with secondary destinations in the More menu.
+- Home `quick-grid` currently exposes only Customers, Products, Invoices and AI Assistant. The other existing modules are reachable from navigation but not surfaced on Home. P1 demo-discoverability target: a role-aware All Modules / Quick Access launcher grouped by Sales, Inventory & Purchasing, Finance & Reports, Team and Administration.
+- P1 role-visibility finding: desktop Activity Log is OWNER-only, but the mobile More menu renders the `audit` item unconditionally. Chat5 must independently verify server-side OWNER/STAFF/non-member authorization and no-side-effect denial; UI visibility alone is not evidence of data exposure.
+- P2 navigation finding: mobile More active-state expression omits `suppliers`, `purchases`, `recurring`, `notifications`, `health`, `integrity` and `taxes`.
+- In-app `FEATURE_CATALOG` has 9 groups and omits Supplier Directory, Purchase Orders/Receiving, Recurring Schedules, Notification Queue, Data Integrity Review, Operational Health and Tax Summary. Add only implemented behavior with limitations stated.
+- `demo/index.html` and `frontend/public/demo/index.html` are standalone static prototypes with synthetic local data/simulated interactions, not connected to Firebase, production API or PostgreSQL. Do not present them as proof of production workflows.
+- Current inventory refresh is recorded in `docs/FEATURE_INVENTORY_2026-10-26.md` on this branch (commit `a9be8ba72d1c43b7b3d0af92698a59b0cb3990eb`). It records the 2026-11-01 UI surface, limitations and findings.
+- Ownership: `frontend/src/app/app.component.ts` and `frontend/src/app/release-guide.ts` are changed in existing Chat1 PR #305. Do not create a competing writer. Master will sequence the Home launcher, OWNER guard and More active-state fix after #305 shared-file reconciliation. Chat5 owns independent audit-route verification; T50 owns browser/UX acceptance and demo runbook.
+- Authenticated OWNER/STAFF/second-business/non-member browser journeys, manual responsive/mobile/RTL/accessibility, frontend/backend tests/build and exact-head CI remain NOT RUN. CircleCI/replacement CI/TinyFish remain prohibited; no CI was triggered, no merge or deployment was performed.
+
+### Next demo actions
+
+1. T50 records the Home discoverability and mobile role/navigation findings in its defect register and demo runbook, then runs approved non-production browser journeys when credentials/browser are available.
+2. Chat5 verifies the audit route's role/tenant matrix and denied-read no-side-effects independently.
+3. Master reconciles Chat1 PR #305 against current main, preserving current auth/workspace guards, then implements the Home All Modules launcher and mobile navigation fixes with regression tests.
+4. Re-run permitted local checks on the exact integrated SHA; keep CI NOT RUN while frozen. No merge/deployment until separate owner authorization and release gates are satisfied.
+
+---
+
 ## Open PR inventory refresh — 2026-10-31 14:20 EET
 
 - Fresh owner-authored open-PR inventory: **15 open PRs** — #302, #304, #305, #306, #307, #308, #309, #311, #312, #313, #314, #315, #317, #318, #322.
