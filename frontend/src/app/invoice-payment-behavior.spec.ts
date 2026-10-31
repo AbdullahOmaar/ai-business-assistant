@@ -249,3 +249,22 @@ test('late payment success after a workspace identity switch does not overwrite 
   assert.equal(component.paymentSaving, false);
   assert.equal(component.loading, false);
 });
+
+test('workspace switching is rejected while a payment mutation is pending', async () => {
+  const component = extractComponent(['switchBusiness']);
+  let workspaceLoads = 0;
+  const currentBusiness = { id: 'business-a', name: 'Current', currency_code: 'EGP' };
+  Object.assign(component, {
+    paymentSaving: true,
+    business: currentBusiness,
+    businesses: [currentBusiness, { id: 'business-b', name: 'Other', currency_code: 'USD' }],
+    selectedBusinessId: 'business-a',
+    loadWorkspaceData: async () => { workspaceLoads += 1; },
+  });
+
+  await component.switchBusiness('business-b');
+
+  assert.equal(component.business, currentBusiness);
+  assert.equal(component.selectedBusinessId, 'business-a');
+  assert.equal(workspaceLoads, 0);
+});
