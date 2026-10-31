@@ -1,3 +1,31 @@
+## T40/T41 Master integration self-review — 2026-10-31 12:29 EET
+
+### Payroll privacy source review
+- T40 PR #304 head: `e671d8ea36781ed955c0b72bf169c5bf385e9bd8`; T41 PR #308 head: `6b89e743ddec2a02c22039659c9a6f17c586fb44`. Both OPEN/DRAFT/UNMERGED, base `c464398e0a6ace77eba32aabfbdbd09091f53999`, GitHub mergeable=false; each has COMMENTED-only reviews, no approval.
+- T40's narrow Payroll Privacy v1.0 source slice uses `PayrollRecord.expense_id` as the authoritative link, scoped by business_id and excluding NULL links; OWNER retains access. Applied before pagination/aggregation in expenses, report summary, assistant insights, dashboard, P&L, internal financial_summary, and assistant/provider recent-expense context. CSV and employee/payroll routes remain OWNER-only.
+- T40 test source covers STAFF list limit=1, summary/dashboard/P&L/insights/chat/internal summary, OWNER positive controls, another-business isolation, and date-boundary/offset pagination. Tests/build/security NOT RUN.
+- T37 remains fail-closed for broader report formulas, posting, tax, settlement and financial semantics. Narrow privacy approval does not approve those semantics.
+
+### Shared-file ownership and integration decision
+- T40/#304 is canonical owner for shared privacy/report backend: `security.py`, `extended_api.py`, `core_features_api.py`, `assistant_api.py`, `operations.py` and the broad privacy/date-filter regression suite.
+- #308 duplicates `apply_expense_visibility` and its usages in those paths. Do not merge the duplicate helper/uses or a second copy of broad privacy tests from T41. Preserve T41-specific employee search/pagination backend (`employee_payroll_api.py`), frontend component/API/spec, unique employee/payroll lifecycle tests and docs.
+- The cross-business privacy test in `test_employee_payroll_search.py` duplicates T40's second-business privacy assertion; route it into T40's single-writer suite.
+- Preserve PostgreSQL concurrent payroll-creation test as T41-specific integrity coverage. Concurrent payroll-payment/expense creation remains gated by the unresolved financial lifecycle contract and authorized PostgreSQL validation.
+- Master owns `TASKS.md`; T41 must not independently modify it.
+
+### T41 API/UI decision
+- Source review confirms GET /employees remains OWNER-only and business-scoped; search is bounded to 100 characters, whitespace-normalized, SQL LIKE wildcard-escaped, and searches name/code/email/department/job title. Pagination is bounded 1–200, offset non-negative, stable order by name+id.
+- UI uses 25+1 results to derive hasNext, independent employee/payroll offsets, search reset and business/request sequence fencing. No authoritative total-count response is required for previous/next navigation; do not expand the API contract for total count solely for this slice.
+- No salary-history/effective-date schema or Alembic migration is present in current #308 changed files. Salary history, backfill, proration, statutory and advanced payout semantics remain deferred.
+
+### T40 remaining source defect
+- Verified `customer_statement()` in T40 branch still filters `occurred_at.date()` in UTC rather than business-local half-open bounds. Example: `2026-01-14T22:30Z` is Jan 15 00:30 in Africa/Cairo but is compared as Jan 14.
+- Existing handoff says Chat 5 retains `extended_api.py`; no concurrent edit made. Add start-only/end-only/combined, Cairo/DST, tenant-isolation and pagination regressions in controlled integration.
+
+### Validation and release
+- Exact-source CI, pytest, frontend tests/build, PostgreSQL concurrency, browser smoke and security scans NOT RUN. Effective Master project policy prohibits CI triggers/retries; no pipeline started.
+- Master self-review is not independent approval. No merge, production DB write/migration or deployment occurred.
+
 ## @n Master self-review refresh — 2026-10-31 12:29 EET
 
 ### Live baseline and source reconciliation
