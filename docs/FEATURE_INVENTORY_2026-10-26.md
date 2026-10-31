@@ -1,5 +1,59 @@
 # Existing Product Feature Inventory — 2026-10-26
 
+## Current demo UI inventory — 2026-11-01 (source-only refresh)
+
+This section supersedes the historical frontend-screen summary below for the current main revision. The remainder of this document is a 2026-10-26 source snapshot; its backend endpoint list and older verification notes have not been fully re-audited against the current main SHA.
+
+- **Current source:** `main` at `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`, release `v1.3.5`.
+- **Production:** Vercel Web and API deployments are both `READY` on this exact SHA. The latest 24-hour Vercel runtime-error query returned no errors; the latest 30-minute error/fatal log query returned no entries. T50 previously recorded direct `/version`, `/readyz`, `/health` and Web-root HTTP 200 probes against this same deployment. These are health/shell checks, not authenticated product acceptance.
+- **Verification boundary:** this is a source-level UI inventory only. Authenticated OWNER/STAFF/non-member journeys, manual browser interaction, mobile viewport, keyboard, RTL and accessibility checks remain **NOT RUN**.
+
+### Current tab destinations
+
+The root Angular app declares 19 tab destinations and corresponding `setTab` navigation handlers:
+
+| Area | UI destination | Visibility / limitation |
+|---|---|---|
+| Home | Overview / dashboard | Default workspace view |
+| Customers | Customer directory and statements | Workspace-scoped |
+| Products | Products and inventory | Workspace-scoped; inventory completeness needs separate acceptance |
+| Invoices | Invoice drafts, issue/void and list | Server remains authoritative for totals and validation |
+| Payments | Payment recording and allocations | OWNER-only navigation |
+| Expenses | Expense recording and list | Workspace-scoped |
+| Employees | Employee and payroll workspace | OWNER-only navigation; payroll policy remains restricted |
+| Assistant | AI assistant | Model-backed behavior depends on backend provider configuration |
+| Reports | Profit & loss and receivables views | Current P&L is preliminary; not a reconciled GL/net-profit report |
+| Taxes | Tax summary | OWNER-only; reads saved invoice tax totals, not tax-rule configuration or compliance |
+| Audit | Activity log | Intended OWNER-only; mobile menu currently exposes the item without the OWNER wrapper (P1 UI defect; API authorization must be independently verified) |
+| Integrity | Data integrity review | OWNER-only, read-only |
+| Release Guide | In-app feature/release guide | Current catalogue has 9 groups; see coverage gap below |
+| Platform Admin | Platform administration | Only when `platformAdminAvailable` is true |
+| Suppliers | Supplier directory | Workspace-scoped |
+| Purchases | Purchase orders and receiving | Receiving is OWNER-only; no AP/supplier-payment semantics are implied |
+| Recurring | Recurring invoice schedules | Schedule configuration only; automatic invoice generation requires a deployed scheduler worker |
+| Notifications | Notification queue | Stores notification metadata/status; delivery requires a configured provider and deployed worker |
+| Health | Operational health | OWNER-only, read-only |
+
+### Navigation and discoverability
+
+- **Desktop:** the sidebar contains the module destinations, with Owner/Platform Admin visibility conditions.
+- **Mobile:** the bottom dock intentionally has four slots (Home, Invoices, Customers, More). Secondary destinations are grouped in the scrollable More menu; this is a responsive navigation choice, not proof that every workflow is complete.
+- **Home quick access:** the current Home `quick-grid` links only to Customers, Products, Invoices and AI Assistant. The remaining existing destinations are discoverable through the sidebar / More menu but are not surfaced from the Home dashboard. A role-aware **All Modules / Quick Access** launcher is a P1 demo-discoverability improvement.
+- **Mobile More active state:** its active-tab expression omits `suppliers`, `purchases`, `recurring`, `notifications`, `health`, `integrity` and `taxes`. More may not remain highlighted when those destinations are active (P2 UI defect).
+- **Role consistency:** desktop Activity Log is OWNER-only, but its mobile More menu item is currently unconditional. Hide it for non-owners in the UI and independently verify server-side OWNER/STAFF/non-member authorization; frontend visibility is never an authorization boundary.
+- **Feature catalogue coverage:** `FEATURE_CATALOG` currently contains 9 groups (workspace, customers, products, invoices, payments, finance, employees/payroll, assistant, admin). It does not document the existing Supplier Directory, Purchase Orders/Receiving, Recurring Schedules, Notification Queue, Data Integrity Review, Operational Health or Tax Summary destinations. Add only verified current functionality and preserve the limitations stated above.
+
+### Standalone static demo warning
+
+The repository also contains `demo/index.html` and `frontend/public/demo/index.html`. These are standalone illustrative prototypes with local synthetic data and simulated interactions; they are explicitly labelled as independent demos and are not connected to the production API, Firebase authentication, PostgreSQL or real financial workflows. They must not be presented as proof that the corresponding production features work. Use the authenticated Angular application for the real product demo; use the static pages only when clearly labelled as mock prototypes.
+
+### Safe demo scope — do not present as implemented
+
+The Production V1 Charter requires several larger capabilities that are not established by the current UI inventory, including a reconciled double-entry GL/Trial Balance, complete AP and supplier-payment lifecycle, approved inventory valuation/COGS, bank/cash reconciliation, fully reconciled cash-flow/Balance Sheet reporting, period close, and Egypt tax/ETA compliance. Do not expose these as live modules or imply completion from a model/table, a static mock-up or a planned issue. T37 remains DRAFT / NOT APPROVED; do not invent financial, tax, posting or payroll semantics.
+
+---
+
+
 ## Scope and evidence
 
 - Source baseline reviewed: `main` at `dec7f26bd2bb33a4c27af4e785abe982e8486676`.
