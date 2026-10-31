@@ -1,3 +1,12 @@
+## T50 production probe verification — 2026-10-31 14:15 EET
+
+- Current production Web deployment `dpl_F4CDmFLXug9aRqkU2TQerP4XzRDy`: READY, production, source SHA `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`.
+- Current production API deployment `dpl_6E9bZUkucaBM2og1s7eFNBbk7QH4`: READY, production, same source SHA.
+- Direct API probes: `/version` HTTP 200 returned version `1.3.5`, commit `dcb0853ab06d`, environment `production`; `/readyz` HTTP 200 returned ready; `/health` HTTP 200 returned ok.
+- This verifies existing v1.3.5 deployment and basic API readiness only. Authenticated Firebase browser journeys, cross-tab account/workspace/role changes, delayed-response races, responsive/RTL/accessibility manual smoke, and application smoke against the restored Neon branch remain NOT RUN.
+- Updated `docs/RELEASE_HISTORY.md` to replace its stale v1.3.5 NOT DEPLOYED statement with the observed deployment/probe evidence. Commit: `ec4639deb3bb1125e30cd124f3c9a3c354f94232`.
+- No new version bump, merge, production deploy, database write, or migration was performed.
+
 ## Master @n source review refresh — 2026-10-31 14:00 EET
 
 ### Current repository state
