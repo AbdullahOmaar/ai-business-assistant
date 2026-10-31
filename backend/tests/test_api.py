@@ -1840,6 +1840,9 @@ def test_owner_can_allocate_one_payment_across_multiple_invoices():
     try:
         response = client.post(base, json=payload)
         assert response.status_code == 201, response.text
+        replay = client.post(base, json=payload)
+        assert replay.status_code == 201, replay.text
+        assert replay.json()["id"] == response.json()["id"]
 
         with Session(engine) as session:
             payment = session.scalar(select(Payment).where(
@@ -1848,6 +1851,9 @@ def test_owner_can_allocate_one_payment_across_multiple_invoices():
             ))
             assert payment is not None
             assert payment.amount == Decimal("7.00")
+            assert session.scalar(select(func.count()).select_from(Payment).where(
+                Payment.business_id == business_id,
+            )) == 1
             allocations = session.scalars(select(PaymentAllocation).where(
                 PaymentAllocation.business_id == business_id,
                 PaymentAllocation.payment_id == payment.id,
