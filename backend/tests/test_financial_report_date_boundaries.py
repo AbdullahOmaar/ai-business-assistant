@@ -846,8 +846,19 @@ def test_customer_statement_date_filters_use_business_local_invoice_and_payment_
         assert payload["total"] == expected_total
         assert len(payload["items"]) == expected_total
         assert payload["balances_by_currency"] == {"EGP": str(expected_balance)}
-        assert {
-            item["event_type"] for item in payload["items"]
-        } == {"invoice_issued", "payment_allocation"}
+        expected_invoice_numbers = {"STATEMENT-LOCAL-DAY"}
+        expected_invoice_ids = {str(local_day_invoice.id)}
+        if "from_date" in date_params and "to_date" not in date_params:
+            expected_invoice_numbers.add("STATEMENT-NEXT-LOCAL-DAY")
+            expected_invoice_ids.add(str(next_local_day_invoice.id))
+
+        invoice_rows = [
+            item for item in payload["items"] if item["event_type"] == "invoice_issued"
+        ]
+        allocation_rows = [
+            item for item in payload["items"] if item["event_type"] == "payment_allocation"
+        ]
+        assert {item["reference"] for item in invoice_rows} == expected_invoice_numbers
+        assert {item["invoice_id"] for item in allocation_rows} == expected_invoice_ids
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)
