@@ -510,8 +510,6 @@ def test_concurrent_payroll_creation_for_same_employee_period_commits_once(
         session.commit()
         employee_id = employee.id
 
-    previous_factory = getattr(app.state, "session_factory", None)
-    previous_resolver = getattr(app.state, "principal_resolver", None)
     monkeypatch.setattr(
         app.state, "session_factory",
         sessionmaker(bind=postgres_engine, expire_on_commit=False),
@@ -534,37 +532,25 @@ def test_concurrent_payroll_creation_for_same_employee_period_commits_once(
         )
         return response.status_code, response.json()
 
-    try:
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            results = list(pool.map(create, range(2)))
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(create, range(2)))
 
-        assert sorted(status for status, _ in results) == [201, 409], results
-        with Session(postgres_engine) as session:
-            records = session.scalars(select(PayrollRecord).where(
-                PayrollRecord.business_id == business_id,
-                PayrollRecord.employee_id == employee_id,
-                PayrollRecord.period == "2026-12",
-            )).all()
-            assert len(records) == 1
-            assert records[0].status == "draft"
-            assert records[0].net_pay == Decimal("4325.00")
-            assert session.scalar(select(func.count()).select_from(Expense).where(
-                Expense.business_id == business_id,
-            )) == 0
-            actions = session.scalars(select(AuditEvent.action).where(
-                AuditEvent.business_id == business_id,
-                AuditEvent.target_type == "payroll",
-                AuditEvent.target_id == str(records[0].id),
-            )).all()
-            assert actions == ["payroll.created"]
-    finally:
-        if previous_factory is None:
-            if hasattr(app.state, "session_factory"):
-                del app.state.session_factory
-        else:
-            app.state.session_factory = previous_factory
-        if previous_resolver is None:
-            if hasattr(app.state, "principal_resolver"):
-                del app.state.principal_resolver
-        else:
-            app.state.principal_resolver = previous_resolver
+    assert sorted(status for status, _ in results) == [201, 409], results
+    with Session(postgres_engine) as session:
+        records = session.scalars(select(PayrollRecord).where(
+            PayrollRecord.business_id == business_id,
+            PayrollRecord.employee_id == employee_id,
+            PayrollRecord.period == "2026-12",
+        )).all()
+        assert len(records) == 1
+        assert records[0].status == "draft"
+        assert records[0].net_pay == Decimal("4325.00")
+        assert session.scalar(select(func.count()).select_from(Expense).where(
+            Expense.business_id == business_id,
+        )) == 0
+        actions = session.scalars(select(AuditEvent.action).where(
+            AuditEvent.business_id == business_id,
+            AuditEvent.target_type == "payroll",
+            AuditEvent.target_id == str(records[0].id),
+        )).all()
+        assert actions == ["payroll.created"]
