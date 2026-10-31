@@ -1,3 +1,11 @@
+## T38 payment/auth transition race — 2026-10-31 13:00 EET
+
+- Source review of PR #305 head `233c84994cd22352829c5d3292a2901fac604d0a` found that createPayment() blocks manual switchBusiness() while paymentSaving=true, but Firebase auth transitions call clearWorkspaceData() directly.
+- clearWorkspaceData() clears paymentIdempotencyKey and payment form state while the mutation may still be in flight; it does not cancel or preserve a pending mutation record. Late createPayment() finally unconditionally clears paymentSaving and global loading. If the result is uncertain, the key/payload may be lost and a retry may use a new key; if a new workspace load started, the late finally may clear its loading state.
+- printInvoice() snapshots businessId and closes the window after workspace change, but its finally also unconditionally clears global loading while another workspace operation may be active.
+- Required fix on the existing T38 branch: generation-scoped operation tokens or dedicated busy states; invalidate stale UI completions on auth/workspace transition; preserve pending payment idempotency key + immutable payload until confirmed outcome (including uncertain errors); do not leak old form into a new identity.
+- Required delayed-promise tests: same-business auth switch, different-business switch, sign-out, late success/failure, and concurrent new workspace load. Source-level concern only; runtime tests NOT RUN. This is a P1 data-integrity issue and blocks T38 release acceptance.
+
 ## T38 latest source integration finding — 2026-10-31 12:55 EET
 
 - PR #305 latest head `233c84994cd22352829c5d3292a2901fac604d0a`; 8 commits since previous code head changed only `invoice-draft-editor.component.ts`, `invoice-draft.ts`, and `invoice-draft.spec.ts`.
