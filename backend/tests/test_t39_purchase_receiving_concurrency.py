@@ -21,7 +21,7 @@ from app.models import (
     StockMovement,
     Supplier,
 )
-from app.operations import receive_purchase_order
+from app.operations import WorkflowError, receive_purchase_order
 from app.security import AuthenticatedPrincipal
 from app.services import create_product
 
@@ -180,3 +180,111 @@ def test_concurrent_postgres_receipts_with_reversed_product_order_do_not_deadloc
         if listener_registered:
             event.remove(engine, "after_cursor_execute", synchronize_opposing_legacy_locks)
         engine.dispose()
+
+def test_concurrent_postgres_receipts_cannot_overreceive_same_remaining_quantity():
+    """Two concurrent receipts for one remaining balance cannot both commit."""
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if not database_url or not database_url.startswith("postgresql"):
+        pytest.skip("Set TEST_DATABASE_URL to a disposable PostgreSQL database")
+
+    engine = create_engine(database_url, pool_size=5, max_overflow=0)
+    suffix = uuid4().hex[:12]
+    principal = AuthenticatedPrincipal(subject=f"t39-overreceipt-owner-{suffix}")
+    try:
+        with Session(engine) as session:
+            business = Business(name=f"T39 overreceipt {suffix}", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            business_id = business.id
+            session.add(BusinessMembership(
+                business_id=business_id,
+                user_subject=principal.subject,
+                role=MembershipRole.OWNER,
+            ))
+            session.flush()
+            supplier = Supplier(business_id=business_id, name=f"T39 supplier {suffix}")
+            session.add(supplier)
+            session.flush()
+            product = create_product(
+                session,
+                principal=principal,
+                business_id=business_id,
+                name=f"T39 overreceipt product {suffix}",
+                unit_price=Decimal("10.00"),
+                is_stock_tracked=True,
+            )
+            order = PurchaseOrder(
+                business_id=business_id,
+                supplier_id=supplier.id,
+                order_number=f"T39-OVER-{suffix}",
+                status="approved",
+                currency_code="EGP",
+                total=Decimal("50.00"),
+            )
+            session.add(order)
+            session.flush()
+            line = PurchaseOrderLine(
+                business_id=business_id,
+                purchase_order_id=order.id,
+                product_id=product.id,
+                quantity=Decimal("5.000"),
+                unit_cost=Decimal("10.00"),
+                received_quantity=Decimal("0.000"),
+            )
+            session.add(line)
+            session.commit()
+            order_id, line_id = order.id, line.id
+
+        start_together = Barrier(2)
+
+        def receive_four():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                try:
+                    receive_purchase_order(
+                        session,
+                        principal=principal,
+                        business_id=business_id,
+                        purchase_order_id=order_id,
+                        received_quantities={line_id: Decimal("4.000")},
+                    )
+                    session.commit()
+                    return "received"
+                except WorkflowError:
+                    session.rollback()
+                    return "rejected"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(lambda _: receive_four(), range(2)))
+        assert sorted(outcomes) == ["received", "rejected"]
+
+        with Session(engine) as session:
+            saved_order = session.get(PurchaseOrder, order_id)
+            saved_line = session.get(PurchaseOrderLine, line_id)
+            assert saved_order.status == "partially_received"
+            assert saved_line.received_quantity == Decimal("4.000")
+
+            movements = session.scalars(
+                select(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.movement_type == "receipt",
+                    StockMovement.reference_type == "purchase_order",
+                    StockMovement.reference_id == order_id,
+                )
+            ).all()
+            assert len(movements) == 1
+            assert movements[0].product_id == product.id
+            assert movements[0].quantity_delta == Decimal("4.000")
+
+            receipt_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "purchase_order.received",
+                    AuditEvent.target_id == str(order_id),
+                )
+            ).all()
+            assert len(receipt_audits) == 1
+    finally:
+        engine.dispose()
+
