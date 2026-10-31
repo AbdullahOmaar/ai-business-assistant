@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
+import app.assistant_api as assistant_api
 from app.models import AuditEvent, Base, Business, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
 from app.security import AuthenticatedPrincipal
 from app.operations import financial_summary
@@ -397,7 +399,7 @@ def test_payroll_deductions_cannot_exceed_earnings(employee_environment):
 
 
 
-def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_environment, monkeypatch):
+def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_environment, monkeypatch, caplog):
     """Payroll-linked expenses stay OWNER-only across list, reports and AI context."""
     env = employee_environment
     employee = _create_employee(env, name="Confidential Payroll Employee").json()
@@ -418,8 +420,9 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     ordinary_expense = env["client"].post(
         f"{base}/expenses",
         json={
-            "category": "Office",
-            "description": "Office supplies",
+            "category": "Payroll",
+            "description": "Payroll-tagged office supplies",
+            "reference": "payroll:spoofed-reference",
             "amount": "100.00",
             "currency_code": "EGP",
             "incurred_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
@@ -428,13 +431,34 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert ordinary_expense.status_code == 201, ordinary_expense.text
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
+    def business_state():
+        with app.state.session_factory() as session:
+            business_uuid = UUID(env["business_id"])
+            return (
+                session.scalar(select(func.count()).select_from(Employee).where(
+                    Employee.business_id == business_uuid
+                )),
+                session.scalar(select(func.count()).select_from(PayrollRecord).where(
+                    PayrollRecord.business_id == business_uuid
+                )),
+                session.scalar(select(func.count()).select_from(Expense).where(
+                    Expense.business_id == business_uuid
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_uuid
+                )),
+            )
+
+    before_staff_reads = business_state()
+    caplog.clear()
+
     env["subject"]["value"] = STAFF
     # The payroll expense is newer. Hiding it must happen before LIMIT/OFFSET,
     # otherwise STAFF receives an empty first page instead of the ordinary row.
     staff_expenses = env["client"].get(f"{base}/expenses", params={"limit": 1})
     assert staff_expenses.status_code == 200, staff_expenses.text
     assert len(staff_expenses.json()) == 1
-    assert staff_expenses.json()[0]["description"] == "Office supplies"
+    assert staff_expenses.json()[0]["description"] == "Payroll-tagged office supplies"
     assert all("Confidential Payroll Employee" not in str(row) for row in staff_expenses.json())
 
     staff_export = env["client"].get(f"{base}/exports/expenses.csv")
@@ -477,12 +501,56 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert "5000.00" not in chat.text
     assert "payroll:" not in chat.text
 
+
+    # Exercise the provider-backed path and inspect the exact outbound payload.
+    captured = {}
+
+    class FakeProviderResponse:
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({
+                            "answer": "Only ordinary expenses are available.",
+                            "source_ids": [],
+                        })
+                    }
+                }]
+            }
+
+    async def fake_provider_post(_client, *, headers, payload):
+        captured["headers"] = headers
+        captured["payload"] = payload
+        return FakeProviderResponse()
+
+    monkeypatch.setattr(assistant_api, "_provider_post", fake_provider_post)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    provider_chat = env["client"].post(
+        f"{base}/assistant/chat",
+        json={"message": "Summarize recent expenses."},
+    )
+    assert provider_chat.status_code == 200, provider_chat.text
+    outbound = json.dumps(captured["payload"], ensure_ascii=False)
+    assert "Payroll-tagged office supplies" in outbound
+    assert "Confidential Payroll Employee" not in outbound
+    assert "5000.00" not in outbound
+    assert "payroll:" not in outbound
+
+    # Read and denied-export paths must not mutate business records or audit state,
+    # and application logs must not contain payroll-sensitive values.
+    assert business_state() == before_staff_reads
+    captured_logs = caplog.text
+    for sensitive_value in (
+        "Confidential Payroll Employee", "5000.00", payroll.json()["id"],
+    ):
+        assert sensitive_value not in captured_logs
+
     # OWNER retains access to the linked payroll expense and its totals.
     env["subject"]["value"] = OWNER
     owner_expenses = env["client"].get(f"{base}/expenses")
     assert owner_expenses.status_code == 200, owner_expenses.text
     assert len(owner_expenses.json()) == 2
-    payroll_rows = [row for row in owner_expenses.json() if row["category"] == "Payroll"]
+    payroll_rows = [row for row in owner_expenses.json() if row["vendor_name"] == "Confidential Payroll Employee"]
     assert len(payroll_rows) == 1
     assert payroll_rows[0]["vendor_name"] == "Confidential Payroll Employee"
     owner_summary = env["client"].get(f"{base}/reports/summary")
