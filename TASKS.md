@@ -1,3 +1,12 @@
+## T38 latest source integration finding — 2026-10-31 12:55 EET
+
+- PR #305 latest head `233c84994cd22352829c5d3292a2901fac604d0a`; 8 commits since previous code head changed only `invoice-draft-editor.component.ts`, `invoice-draft.ts`, and `invoice-draft.spec.ts`.
+- The active AppComponent invoice screen on this branch implements manual/service lines inline and sends product_id or description/unit_price via API. Source comparison confirms the inline preview's per-line HALF_UP rounding and discount/tax calculation matches backend `calculate_invoice_totals`.
+- The newly added InvoiceDraftEditorComponent is not imported or rendered by AppComponent; its selector is unused. AppComponent does not call `validateInvoiceDraft` or `buildInvoiceDraftPayload`. The new helper/component tests exercise unused code, not the active Angular flow.
+- The component's serverSummary input is unconnected; active createInvoice() ignores the returned invoice and refetches invoice list/dashboard. Draft preview remains client-computed; server-returned totals are not surfaced directly in the editor.
+- Decision: integrate the component/helper into the active screen (including initial draft state, server-returned summary, and stale-summary clearing) plus behavioral tests, OR remove unused component/helper and test the inline implementation. Do not retain parallel implementations. This is an integration/maintainability gap, not a demonstrated arithmetic mismatch.
+- PR remains Draft/unmerged/mergeable=false; exact backend/frontend tests, Angular build, browser print/payment/workspace-race and CI NOT RUN. T37-dependent financial semantics remain fail-closed.
+
 ## @n continued — latest PR self-review reconciliation — 2026-10-31 12:50 EET
 
 ### Updated live PR heads and Master review findings
