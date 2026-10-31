@@ -5,7 +5,6 @@ separate file so it does not overwrite Chat 4's employee/payroll feature tests.
 """
 import json
 from datetime import datetime, timezone
-from decimal import Decimal
 from uuid import UUID
 
 import pytest
@@ -17,6 +16,7 @@ from sqlalchemy import create_engine
 
 from app.main import app
 import app.assistant_api as assistant_api
+from app.security import AuthenticatedPrincipal
 from app.models import (
     AuditEvent,
     Base,
@@ -31,6 +31,7 @@ from app.models import (
 OWNER = "t40-report-privacy-owner"
 APPROVER = "t40-report-privacy-approver"
 STAFF = "t40-report-privacy-staff"
+FOREIGN_STAFF = "t40-report-privacy-staff-a-only"
 
 
 @pytest.fixture
@@ -45,9 +46,9 @@ def report_privacy_environment(monkeypatch):
     previous_factory = getattr(app.state, "session_factory", None)
     previous_resolver = getattr(app.state, "principal_resolver", None)
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
-    app.state.principal_resolver = lambda request: __import__(
-        "app.security", fromlist=["AuthenticatedPrincipal"]
-    ).AuthenticatedPrincipal(current_subject["value"])
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+        current_subject["value"]
+    )
     monkeypatch.delenv("PLATFORM_SUPER_ADMIN_UIDS", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "")
     try:
@@ -81,6 +82,11 @@ def report_privacy_environment(monkeypatch):
                     business_id=UUID(second_id),
                     user_subject=APPROVER,
                     role=MembershipRole.OWNER,
+                ),
+                BusinessMembership(
+                    business_id=UUID(first_id),
+                    user_subject=FOREIGN_STAFF,
+                    role=MembershipRole.STAFF,
                 ),
             ])
             session.commit()
@@ -177,6 +183,21 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
             )
 
     before_staff_reads = snapshot()
+
+    # An A-only staff identity cannot cross the outer tenant authorization boundary.
+    env["subject"]["value"] = FOREIGN_STAFF
+    for endpoint in ("expenses", "reports/summary", "dashboard", "profit-loss", "assistant/insights"):
+        denied = client.get(f"{base_b}/{endpoint}")
+        assert denied.status_code == 403, (
+            f"GET {base_b}/{endpoint}: expected 403 for an A-only member, "
+            f"got {denied.status_code}: {denied.text}"
+        )
+    denied_chat = client.post(
+        f"{base_b}/assistant/chat",
+        json={"message": "Show me business B expenses."},
+    )
+    assert denied_chat.status_code == 403, denied_chat.text
+
     env["subject"]["value"] = STAFF
 
     # Business A remains unaffected by the payroll link that exists only in B.
