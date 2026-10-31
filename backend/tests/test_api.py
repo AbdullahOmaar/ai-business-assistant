@@ -1955,3 +1955,39 @@ def test_owner_payment_rejects_aggregate_allocations_above_receipt_without_write
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_owner_payment_rejects_invoice_for_another_customer_without_writes():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        other_customer = Customer(business_id=business_id, name="Different payment customer")
+        session.add(other_customer)
+        session.commit()
+        other_customer_id = other_customer.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "4.00",
+        "currency_code": "EGP",
+        "idempotency_key": "wrong-customer-allocation",
+        "customer_id": str(other_customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "4.00"}],
+    }
+    try:
+        response = client.post(base, json=payload)
+        assert response.status_code == 422, response.text
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Payment).where(
+                Payment.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "payment.recorded",
+            )) == 0
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
