@@ -140,3 +140,11 @@ test('clears all workspace-scoped employee and payroll state when the workspace 
   }
   assert.ok(handler.includes('if (this.businessId) void this.loadEmployeesAndPayroll()'));
 });
+
+
+test('employee and payroll load failures expose a retry action for the current workspace', () => {
+  assert.ok(component.includes('(click)="retryLoad()"'));
+  assert.ok(component.includes("t('إعادة المحاولة', 'Retry')"));
+  assert.ok(component.includes('retryLoad(): void {'));
+  assert.ok(component.includes('void this.loadEmployeesAndPayroll();'));
+});
