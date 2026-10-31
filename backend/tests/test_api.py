@@ -1859,7 +1859,7 @@ def test_owner_can_allocate_one_payment_across_multiple_invoices():
             assert session.scalar(select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "payment.recorded",
-                AuditEvent.target_id == payment.id,
+                AuditEvent.target_id == str(payment.id),
             )) == 1
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
