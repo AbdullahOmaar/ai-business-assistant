@@ -40,9 +40,11 @@ Only the version embedded in the deployed build identifies what users have actua
 - Production status: NOT DEPLOYED until exact-main CircleCI and release gates pass and the deployment SHA/version is verified.
 
 
-## 1.3.5 — Session and tenant-state security (release candidate)
+## 1.3.5 — Session and tenant-state security (production release)
 
 - Align frontend package, lockfile root metadata, backend package, FastAPI API metadata, local build-info fallback, and PWA service-worker fallback at `1.3.5`.
 - Synchronize Firebase sign-in/sign-out/account changes across tabs; clear workspace-scoped state on identity transitions; fence delayed Audit and Customer Statement responses against stale workspace, UID, role, and selected-customer context.
 - Add regression coverage for observer lifecycle and tenant request-context transitions.
-- **Production status: NOT DEPLOYED.** This is a release candidate until GitLab exact-source validation, required review/merge gates, and Vercel deployment verification complete.
+- **Production deployment:** Web and API are both `READY` on GitHub main SHA `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`. Vercel production deployment IDs: Web `dpl_F4CDmFLXug9aRqkU2TQerP4XzRDy`; API `dpl_6E9bZUkucaBM2og1s7eFNBbk7QH4`.
+- **Live API verification (2026-10-31):** `GET /version` returned version `1.3.5`, commit `dcb0853ab06d`, environment `production`; `GET /readyz` returned ready; `GET /health` returned ok.
+- This verifies the existing v1.3.5 production release. It does not mean any newer candidate PR has been merged or deployed.
