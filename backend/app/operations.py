@@ -60,10 +60,8 @@ def receive_purchase_order(
     by_id = {line.id: line for line in lines}
     if not received_quantities:
         raise WorkflowError("At least one received quantity is required")
-    # Validate every line and lock its product before writing anything. A later
-    # invalid line must not leave earlier lines, stock movements, or audit events
-    # partially staged if the caller catches WorkflowError in the same transaction.
-    prepared_receipts: list[tuple[PurchaseOrderLine, Product, Decimal]] = []
+    # Validate every requested line before acquiring Product locks or staging writes.
+    validated_receipts: list[tuple[PurchaseOrderLine, Decimal]] = []
     for line_id, quantity in received_quantities.items():
         line = by_id.get(line_id)
         if line is None:
@@ -74,9 +72,24 @@ def receive_purchase_order(
             or line.received_quantity + quantity > line.quantity
         ):
             raise WorkflowError("Received quantity must be finite, positive and cannot exceed ordered quantity")
-        product = session.scalars(select(Product).where(
-            Product.id == line.product_id, Product.business_id == business_id,
-        ).with_for_update()).one_or_none()
+        validated_receipts.append((line, quantity))
+
+    # Lock every referenced Product in one deterministic Product.id order.
+    # This matches PO create/edit ordering and prevents reversed receipt payloads
+    # from acquiring the same Product rows in opposite orders on PostgreSQL.
+    product_ids = {line.product_id for line, _ in validated_receipts}
+    products = {
+        product.id: product
+        for product in session.scalars(
+            select(Product).where(
+                Product.id.in_(product_ids),
+                Product.business_id == business_id,
+            ).order_by(Product.id).with_for_update()
+        ).all()
+    }
+    prepared_receipts: list[tuple[PurchaseOrderLine, Product, Decimal]] = []
+    for line, quantity in validated_receipts:
+        product = products.get(line.product_id)
         if product is None:
             raise WorkflowError("Purchase order product not found in this business")
         if not product.is_stock_tracked:

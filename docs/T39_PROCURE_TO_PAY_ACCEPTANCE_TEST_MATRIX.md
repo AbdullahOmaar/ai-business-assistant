@@ -68,6 +68,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-36 | OWNER disables stock tracking while a draft, approved, or partially received PO line references the product | Reject before product mutation/audit; retain tracking and all stock state. Positive control: allow disabling when no non-terminal PO line or stock movement references the product | Contract-independent stock-ledger integrity |
 | T39-37 | Receipt includes a legacy/non-stock-tracked product after a valid line | Reject the entire receipt during prevalidation; no received quantity, StockMovement, PO status, or audit changes | Master-authorized stock-only receiving invariant (not a T37 financial approval) |
 | T39-38 | PO create/edit races with stock-tracking disable for the same product | Product row locks serialize both operations; committed state cannot contain a non-terminal PO line referencing a product whose stock tracking was disabled | PostgreSQL concurrency validation required |
+| T39-39 | Two different POs receive the same Product set with line IDs submitted in reverse Product-ID order concurrently | Both PostgreSQL transactions complete without deadlock; both POs reach received; every line quantity, four receipt movements and two PO receipt audit events reconcile exactly | PostgreSQL two-transaction concurrency regression required; SQLite is not sufficient |
 
 ## Stock-tracking / receiving integrity follow-up — 2026-10-30
 
@@ -150,7 +151,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 
 ## T39 duplicate order-number API regression — 2026-10-29
 
-- Added `backend/tests/test_api.py::test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit` (acceptance scenario T39-34; T39-33 is reserved for PO CSV export).
+- Added `backend/tests/test_api.py::test_purchase_order_number_is_unique_per_business_on_create_and_draft_edit` (acceptance scenario T39-33; T39-34 is reserved for PO CSV export).
 - The API regression checks same-business duplicate creation is rejected without changing purchase-order or audit counts; identical numbers are accepted in a second business; and draft editing to another same-business order's number is rejected without changing the original order number, line count, or audit count.
 - Existing `UniqueConstraint("business_id", "order_number")` remains the database concurrency backstop; the route preflight supplies a clear validation response but is not a substitute for that constraint.
 - The test was authored but **NOT RUN** per owner instruction. No passing test claim is made.
