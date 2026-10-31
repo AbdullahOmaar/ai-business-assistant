@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -7,8 +8,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.models import (
-    Base, Business, BusinessMembership, InvoiceLine, MembershipRole,
-    Product, PurchaseOrder, PurchaseOrderLine, SalesReturn, SalesReturnLine,
+    Base, Business, BusinessMembership, Expense, Invoice, InvoiceLine, MembershipRole,
+    Payment, PaymentAllocation, Product, PurchaseOrder, PurchaseOrderLine,
+    SalesReturn, SalesReturnLine,
     StockMovement, Supplier,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError
@@ -434,3 +436,100 @@ def test_invoice_void_rejects_invoice_with_approved_sales_return(operation_works
             StockMovement.reference_type == "invoice_void",
             StockMovement.reference_id == invoice.id,
         )) is None
+
+
+
+def test_financial_summary_keeps_each_source_metric_separate_by_currency(operation_workspace):
+    engine, business_id, principal = operation_workspace
+    timestamp = datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc)
+    with Session(engine) as session:
+        egp_invoice = Invoice(
+            business_id=business_id,
+            invoice_number="SUMMARY-EGP",
+            status="issued",
+            currency_code="EGP",
+            issue_date=timestamp,
+            subtotal=Decimal("100.00"),
+            discount_total=Decimal("0.00"),
+            tax_total=Decimal("0.00"),
+            total=Decimal("100.00"),
+        )
+        usd_invoice = Invoice(
+            business_id=business_id,
+            invoice_number="SUMMARY-USD",
+            status="issued",
+            currency_code="USD",
+            issue_date=timestamp,
+            subtotal=Decimal("40.00"),
+            discount_total=Decimal("0.00"),
+            tax_total=Decimal("0.00"),
+            total=Decimal("40.00"),
+        )
+        session.add_all([egp_invoice, usd_invoice])
+        session.flush()
+
+        egp_payment = Payment(
+            business_id=business_id,
+            amount=Decimal("30.00"),
+            currency_code="EGP",
+            received_at=timestamp,
+            idempotency_key="summary-egp-payment",
+        )
+        usd_payment = Payment(
+            business_id=business_id,
+            amount=Decimal("10.00"),
+            currency_code="USD",
+            received_at=timestamp,
+            idempotency_key="summary-usd-payment",
+        )
+        session.add_all([egp_payment, usd_payment])
+        session.flush()
+        session.add_all([
+            PaymentAllocation(
+                business_id=business_id,
+                payment_id=egp_payment.id,
+                invoice_id=egp_invoice.id,
+                amount=Decimal("30.00"),
+            ),
+            PaymentAllocation(
+                business_id=business_id,
+                payment_id=usd_payment.id,
+                invoice_id=usd_invoice.id,
+                amount=Decimal("10.00"),
+            ),
+            Expense(
+                business_id=business_id,
+                category="operations",
+                description="EGP office expense",
+                amount=Decimal("20.00"),
+                currency_code="EGP",
+                incurred_at=timestamp,
+            ),
+            Expense(
+                business_id=business_id,
+                category="operations",
+                description="USD office expense",
+                amount=Decimal("5.00"),
+                currency_code="USD",
+                incurred_at=timestamp,
+            ),
+        ])
+        summary = financial_summary(
+            session, principal=principal, business_id=business_id,
+        )
+        session.commit()
+
+    assert summary == {
+        "issued_invoices": {
+            "EGP": Decimal("100.00"),
+            "USD": Decimal("40.00"),
+        },
+        "allocated_payments": {
+            "EGP": Decimal("30.00"),
+            "USD": Decimal("10.00"),
+        },
+        "expenses": {
+            "EGP": Decimal("20.00"),
+            "USD": Decimal("5.00"),
+        },
+    }
