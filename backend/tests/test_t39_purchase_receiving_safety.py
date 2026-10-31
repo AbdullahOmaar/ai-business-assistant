@@ -6,7 +6,20 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.extended_api import PurchaseLineInput, PurchaseOrderInput, update_purchase_order
+from app.extended_api import (
+    PurchaseLineInput,
+    PurchaseOrderInput,
+    SupplierPatch,
+    cancel_purchase_order,
+    get_purchase_order,
+    get_purchase_order_activity,
+    get_supplier,
+    list_purchase_order_receipts,
+    list_purchase_orders,
+    patch_supplier,
+    purchase_order_summary,
+    update_purchase_order,
+)
 
 from app.models import (
     AuditEvent,
@@ -636,4 +649,286 @@ def test_staff_cannot_edit_draft_purchase_order_without_side_effects(purchasing_
         assert saved_lines[0].quantity == Decimal("2.000")
         assert saved_lines[0].unit_cost == Decimal("12.00")
         assert len(update_audits) == 1
+
+def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_foreign_ids(purchasing_workspace):
+    engine, business_id, owner_principal = purchasing_workspace
+    staff_principal = AuthenticatedPrincipal(subject="t39-staff-reader")
+    outsider_principal = AuthenticatedPrincipal(subject="t39-non-member")
+
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject=staff_principal.subject,
+            role=MembershipRole.STAFF,
+        ))
+        session.flush()
+        order, line, product = _approved_order(
+            session, business_id, owner_principal, quantity=Decimal("10.000")
+        )
+        supplier_id, order_id = order.supplier_id, order.id
+        receive_purchase_order(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line.id: Decimal("2.000")},
+        )
+        session.commit()
+
+        foreign_business = Business(name="T39 Foreign Shop", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        foreign_business_id = foreign_business.id
+        foreign_principal = AuthenticatedPrincipal(subject="t39-foreign-owner")
+        session.add(BusinessMembership(
+            business_id=foreign_business_id,
+            user_subject=foreign_principal.subject,
+            role=MembershipRole.OWNER,
+        ))
+        session.flush()
+        foreign_supplier = Supplier(
+            business_id=foreign_business_id,
+            name="T39 Foreign Supplier",
+        )
+        session.add(foreign_supplier)
+        session.flush()
+        foreign_product = create_product(
+            session,
+            principal=foreign_principal,
+            business_id=foreign_business_id,
+            name="T39 Foreign Product",
+            unit_price=Decimal("5.00"),
+            is_stock_tracked=True,
+        )
+        foreign_order = PurchaseOrder(
+            business_id=foreign_business_id,
+            supplier_id=foreign_supplier.id,
+            order_number="PO-T39-FOREIGN",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("5.00"),
+        )
+        session.add(foreign_order)
+        session.flush()
+        session.add(PurchaseOrderLine(
+            business_id=foreign_business_id,
+            purchase_order_id=foreign_order.id,
+            product_id=foreign_product.id,
+            quantity=Decimal("1.000"),
+            unit_cost=Decimal("5.00"),
+            received_quantity=Decimal("0.000"),
+        ))
+        foreign_supplier_id, foreign_order_id = foreign_supplier.id, foreign_order.id
+        session.commit()
+
+    with Session(engine) as session:
+        supplier_view = get_supplier(
+            business_id=business_id,
+            supplier_id=supplier_id,
+            session=session,
+            principal=staff_principal,
+        )
+        order_view = get_purchase_order(
+            business_id=business_id,
+            order_id=order_id,
+            session=session,
+            principal=staff_principal,
+        )
+        activity = get_purchase_order_activity(
+            business_id=business_id,
+            order_id=order_id,
+            session=session,
+            principal=staff_principal,
+        )
+        receipts = list_purchase_order_receipts(
+            business_id=business_id,
+            order_id=order_id,
+            session=session,
+            principal=staff_principal,
+        )
+        summary = purchase_order_summary(
+            business_id=business_id,
+            session=session,
+            principal=staff_principal,
+        )
+        listing = list_purchase_orders(
+            business_id=business_id,
+            session=session,
+            principal=staff_principal,
+        )
+        assert supplier_view["id"] == str(supplier_id)
+        assert order_view["status"] == "partially_received"
+        assert order_view["lines"][0]["remaining_quantity"] == "8.000"
+        assert any(item["action"] == "purchase_order.received" for item in activity)
+        assert len(receipts) == 1
+        assert receipts[0]["quantity"] == "2.000"
+        assert len(summary["groups"]) == 1
+        assert summary["groups"][0]["currency_code"] == "EGP"
+        assert summary["groups"][0]["status"] == "partially_received"
+        assert len(listing) == 1
+
+    foreign_reads = (
+        lambda session: get_supplier(
+            business_id=business_id, supplier_id=foreign_supplier_id,
+            session=session, principal=owner_principal,
+        ),
+        lambda session: get_purchase_order(
+            business_id=business_id, order_id=foreign_order_id,
+            session=session, principal=owner_principal,
+        ),
+        lambda session: get_purchase_order_activity(
+            business_id=business_id, order_id=foreign_order_id,
+            session=session, principal=owner_principal,
+        ),
+        lambda session: list_purchase_order_receipts(
+            business_id=business_id, order_id=foreign_order_id,
+            session=session, principal=owner_principal,
+        ),
+    )
+    for read in foreign_reads:
+        with Session(engine) as session:
+            with pytest.raises(HTTPException) as denied:
+                read(session)
+            assert denied.value.status_code == 404
+
+    member_reads = (
+        lambda session: get_supplier(
+            business_id=business_id, supplier_id=supplier_id,
+            session=session, principal=outsider_principal,
+        ),
+        lambda session: get_purchase_order(
+            business_id=business_id, order_id=order_id,
+            session=session, principal=outsider_principal,
+        ),
+        lambda session: get_purchase_order_activity(
+            business_id=business_id, order_id=order_id,
+            session=session, principal=outsider_principal,
+        ),
+        lambda session: list_purchase_order_receipts(
+            business_id=business_id, order_id=order_id,
+            session=session, principal=outsider_principal,
+        ),
+        lambda session: purchase_order_summary(
+            business_id=business_id, session=session, principal=outsider_principal,
+        ),
+    )
+    for read in member_reads:
+        with Session(engine) as session:
+            with pytest.raises(HTTPException) as denied:
+                read(session)
+            assert denied.value.status_code == 403
+
+    with Session(engine) as session:
+        assert list_purchase_orders(
+            business_id=business_id,
+            supplier_id=foreign_supplier_id,
+            session=session,
+            principal=owner_principal,
+        ) == []
+
+
+def test_supplier_patch_role_split_and_purchase_order_cancel_are_owner_gated(purchasing_workspace):
+    engine, business_id, owner_principal = purchasing_workspace
+    staff_principal = AuthenticatedPrincipal(subject="t39-staff-supplier-editor")
+
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject=staff_principal.subject,
+            role=MembershipRole.STAFF,
+        ))
+        supplier = Supplier(business_id=business_id, name="T39 Role Split Supplier")
+        product = create_product(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            name="T39 Role Split Product",
+            unit_price=Decimal("10.00"),
+            is_stock_tracked=True,
+        )
+        session.add(supplier)
+        session.flush()
+        order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier.id,
+            order_number="PO-T39-CANCEL-GUARD",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("10.00"),
+        )
+        session.add(order)
+        session.flush()
+        session.add(PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=product.id,
+            quantity=Decimal("1.000"),
+            unit_cost=Decimal("10.00"),
+            received_quantity=Decimal("0.000"),
+        ))
+        supplier_id, order_id = supplier.id, order.id
+        session.commit()
+
+    with Session(engine) as session:
+        updated_supplier = patch_supplier(
+            business_id=business_id,
+            supplier_id=supplier_id,
+            body=SupplierPatch(email="staff-updated@example.test"),
+            session=session,
+            principal=staff_principal,
+        )
+        assert updated_supplier["email"] == "staff-updated@example.test"
+
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as denied:
+            patch_supplier(
+                business_id=business_id,
+                supplier_id=supplier_id,
+                body=SupplierPatch(is_active=False),
+                session=session,
+                principal=staff_principal,
+            )
+        assert denied.value.status_code == 403
+
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as denied:
+            cancel_purchase_order(
+                business_id=business_id,
+                order_id=order_id,
+                session=session,
+                principal=staff_principal,
+            )
+        assert denied.value.status_code == 403
+
+    with Session(engine) as session:
+        cancelled = cancel_purchase_order(
+            business_id=business_id,
+            order_id=order_id,
+            session=session,
+            principal=owner_principal,
+        )
+        assert cancelled["status"] == "cancelled"
+
+    with Session(engine) as session:
+        saved_supplier = session.get(Supplier, supplier_id)
+        saved_order = session.get(PurchaseOrder, order_id)
+        supplier_audits = session.scalars(
+            select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "supplier.updated",
+                AuditEvent.target_id == str(supplier_id),
+            )
+        ).all()
+        cancel_audits = session.scalars(
+            select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.cancelled",
+                AuditEvent.target_id == str(order_id),
+            )
+        ).all()
+        assert saved_supplier.email == "staff-updated@example.test"
+        assert saved_supplier.is_active is True
+        assert saved_order.status == "cancelled"
+        assert len(supplier_audits) == 1
+        assert len(cancel_audits) == 1
 
