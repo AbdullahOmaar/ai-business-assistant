@@ -101,7 +101,7 @@ def test_nonmember_and_staff_route_matrices_preserve_all_business_rows_per_reque
             ("get", f"{base}/operations/health", None, None),
             ("get", f"{base}/reports/tax-summary", None, None),
             ("post", f"{base}/purchase-orders/{uuid4()}/approve", None, None),
-            ("post", f"{base}/imports/customers.csv/preview", None, "name\\nOutsider\\n"),
+            ("post", f"{base}/imports/customers.csv/preview", None, "name\nOutsider\n"),
             ("get", f"{base}/reports/receivables-aging", None, None),
             ("get", f"{base}/customers/{uuid4()}/statement", None, None),
             ("get", f"{base}/audit-events", None, None),
@@ -130,7 +130,7 @@ def test_nonmember_and_staff_route_matrices_preserve_all_business_rows_per_reque
                 method=method,
                 url=url,
                 expected_status=403,
-                content="name\\nStaff Preview\\n" if method == "post" else None,
+                content="name\nStaff Preview\n" if method == "post" else None,
                 headers={"content-type": "text/csv"} if method == "post" else None,
             )
 
