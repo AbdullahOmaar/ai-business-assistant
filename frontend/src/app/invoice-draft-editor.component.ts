@@ -7,6 +7,7 @@ import {
   InvoiceDraftPayload,
   InvoiceDraftProduct,
   moveInvoiceDraftLine,
+  removeInvoiceDraftLine,
   toInvoiceDraftPayload,
   validateInvoiceDraft,
   localizeInvoiceDraftValidationMessage,
@@ -151,7 +152,7 @@ export class InvoiceDraftEditorComponent {
   addProductLine(): void { if (!this.busy) this.lines = [...this.lines, this.newLine('product')]; }
   addManualLine(): void { if (!this.busy) this.lines = [...this.lines, this.newLine('manual')]; }
   removeLine(index: number): void {
-    if (!this.busy && this.lines.length > 1) this.lines = this.lines.filter((_, i) => i !== index);
+    if (!this.busy) this.lines = removeInvoiceDraftLine(this.lines, index);
   }
   moveLine(index: number, direction: -1 | 1): void {
     if (this.busy) return;
