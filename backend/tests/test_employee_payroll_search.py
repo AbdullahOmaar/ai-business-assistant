@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 import pytest
@@ -437,3 +438,53 @@ def test_payroll_privacy_and_tenant_isolation_hold_across_two_businesses(employe
     assert owner_b_summary.json()["expenses_by_currency"] == [
         {"currency_code": "EGP", "count": 2, "total": "5125.00"}
     ]
+
+
+
+def test_employee_search_and_pagination_reach_records_beyond_first_200(employee_search_environment):
+    env = employee_search_environment
+    business_id = UUID(env["business_id"])
+
+    # Seed more than the API's maximum single-page limit without making
+    # hundreds of setup HTTP requests.
+    with app.state.session_factory() as session:
+        session.add_all([
+            Employee(
+                business_id=business_id,
+                employee_code=f"DIR-{index:03d}",
+                name=f"Directory Employee {index:03d}",
+                monthly_salary=Decimal("5000.00"),
+                is_active=True,
+            )
+            for index in range(205)
+        ])
+        session.commit()
+
+    base = f"/api/v1/businesses/{env['business_id']}/employees"
+    final_page = env["client"].get(
+        base,
+        params={
+            "search": "Directory Employee",
+            "active_only": "true",
+            "limit": 200,
+            "offset": 200,
+        },
+    )
+    assert final_page.status_code == 200, final_page.text
+    rows = final_page.json()
+    assert len(rows) == 5
+    assert [row["name"] for row in rows] == [
+        f"Directory Employee {index:03d}" for index in range(200, 205)
+    ]
+
+    picker_search = env["client"].get(
+        base,
+        params={
+            "search": "Directory Employee 204",
+            "active_only": "true",
+            "limit": 25,
+            "offset": 0,
+        },
+    )
+    assert picker_search.status_code == 200, picker_search.text
+    assert [row["id"] for row in picker_search.json()] == [rows[-1]["id"]]
