@@ -110,3 +110,8 @@ export function moveInvoiceDraftLine<T>(lines: readonly T[], index: number, dire
   [next[index], next[target]] = [next[target], next[index]];
   return next;
 }
+
+export function removeInvoiceDraftLine<T>(lines: readonly T[], index: number): T[] {
+  if (index < 0 || index >= lines.length || lines.length <= 1) return [...lines];
+  return lines.filter((_, currentIndex) => currentIndex !== index);
+}
