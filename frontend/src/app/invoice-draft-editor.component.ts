@@ -69,11 +69,11 @@ export interface InvoiceDraftServerSummary {
               <input [name]="'description-' + line.id" maxlength="500" [(ngModel)]="line.description" [disabled]="busy">
             </label>
             <label>{{ language === 'ar' ? 'سعر الوحدة' : 'Unit price' }}
-              <input [name]="'price-' + line.id" type="number" min="0" step="0.01" [(ngModel)]="line.unit_price" [disabled]="busy">
+              <input [name]="'price-' + line.id" type="text" inputmode="decimal" autocomplete="off" [(ngModel)]="line.unit_price" [disabled]="busy">
             </label>
           }
           <label>{{ language === 'ar' ? 'الكمية' : 'Quantity' }}
-            <input [name]="'quantity-' + line.id" type="number" min="0.001" step="0.001" [(ngModel)]="line.quantity" [disabled]="busy">
+            <input [name]="'quantity-' + line.id" type="text" inputmode="decimal" autocomplete="off" [(ngModel)]="line.quantity" [disabled]="busy">
           </label>
           <div class="line-actions">
             <button type="button" [disabled]="busy || index === 0" (click)="moveLine(index, -1)" [attr.aria-label]="language === 'ar' ? 'تحريك لأعلى' : 'Move up'">↑</button>
@@ -85,10 +85,10 @@ export interface InvoiceDraftServerSummary {
 
       <div class="grid rates">
         <label>{{ language === 'ar' ? 'الخصم (%)' : 'Discount (%)' }}
-          <input name="discountRate" type="number" min="0" max="100" step="any" [(ngModel)]="discountRate" [disabled]="busy">
+          <input name="discountRate" type="text" inputmode="decimal" autocomplete="off" [(ngModel)]="discountRate" [disabled]="busy">
         </label>
         <label>{{ language === 'ar' ? 'الضريبة (%)' : 'Tax (%)' }}
-          <input name="taxRate" type="number" min="0" max="100" step="any" [(ngModel)]="taxRate" [disabled]="busy">
+          <input name="taxRate" type="text" inputmode="decimal" autocomplete="off" [(ngModel)]="taxRate" [disabled]="busy">
         </label>
       </div>
 
