@@ -9,6 +9,7 @@ import {
   moveInvoiceDraftLine,
   toInvoiceDraftPayload,
   validateInvoiceDraft,
+  localizeInvoiceDraftValidationMessage,
 } from './invoice-draft';
 
 export interface InvoiceDraftCustomer { id: string; name: string; }
@@ -92,7 +93,7 @@ export interface InvoiceDraftServerSummary {
         </label>
       </div>
 
-      @if (validationMessage) { <p class="error" role="alert">{{ validationMessage }}</p> }
+      @if (validationMessage) { <p class="error" role="alert">{{ localizedValidationMessage }}</p> }
       @if (serverSummary; as summary) {
         <dl class="server-summary" aria-live="polite">
           <div><dt>{{ language === 'ar' ? 'الإجمالي قبل الخصم' : 'Subtotal' }}</dt><dd>{{ summary.subtotal ?? '—' }} {{ summary.currency_code }}</dd></div>
@@ -142,6 +143,10 @@ export class InvoiceDraftEditorComponent {
   private nextId = 1;
   lines: InvoiceDraftLine[] = [this.newLine('product')];
   validationMessage = '';
+
+  get localizedValidationMessage(): string {
+    return localizeInvoiceDraftValidationMessage(this.validationMessage, this.language);
+  }
 
   addProductLine(): void { if (!this.busy) this.lines = [...this.lines, this.newLine('product')]; }
   addManualLine(): void { if (!this.busy) this.lines = [...this.lines, this.newLine('manual')]; }
