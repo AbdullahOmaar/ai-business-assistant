@@ -1800,3 +1800,67 @@ def test_customer_statement_rejects_foreign_customer_and_never_lists_foreign_rec
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_owner_can_allocate_one_payment_across_multiple_invoices():
+    engine, business_id, first_invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        first_invoice = session.get(Invoice, first_invoice_id)
+        assert first_invoice is not None and first_invoice.customer_id is not None
+        customer_id = first_invoice.customer_id
+        second_invoice = Invoice(
+            business_id=business_id,
+            customer_id=customer_id,
+            invoice_number="RET-INV-2",
+            status="issued",
+            currency_code="EGP",
+            subtotal=Decimal("8.00"),
+            tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"),
+            total=Decimal("8.00"),
+        )
+        session.add(second_invoice)
+        session.commit()
+        second_invoice_id = second_invoice.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "7.00",
+        "currency_code": "EGP",
+        "idempotency_key": "owner-multi-invoice-allocation",
+        "customer_id": str(customer_id),
+        "allocations": [
+            {"invoice_id": str(first_invoice_id), "amount": "4.00"},
+            {"invoice_id": str(second_invoice_id), "amount": "3.00"},
+        ],
+        "method": "cash",
+        "reference": "two invoice receipt",
+    }
+    try:
+        response = client.post(base, json=payload)
+        assert response.status_code == 201, response.text
+
+        with Session(engine) as session:
+            payment = session.scalar(select(Payment).where(
+                Payment.business_id == business_id,
+                Payment.idempotency_key == payload["idempotency_key"],
+            ))
+            assert payment is not None
+            assert payment.amount == Decimal("7.00")
+            allocations = session.scalars(select(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.payment_id == payment.id,
+            )).all()
+            assert {item.invoice_id: item.amount for item in allocations} == {
+                first_invoice_id: Decimal("4.00"),
+                second_invoice_id: Decimal("3.00"),
+            }
+            assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "payment.recorded",
+                AuditEvent.target_id == payment.id,
+            )) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
