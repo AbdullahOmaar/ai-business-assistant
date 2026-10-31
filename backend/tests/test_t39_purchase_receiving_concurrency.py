@@ -213,6 +213,7 @@ def test_concurrent_postgres_receipts_cannot_overreceive_same_remaining_quantity
                 unit_price=Decimal("10.00"),
                 is_stock_tracked=True,
             )
+            product_id = product.id
             order = PurchaseOrder(
                 business_id=business_id,
                 supplier_id=supplier.id,
@@ -274,7 +275,7 @@ def test_concurrent_postgres_receipts_cannot_overreceive_same_remaining_quantity
                 )
             ).all()
             assert len(movements) == 1
-            assert movements[0].product_id == product.id
+            assert movements[0].product_id == product_id
             assert movements[0].quantity_delta == Decimal("4.000")
 
             receipt_audits = session.scalars(
