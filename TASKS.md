@@ -1,3 +1,11 @@
+## Open PR inventory refresh — 2026-10-31 14:20 EET
+
+- Fresh owner-authored open-PR inventory: **14 open PRs** — #302, #304, #305, #306, #307, #308, #309, #311, #312, #313, #314, #315, #317, #318. Including docs PR #322, the project has **15 open PRs**.
+- Review sweep of #302, #304, #305, #306, #307, #308, #309, #311, #312, #313, #314, #315, #317, #318, and #322: **0 APPROVED reviews**. Nine PRs have COMMENTED-only submissions (#302, #304, #305, #306, #308, #312, #313, #315, #318); six have no review submission (#307, #309, #311, #314, #317, #322).
+- All PRs remain individually subject to exact-head GitLab validation, integration/base reconciliation, scope approvals (especially T37), and review gates. GitHub mergeable=true does not waive those requirements.
+- Latest #322 docs branch commits: source-review ledger 3104a2c5ead6ab6b2d29e0ea374d4f476acc8a54; v1.3.5 release history correction ec4639deb3bb1125e30cd124f3c9a3c354f94232; production probe ledger 3953dfeba626d489abc0b97dba38a76a2e327001. No CI trigger because each doc commit uses [skip ci].
+- PR #322 remains Draft, no exact GitLab pipeline, no review approval. No PR was merged.
+
 ## T50 production probe verification — 2026-10-31 14:15 EET
 
 - Current production Web deployment `dpl_F4CDmFLXug9aRqkU2TQerP4XzRDy`: READY, production, source SHA `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`.
