@@ -588,10 +588,11 @@ def test_postgres_draft_po_edit_and_stock_tracking_disable_serialize_on_product_
                 for index in range(2)
             ]
             target_product_id, original_product_id = products[0].id, products[1].id
+            supplier_id = supplier.id
             session.commit()
 
         original_body = PurchaseOrderInput(
-            supplier_id=supplier.id,
+            supplier_id=supplier_id,
             order_number=f"T39-EDIT-RACE-{suffix}",
             currency_code="EGP",
             lines=[
@@ -612,7 +613,7 @@ def test_postgres_draft_po_edit_and_stock_tracking_disable_serialize_on_product_
             order_id = UUID(created["id"])
 
         edit_body = PurchaseOrderInput(
-            supplier_id=supplier.id,
+            supplier_id=supplier_id,
             order_number=original_body.order_number,
             currency_code="EGP",
             lines=[
