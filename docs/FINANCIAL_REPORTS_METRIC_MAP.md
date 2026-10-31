@@ -348,3 +348,5 @@ The code paths reviewed are `backend/app/core_features_api.py` (dashboard and P&
 - Added `test_concurrent_purchase_receipts_lock_products_in_stable_order` to `backend/tests/test_postgres_financial_concurrency.py`. It creates two approved synthetic purchase orders with opposite product order, synchronizes both transactions immediately before their first Product row-lock query, and verifies both complete with four receipt movements and all line quantities fully received.
 - Test execution requires `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and a disposable PostgreSQL `TEST_DATABASE_URL` whose database name contains `test`, `ci`, `disposable` or `tmp`. No production database is eligible. Runtime execution remains **NOT RUN** until an authorized disposable PostgreSQL runner is available.
 - No CI workflow was triggered or retried; this commit is marked `[skip ci]`.
+
+- Regression inventory after this PostgreSQL case: **35 T40-targeted + 27 related = 62 authored tests**. All remain **NOT RUN** pending an authorized runner; source presence is not execution evidence.
