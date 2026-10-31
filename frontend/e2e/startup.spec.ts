@@ -97,6 +97,10 @@ test('shows a recoverable startup error when runtime configuration cannot be loa
   await expect(page.getByRole('heading', {
     name: /تعذر تحميل إعدادات التطبيق|Unable to load app configuration/,
   })).toBeVisible({ timeout: 20_000 });
+  await page.locator('.language-toggle').click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await page.locator('.language-toggle').click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByRole('alert')).toContainText(/Runtime configuration could not be loaded/);
   await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
 
@@ -177,3 +181,32 @@ for (const [label, invalidConfig] of [
     expect(configRequests).toBe(2);
   });
 }
+
+test('shows a recoverable startup error when runtime configuration is not valid JSON', async ({ page }) => {
+  let configRequests = 0;
+  await page.route('**/runtime-config.json', async (route) => {
+    configRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: configRequests === 1 ? '{"apiBaseUrl":' : JSON.stringify({
+        apiBaseUrl: '',
+        firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', {
+    name: /تعذر تحميل إعدادات التطبيق|Unable to load app configuration/,
+  })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('alert')).toContainText('Runtime configuration is invalid.');
+  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /إعادة المحاولة|Retry startup/ }).click();
+  await expect(page.getByRole('heading', {
+    name: /اربط مساحة عملك الآمنة|Connect your secure workspace/,
+  })).toBeVisible({ timeout: 20_000 });
+  expect(configRequests).toBe(2);
+});
+

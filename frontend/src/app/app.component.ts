@@ -31,6 +31,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
         </main>
       } @else if (startupFailed) {
         <main class="auth-card">
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
           <div class="brand-mark">A</div>
           <h1>{{ t('تعذر تحميل إعدادات التطبيق', 'Unable to load app configuration') }}</h1>
           <p class="error" role="alert">{{ error }}</p>

@@ -38,7 +38,13 @@ export class AuthService {
       this.configPromise = fetch('/runtime-config.json', { cache: 'no-store', signal: controller.signal })
         .then(async response => {
           if (!response.ok) throw new Error('Runtime configuration could not be loaded.');
-          return validateRuntimeConfig(await response.json());
+          let payload: unknown;
+          try {
+            payload = await response.json();
+          } catch {
+            throw new Error('Runtime configuration is invalid.');
+          }
+          return validateRuntimeConfig(payload);
         })
         .catch(error => {
           this.configPromise = undefined;

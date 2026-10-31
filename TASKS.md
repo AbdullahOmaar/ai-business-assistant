@@ -1710,3 +1710,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added Node unit tests for valid config, missing/null setup values, malformed top-level/Firebase shapes, all four Firebase fields and safe non-echoing errors. Added startup Playwright regressions for HTTP 503, JSON null, wrong API URL types, array Firebase settings and wrong Firebase field types.
 - Local targeted Node validation: **7/7 PASS** on Node v22.16.0 using `node --experimental-strip-types --test frontend/src/app/runtime-config.spec.ts`. Full repository frontend suite, Angular build and Playwright: **NOT RUN** (no connected local checkout/dependencies or permitted browser runner). No CI provider was triggered.
 - PR remains Draft/unmerged pending exact-head permitted validation and independent review. No release, merge, production config change or DB mutation.
+
+### T43 startup hardening follow-up
+
+- Hardened JSON parsing: syntactically invalid `runtime-config.json` responses are mapped to the same safe configuration error instead of exposing a browser/parser-specific message.
+- Added a Playwright regression for malformed JSON syntax, retry recovery and absence of sign-in inputs. The startup-failure screen now includes the Arabic/English language toggle.
+- Playwright remains NOT RUN; this is authored regression coverage only. Local pure-validator tests remain 7/7 PASS. Full frontend suite/build and CI remain NOT RUN.
