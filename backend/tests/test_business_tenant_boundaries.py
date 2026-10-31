@@ -1815,13 +1815,20 @@ def test_supplier_create_denies_non_members_without_side_effects_and_allows_memb
     previous_resolver = getattr(app.state, "principal_resolver", None)
     app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     owner_subject, staff_subject = "supplier-route-owner", "supplier-route-staff"
-    business_id = uuid4()
+    foreign_owner_subject = "supplier-route-foreign-owner"
+    business_id, foreign_business_id = uuid4(), uuid4()
+    business_ids = (business_id, foreign_business_id)
 
     try:
         with app.state.session_factory() as session:
-            session.add(Business(
-                id=business_id, name="Supplier Route Workspace", currency_code="EGP"
-            ))
+            session.add_all([
+                Business(
+                    id=business_id, name="Supplier Route Workspace A", currency_code="EGP"
+                ),
+                Business(
+                    id=foreign_business_id, name="Supplier Route Workspace B", currency_code="EGP"
+                ),
+            ])
             session.flush()
             session.add_all([
                 BusinessMembership(
@@ -1832,6 +1839,10 @@ def test_supplier_create_denies_non_members_without_side_effects_and_allows_memb
                     business_id=business_id, user_subject=staff_subject,
                     role=MembershipRole.STAFF,
                 ),
+                BusinessMembership(
+                    business_id=foreign_business_id, user_subject=foreign_owner_subject,
+                    role=MembershipRole.OWNER,
+                ),
             ])
             session.commit()
 
@@ -1840,12 +1851,12 @@ def test_supplier_create_denies_non_members_without_side_effects_and_allows_memb
                 snapshot = []
                 for table in Base.metadata.sorted_tables:
                     if table.name == "businesses":
-                        # The tenant root is keyed by id, not business_id; include
-                        # it so denied requests cannot mutate the workspace itself.
-                        statement = table.select().where(table.c.id == business_id)
+                        # Tenant roots are keyed by id, not business_id; include
+                        # both so a denied cross-tenant request cannot mutate either.
+                        statement = table.select().where(table.c.id.in_(business_ids))
                     elif "business_id" in table.c:
                         statement = table.select().where(
-                            table.c.business_id == business_id
+                            table.c.business_id.in_(business_ids)
                         )
                     else:
                         continue
@@ -1869,6 +1880,18 @@ def test_supplier_create_denies_non_members_without_side_effects_and_allows_memb
         )
         assert denied.status_code == 403, denied.text
         assert business_row_snapshot() == before_denied_request
+
+        # A valid OWNER in Business B must still be denied access to Business A.
+        before_cross_tenant_request = business_row_snapshot()
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            foreign_owner_subject
+        )
+        cross_tenant_denied = client.post(
+            base,
+            json={"name": "Foreign Tenant Supplier", "email": "foreign@example.com"},
+        )
+        assert cross_tenant_denied.status_code == 403, cross_tenant_denied.text
+        assert business_row_snapshot() == before_cross_tenant_request
 
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal(owner_subject)
         owner_created = client.post(
