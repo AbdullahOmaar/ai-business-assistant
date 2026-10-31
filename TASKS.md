@@ -1,3 +1,36 @@
+## Master @n source review refresh — 2026-10-31 14:00 EET
+
+### Current repository state
+- GitHub main remains `dcb0853ab06dc9271b1109db03eb84ab2e3360c8` (v1.3.5). `AGENTS.md` confirms GitLab is the sole CI provider; CircleCI/Semaphore are retired. Do not trigger or retry them.
+- Current GitHub metadata reports `main.protected=false`. This is a material release/security configuration gap; do not describe main as protected.
+- Desktop Commander has no online device (the only registered device is Offline); local repo/test execution is unavailable in this session.
+- GitLab project 88314921 has no current pipeline for T03 branch `qa/foreign-resource-read-no-side-effects-20261029`; its mirror branch is stale at `ccbc662e6fc3333bbd64c653daec103cb1ded89d`, while current GitHub PR #302 head is `57bc33543954c3f0c28ee3a4380c1ca969681154`.
+
+### T03 / PR #302 Master self-review (source-only)
+- Current PR #302 head `57bc33543954c3f0c28ee3a4380c1ca969681154`; old base `c464398e0a6ace77eba32aabfbdbd09091f53999`; current main is 3 commits ahead. GitHub reports mergeable=true; source compare shows main's three commits affect CI/release/auth files and the PR's six changed paths are backend extended API/tests and security inventory, so no direct file overlap is visible. This is not a rebase or exact-head validation.
+- Verified the duplicate supplier route: current main registers `POST /api/v1/businesses/{business_id}/suppliers` in both `backend/app/api.py` and `backend/app/extended_api.py`. PR #302 removes the extended_api duplicate and adds a route uniqueness regression. This is a correct defect fix.
+- Added regressions snapshot all business-scoped rows and AuditEvent after denied foreign-ID/customer/product/invoice/stock/return/purchase-order/payment-allocation operations. Source review found no clear unsafe financial semantic changes; the PR is test/route de-duplication and docs.
+- The PR itself still lists remaining route × role × tenant coverage gaps. Do not call the full T03 matrix complete.
+- Current head has only retired CircleCI/Semaphore failure contexts visible; no GitLab pipeline exists for exact head. Full pytest/PostgreSQL/browser/security execution remains NOT RUN. No merge.
+- Master source-only review and rationale were posted on PR #302. This is not an independent approval.
+
+### PR #318 sync workflow trust boundary
+- Latest workflow is dispatch-only, validates exact full SHA, fetches the exact GitHub ref and pushes without force/prune; static YAML/bash checks were previously PASS.
+- Blocking repository configuration: workflow expects a protected main definition, but current GitHub repository metadata reports `main.protected=false`. The `gitlab-sync` environment name alone does not prove required reviewers or branch restrictions. Environment protection, token scope and branch protection have not been verified.
+- Master security self-review was posted on PR #318. Do not dispatch or expose sync secrets until main protection, environment reviewers/ref restrictions and least-privilege GitLab token are verified.
+- No GitHub workflow-dispatch tool is available in this session. Do not manually create GitLab mirror branches or force-push around the approved sync mechanism.
+
+### PR #322 / release documentation
+- Keep PR #322 as the canonical documentation successor for closed-PR reconciliation and release evidence. This checkpoint is being added to the existing documentation branch; no second branch created.
+- Exact GitLab pipeline and independent review for current #322 head remain NOT RUN. Keep Draft and do not merge until required review and validation gates are satisfied.
+
+### Master next actions
+1. Resolve main branch protection and protected environment configuration through repository settings with verifiable readback.
+2. Use the trusted sync workflow from protected main to mirror the exact #302 and #322 SHAs; run GitLab pipelines only after sync.
+3. For #302, retain the duplicate supplier route fix and all no-side-effect regressions; run full backend tests on exact current-main-integrated head and continue remaining T03 matrix.
+4. For #322, validate exact doc-only candidate and merge only after required review/gates.
+5. Do not bump version or deploy until integrated candidate tests, version consistency, release markers, backup/restore gates, and production smoke are verified.
+
 ## T38 current-main auth/workspace fence integration warning — 2026-10-31 13:02 EET
 
 - PR #305 AppComponent is based on the older d99/c464 source. Its clearWorkspaceData() lacks current main dcb0853's workspaceLoadGuard, auditLoadGuard and statementLoadGuard invalidation and statement-state reset. T38 has statementRequestVersion in request methods but does not invalidate it from clearWorkspaceData().
