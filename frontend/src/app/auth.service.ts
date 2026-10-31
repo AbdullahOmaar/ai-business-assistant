@@ -7,19 +7,10 @@ import {
 } from '@firebase/auth';
 import type { Auth, User } from '@firebase/auth';
 import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer';
-import { validateRuntimeConfig } from './runtime-config';
+import { validateRuntimeConfig, type RuntimeConfig } from './runtime-config';
+export type { RuntimeConfig } from './runtime-config';
 
 export interface AuthUserSnapshot { uid: string; email: string | null; }
-
-export interface RuntimeConfig {
-  apiBaseUrl: string;
-  firebase: {
-    apiKey: string;
-    authDomain: string;
-    projectId: string;
-    appId: string;
-  };
-}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
