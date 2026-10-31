@@ -100,7 +100,7 @@ test('employee and payroll lists use independent server-side offset pagination',
 
 test('employee pagination uses a lookahead row instead of a total-count API', () => {
   assert.match(component, /limit: this\.employeePageSize \+ 1/);
-  assert.match(component, /limit: this\.payrollPageSize \+ 1/);
+  assert.match(component, /this\.payrollPageSize \+ 1,\s*this\.payrollOffset/);
   assert.match(component, /this\.employeeHasNext = employeeRows\.length > this\.employeePageSize/);
   assert.match(component, /this\.employees = employeeRows\.slice\(0, this\.employeePageSize\)/);
   assert.match(component, /this\.payrollHasNext = payrollRows\.length > this\.payrollPageSize/);
