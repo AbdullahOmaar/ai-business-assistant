@@ -17,7 +17,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <span class="count">{{ employees.length }} / {{ employeePageSize }} {{ t('في الصفحة', 'on this page') }}</span>
       </div>
 
-      @if (error) { <p class="error" role="alert">{{ error }}</p> }
+      @if (error) { <div class="error" role="alert"><span>{{ error }}</span><button class="secondary" type="button" (click)="retryLoad()" [disabled]="busy">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
       @if (message) { <p class="notice" role="status">{{ message }}</p> }
 
       <form class="employee-form" (ngSubmit)="saveEmployee()">
@@ -202,7 +202,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .primary:hover:not(:disabled){background:#115e59}
     button:disabled{opacity:.55;cursor:not-allowed}
     input,select{width:100%;max-width:100%;min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}
-    .error{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}
+    .error{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}
     .notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}
     .warning-notice{background:#fffbeb;border-color:#fde68a;color:#92400e}
     .muted{font-size:12px;color:#6b7280;line-height:1.7}
@@ -358,6 +358,10 @@ export class EmployeePayrollComponent implements OnChanges {
       paid: { ar: 'تم الصرف', en: 'Paid' }
     };
     return labels[status][this.language];
+  }
+
+  retryLoad(): void {
+    void this.loadEmployeesAndPayroll();
   }
 
   async loadEmployeesAndPayroll(): Promise<void> {
