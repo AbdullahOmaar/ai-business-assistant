@@ -22,6 +22,7 @@ from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_m
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["employees and payroll"])
 CENT = Decimal("0.01")
+MAX_MONEY = Decimal("999999999999.99")
 PERIOD_PATTERN = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
@@ -377,6 +378,8 @@ def create_payroll(
         net_pay = _money(employee.monthly_salary + body.allowances + body.bonuses - body.deductions)
         if net_pay <= 0:
             raise HTTPException(status_code=422, detail="Deductions must be lower than total earnings.")
+        if net_pay > MAX_MONEY:
+            raise HTTPException(status_code=422, detail="Calculated net pay exceeds the maximum supported amount.")
         record = PayrollRecord(
             business_id=business_id,
             employee_id=employee.id,
@@ -429,6 +432,8 @@ def update_payroll(
         record.net_pay = _money(record.base_salary + record.allowances + record.bonuses - record.deductions)
         if record.net_pay <= 0:
             raise HTTPException(status_code=422, detail="Deductions must be lower than total earnings.")
+        if record.net_pay > MAX_MONEY:
+            raise HTTPException(status_code=422, detail="Calculated net pay exceeds the maximum supported amount.")
         session.flush()
         _audit(session, business_id, principal.subject, "payroll.updated", "payroll", record.id,
                "Payroll components updated: " + ", ".join(sorted(changes.keys())) + ".")
