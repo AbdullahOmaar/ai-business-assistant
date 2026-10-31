@@ -11,7 +11,8 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
-- **GitHub Actions / CI:** https://github.com/AbdullahOmaar/ai-business-assistant/actions
+- **GitLab CI (sole approved test/build/security validation):** https://gitlab.com/abdullahomarrefaat/ai-business-assistant/-/pipelines
+- **GitHub Actions:** legacy/non-authoritative for release validation; sync-only workflows may transport exact refs to GitLab.
 - **Interactive feature demo (branch preview):** `/demo/` (fictional local-only data; no production API calls)
 - **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
 - **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
@@ -63,7 +64,7 @@ The repository includes:
 - Angular email/password sign-in, authenticated API client, live dashboard/customer/product/invoice views, invoice draft editing/issuing/voiding, and a record-grounded AI chat UI.
 - Invoice issuance stock deductions as auditable stock movements for tracked products and insufficient-stock validation.
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
-- GitHub Actions for backend tests, PostgreSQL migration validation, and Angular production builds.
+- GitLab CI, defined in `.gitlab-ci.yml`, is the sole approved test/build/security validation provider. Existing GitHub Actions test workflows are non-authoritative and must not be used as a replacement CI provider; the permitted GitHub-side workflow is sync-only.
 - Regression tests for cross-business authorization boundaries, invoice state transitions, and AI input/provider safety.
 
 ## Release blockers and known limitations
