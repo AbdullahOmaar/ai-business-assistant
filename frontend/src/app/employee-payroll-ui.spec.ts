@@ -20,6 +20,7 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
   for (const phrase of ['saveEmployee()', 'editEmployee(employee)', 'toggleEmployeeActive(employee)', 'preparePayroll(employee)', 'savePayroll()', 'approvePayroll(payroll)', 'payPayroll(payroll)']) {
     assert.ok(component.includes(phrase), `Missing UI action: ${phrase}`);
   }
+  assert.ok(component.includes(`[attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"`), 'Arabic UI must declare RTL direction');
   assert.match(component, /employeeSearch/);
   assert.match(component, /t\('الموظفون والمرتبات', 'Employees & payroll'\)/);
   assert.match(component, /Net pay is calculated on the server/);
