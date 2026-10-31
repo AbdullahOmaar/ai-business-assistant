@@ -1864,3 +1864,94 @@ def test_owner_can_allocate_one_payment_across_multiple_invoices():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_owner_payment_rejects_duplicate_invoice_allocations_without_writes():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "6.00",
+        "currency_code": "EGP",
+        "idempotency_key": "duplicate-invoice-allocation",
+        "customer_id": str(customer_id),
+        "allocations": [
+            {"invoice_id": str(invoice_id), "amount": "3.00"},
+            {"invoice_id": str(invoice_id), "amount": "3.00"},
+        ],
+    }
+    try:
+        response = client.post(base, json=payload)
+        assert response.status_code == 422, response.text
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Payment).where(
+                Payment.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "payment.recorded",
+            )) == 0
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_owner_payment_rejects_aggregate_allocations_above_receipt_without_writes():
+    engine, business_id, first_invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        first_invoice = session.get(Invoice, first_invoice_id)
+        assert first_invoice is not None and first_invoice.customer_id is not None
+        customer_id = first_invoice.customer_id
+        second_invoice = Invoice(
+            business_id=business_id,
+            customer_id=customer_id,
+            invoice_number="RET-INV-AGGREGATE-2",
+            status="issued",
+            currency_code="EGP",
+            subtotal=Decimal("8.00"),
+            tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"),
+            total=Decimal("8.00"),
+        )
+        session.add(second_invoice)
+        session.commit()
+        second_invoice_id = second_invoice.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "6.00",
+        "currency_code": "EGP",
+        "idempotency_key": "aggregate-allocation-over-receipt",
+        "customer_id": str(customer_id),
+        "allocations": [
+            {"invoice_id": str(first_invoice_id), "amount": "4.00"},
+            {"invoice_id": str(second_invoice_id), "amount": "3.00"},
+        ],
+    }
+    try:
+        response = client.post(base, json=payload)
+        assert response.status_code == 422, response.text
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Payment).where(
+                Payment.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+            )) == 0
+            assert session.scalar(select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "payment.recorded",
+            )) == 0
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
