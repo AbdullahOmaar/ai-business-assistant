@@ -974,24 +974,55 @@ def test_delegated_read_only_platform_role_cannot_change_workspace_status(platfo
         business_audit_before = session.scalar(select(func.count(AuditEvent.id)))
         platform_audit_before = session.scalar(select(func.count(PlatformAdminAuditEvent.id)))
 
+    def all_persisted_rows():
+        """Snapshot every synthetic DB table, including business and platform audit/grant state."""
+        with Session(environment["engine"]) as session:
+            snapshot = []
+            for table in Base.metadata.sorted_tables:
+                statement = table.select()
+                primary_key = list(table.primary_key.columns)
+                if primary_key:
+                    statement = statement.order_by(*primary_key)
+                snapshot.append((
+                    table.name,
+                    tuple(tuple(row) for row in session.execute(statement).all()),
+                ))
+            return tuple(snapshot)
+
     environment["subject"]["value"] = subject
     client = environment["client"]
     business_id = environment["alpha_id"]
+
+    before_overview = all_persisted_rows()
     overview = client.get("/api/v1/platform-admin/overview")
+    assert overview.status_code == 200
+    assert all_persisted_rows() == before_overview, "Read-only overview changed persisted state"
+
+    before_audit_read = all_persisted_rows()
     audit_read = client.get("/api/v1/platform-admin/audit-events")
+    assert audit_read.status_code == 200
+    assert all_persisted_rows() == before_audit_read, "Read-only audit view changed persisted state"
+
+    before_status_denial = all_persisted_rows()
     response = client.patch(
         f"/api/v1/platform-admin/businesses/{business_id}/status",
         json={"is_active": False, "reason": "Should be denied"},
     )
+    assert response.status_code == 403
+    assert all_persisted_rows() == before_status_denial, (
+        "Denied workspace-status mutation changed persisted state or audit events"
+    )
+
+    before_role_denial = all_persisted_rows()
     role_change = client.post(
         "/api/v1/platform-admin/users/new-platform-user/roles",
         json={"role": "workspace_operator", "active": True, "reason": "Should be denied"},
     )
-
-    assert overview.status_code == 200
-    assert audit_read.status_code == 200
-    assert response.status_code == 403
     assert role_change.status_code == 403
+    assert all_persisted_rows() == before_role_denial, (
+        "Denied delegated-role grant changed persisted state or audit events"
+    )
+
     with Session(environment["engine"]) as session:
         business = session.get(Business, UUID(business_id))
         business_audit_after = session.scalar(select(func.count(AuditEvent.id)))
