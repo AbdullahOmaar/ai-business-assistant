@@ -7,6 +7,8 @@ from threading import Barrier, local
 from uuid import uuid4
 
 import pytest
+
+import app.operations as purchasing_operations
 from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.orm import Session
 
@@ -286,6 +288,131 @@ def test_concurrent_postgres_receipts_cannot_overreceive_same_remaining_quantity
                 )
             ).all()
             assert len(receipt_audits) == 1
+    finally:
+        engine.dispose()
+
+def test_postgres_receipt_failure_after_first_stock_write_rolls_back_all_effects(monkeypatch):
+    """A later receipt-write failure must roll back earlier staged stock and audit rows."""
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if not database_url or not database_url.startswith("postgresql"):
+        pytest.skip("Set TEST_DATABASE_URL to a disposable PostgreSQL database")
+
+    engine = create_engine(database_url, pool_size=5, max_overflow=0)
+    suffix = uuid4().hex[:12]
+    principal = AuthenticatedPrincipal(subject=f"t39-rollback-owner-{suffix}")
+    try:
+        with Session(engine) as session:
+            business = Business(name=f"T39 rollback {suffix}", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            business_id = business.id
+            session.add(BusinessMembership(
+                business_id=business_id,
+                user_subject=principal.subject,
+                role=MembershipRole.OWNER,
+            ))
+            session.flush()
+            supplier = Supplier(business_id=business_id, name=f"T39 supplier {suffix}")
+            session.add(supplier)
+            session.flush()
+            products = [
+                create_product(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    name=f"T39 rollback product {suffix}-{index}",
+                    unit_price=Decimal("10.00"),
+                    is_stock_tracked=True,
+                )
+                for index in range(2)
+            ]
+            order = PurchaseOrder(
+                business_id=business_id,
+                supplier_id=supplier.id,
+                order_number=f"T39-ROLLBACK-{suffix}",
+                status="approved",
+                currency_code="EGP",
+                total=Decimal("20.00"),
+            )
+            session.add(order)
+            session.flush()
+            lines = []
+            for product in products:
+                line = PurchaseOrderLine(
+                    business_id=business_id,
+                    purchase_order_id=order.id,
+                    product_id=product.id,
+                    quantity=Decimal("1.000"),
+                    unit_cost=Decimal("10.00"),
+                    received_quantity=Decimal("0.000"),
+                )
+                session.add(line)
+                session.flush()
+                lines.append(line)
+            session.commit()
+            order_id = order.id
+            line_ids = [line.id for line in lines]
+
+        original_record_stock_movement = purchasing_operations.record_stock_movement
+        calls = 0
+
+        def fail_on_second_stock_write(*args, **kwargs):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise RuntimeError("injected second stock-write failure")
+            return original_record_stock_movement(*args, **kwargs)
+
+        monkeypatch.setattr(
+            purchasing_operations,
+            "record_stock_movement",
+            fail_on_second_stock_write,
+        )
+
+        with Session(engine) as session:
+            with pytest.raises(RuntimeError, match="injected second stock-write failure"):
+                with session.begin():
+                    receive_purchase_order(
+                        session,
+                        principal=principal,
+                        business_id=business_id,
+                        purchase_order_id=order_id,
+                        received_quantities={
+                            line_id: Decimal("1.000") for line_id in line_ids
+                        },
+                    )
+        assert calls == 2
+
+        with Session(engine) as session:
+            saved_order = session.get(PurchaseOrder, order_id)
+            assert saved_order.status == "approved"
+            saved_lines = session.scalars(
+                select(PurchaseOrderLine).where(
+                    PurchaseOrderLine.purchase_order_id == order_id
+                )
+            ).all()
+            assert len(saved_lines) == 2
+            assert all(line.received_quantity == Decimal("0.000") for line in saved_lines)
+
+            movements = session.scalars(
+                select(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.reference_type == "purchase_order",
+                    StockMovement.reference_id == order_id,
+                )
+            ).all()
+            assert movements == []
+
+            receipt_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action.in_([
+                        "purchase_order.received",
+                        "stock.movement_recorded",
+                    ]),
+                )
+            ).all()
+            assert receipt_audits == []
     finally:
         engine.dispose()
 
