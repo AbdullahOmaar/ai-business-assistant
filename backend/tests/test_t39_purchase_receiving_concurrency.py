@@ -780,7 +780,7 @@ def test_postgres_po_approval_and_receipt_share_stable_product_lock_order():
                     receive_line_ids = line_ids
             session.commit()
 
-        worker_state = local()
+        checked_lock_queries = []
 
         def assert_stable_product_lock_order(
             connection, cursor, statement, parameters, context, executemany
@@ -825,6 +825,7 @@ def test_postgres_po_approval_and_receipt_share_stable_product_lock_order():
         with ThreadPoolExecutor(max_workers=2) as pool:
             outcomes = list(pool.map(lambda fn: fn(), (approve, receive)))
         assert sorted(outcomes) == ["approved", "received"]
+        assert len(checked_lock_queries) == 2
 
         event.remove(engine, "after_cursor_execute", assert_stable_product_lock_order)
         listener_registered = False
