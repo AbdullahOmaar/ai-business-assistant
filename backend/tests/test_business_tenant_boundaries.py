@@ -1668,25 +1668,25 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         # Capture every business-scoped persisted row, not just selected PO fields
         # and row counts. Reads and denied foreign-ID operations below must not
         # mutate either tenant's domain records, stock ledger, or audit trail.
-        def business_row_snapshot(business_id: str):
-            business_uuid = UUID(business_id)
+        def all_business_rows():
+            """Snapshot all persisted rows for both tenants, including Business and AuditEvent."""
+            business_ids = (UUID(business_a), UUID(business_b))
             with app.state.session_factory() as session:
                 snapshot = []
                 for table in Base.metadata.sorted_tables:
-                    if "business_id" not in table.c:
+                    if "business_id" in table.c:
+                        statement = table.select().where(table.c.business_id.in_(business_ids))
+                    elif table.name == "businesses":
+                        statement = table.select().where(table.c.id.in_(business_ids))
+                    else:
                         continue
-                    statement = table.select().where(
-                        table.c.business_id == business_uuid
-                    )
                     primary_key = list(table.primary_key.columns)
                     if primary_key:
                         statement = statement.order_by(*primary_key)
-                    rows = session.execute(statement).all()
-                    snapshot.append((table.name, tuple(tuple(row) for row in rows)))
+                    snapshot.append((table.name, tuple(tuple(row) for row in session.execute(statement).all())))
                 return tuple(snapshot)
 
-        tenant_a_before = business_row_snapshot(business_a)
-        tenant_b_before = business_row_snapshot(business_b)
+        all_business_rows_before = all_business_rows()
         with app.state.session_factory() as session:
             foreign_order = session.get(PurchaseOrder, UUID(resources_b["order_id"]))
             assert foreign_order is not None
@@ -1699,10 +1699,14 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         use_owner("tenant-a-owner")
         base_a = f"/api/v1/businesses/{business_a}"
 
+        before_foreign_statement = all_business_rows()
         foreign_statement = client.get(
             f"{base_a}/customers/{resources_b['customer_id']}/statement"
         )
         assert foreign_statement.status_code == 404, foreign_statement.text
+        assert all_business_rows() == before_foreign_statement, (
+            "Foreign customer statement read changed persisted tenant rows or AuditEvent"
+        )
 
         audit = client.get(f"{base_a}/audit-events")
         assert audit.status_code == 200, audit.text
@@ -1754,12 +1758,17 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
 
         # Foreign purchase-order IDs must fail at lookup, before any PO, line,
         # stock movement or audit record can be changed.
+        before_foreign_approve = all_business_rows()
         foreign_approve = client.post(
             f"{base_a}/purchase-orders/{resources_b['order_id']}/approve"
         )
         assert foreign_approve.status_code == 422, foreign_approve.text
         assert foreign_approve.json()["detail"] == "Purchase order not found in this business"
+        assert all_business_rows() == before_foreign_approve, (
+            "Foreign purchase-order approval changed persisted tenant rows or AuditEvent"
+        )
 
+        before_foreign_receive = all_business_rows()
         foreign_receive = client.post(
             f"{base_a}/purchase-orders/{resources_b['order_id']}/receive",
             json={
@@ -1771,9 +1780,11 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         )
         assert foreign_receive.status_code == 422, foreign_receive.text
         assert foreign_receive.json()["detail"] == "Purchase order is not available for receiving"
+        assert all_business_rows() == before_foreign_receive, (
+            "Foreign purchase-order receiving changed persisted tenant rows or AuditEvent"
+        )
 
-        assert business_row_snapshot(business_a) == tenant_a_before
-        assert business_row_snapshot(business_b) == tenant_b_before
+        assert all_business_rows() == all_business_rows_before
 
     finally:
         if previous_factory is None:
