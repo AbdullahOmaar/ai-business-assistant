@@ -1,0 +1,109 @@
+# T39 Purchasing UI/API Integration Handoff
+
+Status: source-reviewed contract handoff for Master integration. This document describes the existing **PR #306 feature-branch candidate**, not current production/main behavior. It does not authorize changes to Master-owned Angular files.
+
+Repository: `AbdullahOmaar/ai-business-assistant`  
+Branch: `docs/t39-procure-to-pay-test-matrix-20261029`  
+Existing PR: #306  
+Issue: #321 — Purchase Order Lifecycle & Multi-line UI
+
+## 1. API base and payload contracts
+
+All routes below use the branch router prefix:
+
+`/api/v1/businesses/{business_id}`
+
+The server derives the authenticated principal from the trusted auth dependency. Do not send or trust a client role/actor identity.
+
+### Purchase-order endpoints
+
+| Method + path | Contract |
+|---|---|
+| GET `/purchase-orders` | Optional query: `limit` (1–200, default 100), `offset` (>=0), `status` (draft/approved/partially_received/received/cancelled), `supplier_id`. Returns a tenant-scoped PO list with line summaries. |
+| GET `/purchase-orders/summary` | Returns `{ business_id, groups: [{ status, currency_code, order_count, total }], currency_note }`. Totals are grouped by status AND currency; never add different currencies together. |
+| POST `/purchase-orders` | Creates a draft. Body: `{ supplier_id, order_number, currency_code, lines: [{ product_id, quantity, unit_cost }] }`. Lines: 1–300; quantity positive, 3 decimal places; unit_cost non-negative, 2 decimal places. Response is the PO header summary (id, business_id, supplier_id, order_number, status, currency_code, total, created_at); reload detail for lines. |
+| PUT `/purchase-orders/{order_id}` | Replaces supplier, order number, currency and all lines on a draft only. Uses the same body/response shape as POST. OWNER-only. Existing lines are replaced, not patched individually. |
+| GET `/purchase-orders/{order_id}` | Tenant-scoped detail: PO header, nested supplier `{ id, name, is_active }`, and lines with `id, product_id, quantity, unit_cost, received_quantity, product_name, sku, unit, remaining_quantity`. |
+| POST `/purchase-orders/{order_id}/approve` | No request body. OWNER-only. Draft only; revalidates active same-business supplier and active stock-tracked same-business products. Returns PO header summary. Approval does not post stock movements. |
+| POST `/purchase-orders/{order_id}/cancel` | No request body. OWNER-only. Draft/approved only and only if no quantity has been received. Never reverses stock. Returns PO header summary. |
+| POST `/purchase-orders/{order_id}/receive` | Body: `{ lines: [{ line_id, quantity }] }`. OWNER-only through the receiving domain operation. Each line ID must appear once; quantity must be finite, positive and not exceed remaining quantity. Returns PO header summary; reload detail and receipt history. |
+| GET `/purchase-orders/{order_id}/receipts` | Read-only receipt ledger; query `limit` (1–200, default 100), `offset` (>=0). Returns an array ordered by created_at/id with movement id, product id/name/SKU, quantity, reason and created_at. |
+| GET `/purchase-orders/{order_id}/activity` | Read-only PO audit timeline; same limit/offset. Returns an array ordered by created_at/id with event id, action, summary and created_at. |
+
+### Supplier endpoints relevant to the current Purchasing UI
+
+- GET `/suppliers`: query `name`, `include_inactive`, `limit`, `offset`. Inactive records are only returned when explicitly requested by an OWNER.
+- GET `/suppliers/{supplier_id}`: tenant-scoped supplier detail.
+- PATCH `/suppliers/{supplier_id}`: body supports `name`, `email`, `phone`, `address`, `is_active`. OWNER/STAFF may update contact/profile fields; only OWNER may include `is_active`. Omitted fields remain unchanged; optional contact values may be cleared.
+- POST `/suppliers`: supplier create route is provided by the canonical service-backed route. Do not reintroduce the removed duplicate route.
+
+### Error mapping
+
+- 403: caller is not an authorized member/role.
+- 404: PO/supplier/product reference is not found within the requested business; do not reveal foreign-tenant IDs.
+- 422: invalid input or unsupported lifecycle transition (including stale inactive supplier/product on approval).
+- 409: integrity/duplicate-key conflict.
+- Treat unknown/network failures as retry-unsafe until the UI has reloaded authoritative state; do not optimistically advance lifecycle status.
+
+## 2. Permission matrix
+
+| Capability | OWNER | STAFF |
+|---|---:|---:|
+| List/read own-business POs, detail, summary, receipt history, activity | Yes | Yes |
+| Create a draft PO (backend currently authorizes business members) | Yes | Yes |
+| Edit a draft PO | Yes | No |
+| Approve a draft PO | Yes | No |
+| Cancel an unreceived draft/approved PO | Yes | No |
+| Receive an approved/partially_received PO | Yes | No |
+| Read active suppliers / search suppliers | Yes | Yes |
+| Include inactive suppliers in directory | Yes | No |
+| Read supplier detail | Yes | Yes |
+| Edit supplier contact/profile fields | Yes | Yes |
+| Change supplier active state | Yes | No |
+| Download supplier / PO CSV | Yes | No |
+
+UI role gating is for usability only. Backend authorization remains authoritative. Every ID-bearing request must remain scoped to the active `business_id`; never use a business ID, role, total or price supplied by the UI as authorization evidence.
+
+## 3. UI workflow for Master-owned Angular integration
+
+1. **List:** show order number, supplier, status, currency, total and per-line ordered/received/remaining quantities. Keep summary totals grouped by currency.
+2. **Create:** OWNER and STAFF may create a draft. Support 1–300 lines with add/remove controls; each line selects a product and accepts quantity/unit cost. Validate finite positive quantity and finite non-negative unit cost; show line-level errors. Send the full `lines[]` payload; do not calculate or trust a client-authoritative total.
+3. **Draft lifecycle:** OWNER sees Edit and Approve for draft orders. Edit is a full replacement of supplier/order number/currency/lines and is unavailable after approval. Approve refreshes detail after server success.
+4. **Cancellation:** OWNER sees Cancel only for draft/approved orders with no received quantity. Backend remains authoritative; a 422 must leave the UI state unchanged and reload the detail.
+5. **Receiving:** OWNER sees Receive only for approved/partially_received orders with remaining quantities. Submit only line IDs and quantities. On success reload detail, receipt history and activity; do not create a bill/payment/expense.
+6. **Detail/history:** detail, receipts and activity are read-only. Each view needs loading, empty, error and retry states; history pagination uses limit/offset.
+7. **Workspace fencing:** capture the active business ID plus a monotonically increasing request generation before each async call. Apply a response only if both still match; clear PO/supplier/detail/history state on workspace switch. Fence each independent request and its finally/loading cleanup.
+
+## 4. Frontend API client methods to add (Master-owned file)
+
+Current branch `frontend/src/app/api.service.ts` has typed supplier list/update/create, CSV, PO list/create/receive methods only. It has no typed approve/cancel/update/detail/receipts/activity methods.
+
+Suggested method names (adapt to existing local naming conventions):
+
+- `approvePurchaseOrder(businessId, orderId): Promise<PurchaseOrder>`
+- `cancelPurchaseOrder(businessId, orderId): Promise<PurchaseOrder>`
+- `updatePurchaseOrder(businessId, orderId, body: PurchaseOrderInput): Promise<PurchaseOrder>`
+- `getPurchaseOrder(businessId, orderId): Promise<PurchaseOrderDetail>`
+- `getPurchaseOrderReceipts(businessId, orderId, limit, offset): Promise<PurchaseOrderReceipt[]>`
+- `getPurchaseOrderActivity(businessId, orderId, limit, offset): Promise<PurchaseOrderActivity[]>`
+
+POST/PUT mutation responses are header summaries, not full detail objects. Reload `getPurchaseOrder` after mutation rather than assuming line data is returned.
+
+## 5. Acceptance tests to preserve/add
+
+- OWNER happy path: create multi-line draft → approve → partial receive → full receive; assert each returned state and exact stock movement quantities.
+- STAFF: may read and create draft per current API contract; must not see edit/approve/cancel/receive controls; direct mutation calls return 403 and do not change PO/line/audit/stock snapshots.
+- Tenant isolation: foreign PO/supplier/product IDs return 404 or empty tenant-scoped filter results; no foreign labels/history are exposed.
+- Invalid transitions: edit approved/received/cancelled; approve non-draft or with deactivated supplier/product; cancel partial/full received; receive draft/cancelled; assert no state/audit/stock side effects.
+- Multi-line: all submitted lines survive create/edit; invalid later line rejects the whole operation without partial header/line/audit writes.
+- UI state: loading/empty/HTTP failure, retry, duplicate-submit prevention, stale response after workspace switch, stale finally/loading cleanup, role-based control visibility.
+- Detail/history: tenant-scoped content, stable pagination, empty states and server failure states.
+- Exact final SHA frontend/API tests and builds remain required; authored tests are not execution evidence.
+
+## 6. Scope and release boundaries
+
+This handoff is limited to the existing supplier/PO/stock-receipt contract. A PO receipt is stock receipt only. Do not add supplier bills, AP/payables, supplier payments, expense/cash outflow, returns/reversals, valuation, landed cost, COGS, FX, tax, GL/posting, schema or migration behavior. T37 remains DRAFT / NOT APPROVED.
+
+Master owns `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`, root `TASKS.md`, and cross-feature integration. Chat 2 has not edited those shared paths. Chat 3 owns `backend/app/operations.py` and its PostgreSQL lock-order regression; Chat 5 owns `backend/app/extended_api.py` and CSV export route-level QA. Keep this handoff on the existing PR #306 branch; do not create a duplicate branch/PR.
+
+Validation state at authoring: pytest, py_compile, Angular tests/build, PostgreSQL concurrency, security scans and browser E2E are NOT RUN.
