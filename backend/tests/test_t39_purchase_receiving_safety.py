@@ -1320,3 +1320,111 @@ def test_purchase_order_activity_history_paginates_and_cancel_denials_have_no_si
                 AuditEvent.business_id.in_([business_id, foreign_business_id])
             )
         ) == audit_count_before
+
+
+def test_purchase_order_edit_rejects_approved_and_foreign_orders_without_side_effects(
+    purchasing_workspace,
+):
+    engine, business_id, owner_principal = purchasing_workspace
+
+    with Session(engine) as session:
+        approved_order, approved_line, local_product = _approved_order(
+            session, business_id, owner_principal, quantity=Decimal("3.000")
+        )
+        approved_order_id = approved_order.id
+        supplier_id = approved_order.supplier_id
+        approve_purchase_order(
+            business_id=business_id,
+            order_id=approved_order_id,
+            session=session,
+            principal=owner_principal,
+        )
+
+    with Session(engine) as session:
+        foreign_business = Business(name="T39 Edit Isolation Shop", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        foreign_business_id = foreign_business.id
+        foreign_principal = AuthenticatedPrincipal(subject="t39-edit-foreign-owner")
+        session.add(BusinessMembership(
+            business_id=foreign_business_id,
+            user_subject=foreign_principal.subject,
+            role=MembershipRole.OWNER,
+        ))
+        session.commit()
+        foreign_order, _, _ = _approved_order(
+            session, foreign_business_id, foreign_principal, quantity=Decimal("2.000")
+        )
+        foreign_order_id = foreign_order.id
+        session.commit()
+
+    replacement = PurchaseOrderInput(
+        supplier_id=supplier_id,
+        order_number="PO-T39-EDIT-REJECTED",
+        currency_code="EGP",
+        lines=[
+            PurchaseLineInput(
+                product_id=local_product.id,
+                quantity=Decimal("5.000"),
+                unit_cost=Decimal("10.00"),
+            )
+        ],
+    )
+
+    with Session(engine) as session:
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id.in_([business_id, foreign_business_id])
+            )
+        )
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id.in_([business_id, foreign_business_id])
+            )
+        )
+        line_count_before = session.scalar(
+            select(func.count()).select_from(PurchaseOrderLine).where(
+                PurchaseOrderLine.purchase_order_id == approved_order_id
+            )
+        )
+
+        with pytest.raises(HTTPException) as immutable_denied:
+            update_purchase_order(
+                business_id=business_id,
+                order_id=approved_order_id,
+                body=replacement,
+                session=session,
+                principal=owner_principal,
+            )
+        assert immutable_denied.value.status_code == 422
+        session.rollback()
+
+        with pytest.raises(HTTPException) as foreign_denied:
+            update_purchase_order(
+                business_id=business_id,
+                order_id=foreign_order_id,
+                body=replacement,
+                session=session,
+                principal=owner_principal,
+            )
+        assert foreign_denied.value.status_code == 422
+        session.rollback()
+        session.expire_all()
+
+        assert session.get(PurchaseOrder, approved_order_id).status == "approved"
+        assert session.get(PurchaseOrder, foreign_order_id).status == "approved"
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseOrderLine).where(
+                PurchaseOrderLine.purchase_order_id == approved_order_id
+            )
+        ) == line_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id.in_([business_id, foreign_business_id])
+            )
+        ) == audit_count_before
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id.in_([business_id, foreign_business_id])
+            )
+        ) == movement_count_before
