@@ -1333,6 +1333,7 @@ def test_purchase_order_edit_rejects_approved_and_foreign_orders_without_side_ef
         )
         approved_order_id = approved_order.id
         supplier_id = approved_order.supplier_id
+        local_product_id = local_product.id
         approve_purchase_order(
             business_id=business_id,
             order_id=approved_order_id,
@@ -1364,7 +1365,7 @@ def test_purchase_order_edit_rejects_approved_and_foreign_orders_without_side_ef
         currency_code="EGP",
         lines=[
             PurchaseLineInput(
-                product_id=local_product.id,
+                product_id=local_product_id,
                 quantity=Decimal("5.000"),
                 unit_cost=Decimal("10.00"),
             )
