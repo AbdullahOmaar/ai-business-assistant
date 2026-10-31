@@ -2,6 +2,7 @@
 
 from uuid import UUID, uuid4
 
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -159,3 +160,22 @@ def test_nonmember_and_staff_route_matrices_preserve_all_business_rows_per_reque
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+
+def test_supplier_create_route_is_registered_once_on_canonical_service_handler():
+    """The assembled FastAPI app must expose one canonical supplier-create route."""
+    routes = [
+        route
+        for route in app.routes
+        if isinstance(route, APIRoute)
+        and "POST" in (route.methods or set())
+        and route.path == "/api/v1/businesses/{business_id}/suppliers"
+    ]
+
+    assert len(routes) == 1, (
+        "Supplier create must be registered exactly once; duplicate router handlers "
+        "can shadow different service/validation behavior"
+    )
+    assert routes[0].endpoint.__module__ == "app.api"
+    assert routes[0].endpoint.__name__ == "post_supplier"
