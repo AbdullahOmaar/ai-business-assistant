@@ -554,7 +554,7 @@ def update_purchase_order(business_id: UUID, order_id: UUID, body: PurchaseOrder
                           principal: AuthenticatedPrincipal = Depends(get_principal)):
     """Replace a draft PO's supplier, number, currency and lines; never edit after approval/receipt."""
     def op():
-        _authorized(session, principal, business_id)
+        _authorized(session, principal, business_id, owner_only=True)
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id,
             PurchaseOrder.business_id == business_id,

@@ -1,9 +1,12 @@
 from decimal import Decimal
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
+
+from app.extended_api import PurchaseLineInput, PurchaseOrderInput, update_purchase_order
 
 from app.models import (
     AuditEvent,
@@ -525,3 +528,112 @@ def test_non_finite_or_non_positive_receipt_quantity_is_rejected_without_side_ef
                 AuditEvent.business_id == business_id
             )
         ) == audit_count_before
+
+def test_staff_cannot_edit_draft_purchase_order_without_side_effects(purchasing_workspace):
+    engine, business_id, owner_principal = purchasing_workspace
+    staff_principal = AuthenticatedPrincipal(subject="t39-staff-editor")
+
+    with Session(engine) as session:
+        session.add(BusinessMembership(
+            business_id=business_id,
+            user_subject=staff_principal.subject,
+            role=MembershipRole.STAFF,
+        ))
+        supplier = Supplier(business_id=business_id, name="T39 Edit Guard Supplier")
+        session.add(supplier)
+        session.flush()
+        product = create_product(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            name="T39 Edit Guard Product",
+            unit_price=Decimal("10.00"),
+            is_stock_tracked=True,
+        )
+        order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier.id,
+            order_number="PO-T39-EDIT-GUARD",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("10.00"),
+        )
+        session.add(order)
+        session.flush()
+        line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=product.id,
+            quantity=Decimal("1.000"),
+            unit_cost=Decimal("10.00"),
+            received_quantity=Decimal("0.000"),
+        )
+        session.add(line)
+        session.commit()
+        order_id = order.id
+        supplier_id = supplier.id
+        product_id = product.id
+
+    owner_edit = PurchaseOrderInput(
+        supplier_id=supplier_id,
+        order_number="PO-T39-OWNER-EDITED",
+        currency_code="EGP",
+        lines=[PurchaseLineInput(
+            product_id=product_id,
+            quantity=Decimal("2.000"),
+            unit_cost=Decimal("12.00"),
+        )],
+    )
+    with Session(engine) as session:
+        owner_result = update_purchase_order(
+            business_id=business_id,
+            order_id=order_id,
+            body=owner_edit,
+            session=session,
+            principal=owner_principal,
+        )
+        assert owner_result["order_number"] == "PO-T39-OWNER-EDITED"
+
+    staff_edit = PurchaseOrderInput(
+        supplier_id=supplier_id,
+        order_number="PO-T39-STAFF-EDITED",
+        currency_code="EGP",
+        lines=[PurchaseLineInput(
+            product_id=product_id,
+            quantity=Decimal("3.000"),
+            unit_cost=Decimal("13.00"),
+        )],
+    )
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as denied:
+            update_purchase_order(
+                business_id=business_id,
+                order_id=order_id,
+                body=staff_edit,
+                session=session,
+                principal=staff_principal,
+            )
+        assert denied.value.status_code == 403
+
+    with Session(engine) as session:
+        saved_order = session.get(PurchaseOrder, order_id)
+        saved_lines = session.scalars(
+            select(PurchaseOrderLine).where(
+                PurchaseOrderLine.purchase_order_id == order_id
+            )
+        ).all()
+        update_audits = session.scalars(
+            select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.updated",
+                AuditEvent.target_id == str(order_id),
+            )
+        ).all()
+        assert saved_order.status == "draft"
+        assert saved_order.order_number == "PO-T39-OWNER-EDITED"
+        assert saved_order.total == Decimal("24.00")
+        assert len(saved_lines) == 1
+        assert saved_lines[0].quantity == Decimal("2.000")
+        assert saved_lines[0].unit_cost == Decimal("12.00")
+        assert len(update_audits) == 1
+
