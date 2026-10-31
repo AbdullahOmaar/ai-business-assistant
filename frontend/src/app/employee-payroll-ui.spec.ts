@@ -158,3 +158,11 @@ test('employee and payroll load failures expose a retry action for the current w
   assert.ok(component.includes('retryLoad(): void {'));
   assert.ok(component.includes('void this.loadEmployeesAndPayroll();'));
 });
+
+
+test('payroll creation requires an explicit employee choice instead of defaulting to the first active employee', () => {
+  assert.doesNotMatch(component, /const firstActive = this\.payrollEmployeeOptions\[0\]/);
+  assert.match(component, /!payrollEmployeeId/);
+  assert.match(component, /this\.payrollEmployeeId = ''/);
+  assert.match(component, /previouslySelected && !this\.payrollEmployeeOptions\.some/);
+});
