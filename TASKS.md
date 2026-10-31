@@ -1,3 +1,10 @@
+## T38 current-main auth/workspace fence integration warning — 2026-10-31 13:02 EET
+
+- PR #305 AppComponent is based on the older d99/c464 source. Its clearWorkspaceData() lacks current main dcb0853's workspaceLoadGuard, auditLoadGuard and statementLoadGuard invalidation and statement-state reset. T38 has statementRequestVersion in request methods but does not invalidate it from clearWorkspaceData().
+- Current main auth observer/reset paths call clearWorkspaceData() on identity changes. During integration, preserve current main auth observer, workspaceLoadGuard, auditLoadGuard, statementLoadGuard and statement data/visibility/customer reset; do not take old T38 clearWorkspaceData() wholesale.
+- Add behavioral regression for auth identity transition with delayed customer-statement response, same/different business IDs and stale response. Separate from the payment idempotency race.
+- No code changed; tests NOT RUN. This is an integration gate before any T38 merge.
+
 ## T38 payment/auth transition race — 2026-10-31 13:00 EET
 
 - Source review of PR #305 head `233c84994cd22352829c5d3292a2901fac604d0a` found that createPayment() blocks manual switchBusiness() while paymentSaving=true, but Firebase auth transitions call clearWorkspaceData() directly.
