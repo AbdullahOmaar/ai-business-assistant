@@ -802,7 +802,7 @@ def approve_purchase_order(business_id: UUID, order_id: UUID,
                 Product.business_id == business_id,
                 Product.is_active.is_(True),
                 Product.is_stock_tracked.is_(True),
-            ).with_for_update()).all()
+            ).order_by(Product.id).with_for_update()).all()
         } if product_ids else set()
         if active_products != product_ids:
             raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")

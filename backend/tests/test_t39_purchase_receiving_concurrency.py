@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from fastapi import HTTPException
 
-from app.extended_api import ProductPatch, PurchaseLineInput, PurchaseOrderInput, patch_product, post_purchase_order, update_purchase_order
+from app.extended_api import ProductPatch, PurchaseLineInput, PurchaseOrderInput, approve_purchase_order, patch_product, post_purchase_order, update_purchase_order
 
 from app.models import (
     AuditEvent,
@@ -707,5 +707,158 @@ def test_postgres_draft_po_edit_and_stock_tracking_disable_serialize_on_product_
                 assert edit_audits == []
                 assert len(product_audits) == 1
     finally:
+        engine.dispose()
+
+def test_postgres_po_approval_and_receipt_share_stable_product_lock_order():
+    """Approval and receipt on different POs acquire shared Product locks identically."""
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if not database_url or not database_url.startswith("postgresql"):
+        pytest.skip("Set TEST_DATABASE_URL to a disposable PostgreSQL database")
+
+    engine = create_engine(database_url, pool_size=5, max_overflow=0)
+    suffix = uuid4().hex[:12]
+    principal = AuthenticatedPrincipal(subject=f"t39-approval-race-owner-{suffix}")
+    listener_registered = False
+    try:
+        with Session(engine) as session:
+            business = Business(name=f"T39 approval race {suffix}", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            business_id = business.id
+            session.add(BusinessMembership(
+                business_id=business_id,
+                user_subject=principal.subject,
+                role=MembershipRole.OWNER,
+            ))
+            session.flush()
+            supplier = Supplier(business_id=business_id, name=f"T39 supplier {suffix}")
+            session.add(supplier)
+            session.flush()
+            products = [
+                create_product(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    name=f"T39 approval product {suffix}-{index}",
+                    unit_price=Decimal("10.00"),
+                    is_stock_tracked=True,
+                )
+                for index in range(2)
+            ]
+            products = sorted(products, key=lambda product: str(product.id))
+            order_ids = {}
+            receive_line_ids = []
+            for key, status, ordered_products in (
+                ("approve", "draft", list(reversed(products))),
+                ("receive", "approved", products),
+            ):
+                order = PurchaseOrder(
+                    business_id=business_id,
+                    supplier_id=supplier.id,
+                    order_number=f"T39-{suffix}-{key}",
+                    status=status,
+                    currency_code="EGP",
+                    total=Decimal("20.00"),
+                )
+                session.add(order)
+                session.flush()
+                line_ids = []
+                for product in ordered_products:
+                    line = PurchaseOrderLine(
+                        business_id=business_id,
+                        purchase_order_id=order.id,
+                        product_id=product.id,
+                        quantity=Decimal("1.000"),
+                        unit_cost=Decimal("10.00"),
+                        received_quantity=Decimal("0.000"),
+                    )
+                    session.add(line)
+                    session.flush()
+                    line_ids.append(line.id)
+                order_ids[key] = order.id
+                if key == "receive":
+                    receive_line_ids = line_ids
+            session.commit()
+
+        worker_state = local()
+
+        def assert_stable_product_lock_order(
+            connection, cursor, statement, parameters, context, executemany
+        ):
+            normalized = " ".join(statement.lower().split())
+            if " from products " in normalized and " for update" in normalized and " in (" in normalized:
+                assert " order by products.id" in normalized
+                worker_state.checked = True
+
+        event.listen(engine, "after_cursor_execute", assert_stable_product_lock_order)
+        listener_registered = True
+        start_together = Barrier(2)
+
+        def approve():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                approve_purchase_order(
+                    business_id=business_id,
+                    order_id=order_ids["approve"],
+                    session=session,
+                    principal=principal,
+                )
+                return "approved"
+
+        def receive():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                receive_purchase_order(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    purchase_order_id=order_ids["receive"],
+                    received_quantities={
+                        line_id: Decimal("1.000") for line_id in receive_line_ids
+                    },
+                )
+                session.commit()
+                return "received"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(lambda fn: fn(), (approve, receive)))
+        assert sorted(outcomes) == ["approved", "received"]
+
+        event.remove(engine, "after_cursor_execute", assert_stable_product_lock_order)
+        listener_registered = False
+
+        with Session(engine) as session:
+            approved_order = session.get(PurchaseOrder, order_ids["approve"])
+            received_order = session.get(PurchaseOrder, order_ids["receive"])
+            assert approved_order.status == "approved"
+            assert received_order.status == "received"
+            movements = session.scalars(
+                select(StockMovement).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.reference_type == "purchase_order",
+                    StockMovement.reference_id == order_ids["receive"],
+                )
+            ).all()
+            assert len(movements) == 2
+            assert all(movement.quantity_delta == Decimal("1.000") for movement in movements)
+            lifecycle_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action.in_([
+                        "purchase_order.approved",
+                        "purchase_order.received",
+                    ]),
+                    AuditEvent.target_id.in_([
+                        str(order_ids["approve"]),
+                        str(order_ids["receive"]),
+                    ]),
+                )
+            ).all()
+            assert len(lifecycle_audits) == 2
+    finally:
+        if listener_registered:
+            event.remove(engine, "after_cursor_execute", assert_stable_product_lock_order)
         engine.dispose()
 
