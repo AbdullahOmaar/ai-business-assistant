@@ -338,3 +338,52 @@ def test_employee_search_and_pagination_reach_records_beyond_first_200(employee_
     )
     assert picker_search.status_code == 200, picker_search.text
     assert [row["id"] for row in picker_search.json()] == [rows[-1]["id"]]
+
+
+
+def test_employee_search_and_pagination_reject_out_of_range_parameters_without_side_effects(employee_search_environment):
+    env = employee_search_environment
+    created = _create_employee(
+        env,
+        name="Validation Boundary",
+        code="EMP-VALIDATION",
+        email="validation@example.test",
+        department="Operations",
+        job_title="Associate",
+    )
+    assert created.status_code == 201
+
+    base = f"/api/v1/businesses/{env['business_id']}/employees"
+
+    def snapshot():
+        with app.state.session_factory() as session:
+            employees = session.scalars(
+                select(Employee).where(Employee.business_id == UUID(env["business_id"]))
+            ).all()
+            audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == UUID(env["business_id"]),
+                    AuditEvent.target_type == "employee",
+                )
+            ).all()
+            return (
+                tuple(sorted(str(employee.id) for employee in employees)),
+                tuple(sorted((event.action, event.target_id, event.change_summary) for event in audits)),
+            )
+
+    before = snapshot()
+    invalid_queries = [
+        {"search": "x" * 101},
+        {"limit": 0},
+        {"limit": 201},
+        {"offset": -1},
+    ]
+    for params in invalid_queries:
+        response = env["client"].get(base, params=params)
+        assert response.status_code == 422, (
+            f"Out-of-range employee query {params} was not rejected: "
+            f"{response.status_code} {response.text}"
+        )
+        assert snapshot() == before, (
+            f"Rejected employee query {params} changed employee or audit state"
+        )
