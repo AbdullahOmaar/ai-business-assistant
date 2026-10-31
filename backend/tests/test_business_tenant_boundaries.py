@@ -1839,11 +1839,16 @@ def test_supplier_create_denies_non_members_without_side_effects_and_allows_memb
             with app.state.session_factory() as session:
                 snapshot = []
                 for table in Base.metadata.sorted_tables:
-                    if "business_id" not in table.c:
+                    if table.name == "businesses":
+                        # The tenant root is keyed by id, not business_id; include
+                        # it so denied requests cannot mutate the workspace itself.
+                        statement = table.select().where(table.c.id == business_id)
+                    elif "business_id" in table.c:
+                        statement = table.select().where(
+                            table.c.business_id == business_id
+                        )
+                    else:
                         continue
-                    statement = table.select().where(
-                        table.c.business_id == business_id
-                    )
                     primary_key = list(table.primary_key.columns)
                     if primary_key:
                         statement = statement.order_by(*primary_key)
