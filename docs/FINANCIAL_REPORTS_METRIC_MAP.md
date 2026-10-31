@@ -254,3 +254,61 @@ Source review of the actual PR #304 diff found that Dashboard and receivables-ag
 ### T37 authority conflict and effective handling — 2026-10-31
 
 The canonical T37 task page includes an “OWNER DECISION — T37 Shared Financial Contract v1.0.1” section stating Product Owner approval on 2026-10-30 for bounded operational policies. The Master Task Plan and later Master authority reconciliation still classify T37 overall as PARTIALLY COMPLETE / DRAFT / NOT APPROVED and require fail-closed handling until scope is reconciled. The Operating Model preserves both statements. Under the current project-level instruction, candidate historical-as-of, allocation-eligibility, over-allocation and settlement semantics remain blocked until Master explicitly confirms which v1.0.1 decisions are effective. The separately approved Payroll Privacy v1.0 scope remains narrow and independent.
+
+
+## T40 issue-level source audit — 2026-10-31 (read-only)
+
+This addendum records source evidence from GitHub main `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`. It does not implement or approve new financial behavior. Issue status and acceptance are separate from source presence.
+
+### Issue #82 — Receivables aging
+
+- The read-only `GET /reports/receivables-aging` endpoint already exists on main. The current implementation reads issued invoices and recorded PaymentAllocation/Payment records, keeps currencies separate, reports currency mismatch and over-allocation warnings, and uses an explicit `as_of` date or a default date. This is the previously delivered baseline, not proof that the open issue's full acceptance is complete.
+- PR #304 adds candidate historical-as-of/event-time and allocation-eligibility behavior plus optional row pagination. Those candidate financial rules remain gated by the unresolved T37 authority decision. The pagination portion is a transport concern, but the shared endpoint writer and the report UI/API files still need an explicit integration sequence.
+- The main-branch frontend `receivablesAging()` client currently sends only `as_of`; it has no `limit`/`offset` parameters. The Reports UI is in Master-owned `app.component.ts`; no Chat 3 edits were made there.
+- Safe remaining work before policy approval: source/response contract documentation and tests for date parsing/transport validation that do not assert a new receivable formula. Do not change allocation eligibility, cutoff basis or outstanding-balance formula without the reconciled T37 decision.
+
+### Issue #83 — Expense categories and evidence
+
+- Main `Expense` stores `category` (a free-form string), `description`, amount/currency, `incurred_at`, optional `vendor_name` and optional `reference`. The current `ExpenseInput` mirrors those fields.
+- The expense CSV export is OWNER-only and currently exports id, category, description, amount, currency, incurred date, vendor and reference. No receipt/evidence metadata is included.
+- The inspected main model inventory has no expense-category registry and no receipt/attachment/evidence model. The expense API has no upload/attachment endpoint, and the repository search found no private object-storage upload implementation. Therefore the issue's configurable categories and receipt metadata/private-storage acceptance are not implemented on main.
+- No paid storage service should be introduced. Before attachment implementation, the owner must approve the evidence metadata contract, private storage provider/bucket policy (or a zero-cost self-hosted alternative), maximum size/MIME allowlist, retention/deletion rules, malware/content validation, download authorization and CSV export representation. Do not accept public URLs or arbitrary caller-supplied storage paths.
+- Category-only configuration may be separable from accounting policy, but it still needs an explicit feature contract and an assigned writer for the expense API/UI. No schema or shared frontend change was made in this audit.
+
+### Issue #85 — Tax configuration and reporting
+
+- Main `Invoice` persists `tax_total`; `Business` has no tax-jurisdiction/configuration fields in the inspected model. The operational tax summary aggregates stored tax totals for issued invoices and groups by currency.
+- The source does not establish jurisdiction, inclusive/exclusive behavior, exemptions, tax point, filing period, tax rounding for the configured jurisdiction or filing output. The existing report is not a compliance filing.
+- Date filtering and currency separation do not resolve tax policy. No tax rates, jurisdiction defaults, exemptions, tax-inclusive calculation, retroactive recalculation or return treatment may be inferred from the current data.
+- Implementation remains blocked on a versioned owner/accountant decision covering jurisdiction, inclusive/exclusive basis, exemption cases, rounding, tax point, historical invoice treatment, returns/credit notes and report/filing scope. No tax schema/API change was made.
+
+### Issue #86 — Bank and cash reconciliation
+
+- The inspected main SQLAlchemy model inventory includes Payment, PaymentAllocation and Expense, but no BankStatement, BankStatementRow, Cashbox, CashTransaction, Reconciliation or ReconciliationMatch model.
+- Expense records an incurred cost; it is not evidence of a cash disbursement. Recorded payments and invoice allocations are separate source records. No bank integration or statement-import/reconciliation API was found in the inspected source.
+- The issue's CSV import, duplicate detection, matching, reconciliation status and difference reporting require a source-event and matching contract: supported statement columns, account/currency identity, stable row fingerprint, duplicate policy, match candidate rules, manual override/audit behavior, partial matches, reversals and no-side-effect guarantees.
+- This is blocked pending T37/M07 financial-source and settlement approval plus owner approval of import/evidence and data-retention behavior. No bank integration, schema, migration, cash balance or posting logic was added.
+
+### Synthetic report source worksheet — no unapproved formula
+
+| Synthetic source row | What it proves | What it must not be treated as |
+| --- | --- | --- |
+| Issued Invoice with a stored total | An issued invoice source exists; its currency and issue date can be identified | Cash received, tax filing liability, net profit or COGS |
+| Recorded Payment with a received date | A receipt event was recorded in its own currency | A second receipt when linked through an allocation |
+| PaymentAllocation linked to an invoice | A relationship/amount allocation was recorded | A new payment event or an FX conversion |
+| Expense with an incurred date | An expense/cost record was incurred and recorded | Proof of approval, settlement, bank debit or cash outflow |
+| Payroll-linked expense reference | A cross-module sensitive relationship may exist | Permission to expose it to STAFF or infer payout/cash semantics beyond the approved privacy contract |
+| Invoice with stored tax_total | A previously persisted tax amount is available for operational summary | A jurisdiction-specific tax calculation or filed return |
+
+Acceptance invariants for source-level tests: preserve tenant scoping; preserve separate currency groups; do not double-count Payment and PaymentAllocation as receipts; do not infer cash from issued invoices or incurred Expense rows; do not call the current P&L net profit; do not derive tax policy or unapproved receivable formulas from synthetic fixtures. Expected numeric values for T37-gated metrics are intentionally omitted.
+
+### Current owner-gated sequence
+
+1. Chat 3 can continue read-only source mapping, incurred-vs-paid audits, date/timezone boundary review and synthetic worksheet/test design that does not encode unapproved formulas.
+2. Category/evidence contract and writer assignment are required before implementing #83.
+3. T37/M07 versioned tax decision is required before #85 tax-configuration implementation.
+4. T37/M07 settlement/reconciliation contract and owner-approved import/evidence policy are required before #86 implementation.
+5. Master must assign the Reports UI/API writer and integrate the existing #304 candidate with the concurrent T41 branch before UI pagination work.
+6. Runtime tests, supported-PostgreSQL tests, frontend build/browser E2E and security scans remain NOT RUN; do not mark any issue verified from source review alone.
+
+Source refs: `backend/app/models.py` blob `b2aefb5d4d66d47b52fb1954f4ef06611d07ad2f`; `backend/app/extended_api.py` blob `0c2f7a7d67e34996272d2baee0302b0d51f150ba`; `backend/app/core_features_api.py` blob `3f250d241d82351b234ed8623f90ddcc9ab84665`; `frontend/src/app/api.service.ts` blob `dfbdd923aeb91778df1c79b774b8c463f8e3f8af`. All are main-branch source snapshots, not runtime verification.
