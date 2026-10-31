@@ -1205,3 +1205,118 @@ def test_purchase_order_approval_is_owner_only_and_has_no_stock_posting_side_eff
         assert saved_owner_order.status == "approved"
         assert len(approval_audits) == 1
         assert stock_movements == []
+
+
+def test_purchase_order_activity_history_paginates_and_cancel_denials_have_no_side_effects(
+    purchasing_workspace,
+):
+    engine, business_id, owner_principal = purchasing_workspace
+    outsider_principal = AuthenticatedPrincipal(subject="t39-cancel-outsider")
+
+    with Session(engine) as session:
+        order, line, product = _approved_order(
+            session, business_id, owner_principal, quantity=Decimal("4.000")
+        )
+        order_id = order.id
+        session.commit()
+
+        # Two partial receipts create two independent lifecycle events.
+        receive_purchase_order(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line.id: Decimal("1.000")},
+        )
+        receive_purchase_order(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line.id: Decimal("1.000")},
+        )
+
+    with Session(engine) as session:
+        first_page = get_purchase_order_activity(
+            business_id=business_id,
+            order_id=order_id,
+            limit=1,
+            offset=0,
+            session=session,
+            principal=owner_principal,
+        )
+        second_page = get_purchase_order_activity(
+            business_id=business_id,
+            order_id=order_id,
+            limit=1,
+            offset=1,
+            session=session,
+            principal=owner_principal,
+        )
+        assert len(first_page) == len(second_page) == 1
+        assert first_page[0]["id"] != second_page[0]["id"]
+        assert first_page[0]["action"] == second_page[0]["action"] == "purchase_order.received"
+
+    with Session(engine) as session:
+        foreign_business = Business(name="T39 Cancel Isolation Shop", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        foreign_business_id = foreign_business.id
+        foreign_principal = AuthenticatedPrincipal(subject="t39-cancel-foreign-owner")
+        session.add(BusinessMembership(
+            business_id=foreign_business_id,
+            user_subject=foreign_principal.subject,
+            role=MembershipRole.OWNER,
+        ))
+        session.commit()
+        foreign_order, foreign_line, _ = _approved_order(
+            session, foreign_business_id, foreign_principal, quantity=Decimal("2.000")
+        )
+        foreign_order_id = foreign_order.id
+        session.commit()
+
+    with Session(engine) as session:
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id.in_([business_id, foreign_business_id])
+            )
+        )
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id.in_([business_id, foreign_business_id])
+            )
+        )
+
+        with pytest.raises(HTTPException) as outsider_denied:
+            cancel_purchase_order(
+                business_id=business_id,
+                order_id=order_id,
+                session=session,
+                principal=outsider_principal,
+            )
+        assert outsider_denied.value.status_code == 403
+        session.rollback()
+
+        with pytest.raises(HTTPException) as foreign_denied:
+            cancel_purchase_order(
+                business_id=business_id,
+                order_id=foreign_order_id,
+                session=session,
+                principal=owner_principal,
+            )
+        assert foreign_denied.value.status_code == 422
+        session.rollback()
+        session.expire_all()
+
+        assert session.get(PurchaseOrder, order_id).status == "partially_received"
+        assert session.get(PurchaseOrder, foreign_order_id).status == "approved"
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id.in_([business_id, foreign_business_id])
+            )
+        ) == movement_count_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id.in_([business_id, foreign_business_id])
+            )
+        ) == audit_count_before
