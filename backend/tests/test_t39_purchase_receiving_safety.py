@@ -665,7 +665,7 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
         order, line, product = _approved_order(
             session, business_id, owner_principal, quantity=Decimal("10.000")
         )
-        supplier_id, order_id = order.supplier_id, order.id
+        supplier_id, order_id, product_id = order.supplier_id, order.id, product.id
         receive_purchase_order(
             session,
             principal=owner_principal,
@@ -673,8 +673,45 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
             purchase_order_id=order_id,
             received_quantities={line.id: Decimal("2.000")},
         )
+        receive_purchase_order(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line.id: Decimal("3.000")},
+        )
+
+        usd_order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier_id,
+            order_number="PO-T39-USD-SUMMARY",
+            status="draft",
+            currency_code="USD",
+            total=Decimal("5.00"),
+        )
+        session.add(usd_order)
+        session.flush()
+        session.add(PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=usd_order.id,
+            product_id=product_id,
+            quantity=Decimal("1.000"),
+            unit_cost=Decimal("5.00"),
+            received_quantity=Decimal("0.000"),
+        ))
         session.commit()
 
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as cancel_denied:
+            cancel_purchase_order(
+                business_id=business_id,
+                order_id=order_id,
+                session=session,
+                principal=owner_principal,
+            )
+        assert cancel_denied.value.status_code == 422
+
+    with Session(engine) as session:
         foreign_business = Business(name="T39 Foreign Shop", currency_code="EGP")
         session.add(foreign_business)
         session.flush()
@@ -765,14 +802,35 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
         )
         assert supplier_view["id"] == str(supplier_id)
         assert order_view["status"] == "partially_received"
-        assert order_view["lines"][0]["remaining_quantity"] == "8.000"
-        assert any(item["action"] == "purchase_order.received" for item in activity)
-        assert len(receipts) == 1
-        assert receipts[0]["quantity"] == "2.000"
-        assert len(summary["groups"]) == 1
-        assert summary["groups"][0]["currency_code"] == "EGP"
-        assert summary["groups"][0]["status"] == "partially_received"
-        assert len(listing) == 1
+        assert order_view["lines"][0]["remaining_quantity"] == "5.000"
+        assert len(activity) == 2
+        assert all(item["action"] == "purchase_order.received" for item in activity)
+        assert len(receipts) == 2
+        page_one = list_purchase_order_receipts(
+            business_id=business_id, order_id=order_id, limit=1, offset=0,
+            session=session, principal=staff_principal,
+        )
+        page_two = list_purchase_order_receipts(
+            business_id=business_id, order_id=order_id, limit=1, offset=1,
+            session=session, principal=staff_principal,
+        )
+        assert len(page_one) == len(page_two) == 1
+        assert page_one[0]["id"] != page_two[0]["id"]
+        assert {page_one[0]["quantity"], page_two[0]["quantity"]} == {"2.000", "3.000"}
+        assert len(summary["groups"]) == 2
+        groups = {(item["status"], item["currency_code"]): item for item in summary["groups"]}
+        assert set(groups) == {("partially_received", "EGP"), ("draft", "USD")}
+        assert groups[("partially_received", "EGP")]["total"] == "100.00"
+        assert groups[("draft", "USD")]["total"] == "5.00"
+        assert len(listing) == 2
+        cancel_audits = session.scalars(
+            select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.cancelled",
+                AuditEvent.target_id == str(order_id),
+            )
+        ).all()
+        assert cancel_audits == []
 
     foreign_reads = (
         lambda session: get_supplier(
