@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { moveInvoiceDraftLine, toInvoiceDraftPayload, validateInvoiceDraft, type InvoiceDraftInput, type InvoiceDraftProduct } from './invoice-draft.ts';
+import { moveInvoiceDraftLine, removeInvoiceDraftLine, toInvoiceDraftPayload, validateInvoiceDraft, type InvoiceDraftInput, type InvoiceDraftProduct } from './invoice-draft.ts';
 
 const products: InvoiceDraftProduct[] = [
   { id: 'p-1', name: 'Product 1', unit_price: '12.50' },
@@ -97,4 +97,12 @@ test('all invoice draft validation messages are localized for Arabic and preserv
     assert.equal(localizeInvoiceDraftValidationMessage(message, 'en'), message);
   }
   assert.equal(localizeInvoiceDraftValidationMessage('Unknown validation error', 'ar'), 'Unknown validation error');
+});
+
+test('line removal preserves remaining order and always keeps one editable line', () => {
+  const lines = ['first', 'second', 'third'];
+  assert.deepEqual(removeInvoiceDraftLine(lines, 1), ['first', 'third']);
+  assert.deepEqual(removeInvoiceDraftLine(lines, -1), lines);
+  assert.deepEqual(removeInvoiceDraftLine(lines, 3), lines);
+  assert.deepEqual(removeInvoiceDraftLine(['only'], 0), ['only']);
 });
