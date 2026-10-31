@@ -414,9 +414,9 @@ export class EmployeePayrollComponent implements OnChanges {
           if (this.hasSelectedPayrollEmployeeOption) {
             this.selectedPayrollEmployeeFallback = '';
           } else if (!this.editingPayrollId) {
-            const firstActive = this.payrollEmployeeOptions[0];
-            this.payrollEmployeeId = firstActive?.id || '';
-            this.selectedPayrollEmployeeFallback = firstActive?.name || '';
+            // Never preselect an arbitrary employee for a financial payroll action.
+            this.payrollEmployeeId = '';
+            this.selectedPayrollEmployeeFallback = '';
           }
         } catch (error) {
           if (pickerSequence === this.pickerLoadSequence && this.businessId === businessId) {
@@ -487,9 +487,9 @@ export class EmployeePayrollComponent implements OnChanges {
       if (this.hasSelectedPayrollEmployeeOption) {
         this.selectedPayrollEmployeeFallback = '';
       } else if (!this.editingPayrollId) {
-        const firstActive = this.payrollEmployeeOptions[0];
-        this.payrollEmployeeId = firstActive?.id || '';
-        this.selectedPayrollEmployeeFallback = firstActive?.name || '';
+        // Never preselect an arbitrary employee for a financial payroll action.
+        this.payrollEmployeeId = '';
+        this.selectedPayrollEmployeeFallback = '';
       }
     } catch (error) {
       if (sequence === this.pickerLoadSequence && this.businessId === businessId) {
