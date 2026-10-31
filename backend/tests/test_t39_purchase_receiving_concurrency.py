@@ -788,7 +788,7 @@ def test_postgres_po_approval_and_receipt_share_stable_product_lock_order():
             normalized = " ".join(statement.lower().split())
             if " from products " in normalized and " for update" in normalized and " in (" in normalized:
                 assert " order by products.id" in normalized
-                worker_state.checked = True
+                checked_lock_queries.append(normalized)
 
         event.listen(engine, "after_cursor_execute", assert_stable_product_lock_order)
         listener_registered = True
