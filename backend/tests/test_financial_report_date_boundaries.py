@@ -8,13 +8,14 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import Base, Business, Expense, Invoice
+from app.models import Base, Business, Customer, Expense, Invoice, Payment, PaymentAllocation
 from app.security import AuthenticatedPrincipal
 
 
@@ -741,5 +742,112 @@ def test_cairo_dst_end_date_filters_use_the_25_hour_local_day():
         assert tax_summary.json()["currencies"] == [
             {"currency_code": "EGP", "tax_total": "5.00", "invoice_count": 2}
         ]
+    finally:
+        _restore_date_filter_client(engine, previous_factory, previous_resolver)
+
+
+
+@pytest.mark.parametrize(
+    ("date_params", "expected_total", "expected_balance"),
+    [
+        ({"from_date": "2026-01-15"}, 4, Decimal("150.00")),
+        ({"to_date": "2026-01-15"}, 2, Decimal("75.00")),
+        (
+            {"from_date": "2026-01-15", "to_date": "2026-01-15"},
+            2,
+            Decimal("75.00"),
+        ),
+    ],
+    ids=("start-only", "end-only", "combined"),
+)
+def test_customer_statement_date_filters_use_business_local_invoice_and_payment_dates(
+    date_params, expected_total, expected_balance,
+):
+    """Cairo local Jan 15 includes UTC Jan 14 22:xx and excludes Jan 15 22:xx."""
+    engine, client, previous_factory, previous_resolver = _date_filter_client()
+    try:
+        business_id = _create_business(client)
+        with Session(engine) as session:
+            customer = Customer(
+                business_id=business_id,
+                name="Customer Statement Local-Date Regression",
+            )
+            session.add(customer)
+            session.flush()
+
+            local_day_invoice = Invoice(
+                business_id=business_id,
+                customer_id=customer.id,
+                invoice_number="STATEMENT-LOCAL-DAY",
+                status="issued",
+                currency_code="EGP",
+                issue_date=datetime(2026, 1, 14, 22, 30, tzinfo=timezone.utc),
+                subtotal=Decimal("100.00"),
+                discount_total=Decimal("0.00"),
+                tax_total=Decimal("0.00"),
+                total=Decimal("100.00"),
+            )
+            next_local_day_invoice = Invoice(
+                business_id=business_id,
+                customer_id=customer.id,
+                invoice_number="STATEMENT-NEXT-LOCAL-DAY",
+                status="issued",
+                currency_code="EGP",
+                issue_date=datetime(2026, 1, 15, 22, 30, tzinfo=timezone.utc),
+                subtotal=Decimal("100.00"),
+                discount_total=Decimal("0.00"),
+                tax_total=Decimal("0.00"),
+                total=Decimal("100.00"),
+            )
+            session.add_all([local_day_invoice, next_local_day_invoice])
+            session.flush()
+
+            local_day_payment = Payment(
+                business_id=business_id,
+                customer_id=customer.id,
+                amount=Decimal("25.00"),
+                currency_code="EGP",
+                received_at=datetime(2026, 1, 14, 22, 45, tzinfo=timezone.utc),
+                idempotency_key="statement-local-day-payment",
+            )
+            next_local_day_payment = Payment(
+                business_id=business_id,
+                customer_id=customer.id,
+                amount=Decimal("25.00"),
+                currency_code="EGP",
+                received_at=datetime(2026, 1, 15, 22, 45, tzinfo=timezone.utc),
+                idempotency_key="statement-next-local-day-payment",
+            )
+            session.add_all([local_day_payment, next_local_day_payment])
+            session.flush()
+            session.add_all([
+                PaymentAllocation(
+                    business_id=business_id,
+                    payment_id=local_day_payment.id,
+                    invoice_id=local_day_invoice.id,
+                    amount=Decimal("25.00"),
+                ),
+                PaymentAllocation(
+                    business_id=business_id,
+                    payment_id=next_local_day_payment.id,
+                    invoice_id=next_local_day_invoice.id,
+                    amount=Decimal("25.00"),
+                ),
+            ])
+            session.commit()
+            customer_id = customer.id
+
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement",
+            params=date_params,
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["total"] == expected_total
+        assert len(payload["items"]) == expected_total
+        assert payload["balances_by_currency"] == {"EGP": str(expected_balance)}
+        assert {
+            item["event_type"] for item in payload["items"]
+        } == {"invoice_issued", "payment_allocation"}
     finally:
         _restore_date_filter_client(engine, previous_factory, previous_resolver)

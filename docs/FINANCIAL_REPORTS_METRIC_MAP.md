@@ -350,3 +350,13 @@ The code paths reviewed are `backend/app/core_features_api.py` (dashboard and P&
 - No CI workflow was triggered or retried; this commit is marked `[skip ci]`.
 
 - Regression inventory after this PostgreSQL case: **35 T40-targeted + 27 related = 62 authored tests**. All remain **NOT RUN** pending an authorized runner; source presence is not execution evidence.
+
+
+
+### Customer statement business-local date gap — Master handoff required — 2026-10-31
+
+- Read-only inspection of the current T40 branch's `backend/app/extended_api.py::customer_statement()` confirms both invoice and payment-allocation events are filtered with `occurred_at.date()` (UTC calendar date), not the Business IANA timezone. For Cairo, `2026-01-14T22:30Z` is Jan 15 00:30 local but is treated as Jan 14; `2026-01-15T22:30Z` is Jan 16 00:30 local but is treated as Jan 15.
+- Added a T40-owned, parametrized test-only regression to `backend/tests/test_financial_report_date_boundaries.py` for start-only, end-only and combined filters. It asserts that Jan 15 local invoice and allocation events are included, while Jan 16 local events are excluded.
+- **BLOCKED:** `extended_api.py` is a shared file with a separate single-writer boundary. No source edit was made. Master must issue an explicit handoff/ownership decision before Chat 3 changes the endpoint. The new regression is authored but not run; its expected result against the current source is not yet verified.
+- This is a date-filter correction only if/when authorized. Do not alter statement allocation, balance, receivables-as-of, settlement, tax or other financial semantics.
+- Updated authored inventory: **38 T40-targeted + 27 related = 65 test cases**, all **NOT RUN**.
