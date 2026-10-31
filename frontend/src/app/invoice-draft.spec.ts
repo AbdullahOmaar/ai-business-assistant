@@ -79,10 +79,22 @@ test('line reorder preserves each line and does not move beyond either boundary'
   assert.deepEqual(moveInvoiceDraftLine(lines, 2, 1), lines);
 });
 
-test('validation messages are localized for Arabic and preserve English fallback', async () => {
+test('all invoice draft validation messages are localized for Arabic and preserve English fallback', async () => {
   const { localizeInvoiceDraftValidationMessage } = await import('./invoice-draft.ts');
-  const message = 'Choose a customer before saving the invoice.';
-  assert.equal(localizeInvoiceDraftValidationMessage(message, 'ar'), 'اختَر العميل قبل حفظ الفاتورة.');
-  assert.equal(localizeInvoiceDraftValidationMessage(message, 'en'), message);
+  const messages = [
+    'Choose a customer before saving the invoice.',
+    'A workspace currency is required.',
+    'Add at least one invoice line.',
+    'Discount and tax rates must be between 0 and 100.',
+    'Every line must have a positive quantity with at most three decimal places.',
+    'Choose a valid catalog product for every product line.',
+    'Every manual line needs a description of 1 to 500 characters.',
+    'Every manual line needs a non-negative unit price with at most two decimal places.',
+  ];
+  for (const message of messages) {
+    const arabic = localizeInvoiceDraftValidationMessage(message, 'ar');
+    assert.ok(arabic && arabic !== message, 'Arabic translation missing for: ' + message);
+    assert.equal(localizeInvoiceDraftValidationMessage(message, 'en'), message);
+  }
   assert.equal(localizeInvoiceDraftValidationMessage('Unknown validation error', 'ar'), 'Unknown validation error');
 });
