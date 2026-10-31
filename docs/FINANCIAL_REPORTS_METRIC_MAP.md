@@ -312,3 +312,12 @@ Acceptance invariants for source-level tests: preserve tenant scoping; preserve 
 6. Runtime tests, supported-PostgreSQL tests, frontend build/browser E2E and security scans remain NOT RUN; do not mark any issue verified from source review alone.
 
 Source refs: `backend/app/models.py` blob `b2aefb5d4d66d47b52fb1954f4ef06611d07ad2f`; `backend/app/extended_api.py` blob `0c2f7a7d67e34996272d2baee0302b0d51f150ba`; `backend/app/core_features_api.py` blob `3f250d241d82351b234ed8623f90ddcc9ab84665`; `frontend/src/app/api.service.ts` blob `dfbdd923aeb91778df1c79b774b8c463f8e3f8af`. All are main-branch source snapshots, not runtime verification.
+
+### Payroll privacy — AI provider payload and application-log regression — 2026-10-31
+
+The existing broad-surface STAFF privacy regression on the canonical T40 branch was strengthened to validate the provider-backed AI path, not only the fallback chat response. Its ordinary visible expense deliberately carries payroll-like mutable text (category=Payroll, reference=payroll:spoofed-reference) to prove the authoritative same-business `PayrollRecord.expense_id` relationship—not labels or free-text—defines privacy. The test captures the outbound provider payload and application logs and asserts that the payroll employee name, payroll amount, payroll reference and payroll record identifier are absent. It also compares read-only Employee/PayrollRecord/Expense/AuditEvent counts before and after STAFF read/denied-export paths, while preserving OWNER-positive access.
+
+- Existing test function strengthened in `backend/tests/test_employee_payroll_api.py`; no new test case was added.
+- Code commit: `cba5bd3f7b6115dc54a9f8dd2c2b36cab4e10d36`.
+- Current source-authored T40 inventory remains **35 targeted + 26 related = 61 cases**; all are **NOT RUN**. This source update and GitHub readback do not prove runtime execution.
+- No financial formula, payroll calculation/state, schema, migration, posting, production data, merge or deployment behavior changed.
