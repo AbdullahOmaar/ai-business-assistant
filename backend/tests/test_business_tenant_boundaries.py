@@ -294,6 +294,25 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         audit_b_before = client.get(f"/api/v1/businesses/{business_b_id}/audit-events")
         assert audit_b_before.status_code == 200, audit_b_before.text
 
+        business_ids = (UUID(business_a_id), UUID(business_b_id))
+
+        def all_business_rows():
+            """Snapshot every persisted row belonging to either tenant, including Business and AuditEvent."""
+            with app.state.session_factory() as session:
+                snapshot = []
+                for table in Base.metadata.sorted_tables:
+                    if "business_id" in table.c:
+                        statement = table.select().where(table.c.business_id.in_(business_ids))
+                    elif table.name == "businesses":
+                        statement = table.select().where(table.c.id.in_(business_ids))
+                    else:
+                        continue
+                    primary_key = list(table.primary_key.columns)
+                    if primary_key:
+                        statement = statement.order_by(*primary_key)
+                    snapshot.append((table.name, tuple(tuple(row) for row in session.execute(statement).all())))
+                return tuple(snapshot)
+
         # Snapshot the full foreign invoice and its line records before denied
         # requests so a rejected PATCH/VOID cannot silently mutate child rows.
         with app.state.session_factory() as session:
@@ -328,12 +347,12 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
         app.state.principal_resolver = lambda request: AuthenticatedPrincipal("tenant-a-owner")
         base_a = f"/api/v1/businesses/{business_a_id}"
         denied = [
-            ("GET customer", client.get(f"{base_a}/customers/{customer_id}")),
-            ("GET product", client.get(f"{base_a}/products/{product_id}")),
-            ("GET invoice", client.get(f"{base_a}/invoices/{invoice_id}")),
-            ("PATCH customer", client.patch(f"{base_a}/customers/{customer_id}", json={"name": "Tampered customer"})),
-            ("PATCH product", client.patch(f"{base_a}/products/{product_id}", json={"name": "Tampered product"})),
-            ("PATCH invoice", client.patch(
+            ("GET customer", lambda: client.get(f"{base_a}/customers/{customer_id}")),
+            ("GET product", lambda: client.get(f"{base_a}/products/{product_id}")),
+            ("GET invoice", lambda: client.get(f"{base_a}/invoices/{invoice_id}")),
+            ("PATCH customer", lambda: client.patch(f"{base_a}/customers/{customer_id}", json={"name": "Tampered customer"})),
+            ("PATCH product", lambda: client.patch(f"{base_a}/products/{product_id}", json={"name": "Tampered product"})),
+            ("PATCH invoice", lambda: client.patch(
                 f"{base_a}/invoices/{invoice_id}",
                 json={
                     "invoice_number": "INV-FOREIGN-TAMPER",
@@ -344,12 +363,12 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
                     "lines": [{"description": "Tampered line", "quantity": "1", "unit_price": "1.00"}],
                 },
             )),
-            ("VOID invoice", client.post(
+            ("VOID invoice", lambda: client.post(
                 f"{base_a}/invoices/{invoice_id}/void",
                 json={"reason": "Cross-tenant void attempt"},
             )),
-            ("DELETE customer", client.delete(f"{base_a}/customers/{customer_id}")),
-            ("DELETE product", client.delete(f"{base_a}/products/{product_id}")),
+            ("DELETE customer", lambda: client.delete(f"{base_a}/customers/{customer_id}")),
+            ("DELETE product", lambda: client.delete(f"{base_a}/products/{product_id}")),
         ]
         expected_statuses = {
             "GET customer": 404,
@@ -362,11 +381,16 @@ def test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects()
             "DELETE customer": 404,
             "DELETE product": 404,
         }
-        for label, response in denied:
+        for label, request in denied:
+            before = all_business_rows()
+            response = request()
             expected_status = expected_statuses[label]
             assert response.status_code == expected_status, (
                 f"{label} expected HTTP {expected_status}; "
                 f"got {response.status_code}: {response.text}"
+            )
+            assert all_business_rows() == before, (
+                f"{label} changed persisted tenant rows or AuditEvent after denial"
             )
             if label in {"PATCH invoice", "VOID invoice"}:
                 # A 422 alone is ambiguous: assert the route rejected the
