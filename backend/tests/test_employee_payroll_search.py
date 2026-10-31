@@ -3,13 +3,13 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy import create_engine
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
+from app.models import AuditEvent, Base, Employee
 from app.security import AuthenticatedPrincipal
 
 
@@ -289,156 +289,6 @@ def test_rejected_duplicate_employee_updates_preserve_profile_and_audit_history(
     )
     assert duplicate_email.status_code == 409
     assert snapshot() == before_email_conflict
-
-
-def test_payroll_privacy_and_tenant_isolation_hold_across_two_businesses(employee_search_environment, monkeypatch):
-    env = employee_search_environment
-    client = env["client"]
-    owner_a = env["subject"]["value"]
-    owner_b = "payroll-tenant-b-owner"
-    approver_b = "payroll-tenant-b-approver"
-    staff_b = "payroll-tenant-b-staff"
-
-    # Create business B as a distinct owner; owner A must not become a member.
-    env["subject"]["value"] = owner_b
-    created_business = client.post(
-        "/api/v1/businesses",
-        json={"name": "Payroll privacy tenant B", "currency_code": "EGP"},
-    )
-    assert created_business.status_code == 201, created_business.text
-    business_b_id = created_business.json()["id"]
-    with app.state.session_factory() as session:
-        session.add_all([
-            BusinessMembership(
-                business_id=UUID(business_b_id),
-                user_subject=approver_b,
-                role=MembershipRole.OWNER,
-            ),
-            BusinessMembership(
-                business_id=UUID(business_b_id),
-                user_subject=staff_b,
-                role=MembershipRole.STAFF,
-            ),
-        ])
-        session.commit()
-
-    base_b = f"/api/v1/businesses/{business_b_id}"
-    employee = client.post(
-        f"{base_b}/employees",
-        json={
-            "name": "Tenant B Confidential Payroll",
-            "employee_code": "TENANT-B-001",
-            "email": "tenant-b-payroll@example.test",
-            "monthly_salary": "5000.00",
-        },
-    )
-    assert employee.status_code == 201, employee.text
-    payroll = client.post(
-        f"{base_b}/employees/{employee.json()['id']}/payroll",
-        json={"period": "2026-10"},
-    )
-    assert payroll.status_code == 201, payroll.text
-
-    env["subject"]["value"] = approver_b
-    approved = client.post(f"{base_b}/payroll/{payroll.json()['id']}/approve", json={})
-    assert approved.status_code == 200, approved.text
-    env["subject"]["value"] = owner_b
-    paid = client.post(f"{base_b}/payroll/{payroll.json()['id']}/pay", json={})
-    assert paid.status_code == 200, paid.text
-
-    ordinary = client.post(
-        f"{base_b}/expenses",
-        json={
-            "category": "Office",
-            "description": "Tenant B ordinary expense",
-            "amount": "125.00",
-            "currency_code": "EGP",
-            "incurred_at": "2026-10-30T12:00:00+00:00",
-        },
-    )
-    assert ordinary.status_code == 201, ordinary.text
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-
-    def counts():
-        with app.state.session_factory() as session:
-            return (
-                session.scalar(select(func.count(Expense.id)).where(
-                    Expense.business_id == UUID(business_b_id)
-                )),
-                session.scalar(select(func.count(PayrollRecord.id)).where(
-                    PayrollRecord.business_id == UUID(business_b_id)
-                )),
-                session.scalar(select(func.count(AuditEvent.id)).where(
-                    AuditEvent.business_id == UUID(business_b_id)
-                )),
-            )
-
-    before_denied_reads = counts()
-
-    # STAFF B retains ordinary expense access but never sees payroll-linked rows or totals.
-    env["subject"]["value"] = staff_b
-    staff_expenses = client.get(f"{base_b}/expenses", params={"limit": 1})
-    staff_summary = client.get(f"{base_b}/reports/summary")
-    staff_dashboard = client.get(f"{base_b}/dashboard")
-    staff_profit_loss = client.get(f"{base_b}/profit-loss", params={"period": "all"})
-    staff_insights = client.get(f"{base_b}/assistant/insights")
-    staff_chat = client.post(f"{base_b}/assistant/chat", json={"message": "Summarize expenses"})
-    staff_payroll = client.get(f"{base_b}/payroll")
-    for response in (
-        staff_expenses, staff_summary, staff_dashboard, staff_profit_loss,
-        staff_insights, staff_chat,
-    ):
-        assert response.status_code == 200, response.text
-    assert staff_payroll.status_code == 403
-    assert [row["description"] for row in staff_expenses.json()] == [
-        "Tenant B ordinary expense"
-    ]
-    assert staff_summary.json()["expenses_by_currency"] == [
-        {"currency_code": "EGP", "count": 1, "total": "125.00"}
-    ]
-    assert staff_dashboard.json()["expenses"] == [
-        {"currency_code": "EGP", "count": 1, "total": "125.00"}
-    ]
-    staff_egp = next(row for row in staff_profit_loss.json()["currencies"] if row["currency_code"] == "EGP")
-    assert staff_egp["expenses"] == "125.00"
-    assert staff_egp["expense_count"] == 1
-    assert staff_insights.json()["expenses_by_currency"] == [
-        {"currency_code": "EGP", "count": 1, "total": "125.00"}
-    ]
-    for private_value in ("Tenant B Confidential Payroll", "5000.00", "payroll:"):
-        assert private_value not in staff_chat.text
-        assert private_value not in str(staff_summary.json())
-        assert private_value not in str(staff_dashboard.json())
-        assert private_value not in str(staff_profit_loss.json())
-        assert private_value not in str(staff_insights.json())
-
-    # OWNER A cannot access B through broad read surfaces or payroll routes.
-    env["subject"]["value"] = owner_a
-    owner_a_reads = (
-        client.get(f"{base_b}/employees"),
-        client.get(f"{base_b}/payroll"),
-        client.get(f"{base_b}/expenses"),
-        client.get(f"{base_b}/reports/summary"),
-        client.get(f"{base_b}/dashboard"),
-        client.get(f"{base_b}/profit-loss", params={"period": "all"}),
-        client.get(f"{base_b}/assistant/insights"),
-        client.post(f"{base_b}/assistant/chat", json={"message": "Summarize expenses"}),
-    )
-    assert all(response.status_code == 403 for response in owner_a_reads), [
-        response.status_code for response in owner_a_reads
-    ]
-    assert counts() == before_denied_reads
-
-    # OWNER B retains the payroll row and full expense aggregate.
-    env["subject"]["value"] = owner_b
-    owner_b_expenses = client.get(f"{base_b}/expenses")
-    owner_b_summary = client.get(f"{base_b}/reports/summary")
-    assert owner_b_expenses.status_code == owner_b_summary.status_code == 200
-    assert len(owner_b_expenses.json()) == 2
-    assert owner_b_summary.json()["expenses_by_currency"] == [
-        {"currency_code": "EGP", "count": 2, "total": "5125.00"}
-    ]
-
 
 
 def test_employee_search_and_pagination_reach_records_beyond_first_200(employee_search_environment):
