@@ -1287,6 +1287,16 @@ def test_purchase_order_activity_history_paginates_and_cancel_denials_have_no_si
             )
         )
 
+        with pytest.raises(HTTPException) as received_order_denied:
+            cancel_purchase_order(
+                business_id=business_id,
+                order_id=order_id,
+                session=session,
+                principal=owner_principal,
+            )
+        assert received_order_denied.value.status_code == 422
+        session.rollback()
+
         with pytest.raises(HTTPException) as outsider_denied:
             cancel_purchase_order(
                 business_id=business_id,
