@@ -68,6 +68,21 @@ export function validateInvoiceDraft(input: InvoiceDraftInput, products: readonl
   return null;
 }
 
+export function localizeInvoiceDraftValidationMessage(message: string, language: 'ar' | 'en'): string {
+  if (language !== 'ar') return message;
+  const arabic: Record<string, string> = {
+    'Choose a customer before saving the invoice.': 'اختَر العميل قبل حفظ الفاتورة.',
+    'A workspace currency is required.': 'عملة مساحة العمل مطلوبة.',
+    'Add at least one invoice line.': 'أضف بندًا واحدًا على الأقل للفاتورة.',
+    'Discount and tax rates must be between 0 and 100.': 'يجب أن تكون نسبتا الخصم والضريبة بين 0 و100.',
+    'Every line must have a positive quantity with at most three decimal places.': 'يجب أن تكون كمية كل بند أكبر من صفر وبحد أقصى 3 خانات عشرية.',
+    'Choose a valid catalog product for every product line.': 'اختَر منتجًا صحيحًا من قائمة المنتجات لكل بند منتج.',
+    'Every manual line needs a description of 1 to 500 characters.': 'يجب أن يحتوي كل بند يدوي على وصف من حرف إلى 500 حرف.',
+    'Every manual line needs a non-negative unit price with at most two decimal places.': 'يجب أن يكون سعر الوحدة للبند اليدوي صفرًا أو أكثر وبحد أقصى خانتين عشريتين.',
+  };
+  return arabic[message] ?? message;
+}
+
 export function toInvoiceDraftPayload(input: InvoiceDraftInput, products: readonly InvoiceDraftProduct[]): InvoiceDraftPayload {
   const error = validateInvoiceDraft(input, products);
   if (error) throw new RangeError(error);
