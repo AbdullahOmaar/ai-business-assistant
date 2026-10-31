@@ -1,7 +1,7 @@
 """Regression coverage for business-local financial report date filters.
 
-These tests are authored for the candidate branch but are intentionally NOT run
-while the owner has asked to pause test execution due to the current CI/usage issue.
+Run only on an authorized local/test runner with a disposable database. Do not
+trigger or retry CI as a substitute for local validation.
 """
 
 from datetime import date, datetime, timezone
