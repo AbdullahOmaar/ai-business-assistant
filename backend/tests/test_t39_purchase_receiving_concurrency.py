@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from fastapi import HTTPException
 
-from app.extended_api import ProductPatch, PurchaseLineInput, PurchaseOrderInput, patch_product, post_purchase_order
+from app.extended_api import ProductPatch, PurchaseLineInput, PurchaseOrderInput, patch_product, post_purchase_order, update_purchase_order
 
 from app.models import (
     AuditEvent,
@@ -548,6 +548,162 @@ def test_postgres_po_create_and_stock_tracking_disable_serialize_on_product_lock
                 assert orders == []
                 assert lines == []
                 assert created_audits == []
+                assert len(product_audits) == 1
+    finally:
+        engine.dispose()
+
+def test_postgres_draft_po_edit_and_stock_tracking_disable_serialize_on_product_lock():
+    """A draft edit cannot race a product into an untracked open-PO reference."""
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if not database_url or not database_url.startswith("postgresql"):
+        pytest.skip("Set TEST_DATABASE_URL to a disposable PostgreSQL database")
+
+    engine = create_engine(database_url, pool_size=5, max_overflow=0)
+    suffix = uuid4().hex[:12]
+    principal = AuthenticatedPrincipal(subject=f"t39-edit-race-owner-{suffix}")
+    try:
+        with Session(engine) as session:
+            business = Business(name=f"T39 edit race {suffix}", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            business_id = business.id
+            session.add(BusinessMembership(
+                business_id=business_id,
+                user_subject=principal.subject,
+                role=MembershipRole.OWNER,
+            ))
+            session.flush()
+            supplier = Supplier(business_id=business_id, name=f"T39 supplier {suffix}")
+            session.add(supplier)
+            session.flush()
+            products = [
+                create_product(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    name=f"T39 edit race product {suffix}-{index}",
+                    unit_price=Decimal("10.00"),
+                    is_stock_tracked=True,
+                )
+                for index in range(2)
+            ]
+            target_product_id, original_product_id = products[0].id, products[1].id
+            session.commit()
+
+        original_body = PurchaseOrderInput(
+            supplier_id=supplier.id,
+            order_number=f"T39-EDIT-RACE-{suffix}",
+            currency_code="EGP",
+            lines=[
+                PurchaseLineInput(
+                    product_id=original_product_id,
+                    quantity=Decimal("1.000"),
+                    unit_cost=Decimal("10.00"),
+                )
+            ],
+        )
+        with Session(engine) as session:
+            created = post_purchase_order(
+                business_id=business_id,
+                body=original_body,
+                session=session,
+                principal=principal,
+            )
+            order_id = UUID(created["id"])
+
+        edit_body = PurchaseOrderInput(
+            supplier_id=supplier.id,
+            order_number=original_body.order_number,
+            currency_code="EGP",
+            lines=[
+                PurchaseLineInput(
+                    product_id=target_product_id,
+                    quantity=Decimal("1.000"),
+                    unit_cost=Decimal("10.00"),
+                )
+            ],
+        )
+        patch = ProductPatch(is_stock_tracked=False)
+        start_together = Barrier(2)
+
+        def edit_order():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                try:
+                    update_purchase_order(
+                        business_id=business_id,
+                        order_id=order_id,
+                        body=edit_body,
+                        session=session,
+                        principal=principal,
+                    )
+                    return "edited"
+                except HTTPException as exc:
+                    if exc.status_code != 422:
+                        raise
+                    session.rollback()
+                    return "rejected"
+
+        def disable_tracking():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                try:
+                    result = patch_product(
+                        business_id=business_id,
+                        product_id=target_product_id,
+                        body=patch,
+                        session=session,
+                        principal=principal,
+                    )
+                    return "disabled", result["is_stock_tracked"]
+                except HTTPException as exc:
+                    if exc.status_code != 422:
+                        raise
+                    session.rollback()
+                    return "rejected", None
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            edit_result, disable_result = list(pool.map(
+                lambda fn: fn(), (edit_order, disable_tracking)
+            ))
+
+        with Session(engine) as session:
+            saved_product = session.get(Product, target_product_id)
+            saved_lines = session.scalars(
+                select(PurchaseOrderLine).where(
+                    PurchaseOrderLine.purchase_order_id == order_id
+                )
+            ).all()
+            edit_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "purchase_order.updated",
+                    AuditEvent.target_id == str(order_id),
+                )
+            ).all()
+            product_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "product.updated",
+                    AuditEvent.target_id == str(target_product_id),
+                )
+            ).all()
+            assert len(saved_lines) == 1
+
+            if edit_result == "edited":
+                assert disable_result[0] == "rejected"
+                assert saved_product.is_stock_tracked is True
+                assert saved_lines[0].product_id == target_product_id
+                assert len(edit_audits) == 1
+                assert product_audits == []
+            else:
+                assert edit_result == "rejected"
+                assert disable_result == ("disabled", False)
+                assert saved_product.is_stock_tracked is False
+                assert saved_lines[0].product_id == original_product_id
+                assert edit_audits == []
                 assert len(product_audits) == 1
     finally:
         engine.dispose()
