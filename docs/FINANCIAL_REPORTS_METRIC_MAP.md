@@ -321,3 +321,30 @@ The existing broad-surface STAFF privacy regression on the canonical T40 branch 
 - Code commit: `cba5bd3f7b6115dc54a9f8dd2c2b36cab4e10d36`.
 - Current source-authored T40 inventory remains **35 targeted + 26 related = 61 cases**; all are **NOT RUN**. This source update and GitHub readback do not prove runtime execution.
 - No financial formula, payroll calculation/state, schema, migration, posting, production data, merge or deployment behavior changed.
+
+
+## Source-to-metric verification and lock-order regression — 2026-10-31
+
+### Current report source map (source review; not runtime verification)
+
+| Report metric | Source records / date basis | Grouping and boundary | Explicit limitation / gate |
+| --- | --- | --- | --- |
+| Issued sales / invoiced revenue | `Invoice.total`, `Invoice.status == issued`, `Invoice.issue_date` | Grouped by `Invoice.currency_code`; dashboard date filter uses business-local date converted to UTC half-open bounds | Includes stored invoice tax; not cash received or profit by itself |
+| Cash collected | `Payment.amount`, `Payment.currency_code`, `Payment.received_at` | Grouped by payment currency; date filter uses recorded receipt timestamp | Distinct from `PaymentAllocation`; allocation is not another cash receipt |
+| Allocated payments / allocation summaries | `PaymentAllocation.amount` joined to `Payment` | Grouped using payment currency in `operations.financial_summary()` | Allocation relationship is not proof of a separate receipt or cashbox movement |
+| Incurred expenses | `Expense.amount`, `Expense.currency_code`, `Expense.incurred_at` | Grouped by expense currency; date filters use business-local bounds; payroll visibility predicate is applied before aggregation | Expense records incurred cost, not approval, settlement or cash outflow |
+| Dashboard outstanding balance | Invoice and allocation source rows with candidate historical cutoff logic | Currency-specific result | Candidate historical-as-of/allocation eligibility behavior remains T37-gated; do not change or approve semantics here |
+| Profit/loss estimate | Issued `Invoice.total`, recorded `Expense.amount`; approved `SalesReturn.total` disclosed separately | Currency-specific revenue/expense groups; custom dates use business-local bounds | COGS and complete tax/return ledger are absent; not net profit; no cash-flow inference |
+| Tax summary | Stored `Invoice.tax_total` on issued invoices | Grouped by invoice currency; issue date filtered by business-local day | Operational summary of stored tax values, not jurisdictional calculation or filing |
+| Receivables aging | Issued invoices plus recorded `PaymentAllocation` / `Payment` source records | Currency-separated buckets and warnings | Historical cutoff/allocation eligibility candidate behavior remains T37-gated |
+| Assistant insights / provider context | Issued `Invoice` rows and recent `Expense` rows | Source rows are business-scoped; expense visibility is filtered by OWNER/STAFF before serialization | AI context is read-only; payroll-linked expense data remains OWNER-only |
+
+The code paths reviewed are `backend/app/core_features_api.py` (dashboard and P&L), `backend/app/extended_api.py` (expense list, summary, tax summary, receivables aging, CSV export and assistant insights), `backend/app/operations.py::financial_summary()`, `backend/app/assistant_api.py` (provider context), and `backend/app/security.py::apply_expense_visibility()`. This mapping describes current source behavior; it does not authorize disputed financial formulas.
+
+### Lock-order regression — purchase-order receiving
+
+- `backend/app/operations.py::receive_purchase_order()` now validates requested lines before locking Product rows, then locks the distinct business-scoped Product set in ascending `Product.id` order in one ordered `SELECT ... FOR UPDATE` query.
+- This removes caller/dictionary-order dependence: two receiving transactions whose purchase orders contain the same products in reverse line order acquire Product locks in the same order. Purchase-order and purchase-order-line locks remain scoped to their own records; no supplier-payable, costing, valuation or accounting semantics were changed.
+- Added `test_concurrent_purchase_receipts_lock_products_in_stable_order` to `backend/tests/test_postgres_financial_concurrency.py`. It creates two approved synthetic purchase orders with opposite product order, synchronizes both transactions immediately before their first Product row-lock query, and verifies both complete with four receipt movements and all line quantities fully received.
+- Test execution requires `CI_ALLOW_DATABASE_SCHEMA_TESTS=true` and a disposable PostgreSQL `TEST_DATABASE_URL` whose database name contains `test`, `ci`, `disposable` or `tmp`. No production database is eligible. Runtime execution remains **NOT RUN** until an authorized disposable PostgreSQL runner is available.
+- No CI workflow was triggered or retried; this commit is marked `[skip ci]`.

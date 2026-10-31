@@ -8,11 +8,11 @@ from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 import os
 import re
-from threading import Barrier
+from threading import Barrier, local
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, func, select, text
+from sqlalchemy import create_engine, event, func, select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
@@ -28,11 +28,14 @@ from app.models import (
     Payment,
     PaymentAllocation,
     Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
     SalesReturn,
+    Supplier,
     SalesReturnLine,
     StockMovement,
 )
-from app.operations import approve_sales_return
+from app.operations import approve_sales_return, receive_purchase_order
 from app.security import AuthenticatedPrincipal
 from app.services import (
     WorkflowError,
@@ -484,3 +487,132 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             "only the winning lifecycle transition may append an audit event"
         )
         assert lifecycle_events[0].action == expected_audit_action
+
+
+
+def test_concurrent_purchase_receipts_lock_products_in_stable_order(
+    postgres_engine, pg_workspace,
+):
+    """Opposite PO line orders must not acquire Product row locks in opposite order."""
+    business_id = pg_workspace["business_id"]
+    principal = pg_workspace["principal"]
+
+    with Session(postgres_engine) as session:
+        supplier = Supplier(business_id=business_id, name="Concurrent receiving supplier")
+        first_product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Receiving product A", unit_price=Decimal("10.00"), is_stock_tracked=True,
+        )
+        second_product = create_product(
+            session, principal=principal, business_id=business_id,
+            name="Receiving product B", unit_price=Decimal("20.00"), is_stock_tracked=True,
+        )
+        session.add(supplier)
+        session.flush()
+
+        orders = []
+        lines_by_order = []
+        for index, products in enumerate((
+            (first_product, second_product),
+            (second_product, first_product),
+        )):
+            order = PurchaseOrder(
+                business_id=business_id,
+                supplier_id=supplier.id,
+                order_number=f"PO-LOCK-ORDER-{index}-{uuid4().hex[:8]}",
+                status="approved",
+                currency_code="EGP",
+                total=Decimal("30.00"),
+            )
+            session.add(order)
+            session.flush()
+            order_lines = []
+            for product in products:
+                line = PurchaseOrderLine(
+                    business_id=business_id,
+                    purchase_order_id=order.id,
+                    product_id=product.id,
+                    quantity=Decimal("1.000"),
+                    unit_cost=Decimal("10.00"),
+                    received_quantity=Decimal("0.000"),
+                )
+                session.add(line)
+                session.flush()
+                order_lines.append(line)
+            orders.append(order)
+            lines_by_order.append(order_lines)
+        session.commit()
+        order_ids = [order.id for order in orders]
+        line_ids = [[line.id for line in rows] for rows in lines_by_order]
+
+    # Synchronize both transactions immediately before their first Product
+    # SELECT ... FOR UPDATE. With caller-order locking, this lets each
+    # transaction hold a different first Product before requesting the other.
+    # Stable ORDER BY makes both transactions request the same first row.
+    first_product_lock_barrier = Barrier(2)
+    thread_state = local()
+
+    def synchronize_first_product_lock(
+        connection, cursor, statement, parameters, context, executemany,
+    ):
+        normalized = statement.casefold()
+        if (
+            "from products" in normalized
+            and "for update" in normalized
+            and not getattr(thread_state, "waited_for_product_lock", False)
+        ):
+            thread_state.waited_for_product_lock = True
+            first_product_lock_barrier.wait(timeout=15)
+
+    def receive(index):
+        quantities = {
+            line_id: Decimal("1.000")
+            for line_id in line_ids[index]
+        }
+        with Session(postgres_engine) as session:
+            try:
+                order = receive_purchase_order(
+                    session,
+                    principal=principal,
+                    business_id=business_id,
+                    purchase_order_id=order_ids[index],
+                    received_quantities=quantities,
+                )
+                session.commit()
+                return ("ok", order.id, order.status)
+            except Exception as exc:
+                session.rollback()
+                return ("error", type(exc).__name__, str(exc))
+
+    event.listen(postgres_engine, "before_cursor_execute", synchronize_first_product_lock)
+    try:
+        results = _run_two_concurrently(receive)
+    finally:
+        event.remove(postgres_engine, "before_cursor_execute", synchronize_first_product_lock)
+
+    assert all(result[0] == "ok" for result in results), results
+    assert all(result[2] == "received" for result in results), results
+
+    with Session(postgres_engine) as session:
+        persisted_orders = session.scalars(
+            select(PurchaseOrder).where(PurchaseOrder.id.in_(order_ids))
+        ).all()
+        assert len(persisted_orders) == 2
+        assert all(order.status == "received" for order in persisted_orders)
+
+        persisted_lines = session.scalars(
+            select(PurchaseOrderLine).where(
+                PurchaseOrderLine.purchase_order_id.in_(order_ids)
+            )
+        ).all()
+        assert len(persisted_lines) == 4
+        assert all(line.received_quantity == Decimal("1.000") for line in persisted_lines)
+
+        receipts = session.scalars(select(StockMovement).where(
+            StockMovement.business_id == business_id,
+            StockMovement.reference_type == "purchase_order",
+            StockMovement.reference_id.in_(order_ids),
+            StockMovement.movement_type == "receipt",
+        )).all()
+        assert len(receipts) == 4
+        assert sum((row.quantity_delta for row in receipts), Decimal("0")) == Decimal("4.000")

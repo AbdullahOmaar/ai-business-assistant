@@ -60,17 +60,31 @@ def receive_purchase_order(
     by_id = {line.id: line for line in lines}
     if not received_quantities:
         raise WorkflowError("At least one received quantity is required")
+
+    requested_lines = []
+    product_ids = set()
     for line_id, quantity in received_quantities.items():
         line = by_id.get(line_id)
         if line is None:
             raise WorkflowError("Purchase order line not found on this order")
         if quantity <= ZERO or line.received_quantity + quantity > line.quantity:
             raise WorkflowError("Received quantity must be positive and cannot exceed ordered quantity")
-        product = session.scalars(select(Product).where(
-            Product.id == line.product_id, Product.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if product is None:
-            raise WorkflowError("Purchase order product not found in this business")
+        requested_lines.append((line, quantity))
+        product_ids.add(line.product_id)
+
+    # Every receiving transaction locks Product rows in the same global order.
+    # Locking one product at a time in caller/dict order can deadlock when two
+    # purchase orders contain the same products in opposite line orders.
+    products = session.scalars(select(Product).where(
+        Product.id.in_(product_ids),
+        Product.business_id == business_id,
+    ).order_by(Product.id).with_for_update()).all()
+    products_by_id = {product.id: product for product in products}
+    if len(products_by_id) != len(product_ids):
+        raise WorkflowError("Purchase order product not found in this business")
+
+    for line, quantity in requested_lines:
+        product = products_by_id[line.product_id]
         line.received_quantity += quantity
         if product.is_stock_tracked:
             record_stock_movement(
