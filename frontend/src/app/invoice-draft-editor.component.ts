@@ -2,16 +2,18 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  localizeInvoiceDraftValidationMessage,
+  moveInvoiceDraftLine,
+  removeInvoiceDraftLine,
+  toInvoiceDraftPayload,
+} from './invoice-draft';
+import type {
   InvoiceDraftCustomer,
   InvoiceDraftLine,
   InvoiceDraftLineKind,
   InvoiceDraftPayload,
   InvoiceDraftProduct,
   InvoiceDraftServerSummary,
-  localizeInvoiceDraftValidationMessage,
-  moveInvoiceDraftLine,
-  removeInvoiceDraftLine,
-  toInvoiceDraftPayload,
 } from './invoice-draft';
 
 @Component({
@@ -165,9 +167,9 @@ export class InvoiceDraftEditorComponent {
   @Input() serverSummary: InvoiceDraftServerSummary | null = null;
   @Output() saveDraft = new EventEmitter<InvoiceDraftPayload>();
 
+  private lineSequence = 1;
   lines: InvoiceDraftLine[] = [this.newLine('product')];
   error = '';
-  private lineSequence = 1;
 
   t(arabic: string, english: string): string {
     return this.language === 'ar' ? arabic : english;

@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  InvoiceDraftInput,
-  InvoiceDraftLine,
-  InvoiceDraftProduct,
-  InvoiceDraftCustomer,
   localizeInvoiceDraftValidationMessage,
   moveInvoiceDraftLine,
   removeInvoiceDraftLine,
   toInvoiceDraftPayload,
   validateInvoiceDraft,
+} from './invoice-draft.ts';
+import type {
+  InvoiceDraftInput,
+  InvoiceDraftLine,
+  InvoiceDraftProduct,
+  InvoiceDraftCustomer,
 } from './invoice-draft.ts';
 
 const products: InvoiceDraftProduct[] = [{ id: 'p1', name: 'Coffee' }];
