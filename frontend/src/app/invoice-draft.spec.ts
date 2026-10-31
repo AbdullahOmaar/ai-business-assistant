@@ -78,3 +78,11 @@ test('line reorder preserves each line and does not move beyond either boundary'
   assert.deepEqual(moveInvoiceDraftLine(lines, 0, -1), lines);
   assert.deepEqual(moveInvoiceDraftLine(lines, 2, 1), lines);
 });
+
+test('validation messages are localized for Arabic and preserve English fallback', async () => {
+  const { localizeInvoiceDraftValidationMessage } = await import('./invoice-draft.ts');
+  const message = 'Choose a customer before saving the invoice.';
+  assert.equal(localizeInvoiceDraftValidationMessage(message, 'ar'), 'اختَر العميل قبل حفظ الفاتورة.');
+  assert.equal(localizeInvoiceDraftValidationMessage(message, 'en'), message);
+  assert.equal(localizeInvoiceDraftValidationMessage('Unknown validation error', 'ar'), 'Unknown validation error');
+});
