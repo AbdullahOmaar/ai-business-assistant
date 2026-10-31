@@ -6,6 +6,10 @@ import {
   signInWithEmailAndPassword, signOut
 } from '@firebase/auth';
 import type { Auth, User } from '@firebase/auth';
+import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer';
+import { validateRuntimeConfig } from './runtime-config';
+
+export interface AuthUserSnapshot { uid: string; email: string | null; }
 
 export interface RuntimeConfig {
   apiBaseUrl: string;
@@ -22,7 +26,10 @@ export class AuthService {
   private configPromise?: Promise<RuntimeConfig>;
   private auth: Auth | null = null;
   private authReady?: Promise<void>;
+  private authStateUnsubscribe?: () => void;
   private user: User | null = null;
+  private authStateKnown = false;
+  private readonly authState = new AuthStateBroadcaster<AuthUserSnapshot>();
 
   getRuntimeConfig(): Promise<RuntimeConfig> {
     if (!this.configPromise) {
@@ -31,7 +38,7 @@ export class AuthService {
       this.configPromise = fetch('/runtime-config.json', { cache: 'no-store', signal: controller.signal })
         .then(async response => {
           if (!response.ok) throw new Error('Runtime configuration could not be loaded.');
-          return this.validateRuntimeConfig(await response.json());
+          return validateRuntimeConfig(await response.json());
         })
         .catch(error => {
           this.configPromise = undefined;
@@ -43,31 +50,6 @@ export class AuthService {
         .finally(() => clearTimeout(timeoutId));
     }
     return this.configPromise;
-  }
-
-  private validateRuntimeConfig(value: unknown): RuntimeConfig {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      throw new Error('Runtime configuration is invalid.');
-    }
-    const config = value as Record<string, unknown>;
-    const apiBaseUrl = config['apiBaseUrl'];
-    if (apiBaseUrl !== undefined && apiBaseUrl !== null && typeof apiBaseUrl !== 'string') {
-      throw new Error('Runtime configuration is invalid.');
-    }
-    const firebase = config['firebase'];
-    if (firebase !== undefined && firebase !== null) {
-      if (typeof firebase !== 'object' || Array.isArray(firebase)) {
-        throw new Error('Runtime configuration is invalid.');
-      }
-      const fields = firebase as Record<string, unknown>;
-      for (const key of ['apiKey', 'authDomain', 'projectId', 'appId']) {
-        const field = fields[key];
-        if (field !== undefined && field !== null && typeof field !== 'string') {
-          throw new Error('Runtime configuration is invalid.');
-        }
-      }
-    }
-    return value as RuntimeConfig;
   }
 
   async isConfigured(): Promise<boolean> {
@@ -97,42 +79,27 @@ export class AuthService {
         : initializeApp(config.firebase, appName);
       this.auth = getAuth(app);
     }
-    // Re-create the observer after a timeout/error so the Retry button is effective.
+    // Keep the Firebase observer alive so cross-tab sign-in/sign-out changes
+    // update the cached user after the initial session check.
     if (!this.authReady) {
-      this.authReady = new Promise<void>((resolve, reject) => {
-        let unsubscribe: () => void = () => {};
-        let settled = false;
-        const timeoutId = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          unsubscribe();
+      this.authReady = observeAuthState<User>(
+        (onUser, onError) => onAuthStateChanged(this.auth!, onUser, onError),
+        user => { this.updateUser(user ?? null); },
+        _error => {
+          this.updateUser(null);
+          this.authStateUnsubscribe = undefined;
           this.authReady = undefined;
-          reject(new Error('Firebase sign-in session check timed out. Retry when your connection is stable.'));
-        }, 10_000);
-        const finish = (error?: unknown, user?: User | null) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeoutId);
-          unsubscribe();
-          if (error) {
-            this.authReady = undefined;
-            reject(error);
-            return;
-          }
-          this.user = user ?? null;
-          resolve();
-        };
-        unsubscribe = onAuthStateChanged(
-          this.auth!,
-          user => finish(undefined, user),
-          error => finish(error)
-        );
-      });
+        },
+        unsubscribe => { this.authStateUnsubscribe = unsubscribe; }
+      );
     }
     try {
       await this.authReady;
     } catch (error) {
+      this.updateUser(null);
       this.authReady = undefined;
+      this.authStateUnsubscribe?.();
+      this.authStateUnsubscribe = undefined;
       throw error;
     }
   }
@@ -145,14 +112,14 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<User> {
     await this.initialize();
     const credential = await signInWithEmailAndPassword(this.auth!, email.trim(), password);
-    this.user = credential.user;
+    this.updateUser(credential.user);
     return credential.user;
   }
 
   async signUp(email: string, password: string): Promise<User> {
     await this.initialize();
     const credential = await createUserWithEmailAndPassword(this.auth!, email.trim(), password);
-    this.user = credential.user;
+    this.updateUser(credential.user);
     return credential.user;
   }
 
@@ -165,6 +132,21 @@ export class AuthService {
   async signOut(): Promise<void> {
     await this.initialize();
     await signOut(this.auth!);
-    this.user = null;
+    this.updateUser(null);
+  }
+
+  subscribeToAuthState(listener: (user: AuthUserSnapshot | null) => void): () => void {
+    return this.authState.subscribe(listener);
+  }
+
+  private updateUser(user: User | null): void {
+    const changed = !this.authStateKnown ||
+      this.user?.uid !== user?.uid ||
+      (this.user?.email ?? null) !== (user?.email ?? null);
+    this.user = user;
+    this.authStateKnown = true;
+    if (changed) {
+      this.authState.publish(user ? { uid: user.uid, email: user.email } : null);
+    }
   }
 }

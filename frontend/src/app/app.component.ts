@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
-import { AuthService } from './auth.service';
-import { WorkspaceLoadGuard } from './workspace-load-guard';
+import { AuthService, type AuthUserSnapshot } from './auth.service';
+import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
@@ -915,7 +915,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
     }
   `]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
   readonly featureCatalog = FEATURE_CATALOG;
   readonly releaseHistory = RELEASE_HISTORY;
@@ -935,6 +935,13 @@ export class AppComponent implements OnInit {
   email = '';
   password = '';
   userEmail = '';
+  private authStateUnsubscribe?: () => void;
+  private authFlowInProgress = false;
+  private currentAuthUid: string | null = null;
+  private currentAuthEmail: string | null = null;
+  private businessListRequestVersion = 0;
+  private authTransitionVersion = 0;
+  private pendingAuthSnapshot: AuthUserSnapshot | null | undefined;
   tab: Tab = 'overview';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
@@ -974,7 +981,8 @@ export class AppComponent implements OnInit {
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;
-  private statementRequestVersion = 0;
+  private readonly auditLoadGuard = new WorkspaceLoadGuard();
+  private readonly statementLoadGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1153,6 +1161,13 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.authStateUnsubscribe = this.auth.subscribeToAuthState(user => {
+      if (this.authFlowInProgress || !this.initialized) {
+        this.pendingAuthSnapshot = user;
+        return;
+      }
+      void this.handleExternalAuthState(user);
+    });
     void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -1162,6 +1177,66 @@ export class AppComponent implements OnInit {
       if (document.readyState === 'complete') void registerWorker();
       else window.addEventListener('load', () => { void registerWorker(); }, { once: true });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.authStateUnsubscribe?.();
+    this.authStateUnsubscribe = undefined;
+  }
+
+  private async handleExternalAuthState(user: AuthUserSnapshot | null): Promise<void> {
+    const nextUid = user?.uid ?? null;
+    const nextEmail = user?.email ?? null;
+    if (nextUid === this.currentAuthUid && nextEmail === this.currentAuthEmail) return;
+
+    this.currentAuthUid = nextUid;
+    this.currentAuthEmail = nextEmail;
+    const transitionVersion = ++this.authTransitionVersion;
+    this.businessListRequestVersion++;
+    this.businesses = [];
+    this.business = null;
+    this.selectedBusinessId = '';
+    this.clearWorkspaceData();
+    this.error = '';
+
+    if (!user) {
+      this.resetSignedOutState();
+      return;
+    }
+
+    this.signedIn = true;
+    this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+    this.loading = true;
+    try {
+      await this.checkPlatformAdminAccess();
+      if (transitionVersion !== this.authTransitionVersion) return;
+      await this.loadBusinesses();
+    } catch (error) {
+      if (transitionVersion === this.authTransitionVersion) this.error = this.message(error, 'auth');
+    } finally {
+      if (transitionVersion === this.authTransitionVersion) this.loading = false;
+    }
+  }
+
+  private applyPendingAuthSnapshot(): void {
+    const pending = this.pendingAuthSnapshot;
+    this.pendingAuthSnapshot = undefined;
+    if (pending === undefined) return;
+    if (pending?.uid === this.currentAuthUid && pending?.email === this.currentAuthEmail) return;
+    void this.handleExternalAuthState(pending);
+  }
+
+  private resetSignedOutState(): void {
+    this.businessListRequestVersion++;
+    this.signedIn = false;
+    this.userEmail = '';
+    this.platformAdminAvailable = false;
+    this.tab = 'overview';
+    this.businesses = [];
+    this.business = null;
+    this.selectedBusinessId = '';
+    this.clearWorkspaceData();
+    this.loading = false;
   }
 
   private async loadApiVersion(): Promise<void> {
@@ -1197,6 +1272,7 @@ export class AppComponent implements OnInit {
   }
 
   async initializeApp(): Promise<void> {
+    this.authFlowInProgress = true;
     this.initialized = false;
     this.startupFailed = false;
     this.loading = true;
@@ -1212,12 +1288,13 @@ export class AppComponent implements OnInit {
         this.error = this.message(error);
         return;
       }
-
       this.setupNeeded = !config.apiBaseUrl?.trim() ||
         !config.firebase?.apiKey || !config.firebase?.authDomain ||
         !config.firebase?.projectId || !config.firebase?.appId;
       if (this.setupNeeded) return;
       const user = await this.auth.currentUser();
+      this.currentAuthUid = user?.uid ?? null;
+      this.currentAuthEmail = user?.email ?? null;
       if (user) {
         this.signedIn = true;
         this.userEmail = user.email || 'مستخدم مسجّل الدخول';
@@ -1227,8 +1304,10 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.error = this.message(error);
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
       this.initialized = true;
+      this.applyPendingAuthSnapshot();
     }
   }
 
@@ -1363,11 +1442,14 @@ export class AppComponent implements OnInit {
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
+    const requestUid = this.currentAuthUid;
     this.platformAdminAvailable = false;
     try {
       const access = await this.api.platformAdminAccess();
+      if (requestUid !== this.currentAuthUid) return;
       this.platformAdminAvailable = access.is_platform_admin === true;
     } catch {
+      if (requestUid !== this.currentAuthUid) return;
       // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
       this.platformAdminAvailable = false;
       if (this.tab === 'platform-admin') this.tab = 'overview';
@@ -1375,12 +1457,15 @@ export class AppComponent implements OnInit {
   }
 
   async submitAuth(): Promise<void> {
+    this.authFlowInProgress = true;
     this.loading = true;
     this.error = '';
     try {
       const user = this.signingUp
         ? await this.auth.signUp(this.email, this.password)
         : await this.auth.signIn(this.email, this.password);
+      this.currentAuthUid = user.uid;
+      this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
       this.userEmail = user.email || 'مستخدم مسجّل الدخول';
       await this.checkPlatformAdminAccess();
@@ -1388,62 +1473,27 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.error = this.message(error, 'auth');
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
+      this.applyPendingAuthSnapshot();
     }
   }
 
   async logout(): Promise<void> {
+    this.authFlowInProgress = true;
     this.loading = true;
     try {
       await this.auth.signOut();
-      this.signedIn = false;
-      this.platformAdminAvailable = false;
-      this.tab = 'overview';
-      this.businesses = [];
-      this.business = null;
-      this.dashboard = null;
-      this.customers = [];
-      this.products = [];
-      this.invoices = [];
-      this.payments = [];
-    this.expenses = [];
-    this.expenseMessage = '';
-    this.suppliers = [];
-    this.purchaseOrders = [];
-    this.recurringSchedules = [];
-    this.notifications = [];
-    this.operationalHealth = null;
-    this.operationsError = '';
-    this.healthError = '';
-    this.notificationTitle = '';
-    this.notificationBody = '';
-    this.supplierName = '';
-    this.purchaseOrderNumber = '';
-    this.purchaseSupplierId = '';
-    this.purchaseProductId = '';
-    this.recurringCustomerId = '';
-    this.supplierEmail = '';
-    this.supplierPhone = '';
-    this.supplierAddress = '';
-    this.purchaseQuantity = '1';
-    this.purchaseUnitCost = '0';
-    this.recurringIntervalDays = '30';
-    this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    this.recurringTimezone = 'UTC';
-    this.notificationScheduledAt = '';
-    this.notificationDeduplicationKey = 'manual-' + Date.now();
-    this.suppliersLoading = false;
-    this.purchasesLoading = false;
-    this.recurringLoading = false;
-    this.notificationsLoading = false;
-    this.healthLoading = false;
-    this.expenseSubmissionUncertain = false;
-      this.chatMessages = [];
+      this.currentAuthUid = null;
+      this.currentAuthEmail = null;
+      this.resetSignedOutState();
       this.error = '';
     } catch (error) {
       this.error = this.message(error);
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
+      this.applyPendingAuthSnapshot();
     }
   }
 
@@ -1456,10 +1506,15 @@ export class AppComponent implements OnInit {
   }
 
   async loadBusinesses(): Promise<void> {
+    const requestVersion = ++this.businessListRequestVersion;
+    const requestUid = this.currentAuthUid;
     this.loading = true;
     this.error = '';
     try {
-      this.businesses = await this.api.listBusinesses();
+      const businesses = await this.api.listBusinesses();
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
+      this.businesses = businesses;
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
@@ -1469,23 +1524,44 @@ export class AppComponent implements OnInit {
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
-      const workspaceChanged = this.business?.id !== chosen.id;
+      const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      if (workspaceChanged) this.clearWorkspaceData();
+      if (workspaceAccessChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
       this.business = null;
       this.selectedBusinessId = '';
       this.clearWorkspaceData();
       this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (requestVersion === this.businessListRequestVersion) this.loading = false;
     }
   }
 
   private clearWorkspaceData(): void {
+    // Invalidate the top-level workspace load too; otherwise an old load's finally
+    // block can still mutate loading state while a new identity is being resolved.
+    this.workspaceLoadGuard.invalidate();
     this.profitLossLoadGuard.invalidate();
+    this.auditLoadGuard.invalidate();
+    this.statementLoadGuard.invalidate();
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+    this.auditAction = '';
+    this.auditTargetType = '';
+    this.customerStatement = null;
+    this.statementLoading = false;
+    this.statementError = '';
+    this.statementVisible = false;
+    this.statementCustomerName = '';
+    this.statementCustomerId = '';
+    this.statementOffset = 0;
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.profitLoss = null;
@@ -1603,7 +1679,6 @@ export class AppComponent implements OnInit {
   }
 
   async switchBusiness(id: string): Promise<void> {
-    this.statementRequestVersion++;
     this.statementVisible = false;
     this.customerStatement = null;
     this.statementCustomerId = '';
@@ -1896,24 +1971,46 @@ export class AppComponent implements OnInit {
   }
 
   async loadAuditEvents(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.auditLoadGuard.begin();
+    const businessId = this.business.id;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role ?? null,
+      signedIn: this.signedIn,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.auditLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+      },
+    );
+
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(businessId, {
         limit: 50, offset,
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
+      if (!isCurrentRequest()) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
     } catch (error) {
+      if (!isCurrentRequest()) return;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditError = this.message(error);
     } finally {
-      this.auditLoading = false;
+      if (this.auditLoadGuard.isLatest(requestVersion)) this.auditLoading = false;
     }
   }
 
@@ -1954,23 +2051,43 @@ export class AppComponent implements OnInit {
   }
 
   async loadCustomerStatementPage(offset: number): Promise<void> {
-    if (!this.business || !this.statementCustomerId) return;
-    const requestVersion = ++this.statementRequestVersion;
+    if (!this.business || !this.statementCustomerId || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.statementLoadGuard.begin();
     const requestedCustomerId = this.statementCustomerId;
     const businessId = this.business.id;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role ?? null,
+      signedIn: this.signedIn,
+      customerId: requestedCustomerId,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.statementLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+        customerId: this.statementCustomerId,
+      },
+    );
+
     this.customerStatement = null;
     this.statementOffset = offset;
     this.statementLoading = true;
     this.statementError = '';
     try {
       const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.customerStatement = result;
     } catch (error) {
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.statementError = this.message(error);
     } finally {
-      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
+      if (this.statementLoadGuard.isLatest(requestVersion)) this.statementLoading = false;
     }
   }
 

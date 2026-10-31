@@ -28,43 +28,6 @@ test('boots into the explicit setup screen instead of a stuck splash', async ({ 
   expect(uncaughtErrors).toEqual([]);
 });
 
-test('shows a recoverable startup error when runtime configuration cannot be loaded', async ({ page }) => {
-  let configRequests = 0;
-  await page.route('**/runtime-config.json', async (route) => {
-    configRequests += 1;
-    if (configRequests === 1) {
-      await route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({ detail: 'temporarily unavailable' }),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        apiBaseUrl: '',
-        firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
-      }),
-    });
-  });
-
-  await page.goto('/');
-  await expect(page.getByRole('heading', {
-    name: /تعذر تحميل إعدادات التطبيق|Unable to load app configuration/,
-  })).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('alert')).toContainText(/Runtime configuration could not be loaded/);
-  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
-
-  await page.getByRole('button', { name: /إعادة المحاولة|Retry startup/ }).click();
-  await expect(page.getByRole('heading', {
-    name: /اربط مساحة عملك الآمنة|Connect your secure workspace/,
-  })).toBeVisible({ timeout: 20_000 });
-  expect(configRequests).toBe(2);
-});
-
 test('switches startup language and layout direction both ways', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('.language-toggle')).toBeVisible({ timeout: 20_000 });
@@ -105,6 +68,43 @@ test('keeps the safe setup screen usable at a narrow mobile viewport', async ({ 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   await assertNoHorizontalOverflow();
+});
+
+test('shows a recoverable startup error when runtime configuration cannot be loaded', async ({ page }) => {
+  let configRequests = 0;
+  await page.route('**/runtime-config.json', async (route) => {
+    configRequests += 1;
+    if (configRequests === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'temporarily unavailable' }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        apiBaseUrl: '',
+        firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', {
+    name: /تعذر تحميل إعدادات التطبيق|Unable to load app configuration/,
+  })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('alert')).toContainText(/Runtime configuration could not be loaded/);
+  await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /إعادة المحاولة|Retry startup/ }).click();
+  await expect(page.getByRole('heading', {
+    name: /اربط مساحة عملك الآمنة|Connect your secure workspace/,
+  })).toBeVisible({ timeout: 20_000 });
+  expect(configRequests).toBe(2);
 });
 
 test('fails closed when runtime configuration returns an invalid JSON shape', async ({ page }) => {

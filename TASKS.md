@@ -1,3 +1,34 @@
+# Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
+
+## User directive
+- Do NOT trigger, rerun, retry, or otherwise execute CircleCI jobs; user confirmed the CircleCI quota is exhausted.
+- Continue repository work and prepare a production release without consuming CircleCI quota.
+- This directive does not waive security, data-integrity, required-review, or production migration safeguards.
+
+## Verified source and delivery state
+- GitHub canonical repository: `AbdullahOmaar/ai-business-assistant`.
+- Main at inspection: `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`.
+- Frontend package: `1.3.4`; backend package: `1.3.4`; FastAPI app version: `1.3.4`. Version remains aligned; no version bump has been made.
+- Existing Vercel production deployments for Web and API are READY on the same main SHA `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`. No new deployment was triggered in this checkpoint.
+- Vercel runtime inspection (API, last 24h window) reports 7 exceptions across 1 user, including PostgreSQL UndefinedTable for both `employees` and `payroll_records`; Web runtime inspection reports no runtime errors in that window.
+- The API error is a database schema/migration mismatch, not something a redeploy of unchanged application code can repair. Migration `0005_employee_payroll` adds these tables but has not been verified/applied to production. No production SQL, migration, snapshot, or restore operation was run.
+- The release runbook requires backup/restore evidence, schema revision verification, migration rehearsal, and exact candidate checks before applying production migrations.
+
+## PR reconciliation
+- PR #313: OPEN, non-draft, mergeable=true; adds a delegated platform-viewer no-mutation/no-audit regression. No independent review; exact-head CircleCI contexts are failure (not rerun); GitHub Actions also reported failures with unavailable step logs. Not merged.
+- PR #314: OPEN, draft, mergeable=true; adds OWNER-only read-only pricing-rule listing and focused tests. Branch notes report 2 passed in an assembled sandbox, but full exact checkout / CI / review are not verified. It is explicitly PARTIALLY COMPLETE and does not implement effective dates or invoice calculation integration. Not merged.
+- PR #315: OPEN, draft, mergeable=true; adds GitLab CI fallback and repository-boundary docs. Exact-SHA GitLab pipeline/status integration remains unverified. GitLab project inspection returned HTTP 403; no GitLab pipeline was triggered. Not merged.
+- PRs #302, #304–#312 remain based on older base SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`; do not merge wholesale. Reconcile/rebase and review individually.
+- CircleCI statuses remain recorded as unavailable/failing due quota; do not rerun. No required status or branch-protection settings were changed.
+
+## Actions and outcomes
+- Inspected current main, package/app version alignment, release history/runbook, PR #313–#315 diffs, Vercel projects/deployments, and recent API/Web runtime errors.
+- NOT RUN: CircleCI (per user directive), GitLab pipeline (GitLab returned 403), local full test/build, production database backup/restore, production migration, new Vercel deployment.
+- BLOCKED: production release that claims employee/payroll functionality until migration `0005_employee_payroll` is rehearsed against an isolated restored database and production schema/backup gates are satisfied.
+- Next highest-value action: obtain authorized, cost-safe database backup/restore and schema-revision evidence; then rehearse migration `0005_employee_payroll` in isolation. Keep CircleCI untouched and use an independently verified alternative CI path when GitLab access is restored.
+
+---
+
 # Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
@@ -22,6 +53,25 @@
 2. Merge only after all required checks pass, then verify the resulting main SHA and its post-merge checks.
 3. Continue issue #276's remaining route × role × tenant no-write/no-audit coverage on one dedicated branch.
 4. Keep authenticated production smoke, physical mobile/accessibility QA, and isolated PostgreSQL restore explicitly **NOT RUN / BLOCKED** until performed with approved access.
+
+
+## Master parallel staff assignments — 2026-10-29
+
+These are execution assignments on existing Notion tasks, not new duplicate tasks. Notion comments on the linked task pages contain the detailed work orders and must be kept in sync with this section.
+
+1. **Staff 1 — Security & tenant isolation (Notion T03):** Continue the missing route × role × tenant coverage. Start by reviewing `docs/SECURITY_ROUTE_INVENTORY.md`, `backend/tests/test_business_tenant_boundaries.py`, and draft [PR #302](https://github.com/AbdullahOmaar/ai-business-assistant/pull/302) at head `bfda274696dc20305d5a770bb4c994770ffad6e8`. Do not duplicate PR #302 or modify its branch without coordination. Add focused regressions for uncovered routes, role/tenant denial, and no-read/no-write/no-audit side effects. Update the same T03 Notion page with exact evidence.
+
+2. **Staff 2 — Functional regression & automation (Notion T22):** Map the critical MVP workflows to existing tests, inspect scripts and CircleCI, run targeted tests then the full available regression suite, and add only missing coverage. Include success/failure paths and duplicate/retry/idempotency cases only where current contracts are unambiguous. Coordinate with Staff 1 to avoid overlapping security tests and do not invent financial behavior while T37 contracts are open. Update the same T22 Notion page with exact commands, SHA, results, and blockers.
+
+3. **Staff 3 — Repository / PR / CI reconciliation (Notion T01; T07 when relevant):** Re-verify current main SHA, open PR heads/bases/checks, branch inventory, and CI failures. Reconcile existing branch ledgers instead of creating duplicate reports. The totals in historical snapshots are not current counts; full pagination was last marked NOT RUN. Classify code failures vs infrastructure/provider failures and update the same T01 page; update T07 only where its CI-gate acceptance criteria were actually verified.
+
+**Shared controls:** Isolate changes by branch and coordinate shared files. Keep Notion task pages and this ledger aligned. Record exact SHAs and test/CI links; use VERIFIED COMPLETE / PARTIALLY COMPLETE / NOT RUN / BLOCKED accurately. No branch deletion, merge, or production deployment is authorized by these assignments.
+
+
+## Notion-first inter-agent communication — @n
+
+The canonical communication contract lives in the Notion [Agent Prompt Registry](https://app.notion.com/p/407bbf2bc2c58160be0cefe4f6374d05), section **Mandatory Notion-to-Notion Agent Communication Protocol — @n**. Master and specialist chats must read and reply on existing task-page discussions; the user is not a relay. Each operational comment must identify sender/receiver, canonical task, checkpoint, exact status, evidence, next action/owner, and conflicts/dependencies. A specialist's acknowledgement is not assumed until posted by that chat. Notion is not a guaranteed push channel: resumed chats must poll/read comments; never claim a separate chat was notified or woke up automatically. Notion task pages remain canonical for assignments/status, while GitHub remains canonical for code/CI/release evidence. No merge/deploy authorization is implied.
+
 
 ## Current evidence baseline
 
@@ -1554,19 +1604,109 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Release v1.3.4 Web/API remain READY on main SHA `1aa803436c45aaf8c3a5c0bf1bbc2d9e386a713a`.
 
 
-## Startup runtime-config fail-closed validation — 2026-10-30
+## T43 Firebase auth state synchronization — 2026-10-30
 
-- Source review found a malformed but valid JSON payload such as null/array could pass fetch/JSON parsing, then throw while reading config.apiBaseUrl. The outer auth/API catch left startupFailed=false and could render the sign-in form despite invalid configuration.
-- Existing PR #309 now validates the runtime-config payload shape before treating it as RuntimeConfig: top-level object required; apiBaseUrl must be string/null/missing; firebase must be object/null/missing; present firebase fields must be strings. Missing fields remain a safe setup-needed state, not a load error. Error messages do not echo payload values.
-- Added Playwright regression: first runtime-config response is HTTP 200 with JSON null; UI must show recoverable startup error and no email/password inputs; retry returns safe setup screen.
-- Existing 503 retry test remains. No Firebase API call or production API call is made by these mocked tests.
-- Exact PR head before this ledger update: b30e2e73b5163990debd9c7c870d67d8917fcf47. Source reviewed; Playwright/unit/build NOT RUN. Exact-head CircleCI six FAILURE contexts; GitHub Actions jobs have steps=null and log retrieval returns 404 BlobNotFound. No retries/reruns.
-- PR remains Draft/open/unmerged; no deployment.
+- Source review found `AuthService.initialize()` used `onAuthStateChanged` only as a one-shot initial-session barrier, then unsubscribed immediately. This left the cached `User` reference stale when Firebase sign-out/auth-state changes occurred in another tab.
+- Implemented a persistent observer: initial callback resolves the startup promise but keeps the listener; every later auth-state callback updates the cached user; timeout/error paths clear cached identity, unsubscribe and allow a retry.
+- Added Node regression coverage for persistent listener lifetime, later user-state updates, timeout/error cleanup and explicit sign-out clearing.
+- This is client auth-session synchronization only; backend Firebase token verification with `check_revoked=True` remains authoritative. No backend authorization, membership, database schema, financial data or production configuration changed.
+- Tests/build/browser cross-tab smoke: NOT RUN in this connector-only environment. Exact-head CircleCI status pending; no CI rerun requested. PR will remain Draft until exact-head checks and independent review pass.
 
 
-## Startup runtime-config nested type regression — 2026-10-30
+## T43 auth observer regression hardening — 2026-10-30
 
-- Extended the existing PR #309 Playwright startup suite beyond JSON `null` to cover: numeric `apiBaseUrl`, array-valued `firebase`, and numeric `firebase.apiKey`.
-- Each scenario expects the recoverable invalid-configuration screen, no email/password inputs, and a successful retry into the safe setup screen. Responses are intercepted locally; no Firebase/API/production calls are made by these tests.
-- Validation remains NOT RUN on the new exact head. Six CircleCI contexts still fail; GitHub Actions dependency/security and verify workflows are failing, and their job logs are unavailable through the current connector. No retries/reruns.
-- PR #309 remains Draft/open/unmerged. No production deployment or config change.
+- Refactored the Firebase auth-state lifecycle into frontend/src/app/auth-state-observer.ts so listener lifetime and recovery behavior can be tested without Firebase/Angular runtime setup.
+- AuthService.initialize() now delegates initial readiness, persistent state updates, terminal observer error handling, timeout cleanup and retry-state reset to the helper. Backend ID-token verification and server-side membership/role authorization remain unchanged.
+- Replaced regex-only source assertions with five behavioral Node tests covering: initial readiness plus subsequent user/sign-out changes; terminal observer error clearing and unsubscribe; initial observer error rejection/cleanup; timeout rejection/cleanup; and synchronous initial callback registration.
+- Exact current branch head before this ledger update: d115057242cb5527e95a4eb43264a570abd4a07c; base main: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f; branch is 10 commits ahead / 0 behind.
+- Exact-head combined status on d115057242cb5527e95a4eb43264a570abd4a07c: empty (NOT PASS; no checks reported). This commit and the follow-up ledger commit use [skip ci]; CircleCI remains frozen and was not triggered/retried.
+- Node tests, frontend build, browser cross-tab smoke and independent security review: NOT RUN. Desktop Commander remains OFFLINE; no local checkout/runtime available.
+- PR #316 remains OPEN / DRAFT / UNMERGED. No merge, deployment, production configuration, backend authorization, schema or data change.
+
+
+## T43 auth observer terminal-event fencing — 2026-10-30
+
+- Hardened frontend/src/app/auth-state-observer.ts with a terminal-state fence: callbacks arriving after timeout or observer error are ignored, so a queued late event cannot repopulate a signed-out/stale cached identity.
+- Extended behavioral Node coverage to assert late user callbacks remain ignored after a terminal observer error and after the initial auth timeout.
+- Latest code head before this ledger update: 02538f6e512cacbd272368640c708de94290e043. Tests remain authored but NOT RUN; no test result is inferred from source readback.
+- This is still client session-cache lifecycle only. Server-side Firebase token verification and membership/role authorization remain authoritative and unchanged.
+- Follow-up commits use [skip ci]; exact-head status is not treated as PASS, CircleCI remains frozen, and no workflow was triggered/retried.
+
+
+## GitHub Actions execution probe — 2026-10-30 (owner-requested)
+
+- Inspected existing workflows on main: .github/workflows/ci.yml (pull_request/push frontend+backend paths), backend-tests.yml (pull_request + workflow_dispatch), backend-container.yml (pull_request/push backend paths), dependency-security.yml (pull_request/push frontend+backend paths + schedule + workflow_dispatch). No new workflow or replacement CI was introduced.
+- A normal frontend-path commit on this existing PR successfully triggered GitHub Actions. Branch runs API currently reports 11 recent workflow runs, all with conclusion=failure. Probe commits: 9ab975a772b2c1b190c861ec741797bb8dd3fd94, 71c1c52ad6ccf02808ac5f311375c15934c88d80, d5582110bbcd895ad808f9979dd3a611d8643843.
+- Latest exact-head runs on d5582110bbcd895ad808f9979dd3a611d8643843: Verify backend and frontend #41079091825 (failure); Dependency security scan #41079082874 (push, failure) and #41079091918 (pull_request, failure). Earlier probe runs on 9ab975a772b2c1b190c861ec741797bb8dd3fd94: #41078791281, #41078805019, #41078805102 (all failure).
+- Latest jobs completed in approximately 3 seconds with zero steps, empty runner_name and runner_group_name. Workflow-job log retrieval returns 404 BlobNotFound; no runner log is available. Trigger/orchestration is accepted, but jobs do not reach the first step. Root cause (runner provisioning, repository/organization Actions policy, or another platform-side condition) is NOT VERIFIED; do not claim quota/billing as the cause.
+- No GHA rerun requested: initial attempts failed before any step and no logs were available, so blind retries would not isolate the cause.
+- Exact PR head: d5582110bbcd895ad808f9979dd3a611d8643843. PR #316 OPEN / DRAFT / UNMERGED. Combined status also reports SemaphoreCI and six CircleCI contexts as FAILURE; CircleCI remains frozen per owner instruction and was not retried.
+- Auth helper additionally isolates teardown and consumer error-handler exceptions; a sixth behavioral Node regression test covers both without masking the original auth failure. All six Node tests remain authored, NOT RUN locally; frontend build, browser smoke and independent security review remain NOT RUN.
+- Next: inspect repository/organization Actions policy and runner availability in GitHub UI with an owner/admin, or obtain runner logs/annotations from GitHub Support. Do not add/replace CI workflows; keep PR Draft and unmerged.
+
+## T43 auth observer synchronous setup failure hardening — 2026-10-30
+
+- Continued the existing Master-owned T43 / PR #316 branch; no new branch or PR.
+- Source review at prior head `eb528e91833cf9187ce696b9bbc26f221b25799a` found a setup race: the helper resolved readiness inside the first callback before `subscribe()` returned. If subscription setup then threw after a synchronous first callback, the catch block saw readiness as settled and silently discarded the setup error.
+- Updated `frontend/src/app/auth-state-observer.ts` to defer readiness resolution until subscription setup returns and the `onReady` callback succeeds; setup/ready failures now clear cached identity, set a terminal fence, release the observer when an unsubscribe handle exists, notify the error callback, and reject readiness.
+- Added two behavioral regressions in `frontend/src/app/auth-state-regressions.spec.ts`: synchronous initial callback followed by subscription setup failure; and `onReady` failure with observer cleanup.
+- Supplementary isolated local Node 22.16 harness for the helper: **7/7 scenarios PASS** (cross-tab updates, terminal error, timeout/late-event fencing, synchronous setup failure, `onReady` failure, initial error, teardown/consumer-error exception handling). This is not the repository's full frontend test command or a build.
+- Official repository Node test command, Angular build, browser cross-tab smoke, and exact-head GitLab validation: NOT RUN in this environment. CircleCI remains frozen; the GitLab mirror is not modified/pushed to; existing GitHub Actions runner failures remain unresolved.
+- Backend Firebase token verification and server-side membership/role authorization are unchanged. No schema, finance, payroll, production data/configuration, merge or deployment changes.
+- Next: run the official frontend tests/build and browser cross-tab smoke on this exact source commit through an authorized runner, obtain independent T43/security review, then proceed through the remaining release gates.
+
+
+## T43 GitLab validation addendum — 2026-10-30
+
+- User explicitly authorized syncing the current T43 auth source snapshot to the GitLab clone for an isolated test run.
+- GitLab test branch: `test/firebase-auth-state-sync-20261030`.
+- GitHub source commit tested: `f6168b95ae8c0c264249de2d5c29ad0e4c19b255`.
+- The GitLab connector did not expose a raw Git push/ref-update operation. The three source files were therefore transferred as a content-equivalent GitLab commit `9dc70786784a523608e67b2ce1bf597b3afe6c10` (parent exactly the original GitHub source parent `eb528e91833cf9187ce696b9bbc26f221b25799a`). All three Git blob SHAs were read back and matched the GitHub source commit exactly:
+  - `auth-state-observer.ts`: `62f0733bb3f3c7c3bc251906266dbfd2f10b646c`
+  - `auth-state-regressions.spec.ts`: `a9c03376b1b78c5cd317a3fd8efa04dfa93b6f4b`
+  - `TASKS.md`: `5319ee1bf09b4867b9b86cffa2abca980ab40ebb`
+- Added the existing, previously validated GitLab-only test config `.gitlab-ci.yml` on the isolated test branch (no deployment or production-write jobs). Final GitLab test commit: `96586cd4a708fb3a828887fbd994ae1193593136`.
+- Pipeline `3010237745`: **8/8 jobs PASS**, duration 203 seconds. Backend pytest: **253 passed, 0 failed**. Frontend Node test command: PASS. Playwright: **4 passed**. Angular build: PASS. Backend container smoke: PASS (`FastAPI import OK`). Backup/restore safety script: PASS. `pip-audit`: no known vulnerabilities. `npm audit --audit-level=high`: 0 vulnerabilities.
+- Non-failing warnings: `@firebase/auth@1.13.8` declares Node `>=24.12.0`, while the current GitLab Node test/build/audit jobs use Node 22.12 (browser image Node 22.18); `npm` reports EBADENGINE warnings. Angular emits existing NG8107 optional-chain warnings. These warnings did not fail the jobs and should be reconciled in CI runtime/toolchain follow-up.
+- GitLab pipeline SHA differs from the GitHub source commit because the GitLab clone used an equivalent commit and the isolated CI config is an additional file. Source code blob identities are exact; do not represent the GitLab commit SHA as the GitHub PR SHA.
+- GitHub PR #316 remains OPEN / DRAFT / UNMERGED. GitHub combined status on source commit `f6168b95...` remains empty; independent security review remains NOT RUN. This GitLab run is strong exact-source-file validation, but not GitHub-native required-check evidence or independent approval.
+- No merge, version bump, production deployment, production DB write, or GitLab original feature-branch mutation occurred.
+
+## T43 cross-tab session-to-shell propagation — 2026-10-30
+
+- Follow-up source review found the Firebase observer updated AuthService's cached user after cross-tab sign-in/sign-out, but AppComponent did not subscribe to those changes. A remote sign-out could therefore leave the old workspace shell and sensitive records rendered until refresh.
+- Added a safe replayable AuthStateBroadcaster with subscriber exception isolation and tests for initial replay, no pre-initial emission, unsubscribe and listener-failure isolation.
+- AuthService now publishes a minimal {uid,email} snapshot whenever verified Firebase auth identity changes; Firebase User internals are not exposed to the app shell. Same-UID duplicate observer/sign-in updates are suppressed.
+- AppComponent subscribes during its lifecycle, clears all workspace-scoped state on remote sign-out/account change, rechecks platform-admin/workspace access on remote sign-in, and unsubscribes on destroy. Local sign-in/out transitions are fenced to avoid duplicate loading.
+- Membership-list requests are versioned and discarded if they resolve after the active UID/session changes. Existing workspace-load generation guard continues to reject late data from a previous selected workspace.
+- Existing current-main behavior already includes membership-scoped workspace listing/selection/switching, WorkspaceLoadGuard, owner-only membership listing/role changes/removal, last-owner protection, audit events, and OWNER/STAFF only. Invitation flows are not present in current API and are not invented by this change.
+- Validation on this follow-up source: NOT RUN yet. Next: exact GitLab test-branch sync and full 8-job pipeline; then review cross-tab sign-out/account-switch races and request independent Chat 5 security review. No merge, version bump, production deploy, backend contract/schema/financial change, or production data mutation.
+
+### Auth transition race follow-up — 2026-10-30
+- Auth snapshots observed while startup or a local sign-in/sign-out flow is in progress are queued; after the flow finishes, the latest snapshot is reconciled against the current UID/email. This prevents a remote sign-out/account switch racing initialization or a local auth action from being silently ignored.
+- Sign-up now uses the same auth-state broadcaster as sign-in and the Firebase observer.
+- This follow-up source still requires the full GitLab 8-job pipeline and independent review; no production release action.
+- Added a UID guard to platform-admin access resolution so a slow response from a previous signed-in identity cannot overwrite the current account's platform-admin visibility.
+
+
+## T43 tenant-scoped audit and customer-statement response fencing — 2026-10-30
+
+- QA/security review of PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` found that `clearWorkspaceData()` did not clear audit events/totals/filters or customer-statement state, and `loadAuditEvents()` accepted late responses without a tenant/identity/request-generation fence.
+- Added independent request generations for audit and customer-statement reads. Clearing workspace state now invalidates both generations and clears every displayed audit/statement field.
+- Audit responses are accepted only when request generation, business ID, authenticated UID, signed-in state, and current owner role still match the captured request.
+- Customer-statement responses are accepted only when request generation, business ID, authenticated UID, selected customer, and signed-in state still match.
+- Workspace state is also cleared when membership role changes for the same business, not only when the business ID changes.
+- Added focused request-generation regressions for same-business identity and role transitions.
+- Follow-up branch: `fix/tenant-audit-statement-fence-20261030`; stacked Draft PR #320 targets PR #316's branch. No changes were made to PR #316's branch or main.
+- GitLab isolated mirror pipeline #3010472807: **SUCCESS, 8/8 jobs**, 301 seconds, final source mirror commit `e2f38b95f28625a4e1807b060a1936682cd1518c`. Results: backend pytest 253/253; frontend Node tests 80/80; existing Playwright 4/4; Angular production build, backend container smoke, backup/restore safety, npm audit (0 vulnerabilities), and pip-audit (no known vulnerabilities) PASS. Exact GitHub source blobs for the three transferred files were read back from GitLab and matched. This remains external GitLab validation, not GitHub-native exact-head required-check evidence.
+- Full authenticated cross-tab Firebase browser journeys and independent review remain NOT RUN. No merge, version bump, production deploy, database write, or production configuration change.
+
+- Latest GitHub exact-head status read: PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` reports six CircleCI contexts FAILURE; PR #320 head `b695eaea26724193df4e4453d625440ad9f4abe9` reports six CircleCI contexts FAILURE plus SemaphoreCI FAILURE. CircleCI remains frozen; no retry/trigger was issued. GitLab pipeline success is not GitHub-native required-check evidence. Independent review and authenticated Firebase cross-tab/account-switch browser journeys remain NOT RUN.
+
+## T43 Master implementation checkpoint — runtime configuration hardening (2026-10-31)
+
+- Reused existing PR #309 / `qa/startup-config-failure-guard-20261029`; reconciled its stale branch snapshot against v1.3.5 main using a normal two-parent merge commit. Main's current `AuthStateObserver`, tenant response fences and shell behavior are retained; only the startup fail-closed behavior and validator are ported.
+- Added a pure `validateRuntimeConfig(unknown)` contract. It rejects null/array/primitive top-level payloads, wrong API URL types, non-object Firebase settings and non-string Firebase fields. Missing/null public settings normalize to empty strings, preserving the explicit setup-required path and the existing non-null TypeScript contract.
+- Added Node unit tests for valid config, missing/null setup values, malformed top-level/Firebase shapes, all four Firebase fields and safe non-echoing errors. Added startup Playwright regressions for HTTP 503, JSON null, wrong API URL types, array Firebase settings and wrong Firebase field types.
+- Local targeted Node validation: **7/7 PASS** on Node v22.16.0 using `node --experimental-strip-types --test frontend/src/app/runtime-config.spec.ts`. Full repository frontend suite, Angular build and Playwright: **NOT RUN** (no connected local checkout/dependencies or permitted browser runner). No CI provider was triggered.
+- PR remains Draft/unmerged pending exact-head permitted validation and independent review. No release, merge, production config change or DB mutation.

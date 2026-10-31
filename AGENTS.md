@@ -79,8 +79,10 @@ Stop and ask for human input only when necessary for a material product decision
 - The maintainer-facing update procedure is documented in `docs/RELEASE_HISTORY.md`.
 
 ## CI, merge, and deployment
-- Use the existing repository checks; see `.github/workflows/` and `docs/PRODUCTION_DEPLOYMENT.md`.
-- Verify checks on the exact candidate commit before merging.
+- **GitLab CI is the sole approved test/build/security validation provider** for this repository; `.gitlab-ci.yml` is the canonical pipeline definition. GitHub remains the source of truth for code, branches, PRs and release SHA.
+- CircleCI and Semaphore are retired/non-authoritative for release decisions. Do not trigger, retry, wait on, or require their statuses. Remove obsolete in-repository CI configuration where safe; provider-side app disconnection is an account setting, not a code change.
+- Do not use GitHub Actions as a replacement test/build CI. A GitHub-side sync-only workflow may transport exact refs to GitLab but must not run tests or deploy.
+- Verify the GitLab pipeline on the exact candidate SHA before merging. If the GitLab mirror commit SHA differs, verify and record matching GitHub source blob SHAs for every changed source file; do not call this an exact-SHA run.
 - Merge only when authorized and repository policies/checks allow it.
 - Deploy only when requested/authorized and release gates are satisfied.
 - After deployment, verify the deployed commit/version and health/smoke checks. A green build or HTTP response alone does not prove the whole user journey works.
@@ -100,7 +102,7 @@ Never rely only on chat history. If the execution environment ends, leave a chec
 Do not narrate every trivial edit or ask permission between ordinary implementation steps. Send concise progress updates at meaningful milestones. Final reports must separate verified complete, partially complete, not run, and blocked. Prefer evidence (commit SHA, workflow run, test output, deployment version) over claims.
 
 ## Repository-specific validation
-Inspect current workflow definitions before choosing commands. The main CI workflow currently defines backend pytest, Alembic migration validation against CI PostgreSQL, frontend npm audit, and Angular production build. Run the relevant checks locally when possible and rely on GitHub Actions for authoritative CI results. Do not treat a local partial check as equivalent to the full workflow.
+Inspect `.gitlab-ci.yml` before choosing commands. The GitLab pipeline defines backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container smoke, backup/restore safety, and Python/npm dependency audits. GitLab is the authoritative CI runner; CircleCI and Semaphore statuses are not release gates. Do not treat a local partial check or a mirror with unverified source parity as equivalent to the full candidate.
 
 ## Vibe-coding workflow and AI-agent orchestration
 
@@ -169,6 +171,6 @@ If the task is too large, split it into independently reviewable subtasks with e
 ## Master audit plan and cross-session continuity
 - The canonical audit/planning reference is `docs/AUDIT_MASTER_PLAN.md`. Read it before any new audit, planning, design, or implementation session, together with this file and the latest relevant `TASKS.md` checkpoint.
 - At session start, re-check current `main` SHA, working-tree status when local access exists, relevant Issues/PRs, exact-head CI, and deployment evidence. Treat audit-plan counts/SHA/status as a dated snapshot, not live truth.
-- Keep GitHub as the source of truth for code, PRs, Issues, and CI; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
+- Keep GitHub as the source of truth for code, PRs, and Issues; GitLab is the sole CI evidence provider; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
 - The audit plan is read-only planning until the user explicitly authorizes implementation. Do not infer approval to fix application code, merge PRs, or deploy from the existence of the plan.
 - After each substantial session, update `TASKS.md` with actual evidence, checks run/not run, blockers, branch/commit/PR, and one next action. Update `docs/AUDIT_MASTER_PLAN.md` when findings, priorities, decisions, or acceptance criteria change. Never mark a task VERIFIED without evidence.
