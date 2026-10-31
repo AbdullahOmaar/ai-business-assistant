@@ -1,3 +1,40 @@
+## @n Master self-review refresh — 2026-10-31 12:29 EET
+
+### Live baseline and source reconciliation
+- Current GitHub main baseline remains `dcb0853ab06dc9271b1109db03eb84ab2e3360c8` (PR #322 base). Live `AGENTS.md` confirms GitLab CI is the sole approved test/build/security provider; GitHub Actions are not replacement CI; CircleCI/Semaphore must not be triggered or retried.
+- Five Project Sources are all version 1.0.0 DRAFT and relate to old SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; they are context only, not approval/live status.
+- Notion Charter, Master Task Plan, Product & Agent Operating Model, Agent Prompt Registry, Universal Work Execution Standard and E2E Assurance Plan were re-read. Notion connector_search is unavailable under current workspace entitlement; direct canonical Notion page fetch works.
+- Open PR inventory remains 15. Current reviews on PR #302/#305/#318 are COMMENTED by the repository owner only; #322 has no formal review. Master self-review below is not independent approval.
+
+### T03 / PR #302 — Master self-review
+- Exact GitHub PR head `1ef19a856ee4a14d920dd2887d2696d2a61527bd`; branch `qa/foreign-resource-read-no-side-effects-20261029`; PR remains OPEN/DRAFT. GitHub compare to main: 48 ahead / 3 behind; mergeable=true.
+- Static route reconstruction across the six API modules and `main.py`: current main has 80 route decorators / 79 unique method-path pairs. Duplicate: `POST /api/v1/businesses/{business_id}/suppliers` registered by both `api.py` and `extended_api.py`.
+- Candidate removes the duplicate `extended_api.py` handler and unused `SupplierInput`, retaining the canonical service-backed `api.py` route. Candidate source reconstruction: 79 decorators / 79 unique method-path pairs.
+- Candidate route inventory: 79 route rows. Static set comparison to all 79 candidate routes: 0 missing / 0 extra / 0 duplicates.
+- New test modules use per-request persisted-row snapshots including AuditEvent for cross-tenant customer/product/invoice, stock, sales returns, PO, payment allocations and payroll cases. Positive controls exist for authorized reads/operations. Minor test-scope note: supplier-create snapshot excludes the Business row; broader route matrix includes it.
+- **No pytest/build/runtime test was run.** GitLab mirror branch is stale at `ccbc662e6fc3333bbd64c653daec103cb1ded89d`, not exact GitHub SHA; exact candidate commit is absent in GitLab and candidate branch does not contain `.gitlab-ci.yml`. Do not run a stale pipeline or call it exact validation.
+- Disposition: strong security candidate, but keep Draft until exact-source validation and the applicable review gate are satisfied. Master self-review is not independent approval.
+
+### PR #318 — Master security self-review
+- Reviewed `.github/workflows/sync-gitlab.yml` blob `e961d98fbf97e6cc27599b4e4265f9a153d2cbed`.
+- Positive: dispatch-only; main-ref job guard; exact 40-char SHA check + fetched SHA equality; full history; exact SHA push; no force/prune/delete; contents:read; no test/deploy logic; no third-party actions.
+- Blockers: GitHub main currently reported `protected=false`; protected `gitlab-sync` Environment / required reviewers not verified; GitLab token scope/expiry/project restriction not verified. No dispatch or pipeline run.
+- Disposition: do not merge/dispatch until branch protection and environment/credential controls are evidenced. Self-review is not independent approval.
+
+### Documentation correction — PR #322
+- Existing docs branch updated; latest commit `bffd017156bf4924d9d9c64d4afbd4a2367ee3c5`.
+- `README.md` now identifies GitLab as sole approved test/build/security CI and GitHub Actions as legacy/non-authoritative/sync-only. This corrects a direct contradiction with live `AGENTS.md`.
+- `[skip ci]` commit readback: zero GitHub workflow runs and zero status contexts; no build/test run. PR remains Draft.
+
+### Security incident / credential hygiene
+- GitLab project metadata response included the project runner-registration token field. The token value is intentionally not copied into this ledger, comments or prompts. Treat the credential as exposed: rotate/reset it in GitLab project Settings → CI/CD → Runners and audit/revoke any unknown registered runners. No runner registration or token use was performed in this session. The current connector has no runner-token reset action.
+- Notion connector_search returned entitlement_required (Business plan or higher); no automatic retry. Direct Notion page fetch remains available.
+
+### Current execution disposition
+- No PR merged; no production migration/write; no production deployment; no GitLab pipeline triggered.
+- Current production v1.3.5 remains the last known release; a new version is not yet eligible.
+- Next: continue source review of P0 security candidates; reconcile/sync exact PR heads through the approved sync path only after the #318 trust boundary is configured; run exact GitLab CI; then proceed with independent/authorized release gates and safe deployment.
+
 ## Master execution update — 2026-10-31 (latest live reconciliation)
 
 - Canonical GitHub main remains `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`, release `1.3.5`; Vercel Web/API production deployments are READY on this exact SHA and their production aliases are attached.
