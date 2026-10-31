@@ -1000,3 +1000,114 @@ def test_supplier_patch_role_split_and_purchase_order_cancel_are_owner_gated(pur
         assert len(supplier_audits) == 1
         assert len(cancel_audits) == 1
 
+
+
+
+def test_owner_can_replace_draft_purchase_order_with_multiple_lines_without_stock_side_effects(
+    purchasing_workspace,
+):
+    engine, business_id, owner_principal = purchasing_workspace
+
+    with Session(engine) as session:
+        supplier = Supplier(business_id=business_id, name="T39 Multi-line Supplier")
+        session.add(supplier)
+        session.flush()
+        first_product = create_product(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            name="T39 Multi-line Product A",
+            unit_price=Decimal("4.00"),
+            is_stock_tracked=True,
+        )
+        second_product = create_product(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            name="T39 Multi-line Product B",
+            unit_price=Decimal("5.00"),
+            is_stock_tracked=True,
+        )
+        order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=supplier.id,
+            order_number="PO-T39-MULTILINE",
+            status="draft",
+            currency_code="EGP",
+            total=Decimal("4.00"),
+        )
+        session.add(order)
+        session.flush()
+        session.add(PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=first_product.id,
+            quantity=Decimal("1.000"),
+            unit_cost=Decimal("4.00"),
+            received_quantity=Decimal("0.000"),
+        ))
+        supplier_id = supplier.id
+        order_id = order.id
+        first_product_id = first_product.id
+        second_product_id = second_product.id
+        session.commit()
+
+    replacement = PurchaseOrderInput(
+        supplier_id=supplier_id,
+        order_number="PO-T39-MULTILINE-UPDATED",
+        currency_code="EGP",
+        lines=[
+            PurchaseLineInput(
+                product_id=first_product_id,
+                quantity=Decimal("2.000"),
+                unit_cost=Decimal("4.00"),
+            ),
+            PurchaseLineInput(
+                product_id=second_product_id,
+                quantity=Decimal("3.000"),
+                unit_cost=Decimal("5.00"),
+            ),
+        ],
+    )
+
+    with Session(engine) as session:
+        updated = update_purchase_order(
+            business_id=business_id,
+            order_id=order_id,
+            body=replacement,
+            session=session,
+            principal=owner_principal,
+        )
+        assert updated["status"] == "draft"
+        assert updated["order_number"] == "PO-T39-MULTILINE-UPDATED"
+        assert Decimal(updated["total"]) == Decimal("23.00")
+
+    with Session(engine) as session:
+        detail = get_purchase_order(
+            business_id=business_id,
+            order_id=order_id,
+            session=session,
+            principal=owner_principal,
+        )
+        lines_by_product = {line["product_id"]: line for line in detail["lines"]}
+        assert set(lines_by_product) == {str(first_product_id), str(second_product_id)}
+        assert lines_by_product[str(first_product_id)]["quantity"] == "2.000"
+        assert lines_by_product[str(second_product_id)]["quantity"] == "3.000"
+        assert all(line["remaining_quantity"] == line["quantity"] for line in detail["lines"])
+
+        update_audits = session.scalars(
+            select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.updated",
+                AuditEvent.target_id == str(order_id),
+            )
+        ).all()
+        stock_movements = session.scalars(
+            select(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.reference_id == order_id,
+            )
+        ).all()
+        assert len(update_audits) == 1
+        assert stock_movements == []
