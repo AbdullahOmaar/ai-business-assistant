@@ -1,3 +1,24 @@
+## Master execution update — 2026-10-31 (latest live reconciliation)
+
+- Canonical GitHub main remains `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`, release `1.3.5`; Vercel Web/API production deployments are READY on this exact SHA and their production aliases are attached.
+- Canonical GitLab project `abdullahomarrefaat/ai-business-assistant` (88314921) main is mirror SHA `843751f396b6b6d308d9c833666d848c42c909ca`; pipeline #3010621725 passed 8/8. The release parity review compared all 20 changed/added files from dcb0853 and verified content parity (19/19 changed/added blobs; the deleted CircleCI config is absent on both refs). The mirror commit SHA is not identical to GitHub main.
+- Neon production main was read-only checked: Alembic `0005_employee_payroll`; `employees` and `payroll_records` exist. No production SQL writes or migrations were run.
+- The production API `DATABASE_URL` environment variable was updated before the current dcb0853 deployment. Older runtime error clusters include failed DB authentication on a prior deployment; the current API deployment had no error-level runtime logs in the latest 30-minute window. Direct `/version`, `/readyz`, and authenticated browser journeys remain NOT RUN.
+- T37 approval is CONFLICTED across imported task text: the T37 canonical page and its recorded discussion still say PARTIALLY COMPLETE / DRAFT / NOT APPROVED; one T38 paragraph claims bounded T37 v1.0.1 approval, while T39 and the latest Master handoffs explicitly keep T37 unapproved. Fail closed: no shared financial schema/posting/tax/FX/COGS/AP/refund/payroll-payout semantics are approved from this conflicting evidence. The separate narrow T41 payroll-privacy policy approval does not approve T37 as a whole.
+- PR #318 existing branch was hardened at commit `99ab2f24485f9ae16e20841c066f65ced4842adb`: dispatch-only, requires main as workflow source, validates exact branch ref and full SHA, fetches full Git history, verifies the fetched SHA, and pushes without force/deletion. YAML parsing and `bash -n` on all three shell steps PASS in the local static check. No workflow was dispatched. Independent security review and protected `gitlab-sync` environment/required reviewers remain BLOCKED.
+- GitHub main metadata still reports `protected=false`; repository ruleset details remain UNKNOWN. Do not treat missing enforcement as permission to bypass review.
+- Fresh GitHub search shows **15 OPEN PRs**: #302, #304, #305, #306, #307, #308, #309, #311, #312, #313, #314, #315, #317, #318, #322. They remain individually subject to stale-base/conflict checks, exact GitLab validation, independent review, and scope-specific approvals. #310 remains consolidated into #305; #319 remains intentionally closed.
+- T42 has an existing branch but no open PR; its task record identifies TypeScript CSV preview/import call-signature defects, parser/execute row-limit mismatch, and a competing Alembic revision with #312. Resolve this migration graph conflict before integrating either migration-bearing branch.
+- No application PR was merged and no new production deployment was triggered in this update. Current v1.3.5 is the last verified production deployment; a new version must wait for a newly validated and reviewed candidate.
+
+### Release execution order from this checkpoint
+1. Complete independent review and protected-environment setup for #318; only then sync a unique validation ref (never force-push divergent main/stale refs).
+2. Finish P0 security/auth acceptance: T03 route × role × tenant no-side-effect matrix, T43 authenticated session/workspace journey, and #302/#309/#313 exact-head validation.
+3. Reconcile and validate T22 QA candidate #315 and non-financial T42 customer/product CSV work; resolve #312/T42 Alembic revision conflict before any migration integration.
+4. Reconcile T38 #305, T39 #306, T40 #304, and T41 #308 individually against current main. Keep all T37-dependent financial semantics blocked until a canonical versioned approval resolves the conflicting task records. Retain only the separately approved T41 payroll-privacy slice.
+5. Complete exact-source GitLab pipeline, independent security/QA review, frontend/API/browser tests, backup/restore evidence, production endpoint and authenticated smoke.
+6. Only after the final merged SHA passes gates: align frontend/backend/FastAPI version, update bilingual release guide and TASKS, deploy affected Vercel projects once, verify production aliases, SHA/version, /health, /readyz, and safe user journey.
+
 # Master execution checkpoint — 2026-10-31 (v1.3.5 production; demo readiness NOT READY)
 
 This checkpoint supersedes older status snapshots below where they conflict. Historical notes remain preserved.
@@ -25,7 +46,7 @@ This checkpoint supersedes older status snapshots below where they conflict. His
 - GitLab mirror branch listing returned **282 refs**. This is not a canonical GitHub branch count; full GitHub branch-ref pagination remains **NOT VERIFIED**. Do not infer GitHub branch count from the GitLab mirror.
 
 ## Current open PRs and merge gates
-- GitHub currently has **14 open PRs** after closing #319.
+- GitHub currently has **15 open PRs** after closing #319; #307 (Notion workspace migration handoff package) is also OPEN/DRAFT and documentation-only.
 - #305 (sales-to-cash/invoice print) remains Draft and merge-blocked; current exact-head GitLab pipeline is not verified. Its frontend regex/source-text tests are static guards, not behavioral tests. Required browser behavior includes popup blocking, delayed invoice detail after workspace switch, payment controls locked while pending, stable idempotency key/payload on retry, and no stale workspace update.
 - #315 (Production V1 scenarios) remains Draft and merge-blocked. GitLab pipeline #3010128927 passed 8/8 on its older exact head, but the branch is not current-main aligned and its four browser tests do not cover authenticated Firebase ERP flows. Its API/persistence scenarios use synthetic principals.
 - #309 (runtime-config fail-closed) and #316's merged auth-state synchronization must not be combined by stale wholesale merge; #309's validation behavior needs a current-main integration and exact GitLab validation.
