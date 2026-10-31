@@ -737,12 +737,16 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
         activity = get_purchase_order_activity(
             business_id=business_id,
             order_id=order_id,
+            limit=100,
+            offset=0,
             session=session,
             principal=staff_principal,
         )
         receipts = list_purchase_order_receipts(
             business_id=business_id,
             order_id=order_id,
+            limit=100,
+            offset=0,
             session=session,
             principal=staff_principal,
         )
@@ -753,6 +757,9 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
         )
         listing = list_purchase_orders(
             business_id=business_id,
+            limit=100,
+            offset=0,
+            status=None,
             session=session,
             principal=staff_principal,
         )
@@ -777,11 +784,11 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
             session=session, principal=owner_principal,
         ),
         lambda session: get_purchase_order_activity(
-            business_id=business_id, order_id=foreign_order_id,
+            business_id=business_id, order_id=foreign_order_id, limit=100, offset=0,
             session=session, principal=owner_principal,
         ),
         lambda session: list_purchase_order_receipts(
-            business_id=business_id, order_id=foreign_order_id,
+            business_id=business_id, order_id=foreign_order_id, limit=100, offset=0,
             session=session, principal=owner_principal,
         ),
     )
@@ -801,11 +808,11 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
             session=session, principal=outsider_principal,
         ),
         lambda session: get_purchase_order_activity(
-            business_id=business_id, order_id=order_id,
+            business_id=business_id, order_id=order_id, limit=100, offset=0,
             session=session, principal=outsider_principal,
         ),
         lambda session: list_purchase_order_receipts(
-            business_id=business_id, order_id=order_id,
+            business_id=business_id, order_id=order_id, limit=100, offset=0,
             session=session, principal=outsider_principal,
         ),
         lambda session: purchase_order_summary(
@@ -821,6 +828,9 @@ def test_supplier_and_purchase_order_read_routes_are_member_scoped_and_hide_fore
     with Session(engine) as session:
         assert list_purchase_orders(
             business_id=business_id,
+            limit=100,
+            offset=0,
+            status=None,
             supplier_id=foreign_supplier_id,
             session=session,
             principal=owner_principal,
