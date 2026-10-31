@@ -12,6 +12,10 @@ import app.operations as purchasing_operations
 from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.orm import Session
 
+from fastapi import HTTPException
+
+from app.extended_api import ProductPatch, PurchaseLineInput, PurchaseOrderInput, patch_product, post_purchase_order
+
 from app.models import (
     AuditEvent,
     Business,
@@ -413,6 +417,138 @@ def test_postgres_receipt_failure_after_first_stock_write_rolls_back_all_effects
                 )
             ).all()
             assert receipt_audits == []
+    finally:
+        engine.dispose()
+
+def test_postgres_po_create_and_stock_tracking_disable_serialize_on_product_lock():
+    """A PO create and stock-tracking disable race cannot commit an invalid pair."""
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if not database_url or not database_url.startswith("postgresql"):
+        pytest.skip("Set TEST_DATABASE_URL to a disposable PostgreSQL database")
+
+    engine = create_engine(database_url, pool_size=5, max_overflow=0)
+    suffix = uuid4().hex[:12]
+    principal = AuthenticatedPrincipal(subject=f"t39-product-race-owner-{suffix}")
+    try:
+        with Session(engine) as session:
+            business = Business(name=f"T39 product race {suffix}", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            business_id = business.id
+            session.add(BusinessMembership(
+                business_id=business_id,
+                user_subject=principal.subject,
+                role=MembershipRole.OWNER,
+            ))
+            session.flush()
+            supplier = Supplier(business_id=business_id, name=f"T39 supplier {suffix}")
+            session.add(supplier)
+            session.flush()
+            product = create_product(
+                session,
+                principal=principal,
+                business_id=business_id,
+                name=f"T39 race product {suffix}",
+                unit_price=Decimal("10.00"),
+                is_stock_tracked=True,
+            )
+            product_id, supplier_id = product.id, supplier.id
+            session.commit()
+
+        body = PurchaseOrderInput(
+            supplier_id=supplier_id,
+            order_number=f"T39-RACE-{suffix}",
+            currency_code="EGP",
+            lines=[
+                PurchaseLineInput(
+                    product_id=product_id,
+                    quantity=Decimal("1.000"),
+                    unit_cost=Decimal("10.00"),
+                )
+            ],
+        )
+        patch = ProductPatch(is_stock_tracked=False)
+        start_together = Barrier(2)
+
+        def create_order():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                try:
+                    result = post_purchase_order(
+                        business_id=business_id,
+                        body=body,
+                        session=session,
+                        principal=principal,
+                    )
+                    return "created", result["id"]
+                except HTTPException as exc:
+                    if exc.status_code != 422:
+                        raise
+                    session.rollback()
+                    return "rejected", None
+
+        def disable_stock_tracking():
+            with Session(engine) as session:
+                session.execute(text("SET LOCAL lock_timeout = '8s'"))
+                start_together.wait(timeout=10)
+                try:
+                    result = patch_product(
+                        business_id=business_id,
+                        product_id=product_id,
+                        body=patch,
+                        session=session,
+                        principal=principal,
+                    )
+                    return "disabled", result["is_stock_tracked"]
+                except HTTPException as exc:
+                    if exc.status_code != 422:
+                        raise
+                    session.rollback()
+                    return "rejected", None
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            create_result, disable_result = list(pool.map(
+                lambda fn: fn(), (create_order, disable_stock_tracking)
+            ))
+
+        with Session(engine) as session:
+            saved_product = session.get(Product, product_id)
+            orders = session.scalars(
+                select(PurchaseOrder).where(PurchaseOrder.business_id == business_id)
+            ).all()
+            lines = session.scalars(
+                select(PurchaseOrderLine).where(PurchaseOrderLine.business_id == business_id)
+            ).all()
+            created_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "purchase_order.created",
+                )
+            ).all()
+            product_audits = session.scalars(
+                select(AuditEvent).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.action == "product.updated",
+                )
+            ).all()
+
+            if create_result[0] == "created":
+                assert disable_result[0] == "rejected"
+                assert saved_product.is_stock_tracked is True
+                assert len(orders) == 1
+                assert len(lines) == 1
+                assert len(created_audits) == 1
+                assert product_audits == []
+            else:
+                assert create_result[0] == "rejected"
+                assert disable_result[0] == "disabled"
+                assert disable_result[1] is False
+                assert saved_product.is_stock_tracked is False
+                assert orders == []
+                assert lines == []
+                assert created_audits == []
+                assert len(product_audits) == 1
     finally:
         engine.dispose()
 
