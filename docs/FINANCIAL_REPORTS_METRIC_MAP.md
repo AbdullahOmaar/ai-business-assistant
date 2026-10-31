@@ -360,3 +360,12 @@ The code paths reviewed are `backend/app/core_features_api.py` (dashboard and P&
 - **BLOCKED:** `extended_api.py` is a shared file with a separate single-writer boundary. No source edit was made. Master must issue an explicit handoff/ownership decision before Chat 3 changes the endpoint. The new regression is authored but not run; its expected result against the current source is not yet verified.
 - This is a date-filter correction only if/when authorized. Do not alter statement allocation, balance, receivables-as-of, settlement, tax or other financial semantics.
 - Updated authored inventory: **38 T40-targeted + 27 related = 65 test cases**, all **NOT RUN**.
+
+
+
+### Non-empty currency-separated operations summary regression — 2026-10-31
+
+- Added `test_financial_summary_keeps_each_source_metric_separate_by_currency` to `backend/tests/test_operations.py`.
+- The test seeds issued EGP/USD invoices, matching EGP/USD payments and allocations, and EGP/USD incurred expenses, then asserts `financial_summary()` returns three independent currency maps without cross-currency addition.
+- This tests existing grouping behavior only. It does not introduce FX conversion, receivables allocation policy, cashflow semantics or new financial formulas.
+- Updated authored inventory: **38 T40-targeted + 28 related = 66 test cases**, all **NOT RUN**.
