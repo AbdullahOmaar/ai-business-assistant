@@ -583,6 +583,52 @@ def test_payroll_precision_and_unknown_fields_are_rejected_without_side_effects(
         assert actions == ["payroll.created"]
 
 
+
+def test_calculated_payroll_net_pay_overflow_is_rejected_without_side_effects(employee_environment):
+    env = employee_environment
+    employee = _create_employee(env, salary="999999999999.99").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+
+    overflow_create = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-10", "allowances": "0.01"},
+    )
+    assert overflow_create.status_code == 422
+    assert "maximum supported amount" in overflow_create.json()["detail"]
+
+    created = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11"},
+    )
+    assert created.status_code == 201
+    payroll_id = created.json()["id"]
+
+    overflow_update = env["client"].patch(
+        f"{base}/payroll/{payroll_id}",
+        json={"allowances": "0.01"},
+    )
+    assert overflow_update.status_code == 422
+    assert "maximum supported amount" in overflow_update.json()["detail"]
+
+    with app.state.session_factory() as session:
+        records = session.scalars(select(PayrollRecord)).all()
+        assert len(records) == 1
+        persisted = records[0]
+        assert str(persisted.id) == payroll_id
+        assert persisted.base_salary == Decimal("999999999999.99")
+        assert persisted.allowances == Decimal("0.00")
+        assert persisted.net_pay == Decimal("999999999999.99")
+        assert persisted.status == "draft"
+        assert persisted.expense_id is None
+        assert session.scalar(select(func.count()).select_from(Expense)) == 0
+        payroll_actions = session.scalars(
+            select(AuditEvent.action)
+            .where(AuditEvent.target_type == "payroll")
+            .order_by(AuditEvent.created_at, AuditEvent.action)
+        ).all()
+        assert payroll_actions == ["payroll.created"]
+
+
 def test_invalid_payroll_components_and_period_have_no_side_effects(employee_environment):
     env = employee_environment
     employee = _create_employee(env).json()
