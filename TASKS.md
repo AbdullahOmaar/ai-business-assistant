@@ -199,6 +199,37 @@
 
 # Master execution checkpoint — 2026-10-31 (v1.3.5 production; demo readiness NOT READY)
 
+## Master execution refresh — 2026-10-31 13:40 EET
+
+This refresh supersedes earlier live status snapshots only where newer provider evidence is explicitly listed below. GitHub remains canonical for source/PRs; GitLab is validation-only; Vercel is runtime authority.
+
+### Current source / release baseline
+- GitHub main: `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`, coordinated version v1.3.5.
+- Existing Vercel Web/API production deployments remain READY on that SHA; previously verified API `/version` 1.3.5, `/readyz` ready, `/health` ok. This session did not create a version bump or deployment.
+- GitLab project 88314921 latest main pipeline #3010621725 is on mirror SHA `843751f396b6b6d308d9c833666d848c42c909ca`, not GitHub main dcb0853; do not count it as current-main validation.
+- GitHub branch-protection/ruleset readback is unavailable to the current integration (403). Prior live repository metadata reported `main.protected=false`; treat main protection as a release/security blocker until owner/admin verifies enforcement.
+
+### Exact-SHA CI capability verified
+- PR #315 head `a7fef432e8dedcf1b7ffbac24494ac727f23b02c` on `ci/gitlab-fallback-canonical-20261030` has GitLab pipeline #3010593680 SUCCESS, 8/8 jobs: backend tests, frontend tests, browser E2E, backup/restore safety, backend container smoke, frontend build, Python dependency audit, frontend dependency audit.
+- GitLab JUnit summary for that exact SHA: 259 passed, 0 failed. This proves the runner/config can execute for PR #315 only; it does not validate main or other PR heads. Browser coverage remains startup/platform-admin, not the authenticated OWNER/STAFF ERP business journey.
+- PR #315 remains OPEN/DRAFT/UNMERGED and diverged/conflicted against current main; no merge or sync mechanism activation is authorized by this evidence.
+
+### Priority workstream status and exact blockers
+- T03 / PR #302: head `57bc33543954c3f0c28ee3a4380c1ca969681154`, base `c464398e0a6ace77eba32aabfbdbd09091f53999`, diverged 52 ahead / 3 behind current main. Static route inventory is 79/79 and duplicate supplier route removal is source-verified. GitLab mirror branch is stale at `ccbc662e6fc3333bbd64c653daec103cb1ded89d`; no exact-head pipeline; full pytest/PostgreSQL/browser/security matrix NOT RUN. Keep Draft.
+- T40 / PR #304: head `e671d8ea36781ed955c0b72bf169c5bf385e9bd8`; GitLab mirror stale at `e6554c57f9f4c1c4593f7a3e95cc54283879641a`; no exact-head pipeline. Reports UI pagination is blocked by Master-owned app.component.ts/api.service.ts and missing dedicated Reports component. Exact tests/build/PostgreSQL/browser/security NOT RUN.
+- T41 / PR #308: head `b5da991c593a1181d6bbda71cf9754ff0ac64bcd`; GitLab mirror stale at `1b9a0bc052cc74cf479725a8c60b291159252057`; no exact-head pipeline. Exact pytest/PostgreSQL concurrency/frontend/browser/security/migration rehearsal NOT RUN.
+- T40/T41 overlap in seven shared files: TASKS.md, assistant_api.py, core_features_api.py, extended_api.py, operations.py, security.py, and test_employee_payroll_api.py. Master owns TASKS.md and must coordinate a single-writer integration; do not merge/rebase either branch wholesale.
+- T38 / PR #305, T39 / PR #306, T38 statement filters / PR #311 and credit-note lifecycle / PR #312 remain unvalidated on exact heads. T37 remains DRAFT / NOT APPROVED; all dependent allocation, refund/credit-note posting, AP, COGS, FX, GL, payroll statutory/effective-date and settlement semantics remain fail-closed.
+- Startup guard PR #309, admin regression PR #313, pricing-rule listing PR #314 and knowledge package PR #317 have mirrored branches at their current GitHub heads (or, for #313, a stale head), but no exact-SHA GitLab pipelines were found. Do not count empty GitHub statuses or old CircleCI/Semaphore contexts as PASS.
+- PR #318 remains dispatch-only sync candidate; do not activate while main protection, environment reviewer/ref restrictions and least-privilege token scope are unverified.
+- PR #322 remains docs-only, Draft, self-reviewed, with no exact GitLab pipeline or independent approval.
+
+### Review / execution policy
+- Open PR inventory remains 15; review sweep recorded 0 APPROVED (9 COMMENTED-only, 6 with no review submission). Comments and maintainer self-review are not independent approvals.
+- No CircleCI/Semaphore triggers or retries; no TinyFish; no direct GitLab source edits; no manual mirror branch creation; no force-push; no production DB writes/migrations; no merge or deployment in this refresh.
+- Next: continue safe source review and independent work packages; resolve sync/trust configuration through owner/admin controls, then validate exact candidate SHAs on GitLab before any merge/release.
+
+
 This checkpoint supersedes older status snapshots below where they conflict. Historical notes remain preserved.
 
 ## Verified production delivery
