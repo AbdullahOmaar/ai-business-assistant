@@ -29,15 +29,3 @@ const MOBILE_MORE_TABS = new Set<WorkspaceModuleTab>([
 export function isMobileMoreTab(tab: WorkspaceModuleTab): boolean {
   return MOBILE_MORE_TABS.has(tab);
 }
-
-
-const MOBILE_MORE_TABS = new Set<WorkspaceModuleTab>([
-  'products', 'payments', 'expenses', 'employees', 'assistant', 'reports',
-  'audit', 'platform-admin', 'release-guide', 'suppliers', 'purchases',
-  'recurring', 'notifications', 'health', 'integrity', 'taxes',
-]);
-
-/** Whether the mobile More navigation item should be active for the current tab. */
-export function isMobileMoreTab(tab: WorkspaceModuleTab): boolean {
-  return MOBILE_MORE_TABS.has(tab);
-}
