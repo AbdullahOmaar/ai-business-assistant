@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { WorkspaceLoadGuard } from './workspace-load-guard.ts';
+import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard.ts';
 
 test('accepts only the newest request generation', () => {
   const guard = new WorkspaceLoadGuard();
@@ -65,4 +65,27 @@ test('invalidates a pending same-workspace request when owner access is revoked'
   guard.invalidate();
 
   assert.equal(guard.isCurrent(request, 'business-a', 'business-a'), false);
+});
+
+test('rejects a late response after auth transition even when workspace, user, and role are unchanged', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
+  const requested = {
+    workspaceId: 'shared-business', userId: 'user-a', role: 'owner',
+    signedIn: true, authTransitionVersion: 7,
+  };
+  const current = { ...requested, authTransitionVersion: 8 };
+
+  assert.equal(isCurrentTenantRequest(guard, request, requested, current), false);
+});
+
+test('accepts a tenant response only when auth transition generation is unchanged', () => {
+  const guard = new WorkspaceLoadGuard();
+  const request = guard.begin();
+  const context = {
+    workspaceId: 'business-a', userId: 'user-a', role: 'owner',
+    signedIn: true, authTransitionVersion: 3,
+  };
+
+  assert.equal(isCurrentTenantRequest(guard, request, context, context), true);
 });
