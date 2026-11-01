@@ -1869,3 +1869,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - A first incomplete-snapshot attempt failed with missing `employee-payroll.component.ts` and `module-access.ts`; it was discarded as an invalid harness (not a code regression). The second run included all exact dependencies and passed 13/13.
 - Cumulative targeted isolated Node evidence: **97 PASS / 0 FAIL** across five groups (47 template/invoice/payment retry; 8 release guide; 14 module access/workspace guard; 15 payment allocation/list pagination; 13 employee/payroll + expenses). These are not a full repo test/build or browser/backend evidence.
 - Task 3 remains IN PROGRESS: Employees/Expenses now have focused source tests; suppliers/purchasing/receiving and real API/data journeys remain unverified. Do not merge old-base PR #304/#308 or T37-gated work to make the demo appear complete.
+
+
+## Master latest evidence — 2026-11-01 14:30 +02:00
+
+- Current PR #323 candidate before this ledger refresh: `22373ad3bd2e3fd95bb96a463aa370215ae8cad4`, base/main `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`; OPEN/DRAFT/UNMERGED; mergeable=true; zero review submissions. Exact-head status: Semaphore FAILURE and CircleCI ERROR. No CI was triggered/retried by Master.
+- Exact branch preview lookup returned **0 Web deployments and 0 API deployments** for `master/demo-readiness-ui-20261101`. Production aliases are not this candidate. Demo Owner/Staff accounts and synthetic fixtures remain NOT PROVIDED / NOT VERIFIED.
+- Targeted source/spec tests now total **97 PASS / 0 FAIL** across five isolated Node 24.22.1 runs: template/invoice-draft/payment-retry 47 (at parent code head cb342; tested app/helper blobs unchanged in later commits), release guide 8, module-access/workspace-load-guard 14, payment-allocation/list-pagination 15, employee-payroll/expenses UI 13. This does not satisfy full suite/build/E2E/backend requirements.
+- Chat 1 PR #305 current head remains `14761ed409c14087c95a1580b798483f21885c6c`, base d99b71b; OPEN/DRAFT/UNMERGED, mergeable=false. Its seven extracted-method behavior simulations are present; exact-head Chat 5 review still pending. Observed CI status contains CircleCI SUCCESS and Semaphore FAILURE, not counted as independent demo proof under the freeze/provider conflict.
+- **0/5 tasks VERIFIED COMPLETE**: Tasks 1–4 remain IN PROGRESS; Task 5 remains BLOCKED. No merge, deploy, version bump, migration, production write or CI trigger/retry.
+
