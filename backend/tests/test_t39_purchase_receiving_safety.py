@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.extended_api import (
     PurchaseLineInput,
+    ProductPatch,
     approve_purchase_order,
     PurchaseOrderInput,
     SupplierPatch,
@@ -17,6 +18,8 @@ from app.extended_api import (
     get_supplier,
     list_purchase_order_receipts,
     list_purchase_orders,
+    list_suppliers,
+    patch_product,
     patch_supplier,
     purchase_order_summary,
     update_purchase_order,
@@ -1533,3 +1536,315 @@ def test_approval_rejects_deactivated_supplier_or_product_without_side_effects(
                 AuditEvent.target_id == str(order_id),
             )
         ) == 0
+
+
+def test_purchase_order_status_and_supplier_filters_compose_and_paginate(purchasing_workspace):
+    """PO filters compose without crossing tenant boundaries or destabilizing pages."""
+    engine, business_id, owner_principal = purchasing_workspace
+    with Session(engine) as session:
+        supplier_a = Supplier(business_id=business_id, name="Filter Supplier A")
+        supplier_b = Supplier(business_id=business_id, name="Filter Supplier B")
+        foreign_business = Business(name="Foreign Filter Shop", currency_code="EGP")
+        session.add_all([supplier_a, supplier_b, foreign_business])
+        session.flush()
+        foreign_supplier = Supplier(
+            business_id=foreign_business.id,
+            name="Foreign Filter Supplier",
+        )
+        session.add(foreign_supplier)
+        session.flush()
+
+        orders = [
+            PurchaseOrder(
+                business_id=business_id,
+                supplier_id=supplier_a.id,
+                order_number="PO-FILTER-A-DRAFT",
+                status="draft",
+                currency_code="EGP",
+                total=Decimal("10.00"),
+            ),
+            PurchaseOrder(
+                business_id=business_id,
+                supplier_id=supplier_a.id,
+                order_number="PO-FILTER-A-APPROVED",
+                status="approved",
+                currency_code="EGP",
+                total=Decimal("20.00"),
+            ),
+            PurchaseOrder(
+                business_id=business_id,
+                supplier_id=supplier_b.id,
+                order_number="PO-FILTER-B-DRAFT",
+                status="draft",
+                currency_code="USD",
+                total=Decimal("30.00"),
+            ),
+            PurchaseOrder(
+                business_id=foreign_business.id,
+                supplier_id=foreign_supplier.id,
+                order_number="PO-FILTER-FOREIGN",
+                status="draft",
+                currency_code="EGP",
+                total=Decimal("999.00"),
+            ),
+        ]
+        session.add_all(orders)
+        session.commit()
+        supplier_a_id = supplier_a.id
+        local_order_ids = {str(order.id) for order in orders[:3]}
+        expected_status_ids = {str(orders[0].id), str(orders[2].id)}
+        expected_supplier_ids = {str(orders[0].id), str(orders[1].id)}
+        expected_combined_ids = {str(orders[0].id)}
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+        movement_count_before = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        )
+
+        all_rows = list_purchase_orders(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            status=None,
+            supplier_id=None,
+            session=session,
+            principal=owner_principal,
+        )
+        status_rows = list_purchase_orders(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            status="draft",
+            supplier_id=None,
+            session=session,
+            principal=owner_principal,
+        )
+        supplier_rows = list_purchase_orders(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            status=None,
+            supplier_id=supplier_a_id,
+            session=session,
+            principal=owner_principal,
+        )
+        combined_rows = list_purchase_orders(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            status="draft",
+            supplier_id=supplier_a_id,
+            session=session,
+            principal=owner_principal,
+        )
+
+        all_ids = [row["id"] for row in all_rows]
+        paged_ids = []
+        for offset in range(len(all_ids)):
+            page = list_purchase_orders(
+                business_id=business_id,
+                limit=1,
+                offset=offset,
+                status=None,
+                supplier_id=None,
+                session=session,
+                principal=owner_principal,
+            )
+            paged_ids.extend(row["id"] for row in page)
+
+        assert set(all_ids) == local_order_ids
+        assert {row["id"] for row in status_rows} == expected_status_ids
+        assert {row["id"] for row in supplier_rows} == expected_supplier_ids
+        assert {row["id"] for row in combined_rows} == expected_combined_ids
+        assert paged_ids == all_ids
+        assert len(paged_ids) == len(set(paged_ids))
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id
+            )
+        ) == movement_count_before
+
+
+def test_supplier_search_is_case_insensitive_paginated_and_owner_controls_inactive_visibility(
+    purchasing_workspace,
+):
+    """Supplier search is tenant-scoped; inactive rows remain OWNER-only."""
+    engine, business_id, owner_principal = purchasing_workspace
+    with Session(engine) as session:
+        local_suppliers = [
+            Supplier(business_id=business_id, name="Northwind Alpha", is_active=True),
+            Supplier(business_id=business_id, name="northwind Beta", is_active=True),
+            Supplier(business_id=business_id, name="NORTHWIND Gamma", is_active=True),
+            Supplier(business_id=business_id, name="Northwind Archived", is_active=False),
+        ]
+        foreign_business = Business(name="Foreign Supplier Search Shop", currency_code="EGP")
+        session.add_all(local_suppliers + [foreign_business])
+        session.flush()
+        foreign_supplier = Supplier(
+            business_id=foreign_business.id,
+            name="Northwind Foreign",
+            is_active=True,
+        )
+        staff_membership = BusinessMembership(
+            business_id=business_id,
+            user_subject="t39-staff-search",
+            role=MembershipRole.STAFF,
+        )
+        session.add_all([foreign_supplier, staff_membership])
+        session.commit()
+
+        staff_principal = AuthenticatedPrincipal(subject="t39-staff-search")
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+
+        owner_active = list_suppliers(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            include_inactive=False,
+            name="nOrThWiNd",
+            session=session,
+            principal=owner_principal,
+        )
+        owner_page_one = list_suppliers(
+            business_id=business_id,
+            limit=2,
+            offset=0,
+            include_inactive=False,
+            name="nOrThWiNd",
+            session=session,
+            principal=owner_principal,
+        )
+        owner_page_two = list_suppliers(
+            business_id=business_id,
+            limit=2,
+            offset=2,
+            include_inactive=False,
+            name="nOrThWiNd",
+            session=session,
+            principal=owner_principal,
+        )
+        owner_including_inactive = list_suppliers(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            include_inactive=True,
+            name="nOrThWiNd",
+            session=session,
+            principal=owner_principal,
+        )
+        staff_active = list_suppliers(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            include_inactive=False,
+            name="nOrThWiNd",
+            session=session,
+            principal=staff_principal,
+        )
+
+        with pytest.raises(HTTPException) as inactive_denied:
+            list_suppliers(
+                business_id=business_id,
+                limit=20,
+                offset=0,
+                include_inactive=True,
+                name="nOrThWiNd",
+                session=session,
+                principal=staff_principal,
+            )
+
+        active_ids = [row["id"] for row in owner_active]
+        paged_ids = [row["id"] for row in owner_page_one + owner_page_two]
+        assert len(owner_active) == 3
+        assert all("northwind" in row["name"].lower() for row in owner_active)
+        assert all(row["business_id"] == str(business_id) for row in owner_active)
+        assert paged_ids == active_ids
+        assert len(paged_ids) == len(set(paged_ids))
+        assert len(owner_including_inactive) == 4
+        assert any(row["is_active"] is False for row in owner_including_inactive)
+        assert len(staff_active) == 3
+        assert inactive_denied.value.status_code == 403
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
+
+
+def test_owner_cannot_disable_stock_tracking_after_completed_purchase_receipt(
+    purchasing_workspace,
+):
+    """The historical StockMovement guard still applies after the PO is fully received."""
+    engine, business_id, owner_principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, product = _approved_order(
+            session,
+            business_id,
+            owner_principal,
+            quantity=Decimal("5"),
+        )
+        order_id, line_id, product_id = order.id, line.id, product.id
+        received = receive_purchase_order(
+            session,
+            principal=owner_principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line_id: Decimal("5")},
+        )
+        assert received.status == "received"
+        session.commit()
+
+    with Session(engine) as session:
+        audit_count_before = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        )
+        movement_ids_before = set(session.scalars(
+            select(StockMovement.id).where(
+                StockMovement.business_id == business_id,
+                StockMovement.product_id == product_id,
+            )
+        ).all())
+
+        with pytest.raises(HTTPException) as rejected:
+            patch_product(
+                business_id=business_id,
+                product_id=product_id,
+                body=ProductPatch(is_stock_tracked=False),
+                session=session,
+                principal=owner_principal,
+            )
+        assert rejected.value.status_code == 422
+        assert "stock movements" in rejected.value.detail.lower()
+
+    with Session(engine) as session:
+        assert session.get(Product, product_id).is_stock_tracked is True
+        assert session.get(PurchaseOrder, order_id).status == "received"
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("5.000")
+        movement_ids_after = set(session.scalars(
+            select(StockMovement.id).where(
+                StockMovement.business_id == business_id,
+                StockMovement.product_id == product_id,
+            )
+        ).all())
+        assert movement_ids_after == movement_ids_before
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id
+            )
+        ) == audit_count_before
