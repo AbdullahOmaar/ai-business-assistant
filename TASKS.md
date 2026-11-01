@@ -1779,3 +1779,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added responsive styles for the new multi-invoice allocation editor in `frontend/src/app/app.component.ts`: full-width allocation section, clear invoice/amount rows, tabular amount summary, and single-column mobile layout.
 - Structural source check confirms all allocation editor selectors are present in the active component stylesheet. Visual/browser rendering remains **NOT RUN**.
 - Candidate before this ledger note: `768eaa8c2a74027bd5cd48fe2ce20c059adc51aa`; PR #323 remained OPEN / DRAFT / UNMERGED, 37 ahead / 0 behind main.
+
+
+### Master customer / product / invoice picker pagination — 2026-11-01
+
+- Candidate before this ledger update: `85477a0feeabf6493889b4ee2330c368208f9575`.
+- Extended the existing API client methods for customers, products and invoices to accept `limit` + `offset` (customers also retain the backend-supported optional `q` filter). Verified the existing main backend GET routes already support bounded pagination with `limit <= 200` and `offset >= 0`; no backend route/schema change was needed.
+- Added guarded “Load more” actions to customer/product lists, the active invoice editor's customer/product pickers, the invoice list, and the payment allocation invoice picker. This removes the hard 100-record ceiling from these UI flows without loading the entire workspace into memory at startup.
+- Added separate page request guards for customer/product/invoice lists. Page responses are fenced by workspace ID, authenticated UID, auth-transition version and per-list generation; a fresh list refresh invalidates any in-flight older page request.
+- Added `frontend/src/app/list-pagination.ts` and `list-pagination.spec.ts`: append pages by stable IDs, avoid duplicates across and within pages, advance offsets by raw server page length, and calculate whether another page may exist.
+- Exact-source focused validation: Node 22 `node --experimental-strip-types --test list-pagination.spec.ts` — **5/5 PASS**. Local source/spec Git blob hashes exactly match GitHub: helper `25421c5ff841582fee2be4090e100f6a7242f50c`; spec `f782f0f69620c07f7afa430482fdb0651d9bc4ac`. Strict TypeScript check for the exact helper — **PASS**.
+- GitHub source readback / structural assertions: PASS for API limit/offset signatures, matching backend route support, page guards, refresh invalidation, picker/list controls and absence of hardcoded first-page-only customer/product/invoice URLs.
+- Full Angular build/template type-check, complete frontend `npm test`, browser/mobile/accessibility E2E, backend pytest, PostgreSQL tests and dependency/security scans: **NOT RUN**. Structural checks and the isolated helper tests are not full UI/runtime acceptance.
+- No backend changes, financial semantics, schema/migrations, CI trigger/retry, merge, deployment or production data write.
+- Next: run exact candidate Angular build and browser tests for customer/product/invoice page loading, workspace-switch races and allocation selection beyond record 100; independent review remains required.
