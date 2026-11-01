@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
 test('mobile bottom navigation keeps four slots and places platform admin in More', () => {
   const mobileSidebarStart = source.indexOf('.sidebar{position:fixed;inset:auto 0 0;width:100%');
@@ -10,10 +11,10 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.ok(mobileSidebarStart >= 0 && mobileItemsStart > mobileSidebarStart);
 
   const mobileSidebarStyles = source.slice(mobileSidebarStart, mobileItemsStart);
-  assert.match(mobileSidebarStyles, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(mobileSidebarStyles, /grid-template-columns:repeat\\(4,minmax\\(0,1fr)\\)/);
   assert.match(
     source,
-    /\.sidebar>\.mobile-extra,\.sidebar>\.platform-admin-nav\{display:none\}/,
+    /\\.sidebar>\\.mobile-extra,\\.sidebar>\\.platform-admin-nav\\{display:none\\}/,
     'non-primary sections, including the desktop admin link, must not create a fifth mobile slot',
   );
 
@@ -21,17 +22,20 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
-  assert.match(moreMenu, /@if \(platformAdminAvailable\)/);
-  assert.match(moreMenu, /setTab\('platform-admin'\)/);
+  assert.match(moreMenu, /@if \\(platformAdminAvailable\\)/);
+  assert.match(moreMenu, /setTab\\('platform-admin'\\)/);
   assert.match(moreMenu, /Platform admin/);
   assert.match(
     source,
-    /class="nav-item platform-admin-nav".{0,500}setTab\('platform-admin'\)/s,
+    /class="nav-item platform-admin-nav".{0,500}setTab\\('platform-admin'\\)/s,
     'the existing desktop Platform Admin destination must remain available',
   );
+
   assert.match(
     source,
-    /\['products','payments','expenses','employees','assistant','reports','audit','platform-admin','release-guide','suppliers','purchases','recurring','notifications','health','integrity','taxes'\]\.includes\(tab\)/,
-    'More must stay active when a hidden destination is open',
+    /\\[class\\.active\\]="mobileMoreOpen \\|\\| isMobileMoreTab\\(tab\\)"/,
+    'the More active state must use the shared tested tab classifier',
   );
+  assert.match(moduleAccessSource, /export function isMobileMoreTab\\(tab: WorkspaceModuleTab\\): boolean/);
+  assert.match(moduleAccessSource, /return MOBILE_MORE_TABS\\.has\\(tab\\)/);
 });
