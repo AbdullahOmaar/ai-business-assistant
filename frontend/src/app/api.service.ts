@@ -148,6 +148,10 @@ export interface Dashboard {
 export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
 
 @Injectable({ providedIn: 'root' })
+export type InvoiceLineInput =
+  | { product_id: string; quantity: string; description?: string }
+  | { description: string; quantity: string; unit_price: string };
+
 export class ApiService {
   constructor(private readonly auth: AuthService) {}
 
@@ -514,14 +518,14 @@ export class ApiService {
     return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?limit=100`);
   }
   createInvoice(businessId: string, body: {
-    invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string;
   }): Promise<Invoice> {
     return this.request<Invoice>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices`, 'POST', body);
   }
   createAndIssueInvoice(businessId: string, body: {
     invoice_number: string; currency_code: string; customer_id: string;
-    lines: Array<{ product_id: string; quantity: string }>;
+    lines: InvoiceLineInput[];
   }): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/issue`, 'POST', body
@@ -538,7 +542,7 @@ export class ApiService {
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
-    invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string;
   }): Promise<Invoice> {
     return this.request<Invoice>(
