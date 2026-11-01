@@ -8,6 +8,7 @@ import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
+import { appendUniquePage } from './list-pagination';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab } from './module-access';
@@ -1969,10 +1970,10 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const page = await this.api.customers(businessId, this.pickerPageSize, offset);
       if (!isCurrent()) return;
-      const existing = new Set(this.customers.map(item => item.id));
-      this.customers = [...this.customers, ...page.filter(item => !existing.has(item.id))];
-      this.customerOffset = offset + page.length;
-      this.hasMoreCustomers = page.length === this.pickerPageSize;
+      const result = appendUniquePage(this.customers, page, offset, this.pickerPageSize);
+      this.customers = result.items;
+      this.customerOffset = result.nextOffset;
+      this.hasMoreCustomers = result.hasMore;
     } catch (error) {
       if (isCurrent()) this.customerLoadMoreError = this.message(error);
     } finally {
@@ -1995,10 +1996,10 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const page = await this.api.products(businessId, this.pickerPageSize, offset);
       if (!isCurrent()) return;
-      const existing = new Set(this.products.map(item => item.id));
-      this.products = [...this.products, ...page.filter(item => !existing.has(item.id))];
-      this.productOffset = offset + page.length;
-      this.hasMoreProducts = page.length === this.pickerPageSize;
+      const result = appendUniquePage(this.products, page, offset, this.pickerPageSize);
+      this.products = result.items;
+      this.productOffset = result.nextOffset;
+      this.hasMoreProducts = result.hasMore;
     } catch (error) {
       if (isCurrent()) this.productLoadMoreError = this.message(error);
     } finally {
@@ -2021,10 +2022,10 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const page = await this.api.invoices(businessId, this.pickerPageSize, offset);
       if (!isCurrent()) return;
-      const existing = new Set(this.invoices.map(item => item.id));
-      this.invoices = [...this.invoices, ...page.filter(item => !existing.has(item.id))];
-      this.invoiceOffset = offset + page.length;
-      this.hasMoreInvoices = page.length === this.pickerPageSize;
+      const result = appendUniquePage(this.invoices, page, offset, this.pickerPageSize);
+      this.invoices = result.items;
+      this.invoiceOffset = result.nextOffset;
+      this.hasMoreInvoices = result.hasMore;
     } catch (error) {
       if (isCurrent()) this.invoiceLoadMoreError = this.message(error);
     } finally {
