@@ -483,6 +483,36 @@ def _set_test_membership_role(engine, role):
         session.commit()
 
 
+def test_invoice_create_rejects_manual_line_without_price_without_writes():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        with Session(engine) as session:
+            customer = session.scalar(select(Customer).where(Customer.business_id == business_id))
+            assert customer is not None
+            customer_id = customer.id
+
+        before = _persisted_rows_snapshot(engine)
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/invoices",
+            json={
+                "invoice_number": "API-MISSING-SERVICE-PRICE",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "Service without price", "quantity": "1"}],
+            },
+        )
+        assert response.status_code == 422, response.text
+        assert "Manual invoice lines require a unit price" in response.json()["detail"]
+        assert _persisted_rows_snapshot(engine) == before, (
+            "invalid invoice draft must leave every persisted row unchanged"
+        )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_owner_can_create_mixed_product_service_invoice_with_server_totals():
     engine, business_id, _, _ = _sales_return_fixture()
     previous_factory, previous_resolver = _configure_test_identity(engine)
