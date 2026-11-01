@@ -3,15 +3,17 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
 test('mobile More menu has a correctly delimited active-class attribute', () => {
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
   assert.ok(line, 'mobile More button must exist');
-  assert.match(line, /\[class\.active\]="mobileMoreOpen \|\| \[[^\]]*'release-guide'[^\]]*\]\.includes\(tab\)"/,
-    'the More menu active binding must include release-guide inside the tab list');
+  assert.match(line, /\[class\.active\]="mobileMoreOpen \|\| isMobileMoreTab\(tab\)"/,
+    'the More menu active binding must delegate to the tested secondary-tab classifier');
   assert.ok(line.includes('[attr.aria-label]='),
     'the More menu item must retain its accessible label');
   assert.equal(line.includes('.includes(tab)""'), false);
+  assert.match(moduleAccessSource, /export function isMobileMoreTab\(tab: WorkspaceModuleTab\): boolean/);
 });
 
 const authSource = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
