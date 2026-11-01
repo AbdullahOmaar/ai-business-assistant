@@ -25,7 +25,15 @@ test('payment retries preserve the idempotency key after an uncertain result', (
   assert.ok(start >= 0 && end > start);
   const handler = source.slice(start, end);
   assert.match(handler, /if \(!this\.paymentIdempotencyKey\)/);
-  assert.match(handler, /Preserve entered values and the idempotency key if the save failed or its outcome is uncertain/);
+  assert.match(handler, /this\.paymentRetryVault\.save\(authUid, retrySnapshot\)/);
+  assert.match(handler, /this\.paymentRetryVault\.get\(authUid, businessId\)/);
+  assert.match(handler, /original payload and idempotency key were preserved/);
+  assert.ok(
+    handler.indexOf('this.paymentRetryVault.save(authUid, retrySnapshot)') <
+      handler.indexOf('await this.api.createPayment(businessId, requestPayload)'),
+    'the immutable retry record must be stored before the network request',
+  );
+  assert.match(handler, /this\.paymentRetryVault\.delete\(authUid, businessId\)/);
   assert.match(handler, /this\.paymentIdempotencyKey = ''/);
 });
 
