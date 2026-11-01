@@ -483,6 +483,79 @@ def _set_test_membership_role(engine, role):
         session.commit()
 
 
+def test_owner_can_create_mixed_product_service_invoice_with_server_totals():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        customer_id = None
+        with Session(engine) as session:
+            customer = session.scalar(select(Customer).where(Customer.business_id == business_id))
+            assert customer is not None
+            customer_id = customer.id
+
+        product = client.post(
+            f"/api/v1/businesses/{business_id}/products",
+            json={"name": "Catalog demo product", "unit_price": "12.50"},
+        )
+        assert product.status_code == 201, product.text
+        product_id = product.json()["id"]
+
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/invoices",
+            json={
+                "invoice_number": "API-MIXED-SERVICE-1",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [
+                    {"product_id": product_id, "quantity": "2"},
+                    {"description": "Installation service", "quantity": "1", "unit_price": "5.00"},
+                ],
+            },
+        )
+        assert response.status_code == 201, response.text
+        saved = response.json()
+        assert saved["status"] == "draft"
+        assert saved["subtotal"] == "30.00"
+        assert saved["discount_total"] == "0.00"
+        assert saved["tax_total"] == "0.00"
+        assert saved["total"] == "30.00"
+
+        with Session(engine) as session:
+            persisted = session.scalar(select(Invoice).where(
+                Invoice.business_id == business_id,
+                Invoice.invoice_number == "API-MIXED-SERVICE-1",
+            ))
+            assert persisted is not None
+            assert persisted.subtotal == Decimal("30.00")
+            assert persisted.discount_total == Decimal("0.00")
+            assert persisted.tax_total == Decimal("0.00")
+            assert persisted.total == Decimal("30.00")
+            lines = session.scalars(select(InvoiceLine).where(
+                InvoiceLine.business_id == business_id,
+                InvoiceLine.invoice_id == persisted.id,
+            )).all()
+            assert len(lines) == 2
+            catalog_line = next(line for line in lines if line.product_id == UUID(product_id))
+            service_line = next(line for line in lines if line.product_id is None)
+            assert catalog_line.quantity == Decimal("2")
+            assert catalog_line.unit_price == Decimal("12.50")
+            assert catalog_line.line_total == Decimal("25.00")
+            assert service_line.description == "Installation service"
+            assert service_line.quantity == Decimal("1")
+            assert service_line.unit_price == Decimal("5.00")
+            assert service_line.line_total == Decimal("5.00")
+            created_events = session.scalars(select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "invoice.created",
+                AuditEvent.target_id == str(persisted.id),
+            )).all()
+            assert len(created_events) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_owner_can_issue_draft_invoice_via_api_and_records_audit_event():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
