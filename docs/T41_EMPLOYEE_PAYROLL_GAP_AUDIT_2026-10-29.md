@@ -482,3 +482,20 @@ The two PostgreSQL-only T41 cases in `backend/tests/test_postgres_financial_conc
 - Commits: component `e5e7f422a556f181341396e03212d73427d03d80`; UI regression `332c516de3664269421cf0973493bc2d5e1dbce2` (current branch HEAD at this checkpoint).
 - This satisfies the current T41 acceptance alternative to disclose the 200-record cap; it does not implement subsequent-page navigation. API paging parameters already exist, but the UI still requests `limit=200&offset=0` for each list.
 - Source readback confirms both notes and the static UI assertions are present. Frontend test/build/browser execution: NOT RUN. No API contract, backend runtime, payroll calculation, schema, financial policy, shared T40 path, production data or deployment changed.
+
+## T41 continuation — employee directory workspace/search isolation — 2026-11-01
+
+**Feature-local regression only; no runtime or schema behavior changed.**
+
+- Added `test_employee_directory_is_workspace_scoped_and_active_only_excludes_deactivated` in `backend/tests/test_employee_payroll_search.py`.
+- The synthetic fixture creates two distinct businesses owned by the same test principal, creates one employee in each, deactivates the first, then verifies:
+  - `active_only=true` excludes the deactivated employee.
+  - The unfiltered first-workspace directory still includes its inactive employee.
+  - The second-workspace active directory contains only its own employee.
+  - Searching for the other workspace's employee from either directory returns an empty result.
+- This specifically extends employee-directory search isolation; it does not replace the existing payroll-list/employee-ID tenant-boundary regressions.
+- Current branch commits for this addition: `2dcce2276bd9b238f3f1d55142caa8021f50179c` and `1d1a5cf57dec7cdfd64689725cd71b2512f076ff`. Latest exact PR head is the latter at the time of this note.
+- Source read-back confirms both cross-workspace search assertions and the distinct-business assertion. Static source assertions: PASS. Runtime pytest: NOT RUN; no authorized exact-candidate runner/pipeline is available. No CI trigger/retry was performed.
+- Updated source inventory: 29 payroll API test functions, 7 employee search/directory test functions, 1 payroll-specific PostgreSQL concurrency test function, and 14 frontend UI source specs. These are authored-source counts, not executed test results.
+- Deferred unchanged: salary-history/effective-date schema and backfill, proration/statutory rules, new payout states, payslip snapshot/export, and any unapproved financial posting semantics.
+- Shared PR #304/#308 paths remain under Master/Chat 3/Chat 5 single-writer coordination; Chat 4 did not edit them.
