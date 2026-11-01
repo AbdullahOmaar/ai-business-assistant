@@ -9,10 +9,12 @@ const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8
 
 test('employee and payroll UI is wired to the owner-only workspace tab on desktop and mobile', () => {
   assert.match(app, /type Tab = [^;]*'employees'/);
-  assert.match(app, /business\?\.role === 'owner'[^\n]*tab === 'employees'/);
+  assert.match(app, /canAccessTab\('employees'\)/);
   assert.match(app, /role="menuitem"[^\n]*tab === 'employees'/);
-  assert.match(app, /tab === 'employees' && business\?\.role === 'owner' && business/);
-  assert.match(app, /if \(tab === 'employees' && this\.business\?\.role !== 'owner'\)/);
+  assert.match(app, /canAccessTab\(tab: Tab\): boolean/);
+  assert.match(app, /canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\)/);
+  assert.match(app, /if \(!this\.canAccessTab\(tab\)\)/);
+  assert.match(app, /@if \(canAccessTab\('employees'\)\)/);
   assert.match(app, /<aba-employee-payroll \[businessId\]="business\.id"/);
 });
 

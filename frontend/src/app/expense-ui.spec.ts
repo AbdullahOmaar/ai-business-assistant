@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const ui = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+const moduleAccess = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
 test('expenses use a typed workspace-scoped API', () => {
   assert.match(api, /export interface Expense\s*\{/);
@@ -19,7 +20,8 @@ test('expense view is reachable from mobile More and has bilingual labels', () =
   assert.match(ui, /@if \(tab === 'expenses'\)/);
   assert.match(ui, /t\('تسجيل مصروف', 'Record an expense'\)/);
   assert.match(ui, /t\('حفظ المصروف', 'Save expense'\)/);
-  assert.match(ui, /\['products','payments','expenses','employees','assistant'/);
+  assert.match(ui, /isMobileMoreTab\(tab\)/);
+  assert.match(moduleAccess, /'products', 'payments', 'expenses', 'employees', 'assistant'/);
 });
 
 test('workspace load and clear paths include expense records', () => {

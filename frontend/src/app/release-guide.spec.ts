@@ -104,11 +104,12 @@ test('current frontend release metadata is consistent in the configured project 
 });
 
 if (hasBackendPackage) {
-  test('frontend and backend release metadata stay aligned in a full repository checkout', () => {
+  test('frontend and backend release metadata stay aligned according to the release scope', () => {
     const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
     const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
 
-    assert.match(backendPackage, new RegExp('^version = "' + frontendPackage.version + '"$', 'm'));
-    assert.match(backendApp, new RegExp('version="' + frontendPackage.version + '"'));
+    const expectedApiVersion = RELEASE_HISTORY[0].apiVersion ?? frontendPackage.version;
+    assert.match(backendPackage, new RegExp('^version = "' + expectedApiVersion + '"$', 'm'));
+    assert.match(backendApp, new RegExp('version="' + expectedApiVersion + '"'));
   });
 }

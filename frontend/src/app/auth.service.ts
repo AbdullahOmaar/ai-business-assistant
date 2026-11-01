@@ -7,18 +7,10 @@ import {
 } from '@firebase/auth';
 import type { Auth, User } from '@firebase/auth';
 import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer';
+import { validateRuntimeConfig, type RuntimeConfig } from './runtime-config';
+export type { RuntimeConfig } from './runtime-config';
 
 export interface AuthUserSnapshot { uid: string; email: string | null; }
-
-export interface RuntimeConfig {
-  apiBaseUrl: string;
-  firebase: {
-    apiKey: string;
-    authDomain: string;
-    projectId: string;
-    appId: string;
-  };
-}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -37,7 +29,13 @@ export class AuthService {
       this.configPromise = fetch('/runtime-config.json', { cache: 'no-store', signal: controller.signal })
         .then(async response => {
           if (!response.ok) throw new Error('Runtime configuration could not be loaded.');
-          return await response.json() as RuntimeConfig;
+          let payload: unknown;
+          try {
+            payload = await response.json();
+          } catch {
+            throw new Error('Runtime configuration is invalid.');
+          }
+          return validateRuntimeConfig(payload);
         })
         .catch(error => {
           this.configPromise = undefined;

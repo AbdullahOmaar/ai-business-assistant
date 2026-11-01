@@ -7,8 +7,10 @@ const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf
 test('mobile More menu has a correctly delimited active-class attribute', () => {
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
   assert.ok(line, 'mobile More button must exist');
-  assert.ok(line.includes("tab === 'release-guide'\" [attr.aria-label]"));
-  assert.equal(line.includes("tab === 'release-guide'\"\""), false);
+  assert.ok(line.includes('[class.active]="mobileMoreOpen || isMobileMoreTab(tab)"'));
+  assert.match(source, /isMobileMoreTab\(tab: Tab\): boolean/);
+  assert.ok(line.includes('[attr.aria-label]'));
+  assert.equal(line.includes('isMobileMoreTab(tab)""'), false);
 });
 
 const authSource = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
@@ -174,4 +176,14 @@ test('workspace switch clears pending product and customer CSV imports', () => {
   ]) {
     assert.match(reset, new RegExp('this\\.' + field + '\\s*='));
   }
+});
+
+test('All Modules launcher exposes workspace destinations through the guarded tab handler', () => {
+  assert.ok(source.includes('class="panel module-launcher"'));
+  assert.ok(source.includes('id="module-launcher-title"'));
+  assert.match(source, /canAccessTab\('payments'\)/);
+  assert.match(source, /canAccessTab\('employees'\)/);
+  assert.match(source, /canAccessTab\('audit'\)/);
+  assert.match(source, /canAccessTab\('platform-admin'\)/);
+  assert.match(source, /setTab\('overview'\)/);
 });

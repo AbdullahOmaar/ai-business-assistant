@@ -229,6 +229,24 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.6',
+    apiVersion: '1.3.5',
+    titleAr: 'موثوقية التشغيل والتنقل بين الأقسام',
+    titleEn: 'Startup reliability and workspace navigation',
+    changesAr: [
+      'معالجة فشل تحميل الإعدادات برسالة واضحة وإتاحة إعادة المحاولة، مع رفض القيم الفارغة قبل تهيئة Firebase.',
+      'إضافة شاشة كل الأقسام للوصول المباشر إلى وحدات مساحة العمل مع احترام صلاحيات المالك والموظف.',
+      'تطبيق تحقق مركزي على التنقل إلى الأقسام المحمية وإخفاء سجل العمليات عن الموظف في قائمة الموبايل.',
+      'تحديث إصدار الواجهة إلى 1.3.6 مع إبقاء واجهة API على 1.3.5 دون تغيير.',
+    ],
+    changesEn: [
+      'Shows a recoverable startup error and retry when configuration loading fails; whitespace-only settings are rejected before Firebase initialization.',
+      'Adds an All Modules launcher for direct workspace navigation while respecting OWNER and STAFF access.',
+      'Centralizes protected-tab navigation checks and hides Activity Log from STAFF in the mobile More menu.',
+      'Updates the web UI to version 1.3.6; the unchanged API remains on version 1.3.5.',
+    ],
+  },
+  {
     version: '1.3.5',
     titleAr: 'مزامنة الجلسة وحماية بيانات مساحة العمل',
     titleEn: 'Session synchronization and workspace data protection',

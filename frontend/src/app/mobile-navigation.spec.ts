@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
 test('mobile bottom navigation keeps four slots and places platform admin in More', () => {
   const mobileSidebarStart = source.indexOf('.sidebar{position:fixed;inset:auto 0 0;width:100%');
@@ -29,9 +30,11 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
     /class="nav-item platform-admin-nav".{0,500}setTab\('platform-admin'\)/s,
     'the existing desktop Platform Admin destination must remain available',
   );
-  assert.match(
-    source,
-    /\['products','payments','expenses','employees','assistant','reports','audit','platform-admin'\]\.includes\(tab\)/,
-    'More must stay active when a hidden destination is open',
+
+  assert.ok(
+    source.includes('[class.active]="mobileMoreOpen || isMobileMoreTab(tab)"'),
+    'the More active state must use the shared tested tab classifier',
   );
+  assert.match(moduleAccessSource, /export function isMobileMoreTab\(tab: WorkspaceModuleTab\): boolean/);
+  assert.match(moduleAccessSource, /return MOBILE_MORE_TABS\.has\(tab\)/);
 });

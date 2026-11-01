@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aba-shell-v1.3.5-unknown';
+const CACHE_NAME = 'aba-shell-v1.3.6-unknown';
 const SHELL_URLS = [
   '/manifest.webmanifest',
   '/icons/icon.svg',
