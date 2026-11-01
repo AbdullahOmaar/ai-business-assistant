@@ -1852,3 +1852,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Safety/delivery:** no merge, production deployment, version bump, migration, production SQL/write or branch deletion. Do not promote runbook to a successful-demo claim.
 - **Next:** keep using PR #323 only for Master-owned shell/integration; obtain independent Chat 5 review on exact current head; continue safe source-level and API contract inspection; obtain a complete authorized repository runner/demo preview + synthetic Owner/Staff setup before claiming Tasks 1–5 complete.
 
+
+
+## Master reconciliation update — 2026-11-01 14:20 +02:00
+
+- Chat 1 advanced existing PR #305 to exact HEAD `14761ed409c14087c95a1580b798483f21885c6c` (base `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`), OPEN/DRAFT/UNMERGED, mergeable=false. The new `invoice-payment-behavior.spec.ts` (blob `ca05034e5413801d83f5318fb56442886ebce67f`) contains seven extracted-method simulations: popup blocked/no fetch, late print after workspace switch, escaped persisted totals, single-flight payment, same-key/same-payload retry after uncertain failure, late payment completion after identity switch, and rejecting workspace switch while payment is pending. This is method-level behavior simulation, not Angular TestBed, browser/Firebase cross-tab or persisted backend side-effect coverage. Chat 5's existing reviews are COMMENTED on older heads; exact-head independent review remains outstanding.
+- PR #305 combined status on that head currently exposes CircleCI contexts SUCCESS and Semaphore FAILURE. Master did not trigger/retry these; given the freeze and provider-authority conflict, they are not used as a substitute for independent review or demo E2E.
+- Master PR #323 advanced to `d77f2cd0ce7e65b319542f08b7bc304628b6635a` after updating TASKS/runbook; OPEN/DRAFT/UNMERGED. Its exact-head status at the previous source-only head had Semaphore FAILURE and CircleCI ERROR; refresh exact status after this ledger commit. No independent review submissions.
+- Additional source-only tests remain 84 PASS / 0 FAIL across the four recorded isolated runs. Full frontend `npm test`, Angular build, backend pytest/PostgreSQL, browser E2E, authenticated Owner/Staff, A→B/logout→B, mobile/RTL/accessibility, dependency/security scans and preview/demo fixtures remain NOT RUN/UNKNOWN.
+- Overall remains 0/5 VERIFIED COMPLETE; four tasks IN PROGRESS, Final Demo Validation BLOCKED. No merge, production deploy, version bump, migration, production write or CI trigger/retry.
