@@ -111,4 +111,49 @@ if (hasBackendPackage) {
     assert.match(backendPackage, new RegExp('^version = "' + frontendPackage.version + '"$', 'm'));
     assert.match(backendApp, new RegExp('version="' + frontendPackage.version + '"'));
   });
-}\n\nconst catalogueById = new Map(FEATURE_CATALOG.map((group) => [group.id, group]));\n\ntest('demo catalogue includes all seven implemented operational groups in Arabic and English', () => {\n  const expected = [\n    ['suppliers', 'الموردون', 'Suppliers'],\n    ['purchasing', 'المشتريات والاستلام', 'Purchasing & receiving'],\n    ['recurring-invoices', 'الفواتير الدورية', 'Recurring invoices'],\n    ['notifications', 'الإشعارات', 'Notifications'],\n    ['operational-health', 'الحالة التشغيلية', 'Operational health'],\n    ['data-integrity', 'سلامة البيانات', 'Data integrity'],\n    ['tax-summary', 'ملخص الضرائب', 'Tax summary'],\n  ];\n\n  for (const [id, titleAr, titleEn] of expected) {\n    const group = catalogueById.get(id);\n    assert.ok(group, `missing catalogue group: ${id}`);\n    assert.equal(group.titleAr, titleAr, `${id} Arabic title`);\n    assert.equal(group.titleEn, titleEn, `${id} English title`);\n    assert.ok(group.noteAr.trim(), `${id} Arabic summary`);\n    assert.ok(group.noteEn.trim(), `${id} English summary`);\n    assert.ok(group.features.length > 0, `${id} feature list`);\n\n    for (const feature of group.features) {\n      assert.ok(feature.titleAr.trim(), `${id} feature Arabic title`);\n      assert.ok(feature.titleEn.trim(), `${id} feature English title`);\n      assert.ok(feature.detailAr.trim(), `${id} feature Arabic detail`);\n      assert.ok(feature.detailEn.trim(), `${id} feature English detail`);\n    }\n  }\n});\n\ntest('catalogue clearly discloses deferred execution and read-only boundaries', () => {\n  assert.match(catalogueById.get('purchasing').noteAr, /لا تفترض.*معالجة محاسبية/);\n  assert.match(catalogueById.get('purchasing').noteEn, /does not imply accounting treatment/);\n  assert.match(catalogueById.get('recurring-invoices').noteAr, /إنشاء الفواتير الفعلية يعتمد على تنفيذ الخادم/);\n  assert.match(catalogueById.get('recurring-invoices').noteEn, /actual invoice creation depends on backend execution/);\n  assert.match(catalogueById.get('notifications').noteAr, /الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا/);\n  assert.match(catalogueById.get('notifications').noteEn, /actual delivery requires a configured provider and deployed worker/);\n  assert.match(catalogueById.get('data-integrity').noteAr, /لا ينفذ إصلاحات تلقائية/);\n  assert.match(catalogueById.get('data-integrity').noteEn, /does not automatically repair records/);\n  assert.match(catalogueById.get('tax-summary').noteAr, /لا ينشئ إقرارات أو قيودًا أو التزامات ضريبية/);\n  assert.match(catalogueById.get('tax-summary').noteEn, /does not create filings, ledger entries, or tax liabilities/);\n});\n
+}
+
+const catalogueById = new Map(FEATURE_CATALOG.map((group) => [group.id, group]));
+
+test('demo catalogue includes all seven implemented operational groups in Arabic and English', () => {
+  const expected = [
+    ['suppliers', 'الموردون', 'Suppliers'],
+    ['purchasing', 'المشتريات والاستلام', 'Purchasing & receiving'],
+    ['recurring-invoices', 'الفواتير الدورية', 'Recurring invoices'],
+    ['notifications', 'الإشعارات', 'Notifications'],
+    ['operational-health', 'الحالة التشغيلية', 'Operational health'],
+    ['data-integrity', 'سلامة البيانات', 'Data integrity'],
+    ['tax-summary', 'ملخص الضرائب', 'Tax summary'],
+  ];
+
+  for (const [id, titleAr, titleEn] of expected) {
+    const group = catalogueById.get(id);
+    assert.ok(group, `missing catalogue group: ${id}`);
+    assert.equal(group.titleAr, titleAr, `${id} Arabic title`);
+    assert.equal(group.titleEn, titleEn, `${id} English title`);
+    assert.ok(group.noteAr.trim(), `${id} Arabic summary`);
+    assert.ok(group.noteEn.trim(), `${id} English summary`);
+    assert.ok(group.features.length > 0, `${id} feature list`);
+
+    for (const feature of group.features) {
+      assert.ok(feature.titleAr.trim(), `${id} feature Arabic title`);
+      assert.ok(feature.titleEn.trim(), `${id} feature English title`);
+      assert.ok(feature.detailAr.trim(), `${id} feature Arabic detail`);
+      assert.ok(feature.detailEn.trim(), `${id} feature English detail`);
+    }
+  }
+});
+
+test('catalogue clearly discloses deferred execution and read-only boundaries', () => {
+  assert.ok(catalogueById.get('purchasing').noteAr.includes('لا تفترض'));
+  assert.ok(catalogueById.get('purchasing').noteAr.includes('معالجة محاسبية'));
+  assert.ok(catalogueById.get('purchasing').noteEn.includes('does not imply accounting treatment'));
+  assert.ok(catalogueById.get('recurring-invoices').noteAr.includes('إنشاء الفواتير الفعلية يعتمد على تنفيذ الخادم'));
+  assert.ok(catalogueById.get('recurring-invoices').noteEn.includes('actual invoice creation depends on backend execution'));
+  assert.ok(catalogueById.get('notifications').noteAr.includes('الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا'));
+  assert.ok(catalogueById.get('notifications').noteEn.includes('actual delivery requires a configured provider and deployed worker'));
+  assert.ok(catalogueById.get('data-integrity').noteAr.includes('لا ينفذ إصلاحات تلقائية'));
+  assert.ok(catalogueById.get('data-integrity').noteEn.includes('does not automatically repair records'));
+  assert.ok(catalogueById.get('tax-summary').noteAr.includes('لا ينشئ إقرارات أو قيودًا أو التزامات ضريبية'));
+  assert.ok(catalogueById.get('tax-summary').noteEn.includes('does not create filings, ledger entries, or tax liabilities'));
+});
