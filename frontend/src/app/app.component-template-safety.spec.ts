@@ -325,6 +325,8 @@ test('invoice editor supports updating existing mixed product and manual draft l
   assert.match(invoiceEditorSource, /implements OnChanges/);
   assert.match(invoiceEditorSource, /this\.initialLines\.map\(line => \(\{ \.\.\.line \}\)\)/);
   assert.match(invoiceEditorSource, /editing \? t\('تعديل مسودة الفاتورة', 'Edit invoice draft'\)/);
+  assert.match(invoiceEditorSource, /editing && !serverSummary/);
+  assert.match(invoiceEditorSource, /newDraft\.emit\(\)/);
   assert.equal(source.includes('detail.lines.some(line => !line.product_id)'), false,
     'manual service lines must not block draft editing');
 });
