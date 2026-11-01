@@ -37,7 +37,7 @@ import type {
         </label>
         <label>
           {{ t('العميل', 'Customer') }}
-          <select name="customerId" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="saving">
+          <select name="customerId" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="locked">
             <option value="">{{ t('اختَر العميل', 'Choose customer') }}</option>
             @for (customer of customers; track customer.id) {
               <option [value]="customer.id">{{ customer.name }}</option>
@@ -49,8 +49,8 @@ import type {
       <div class="lines-heading">
         <h4>{{ t('بنود الفاتورة', 'Invoice lines') }}</h4>
         <div class="add-actions">
-          <button type="button" class="secondary" (click)="addLine('product')" [disabled]="saving">{{ t('+ منتج', '+ Product') }}</button>
-          <button type="button" class="secondary" (click)="addLine('manual')" [disabled]="saving">{{ t('+ خدمة', '+ Service') }}</button>
+          <button type="button" class="secondary" (click)="addLine('product')" [disabled]="locked">{{ t('+ منتج', '+ Product') }}</button>
+          <button type="button" class="secondary" (click)="addLine('manual')" [disabled]="locked">{{ t('+ خدمة', '+ Service') }}</button>
         </div>
       </div>
 
@@ -61,13 +61,13 @@ import type {
               <strong>{{ t('بند', 'Line') }} {{ index + 1 }}</strong>
               <div class="line-actions">
                 <button type="button" class="icon-button" (click)="moveLine(index, -1)" [disabled]="locked || index === 0" [attr.aria-label]="t('تحريك لأعلى', 'Move up')">↑</button>
-                <button type="button" class="icon-button" (click)="moveLine(index, 1)" [disabled]="saving || index === lines.length - 1" [attr.aria-label]="t('تحريك لأسفل', 'Move down')">↓</button>
+                <button type="button" class="icon-button" (click)="moveLine(index, 1)" [disabled]="locked || index === lines.length - 1" [attr.aria-label]="t('تحريك لأسفل', 'Move down')">↓</button>
                 <button type="button" class="icon-button danger" (click)="removeLine(index)" [disabled]="locked || lines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">×</button>
               </div>
             </div>
             <label>
               {{ t('نوع البند', 'Line type') }}
-              <select [name]="'kind-' + line.id" [(ngModel)]="line.kind" (ngModelChange)="changeKind(line, $event)" [disabled]="saving">
+              <select [name]="'kind-' + line.id" [(ngModel)]="line.kind" (ngModelChange)="changeKind(line, $event)" [disabled]="locked">
                 <option value="product">{{ t('منتج من الكتالوج', 'Catalog product') }}</option>
                 <option value="manual">{{ t('خدمة / بند يدوي', 'Service / manual line') }}</option>
               </select>
@@ -76,7 +76,7 @@ import type {
             @if (line.kind === 'product') {
               <label>
                 {{ t('المنتج', 'Product') }}
-                <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" (ngModelChange)="markDirty()" [disabled]="saving">
+                <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" (ngModelChange)="markDirty()" [disabled]="locked">
                   <option value="">{{ t('اختَر المنتج', 'Choose product') }}</option>
                   @for (product of products; track product.id) {
                     <option [value]="product.id">{{ product.name }}</option>
@@ -85,21 +85,21 @@ import type {
               </label>
               <label>
                 {{ t('وصف إضافي (اختياري)', 'Description (optional)') }}
-                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="500" [disabled]="saving" />
+                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="500" [disabled]="locked" />
               </label>
             } @else {
               <label>
                 {{ t('وصف الخدمة', 'Service description') }}
-                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="500" [disabled]="saving" />
+                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="500" [disabled]="locked" />
               </label>
               <label>
                 {{ t('سعر الوحدة', 'Unit price') }} ({{ currencyCode }})
-                <input [name]="'price-' + line.id" inputmode="decimal" [(ngModel)]="line.unit_price" (ngModelChange)="markDirty()" placeholder="0.00" [disabled]="saving" />
+                <input [name]="'price-' + line.id" inputmode="decimal" [(ngModel)]="line.unit_price" (ngModelChange)="markDirty()" placeholder="0.00" [disabled]="locked" />
               </label>
             }
             <label>
               {{ t('الكمية', 'Quantity') }}
-              <input [name]="'quantity-' + line.id" inputmode="decimal" [(ngModel)]="line.quantity" (ngModelChange)="markDirty()" placeholder="1" [disabled]="saving" />
+              <input [name]="'quantity-' + line.id" inputmode="decimal" [(ngModel)]="line.quantity" (ngModelChange)="markDirty()" placeholder="1" [disabled]="locked" />
             </label>
           </article>
         }
