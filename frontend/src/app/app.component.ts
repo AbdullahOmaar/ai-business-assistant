@@ -380,6 +380,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list">
                   @for (customer of filteredCustomers; track customer.id) { <article class="list-row customer-list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
                   @if (!filteredCustomers.length) { <p class="empty">{{ customerSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.') }}</p> }
+                  @if (hasMoreCustomers) { <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="loadingMoreCustomers">{{ loadingMoreCustomers ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل عملاء إضافيين', 'Load more customers') }}</button> }
+                  @if (customerLoadMoreError) { <p class="error" role="alert">{{ customerLoadMoreError }}</p> }
                 </div>
                 @if (statementVisible) {
                   <section class="panel statement-panel">
@@ -434,6 +436,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list">
                   @for (product of filteredProducts; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('المخزون: ', 'Stock: ') + (product.stock_quantity ?? '0') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
                   @if (!filteredProducts.length) { <p class="empty">{{ productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.') }}</p> }
+                  @if (hasMoreProducts) { <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="loadingMoreProducts">{{ loadingMoreProducts ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل منتجات إضافية', 'Load more products') }}</button> }
+                  @if (productLoadMoreError) { <p class="error" role="alert">{{ productLoadMoreError }}</p> }
                 </div>
               </section>
             }
@@ -457,8 +461,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       [customerId]="invoiceCustomerId"
                       [saving]="invoiceDraftSaving"
                       [serverSummary]="invoiceDraftSummary"
+                      [hasMoreCustomers]="hasMoreCustomers"
+                      [hasMoreProducts]="hasMoreProducts"
+                      [loadingMoreCustomers]="loadingMoreCustomers"
+                      [loadingMoreProducts]="loadingMoreProducts"
                       (saveDraft)="saveInvoiceDraft($event)"
                       (newDraft)="startNewInvoiceDraft()"
+                      (loadMoreCustomers)="loadMoreCustomers()"
+                      (loadMoreProducts)="loadMoreProducts()"
                     />
                   </div>
                 } @else {
@@ -482,6 +492,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list">
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading || printLoading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
                   @if (!filteredInvoices.length) { <p class="empty">{{ (invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.')) }}</p> }
+                  @if (hasMoreInvoices) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="loadingMoreInvoices">{{ loadingMoreInvoices ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
+                  @if (invoiceLoadMoreError) { <p class="error" role="alert">{{ invoiceLoadMoreError }}</p> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
@@ -498,7 +510,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <select [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentLoading || paymentRetryPending || paymentAllocations.length > 0"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>
                   <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentLoading || paymentRetryPending"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
                   <div class="payment-allocation-editor">
-                    <div class="section-actions"><strong>{{ t('تخصيص المبلغ للفواتير', 'Allocate receipt to invoices') }}</strong><button class="secondary" type="button" (click)="addPaymentAllocation()" [disabled]="paymentLoading || paymentRetryPending || !paymentCustomerId || !eligiblePaymentInvoices.length">{{ t('إضافة فاتورة', 'Add invoice') }} +</button></div>
+                    <div class="section-actions"><strong>{{ t('تخصيص المبلغ للفواتير', 'Allocate receipt to invoices') }}</strong><div class="section-actions"><button class="secondary" type="button" (click)="addPaymentAllocation()" [disabled]="paymentLoading || paymentRetryPending || !paymentCustomerId || !eligiblePaymentInvoices.length">{{ t('إضافة فاتورة', 'Add invoice') }} +</button>@if (hasMoreInvoices) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="paymentLoading || paymentRetryPending || loadingMoreInvoices">{{ loadingMoreInvoices ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }</div></div>
                     @if (!paymentAllocations.length) { <p class="muted">{{ t('يمكنك تسجيل الدفعة دون تخصيصها الآن، أو إضافة عدة فواتير للعميل نفسه.', 'You may record the receipt without allocating it now, or add multiple invoices for the same customer.') }}</p> }
                     @for (allocation of paymentAllocations; track $index; let i = $index) {
                       <div class="payment-allocation-row">
@@ -507,6 +519,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                         <button class="secondary danger" type="button" (click)="removePaymentAllocation(i)" [disabled]="paymentLoading || paymentRetryPending" [attr.aria-label]="t('حذف التخصيص', 'Remove allocation')">{{ t('حذف', 'Remove') }}</button>
                       </div>
                     }
+                    @if (invoiceLoadMoreError) { <p class="error" role="alert">{{ invoiceLoadMoreError }}</p> }
                     @if (paymentAllocations.length) {
                       <div class="payment-allocation-summary"><span>{{ t('إجمالي التخصيصات', 'Allocated total') }}: <strong>{{ paymentAllocationTotal }} {{ business.currency_code }}</strong></span><span>{{ t('المتبقي من الدفعة غير المخصص', 'Receipt amount not allocated') }}: <strong>{{ paymentAllocationBalance }} {{ business.currency_code }}</strong></span></div>
                       @if (paymentAllocationValidationMessage) { <p class="error" role="alert">{{ paymentAllocationValidationMessage }}</p> }
