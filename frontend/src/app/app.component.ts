@@ -13,6 +13,8 @@ import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab } from './module-access';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
 import type { InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
+import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot } from './payment-retry-snapshot';
+import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
@@ -467,7 +469,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
-                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
+                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading || printLoading>{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
                   @if (!filteredInvoices.length) { <p class="empty">{{ (invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.')) }}</p> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
@@ -481,13 +483,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div></div>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
-                  <input [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount">
-                  <select [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>
-                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
-                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount"> }
-                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
-                  <button class="primary" type="submit" [disabled]="loading || !paymentAmount">{{ t('تسجيل دفعة', 'Record payment') }}</button>
+                  <input [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [disabled]="paymentLoading || paymentRetryPending">
+                  <select [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentLoading || paymentRetryPending"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>
+                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentLoading || paymentRetryPending"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
+                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" (ngModelChange)="syncPaymentCustomer()" [disabled]="paymentLoading || paymentRetryPending"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentLoading || paymentRetryPending"> }
+                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference" [disabled]="paymentLoading || paymentRetryPending">
+                  <button class="primary" type="submit" [disabled]="paymentLoading || (!paymentRetryPending && (!paymentAmount || !paymentCustomerId))">{{ paymentLoading ? t('جارٍ التسجيل…', 'Recording…') : (paymentRetryPending ? t('إعادة المحاولة بنفس البيانات', 'Retry with same details') : t('تسجيل دفعة', 'Record payment')) }}</button>
                 </form>
                 @if (paymentMessage) { <p [class.error]="paymentError" [attr.role]="paymentError ? 'alert' : 'status'" aria-live="polite">{{ paymentMessage }}</p> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
@@ -1093,6 +1095,10 @@ export class AppComponent implements OnInit, OnDestroy {
   paymentMethod = 'cash';
   paymentReference = '';
   paymentIdempotencyKey = '';
+  paymentLoading = false;
+  paymentRetryPending = false;
+  private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
+  printLoading = false;
   chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
   chatSending = false;
@@ -1562,6 +1568,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private clearWorkspaceData(): void {
     this.invoiceDraftSaving = false;
     this.invoiceDraftSummary = null;
+    this.paymentLoading = false;
+    this.paymentRetryPending = false;
+    this.pendingPaymentRetrySnapshot = null;
+    this.paymentIdempotencyKey = '';
+    this.printLoading = false;
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2433,16 +2444,25 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async printInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || invoice.status !== 'issued') return;
+    const businessSnapshot = this.business;
+    if (!businessSnapshot || !this.signedIn || !this.currentAuthUid || invoice.status !== 'issued' || this.printLoading) return;
+    const businessId = businessSnapshot.id;
+    const authUid = this.currentAuthUid;
+    const authVersion = this.authTransitionVersion;
+    const isCurrent = (): boolean =>
+      this.business?.id === businessId &&
+      this.currentAuthUid === authUid &&
+      this.authTransitionVersion === authVersion;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       this.error = this.t('اسمح بفتح نافذة الطباعة من المتصفح ثم حاول مرة أخرى.', 'Allow pop-ups for printing, then try again.');
       return;
     }
-    this.loading = true;
+    this.printLoading = true;
     this.error = '';
     try {
-      const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      const detail = await this.api.invoiceDetail(businessId, invoice.id);
+      if (!isCurrent()) { printWindow.close(); return; }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
         this.escapePrintHtml(line.quantity) + '</td><td class="number">' +
@@ -2471,7 +2491,7 @@ export class AppComponent implements OnInit, OnDestroy {
         '.actions{margin-top:24px;display:flex;gap:8px}button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
         '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.total{break-inside:avoid}}</style></head><body>' +
         '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p></div>' +
-        '<div><strong>' + this.escapePrintHtml(this.business.name) + '</strong><p>' + this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
+        '<div><strong>' + this.escapePrintHtml(businessSnapshot.name) + '</strong><p>' + this.escapePrintHtml(businessSnapshot.currency_code) + '</p></div></header>' +
         '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table><div class="total">' + labels.total + ': ' + total + ' ' + currency + '</div>' +
         '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
@@ -2481,9 +2501,9 @@ export class AppComponent implements OnInit, OnDestroy {
       printWindow.focus();
     } catch (error) {
       printWindow.close();
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.printLoading = false;
     }
   }
   async editInvoice(invoice: Invoice): Promise<void> {
@@ -2687,41 +2707,61 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createPayment(): Promise<void> {
-    if (!this.business || !this.paymentAmount.trim() || !this.paymentCustomerId) {
-      this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
+    const businessSnapshot = this.business;
+    if (!businessSnapshot || !this.signedIn || !this.currentAuthUid) return;
+    const businessId = businessSnapshot.id;
+    const authUid = this.currentAuthUid;
+    const authVersion = this.authTransitionVersion;
+    const isCurrent = (): boolean =>
+      this.business?.id === businessId &&
+      this.currentAuthUid === authUid &&
+      this.authTransitionVersion === authVersion;
+
+    let retrySnapshot = this.pendingPaymentRetrySnapshot;
+    if (retrySnapshot && retrySnapshot.businessId !== businessId) {
+      this.pendingPaymentRetrySnapshot = null;
+      this.paymentRetryPending = false;
+      this.paymentIdempotencyKey = '';
+      this.paymentMessage = this.t('تغيرت مساحة العمل؛ ابدأ دفعة جديدة بعد مراجعة البيانات.', 'The workspace changed; start a new payment after reviewing the details.');
+      this.paymentError = true;
       return;
     }
-    const businessId = this.business.id;
-    const amount = this.paymentAmount.trim();
-    const allocation = this.paymentAllocationAmount.trim();
-    if (this.paymentInvoiceId && !allocation) {
-      this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
-      return;
-    }
-    const currencyCode = this.business.currency_code;
-    this.loading = true;
-    this.error = '';
-    this.paymentMessage = '';
-    this.paymentError = false;
-    if (!this.paymentIdempotencyKey) {
-      this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
-    }
-    try {
-      await this.api.createPayment(businessId, {
-        amount,
-        currency_code: currencyCode,
+    if (!retrySnapshot) {
+      if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
+        this.error = this.t('اختَر العميل وأدخل مبلغ الدفعة.', 'Choose a customer and enter the payment amount.');
+        return;
+      }
+      const allocation = this.paymentAllocationAmount.trim();
+      if (this.paymentInvoiceId && !allocation) {
+        this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
+        return;
+      }
+      if (!this.paymentIdempotencyKey) {
+        this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      }
+      retrySnapshot = createPaymentRetrySnapshot(businessId, {
+        amount: this.paymentAmount.trim(),
+        currency_code: businessSnapshot.currency_code,
         idempotency_key: this.paymentIdempotencyKey,
         customer_id: this.paymentCustomerId,
         method: this.paymentMethod,
         reference: this.paymentReference.trim() || undefined,
-        allocations: this.paymentInvoiceId ? [{
-          invoice_id: this.paymentInvoiceId,
-          amount: allocation
-        }] : []
+        allocations: this.paymentInvoiceId ? [{ invoice_id: this.paymentInvoiceId, amount: allocation }] : [],
       });
+      this.pendingPaymentRetrySnapshot = retrySnapshot;
+    }
 
-      // Do not treat a post-save refresh failure as a failed payment mutation.
-      if (this.business?.id !== businessId) return;
+    const requestPayload = paymentRequestFromRetrySnapshot(retrySnapshot);
+    this.paymentLoading = true;
+    this.error = '';
+    this.paymentMessage = '';
+    this.paymentError = false;
+    try {
+      await this.api.createPayment(businessId, requestPayload);
+      if (!isCurrent()) return;
+
+      this.pendingPaymentRetrySnapshot = null;
+      this.paymentRetryPending = false;
       this.paymentAmount = '';
       this.paymentCustomerId = '';
       this.paymentInvoiceId = '';
@@ -2737,12 +2777,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.invoices(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
+        if (!isCurrent()) return;
         this.payments = payments;
         this.dashboard = dashboard;
         this.invoices = invoices;
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.paymentMessage = this.t(
             'تم تسجيل الدفعة، لكن تعذر تحديث العرض. لا تعاود تسجيل الدفعة؛ حدّث البيانات أولًا.',
             'Payment was recorded, but the view could not refresh. Do not record it again; refresh the data first.'
@@ -2750,13 +2790,16 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      // Preserve entered values and the idempotency key if the save failed or its outcome is uncertain.
-      if (this.business?.id === businessId) {
-        this.paymentMessage = this.message(error) || this.t('تعذر تسجيل الدفعة. لم يتم تأكيد النتيجة؛ لا تغيّر البيانات وأعد المحاولة بنفس الطلب بعد التحقق من سجل المدفوعات.', 'Could not confirm the payment. Keep the entered values and verify the payment list before retrying.');
+      if (isCurrent()) {
+        this.paymentRetryPending = true;
+        this.paymentMessage = this.message(error) || this.t(
+          'تعذر تأكيد الدفعة. تم الاحتفاظ بنفس بيانات الطلب ومفتاح التكرار؛ أعد المحاولة دون تعديل البيانات.',
+          'The payment outcome could not be confirmed. The original payload and idempotency key were preserved; retry without editing the details.'
+        );
         this.paymentError = true;
       }
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.paymentLoading = false;
     }
   }
 
