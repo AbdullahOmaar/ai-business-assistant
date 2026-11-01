@@ -1746,3 +1746,18 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Ran strict TypeScript validation for the three pure helper/model modules using `tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler`: **PASS**.
 - GitHub Git blob SHA read-back matched all six helper/model source and test files used in the local test run. This verifies the executed test snapshots match the branch files byte-for-byte.
 - These results do not validate Angular component/template compilation or full-project build. Angular build/type-check, component/browser workflows, full backend/frontend suites, PostgreSQL behavior, dependency/security scans and exact-head GitLab CI remain **NOT RUN**.
+
+
+### Master multi-invoice allocation + identity-scoped retry recovery — 2026-11-01
+
+- Candidate before this ledger update: `443e310bae7bb6d90706bcc62de20a1678870b2d`; PR #323 remains OPEN / DRAFT / UNMERGED.
+- Added `frontend/src/app/payment-allocation.ts` and `payment-allocation.spec.ts`. The active OWNER payment form now supports allocating one received payment across multiple eligible issued invoices for the same customer and workspace currency. Client input guardrails use integer cents/BigInt and reject incomplete/duplicate/mismatched/over-outstanding/over-receipt allocations; the existing backend remains authoritative.
+- Verified main's existing `PaymentCreate.allocations` contract already accepts an array of `PaymentAllocationInput`; no backend route, schema, migration, payment posting or accounting semantics were changed.
+- Extended `payment-retry-snapshot.ts` with an in-memory `PaymentRetryVault` keyed by authenticated UID + business ID. The active flow stores the immutable payload before the request, preserves it across auth transitions, restores it only for the same owner/workspace, and removes it only after confirmed API success. Another identity cannot retrieve the record; no localStorage/sessionStorage persistence is used.
+- Added vault isolation/identity regression cases in `payment-retry-snapshot.spec.ts`. `app.component.ts` now saves the active uncertain snapshot before auth-state reset, restores the exact attempt after the same identity re-enters the workspace, and reuses the same idempotency key/payload.
+- Local supplemental check: reconstructed mirror harness for allocation + retry-vault logic — **12/12 PASS**; strict TypeScript 5.8.3 check on those local mirrored helper modules — **PASS**. These local files were not verified byte-for-byte against Git blobs, so this is not exact-source repository test evidence.
+- Earlier candidate checkpoint's exact Git-blob-matched focused tests (module access + invoice draft model + original retry snapshot): **20/20 PASS**; historical evidence only, not a full latest-head suite.
+- Latest observed GitHub head before this ledger append had legacy CircleCI `error` and Semaphore `failure` status contexts. No CI provider was triggered or retried. GitLab mirror branch remains stale at `4a405518d1dc7802ea1f41c0b72560da9786da0d`; no exact-head GitLab pipeline is available.
+- Full frontend `npm test`, Angular build/template type-check, browser/mobile/accessibility behavior, backend pytest, PostgreSQL concurrency, dependency/security scans and exact-head CI: **NOT RUN**. Independent review remains outstanding.
+- No merge, version bump, deployment, migration or production data write. Keep PR #323 Draft/unmerged until permitted exact-head validation and independent review are available.
+- Next: obtain a permitted exact-source test/build environment, complete real browser behavior for print/payment/auth/workspace transitions, and finish invoice/customer pagination beyond 100 records.
