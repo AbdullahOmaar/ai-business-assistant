@@ -11,13 +11,15 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab } from './module-access';
+import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
+import type { InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, InvoiceDraftEditorComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="mobileMoreOpen = false">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -428,7 +430,26 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <section class="panel">
                 <div class="section-head"><div><h2>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</h2><p>{{ t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') }}</p></div><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></div>
                 <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
-                <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
+                @if (!editingInvoiceId) {
+                  <div class="invoice-form stack">
+                    <div class="inline-form">
+                      <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate" [disabled]="invoiceDraftSaving"></label>
+                      <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate" [disabled]="invoiceDraftSaving"></label>
+                    </div>
+                    <aba-invoice-draft-editor
+                      [language]="language"
+                      [products]="products"
+                      [customers]="customers"
+                      [currencyCode]="business.currency_code"
+                      [invoiceNumber]="invoiceNumber"
+                      [customerId]="invoiceCustomerId"
+                      [saving]="invoiceDraftSaving"
+                      [serverSummary]="invoiceDraftSummary"
+                      (saveDraft)="saveInvoiceDraft($event)"
+                    />
+                  </div>
+                } @else {
+                  <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
                   <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select></label>
                   <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate"></label>
@@ -437,10 +458,11 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select></label><label>{{ t('الكمية', 'Quantity') }}<input [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity"></label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
                   </div>
                   <p class="muted">{{ t('لا يتم حساب إجماليات الفاتورة داخل المتصفح. ستظهر الإجماليات المحفوظة بعد استلام رد الخادم.', 'Invoice totals are not calculated in the browser. Saved totals appear after the server response.') }}</p>
-                  <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
+                  <p class="footnote">{{ t('الخادم هو المرجع النهائي للإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'The server is authoritative for invoice totals and validates prices and quantities when saving and issuing.') }}</p>
                   <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
+                }
                 </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
                 @if (invoiceMessage) { <p class="notice" role="status">{{ invoiceMessage }}</p> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
@@ -1058,6 +1080,8 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceTaxRate = '0';
   invoiceMessage = '';
   invoiceNumber = '';
+  invoiceDraftSaving = false;
+  invoiceDraftSummary: InvoiceDraftServerSummary | null = null;
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
   paymentCustomerId = '';
@@ -1536,6 +1560,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.invoiceDraftSaving = false;
+    this.invoiceDraftSummary = null;
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2298,6 +2324,66 @@ export class AppComponent implements OnInit, OnDestroy {
   removeInvoiceLine(index: number): void {
     if (this.loading || this.invoiceLines.length <= 1) return;
     this.invoiceLines = this.invoiceLines.filter((_, lineIndex) => lineIndex !== index);
+  }
+
+  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
+    if (!this.business || !this.signedIn || !this.currentAuthUid) return;
+    const discountRate = Number(this.invoiceDiscountRate);
+    const taxRate = Number(this.invoiceTaxRate);
+    if (!Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
+        !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
+      this.error = this.t('أدخل نسب خصم وضريبة صحيحة من 0 إلى 100.', 'Enter valid discount and tax rates from 0 to 100.');
+      return;
+    }
+    const businessId = this.business.id;
+    const authUid = this.currentAuthUid;
+    const authVersion = this.authTransitionVersion;
+    const isCurrent = (): boolean =>
+      this.business?.id === businessId &&
+      this.currentAuthUid === authUid &&
+      this.authTransitionVersion === authVersion;
+    this.invoiceDraftSaving = true;
+    this.error = '';
+    this.invoiceMessage = '';
+    this.invoiceDraftSummary = null;
+    try {
+      const saved = await this.api.createInvoice(businessId, {
+        ...payload,
+        discount_rate: String(discountRate),
+        tax_rate: String(taxRate),
+      });
+      if (!isCurrent()) return;
+      this.invoiceNumber = payload.invoice_number;
+      this.invoiceCustomerId = payload.customer_id;
+      this.invoiceDraftSummary = {
+        currency_code: saved.currency_code,
+        subtotal: saved.subtotal ?? null,
+        discount_total: saved.discount_total ?? null,
+        tax_total: saved.tax_total ?? null,
+        total: saved.total,
+      };
+      this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft saved. The displayed totals were returned by the server.');
+      try {
+        const [invoices, dashboard] = await Promise.all([
+          this.api.invoices(businessId),
+          this.api.dashboard(businessId),
+        ]);
+        if (!isCurrent()) return;
+        this.invoices = invoices;
+        this.dashboard = dashboard;
+      } catch {
+        if (isCurrent()) {
+          this.invoiceMessage = this.t(
+            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تعاود الحفظ؛ حدّث البيانات أولًا.',
+            'Draft saved, but the list could not refresh. Do not save again; refresh the data first.'
+          );
+        }
+      }
+    } catch (error) {
+      if (isCurrent()) this.error = this.message(error);
+    } finally {
+      if (isCurrent()) this.invoiceDraftSaving = false;
+    }
   }
 
   async createInvoice(): Promise<void> {
