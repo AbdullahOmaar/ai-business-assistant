@@ -213,3 +213,77 @@ test('direct setTab selection fails closed when STAFF requests Activity Log or T
   assert.ok(moduleAccessSource.includes("'taxes', 'audit'"));
   assert.ok(moduleAccessSource.includes("if (OWNER_ONLY_TABS.has(tab)) return role === 'owner';"));
 });
+
+function asyncSourceSection(startMarker: string, endMarker: string): string {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.ok(start >= 0 && end > start, `missing source section: ${startMarker}`);
+  return source.slice(start, end);
+}
+
+test('chat responses and errors are fenced by captured workspace, user, auth generation, and request generation', () => {
+  const method = asyncSourceSection('async sendChat(): Promise<void>', 'private message(');
+  assert.match(method, /const businessId = this\.business\.id/);
+  assert.match(method, /this\.chatRequestGuard\.begin\(\)/);
+  assert.match(method, /this\.captureTenantRequest\(businessId\)/);
+  assert.match(method, /if \(!isCurrent\(\)\) return/);
+  assert.match(method, /if \(isCurrent\(\)\) this\.chatSending = false/);
+});
+
+test('product and customer CSV reads, previews, and imports are workspace fenced', () => {
+  const productRead = asyncSourceSection('async onImportFileSelected(', 'async previewProductImport(');
+  const productPreview = asyncSourceSection('async previewProductImport(', 'async confirmProductImport(');
+  const productConfirm = asyncSourceSection('async confirmProductImport(', 'async onCustomerImportFileSelected(');
+  const customerRead = asyncSourceSection('async onCustomerImportFileSelected(', 'async previewCustomerImport(');
+  const customerPreview = asyncSourceSection('async previewCustomerImport(', 'async confirmCustomerImport(');
+  const customerConfirm = asyncSourceSection('async confirmCustomerImport(', 'async createProduct(');
+  for (const method of [productRead, productPreview, productConfirm, customerRead, customerPreview, customerConfirm]) {
+    assert.match(method, /this\.(?:product|customer)ImportRequestGuard\.begin\(\)/);
+    assert.match(method, /this\.captureTenantRequest\(this\.business\.id\)|this\.captureTenantRequest\(businessId\)/);
+    assert.match(method, /isCurrent\(\)/);
+  }
+  assert.match(productConfirm, /never replay it for a new workspace/);
+  assert.match(customerConfirm, /never replay it for a new workspace/);
+});
+
+test('invoice detail and invoice mutations cannot write stale workspace data into the shared editor', () => {
+  const edit = asyncSourceSection('async editInvoice(', 'cancelInvoiceEdit(): void');
+  const create = asyncSourceSection('async createInvoice(): Promise<void>', 'private escapePrintHtml(');
+  const issue = asyncSourceSection('async issueInvoice(', 'async voidInvoice(');
+  const voidInvoice = asyncSourceSection('async voidInvoice(', 'hasOutstandingBalance(');
+  for (const method of [edit, create, issue, voidInvoice]) {
+    assert.match(method, /const businessId = this\.business\.id/);
+    assert.match(method, /this\.captureTenantRequest\(businessId\)/);
+    assert.match(method, /isCurrent\(\)/);
+  }
+});
+
+test('workspace creation is fenced by the initiating Firebase UID and auth transition', () => {
+  const method = asyncSourceSection('async createWorkspace(): Promise<void>', 'async switchBusiness(');
+  assert.match(method, /const requestUid = this\.currentAuthUid/);
+  assert.match(method, /const authVersion = this\.authTransitionVersion/);
+  assert.match(method, /this\.workspaceCreateRequestGuard\.isLatest\(requestVersion\)/);
+  assert.match(method, /if \(!isCurrent\(\)\) return/);
+});
+
+test('workspace reset invalidates every new async guard and clears chat loading state', () => {
+  const reset = asyncSourceSection('private clearWorkspaceData(): void', 'private captureTenantRequest(');
+  for (const guard of [
+    'chatRequestGuard', 'productImportRequestGuard', 'customerImportRequestGuard',
+    'invoiceEditRequestGuard', 'workspaceCreateRequestGuard', 'customerMutationGuard',
+    'productMutationGuard', 'invoiceMutationGuard',
+  ]) assert.ok(reset.includes(`this.${guard}.invalidate()`), `${guard} must be invalidated on reset`);
+  assert.match(reset, /this\.chatSending = false/);
+});
+
+test('customer and product creation mutations are fenced and refresh only their captured workspace', () => {
+  const customer = asyncSourceSection('async createCustomer(): Promise<void>', 'async onImportFileSelected(');
+  const product = asyncSourceSection('async createProduct(): Promise<void>', 'private deriveRate(');
+  for (const method of [customer, product]) {
+    assert.match(method, /const businessId = this\.business\.id/);
+    assert.match(method, /this\.captureTenantRequest\(businessId\)/);
+    assert.match(method, /this\.api\.(?:createCustomer|createProduct)\(businessId/);
+    assert.match(method, /if \(!isCurrent\(\)\) return/);
+    assert.match(method, /if \(isCurrent\(\)\) this\.loading = false/);
+  }
+});
