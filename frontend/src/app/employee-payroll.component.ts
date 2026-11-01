@@ -721,7 +721,7 @@ export class EmployeePayrollComponent implements OnChanges {
     try {
       await this.api.payPayroll(businessId, record.id);
       if (this.businessId !== businessId) return;
-      this.message = this.t('تم تسجيل الصرف وربطه بمصروف رواتب واحد.', 'Payment recorded and linked to one Payroll expense.');
+      this.message = this.t('تم تسجيل المرتب كمدفوع داخل النظام وربطه بمصروف رواتب واحد؛ لا يؤكد ذلك تحويلًا بنكيًا خارجيًا.', 'Payroll marked paid in the app and linked to one Payroll expense; this does not confirm an external bank transfer.');
       this.payrollPaid.emit();
       await this.loadEmployeesAndPayroll();
     } catch (error) {
