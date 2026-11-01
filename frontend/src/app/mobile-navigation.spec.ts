@@ -11,10 +11,10 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.ok(mobileSidebarStart >= 0 && mobileItemsStart > mobileSidebarStart);
 
   const mobileSidebarStyles = source.slice(mobileSidebarStart, mobileItemsStart);
-  assert.match(mobileSidebarStyles, /grid-template-columns:repeat\\(4,minmax\\(0,1fr)\\)/);
+  assert.match(mobileSidebarStyles, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(
     source,
-    /\\.sidebar>\\.mobile-extra,\\.sidebar>\\.platform-admin-nav\\{display:none\\}/,
+    /\.sidebar>\.mobile-extra,\.sidebar>\.platform-admin-nav\{display:none\}/,
     'non-primary sections, including the desktop admin link, must not create a fifth mobile slot',
   );
 
@@ -22,20 +22,19 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
-  assert.match(moreMenu, /@if \\(platformAdminAvailable\\)/);
-  assert.match(moreMenu, /setTab\\('platform-admin'\\)/);
+  assert.match(moreMenu, /@if \(platformAdminAvailable\)/);
+  assert.match(moreMenu, /setTab\('platform-admin'\)/);
   assert.match(moreMenu, /Platform admin/);
   assert.match(
     source,
-    /class="nav-item platform-admin-nav".{0,500}setTab\\('platform-admin'\\)/s,
+    /class="nav-item platform-admin-nav".{0,500}setTab\('platform-admin'\)/s,
     'the existing desktop Platform Admin destination must remain available',
   );
 
-  assert.match(
-    source,
-    /\\[class\\.active\\]="mobileMoreOpen \\|\\| isMobileMoreTab\\(tab\\)"/,
+  assert.ok(
+    source.includes('[class.active]="mobileMoreOpen || isMobileMoreTab(tab)"'),
     'the More active state must use the shared tested tab classifier',
   );
-  assert.match(moduleAccessSource, /export function isMobileMoreTab\\(tab: WorkspaceModuleTab\\): boolean/);
-  assert.match(moduleAccessSource, /return MOBILE_MORE_TABS\\.has\\(tab\\)/);
+  assert.match(moduleAccessSource, /export function isMobileMoreTab\(tab: WorkspaceModuleTab\): boolean/);
+  assert.match(moduleAccessSource, /return MOBILE_MORE_TABS\.has\(tab\)/);
 });
