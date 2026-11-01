@@ -81,3 +81,32 @@ export function paymentRequestFromRetrySnapshot(
 ): PaymentRequestPayload {
   return clonePaymentPayload(snapshot.payload);
 }
+
+
+/**
+ * Keeps uncertain payment attempts in memory, scoped to the authenticated user
+ * and workspace. This allows the same owner to retry after an auth transition
+ * without exposing the previous owner's payment details to another identity.
+ */
+export class PaymentRetryVault {
+  private readonly records = new Map<string, PaymentRetrySnapshot>();
+
+  private key(authUid: string, businessId: string): string {
+    const uid = authUid.trim();
+    const business = businessId.trim();
+    if (!uid || !business) throw new RangeError('An authenticated user and business are required for a payment retry.');
+    return JSON.stringify([uid, business]);
+  }
+
+  save(authUid: string, snapshot: PaymentRetrySnapshot): void {
+    this.records.set(this.key(authUid, snapshot.businessId), snapshot);
+  }
+
+  get(authUid: string, businessId: string): PaymentRetrySnapshot | null {
+    return this.records.get(this.key(authUid, businessId)) ?? null;
+  }
+
+  delete(authUid: string, businessId: string): void {
+    this.records.delete(this.key(authUid, businessId));
+  }
+}
