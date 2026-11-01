@@ -22,8 +22,8 @@ test('invoice print uses persisted totals and date/note fields instead of recalc
   assert.match(componentSource, /detail\.discount_total \?\? '0\.00'/);
   assert.match(componentSource, /detail\.tax_total \?\? '0\.00'/);
   assert.match(componentSource, /detail\.total/);
-  assert.match(componentSource, /detail\.issue_date \? detail\.issue_date\.slice\(0, 10\)/);
-  assert.match(componentSource, /detail\.due_date \? detail\.due_date\.slice\(0, 10\)/);
+  assert.match(componentSource, /const issueDate = detail\.issue_date \? this\.escapePrintHtml\(detail\.issue_date\.slice\(0, 10\)\)/);
+  assert.match(componentSource, /const dueDate = detail\.due_date \? this\.escapePrintHtml\(detail\.due_date\.slice\(0, 10\)\)/);
   assert.match(componentSource, /detail\.notes\?\.trim\(\)/);
   assert.match(componentSource, /const currency = this\.escapePrintHtml\(detail\.currency_code\)/);
 });
