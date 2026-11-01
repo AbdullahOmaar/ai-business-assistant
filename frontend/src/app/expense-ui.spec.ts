@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { isMobileMoreTab } from './module-access.ts';
 
 const ui = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
@@ -19,7 +20,9 @@ test('expense view is reachable from mobile More and has bilingual labels', () =
   assert.match(ui, /@if \(tab === 'expenses'\)/);
   assert.match(ui, /t\('تسجيل مصروف', 'Record an expense'\)/);
   assert.match(ui, /t\('حفظ المصروف', 'Save expense'\)/);
-  assert.match(ui, /\['products','payments','expenses','employees','assistant'/);
+  assert.equal(isMobileMoreTab('expenses'), true);
+  assert.equal(isMobileMoreTab('assistant'), true);
+  assert.equal(isMobileMoreTab('products'), false);
 });
 
 test('workspace load and clear paths include expense records', () => {
