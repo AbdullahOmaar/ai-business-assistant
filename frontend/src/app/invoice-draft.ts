@@ -150,3 +150,20 @@ export function removeInvoiceDraftLine<T>(lines: readonly T[], index: number): T
   if (index < 0 || index >= lines.length || lines.length <= 1) return [...lines];
   return lines.filter((_, currentIndex) => currentIndex !== index);
 }
+
+/** Converts persisted draft lines into editable catalog/manual editor rows. */
+export function invoiceDraftLinesFromExisting(lines: readonly {
+  product_id: string | null;
+  description: string;
+  quantity: string;
+  unit_price: string;
+}[]): InvoiceDraftLine[] {
+  return lines.map((line, index) => ({
+    id: 'existing-invoice-line-' + (index + 1),
+    kind: line.product_id ? 'product' : 'manual',
+    product_id: line.product_id || '',
+    description: line.description || '',
+    quantity: line.quantity,
+    unit_price: line.product_id ? '' : line.unit_price,
+  }));
+}
