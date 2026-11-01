@@ -445,8 +445,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (!editingInvoiceId) {
                   <div class="invoice-form stack">
                     <div class="inline-form">
-                      <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate" [disabled]="invoiceDraftSaving"></label>
-                      <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate" [disabled]="invoiceDraftSaving"></label>
+                      <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate" [disabled]="invoiceDraftSaving || !!invoiceDraftSummary"></label>
+                      <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate" [disabled]="invoiceDraftSaving || !!invoiceDraftSummary"></label>
                     </div>
                     <aba-invoice-draft-editor
                       [language]="language"
