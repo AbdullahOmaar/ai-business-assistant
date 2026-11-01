@@ -9,6 +9,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
+from app.api import router as business_router
+from app.extended_api import router as extended_business_router
 from app.models import Base, BusinessMembership, MembershipRole
 from app.security import AuthenticatedPrincipal
 
@@ -165,12 +167,16 @@ def test_nonmember_and_staff_route_matrices_preserve_all_business_rows_per_reque
 
 def test_supplier_create_route_is_registered_once_on_canonical_service_handler():
     """The assembled FastAPI app must expose one canonical supplier-create route."""
+    path = "/api/v1/businesses/{business_id}/suppliers"
+    # Inspect the source routers directly: recent FastAPI versions defer
+    # include_router expansion, so app.routes is not a stable flattened list.
     routes = [
         route
-        for route in app.routes
+        for router in (business_router, extended_business_router)
+        for route in router.routes
         if isinstance(route, APIRoute)
         and "POST" in (route.methods or set())
-        and route.path == "/api/v1/businesses/{business_id}/suppliers"
+        and route.path == path
     ]
 
     assert len(routes) == 1, (
@@ -179,3 +185,4 @@ def test_supplier_create_route_is_registered_once_on_canonical_service_handler()
     )
     assert routes[0].endpoint.__module__ == "app.api"
     assert routes[0].endpoint.__name__ == "post_supplier"
+    assert "post" in app.openapi()["paths"][path]
