@@ -1803,3 +1803,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Scope is Master-owned shared navigation only; no specialist-owned files or backend/API contracts changed.
 - Validation: local Node 22 isolated snapshot test for the module-access helper and regression cases: 5/5 PASS; helper source Git blob SHA was verified against GitHub. Full Angular build/template compilation and browser/mobile visual verification remain NOT RUN because Desktop Commander is OFFLINE and no full local checkout is available. No CI trigger/retry was issued.
 - Delivery: remain on PR #323 / `master/demo-readiness-ui-20261101`; no merge, deployment, version bump or production data change.
+
+
+### Master async workspace/auth fencing follow-up — 2026-11-01
+
+- Updated `frontend/src/app/workspace-load-guard.ts` so tenant request contexts can include the captured Firebase auth-transition generation; a delayed response is current only when the generation still matches, even if the same user and workspace IDs are reused.
+- Added focused helper regression cases in `frontend/src/app/workspace-load-guard.spec.ts` for unchanged identity/generation acceptance and same-workspace auth-transition rejection.
+- In `frontend/src/app/app.component.ts`, added independent request generations and captured tenant identity for AI chat, product/customer CSV file reads, previews and confirmations, invoice-detail edit, customer/product create, invoice draft create/update, issue/void, and workspace creation. Every post-await UI mutation/refresh is fenced by the captured workspace, Firebase UID, role, auth-transition generation and request generation.
+- `clearWorkspaceData()` invalidates all new generations and resets chat loading state. Stale write completions are not replayed; successful writes whose refresh fails now show an explicit do-not-repeat message.
+- Added source-regression assertions in `frontend/src/app/app.component-template-safety.spec.ts` for the new guards and reset behavior.
+- Validation at commit time: source transformation assertions PASS; helper unit tests, Angular compilation/build, component/browser E2E, authenticated A→B/logout→B journeys, PostgreSQL/API suite, dependency/security scans and exact-head GitLab CI **NOT RUN**. Commits use `[skip ci]`; no CI jobs are requested or retried. No production data writes, schema changes, merge or deployment.
+- Next: run exact-source pure helper tests in an isolated Node runner; then obtain permitted Angular/browser validation and independent review before any merge decision.
