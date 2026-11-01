@@ -964,6 +964,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .workspace-release-meta-inline .version-pill{max-width:100%;white-space:normal;overflow-wrap:anywhere}
       .workspace-release-meta-inline small{text-align:start}
     }
+    .payment-allocation-editor{grid-column:1/-1;display:grid;gap:10px;min-width:0;padding:13px;border:1px solid #dbe4ea;border-radius:12px;background:#fff}
+    .payment-allocation-editor .section-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .payment-allocation-editor .section-actions strong{font-size:12px;color:#334155}
+    .payment-allocation-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(120px,1fr) auto;gap:10px;align-items:end;padding:11px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc}
+    .payment-allocation-row label{display:grid;gap:6px;min-width:0;font-size:11px;font-weight:700;color:#475569}
+    .payment-allocation-row select,.payment-allocation-row input{width:100%;min-width:0}
+    .payment-allocation-summary{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:10px;border-radius:9px;background:#f1f5f9;font-size:11px;color:#475569}
+    .payment-allocation-summary strong{color:#0f172a;font-variant-numeric:tabular-nums}
+    @media(max-width:600px){.payment-allocation-row{grid-template-columns:minmax(0,1fr)}.payment-allocation-row button{justify-self:start}.payment-allocation-editor .section-actions{align-items:flex-start}}
+
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
