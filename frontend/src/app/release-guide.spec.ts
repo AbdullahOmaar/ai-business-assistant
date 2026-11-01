@@ -115,6 +115,16 @@ if (hasBackendPackage) {
 
 const catalogueById = new Map(FEATURE_CATALOG.map((group) => [group.id, group]));
 
+test('invoice and payment catalogue describe mixed draft editing and safe retry boundaries', () => {
+  const invoices = catalogueById.get('invoices');
+  const payments = catalogueById.get('payments');
+  assert.ok(invoices?.features.some(feature => feature.titleEn === 'Edit an existing draft'));
+  assert.ok(invoices?.features.some(feature => feature.detailEn.includes('totals are returned by the server')));
+  assert.ok(payments?.features.some(feature => feature.titleEn === 'Safe payment retry'));
+  assert.ok(payments?.features.some(feature => feature.detailEn.includes('confirmed no-write rejection')));
+});
+
+
 test('demo catalogue includes all seven implemented operational groups in Arabic and English', () => {
   const expected = [
     ['suppliers', 'الموردون', 'Suppliers'],
