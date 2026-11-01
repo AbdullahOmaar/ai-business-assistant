@@ -153,8 +153,8 @@ test('customer CSV import requires preview before confirmation and localizes fee
   assert.match(panel, /confirmCustomerImport\(\)/);
   assert.match(source, /async previewCustomerImport\(\): Promise<void>/);
   assert.match(source, /async confirmCustomerImport\(\): Promise<void>/);
-  assert.match(source, /this\.api\.previewCustomerCsv\(\s*this\.business\.id, this\.customerImportCsvText/);
-  assert.match(source, /this\.api\.importCustomerCsv\(\s*this\.business\.id, this\.customerImportCsvText/);
+  assert.match(source, /this\.api\.previewCustomerCsv\(businessId, csvText\)/);
+  assert.match(source, /this\.api\.importCustomerCsv\(businessId, csvText\)/);
   assert.match(source, /customerImportPreview: Awaited<ReturnType<ApiService\['previewCustomerCsv'\]>>/);
 });
 
