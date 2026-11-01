@@ -2012,6 +2012,99 @@ def test_owner_payment_rejects_invoice_for_another_customer_without_writes():
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+def test_concurrent_exact_payment_retries_return_one_payment_allocation_and_audit():
+    database_url = os.getenv("TEST_DATABASE_URL")
+    if not database_url or not database_url.startswith(("postgresql://", "postgresql+")):
+        pytest.skip("Set TEST_DATABASE_URL to PostgreSQL to run the concurrent payment idempotency regression")
+
+    engine = create_engine(database_url, pool_size=5, max_overflow=0)
+    previous_factory = previous_resolver = None
+    identity_configured = False
+    try:
+        suffix = uuid4().hex[:12]
+        with Session(engine) as session:
+            business = Business(name=f"Concurrent payment {suffix}", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            customer = Customer(
+                business_id=business.id,
+                name=f"Concurrent payment customer {suffix}",
+            )
+            session.add(customer)
+            session.flush()
+            invoice = Invoice(
+                business_id=business.id,
+                customer_id=customer.id,
+                invoice_number=f"PAY-{suffix}",
+                status="issued",
+                currency_code="EGP",
+                subtotal=Decimal("10.00"),
+                tax_total=Decimal("0.00"),
+                discount_total=Decimal("0.00"),
+                total=Decimal("10.00"),
+            )
+            session.add(invoice)
+            session.add(BusinessMembership(
+                business_id=business.id,
+                user_subject="test-subject",
+                role=MembershipRole.OWNER,
+            ))
+            session.commit()
+            business_id, customer_id, invoice_id = business.id, customer.id, invoice.id
+
+        previous_factory, previous_resolver = _configure_test_identity(engine)
+        identity_configured = True
+        base = f"/api/v1/businesses/{business_id}/payments"
+        idempotency_key = f"concurrent-payment-{uuid4().hex}"
+        payload = {
+            "amount": "5.00",
+            "currency_code": "EGP",
+            "idempotency_key": idempotency_key,
+            "customer_id": str(customer_id),
+            "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+            "method": "cash",
+            "reference": "concurrent exact retry",
+        }
+        start_together = Barrier(2)
+
+        def record_once():
+            concurrent_client = TestClient(app)
+            start_together.wait(timeout=10)
+            return concurrent_client.post(base, json=payload)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            responses = list(pool.map(lambda _: record_once(), range(2)))
+
+        assert [response.status_code for response in responses] == [201, 201]
+        payment_ids = [response.json()["id"] for response in responses]
+        assert payment_ids[0] == payment_ids[1]
+
+        with Session(engine) as session:
+            payments = session.scalars(select(Payment).where(
+                Payment.business_id == business_id,
+                Payment.idempotency_key == idempotency_key,
+            )).all()
+            allocations = session.scalars(select(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.payment_id == UUID(payment_ids[0]),
+            )).all()
+            audits = session.scalars(select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "payment.recorded",
+                AuditEvent.target_id == UUID(payment_ids[0]),
+            )).all()
+            assert len(payments) == 1
+            assert payments[0].id == UUID(payment_ids[0])
+            assert len(allocations) == 1
+            assert allocations[0].invoice_id == invoice_id
+            assert allocations[0].amount == Decimal("5.00")
+            assert len(audits) == 1
+    finally:
+        if identity_configured:
+            _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_staff_cannot_record_payment_via_api_without_writes_or_audit_events():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
