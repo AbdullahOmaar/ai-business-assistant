@@ -93,7 +93,8 @@ test('workspace header keeps business name, selector, and release time in separa
 test('responsive sizing rules keep numeric invoice fields compact and cards within mobile width', () => {
   assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
-  assert.match(source, /\.list-row\{min-width:0;flex-wrap:wrap;gap:12px\}/);\n  assert.match(source, /\.list-row\{display:grid;grid-template-columns:auto minmax\(0,1fr\);align-items:start\}/);
+  assert.match(source, /\.list-row\{min-width:0;flex-wrap:wrap;gap:12px\}/);
+  assert.match(source, /\.list-row\{display:grid;grid-template-columns:auto minmax\(0,1fr\);align-items:start\}/);
   assert.match(source, /class="list-row invoice-list-row"/);
   assert.match(source, /class="list-row customer-list-row"/);
   assert.match(source, /\.customer-list-row,\.invoice-list-row\{grid-template-columns:36px minmax\(0,1fr\)/);
