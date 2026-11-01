@@ -180,3 +180,36 @@ test('workspace switch clears pending product and customer CSV imports', () => {
     assert.match(reset, new RegExp('this\\.' + field + '\\s*='));
   }
 });
+
+
+test('Home launcher exposes all 19 existing module destinations with current access flags', () => {
+  const launcherStart = source.indexOf('class="panel module-launcher"');
+  const launcherEnd = source.indexOf('</section>', launcherStart);
+  assert.ok(launcherStart >= 0 && launcherEnd > launcherStart);
+  const launcher = source.slice(launcherStart, launcherEnd);
+  const expectedTabs = [
+    'overview', 'customers', 'products', 'invoices', 'payments', 'expenses',
+    'employees', 'assistant', 'reports', 'taxes', 'audit', 'integrity',
+    'release-guide', 'platform-admin', 'suppliers', 'purchases', 'recurring',
+    'notifications', 'health',
+  ];
+  const actualTabs = [...launcher.matchAll(/setTab\('([^']+)'\)/g)].map((match) => match[1]);
+  assert.deepEqual(actualTabs, expectedTabs);
+  assert.equal((launcher.match(/class="quick-card"/g) || []).length, 19);
+
+  for (const tab of ['payments', 'employees', 'taxes', 'audit', 'integrity', 'health']) {
+    assert.ok(launcher.includes(`@if (canAccessTab('${tab}'))`), `${tab} launcher entry must reuse the existing access policy`);
+  }
+  assert.ok(launcher.includes('@if (platformAdminAvailable)'), 'Platform Admin must follow the existing availability flag');
+});
+
+test('direct setTab selection fails closed when STAFF requests Activity Log or Tax Summary', () => {
+  const methodStart = source.indexOf('setTab(tab: Tab): void {');
+  const methodEnd = source.indexOf('\n  statementEventLabel', methodStart);
+  assert.ok(methodStart >= 0 && methodEnd > methodStart);
+  const method = source.slice(methodStart, methodEnd);
+  assert.match(method, /if \(!this\.canAccessTab\(tab\)\) \{ this\.tab = 'overview'; this\.mobileMoreOpen = false; return; \}/);
+  assert.match(source, /canAccessTab\(tab: Tab\): boolean \{\s*return canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\); \}/);
+  assert.match(moduleAccessSource, /'taxes', 'audit'/);
+  assert.match(moduleAccessSource, /if \(OWNER_ONLY_TABS\.has\(tab\)\) return role === 'owner';/);
+});
