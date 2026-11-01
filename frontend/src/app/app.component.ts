@@ -458,6 +458,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       [saving]="invoiceDraftSaving"
                       [serverSummary]="invoiceDraftSummary"
                       (saveDraft)="saveInvoiceDraft($event)"
+                      (newDraft)="startNewInvoiceDraft()"
                     />
                   </div>
                 } @else {
@@ -2453,6 +2454,17 @@ export class AppComponent implements OnInit, OnDestroy {
   removeInvoiceLine(index: number): void {
     if (this.loading || this.invoiceLines.length <= 1) return;
     this.invoiceLines = this.invoiceLines.filter((_, lineIndex) => lineIndex !== index);
+  }
+
+  startNewInvoiceDraft(): void {
+    if (this.invoiceDraftSaving) return;
+    this.invoiceNumber = '';
+    this.invoiceCustomerId = '';
+    this.invoiceDraftSummary = null;
+    this.invoiceDiscountRate = '0';
+    this.invoiceTaxRate = '0';
+    this.invoiceMessage = '';
+    this.error = '';
   }
 
   async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
