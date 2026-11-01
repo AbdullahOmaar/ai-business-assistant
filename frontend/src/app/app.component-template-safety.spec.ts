@@ -7,11 +7,11 @@ const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf
 test('mobile More menu has a correctly delimited active-class attribute', () => {
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
   assert.ok(line, 'mobile More button must exist');
-  assert.ok(line.includes("[class.active]=\"tab === 'release-guide'\""),
-    'the release-guide active binding must be a complete Angular attribute');
+  assert.match(line, /\[class\.active\]="mobileMoreOpen \|\| \[[^\]]*'release-guide'[^\]]*\]\.includes\(tab\)"/,
+    'the More menu active binding must include release-guide inside the tab list');
   assert.ok(line.includes('[attr.aria-label]='),
     'the More menu item must retain its accessible label');
-  assert.equal(line.includes("[class.active]=\"tab === 'release-guide'\"\""), false);
+  assert.equal(line.includes('.includes(tab)""'), false);
 });
 
 const authSource = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
