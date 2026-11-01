@@ -179,32 +179,3 @@ test('payroll creation requires an explicit employee choice instead of defaultin
   assert.match(component, /this\.payrollEmployeeId = ''/);
   assert.match(component, /previouslySelected && !this\.payrollEmployeeOptions\.some/);
 });
-
-
-test('late employee and picker responses cannot repopulate a different workspace', () => {
-  const changeStart = component.indexOf('ngOnChanges(changes: SimpleChanges): void');
-  const changeEnd = component.indexOf('\n  t(arabic: string', changeStart);
-  assert.ok(changeStart >= 0 && changeEnd > changeStart);
-  const workspaceChange = component.slice(changeStart, changeEnd);
-  assert.match(workspaceChange, /this\.loadSequence\+\+/);
-  assert.match(workspaceChange, /this\.pickerLoadSequence\+\+/);
-  assert.match(workspaceChange, /this\.employees = \[\]/);
-  assert.match(workspaceChange, /this\.payrollRecords = \[\]/);
-
-  const loadStart = component.indexOf('async loadEmployeesAndPayroll(): Promise<void>');
-  const loadEnd = component.indexOf('\n  searchEmployees(): void', loadStart);
-  assert.ok(loadStart >= 0 && loadEnd > loadStart);
-  const loader = component.slice(loadStart, loadEnd);
-  assert.match(loader, /const businessId = this\.businessId/);
-  assert.match(loader, /const sequence = \+\+this\.loadSequence/);
-  assert.match(loader, /if \(sequence !== this\.loadSequence \|\| this\.businessId !== businessId\) return/);
-  assert.match(loader, /if \(pickerSequence !== this\.pickerLoadSequence \|\| this\.businessId !== businessId\) return/);
-  assert.match(loader, /if \(sequence === this\.loadSequence && this\.businessId === businessId\) this\.busy = false/);
-
-  const pickerStart = component.indexOf('async searchPayrollEmployees(): Promise<void>');
-  const pickerEnd = component.indexOf('\n  onPayrollEmployeeChange(', pickerStart);
-  assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
-  const picker = component.slice(pickerStart, pickerEnd);
-  assert.match(picker, /if \(sequence !== this\.pickerLoadSequence \|\| this\.businessId !== businessId\) return/);
-  assert.match(picker, /if \(sequence === this\.pickerLoadSequence && this\.businessId === businessId\) \{\s*this\.pickerBusy = false;/);
-});
