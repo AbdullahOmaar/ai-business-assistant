@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   localizeInvoiceDraftValidationMessage,
@@ -24,7 +24,7 @@ import type {
     <section class="invoice-draft" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       <header class="editor-heading">
         <div>
-          <h3>{{ t('فاتورة جديدة', 'New invoice') }}</h3>
+          <h3>{{ editing ? t('تعديل مسودة الفاتورة', 'Edit invoice draft') : t('فاتورة جديدة', 'New invoice') }}</h3>
           <p>{{ t('أضف المنتجات أو الخدمات، وسيتم حساب الإجماليات على الخادم.', 'Add products or services; totals are calculated by the server.') }}</p>
         </div>
         <span class="currency">{{ currencyCode }}</span>
@@ -168,7 +168,7 @@ import type {
     @media (max-width: 600px) { .invoice-fields, .line-card { grid-template-columns: minmax(0, 1fr); } .line-top { grid-column: 1; } .save { width: 100%; } }
   `],
 })
-export class InvoiceDraftEditorComponent {
+export class InvoiceDraftEditorComponent implements OnChanges {
   @Input() language: 'ar' | 'en' = 'ar';
   @Input() products: InvoiceDraftProduct[] = [];
   @Input() customers: InvoiceDraftCustomer[] = [];
@@ -177,6 +177,9 @@ export class InvoiceDraftEditorComponent {
   @Input() customerId = '';
   @Input() saving = false;
   @Input() serverSummary: InvoiceDraftServerSummary | null = null;
+  @Input() initialLines: readonly InvoiceDraftLine[] | null = null;
+  @Input() draftRevision = 0;
+  @Input() editing = false;
   @Input() hasMoreCustomers = false;
   @Input() hasMoreProducts = false;
   @Input() loadingMoreCustomers = false;
@@ -189,6 +192,16 @@ export class InvoiceDraftEditorComponent {
   private lineSequence = 1;
   lines: InvoiceDraftLine[] = [this.newLine('product')];
   error = '';
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['draftRevision']) {
+      this.lines = this.initialLines?.length
+        ? this.initialLines.map(line => ({ ...line }))
+        : [this.newLine('product')];
+      this.error = '';
+      this.serverSummary = null;
+    }
+  }
 
   get locked(): boolean {
     return this.saving || !!this.serverSummary;
