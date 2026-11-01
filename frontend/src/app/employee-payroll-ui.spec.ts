@@ -160,6 +160,19 @@ test('employee and payroll load failures expose a retry action for the current w
 });
 
 
+test('employee and payroll UI expose accessible loading, empty, error, and success states in both locales', () => {
+  assert.match(component, /@if \\(busy\\) \\{ <p class="muted" role="status">/);
+  assert.match(component, /Loading employee and payroll data/);
+  assert.match(component, /لا يوجد موظفون مطابقون للبحث/);
+  assert.match(component, /No matching employees found/);
+  assert.match(component, /لا توجد مرتبات في الفترة المحددة/);
+  assert.match(component, /No payroll records for this period/);
+  assert.match(component, /<div class="error" role="alert">/);
+  assert.match(component, /<p class="notice" role="status">/);
+  assert.match(component, /لا يؤكد ذلك تحويلًا بنكيًا خارجيًا/);
+  assert.match(component, /this does not confirm an external bank transfer/);
+});
+
 test('payroll creation requires an explicit employee choice instead of defaulting to the first active employee', () => {
   assert.doesNotMatch(component, /const firstActive = this\.payrollEmployeeOptions\[0\]/);
   assert.match(component, /!payrollEmployeeId/);
