@@ -1674,6 +1674,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentReference = '';
     this.paymentIdempotencyKey = '';
     this.paymentMessage = '';
+    this.paymentError = false;
     this.importCsvText = '';
     this.importFileName = '';
     this.importPreview = null;
