@@ -419,6 +419,7 @@ def test_employee_directory_is_workspace_scoped_and_active_only_excludes_deactiv
 
     first_base = f"/api/v1/businesses/{env['business_id']}/employees"
     second_base = f"/api/v1/businesses/{second_env['business_id']}/employees"
+    assert env["business_id"] != second_env["business_id"]
 
     deactivated = env["client"].patch(
         f"{first_base}/{first_workspace_employee.json()['id']}",
@@ -430,8 +431,23 @@ def test_employee_directory_is_workspace_scoped_and_active_only_excludes_deactiv
     first_active = env["client"].get(first_base, params={"active_only": "true"})
     first_all = env["client"].get(first_base)
     second_active = env["client"].get(second_base, params={"active_only": "true"})
+    first_cross_search = env["client"].get(
+        first_base, params={"search": "Workspace Two Employee"}
+    )
+    second_cross_search = env["client"].get(
+        second_base, params={"search": "Workspace One Employee"}
+    )
 
-    assert first_active.status_code == first_all.status_code == second_active.status_code == 200
+    assert (
+        first_active.status_code
+        == first_all.status_code
+        == second_active.status_code
+        == first_cross_search.status_code
+        == second_cross_search.status_code
+        == 200
+    )
     assert first_active.json() == []
     assert [row["id"] for row in first_all.json()] == [first_workspace_employee.json()["id"]]
     assert [row["id"] for row in second_active.json()] == [second_workspace_employee.json()["id"]]
+    assert first_cross_search.json() == []
+    assert second_cross_search.json() == []
