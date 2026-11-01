@@ -30,12 +30,12 @@ export function formatMoneyCents(cents: bigint): string {
   return `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
 }
 
-export function eligiblePaymentInvoices(
-  invoices: readonly PaymentAllocationInvoice[],
+export function eligiblePaymentInvoices<T extends PaymentAllocationInvoice>(
+  invoices: readonly T[],
   customerId: string,
   currencyCode: string,
   allocations: readonly PaymentAllocationDraft[],
-): PaymentAllocationInvoice[] {
+): T[] {
   if (!customerId || !currencyCode) return [];
   return invoices.filter(invoice =>
     invoice.status === 'issued' &&
@@ -46,13 +46,13 @@ export function eligiblePaymentInvoices(
   );
 }
 
-export function paymentInvoicesForAllocation(
-  invoices: readonly PaymentAllocationInvoice[],
+export function paymentInvoicesForAllocation<T extends PaymentAllocationInvoice>(
+  invoices: readonly T[],
   customerId: string,
   currencyCode: string,
   allocations: readonly PaymentAllocationDraft[],
   current: PaymentAllocationDraft,
-): PaymentAllocationInvoice[] {
+): T[] {
   if (!customerId || !currencyCode) return [];
   return invoices.filter(invoice =>
     invoice.status === 'issued' &&
