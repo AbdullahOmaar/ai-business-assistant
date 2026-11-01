@@ -206,5 +206,5 @@ test('late employee and picker responses cannot repopulate a different workspace
   assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
   const picker = component.slice(pickerStart, pickerEnd);
   assert.match(picker, /if \(sequence !== this\.pickerLoadSequence \|\| this\.businessId !== businessId\) return/);
-  assert.match(picker, /if \(sequence === this\.pickerLoadSequence && this\.businessId === businessId\) \{\\s*this\.pickerBusy = false;/);
+  assert.match(picker, /if \(sequence === this\.pickerLoadSequence && this\.businessId === businessId\) \{\s*this\.pickerBusy = false;/);
 });
