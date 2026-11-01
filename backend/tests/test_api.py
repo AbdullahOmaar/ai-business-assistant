@@ -483,6 +483,71 @@ def _set_test_membership_role(engine, role):
         session.commit()
 
 
+def test_owner_can_issue_draft_invoice_via_api_and_records_audit_event():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None
+        invoice.status = "draft"
+        invoice.issue_date = None
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        before = _persisted_rows_snapshot(engine)
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue",
+            json={},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "issued"
+        assert response.json()["issue_date"] is not None
+        assert _persisted_rows_snapshot(engine) != before
+
+        with Session(engine) as session:
+            persisted = session.get(Invoice, invoice_id)
+            assert persisted is not None
+            assert persisted.status == "issued"
+            assert persisted.issue_date is not None
+            events = session.scalars(select(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "invoice.issued",
+                AuditEvent.target_id == str(invoice_id),
+            )).all()
+            assert len(events) == 1
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_staff_cannot_issue_draft_invoice_without_writes_or_audit_events():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None
+        invoice.status = "draft"
+        invoice.issue_date = None
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    _set_test_membership_role(engine, MembershipRole.STAFF)
+    client = TestClient(app)
+    try:
+        before = _persisted_rows_snapshot(engine)
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue",
+            json={},
+        )
+        assert response.status_code == 403, response.text
+        assert _persisted_rows_snapshot(engine) == before, (
+            "STAFF invoice issue denial must leave every persisted row unchanged"
+        )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_staff_cannot_void_invoice_without_writes_or_audit_events():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
