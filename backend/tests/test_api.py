@@ -1510,10 +1510,14 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
         first = client.post(base, json=payload)
         assert first.status_code == 201, first.text
         assert first.json()["amount"] == "5.00"
+        before_replay = _persisted_rows_snapshot(engine)
 
         replay = client.post(base, json=payload)
         assert replay.status_code == 201, replay.text
         assert replay.json()["id"] == first.json()["id"]
+        assert _persisted_rows_snapshot(engine) == before_replay, (
+            "exact payment replay must not change any persisted row"
+        )
 
         with Session(engine) as session:
             assert session.scalar(select(func.count()).select_from(Payment)) == 1
@@ -1546,6 +1550,7 @@ def test_payment_api_rejects_idempotency_key_reuse_with_changed_payload_without_
         first = client.post(base, json=payload)
         assert first.status_code == 201, first.text
         payment_id = first.json()["id"]
+        before_changed_replay = _persisted_rows_snapshot(engine)
 
         with Session(engine) as session:
             payment_before = session.get(Payment, UUID(payment_id))
@@ -1582,6 +1587,9 @@ def test_payment_api_rejects_idempotency_key_reuse_with_changed_payload_without_
         rejected = client.post(base, json=changed_payload)
         assert rejected.status_code == 422, rejected.text
         assert "different payment details" in rejected.json()["detail"]
+        assert _persisted_rows_snapshot(engine) == before_changed_replay, (
+            "changed-payload payment retry must leave every persisted row unchanged"
+        )
 
         with Session(engine) as session:
             assert session.scalar(
@@ -1854,9 +1862,13 @@ def test_owner_can_allocate_one_payment_across_multiple_invoices():
     try:
         response = client.post(base, json=payload)
         assert response.status_code == 201, response.text
+        before_replay = _persisted_rows_snapshot(engine)
         replay = client.post(base, json=payload)
         assert replay.status_code == 201, replay.text
         assert replay.json()["id"] == response.json()["id"]
+        assert _persisted_rows_snapshot(engine) == before_replay, (
+            "multi-invoice payment replay must not change any persisted row"
+        )
 
         with Session(engine) as session:
             payment = session.scalar(select(Payment).where(
@@ -1906,8 +1918,12 @@ def test_owner_payment_rejects_duplicate_invoice_allocations_without_writes():
         ],
     }
     try:
+        before = _persisted_rows_snapshot(engine)
         response = client.post(base, json=payload)
         assert response.status_code == 422, response.text
+        assert _persisted_rows_snapshot(engine) == before, (
+            "rejected payment allocation must leave every persisted row unchanged"
+        )
         with Session(engine) as session:
             assert session.scalar(select(func.count()).select_from(Payment).where(
                 Payment.business_id == business_id,
@@ -1959,8 +1975,12 @@ def test_owner_payment_rejects_aggregate_allocations_above_receipt_without_write
         ],
     }
     try:
+        before = _persisted_rows_snapshot(engine)
         response = client.post(base, json=payload)
         assert response.status_code == 422, response.text
+        assert _persisted_rows_snapshot(engine) == before, (
+            "rejected payment allocation must leave every persisted row unchanged"
+        )
         with Session(engine) as session:
             assert session.scalar(select(func.count()).select_from(Payment).where(
                 Payment.business_id == business_id,
@@ -1995,8 +2015,12 @@ def test_owner_payment_rejects_invoice_for_another_customer_without_writes():
         "allocations": [{"invoice_id": str(invoice_id), "amount": "4.00"}],
     }
     try:
+        before = _persisted_rows_snapshot(engine)
         response = client.post(base, json=payload)
         assert response.status_code == 422, response.text
+        assert _persisted_rows_snapshot(engine) == before, (
+            "rejected payment allocation must leave every persisted row unchanged"
+        )
         with Session(engine) as session:
             assert session.scalar(select(func.count()).select_from(Payment).where(
                 Payment.business_id == business_id,
