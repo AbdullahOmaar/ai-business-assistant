@@ -1704,6 +1704,9 @@ export class AppComponent implements OnInit, OnDestroy {
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
     this.profitLossLoadGuard.invalidate();
+    this.customerPageGuard.invalidate();
+    this.productPageGuard.invalidate();
+    this.invoicePageGuard.invalidate();
     this.auditLoadGuard.invalidate();
     this.statementLoadGuard.invalidate();
     this.auditEvents = [];
@@ -1867,6 +1870,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
+  private readonly customerPageGuard = new WorkspaceLoadGuard();
+  private readonly productPageGuard = new WorkspaceLoadGuard();
+  private readonly invoicePageGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
     const loadVersion = this.workspaceLoadGuard.begin();
@@ -1897,16 +1903,10 @@ export class AppComponent implements OnInit, OnDestroy {
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.profitLoss = null;
-      this.customers = عميل;
-      this.customerOffset = عميل.length;
-      this.hasMoreCustomers = عميل.length === this.pickerPageSize;
+      this.setCustomerPage(عميل);
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
-      this.products = منتج;
-      this.productOffset = منتج.length;
-      this.hasMoreProducts = منتج.length === this.pickerPageSize;
-      this.invoices = فاتورة;
-      this.invoiceOffset = فاتورة.length;
-      this.hasMoreInvoices = فاتورة.length === this.pickerPageSize;
+      this.setProductPage(منتج);
+      this.setInvoicePage(فاتورة);
       this.payments = دفعة;
       this.expenses = مصروفات;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
@@ -1921,6 +1921,33 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  private setCustomerPage(items: Customer[]): void {
+    this.customerPageGuard.invalidate();
+    this.loadingMoreCustomers = false;
+    this.customers = items;
+    this.customerOffset = items.length;
+    this.hasMoreCustomers = items.length === this.pickerPageSize;
+    this.customerLoadMoreError = '';
+  }
+
+  private setProductPage(items: Product[]): void {
+    this.productPageGuard.invalidate();
+    this.loadingMoreProducts = false;
+    this.products = items;
+    this.productOffset = items.length;
+    this.hasMoreProducts = items.length === this.pickerPageSize;
+    this.productLoadMoreError = '';
+  }
+
+  private setInvoicePage(items: Invoice[]): void {
+    this.invoicePageGuard.invalidate();
+    this.loadingMoreInvoices = false;
+    this.invoices = items;
+    this.invoiceOffset = items.length;
+    this.hasMoreInvoices = items.length === this.pickerPageSize;
+    this.invoiceLoadMoreError = '';
+  }
+
   private isCurrentWorkspaceIdentity(businessId: string, authUid: string, authVersion: number): boolean {
     return this.business?.id === businessId &&
       this.currentAuthUid === authUid &&
@@ -1932,20 +1959,24 @@ export class AppComponent implements OnInit, OnDestroy {
     const authUid = this.currentAuthUid;
     if (!businessId || !authUid || !this.signedIn || !this.hasMoreCustomers || this.loadingMoreCustomers) return;
     const authVersion = this.authTransitionVersion;
+    const pageVersion = this.customerPageGuard.begin();
+    const isCurrent = (): boolean =>
+      this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion) &&
+      this.customerPageGuard.isCurrent(pageVersion, this.business?.id, businessId);
     const offset = this.customerOffset;
     this.loadingMoreCustomers = true;
     this.customerLoadMoreError = '';
     try {
       const page = await this.api.customers(businessId, this.pickerPageSize, offset);
-      if (!this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) return;
+      if (!isCurrent()) return;
       const existing = new Set(this.customers.map(item => item.id));
       this.customers = [...this.customers, ...page.filter(item => !existing.has(item.id))];
       this.customerOffset = offset + page.length;
       this.hasMoreCustomers = page.length === this.pickerPageSize;
     } catch (error) {
-      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.customerLoadMoreError = this.message(error);
+      if (isCurrent()) this.customerLoadMoreError = this.message(error);
     } finally {
-      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.loadingMoreCustomers = false;
+      if (isCurrent()) this.loadingMoreCustomers = false;
     }
   }
 
@@ -1954,20 +1985,24 @@ export class AppComponent implements OnInit, OnDestroy {
     const authUid = this.currentAuthUid;
     if (!businessId || !authUid || !this.signedIn || !this.hasMoreProducts || this.loadingMoreProducts) return;
     const authVersion = this.authTransitionVersion;
+    const pageVersion = this.productPageGuard.begin();
+    const isCurrent = (): boolean =>
+      this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion) &&
+      this.productPageGuard.isCurrent(pageVersion, this.business?.id, businessId);
     const offset = this.productOffset;
     this.loadingMoreProducts = true;
     this.productLoadMoreError = '';
     try {
       const page = await this.api.products(businessId, this.pickerPageSize, offset);
-      if (!this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) return;
+      if (!isCurrent()) return;
       const existing = new Set(this.products.map(item => item.id));
       this.products = [...this.products, ...page.filter(item => !existing.has(item.id))];
       this.productOffset = offset + page.length;
       this.hasMoreProducts = page.length === this.pickerPageSize;
     } catch (error) {
-      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.productLoadMoreError = this.message(error);
+      if (isCurrent()) this.productLoadMoreError = this.message(error);
     } finally {
-      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.loadingMoreProducts = false;
+      if (isCurrent()) this.loadingMoreProducts = false;
     }
   }
 
@@ -1976,20 +2011,24 @@ export class AppComponent implements OnInit, OnDestroy {
     const authUid = this.currentAuthUid;
     if (!businessId || !authUid || !this.signedIn || !this.hasMoreInvoices || this.loadingMoreInvoices) return;
     const authVersion = this.authTransitionVersion;
+    const pageVersion = this.invoicePageGuard.begin();
+    const isCurrent = (): boolean =>
+      this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion) &&
+      this.invoicePageGuard.isCurrent(pageVersion, this.business?.id, businessId);
     const offset = this.invoiceOffset;
     this.loadingMoreInvoices = true;
     this.invoiceLoadMoreError = '';
     try {
       const page = await this.api.invoices(businessId, this.pickerPageSize, offset);
-      if (!this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) return;
+      if (!isCurrent()) return;
       const existing = new Set(this.invoices.map(item => item.id));
       this.invoices = [...this.invoices, ...page.filter(item => !existing.has(item.id))];
       this.invoiceOffset = offset + page.length;
       this.hasMoreInvoices = page.length === this.pickerPageSize;
     } catch (error) {
-      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.invoiceLoadMoreError = this.message(error);
+      if (isCurrent()) this.invoiceLoadMoreError = this.message(error);
     } finally {
-      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.loadingMoreInvoices = false;
+      if (isCurrent()) this.loadingMoreInvoices = false;
     }
   }
 
