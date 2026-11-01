@@ -108,7 +108,11 @@ if (hasBackendPackage) {
     const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
     const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
 
-    assert.match(backendPackage, new RegExp('^version = "' + frontendPackage.version + '"$', 'm'));
-    assert.match(backendApp, new RegExp('version="' + frontendPackage.version + '"'));
+    const expectedApiVersion = RELEASE_HISTORY[0].apiVersion ?? frontendPackage.version;
+    assert.match(backendPackage, new RegExp('^version = "' + expectedApiVersion + '"
+  });
+}
+, 'm'));
+    assert.match(backendApp, new RegExp('version="' + expectedApiVersion + '"'));
   });
 }
