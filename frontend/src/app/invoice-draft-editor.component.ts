@@ -33,7 +33,7 @@ import type {
       <div class="invoice-fields">
         <label>
           {{ t('رقم الفاتورة', 'Invoice number') }}
-          <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="80" [disabled]="saving" />
+          <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="80" [disabled]="locked" />
         </label>
         <label>
           {{ t('العميل', 'Customer') }}
@@ -60,9 +60,9 @@ import type {
             <div class="line-top">
               <strong>{{ t('بند', 'Line') }} {{ index + 1 }}</strong>
               <div class="line-actions">
-                <button type="button" class="icon-button" (click)="moveLine(index, -1)" [disabled]="saving || index === 0" [attr.aria-label]="t('تحريك لأعلى', 'Move up')">↑</button>
+                <button type="button" class="icon-button" (click)="moveLine(index, -1)" [disabled]="locked || index === 0" [attr.aria-label]="t('تحريك لأعلى', 'Move up')">↑</button>
                 <button type="button" class="icon-button" (click)="moveLine(index, 1)" [disabled]="saving || index === lines.length - 1" [attr.aria-label]="t('تحريك لأسفل', 'Move down')">↓</button>
-                <button type="button" class="icon-button danger" (click)="removeLine(index)" [disabled]="saving || lines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">×</button>
+                <button type="button" class="icon-button danger" (click)="removeLine(index)" [disabled]="locked || lines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">×</button>
               </div>
             </div>
             <label>
@@ -122,12 +122,13 @@ import type {
             <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ serverSummary.tax_total }} {{ serverSummary.currency_code }}</strong></div>
           }
           <div class="total"><span>{{ t('الإجمالي', 'Total') }}</span><strong>{{ serverSummary.total }} {{ serverSummary.currency_code }}</strong></div>
+          <button type="button" class="secondary" (click)="startNewDraft()" [disabled]="saving">{{ t('إنشاء فاتورة أخرى', 'Start another invoice') }}</button>
         </section>
       } @else {
         <p class="muted">{{ t('ستظهر الإجماليات بعد حفظ الفاتورة واستلام رد الخادم.', 'Totals appear after saving the invoice and receiving the server response.') }}</p>
       }
 
-      <button type="button" class="primary save" (click)="submit()" [disabled]="saving || !!serverSummary">
+      <button type="button" class="primary save" (click)="submit()" [disabled]="locked">
         {{ saving ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ مسودة الفاتورة', 'Save invoice draft') }}
       </button>
     </section>
@@ -166,10 +167,25 @@ export class InvoiceDraftEditorComponent {
   @Input() saving = false;
   @Input() serverSummary: InvoiceDraftServerSummary | null = null;
   @Output() saveDraft = new EventEmitter<InvoiceDraftPayload>();
+  @Output() newDraft = new EventEmitter<void>();
 
   private lineSequence = 1;
   lines: InvoiceDraftLine[] = [this.newLine('product')];
   error = '';
+
+  get locked(): boolean {
+    return this.saving || !!this.serverSummary;
+  }
+
+  startNewDraft(): void {
+    if (this.saving) return;
+    this.invoiceNumber = '';
+    this.customerId = '';
+    this.lines = [this.newLine('product')];
+    this.error = '';
+    this.serverSummary = null;
+    this.newDraft.emit();
+  }
 
   t(arabic: string, english: string): string {
     return this.language === 'ar' ? arabic : english;
