@@ -287,3 +287,25 @@ test('customer and product creation mutations are fenced and refresh only their 
     assert.match(method, /if \(isCurrent\(\)\) this\.loading = false/);
   }
 });
+
+
+test('draft invoice Issue and Void actions are OWNER-only in both template and methods', () => {
+  const invoiceListStart = source.indexOf('class="list-row invoice-list-row"');
+  const invoiceListEnd = source.indexOf('</article>', invoiceListStart);
+  const invoiceRow = source.slice(invoiceListStart, invoiceListEnd);
+  assert.ok(invoiceListStart >= 0, 'invoice list row must exist');
+  assert.match(invoiceRow, /invoice\.status === 'draft'[\s\S]*?business\?\.role === 'owner'[\s\S]*?issueInvoice\(invoice\)/);
+  assert.match(invoiceRow, /business\?\.role === 'owner'[\s\S]*?voidInvoice\(invoice\)/);
+
+  const issueStart = source.indexOf('async issueInvoice(invoice: Invoice): Promise<void>');
+  const issueEnd = source.indexOf('async voidInvoice(invoice: Invoice): Promise<void>', issueStart);
+  const issueMethod = source.slice(issueStart, issueEnd);
+  assert.match(issueMethod, /this\.business\.role !== 'owner'/,
+    'issue method must fail closed for STAFF even if invoked outside the template');
+
+  const voidStart = issueEnd;
+  const voidEnd = source.indexOf('async ', voidStart + 10);
+  const voidMethod = source.slice(voidStart, voidEnd > voidStart ? voidEnd : undefined);
+  assert.match(voidMethod, /this\.business\.role !== 'owner'/,
+    'void method must fail closed for STAFF even if invoked outside the template');
+});
