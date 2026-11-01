@@ -387,3 +387,51 @@ def test_employee_search_and_pagination_reject_out_of_range_parameters_without_s
         assert snapshot() == before, (
             f"Rejected employee query {params} changed employee or audit state"
         )
+
+
+def test_employee_directory_is_workspace_scoped_and_active_only_excludes_deactivated(employee_search_environment):
+    env = employee_search_environment
+    first_workspace_employee = _create_employee(
+        env,
+        name="Workspace One Employee",
+        code="WS1-EMP",
+        email="workspace-one@example.test",
+        department="Operations",
+        job_title="Associate",
+    )
+    assert first_workspace_employee.status_code == 201
+
+    second_business = env["client"].post(
+        "/api/v1/businesses",
+        json={"name": "Second employee workspace", "currency_code": "EGP"},
+    )
+    assert second_business.status_code == 201
+    second_env = {**env, "business_id": second_business.json()["id"]}
+    second_workspace_employee = _create_employee(
+        second_env,
+        name="Workspace Two Employee",
+        code="WS2-EMP",
+        email="workspace-two@example.test",
+        department="Finance",
+        job_title="Manager",
+    )
+    assert second_workspace_employee.status_code == 201
+
+    first_base = f"/api/v1/businesses/{env['business_id']}/employees"
+    second_base = f"/api/v1/businesses/{second_env['business_id']}/employees"
+
+    deactivated = env["client"].patch(
+        f"{first_base}/{first_workspace_employee.json()['id']}",
+        json={"is_active": False},
+    )
+    assert deactivated.status_code == 200
+    assert deactivated.json()["is_active"] is False
+
+    first_active = env["client"].get(first_base, params={"active_only": "true"})
+    first_all = env["client"].get(first_base)
+    second_active = env["client"].get(second_base, params={"active_only": "true"})
+
+    assert first_active.status_code == first_all.status_code == second_active.status_code == 200
+    assert first_active.json() == []
+    assert [row["id"] for row in first_all.json()] == [first_workspace_employee.json()["id"]]
+    assert [row["id"] for row in second_active.json()] == [second_workspace_employee.json()["id"]]
