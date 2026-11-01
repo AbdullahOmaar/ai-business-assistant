@@ -120,3 +120,14 @@ Exact Master branch app blob `843077a92ea6a438ac82afa8f9274cd19df238e8` and curr
 
 Cumulative focused source/spec checks: **97 PASS / 0 FAIL** across five groups. Full frontend suite/build, browser E2E, backend/PostgreSQL and authenticated demo flows remain NOT RUN. Supplier/purchasing/receiving journeys remain unverified; T37-gated financial changes remain excluded.
 
+
+
+## 11. Preview and current delivery status — 2026-11-01 14:30 +02:00
+
+- PR #323 pre-refresh candidate `22373ad3bd2e3fd95bb96a463aa370215ae8cad4`; OPEN/DRAFT/UNMERGED, no review submissions. Exact status contexts: Semaphore FAILURE, CircleCI ERROR; Master did not trigger/retry CI.
+- Vercel branch-filtered deployment lookup returned **zero** preview deployments for both Web and API on `master/demo-readiness-ui-20261101`. Existing production aliases are main-only and must not be used to claim this candidate is deployed.
+- 97 focused source/spec tests passed across five isolated Node runs; full repository test/build/backend/browser/security/accessibility checks remain NOT RUN.
+- Demo Owner/Staff accounts and synthetic workspaces/fixtures remain NOT PROVIDED / NOT VERIFIED. The walkthrough is therefore not executable end-to-end yet.
+- Chat 1's current PR #305 head is `14761ed409c14087c95a1580b798483f21885c6c`; seven extracted-method behavior simulations are authored; independent Chat 5 review on this head is pending.
+- No merge, production deployment, migration or production DB write.
+
