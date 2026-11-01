@@ -436,16 +436,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة بند', 'Add line') }} +</button></div>
                     @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select></label><label>{{ t('الكمية', 'Quantity') }}<input [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity"></label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
                   </div>
-                  @if (invoicePreview; as preview) {
-                    <div class="invoice-preview" aria-label="Invoice totals preview" aria-live="polite">
-                      <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ preview.subtotal }} {{ business.currency_code }}</strong></div>
-                      <div><span>{{ t('الخصم', 'Discount') }}</span><strong>−{{ preview.discount }} {{ business.currency_code }}</strong></div>
-                      <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ preview.tax }} {{ business.currency_code }}</strong></div>
-                      <div class="total"><span>{{ t('الإجمالي التقديري', 'Estimated total') }}</span><strong>{{ preview.total }} {{ business.currency_code }}</strong></div>
-                    </div>
-                  } @else {
-                    <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
-                  }
+                  <p class="muted">{{ t('لا يتم حساب إجماليات الفاتورة داخل المتصفح. ستظهر الإجماليات المحفوظة بعد استلام رد الخادم.', 'Invoice totals are not calculated in the browser. Saved totals appear after the server response.') }}</p>
                   <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
                   <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length || !invoiceCustomerId">{{ t('حفظ كمسودة', 'Save draft') }}</button>
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
@@ -2282,50 +2273,6 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       this.loading = false;
     }
-  }
-
-  get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
-    if (!this.business || !this.invoiceLines.length) return null;
-    const parseScaled = (value: string | number, scale: number): bigint | null => {
-      const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
-      if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
-      const fraction = (match[2] || '').padEnd(scale, '0');
-      return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
-    };
-    const roundHalfUp = (numerator: bigint, denominator: bigint): bigint =>
-      (numerator + denominator / 2n) / denominator;
-    const formatCents = (cents: bigint): string =>
-      `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
-
-    // Preserve precision when rates are reconstructed from saved totals.
-    const discountRate = parseScaled(this.invoiceDiscountRate, 12);
-    const taxRate = parseScaled(this.invoiceTaxRate, 12);
-    if (discountRate === null || taxRate === null ||
-        discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
-
-    // Match the backend's per-line money() policy: round each quantity × price
-    // to cents with ROUND_HALF_UP, then sum the rounded line totals.
-    let subtotalCents = 0n;
-    for (const line of this.invoiceLines) {
-      const product = this.products.find(item => item.id === line.productId);
-      const quantityMilli = parseScaled(line.quantity, 3);
-      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
-      if (!product || quantityMilli === null || quantityMilli <= 0n ||
-          unitPriceCents === null) return null;
-      const lineMilliCents = quantityMilli * unitPriceCents;
-      subtotalCents += roundHalfUp(lineMilliCents, 1000n);
-      if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    }
-    const rateDenominator = 100n * 1_000_000_000_000n;
-    const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
-    const taxableCents = subtotalCents - discountCents;
-    const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
-    return {
-      subtotal: formatCents(subtotalCents),
-      discount: formatCents(discountCents),
-      tax: formatCents(taxCents),
-      total: formatCents(taxableCents + taxCents),
-    };
   }
 
   private deriveRate(amount: string | undefined, base: string | undefined): string {
