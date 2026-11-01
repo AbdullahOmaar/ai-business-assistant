@@ -104,3 +104,11 @@ Before claiming a successful demo, record:
 - **Five-task status:** 0/5 VERIFIED COMPLETE; UI/navigation, Sales, operational module integration and workspace security remain IN PROGRESS; final demo validation is BLOCKED pending complete exact-source build/E2E runner and safe demo environment.
 - No merge, production deployment, migration or production database write was performed. This runbook remains a demo procedure with explicit limitations, not a release approval.
 
+
+
+## 9. Chat 1 latest T38 handoff — 2026-11-01 14:20 +02:00
+
+Chat 1's existing PR #305 advanced to `14761ed409c14087c95a1580b798483f21885c6c` (OPEN/DRAFT/UNMERGED, mergeable=false). Its new `invoice-payment-behavior.spec.ts` contains seven method-level simulations for popup-blocked printing, late print response after workspace switch, server-total/HTML escaping, single-flight payment, same-key/same-payload retry, late payment completion after identity switch and blocking workspace switch during a pending payment. These do not replace real browser/Firebase tenant journeys or backend persisted side-effect tests. Previous Chat 5 reviews are COMMENTED on older heads; exact-head independent review is pending.
+
+PR #305 combined status shows CircleCI contexts SUCCESS and Semaphore FAILURE; Master did not trigger/retry them. Do not use those statuses as the demo gate under the current freeze/authority conflict. Chat 1 owns #305; do not merge it wholesale or alter its branch from Master.
+
