@@ -163,6 +163,117 @@ export const FEATURE_CATALOG = [
     ],
   },
   {
+    id: 'suppliers',
+    titleAr: 'الموردون',
+    titleEn: 'Suppliers',
+    noteAr: 'إدارة بيانات الموردين المرتبطة بعمليات الشراء.',
+    noteEn: 'Manage supplier records used by purchasing workflows.',
+    features: [
+      {
+        titleAr: 'ملفات الموردين',
+        titleEn: 'Supplier records',
+        detailAr: 'أضف الموردين وراجع بيانات التواصل الخاصة بهم.',
+        detailEn: 'Create suppliers and review their contact details.',
+      },
+    ],
+  },
+  {
+    id: 'purchasing',
+    titleAr: 'المشتريات والاستلام',
+    titleEn: 'Purchasing & receiving',
+    noteAr: 'تتيح الواجهة متابعة أوامر الشراء واستلام بنودها؛ لا تفترض هذه الشاشة أي معالجة محاسبية غير معروضة.',
+    noteEn: 'The interface tracks purchase orders and receiving; it does not imply accounting treatment that is not shown.',
+    features: [
+      {
+        titleAr: 'أوامر الشراء',
+        titleEn: 'Purchase orders',
+        detailAr: 'أنشئ أوامر شراء مرتبطة بمورد وبنود محددة.',
+        detailEn: 'Create purchase orders linked to a supplier and their line items.',
+      },
+      {
+        titleAr: 'استلام البنود',
+        titleEn: 'Receive items',
+        detailAr: 'سجّل استلام كميات البنود من أمر الشراء.',
+        detailEn: 'Record received quantities against a purchase order.',
+      },
+    ],
+  },
+  {
+    id: 'recurring-invoices',
+    titleAr: 'الفواتير الدورية',
+    titleEn: 'Recurring invoices',
+    noteAr: 'تُدار جداول الفوترة ومواعيد التشغيل التالية؛ إنشاء الفواتير الفعلية يعتمد على تنفيذ الخادم.',
+    noteEn: 'Manage billing schedules and next-run dates; actual invoice creation depends on backend execution.',
+    features: [
+      {
+        titleAr: 'جداول الفوترة',
+        titleEn: 'Billing schedules',
+        detailAr: 'أنشئ جدولًا مرتبطًا بعميل وحدد الفاصل الزمني والمنطقة الزمنية وموعد التشغيل التالي.',
+        detailEn: 'Create a customer schedule with an interval, timezone, and next-run date.',
+      },
+    ],
+  },
+  {
+    id: 'notifications',
+    titleAr: 'الإشعارات',
+    titleEn: 'Notifications',
+    noteAr: 'يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.',
+    noteEn: 'Notification metadata and status are stored; actual delivery requires a configured provider and deployed worker.',
+    features: [
+      {
+        titleAr: 'قائمة الإشعارات',
+        titleEn: 'Notification queue',
+        detailAr: 'أنشئ وراجع سجلات الإشعارات وحالاتها دون اعتبارها دليلًا على وصول رسالة للمستلم.',
+        detailEn: 'Create and review notification records and statuses; a record does not prove delivery to a recipient.',
+      },
+    ],
+  },
+  {
+    id: 'operational-health',
+    titleAr: 'الحالة التشغيلية',
+    titleEn: 'Operational health',
+    noteAr: 'قسم قراءة لمؤشرات الحالة التشغيلية المتاحة لمساحة العمل.',
+    noteEn: 'A read-only view of operational health indicators available to the workspace.',
+    features: [
+      {
+        titleAr: 'مؤشرات التشغيل',
+        titleEn: 'Operational indicators',
+        detailAr: 'راجع مؤشرات الخدمة والتشغيل التي يعرضها الخادم.',
+        detailEn: 'Review service and operational indicators returned by the backend.',
+      },
+    ],
+  },
+  {
+    id: 'data-integrity',
+    titleAr: 'سلامة البيانات',
+    titleEn: 'Data integrity',
+    noteAr: 'يعرض نتائج فحوصات القراءة فقط ولا ينفذ إصلاحات تلقائية على السجلات.',
+    noteEn: 'Displays read-only validation results and does not automatically repair records.',
+    features: [
+      {
+        titleAr: 'فحوصات السلامة',
+        titleEn: 'Integrity checks',
+        detailAr: 'راجع التنبيهات والتعارضات المكتشفة في بيانات النشاط.',
+        detailEn: 'Review warnings and inconsistencies detected in business data.',
+      },
+    ],
+  },
+  {
+    id: 'tax-summary',
+    titleAr: 'ملخص الضرائب',
+    titleEn: 'Tax summary',
+    noteAr: 'تقرير ملخص للقراءة فقط؛ لا ينشئ إقرارات أو قيودًا أو التزامات ضريبية.',
+    noteEn: 'A read-only summary; it does not create filings, ledger entries, or tax liabilities.',
+    features: [
+      {
+        titleAr: 'ملخص ضريبي',
+        titleEn: 'Tax overview',
+        detailAr: 'راجع البيانات الضريبية المجمعة للفترة المحددة حسب ما يعرضه الخادم.',
+        detailEn: 'Review aggregated tax data for the selected period as returned by the backend.',
+      },
+    ],
+  },
+  {
     id: 'employees-payroll',
     titleAr: 'الموظفون والمرتبات',
     titleEn: 'Employees & payroll',
