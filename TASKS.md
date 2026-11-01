@@ -1822,3 +1822,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - TypeScript 5.8.3 strict no-emit check of the exact helper — **PASS** (`tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions workspace-load-guard.ts`).
 - GitHub-source structural assertions for the updated chat/CSV/invoice/workspace-create paths and reset invalidation — **PASS**. The Angular template-safety spec containing those assertions is authored but its Node test runner execution is **NOT RUN**.
 - Full Angular build/template compilation, full frontend suite, authenticated browser A→B and logout→B flows, print popup behavior, pending payment retry E2E, full backend/PostgreSQL suites, accessibility/RTL mobile review and security scans remain **NOT RUN**. No CI jobs were triggered or retried.
+
+
+
+### Master Sales integration + exact-source targeted validation — 2026-11-01
+
+- Candidate before this ledger update: `cb342ed18176a6606ba7333ebc337eae0b287719`; PR #323 remains OPEN / DRAFT / UNMERGED.
+- Integrated mixed product/manual-service draft editing into the active shared invoice editor. Existing invoice lines are hydrated via `invoiceDraftLinesFromExisting()`; saving an existing draft calls `updateDraftInvoice()`, while new drafts call `createInvoice()`. The user can cancel an unsaved edit; saved server totals remain locked/read-only.
+- Payment API errors now retain HTTP status. Confirmed no-write statuses 400/401/403/404/422 clear the pending retry snapshot/key and unlock the form for correction; network/timeouts and ambiguous statuses retain the same immutable payload/key.
+- Added pure helper tests for persisted mixed-line hydration and definitive payment rejection classification; added source regression assertions for update wiring, cancellation and retry handling.
+- Targeted exact-source isolated Node run (Node v24.22.1): `node --experimental-strip-types --test src/app/app.component-template-safety.spec.ts src/app/invoice-draft.spec.ts src/app/payment-retry-snapshot.spec.ts` — **47 PASS / 0 FAIL**.
+- Updated bilingual feature catalogue to describe draft editing and safe payment retry, and corrected discount/tax copy to state that server totals appear after saving.
+- Full repository `npm test`, Angular build/template compilation, browser/Owner-Staff/workspace-switch E2E, mobile/RTL/accessibility, backend pytest/PostgreSQL, security runtime and independent review remain **NOT RUN**. No CI provider triggered/retried.
+- No merge, deployment, version bump, migration or production data write. T37 remains DRAFT / NOT APPROVED; deferred financial semantics remain excluded.
+- Next: obtain permitted full exact-source checkout/build, independent Chat 5 review, and safe demo environment/accounts/data; keep PR Draft until gates and explicit owner authorization.
