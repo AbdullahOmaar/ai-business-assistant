@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  invoiceDraftLinesFromExisting,
   localizeInvoiceDraftValidationMessage,
   moveInvoiceDraftLine,
   removeInvoiceDraftLine,
@@ -111,4 +112,16 @@ test('localizes known validation feedback and preserves unknown fallback', () =>
   assert.equal(localizeInvoiceDraftValidationMessage('An invoice cannot contain more than 500 lines.', 'ar'), 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.');
   assert.equal(localizeInvoiceDraftValidationMessage('unknown', 'ar'), 'unknown');
   assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'en'), 'Choose a valid customer.');
+});
+
+
+test('hydrates persisted product and manual service lines without losing editable fields', () => {
+  const lines = invoiceDraftLinesFromExisting([
+    { product_id: 'p1', description: 'Catalog item', quantity: '2.00', unit_price: '15.00' },
+    { product_id: null, description: 'Delivery service', quantity: '1', unit_price: '25.50' },
+  ]);
+  assert.deepEqual(lines.map(line => ({ kind: line.kind, product_id: line.product_id, description: line.description, quantity: line.quantity, unit_price: line.unit_price })), [
+    { kind: 'product', product_id: 'p1', description: 'Catalog item', quantity: '2.00', unit_price: '' },
+    { kind: 'manual', product_id: '', description: 'Delivery service', quantity: '1', unit_price: '25.50' },
+  ]);
 });
