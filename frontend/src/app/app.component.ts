@@ -17,6 +17,8 @@ import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot } from './p
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 import {
   eligiblePaymentInvoices,
+  formatMoneyCents,
+  moneyToCents,
   paymentAllocationTotals,
   paymentInvoicesForAllocation,
   suggestPaymentAllocationAmount,
@@ -2673,8 +2675,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.error = this.t('تعذر تحديد العميل أو الرصيد المستحق. حدّث البيانات وحاول مرة أخرى.', 'Could not determine the customer or outstanding balance. Refresh data and try again.');
       return;
     }
-    const outstanding = Number(invoice.outstanding_amount);
-    if (!Number.isFinite(outstanding) || outstanding <= 0) {
+    const outstanding = moneyToCents(invoice.outstanding_amount);
+    if (outstanding === null || outstanding <= 0n) {
       this.error = this.t('الفاتورة مسددة بالكامل أو لا يوجد رصيد مستحق.', 'This invoice is fully paid or has no outstanding balance.');
       return;
     }
@@ -2685,8 +2687,9 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.paymentCustomerId = invoice.customer_id;
-    this.paymentAllocations = [{ invoiceId: invoice.id, amount: outstanding.toFixed(2) }];
-    this.paymentAmount = outstanding.toFixed(2);
+    const outstandingAmount = formatMoneyCents(outstanding);
+    this.paymentAllocations = [{ invoiceId: invoice.id, amount: outstandingAmount }];
+    this.paymentAmount = outstandingAmount;
     this.paymentMessage = this.t('تم اختيار الفاتورة وتحديد الرصيد المستحق. راجع المبلغ وطريقة الدفع ثم سجّل الدفعة.', 'Invoice selected and outstanding balance filled in. Review the amount and method, then record the payment.');
   }
 
