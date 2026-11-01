@@ -28,6 +28,11 @@ import type {
           <p>{{ t('أضف المنتجات أو الخدمات، وسيتم حساب الإجماليات على الخادم.', 'Add products or services; totals are calculated by the server.') }}</p>
         </div>
         <span class="currency">{{ currencyCode }}</span>
+        @if (editing && !serverSummary) {
+          <button type="button" class="secondary" (click)="newDraft.emit()" [disabled]="saving">
+            {{ t('إلغاء التعديل', 'Cancel edit') }}
+          </button>
+        }
       </header>
 
       <div class="invoice-fields">
