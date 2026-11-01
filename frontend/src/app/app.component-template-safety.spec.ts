@@ -296,7 +296,7 @@ test('draft invoice Issue and Void actions are OWNER-only in both template and m
   assert.ok(invoiceListStart >= 0, 'invoice list row must exist');
   assert.match(invoiceRow, /invoice\.status === 'draft'[\s\S]*?business\?\.role === 'owner'[\s\S]*?issueInvoice\(invoice\)/);
   assert.match(invoiceRow, /business\?\.role === 'owner'[\s\S]*?voidInvoice\(invoice\)/);
-  const ownerGatedVoidActions = source.match(/@if \(business\?\.role === 'owner'\) \{ <button[^>]*\(click\)="voidInvoice\(invoice\)"/g) ?? [];
+  const ownerGatedVoidActions = source.match(/@if \(business\?\.role === 'owner'\) \{[\s\S]*?voidInvoice\(invoice\)/g) ?? [];
   assert.equal(ownerGatedVoidActions.length, 2,
     'both draft and issued invoice Void actions must be OWNER-only');
 
