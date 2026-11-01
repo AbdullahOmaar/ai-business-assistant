@@ -1793,3 +1793,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Full Angular build/template type-check, complete frontend `npm test`, browser/mobile/accessibility E2E, backend pytest, PostgreSQL tests and dependency/security scans: **NOT RUN**. Structural checks and the isolated helper tests are not full UI/runtime acceptance.
 - No backend changes, financial semantics, schema/migrations, CI trigger/retry, merge, deployment or production data write.
 - Next: run exact candidate Angular build and browser tests for customer/product/invoice page loading, workspace-switch races and allocation selection beyond record 100; independent review remains required.
+
+
+### Master mobile More active-state behavior regression — 2026-11-01
+
+- Extracted the mobile secondary-tab classification into `frontend/src/app/module-access.ts` as `isMobileMoreTab()` and wired the actual More navigation active binding to that shared helper.
+- Added behavior-level helper coverage for all 16 secondary tabs (including suppliers, purchasing, recurring invoices, notifications, health, integrity and tax summary) and negative coverage for primary tabs (overview, customers, invoices).
+- Updated the template integration guard to require the active binding to use the tested helper instead of duplicating an inline list.
+- Scope is Master-owned shared navigation only; no specialist-owned files or backend/API contracts changed.
+- Validation: source read-back is required after commit. Test execution, Angular build/template compilation and browser/mobile visual verification are NOT RUN because the authorized Desktop Commander runner is currently OFFLINE and no permitted local checkout is available. No CI trigger/retry was issued.
+- Delivery: remain on PR #323 / `master/demo-readiness-ui-20261101`; no merge, deployment, version bump or production data change.
