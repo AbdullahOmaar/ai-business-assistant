@@ -389,7 +389,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     @if (customerStatement) {
                       <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
                       <div class="table-wrap audit-table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
-                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ event.event_type }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
+                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ statementEventLabel(event.event_type) }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
                       </tbody></table></div>
                       <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
@@ -2152,6 +2152,17 @@ export class AppComponent implements OnInit, OnDestroy {
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
   }
 
+  statementEventLabel(eventType: string): string {
+    const labels: Record<string, { arabic: string; english: string }> = {
+      invoice_issued: { arabic: 'فاتورة صادرة', english: 'Invoice issued' },
+      payment_allocation: { arabic: 'تخصيص دفعة', english: 'Payment allocation' },
+      currency_mismatch_allocation: { arabic: 'تخصيص بعملة مختلفة', english: 'Currency-mismatch allocation' },
+      unapplied_receipt: { arabic: 'دفعة غير مخصصة', english: 'Unapplied receipt' },
+    };
+    const label = labels[eventType];
+    return label ? this.t(label.arabic, label.english) : eventType;
+  }
+
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
     return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
   }
@@ -2550,6 +2561,9 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
       if (!isCurrent()) { printWindow.close(); return; }
+      if (detail.status !== 'issued') {
+        throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
+      }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
         this.escapePrintHtml(line.quantity) + '</td><td class="number">' +
@@ -2559,11 +2573,20 @@ export class AppComponent implements OnInit, OnDestroy {
       const customer = this.escapePrintHtml(this.customerNameForInvoice(detail.customer_id));
       const invoiceNumber = this.escapePrintHtml(detail.invoice_number);
       const currency = this.escapePrintHtml(detail.currency_code);
+      const subtotal = this.escapePrintHtml(detail.subtotal ?? detail.total);
+      const discount = this.escapePrintHtml(detail.discount_total ?? '0.00');
+      const tax = this.escapePrintHtml(detail.tax_total ?? '0.00');
       const total = this.escapePrintHtml(detail.total);
+      const issueDate = detail.issue_date ? this.escapePrintHtml(detail.issue_date.slice(0, 10)) : '—';
+      const dueDate = detail.due_date ? this.escapePrintHtml(detail.due_date.slice(0, 10)) : '—';
+      const notes = detail.notes?.trim()
+        ? '<section class="notes"><strong>' + (this.language === 'ar' ? 'ملاحظات' : 'Notes') +
+          ':</strong><p>' + this.escapePrintHtml(detail.notes) + '</p></section>'
+        : '';
       const direction = this.language === 'ar' ? 'rtl' : 'ltr';
       const labels = this.language === 'ar'
-        ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.' }
-        : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', total: 'Total due', note: 'Generated from saved business records.' };
+        ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', subtotal: 'المجموع قبل الخصم والضريبة', discount: 'الخصم', tax: 'الضريبة', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.', status: 'الحالة', issued: 'صادرة', issueDate: 'تاريخ الإصدار', dueDate: 'تاريخ الاستحقاق' }
+        : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', subtotal: 'Subtotal', discount: 'Discount', tax: 'Tax', total: 'Total due', note: 'Generated from saved business records.', status: 'Status', issued: 'Issued', issueDate: 'Issue date', dueDate: 'Due date' };
       printWindow.onload = () => printWindow.print();
       printWindow.document.open();
       printWindow.document.write(
@@ -2574,14 +2597,18 @@ export class AppComponent implements OnInit, OnDestroy {
         'h1{font-size:25px;margin:0 0 6px}p{margin:4px 0}.muted{color:#6b7280;font-size:12px}' +
         'table{width:100%;border-collapse:collapse;margin-top:22px}th,td{padding:12px 8px;border-bottom:1px solid #d1d5db;text-align:start}' +
         'th{background:#f3f4f6;font-weight:700}.number{text-align:end;font-variant-numeric:tabular-nums}' +
-        '.total{margin-top:24px;margin-inline-start:auto;max-width:340px;padding:16px;border:1px solid #d1d5db;border-radius:8px;font-size:18px;font-weight:700}' +
+        '.totals{margin-top:24px;margin-inline-start:auto;max-width:380px;border:1px solid #d1d5db;border-radius:8px;padding:14px}.totals div{display:flex;justify-content:space-between;gap:16px;padding:5px 0}.totals .total{border-top:1px solid #d1d5db;margin-top:8px;padding-top:12px;font-size:18px;font-weight:700}.notes{margin-top:24px;padding:14px;background:#f9fafb;border-radius:8px}.total{margin-top:0}' +
         '.actions{margin-top:24px;display:flex;gap:8px}button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
         '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.total{break-inside:avoid}}</style></head><body>' +
-        '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p></div>' +
-        '<div><strong>' + this.escapePrintHtml(businessSnapshot.name) + '</strong><p>' + this.escapePrintHtml(businessSnapshot.currency_code) + '</p></div></header>' +
+        '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p><p>' + labels.status + ': ' + labels.issued + '</p></div>' +
+        '<div><strong>' + this.escapePrintHtml(businessSnapshot.name) + '</strong><p>' + this.escapePrintHtml(businessSnapshot.currency_code) + '</p><p>' + labels.issueDate + ': ' + issueDate + '</p><p>' + labels.dueDate + ': ' + dueDate + '</p></div></header>' +
         '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody></table><div class="total">' + labels.total + ': ' + total + ' ' + currency + '</div>' +
-        '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
+        '<tbody>' + rows + '</tbody></table><div class="totals">' +
+        '<div><span>' + labels.subtotal + '</span><strong>' + subtotal + ' ' + currency + '</strong></div>' +
+        '<div><span>' + labels.discount + '</span><strong>' + discount + ' ' + currency + '</strong></div>' +
+        '<div><span>' + labels.tax + '</span><strong>' + tax + ' ' + currency + '</strong></div>' +
+        '<div class="total"><span>' + labels.total + '</span><strong>' + total + ' ' + currency + '</strong></div></div>' +
+        notes + '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
         (this.language === 'ar' ? 'طباعة / حفظ PDF' : 'Print / Save PDF') + '</button></div></body></html>'
       );
       printWindow.document.close();
