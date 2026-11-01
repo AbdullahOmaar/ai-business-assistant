@@ -2373,6 +2373,8 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
       this.customers = await this.api.customers(this.business.id);
+      this.customerOffset = this.customers.length;
+      this.hasMoreCustomers = this.customers.length === this.pickerPageSize;
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
     } catch (error) {
       this.error = this.message(error);
@@ -2432,6 +2434,8 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const result = await this.api.importProductCsv(this.business.id, this.importCsvText);
       this.products = await this.api.products(this.business.id);
+      this.productOffset = this.products.length;
+      this.hasMoreProducts = this.products.length === this.pickerPageSize;
       if (this.products.length) this.invoiceProductId = this.products[0].id;
       this.importMessage = this.t(
         `تم استيراد ${result.row_count} صف بنجاح.`,
@@ -2503,6 +2507,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.business.id, this.customerImportCsvText
       );
       this.customers = await this.api.customers(this.business.id);
+      this.customerOffset = this.customers.length;
+      this.hasMoreCustomers = this.customers.length === this.pickerPageSize;
       if (!this.invoiceCustomerId && this.customers.length) {
         this.invoiceCustomerId = this.customers[0].id;
       }
@@ -2549,6 +2555,8 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
       this.products = await this.api.products(this.business.id);
+      this.productOffset = this.products.length;
+      this.hasMoreProducts = this.products.length === this.pickerPageSize;
       if (this.products.length) this.invoiceProductId = this.products[0].id;
     } catch (error) {
       this.error = this.message(error);
@@ -2685,6 +2693,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.cancelInvoiceEdit();
       this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
       this.invoices = await this.api.invoices(this.business.id);
+      this.invoiceOffset = this.invoices.length;
+      this.hasMoreInvoices = this.invoices.length === this.pickerPageSize;
       this.dashboard = await this.api.dashboard(this.business.id);
       this.tab = 'invoices';
     } catch (error) {
@@ -2823,8 +2833,12 @@ export class AppComponent implements OnInit, OnDestroy {
       await this.api.issueInvoice(this.business.id, invoice.id);
       this.invoiceMessage = '';
       this.invoices = await this.api.invoices(this.business.id);
+      this.invoiceOffset = this.invoices.length;
+      this.hasMoreInvoices = this.invoices.length === this.pickerPageSize;
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
+      this.productOffset = this.products.length;
+      this.hasMoreProducts = this.products.length === this.pickerPageSize;
     } catch (error) {
       this.error = this.message(error);
     } finally {
@@ -2841,8 +2855,12 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await this.api.voidInvoice(this.business.id, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
       this.invoices = await this.api.invoices(this.business.id);
+      this.invoiceOffset = this.invoices.length;
+      this.hasMoreInvoices = this.invoices.length === this.pickerPageSize;
       this.dashboard = await this.api.dashboard(this.business.id);
       this.products = await this.api.products(this.business.id);
+      this.productOffset = this.products.length;
+      this.hasMoreProducts = this.products.length === this.pickerPageSize;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
     } catch (error) {
       this.error = this.message(error);
