@@ -1716,3 +1716,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Hardened JSON parsing: syntactically invalid `runtime-config.json` responses are mapped to the same safe configuration error instead of exposing a browser/parser-specific message.
 - Added a Playwright regression for malformed JSON syntax, retry recovery and absence of sign-in inputs. The startup-failure screen now includes the Arabic/English language toggle.
 - Playwright remains NOT RUN; this is authored regression coverage only. Local pure-validator tests remain 7/7 PASS. Full frontend suite/build and CI remain NOT RUN.
+
+
+## T43 membership mutation hardening — 2026-11-01
+
+- Selectively recovered the still-missing hardening from closed Draft PR #73 into the existing T43 Master branch/PR #309; did not merge the stale branch history.
+- Revalidate OWNER membership after acquiring the workspace row lock before role changes or member removal; fail closed if the workspace is no longer active.
+- Added regressions for revoked OWNER authorization after lock acquisition and workspace deactivation between initial authorization and mutation. Denied paths assert no membership mutation and no audit side effect.
+- Exact GitLab mirror blob verification and full exact-head CI are pending. Independent Chat 5 review remains required. Keep PR #309 unmerged.
