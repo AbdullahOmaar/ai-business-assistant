@@ -150,11 +150,11 @@ export interface Dashboard {
 // `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
 export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
 
-@Injectable({ providedIn: 'root' })
 export type InvoiceLineInput =
   | { product_id: string; quantity: string; description?: string }
   | { description: string; quantity: string; unit_price: string };
 
+@Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private readonly auth: AuthService) {}
 
