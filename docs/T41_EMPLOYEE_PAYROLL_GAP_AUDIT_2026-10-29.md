@@ -499,3 +499,20 @@ The two PostgreSQL-only T41 cases in `backend/tests/test_postgres_financial_conc
 - Updated source inventory: 29 payroll API test functions, 7 employee search/directory test functions, 1 payroll-specific PostgreSQL concurrency test function, and 14 frontend UI source specs. These are authored-source counts, not executed test results.
 - Deferred unchanged: salary-history/effective-date schema and backfill, proration/statutory rules, new payout states, payslip snapshot/export, and any unapproved financial posting semantics.
 - Shared PR #304/#308 paths remain under Master/Chat 3/Chat 5 single-writer coordination; Chat 4 did not edit them.
+
+## T41 migration and backup topology re-check — 2026-11-01 (Neon read-only)
+
+Project `ai-business-assistant-db` (`flat-meadow-20571697`) was inspected without writes.
+
+| Branch | Current Alembic revision | Employee/payroll tables |
+| --- | --- | --- |
+| `main` | `0005_employee_payroll` | Present |
+| `pre-prod-migration-backup-20261030` | `0003_business_workflows` | Absent |
+| `release-restore-verified-20261030` | `0005_employee_payroll` | Present |
+| `release-staging-api-20261030` | `0005_employee_payroll` | Present |
+
+- Snapshot schedules returned empty for all four inspected branches.
+- The project snapshot list contains one manual snapshot, `pre-release-main-0005-20261030`, sourced from the release-restore-rehearsal branch at revision 0005. It is not evidence of a snapshot of the 0003 pre-production backup branch.
+- Main migration `0005_employee_payroll` (revision SHA `62679fc6cdfacba3ed9571867c79fba427c90d09`) follows `0004_platform_user_roles`. Its downgrade explicitly drops `payroll_records`, `employees`, and the composite expense unique constraint; downgrade is destructive to payroll data.
+- No 0003 restore/upgrade/downgrade rehearsal was run in this review. No snapshot, branch, schema, migration, database record, endpoint, or production state was modified.
+- **Disposition:** migration rehearsal remains BLOCKED pending Master/owner authorization, a verified backup of the exact 0003 branch, disposable restored target, restore evidence and documented cleanup/rollback. Do not run downgrade against main or any production branch.
