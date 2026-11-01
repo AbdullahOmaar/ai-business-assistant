@@ -6,13 +6,17 @@ const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
 const component = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
+const access = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
-test('employee and payroll UI is wired to the owner-only workspace tab on desktop and mobile', () => {
+test('employee and payroll UI is wired to the centralized owner-only workspace guard', () => {
   assert.match(app, /type Tab = [^;]*'employees'/);
-  assert.match(app, /business\?\.role === 'owner'[^\n]*tab === 'employees'/);
-  assert.match(app, /role="menuitem"[^\n]*tab === 'employees'/);
+  assert.match(access, /const OWNER_ONLY_TABS = new Set<WorkspaceModuleTab>\(\[[^\]]*'employees'[^\]]*\]\)/);
+  assert.match(app, /canAccessTab\(tab: Tab\): boolean \{\s*return canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\);\s*\}/);
+  assert.match(app, /setTab\(tab: Tab\): void \{\s*if \(!this\.canAccessTab\(tab\)\)/);
+  assert.match(app, /@if \(business\?\.role === 'owner'\) \{ <button class="nav-item mobile-extra"[^\n]*tab === 'employees'/);
+  assert.match(app, /@if \(business\?\.role === 'owner'\) \{ <button class="nav-item" role="menuitem"[^\n]*tab === 'employees'/);
+  assert.match(app, /@if \(canAccessTab\('employees'\)\) \{ <button class="quick-card"[^\n]*setTab\('employees'\)/);
   assert.match(app, /tab === 'employees' && business\?\.role === 'owner' && business/);
-  assert.match(app, /if \(tab === 'employees' && this\.business\?\.role !== 'owner'\)/);
   assert.match(app, /<aba-employee-payroll \[businessId\]="business\.id"/);
 });
 
