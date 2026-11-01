@@ -13,7 +13,7 @@ import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab } from './module-access';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
 import type { InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
-import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot } from './payment-retry-snapshot';
+import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 import {
   eligiblePaymentInvoices,
@@ -1120,6 +1120,7 @@ export class AppComponent implements OnInit, OnDestroy {
   paymentLoading = false;
   paymentRetryPending = false;
   private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
+  private readonly paymentRetryVault = new PaymentRetryVault();
   printLoading = false;
   chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
@@ -1301,6 +1302,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const nextUid = user?.uid ?? null;
     const nextEmail = user?.email ?? null;
     if (nextUid === this.currentAuthUid && nextEmail === this.currentAuthEmail) return;
+
+    // Keep an uncertain attempt only under its original authenticated identity.
+    // A different user cannot read or retry this snapshot.
+    if (this.currentAuthUid && this.pendingPaymentRetrySnapshot) {
+      this.paymentRetryVault.save(this.currentAuthUid, this.pendingPaymentRetrySnapshot);
+    }
 
     this.currentAuthUid = nextUid;
     this.currentAuthEmail = nextEmail;
@@ -1819,6 +1826,19 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     const id = this.business.id;
+    const savedPaymentRetry = this.currentAuthUid
+      ? this.paymentRetryVault.get(this.currentAuthUid, id)
+      : null;
+    if (savedPaymentRetry) {
+      this.pendingPaymentRetrySnapshot = savedPaymentRetry;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = savedPaymentRetry.payload.idempotency_key;
+      this.paymentMessage = this.t(
+        'توجد دفعة سابقة لم يتأكد اكتمالها. أعد المحاولة بنفس البيانات قبل تسجيل دفعة جديدة.',
+        'A previous payment outcome is uncertain. Retry the exact same request before recording another payment.'
+      );
+      this.paymentError = true;
+    }
     this.loading = true;
     this.error = '';
     try {
@@ -2835,7 +2855,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.currentAuthUid === authUid &&
       this.authTransitionVersion === authVersion;
 
-    let retrySnapshot = this.pendingPaymentRetrySnapshot;
+    let retrySnapshot = this.pendingPaymentRetrySnapshot ??
+      this.paymentRetryVault.get(authUid, businessId);
+    if (retrySnapshot) {
+      this.pendingPaymentRetrySnapshot = retrySnapshot;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = retrySnapshot.payload.idempotency_key;
+    }
     if (retrySnapshot && retrySnapshot.businessId !== businessId) {
       this.pendingPaymentRetrySnapshot = null;
       this.paymentRetryPending = false;
@@ -2870,6 +2896,7 @@ export class AppComponent implements OnInit, OnDestroy {
         })),
       });
       this.pendingPaymentRetrySnapshot = retrySnapshot;
+      this.paymentRetryVault.save(authUid, retrySnapshot);
     }
 
     const requestPayload = paymentRequestFromRetrySnapshot(retrySnapshot);
@@ -2882,6 +2909,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (!isCurrent()) return;
 
       this.pendingPaymentRetrySnapshot = null;
+      this.paymentRetryVault.delete(authUid, businessId);
       this.paymentRetryPending = false;
       this.paymentAmount = '';
       this.paymentCustomerId = '';
