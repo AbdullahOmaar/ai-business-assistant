@@ -161,7 +161,7 @@ test('employee and payroll load failures expose a retry action for the current w
 
 
 test('employee and payroll UI expose accessible loading, empty, error, and success states in both locales', () => {
-  assert.match(component, /@if \\(busy\\) \\{ <p class="muted" role="status">/);
+  assert.ok(component.includes('@if (busy) { <p class="muted" role="status">'));
   assert.match(component, /Loading employee and payroll data/);
   assert.match(component, /لا يوجد موظفون مطابقون للبحث/);
   assert.match(component, /No matching employees found/);
