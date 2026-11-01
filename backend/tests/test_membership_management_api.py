@@ -225,7 +225,7 @@ def test_member_removal_fails_closed_if_workspace_deactivates_after_initial_auth
     def deactivate_after_initial_authorization(
         session, principal, requested_business_id, *, owner_only=False
     ):
-        business = session.get(Business, UUID(requested_business_id))
+        business = session.get(Business, requested_business_id)
         business.is_active = False
         session.flush()
         return None
