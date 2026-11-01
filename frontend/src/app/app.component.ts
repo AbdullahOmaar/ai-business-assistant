@@ -1065,6 +1065,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly workspaceCreateRequestGuard = new WorkspaceLoadGuard();
   private readonly customerMutationGuard = new WorkspaceLoadGuard();
   private readonly productMutationGuard = new WorkspaceLoadGuard();
+  private readonly supplierMutationGuard = new WorkspaceLoadGuard();
+  private readonly purchaseOrderMutationGuard = new WorkspaceLoadGuard();
+  private readonly purchaseReceivingGuard = new WorkspaceLoadGuard();
   private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
   invoices: Invoice[] = [];
@@ -1709,6 +1712,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.workspaceCreateRequestGuard.invalidate();
     this.customerMutationGuard.invalidate();
     this.productMutationGuard.invalidate();
+    this.supplierMutationGuard.invalidate();
+    this.purchaseOrderMutationGuard.invalidate();
+    this.purchaseReceivingGuard.invalidate();
     this.invoiceMutationGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
@@ -2278,34 +2284,143 @@ export class AppComponent implements OnInit, OnDestroy {
     finally { if (this.business?.id === businessId) this.recurringLoading = false; }
   }
   async createSupplier(): Promise<void> {
-    if (!this.business || !this.supplierName.trim()) return;
-    const businessId = this.business.id; this.suppliersLoading = true; this.operationsError = '';
-    try { await this.api.createSupplier(businessId,{name:this.supplierName.trim(),email:this.supplierEmail.trim()||undefined,phone:this.supplierPhone.trim()||undefined,address:this.supplierAddress.trim()||undefined});
-      this.supplierName='';this.supplierEmail='';this.supplierPhone='';this.supplierAddress='';
-      const items=await this.api.suppliers(businessId); if(this.business?.id===businessId)this.suppliers=items;
-    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.suppliersLoading=false}
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.supplierName.trim()) return;
+    const businessId = this.business.id;
+    const requestVersion = this.supplierMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(
+      this.supplierMutationGuard, requestVersion, requestContext,
+    );
+    const payload = {
+      name: this.supplierName.trim(),
+      email: this.supplierEmail.trim() || undefined,
+      phone: this.supplierPhone.trim() || undefined,
+      address: this.supplierAddress.trim() || undefined,
+    };
+    this.suppliersLoading = true;
+    this.operationsError = '';
+    try {
+      await this.api.createSupplier(businessId, payload);
+      if (!isCurrent()) return;
+      this.supplierName = '';
+      this.supplierEmail = '';
+      this.supplierPhone = '';
+      this.supplierAddress = '';
+      try {
+        const items = await this.api.suppliers(businessId);
+        if (!isCurrent()) return;
+        this.suppliers = items;
+      } catch {
+        if (isCurrent()) {
+          this.operationsError = this.t(
+            'تم إنشاء المورد، لكن تعذر تحديث القائمة. حدّث البيانات ولا تكرر الإضافة.',
+            'Supplier created, but the list could not refresh. Refresh before attempting another create.',
+          );
+        }
+      }
+    } catch (error) {
+      if (isCurrent()) this.operationsError = this.message(error);
+    } finally {
+      if (isCurrent()) this.suppliersLoading = false;
+    }
   }
+
   async createPurchaseOrder(): Promise<void> {
-    if (!this.business || !this.purchaseSupplierId || !this.purchaseProductId) return;
-    const quantity = Number(this.purchaseQuantity), unitCost = Number(this.purchaseUnitCost);
-    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) { this.operationsError=this.t('تحقق من الكمية والتكلفة.','Check the quantity and unit cost.'); return; }
-    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
-    try { await this.api.createPurchaseOrder(businessId,{supplier_id:this.purchaseSupplierId,order_number:this.purchaseOrderNumber.trim(),currency_code:this.business.currency_code,lines:[{product_id:this.purchaseProductId,quantity:this.purchaseQuantity,unit_cost:this.purchaseUnitCost}]});
-      this.purchaseOrderNumber='';this.purchaseQuantity='1';this.purchaseUnitCost='0';
-      const items=await this.api.purchaseOrders(businessId);if(this.business?.id===businessId)this.purchaseOrders=items;
-    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.purchaseSupplierId || !this.purchaseProductId) return;
+    const quantity = Number(this.purchaseQuantity);
+    const unitCost = Number(this.purchaseUnitCost);
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
+      this.operationsError = this.t('تحقق من الكمية والتكلفة.', 'Check the quantity and unit cost.');
+      return;
+    }
+    const businessId = this.business.id;
+    const requestVersion = this.purchaseOrderMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(
+      this.purchaseOrderMutationGuard, requestVersion, requestContext,
+    );
+    const payload = {
+      supplier_id: this.purchaseSupplierId,
+      order_number: this.purchaseOrderNumber.trim(),
+      currency_code: this.business.currency_code,
+      lines: [{
+        product_id: this.purchaseProductId,
+        quantity: this.purchaseQuantity,
+        unit_cost: this.purchaseUnitCost,
+      }],
+    };
+    this.purchasesLoading = true;
+    this.operationsError = '';
+    try {
+      await this.api.createPurchaseOrder(businessId, payload);
+      if (!isCurrent()) return;
+      this.purchaseOrderNumber = '';
+      this.purchaseQuantity = '1';
+      this.purchaseUnitCost = '0';
+      try {
+        const items = await this.api.purchaseOrders(businessId);
+        if (!isCurrent()) return;
+        this.purchaseOrders = items;
+      } catch {
+        if (isCurrent()) {
+          this.operationsError = this.t(
+            'تم إنشاء أمر الشراء، لكن تعذر تحديث القائمة. حدّث البيانات ولا تكرر الإنشاء.',
+            'Purchase order created, but the list could not refresh. Refresh before attempting another create.',
+          );
+        }
+      }
+    } catch (error) {
+      if (isCurrent()) this.operationsError = this.message(error);
+    } finally {
+      if (isCurrent()) this.purchasesLoading = false;
+    }
   }
-  hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
-  supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
-  productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
+
+  hasRemainingQuantity(line: { remaining_quantity: string }): boolean {
+    return Number(line.remaining_quantity) > 0;
+  }
+
+  supplierNameFor(id: string): string {
+    return this.suppliers.find(item => item.id === id)?.name || id.slice(0, 8);
+  }
+
+  productNameFor(id: string): string {
+    return this.products.find(item => item.id === id)?.name || id.slice(0, 8);
+  }
+
   async receivePurchaseOrder(order: PurchaseOrder): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    const lines=order.lines.filter(line=>this.hasRemainingQuantity(line)).map(line=>({line_id:line.id,quantity:line.remaining_quantity}));
-    if(!lines.length)return;
-    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
-    try { await this.api.receivePurchaseOrder(businessId,order.id,lines); const [orders,products,dashboard]=await Promise.all([this.api.purchaseOrders(businessId),this.api.products(businessId),this.api.dashboard(businessId)]);if(this.business?.id===businessId){this.purchaseOrders=orders;this.products=products;this.dashboard=dashboard;} }
-    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+    if (!this.business || !this.signedIn || !this.currentAuthUid || this.business.role !== 'owner') return;
+    const lines = order.lines
+      .filter(line => this.hasRemainingQuantity(line))
+      .map(line => ({ line_id: line.id, quantity: line.remaining_quantity }));
+    if (!lines.length) return;
+    const businessId = this.business.id;
+    const requestVersion = this.purchaseReceivingGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(
+      this.purchaseReceivingGuard, requestVersion, requestContext,
+    );
+    this.purchasesLoading = true;
+    this.operationsError = '';
+    try {
+      await this.api.receivePurchaseOrder(businessId, order.id, lines);
+      if (!isCurrent()) return;
+      const [orders, products, dashboard] = await Promise.all([
+        this.api.purchaseOrders(businessId),
+        this.api.products(businessId),
+        this.api.dashboard(businessId),
+      ]);
+      if (!isCurrent()) return;
+      this.purchaseOrders = orders;
+      this.products = products;
+      this.dashboard = dashboard;
+    } catch (error) {
+      if (isCurrent()) this.operationsError = this.message(error);
+    } finally {
+      if (isCurrent()) this.purchasesLoading = false;
+    }
   }
+
   async createRecurringSchedule(): Promise<void> {
     if (!this.business) return;
     const interval=Number(this.recurringIntervalDays);if(!Number.isInteger(interval)||interval<1||interval>3650){this.operationsError=this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.','Interval must be between 1 and 3650 days.');return;}
