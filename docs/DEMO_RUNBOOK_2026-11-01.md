@@ -93,3 +93,14 @@ Before claiming a successful demo, record:
 - all blocked, partial and not-run criteria.
 
 **Current status:** Runbook drafted. A real end-to-end demo remains **BLOCKED / NOT VERIFIED** until a safe candidate environment, demo accounts/data and exact-head validation are available.
+
+
+## 8. Master validation refresh — 2026-11-01 14:10 +02:00
+
+- **Current candidate HEAD:** `e8bbabad500c931d37231ec753d4edc661409614` on `master/demo-readiness-ui-20261101`; base/main `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`. PR #323 remains OPEN / DRAFT / UNMERGED with no review submissions. Exact-head statuses: Semaphore FAILURE and CircleCI ERROR; no CI provider was triggered or retried.
+- **Targeted source/spec checks now available:** 84 PASS / 0 FAIL across four isolated Node 24.22.1 runs. The 47-test template/invoice-draft/payment-retry subset ran at parent code head `cb342ed18176a6606ba7333ebc337eae0b287719`; the only three later commits changed `TASKS.md` and `release-guide.ts/spec`, not those tested application/helper files. Current-head runs: release-guide 8/8, module-access + workspace-load-guard 14/14, payment-allocation + list-pagination 15/15. These are focused pure/source-level tests, not the full frontend suite.
+- **Still NOT RUN:** full `npm test`, Angular production build/template compilation, backend pytest/PostgreSQL, browser E2E, authenticated Owner/Staff, A→B/logout→B, mobile/Arabic RTL/accessibility, dependency/security scans and independent Chat 5 review.
+- Demo web/API preview, dedicated Owner/Staff accounts and synthetic fixture workspaces remain UNKNOWN / NOT VERIFIED. Production aliases are not a substitute for this candidate.
+- **Five-task status:** 0/5 VERIFIED COMPLETE; UI/navigation, Sales, operational module integration and workspace security remain IN PROGRESS; final demo validation is BLOCKED pending complete exact-source build/E2E runner and safe demo environment.
+- No merge, production deployment, migration or production database write was performed. This runbook remains a demo procedure with explicit limitations, not a release approval.
+
