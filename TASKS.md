@@ -1761,3 +1761,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Full frontend `npm test`, Angular build/template type-check, browser/mobile/accessibility behavior, backend pytest, PostgreSQL concurrency, dependency/security scans and exact-head CI: **NOT RUN**. Independent review remains outstanding.
 - No merge, version bump, deployment, migration or production data write. Keep PR #323 Draft/unmerged until permitted exact-head validation and independent review are available.
 - Next: obtain a permitted exact-source test/build environment, complete real browser behavior for print/payment/auth/workspace transitions, and finish invoice/customer pagination beyond 100 records.
+
+
+### Master invoice editor saved-state safety follow-up — 2026-11-01
+
+- Latest source candidate before this note: `bf3a4c7a6bf1853444186c5f1acb4992daca79b3`; PR #323 remains OPEN / DRAFT / UNMERGED, 35 commits ahead / 0 behind main.
+- Static review found that the newly wired invoice editor could be edited after a successful save, clear its displayed summary and submit another `createInvoice` request using the same invoice number. That could surface a duplicate-number rejection and confuse saved-vs-new draft state.
+- Fixed `frontend/src/app/invoice-draft-editor.component.ts`: after a server summary is present, lock all line/customer/number controls and pricing inputs; show an explicit “Start another invoice” action; reset child editor state/lines before emitting the new-draft event.
+- Fixed `frontend/src/app/app.component.ts`: the new-draft handler clears invoice number/customer/summary/message and resets discount/tax inputs; discount/tax inputs are also locked while a saved summary is displayed. This avoids silently re-submitting a saved draft as a new draft with the same invoice number.
+- Source read-back/structural checks: PASS (locked controls, new-draft output/action, child reset, parent reset binding, server-only summary, client invoicePreview absent). Angular compilation and component/browser behavior remain **NOT RUN**; these checks do not establish runtime acceptance.
+- No API/backend/schema/financial behavior changed. No merge, CI trigger/retry, deployment, migration or production data write.
+- Next: run the Angular template/build and real create-save-start-another journey on an authorized exact-source runner; add component/browser regression for the duplicate-number scenario.
