@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   createPaymentRetrySnapshot,
+  isDefinitiveNoWritePaymentStatus,
   paymentRequestFromRetrySnapshot,
   PaymentRetryVault,
   type PaymentRequestPayload,
@@ -105,4 +106,10 @@ test('retry vault rejects blank identity keys', () => {
   const snapshot = createPaymentRetrySnapshot('business-a', paymentPayload());
   assert.throws(() => vault.save(' ', snapshot), RangeError);
   assert.throws(() => vault.get('owner-a', ' '), RangeError);
+});
+
+
+test('only known validation and authorization rejections release an uncertain payment snapshot', () => {
+  for (const status of [400, 401, 403, 404, 422]) assert.equal(isDefinitiveNoWritePaymentStatus(status), true);
+  for (const status of [408, 409, 425, 429, 500, 502, 503, 504]) assert.equal(isDefinitiveNoWritePaymentStatus(status), false);
 });
