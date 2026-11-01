@@ -214,13 +214,17 @@ def test_member_removal_rechecks_owner_after_workspace_lock(configured_client, m
     assert events == []
 
 
-def test_member_removal_fails_closed_if_workspace_deactivates_after_initial_auth(configured_client, monkeypatch):
+def test_member_removal_fails_closed_if_workspace_deactivates_after_initial_auth(
+    configured_client, monkeypatch
+):
     import app.core_features_api as core_features_api
 
     business_id = create_workspace(configured_client)
     membership_id = add_member(business_id, "staff-user")
 
-    def deactivate_after_initial_authorization(session, principal, requested_business_id, *, owner_only=False):
+    def deactivate_after_initial_authorization(
+        session, principal, requested_business_id, *, owner_only=False
+    ):
         business = session.get(Business, UUID(requested_business_id))
         business.is_active = False
         session.flush()
