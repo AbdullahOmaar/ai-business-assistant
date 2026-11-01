@@ -1814,3 +1814,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added source-regression assertions in `frontend/src/app/app.component-template-safety.spec.ts` for the new guards and reset behavior.
 - Validation at commit time: source transformation assertions PASS; helper unit tests, Angular compilation/build, component/browser E2E, authenticated A→B/logout→B journeys, PostgreSQL/API suite, dependency/security scans and exact-head GitLab CI **NOT RUN**. Commits use `[skip ci]`; no CI jobs are requested or retried. No production data writes, schema changes, merge or deployment.
 - Next: run exact-source pure helper tests in an isolated Node runner; then obtain permitted Angular/browser validation and independent review before any merge decision.
+
+
+### Exact-source async guard validation — 2026-11-01
+
+- Node 22.16.0: `node --experimental-strip-types --test workspace-load-guard.spec.ts` — **9/9 PASS**. The local test copies were checked against the exact GitHub blob IDs before execution: `workspace-load-guard.ts` `8280adec9064134caa9cb08f762096b95fee0fe6`; `workspace-load-guard.spec.ts` `eff38ab1b0c85c59c7b46ff9b488c9a55d57bed0`.
+- TypeScript 5.8.3 strict no-emit check of the exact helper — **PASS** (`tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions workspace-load-guard.ts`).
+- GitHub-source structural assertions for the updated chat/CSV/invoice/workspace-create paths and reset invalidation — **PASS**. The Angular template-safety spec containing those assertions is authored but its Node test runner execution is **NOT RUN**.
+- Full Angular build/template compilation, full frontend suite, authenticated browser A→B and logout→B flows, print popup behavior, pending payment retry E2E, full backend/PostgreSQL suites, accessibility/RTL mobile review and security scans remain **NOT RUN**. No CI jobs were triggered or retried.
