@@ -516,3 +516,77 @@ Project `ai-business-assistant-db` (`flat-meadow-20571697`) was inspected withou
 - Main migration `0005_employee_payroll` (revision SHA `62679fc6cdfacba3ed9571867c79fba427c90d09`) follows `0004_platform_user_roles`. Its downgrade explicitly drops `payroll_records`, `employees`, and the composite expense unique constraint; downgrade is destructive to payroll data.
 - No 0003 restore/upgrade/downgrade rehearsal was run in this review. No snapshot, branch, schema, migration, database record, endpoint, or production state was modified.
 - **Disposition:** migration rehearsal remains BLOCKED pending Master/owner authorization, a verified backup of the exact 0003 branch, disposable restored target, restore evidence and documented cleanup/rollback. Do not run downgrade against main or any production branch.
+
+## F41-UI-01 implementation and integration handoff — 2026-11-01
+
+### Feature-owned implementation verified from current branch source
+
+- Employee directory now requests server-side pages of 25 plus one lookahead row, with independent Previous/Next navigation and server-side search; changing the search resets offset to zero.
+- Payroll history uses its own 25-row page/lookahead and period filter; changing the period resets the payroll offset.
+- Payroll employee picker searches the active employee directory server-side, independently of the visible employee page. It preserves a previously selected active employee when the current search page does not include it and never preselects an arbitrary first row.
+- Workspace changes increment both request-sequence guards, clear employee/payroll/picker/form/search/page state, and only issue a new load for a non-empty business ID. Late list/picker responses and their loading finalizers are guarded by sequence and business ID.
+- The optional picker request is isolated from the main employee/payroll list request; picker failure reports an error without discarding the already loaded directory/history.
+- Component-local styles include a mobile breakpoint; the template declares Arabic RTL / English LTR and accessible loading, empty, error, success and pagination status labels.
+- The current UI spec source contains 16 tests (including the new stale-response guard source test). Backend employee search/directory source contains 7 tests. These are source inventories, not executed tests.
+
+### Latest exact delivery state
+
+- Existing branch: `feat/t41-salary-history-effective-dates`.
+- Existing PR: [#308](https://github.com/AbdullahOmaar/ai-business-assistant/pull/308), OPEN / DRAFT / UNMERGED, `mergeable=false`.
+- Current PR head after this continuation: `6627a2b650300d17cea6d16d1c17da54db5d1c2f`.
+- PR base / merge base: `c464398e0a6ace77eba32aabfbdbd09091f53999`.
+- Latest main observed in the canonical task/dispatch: `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`; compare is 158 ahead / 3 behind, diverged. Do not rebase or update version files from this feature branch; main is v1.3.5 while the branch inherited v1.3.4. Master owns reconciliation.
+- PR #304 latest observed head: `aca396c9cf7f552134f2664f9d3ebeacef6a5905`, OPEN / DRAFT / UNMERGED, `mergeable=false`.
+
+### Exact file disposition
+
+- T41-owned files for selective integration:
+  1. `backend/app/employee_payroll_api.py`
+  2. `backend/tests/test_employee_payroll_search.py`
+  3. `frontend/src/app/employee-payroll.component.ts`
+  4. `frontend/src/app/employee-payroll-ui.spec.ts`
+  5. `docs/T41_EMPLOYEE_PAYROLL_GAP_AUDIT_2026-10-29.md`
+- Existing PR #308 also contains `frontend/src/app/api.service.ts`, which is Master-owned and frozen for Chat 4.
+- Eight actual changed-file overlaps with PR #304 must remain frozen pending Master disposition:
+  `TASKS.md`, `backend/app/assistant_api.py`, `backend/app/core_features_api.py`, `backend/app/extended_api.py`, `backend/app/operations.py`, `backend/app/security.py`, `backend/tests/test_employee_payroll_api.py`, `backend/tests/test_postgres_financial_concurrency.py`.
+- Additional ownership: `TASKS.md` is Master-owned; `backend/app/extended_api.py` is Chat 5-owned. Chat 4 did not edit these eight overlapping paths or the Master-owned API service during this continuation.
+- T41-only UI hunk boundaries are confined to the `EmployeePayrollComponent` class/template/styles and its matching `employee-payroll-ui.spec.ts` tests. Backend T41-only code is confined to the `employee_payroll_api.py` router and employee-directory tests; no shared report/privacy handlers are included in this handoff.
+
+### Continuation commits
+
+- `ef45088e33fea7a2ca0818b75cb9ed4af010f8e7` — adds the stale employee/picker response guard regression source test.
+- `127ead67fea139f7344789e8478eb3b973dd304d` — corrects escaped regex/source matching in that test.
+- `6038d2638fb49e2fb82bf75104189f4ef70f1e90` — adjusts picker-finalizer matcher to reflect the nested guard.
+- `6627a2b650300d17cea6d16d1c17da54db5d1c2f` — fixes the whitespace matcher to match the actual guarded finalizer.
+- These four commits are a contiguous T41-only test-file chain; retain the current branch tip rather than cherry-picking only the first commit. Runtime execution remains NOT RUN.
+
+### Validation and security disposition
+
+- Read-back of the new test and current component source completed.
+- Eleven source-level assertions against the component's workspace reset, request-sequence guards and guarded finalizers: PASS. This is static inspection only, not Node test execution.
+- Backend pytest, frontend Node tests, Angular build, browser E2E, PostgreSQL concurrency, dependency/security scans and migration/restore rehearsal: NOT RUN.
+- Exact GitLab pipeline for the current GitHub head: NOT VERIFIED / no exact-candidate pipeline evidence. Do not trigger or retry any CI provider under current instructions.
+- OWNER-only route guards and business-scoped queries are present in the feature API source; this is not a substitute for runtime OWNER/STAFF/non-member/foreign-tenant tests.
+- Chat 5's per-request full-row no-side-effect evidence gap in the shared `backend/tests/test_employee_payroll_api.py` remains routed to Master/Chat 3/Chat 5. Chat 4 did not edit it.
+- Payroll privacy across expense/report/assistant surfaces depends on T40 shared integration. T37 remains DRAFT / NOT APPROVED for shared financial semantics; no salary history/effective-date/backfill/proration/statutory rules, new payout states, accounting semantics or production posting are authorized here.
+- Neon 0003 backup restore/upgrade rehearsal remains BLOCKED pending owner authorization and a verified disposable restore target; migration 0005 downgrade is destructive. No DB/schema/branch/snapshot mutation was performed.
+
+### Synthetic demo walkthrough (not executed)
+
+1. Use an isolated synthetic OWNER workspace; create employees with distinct names/codes/departments.
+2. Search for an employee beyond the first 25; navigate Next/Previous and verify no duplicates or missing rows.
+3. Edit, deactivate and reactivate an employee; verify deactivation removes them from the active payroll picker but retains their employee history.
+4. Search the active picker for an employee outside the visible directory page; explicitly select that employee.
+5. Change workspace while requests are pending; verify the previous workspace's delayed list/picker response cannot repopulate the new workspace.
+6. Switch payroll period and navigate payroll history pages; verify page reset and stable period scoping.
+7. Verify Arabic RTL and English LTR on mobile and desktop; exercise loading, empty, error/retry and success states.
+8. Test STAFF, non-member and foreign-workspace direct API access in an isolated test fixture; expect backend denial and no data/audit side effects.
+9. Do not perform the recorded `/pay` transition or create a linked Payroll Expense in any shared/production business until Master resolves the T37/T40 contract and confirms the permitted demo behavior. The UI wording must continue to distinguish in-app recorded-paid from external bank transfer.
+
+### Remaining ordered work
+
+1. Master resolves all eight shared paths and the Master-owned `api.service.ts` / `TASKS.md` hunks, preserving the five T41-owned files and T40-only tests.
+2. Master/Chat 3 address the shared payroll-privacy no-side-effect snapshot gap; Chat 5 independently retests.
+3. Obtain explicit owner-authorized exact-candidate validation route without prohibited CI triggers/retries; run backend, frontend, build, browser and PostgreSQL checks on the integrated SHA.
+4. Obtain authorized isolated 0003 restore/upgrade rehearsal with backup and cleanup/rollback evidence.
+5. Master confirms the narrow payroll demo contract; keep PR #308 Draft/Open/Unmerged until exact-SHA checks, independent review and integration gates are satisfied.
