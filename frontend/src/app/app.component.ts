@@ -3,7 +3,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
-import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard';
+import { isCurrentTenantRequest, WorkspaceLoadGuard, type TenantRequestContext } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
@@ -1070,6 +1070,14 @@ export class AppComponent implements OnInit, OnDestroy {
   statementOffset = 0;
   private readonly auditLoadGuard = new WorkspaceLoadGuard();
   private readonly statementLoadGuard = new WorkspaceLoadGuard();
+  private readonly chatRequestGuard = new WorkspaceLoadGuard();
+  private readonly productImportRequestGuard = new WorkspaceLoadGuard();
+  private readonly customerImportRequestGuard = new WorkspaceLoadGuard();
+  private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
+  private readonly workspaceCreateRequestGuard = new WorkspaceLoadGuard();
+  private readonly customerMutationGuard = new WorkspaceLoadGuard();
+  private readonly productMutationGuard = new WorkspaceLoadGuard();
+  private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1701,6 +1709,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentAllocations = [];
     this.paymentError = false;
     this.printLoading = false;
+    this.chatSending = false;
+    // Invalidate every pending operation that can write into shared workspace UI state.
+    this.chatRequestGuard.invalidate();
+    this.productImportRequestGuard.invalidate();
+    this.customerImportRequestGuard.invalidate();
+    this.invoiceEditRequestGuard.invalidate();
+    this.workspaceCreateRequestGuard.invalidate();
+    this.customerMutationGuard.invalidate();
+    this.productMutationGuard.invalidate();
+    this.invoiceMutationGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -1834,11 +1852,45 @@ export class AppComponent implements OnInit, OnDestroy {
     this.tab = 'overview';
   }
 
+  private captureTenantRequest(workspaceId: string): TenantRequestContext {
+    return {
+      workspaceId,
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+      authTransitionVersion: this.authTransitionVersion,
+    };
+  }
+
+  private isCurrentTenantOperation(
+    guard: WorkspaceLoadGuard,
+    requestVersion: number,
+    requested: TenantRequestContext,
+  ): boolean {
+    return isCurrentTenantRequest(guard, requestVersion, requested, {
+      workspaceId: this.business?.id ?? '',
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+      authTransitionVersion: this.authTransitionVersion,
+    });
+  }
+
   async createWorkspace(): Promise<void> {
+    if (!this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.workspaceCreateRequestGuard.begin();
+    const requestUid = this.currentAuthUid;
+    const authVersion = this.authTransitionVersion;
+    const businessName = this.businessName.trim();
+    const currencyCode = this.currencyCode;
+    const isCurrent = (): boolean => this.workspaceCreateRequestGuard.isLatest(requestVersion)
+      && this.signedIn && this.currentAuthUid === requestUid
+      && this.authTransitionVersion === authVersion;
     this.loading = true;
     this.error = '';
     try {
-      const created = await this.api.createBusiness({ name: this.businessName, currency_code: this.currencyCode });
+      const created = await this.api.createBusiness({ name: businessName, currency_code: currencyCode });
+      if (!isCurrent()) return;
       this.businesses = [created];
       this.business = created;
       this.selectedBusinessId = created.id;
@@ -1846,9 +1898,10 @@ export class AppComponent implements OnInit, OnDestroy {
       this.businessName = '';
       await this.loadWorkspaceData();
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      // loadWorkspaceData owns the loading state after a successful create.
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -2403,27 +2456,43 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createCustomer(): Promise<void> {
-    if (!this.business) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid) return;
+    const businessId = this.business.id;
+    const requestVersion = this.customerMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.customerMutationGuard, requestVersion, requestContext);
+    const payload = {
+      name: this.customerName.trim(), email: this.customerEmail || undefined,
+      phone: this.customerPhone || undefined,
+    };
     this.loading = true;
     this.error = '';
     try {
-      await this.api.createCustomer(this.business.id, {
-        name: this.customerName, email: this.customerEmail || undefined,
-        phone: this.customerPhone || undefined
-      });
+      await this.api.createCustomer(businessId, payload);
+      if (!isCurrent()) return;
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
-      this.setCustomerPage(await this.api.customers(this.business.id));
-      if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
+      try {
+        const customers = await this.api.customers(businessId);
+        if (!isCurrent()) return;
+        this.setCustomerPage(customers);
+        if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
+      } catch {
+        if (isCurrent()) this.error = this.t('تم إنشاء العميل، لكن تعذر تحديث القائمة. حدّث البيانات ولا تكرر الإضافة.', 'Customer created, but the list could not refresh. Refresh before attempting another create.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
   async onImportFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
+    if (!this.business || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.productImportRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(this.business.id);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.productImportRequestGuard, requestVersion, requestContext);
     this.importPreview = null;
     this.importMessage = '';
     this.importCsvText = '';
@@ -2440,56 +2509,78 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      this.importCsvText = await file.text();
+      const csvText = await file.text();
+      if (!isCurrent()) return;
+      this.importCsvText = csvText;
       this.importFileName = file.name;
       this.error = '';
     } catch {
+      if (!isCurrent()) return;
       this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
       input.value = '';
     }
   }
 
   async previewProductImport(): Promise<void> {
-    if (!this.business || !this.importCsvText || this.importLoading) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.importCsvText || this.importLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.importCsvText;
+    const requestVersion = this.productImportRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.productImportRequestGuard, requestVersion, requestContext);
     this.importLoading = true;
     this.importPreview = null;
     this.importMessage = '';
     this.error = '';
     try {
-      this.importPreview = await this.api.previewProductCsv(this.business.id, this.importCsvText);
+      const preview = await this.api.previewProductCsv(businessId, csvText);
+      if (isCurrent()) this.importPreview = preview;
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.importLoading = false;
+      if (isCurrent()) this.importLoading = false;
     }
   }
 
   async confirmProductImport(): Promise<void> {
-    if (!this.business || !this.importCsvText || !this.importPreview?.valid || this.importLoading) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.importCsvText || !this.importPreview?.valid || this.importLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.importCsvText;
+    const requestVersion = this.productImportRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.productImportRequestGuard, requestVersion, requestContext);
     this.importLoading = true;
     this.importMessage = '';
     this.error = '';
     try {
-      const result = await this.api.importProductCsv(this.business.id, this.importCsvText);
-      this.setProductPage(await this.api.products(this.business.id));
-      if (this.products.length) this.invoiceProductId = this.products[0].id;
-      this.importMessage = this.t(
-        `تم استيراد ${result.row_count} صف بنجاح.`,
-        `Successfully imported ${result.row_count} rows.`
-      );
+      const result = await this.api.importProductCsv(businessId, csvText);
+      if (!isCurrent()) return; // The import may have committed; never replay it for a new workspace.
       this.importPreview = null;
       this.importCsvText = '';
       this.importFileName = '';
+      this.importMessage = this.t(`تم استيراد ${result.row_count} صف بنجاح.`, `Successfully imported ${result.row_count} rows.`);
+      try {
+        const products = await this.api.products(businessId);
+        if (!isCurrent()) return;
+        this.setProductPage(products);
+        if (this.products.length) this.invoiceProductId = this.products[0].id;
+      } catch {
+        if (isCurrent()) this.importMessage = this.t('تم الاستيراد، لكن تعذر تحديث القائمة. حدّث البيانات ولا تكرر الاستيراد.', 'Import completed, but the list could not refresh. Refresh before attempting another import.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.importLoading = false;
+      if (isCurrent()) this.importLoading = false;
     }
   }
 
   async onCustomerImportFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
+    if (!this.business || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.customerImportRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(this.business.id);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.customerImportRequestGuard, requestVersion, requestContext);
     this.customerImportPreview = null;
     this.customerImportMessage = '';
     this.customerImportCsvText = '';
@@ -2506,57 +2597,69 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      this.customerImportCsvText = await file.text();
+      const csvText = await file.text();
+      if (!isCurrent()) return;
+      this.customerImportCsvText = csvText;
       this.customerImportFileName = file.name;
       this.error = '';
     } catch {
+      if (!isCurrent()) return;
       this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
       input.value = '';
     }
   }
 
   async previewCustomerImport(): Promise<void> {
-    if (!this.business || !this.customerImportCsvText || this.customerImportLoading) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.customerImportCsvText || this.customerImportLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.customerImportCsvText;
+    const requestVersion = this.customerImportRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.customerImportRequestGuard, requestVersion, requestContext);
     this.customerImportLoading = true;
     this.customerImportPreview = null;
     this.customerImportMessage = '';
     this.error = '';
     try {
-      this.customerImportPreview = await this.api.previewCustomerCsv(
-        this.business.id, this.customerImportCsvText
-      );
+      const preview = await this.api.previewCustomerCsv(businessId, csvText);
+      if (isCurrent()) this.customerImportPreview = preview;
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.customerImportLoading = false;
+      if (isCurrent()) this.customerImportLoading = false;
     }
   }
 
   async confirmCustomerImport(): Promise<void> {
-    if (!this.business || !this.customerImportCsvText ||
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.customerImportCsvText ||
         !this.customerImportPreview?.valid || this.customerImportLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.customerImportCsvText;
+    const requestVersion = this.customerImportRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.customerImportRequestGuard, requestVersion, requestContext);
     this.customerImportLoading = true;
     this.customerImportMessage = '';
     this.error = '';
     try {
-      const result = await this.api.importCustomerCsv(
-        this.business.id, this.customerImportCsvText
-      );
-      this.setCustomerPage(await this.api.customers(this.business.id));
-      if (!this.invoiceCustomerId && this.customers.length) {
-        this.invoiceCustomerId = this.customers[0].id;
-      }
-      this.customerImportMessage = this.t(
-        `تم استيراد ${result.row_count} صف بنجاح.`,
-        `Successfully imported ${result.row_count} rows.`
-      );
+      const result = await this.api.importCustomerCsv(businessId, csvText);
+      if (!isCurrent()) return; // The import may have committed; never replay it for a new workspace.
       this.customerImportPreview = null;
       this.customerImportCsvText = '';
       this.customerImportFileName = '';
+      this.customerImportMessage = this.t(`تم استيراد ${result.row_count} صف بنجاح.`, `Successfully imported ${result.row_count} rows.`);
+      try {
+        const customers = await this.api.customers(businessId);
+        if (!isCurrent()) return;
+        this.setCustomerPage(customers);
+        if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
+      } catch {
+        if (isCurrent()) this.customerImportMessage = this.t('تم الاستيراد، لكن تعذر تحديث القائمة. حدّث البيانات ولا تكرر الاستيراد.', 'Import completed, but the list could not refresh. Refresh before attempting another import.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.customerImportLoading = false;
+      if (isCurrent()) this.customerImportLoading = false;
     }
   }
 
@@ -2579,21 +2682,33 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createProduct(): Promise<void> {
-    if (!this.business) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid) return;
+    const businessId = this.business.id;
+    const requestVersion = this.productMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.productMutationGuard, requestVersion, requestContext);
+    const payload = {
+      name: this.productName.trim(), unit_price: this.productPrice, is_stock_tracked: this.stockTracked,
+      opening_quantity: this.stockTracked ? this.productOpeningQuantity : '0',
+    };
     this.loading = true;
     this.error = '';
     try {
-      await this.api.createProduct(this.business.id, {
-        name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked,
-        opening_quantity: this.stockTracked ? this.productOpeningQuantity : '0'
-      });
+      await this.api.createProduct(businessId, payload);
+      if (!isCurrent()) return;
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
-      this.setProductPage(await this.api.products(this.business.id));
-      if (this.products.length) this.invoiceProductId = this.products[0].id;
+      try {
+        const products = await this.api.products(businessId);
+        if (!isCurrent()) return;
+        this.setProductPage(products);
+        if (this.products.length) this.invoiceProductId = this.products[0].id;
+      } catch {
+        if (isCurrent()) this.error = this.t('تم إنشاء المنتج، لكن تعذر تحديث القائمة. حدّث البيانات ولا تكرر الإضافة.', 'Product created, but the list could not refresh. Refresh before attempting another create.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -2703,32 +2818,50 @@ export class AppComponent implements OnInit, OnDestroy {
       this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
       return;
     }
+    if (!this.signedIn || !this.currentAuthUid) return;
+    const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
+    const editingInvoiceId = this.editingInvoiceId;
+    const businessCurrency = this.business.currency_code;
+    const customerId = this.invoiceCustomerId;
+    const lines = this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) }));
     this.loading = true;
     this.error = '';
     try {
       const invoiceNumber = this.invoiceNumber.trim() || 'INV-' + Date.now();
       const payload = {
         invoice_number: invoiceNumber,
-        currency_code: this.business.currency_code,
-        customer_id: this.invoiceCustomerId,
-        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
+        currency_code: businessCurrency,
+        customer_id: customerId,
+        lines,
         discount_rate: String(discountRate),
         tax_rate: String(taxRate),
       };
-      if (this.editingInvoiceId) {
-        await this.api.updateDraftInvoice(this.business.id, this.editingInvoiceId, payload);
+      if (editingInvoiceId) {
+        await this.api.updateDraftInvoice(businessId, editingInvoiceId, payload);
       } else {
-        await this.api.createInvoice(this.business.id, payload);
+        await this.api.createInvoice(businessId, payload);
       }
+      if (!isCurrent()) return; // Do not replay a write whose server outcome may already be committed.
       this.cancelInvoiceEdit();
       this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
-      this.setInvoicePage(await this.api.invoices(this.business.id));
-      this.dashboard = await this.api.dashboard(this.business.id);
-      this.tab = 'invoices';
+      try {
+        const [invoices, dashboard] = await Promise.all([
+          this.api.invoices(businessId), this.api.dashboard(businessId),
+        ]);
+        if (!isCurrent()) return;
+        this.setInvoicePage(invoices);
+        this.dashboard = dashboard;
+        this.tab = 'invoices';
+      } catch {
+        if (isCurrent()) this.invoiceMessage = this.t('تم حفظ المسودة، لكن تعذر تحديث البيانات. حدّث الصفحة ولا تكرر الحفظ.', 'Draft saved, but the data could not refresh. Refresh before attempting another save.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -2819,11 +2952,16 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   async editInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || invoice.status !== 'draft') return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || invoice.status !== 'draft') return;
+    const businessId = this.business.id;
+    const requestVersion = this.invoiceEditRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceEditRequestGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     try {
-      const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      const detail = await this.api.invoiceDetail(businessId, invoice.id);
+      if (!isCurrent()) return;
       if (!detail.lines.length || detail.lines.some(line => !line.product_id)) {
         throw new Error(this.t('تحتوي المسودة على بند غير مرتبط بمنتج؛ لم يتم تغيير الفاتورة.', 'This draft contains a line without a linked product; no changes were made.'));
       }
@@ -2836,9 +2974,9 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceMessage = '';
       this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -2854,38 +2992,64 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid) return;
+    const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     try {
-      await this.api.issueInvoice(this.business.id, invoice.id);
+      await this.api.issueInvoice(businessId, invoice.id);
+      if (!isCurrent()) return;
       this.invoiceMessage = '';
-      this.setInvoicePage(await this.api.invoices(this.business.id));
-      this.dashboard = await this.api.dashboard(this.business.id);
-      this.setProductPage(await this.api.products(this.business.id));
+      try {
+        const [invoices, dashboard, products] = await Promise.all([
+          this.api.invoices(businessId), this.api.dashboard(businessId), this.api.products(businessId),
+        ]);
+        if (!isCurrent()) return;
+        this.setInvoicePage(invoices);
+        this.dashboard = dashboard;
+        this.setProductPage(products);
+      } catch {
+        if (isCurrent()) this.invoiceMessage = this.t('تم إصدار الفاتورة، لكن تعذر تحديث البيانات. حدّث الصفحة ولا تكرر الإصدار.', 'Invoice issued, but the data could not refresh. Refresh before attempting another issue.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
   async voidInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || !window.confirm(
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !window.confirm(
       `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت الفاتورة عليها دفعات مخصصة، يجب استخدام إجراء ردّ المبلغ أو الإشعار الدائن بدلًا من الإلغاء المباشر.`
     )) return;
+    const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     try {
-      await this.api.voidInvoice(this.business.id, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
-      this.setInvoicePage(await this.api.invoices(this.business.id));
-      this.dashboard = await this.api.dashboard(this.business.id);
-      this.setProductPage(await this.api.products(this.business.id));
-      if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
+      await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
+      if (!isCurrent()) return;
+      try {
+        const [invoices, dashboard, products] = await Promise.all([
+          this.api.invoices(businessId), this.api.dashboard(businessId), this.api.products(businessId),
+        ]);
+        if (!isCurrent()) return;
+        this.setInvoicePage(invoices);
+        this.dashboard = dashboard;
+        this.setProductPage(products);
+        if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
+      } catch {
+        if (isCurrent()) this.invoiceMessage = this.t('تم إلغاء الفاتورة، لكن تعذر تحديث البيانات. حدّث الصفحة ولا تكرر الإلغاء.', 'Invoice voided, but the data could not refresh. Refresh before attempting another void.');
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -3136,7 +3300,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async sendChat(): Promise<void> {
-    if (!this.business || !this.chatDraft.trim() || this.chatSending) return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !this.chatDraft.trim() || this.chatSending) return;
+    const businessId = this.business.id;
+    const requestVersion = this.chatRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.chatRequestGuard, requestVersion, requestContext);
     const question = this.chatDraft.trim();
     const history = this.chatMessages.slice(-8);
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
@@ -3145,16 +3313,18 @@ export class AppComponent implements OnInit, OnDestroy {
     this.chatError = '';
     this.error = '';
     try {
-      const reply: ChatReply = await this.api.chat(this.business.id, question, history);
+      const reply: ChatReply = await this.api.chat(businessId, question, history);
+      if (!isCurrent()) return;
       this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
     } catch (error) {
+      if (!isCurrent()) return;
       this.chatMessages = this.chatMessages.slice(0, -1);
       this.chatDraft = question;
       const rawMessage = error instanceof Error ? error.message : '';
       this.chatConfigurationMissing = /AI chat is not configured/i.test(rawMessage);
       this.chatError = this.message(error);
     } finally {
-      this.chatSending = false;
+      if (isCurrent()) this.chatSending = false;
     }
   }
 
