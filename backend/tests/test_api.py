@@ -2371,6 +2371,52 @@ def test_foreign_workspace_owner_cannot_record_payment_without_persisted_side_ef
         engine.dispose()
 
 
+def test_foreign_workspace_owner_cannot_read_or_issue_foreign_invoice_or_list_payments_without_side_effects():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None
+        invoice.status = "draft"
+        invoice.issue_date = None
+        foreign_business = Business(name="Foreign invoice owner workspace", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=foreign_business.id,
+            user_subject="foreign-invoice-owner",
+            role=MembershipRole.OWNER,
+        ))
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    try:
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            subject="foreign-invoice-owner",
+        )
+        protected_requests = [
+            ("get", f"/api/v1/businesses/{business_id}/invoices", None),
+            ("get", f"/api/v1/businesses/{business_id}/invoices/{invoice_id}", None),
+            ("get", f"/api/v1/businesses/{business_id}/payments", None),
+            ("post", f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", {}),
+        ]
+        for method, path, payload in protected_requests:
+            before = _persisted_rows_snapshot(engine)
+            response = (
+                getattr(client, method)(path, json=payload)
+                if payload is not None else getattr(client, method)(path)
+            )
+            assert response.status_code == 403, (
+                f"Foreign-workspace OWNER must be denied {method.upper()} {path}: {response.text}"
+            )
+            assert _persisted_rows_snapshot(engine) == before, (
+                f"Denied foreign-workspace OWNER request changed persisted rows: {method.upper()} {path}"
+            )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
 def test_nonmember_cannot_record_payment_without_persisted_side_effects():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
