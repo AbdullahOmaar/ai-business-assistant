@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   createPaymentRetrySnapshot,
   paymentRequestFromRetrySnapshot,
+  PaymentRetryVault,
   type PaymentRequestPayload,
 } from './payment-retry-snapshot.ts';
 
@@ -81,4 +82,27 @@ test('retry snapshot rejects missing business identity or idempotency key', () =
   const payload = paymentPayload();
   payload.idempotency_key = ' ';
   assert.throws(() => createPaymentRetrySnapshot('business-a', payload), RangeError);
+});
+
+
+test('retry vault preserves the original attempt across auth changes without cross-user or cross-workspace access', () => {
+  const vault = new PaymentRetryVault();
+  const snapshot = createPaymentRetrySnapshot('business-a', paymentPayload());
+
+  vault.save('owner-a', snapshot);
+
+  assert.equal(vault.get('owner-a', 'business-a'), snapshot);
+  assert.equal(vault.get('owner-b', 'business-a'), null);
+  assert.equal(vault.get('owner-a', 'business-b'), null);
+  assert.equal(vault.get('owner-b', 'business-b'), null);
+
+  vault.delete('owner-a', 'business-a');
+  assert.equal(vault.get('owner-a', 'business-a'), null);
+});
+
+test('retry vault rejects blank identity keys', () => {
+  const vault = new PaymentRetryVault();
+  const snapshot = createPaymentRetrySnapshot('business-a', paymentPayload());
+  assert.throws(() => vault.save(' ', snapshot), RangeError);
+  assert.throws(() => vault.get('owner-a', ' '), RangeError);
 });
