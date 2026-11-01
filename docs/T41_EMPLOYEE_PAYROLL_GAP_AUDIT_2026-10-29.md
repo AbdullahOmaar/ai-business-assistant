@@ -602,3 +602,12 @@ Project `ai-business-assistant-db` (`flat-meadow-20571697`) was inspected withou
 - The current main `TASKS.md` contains a dated older snapshot referencing main `ae7a34b...` and prior Vercel errors; this is stale against live Vercel deployment SHA `dcb0853...` and current runtime error aggregation. Provider live evidence takes precedence for deployment/runtime; Notion remains authoritative for assignments and approvals.
 - The pre-production backup restore/upgrade rehearsal remains BLOCKED: no authorized restore/upgrade rehearsal was run. Do not run migration or downgrade against production.
 - Backend pytest, frontend Node tests, Angular build, browser E2E, PostgreSQL concurrency, dependency/security scans and exact-head GitLab validation remain NOT RUN / NOT VERIFIED.
+
+## Payroll concurrency coverage correction — 2026-11-01
+
+- Exact current branch `backend/tests/test_postgres_financial_concurrency.py` contains six test functions total and only one payroll-specific case: `test_concurrent_payroll_creation_for_same_employee_period_commits_once`.
+- The current main copy contains five functions and no payroll-specific concurrency case. The one payroll-create concurrency test is therefore a T41-only hunk inside a shared file.
+- No concurrent `/pay` / linked Payroll Expense race test is present in either exact branch or current main. Earlier statements in this audit/handoff that described two T41 payroll concurrency cases are stale and incorrect; do not count a payout-concurrency test as existing evidence.
+- Preserve the existing payroll-create concurrency hunk during Master reconciliation. The missing concurrent recorded-paid/payout race regression is a shared-file gap; Chat 4 will not edit `backend/tests/test_postgres_financial_concurrency.py`. Master/Chat 3 must decide the correct shared hunk and Chat 5 independently reviews/retests it.
+- Runtime PostgreSQL concurrency tests remain NOT RUN. This inventory was read-only source inspection.
+- Additional source checks on the exact T41 API/model/UI blobs: all eight employee/payroll route handlers call the OWNER guard; business-scoped unique constraints exist for employee code/email and payroll employee-period; search escapes backslash, percent and underscore; API pagination/search bounds and UI 25+1 lookahead/workspace fencing are present. These are static source assertions, not runtime tests.
