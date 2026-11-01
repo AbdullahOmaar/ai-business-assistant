@@ -44,6 +44,11 @@ import type {
             }
           </select>
         </label>
+        @if (hasMoreCustomers) {
+          <button type="button" class="secondary picker-more" (click)="loadMoreCustomers.emit()" [disabled]="locked || loadingMoreCustomers">
+            {{ loadingMoreCustomers ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل عملاء إضافيين', 'Load more customers') }}
+          </button>
+        }
       </div>
 
       <div class="lines-heading">
@@ -51,6 +56,11 @@ import type {
         <div class="add-actions">
           <button type="button" class="secondary" (click)="addLine('product')" [disabled]="locked">{{ t('+ منتج', '+ Product') }}</button>
           <button type="button" class="secondary" (click)="addLine('manual')" [disabled]="locked">{{ t('+ خدمة', '+ Service') }}</button>
+          @if (hasMoreProducts) {
+            <button type="button" class="secondary" (click)="loadMoreProducts.emit()" [disabled]="locked || loadingMoreProducts">
+              {{ loadingMoreProducts ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل منتجات إضافية', 'Load more products') }}
+            </button>
+          }
         </div>
       </div>
 
@@ -154,6 +164,7 @@ import type {
     .server-summary div { display: flex; justify-content: space-between; gap: 12px; }
     .server-summary .total { font-weight: 800; font-size: 1.08rem; }
     .save { justify-self: start; }
+    .picker-more{justify-self:start;align-self:end;max-width:100%}
     @media (max-width: 600px) { .invoice-fields, .line-card { grid-template-columns: minmax(0, 1fr); } .line-top { grid-column: 1; } .save { width: 100%; } }
   `],
 })
@@ -166,8 +177,14 @@ export class InvoiceDraftEditorComponent {
   @Input() customerId = '';
   @Input() saving = false;
   @Input() serverSummary: InvoiceDraftServerSummary | null = null;
+  @Input() hasMoreCustomers = false;
+  @Input() hasMoreProducts = false;
+  @Input() loadingMoreCustomers = false;
+  @Input() loadingMoreProducts = false;
   @Output() saveDraft = new EventEmitter<InvoiceDraftPayload>();
   @Output() newDraft = new EventEmitter<void>();
+  @Output() loadMoreCustomers = new EventEmitter<void>();
+  @Output() loadMoreProducts = new EventEmitter<void>();
 
   private lineSequence = 1;
   lines: InvoiceDraftLine[] = [this.newLine('product')];
