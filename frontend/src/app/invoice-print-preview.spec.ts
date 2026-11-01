@@ -24,9 +24,13 @@ test('print invoice escapes customer, business, invoice, and line values before 
   for (const encoded of ['&amp;', '&lt;', '&gt;', '&quot;', '&#39;']) {
     assert.ok(helper.includes(encoded), 'missing HTML escape for ' + encoded);
   }
-  assert.match(printMethod, /this\.api\.invoiceDetail\(this\.business\.id, invoice\.id\)/);
+  assert.match(printMethod, /const business = this\.business/);
+  assert.match(printMethod, /const businessId = business\.id/);
+  assert.match(printMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
+  assert.match(printMethod, /this\.business\?\.id !== businessId/);
   assert.match(printMethod, /this\.escapePrintHtml\(line\.description\)/);
-  assert.match(printMethod, /this\.escapePrintHtml\(this\.business\.name\)/);
+  assert.match(printMethod, /this\.escapePrintHtml\(this\.customerNameForInvoice\(detail\.customer_id\)\)/);
+  assert.match(printMethod, /this\.escapePrintHtml\(business\.name\)/);
   assert.match(printMethod, /printWindow\.document\.write\(/);
 });
 
