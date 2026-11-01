@@ -2091,7 +2091,7 @@ def test_concurrent_exact_payment_retries_return_one_payment_allocation_and_audi
             audits = session.scalars(select(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "payment.recorded",
-                AuditEvent.target_id == UUID(payment_ids[0]),
+                AuditEvent.target_id == str(payment_ids[0]),
             )).all()
             assert len(payments) == 1
             assert payments[0].id == UUID(payment_ids[0])
