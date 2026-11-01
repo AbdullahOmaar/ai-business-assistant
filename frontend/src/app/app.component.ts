@@ -10,7 +10,7 @@ import { filterCustomers, filterInvoices, filterProducts } from './record-filter
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
-import { canAccessWorkspaceTab, isMobileMoreTab } from './module-access';
+import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
@@ -2042,6 +2042,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   canAccessTab(tab: Tab): boolean {
     return canAccessWorkspaceTab(tab, this.business?.role, this.platformAdminAvailable);
+  }
+
+  isMobileMoreTab(tab: Tab): boolean {
+    return isMobileMoreTabValue(tab);
   }
 
   setTab(tab: Tab): void {
