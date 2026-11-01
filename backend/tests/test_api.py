@@ -2178,3 +2178,38 @@ def test_foreign_workspace_owner_cannot_record_payment_without_persisted_side_ef
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_nonmember_cannot_record_payment_without_persisted_side_effects():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    payload = {
+        "amount": "4.00",
+        "currency_code": "EGP",
+        "idempotency_key": "nonmember-payment-must-be-denied",
+        "customer_id": str(customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "4.00"}],
+        "method": "cash",
+    }
+    try:
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            subject="nonmember-payment-subject",
+        )
+        before = _persisted_rows_snapshot(engine)
+        response = TestClient(app).post(
+            f"/api/v1/businesses/{business_id}/payments",
+            json=payload,
+        )
+        assert response.status_code == 403, response.text
+        assert _persisted_rows_snapshot(engine) == before, (
+            "non-member payment denial must leave every persisted row unchanged"
+        )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
