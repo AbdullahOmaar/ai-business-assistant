@@ -127,7 +127,7 @@ import type {
         <p class="muted">{{ t('ستظهر الإجماليات بعد حفظ الفاتورة واستلام رد الخادم.', 'Totals appear after saving the invoice and receiving the server response.') }}</p>
       }
 
-      <button type="button" class="primary save" (click)="submit()" [disabled]="saving">
+      <button type="button" class="primary save" (click)="submit()" [disabled]="saving || !!serverSummary">
         {{ saving ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ مسودة الفاتورة', 'Save invoice draft') }}
       </button>
     </section>
@@ -214,8 +214,10 @@ export class InvoiceDraftEditorComponent {
   submit(): void {
     if (this.saving) return;
     try {
+      const invoiceNumber = this.invoiceNumber.trim() || 'INV-' + Date.now();
+      this.invoiceNumber = invoiceNumber;
       const payload = toInvoiceDraftPayload({
-        invoice_number: this.invoiceNumber,
+        invoice_number: invoiceNumber,
         currency_code: this.currencyCode,
         customer_id: this.customerId,
         lines: this.lines,
