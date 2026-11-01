@@ -95,10 +95,16 @@ export const FEATURE_CATALOG = [
         detailEn: 'Create a draft, add or remove lines, and enter quantities.',
       },
       {
+        titleAr: 'تعديل المسودة',
+        titleEn: 'Edit an existing draft',
+        detailAr: 'عدّل بنود المنتجات والخدمات في المسودة قبل إصدارها؛ الإجماليات تأتي من الخادم.',
+        detailEn: 'Edit catalog and manual service lines before issuing; totals are returned by the server.',
+      },
+      {
         titleAr: 'الخصم والضريبة',
         titleEn: 'Discounts and tax',
-        detailAr: 'راجع المعاينة، ويعيد الخادم حساب الإجمالي النهائي.',
-        detailEn: 'Preview discounts and tax; the server recalculates the final total.',
+        detailAr: 'حدد الخصم والضريبة، وتظهر الإجماليات المحفوظة من الخادم بعد الحفظ.',
+        detailEn: 'Set discounts and tax; saved totals appear from the server after saving.',
       },
       {
         titleAr: 'إصدار وإلغاء الفاتورة',
@@ -126,6 +132,12 @@ export const FEATURE_CATALOG = [
         titleEn: 'Pay an invoice',
         detailAr: 'انتقل من الفاتورة إلى السداد مع تعبئة الرصيد المتبقي، ويمكن السداد جزئيًا.',
         detailEn: 'Start from an invoice with the outstanding amount filled in; partial payments are supported.',
+      },
+      {
+        titleAr: 'إعادة محاولة آمنة',
+        titleEn: 'Safe payment retry',
+        detailAr: 'بعد انقطاع الاتصال أعد المحاولة بنفس الطلب والمفتاح؛ والرفض المؤكد دون حفظ يتيح تصحيح البيانات.',
+        detailEn: 'After an uncertain network outcome, retry the same payload and key; confirmed no-write rejection unlocks correction.',
       },
       {
         titleAr: 'مطابقة الدفعة',
