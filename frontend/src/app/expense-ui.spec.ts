@@ -22,7 +22,7 @@ test('expense view is reachable from mobile More and has bilingual labels', () =
   assert.match(ui, /t\('حفظ المصروف', 'Save expense'\)/);
   assert.equal(isMobileMoreTab('expenses'), true);
   assert.equal(isMobileMoreTab('assistant'), true);
-  assert.equal(isMobileMoreTab('products'), false);
+  assert.equal(isMobileMoreTab('overview'), false);
 });
 
 test('workspace load and clear paths include expense records', () => {
