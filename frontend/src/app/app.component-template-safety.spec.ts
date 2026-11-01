@@ -200,7 +200,7 @@ test('Home launcher exposes all 19 existing module destinations with current acc
   for (const tab of ['payments', 'employees', 'taxes', 'audit', 'integrity', 'health']) {
     assert.ok(launcher.includes(`@if (canAccessTab('${tab}'))`), `${tab} launcher entry must reuse the existing access policy`);
   }
-  assert.ok(launcher.includes('@if (platformAdminAvailable)'), 'Platform Admin must follow the existing availability flag');
+  assert.ok(launcher.includes("@if (canAccessTab('platform-admin'))"), 'Platform Admin must follow the existing availability flag through the shared guard');
 });
 
 test('direct setTab selection fails closed when STAFF requests Activity Log or Tax Summary', () => {
@@ -208,8 +208,8 @@ test('direct setTab selection fails closed when STAFF requests Activity Log or T
   const methodEnd = source.indexOf('\n  statementEventLabel', methodStart);
   assert.ok(methodStart >= 0 && methodEnd > methodStart);
   const method = source.slice(methodStart, methodEnd);
-  assert.match(method, /if \(!this\.canAccessTab\(tab\)\) \{ this\.tab = 'overview'; this\.mobileMoreOpen = false; return; \}/);
-  assert.match(source, /canAccessTab\(tab: Tab\): boolean \{\s*return canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\); \}/);
-  assert.match(moduleAccessSource, /'taxes', 'audit'/);
-  assert.match(moduleAccessSource, /if \(OWNER_ONLY_TABS\.has\(tab\)\) return role === 'owner';/);
+  assert.ok(method.includes("if (!this.canAccessTab(tab)) { this.tab = 'overview'; this.mobileMoreOpen = false; return; }"));
+  assert.ok(source.includes('return canAccessWorkspaceTab(tab, this.business?.role, this.platformAdminAvailable);'));
+  assert.ok(moduleAccessSource.includes("'taxes', 'audit'"));
+  assert.ok(moduleAccessSource.includes("if (OWNER_ONLY_TABS.has(tab)) return role === 'owner';"));
 });
