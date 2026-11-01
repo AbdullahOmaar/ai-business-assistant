@@ -13,6 +13,7 @@ import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab, isMobileMoreTab } from './module-access';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
+import { invoiceDraftLinesFromExisting } from './invoice-draft';
 import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
@@ -2978,14 +2979,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
       this.invoiceMessage = '';
       this.invoiceDraftSummary = null;
-      this.invoiceDraftInitialLines = detail.lines.map((line, index) => ({
-        id: 'invoice-line-' + invoice.id + '-' + (index + 1),
-        kind: line.product_id ? 'product' : 'manual',
-        product_id: line.product_id || '',
-        description: line.description || '',
-        quantity: line.quantity,
-        unit_price: line.product_id ? '' : line.unit_price,
-      }));
+      this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
       this.invoiceDraftRevision += 1;
       this.invoiceCreateOpen = true;
       this.tab = 'invoices';
