@@ -1772,3 +1772,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Source read-back/structural checks: PASS (locked controls, new-draft output/action, child reset, parent reset binding, server-only summary, client invoicePreview absent). Angular compilation and component/browser behavior remain **NOT RUN**; these checks do not establish runtime acceptance.
 - No API/backend/schema/financial behavior changed. No merge, CI trigger/retry, deployment, migration or production data write.
 - Next: run the Angular template/build and real create-save-start-another journey on an authorized exact-source runner; add component/browser regression for the duplicate-number scenario.
+
+
+### Master multi-invoice payment responsive layout — 2026-11-01
+
+- Added responsive styles for the new multi-invoice allocation editor in `frontend/src/app/app.component.ts`: full-width allocation section, clear invoice/amount rows, tabular amount summary, and single-column mobile layout.
+- Structural source check confirms all allocation editor selectors are present in the active component stylesheet. Visual/browser rendering remains **NOT RUN**.
+- Candidate before this ledger note: `768eaa8c2a74027bd5cd48fe2ce20c059adc51aa`; PR #323 remained OPEN / DRAFT / UNMERGED, 37 ahead / 0 behind main.
