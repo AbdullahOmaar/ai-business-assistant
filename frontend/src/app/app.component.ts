@@ -1034,6 +1034,19 @@ export class AppComponent implements OnInit, OnDestroy {
   agingError = '';
   agingAsOf = new Date().toISOString().slice(0, 10);
   customers: Customer[] = [];
+  readonly pickerPageSize = 100;
+  customerOffset = 0;
+  productOffset = 0;
+  invoiceOffset = 0;
+  hasMoreCustomers = false;
+  hasMoreProducts = false;
+  hasMoreInvoices = false;
+  loadingMoreCustomers = false;
+  loadingMoreProducts = false;
+  loadingMoreInvoices = false;
+  customerLoadMoreError = '';
+  productLoadMoreError = '';
+  invoiceLoadMoreError = '';
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
   statementError = '';
@@ -1719,6 +1732,18 @@ export class AppComponent implements OnInit, OnDestroy {
     this.customers = [];
     this.products = [];
     this.invoices = [];
+    this.customerOffset = 0;
+    this.productOffset = 0;
+    this.invoiceOffset = 0;
+    this.hasMoreCustomers = false;
+    this.hasMoreProducts = false;
+    this.hasMoreInvoices = false;
+    this.loadingMoreCustomers = false;
+    this.loadingMoreProducts = false;
+    this.loadingMoreInvoices = false;
+    this.customerLoadMoreError = '';
+    this.productLoadMoreError = '';
+    this.invoiceLoadMoreError = '';
     this.payments = [];
     this.expenses = [];
     this.suppliers = [];
@@ -1860,9 +1885,15 @@ export class AppComponent implements OnInit, OnDestroy {
       this.dashboard = dashboard;
       this.profitLoss = null;
       this.customers = عميل;
+      this.customerOffset = عميل.length;
+      this.hasMoreCustomers = عميل.length === this.pickerPageSize;
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
       this.products = منتج;
+      this.productOffset = منتج.length;
+      this.hasMoreProducts = منتج.length === this.pickerPageSize;
       this.invoices = فاتورة;
+      this.invoiceOffset = فاتورة.length;
+      this.hasMoreInvoices = فاتورة.length === this.pickerPageSize;
       this.payments = دفعة;
       this.expenses = مصروفات;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
@@ -1874,6 +1905,78 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     } finally {
       if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
+    }
+  }
+
+  private isCurrentWorkspaceIdentity(businessId: string, authUid: string, authVersion: number): boolean {
+    return this.business?.id === businessId &&
+      this.currentAuthUid === authUid &&
+      this.authTransitionVersion === authVersion;
+  }
+
+  async loadMoreCustomers(): Promise<void> {
+    const businessId = this.business?.id;
+    const authUid = this.currentAuthUid;
+    if (!businessId || !authUid || !this.signedIn || !this.hasMoreCustomers || this.loadingMoreCustomers) return;
+    const authVersion = this.authTransitionVersion;
+    const offset = this.customerOffset;
+    this.loadingMoreCustomers = true;
+    this.customerLoadMoreError = '';
+    try {
+      const page = await this.api.customers(businessId, this.pickerPageSize, offset);
+      if (!this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) return;
+      const existing = new Set(this.customers.map(item => item.id));
+      this.customers = [...this.customers, ...page.filter(item => !existing.has(item.id))];
+      this.customerOffset = offset + page.length;
+      this.hasMoreCustomers = page.length === this.pickerPageSize;
+    } catch (error) {
+      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.customerLoadMoreError = this.message(error);
+    } finally {
+      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.loadingMoreCustomers = false;
+    }
+  }
+
+  async loadMoreProducts(): Promise<void> {
+    const businessId = this.business?.id;
+    const authUid = this.currentAuthUid;
+    if (!businessId || !authUid || !this.signedIn || !this.hasMoreProducts || this.loadingMoreProducts) return;
+    const authVersion = this.authTransitionVersion;
+    const offset = this.productOffset;
+    this.loadingMoreProducts = true;
+    this.productLoadMoreError = '';
+    try {
+      const page = await this.api.products(businessId, this.pickerPageSize, offset);
+      if (!this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) return;
+      const existing = new Set(this.products.map(item => item.id));
+      this.products = [...this.products, ...page.filter(item => !existing.has(item.id))];
+      this.productOffset = offset + page.length;
+      this.hasMoreProducts = page.length === this.pickerPageSize;
+    } catch (error) {
+      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.productLoadMoreError = this.message(error);
+    } finally {
+      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.loadingMoreProducts = false;
+    }
+  }
+
+  async loadMoreInvoices(): Promise<void> {
+    const businessId = this.business?.id;
+    const authUid = this.currentAuthUid;
+    if (!businessId || !authUid || !this.signedIn || !this.hasMoreInvoices || this.loadingMoreInvoices) return;
+    const authVersion = this.authTransitionVersion;
+    const offset = this.invoiceOffset;
+    this.loadingMoreInvoices = true;
+    this.invoiceLoadMoreError = '';
+    try {
+      const page = await this.api.invoices(businessId, this.pickerPageSize, offset);
+      if (!this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) return;
+      const existing = new Set(this.invoices.map(item => item.id));
+      this.invoices = [...this.invoices, ...page.filter(item => !existing.has(item.id))];
+      this.invoiceOffset = offset + page.length;
+      this.hasMoreInvoices = page.length === this.pickerPageSize;
+    } catch (error) {
+      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.invoiceLoadMoreError = this.message(error);
+    } finally {
+      if (this.isCurrentWorkspaceIdentity(businessId, authUid, authVersion)) this.loadingMoreInvoices = false;
     }
   }
 
@@ -2521,6 +2624,8 @@ export class AppComponent implements OnInit, OnDestroy {
         ]);
         if (!isCurrent()) return;
         this.invoices = invoices;
+        this.invoiceOffset = invoices.length;
+        this.hasMoreInvoices = invoices.length === this.pickerPageSize;
         this.dashboard = dashboard;
       } catch {
         if (isCurrent()) {
@@ -2951,6 +3056,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.payments = payments;
         this.dashboard = dashboard;
         this.invoices = invoices;
+        this.invoiceOffset = invoices.length;
+        this.hasMoreInvoices = invoices.length === this.pickerPageSize;
       } catch {
         if (isCurrent()) {
           this.paymentMessage = this.t(
