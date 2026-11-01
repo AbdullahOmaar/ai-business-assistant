@@ -312,3 +312,29 @@ test('draft invoice Issue and Void actions are OWNER-only in both template and m
   assert.match(voidMethod, /this\.business\.role !== 'owner'/,
     'void method must fail closed for STAFF even if invoked outside the template');
 });
+
+
+const invoiceEditorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
+
+test('invoice editor supports updating existing mixed product and manual draft lines', () => {
+  assert.match(source, /\[initialLines\]="invoiceDraftInitialLines"/);
+  assert.match(source, /\[draftRevision\]="invoiceDraftRevision"/);
+  assert.match(source, /this\.api\.updateDraftInvoice\(businessId, editingInvoiceId, request\)/);
+  assert.match(source, /kind: line\.product_id \? 'product' : 'manual'/);
+  assert.match(invoiceEditorSource, /implements OnChanges/);
+  assert.match(invoiceEditorSource, /this\.initialLines\.map\(line => \(\{ \.\.\.line \}\)\)/);
+  assert.match(invoiceEditorSource, /editing \? t\('تعديل مسودة الفاتورة', 'Edit invoice draft'\)/);
+  assert.equal(source.includes('detail.lines.some(line => !line.product_id)'), false,
+    'manual service lines must not block draft editing');
+});
+
+test('confirmed no-write payment rejections clear retry state while uncertain outcomes retain it', () => {
+  assert.match(apiSource, /export function isDefinitiveNoWriteHttpStatus\(status: number\): boolean/);
+  assert.match(apiSource, /\[400, 401, 403, 404, 422\]\.includes\(status\)/);
+  assert.match(apiSource, /throw new ApiRequestError\(message, response\.status\)/);
+  assert.match(source, /error instanceof ApiRequestError && error\.definitiveNoWrite/);
+  assert.match(source, /this\.paymentRetryVault\.delete\(authUid, businessId\)/);
+  assert.match(source, /this\.paymentRetryPending = false/);
+  assert.match(source, /this\.paymentIdempotencyKey = ''/);
+  assert.match(source, /this\.paymentRetryPending = true/);
+});
