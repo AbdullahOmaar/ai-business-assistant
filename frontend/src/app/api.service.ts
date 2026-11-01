@@ -430,14 +430,21 @@ export class ApiService {
     if (endDate) params.set('end_date', endDate);
     return this.request<ProfitLossReport>(`/api/v1/businesses/${encodeURIComponent(businessId)}/profit-loss?${params.toString()}`);
   }
-  customers(businessId: string): Promise<Customer[]> {
-    return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers?limit=100`);
+  customers(businessId: string, limit = 100, offset = 0, query = ''): Promise<Customer[]> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (query.trim()) params.set('q', query.trim());
+    return this.request<Customer[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/customers?${params.toString()}`
+    );
   }
   createCustomer(businessId: string, body: { name: string; email?: string; phone?: string }): Promise<Customer> {
     return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers`, 'POST', body);
   }
-  products(businessId: string): Promise<Product[]> {
-    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products?limit=100`);
+  products(businessId: string, limit = 100, offset = 0): Promise<Product[]> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    return this.request<Product[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/products?${params.toString()}`
+    );
   }
   createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
@@ -517,8 +524,11 @@ export class ApiService {
   }): Promise<Payment> {
     return this.request<Payment>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments`, 'POST', body);
   }
-  invoices(businessId: string): Promise<Invoice[]> {
-    return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?limit=100`);
+  invoices(businessId: string, limit = 100, offset = 0): Promise<Invoice[]> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    return this.request<Invoice[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?${params.toString()}`
+    );
   }
   createInvoice(businessId: string, body: {
     invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
