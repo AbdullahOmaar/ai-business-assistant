@@ -1738,3 +1738,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact touched paths also include `frontend/src/app/app.component.ts`; no backend/payment semantics changed.
 - Validation: source read-back/structural assertions: PASS. The helper's 4 focused tests are present but **NOT RUN on this candidate**; no Angular/browser print/payment behavioral tests, full suites, build/type-check, PostgreSQL concurrency or security scan were run. Exact-head CI remains NOT RUN under the freeze.
 - Remaining: real browser tests for popup-blocked printing, delayed print response after workspace switch, same-key exact payment retry, changed-payload rejection, and delayed payment completion after workspace/auth switch. Continue pagination and final shared integration review.
+
+
+### Focused local verification checkpoint — 2026-11-01
+
+- Executed the candidate's exact Git-blob-matched copies of `module-access.ts` + `module-access.spec.ts`, `payment-retry-snapshot.ts` + `payment-retry-snapshot.spec.ts`, and `invoice-draft.ts` + `invoice-draft.spec.ts` with Node 22 `--experimental-strip-types --test`: **20/20 PASS**.
+- Ran strict TypeScript validation for the three pure helper/model modules using `tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler`: **PASS**.
+- GitHub Git blob SHA read-back matched all six helper/model source and test files used in the local test run. This verifies the executed test snapshots match the branch files byte-for-byte.
+- These results do not validate Angular component/template compilation or full-project build. Angular build/type-check, component/browser workflows, full backend/frontend suites, PostgreSQL behavior, dependency/security scans and exact-head GitLab CI remain **NOT RUN**.
