@@ -10,6 +10,7 @@ import { filterCustomers, filterInvoices, filterProducts } from './record-filter
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
+import { canAccessWorkspaceTab, isMobileMoreTab } from './module-access';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
@@ -28,6 +29,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <span class="version-pill splash-version" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
           <h1>{{ t('جارٍ تشغيل التطبيق', 'Starting the app') }}</h1>
           <p class="muted">{{ t('نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.', 'Checking configuration and your sign-in session before opening the workspace.') }}</p>
+        </main>
+      } @else if (startupFailed) {
+        <main class="auth-card">
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="brand-mark">A</div>
+          <h1>{{ t('تعذر تحميل إعدادات التطبيق', 'Unable to load app configuration') }}</h1>
+          <p class="error" role="alert">{{ error }}</p>
+          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button>
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
@@ -81,7 +90,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('الحالة التشغيلية', 'Operational health')" [attr.title]="t('الحالة التشغيلية', 'Operational health')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة', 'Health') }}</span></button> }
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','expenses','employees','assistant','reports','audit','platform-admin'].includes(tab) || tab === 'release-guide'" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
@@ -96,7 +105,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'release-guide'" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
               @if (platformAdminAvailable) { <button class="nav-item" role="menuitem" [class.active]="tab === 'platform-admin'" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
-<button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
+@if (canAccessTab('audit')) { <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
                             <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'integrity'" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('سلامة البيانات', 'Data integrity') }}</span></button> }
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'taxes'" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('التقارير الضريبية', 'Tax summary') }}</span></button> }
@@ -918,6 +927,7 @@ export class AppComponent implements OnInit, OnDestroy {
   apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
+  startupFailed = false;
   setupNeeded = false;
   signedIn = false;
   platformAdminAvailable = false;
@@ -1266,12 +1276,20 @@ export class AppComponent implements OnInit, OnDestroy {
   async initializeApp(): Promise<void> {
     this.authFlowInProgress = true;
     this.initialized = false;
+    this.startupFailed = false;
     this.loading = true;
     this.error = '';
     document.documentElement.lang = this.language;
     document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
     try {
-      const config = await this.auth.getRuntimeConfig();
+      let config: Awaited<ReturnType<AuthService['getRuntimeConfig']>>;
+      try {
+        config = await this.auth.getRuntimeConfig();
+      } catch (error) {
+        this.startupFailed = true;
+        this.error = this.message(error);
+        return;
+      }
       this.setupNeeded = !config.apiBaseUrl?.trim() ||
         !config.firebase?.apiKey || !config.firebase?.authDomain ||
         !config.firebase?.projectId || !config.firebase?.appId;
@@ -1998,15 +2016,14 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  canAccessTab(tab: Tab): boolean {
+    return canAccessWorkspaceTab(tab, this.business?.role, this.platformAdminAvailable);
+  }
+
   setTab(tab: Tab): void {
-    if (tab === 'employees' && this.business?.role !== 'owner') { this.tab = 'overview'; return; }
-    if (tab === 'health' && this.business?.role !== 'owner') { this.tab = 'overview'; return; }
-    if (tab === 'integrity' && this.business?.role !== 'owner') {
+    if (!this.canAccessTab(tab)) {
       this.tab = 'overview';
-      return;
-    }
-    if (tab === 'platform-admin' && !this.platformAdminAvailable) {
-      this.tab = 'overview';
+      this.mobileMoreOpen = false;
       return;
     }
     this.tab = tab;
