@@ -320,7 +320,7 @@ test('invoice editor supports updating existing mixed product and manual draft l
   assert.match(source, /\[initialLines\]="invoiceDraftInitialLines"/);
   assert.match(source, /\[draftRevision\]="invoiceDraftRevision"/);
   assert.match(source, /this\.api\.updateDraftInvoice\(businessId, editingInvoiceId, request\)/);
-  assert.match(source, /kind: line\.product_id \? 'product' : 'manual'/);
+  assert.match(source, /this\.invoiceDraftInitialLines = invoiceDraftLinesFromExisting\(detail\.lines\)/);
   assert.match(invoiceEditorSource, /implements OnChanges/);
   assert.match(invoiceEditorSource, /this\.initialLines\.map\(line => \(\{ \.\.\.line \}\)\)/);
   assert.match(invoiceEditorSource, /editing \? t\('تعديل مسودة الفاتورة', 'Edit invoice draft'\)/);
