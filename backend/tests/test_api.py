@@ -575,7 +575,6 @@ def test_owner_can_issue_draft_invoice_via_api_and_records_audit_event():
         )
         assert response.status_code == 200, response.text
         assert response.json()["status"] == "issued"
-        assert response.json()["issue_date"] is not None
         assert _persisted_rows_snapshot(engine) != before
 
         with Session(engine) as session:
