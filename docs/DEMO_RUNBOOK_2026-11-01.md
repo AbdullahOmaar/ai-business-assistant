@@ -112,3 +112,11 @@ Chat 1's existing PR #305 advanced to `14761ed409c14087c95a1580b798483f21885c6c`
 
 PR #305 combined status shows CircleCI contexts SUCCESS and Semaphore FAILURE; Master did not trigger/retry them. Do not use those statuses as the demo gate under the current freeze/authority conflict. Chat 1 owns #305; do not merge it wholesale or alter its branch from Master.
 
+
+
+## 10. Operational UI validation update — 2026-11-01 14:25 +02:00
+
+Exact Master branch app blob `843077a92ea6a438ac82afa8f9274cd19df238e8` and current dependencies were used to run `employee-payroll-ui.spec.ts` + `expense-ui.spec.ts` in isolated Node 24.22.1: **13 PASS / 0 FAIL**. Payroll checks cover Owner-only UI guard, workflow controls, responsive styles, workspace-scoped API, no client net-pay, period validation, bilingual guide and post-pay expense/dashboard refresh. Expense checks cover API scope, mobile navigation, load/clear, validation, uncertain-save protection and local datetime handling.
+
+Cumulative focused source/spec checks: **97 PASS / 0 FAIL** across five groups. Full frontend suite/build, browser E2E, backend/PostgreSQL and authenticated demo flows remain NOT RUN. Supplier/purchasing/receiving journeys remain unverified; T37-gated financial changes remain excluded.
+
