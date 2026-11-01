@@ -8,6 +8,7 @@ test('mobile More menu has a correctly delimited active-class attribute', () => 
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
   assert.ok(line, 'mobile More button must exist');
   assert.ok(line.includes('[class.active]="mobileMoreOpen || isMobileMoreTab(tab)"'));
+  assert.match(source, /isMobileMoreTab\(tab: Tab\): boolean/);
   assert.ok(line.includes('[attr.aria-label]'));
   assert.equal(line.includes('isMobileMoreTab(tab)""'), false);
 });
