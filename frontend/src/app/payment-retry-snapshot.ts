@@ -110,3 +110,8 @@ export class PaymentRetryVault {
     this.records.delete(this.key(authUid, businessId));
   }
 }
+
+/** HTTP statuses for which the payment endpoint contract guarantees rejection before persistence. */
+export function isDefinitiveNoWritePaymentStatus(status: number): boolean {
+  return [400, 401, 403, 404, 422].includes(status);
+}
