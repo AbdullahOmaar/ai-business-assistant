@@ -19,6 +19,20 @@ from app.models import (
 from app.security import AuthenticatedPrincipal
 
 
+def _persisted_rows_snapshot(engine):
+    """Capture every mapped row so denied API requests prove zero DB side effects."""
+    with Session(engine) as session:
+        snapshot = {}
+        for table in Base.metadata.sorted_tables:
+            statement = select(table)
+            if table.primary_key.columns:
+                statement = statement.order_by(*table.primary_key.columns)
+            snapshot[table.name] = tuple(
+                tuple(row) for row in session.execute(statement).all()
+            )
+        return snapshot
+
+
 def test_health_endpoint_reports_process_liveness():
     response = TestClient(app).get("/health")
     assert response.status_code == 200
@@ -2016,22 +2030,58 @@ def test_staff_cannot_record_payment_via_api_without_writes_or_audit_events():
         "method": "cash",
     }
     try:
+        before = _persisted_rows_snapshot(engine)
         response = TestClient(app).post(
             f"/api/v1/businesses/{business_id}/payments",
             json=payload,
         )
         assert response.status_code == 403, response.text
-        with Session(engine) as session:
-            assert session.scalar(select(func.count()).select_from(Payment).where(
-                Payment.business_id == business_id,
-            )) == 0
-            assert session.scalar(select(func.count()).select_from(PaymentAllocation).where(
-                PaymentAllocation.business_id == business_id,
-            )) == 0
-            assert session.scalar(select(func.count()).select_from(AuditEvent).where(
-                AuditEvent.business_id == business_id,
-                AuditEvent.action == "payment.recorded",
-            )) == 0
+        assert _persisted_rows_snapshot(engine) == before, (
+            "STAFF payment denial must leave every persisted row unchanged"
+        )
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_foreign_workspace_owner_cannot_record_payment_without_persisted_side_effects():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+        foreign_business = Business(name="Foreign payment owner workspace", currency_code="EGP")
+        session.add(foreign_business)
+        session.flush()
+        session.add(BusinessMembership(
+            business_id=foreign_business.id,
+            user_subject="foreign-payment-owner",
+            role=MembershipRole.OWNER,
+        ))
+        session.commit()
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    payload = {
+        "amount": "4.00",
+        "currency_code": "EGP",
+        "idempotency_key": "foreign-owner-payment-must-be-denied",
+        "customer_id": str(customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "4.00"}],
+        "method": "cash",
+    }
+    try:
+        app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+            subject="foreign-payment-owner",
+        )
+        before = _persisted_rows_snapshot(engine)
+        response = TestClient(app).post(
+            f"/api/v1/businesses/{business_id}/payments",
+            json=payload,
+        )
+        assert response.status_code == 403, response.text
+        assert _persisted_rows_snapshot(engine) == before, (
+            "foreign-workspace OWNER payment denial must leave every persisted row unchanged"
+        )
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
