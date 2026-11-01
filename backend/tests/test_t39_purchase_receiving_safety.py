@@ -2,10 +2,12 @@ from decimal import Decimal
 
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.main import app
 from app.extended_api import (
     PurchaseLineInput,
     ProductPatch,
@@ -1848,3 +1850,56 @@ def test_owner_cannot_disable_stock_tracking_after_completed_purchase_receipt(
                 AuditEvent.business_id == business_id
             )
         ) == audit_count_before
+
+
+def test_purchase_order_list_rejects_invalid_status_query_without_side_effects(
+    purchasing_workspace,
+):
+    """FastAPI rejects invalid PO status filters before reaching the route handler."""
+    engine, business_id, owner_principal = purchasing_workspace
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+        subject=owner_principal.subject
+    )
+    try:
+        with Session(engine) as session:
+            audit_count_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            movement_count_before = session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id
+                )
+            )
+
+        response = TestClient(app).get(
+            f"/api/v1/businesses/{business_id}/purchase-orders?status=unknown"
+        )
+        assert response.status_code == 422
+
+        with Session(engine) as session:
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            ) == audit_count_before
+            assert session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id
+                )
+            ) == movement_count_before
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
