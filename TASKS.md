@@ -1702,3 +1702,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Full authenticated cross-tab Firebase browser journeys and independent review remain NOT RUN. No merge, version bump, production deploy, database write, or production configuration change.
 
 - Latest GitHub exact-head status read: PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` reports six CircleCI contexts FAILURE; PR #320 head `b695eaea26724193df4e4453d625440ad9f4abe9` reports six CircleCI contexts FAILURE plus SemaphoreCI FAILURE. CircleCI remains frozen; no retry/trigger was issued. GitLab pipeline success is not GitHub-native required-check evidence. Independent review and authenticated Firebase cross-tab/account-switch browser journeys remain NOT RUN.
+
+
+## Master — demo readiness navigation integration (2026-11-01)
+
+- Branch: `master/demo-readiness-ui-20261101`, based on main `dcb0853ab06dc9271b1109db03eb84ab2e3360c8`.
+- Added a responsive Home “All modules” launcher for the existing 19 Production V1 tabs. Visibility follows the existing workspace role and platform-admin availability; no new permissions were invented.
+- Centralized UI navigation access in `frontend/src/app/module-access.ts`: payments, employees, tax summary, activity log, data integrity and operational health are OWNER-only; Platform Admin follows `platformAdminAvailable`. The same guard is applied in `setTab()`, so direct tab selection fails closed.
+- Guarded the mobile More menu’s Activity Log entry and expanded its active-state tracking to suppliers, purchasing, recurring invoices, notifications, health, integrity and tax summary.
+- Added seven missing bilingual catalogue groups in `frontend/src/app/release-guide.ts`: suppliers, purchasing, recurring invoices, notifications, operational health, data integrity and tax summary. Notification copy explicitly states that queue metadata is not proof of delivery; the purchasing and tax summaries do not imply unapproved accounting/tax posting semantics.
+- Added focused role/access matrix tests in `frontend/src/app/module-access.spec.ts`.
+- Exact branch changes: `frontend/src/app/app.component.ts`, `frontend/src/app/release-guide.ts`, new `frontend/src/app/module-access.ts`, new `frontend/src/app/module-access.spec.ts`, and this TASKS handoff.
+- Validation: source read-back and structural assertions PASS. Executable Node tests, Angular build/type-check, browser/mobile/accessibility tests, dependency/security scans and GitLab exact-head pipeline: **NOT RUN**. CI remains frozen; no CI trigger/retry or replacement provider was used.
+- Delivery: draft review only; no merge, version bump, deployment, migration or production data write. Independent review remains outstanding; maintainer self-review is not independent approval.
+- Next: run permitted local Node/Angular checks when an authorized runner/worktree is available; add component-level behavior coverage; complete invoice/payment shared-shell integration separately; request independent Chat 5 review before any merge gate.
