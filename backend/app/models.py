@@ -585,7 +585,7 @@ class PurchaseReceiptIdempotency(Base):
             name="uq_purchase_receipt_idempotency_business_key",
         ),
         CheckConstraint(
-            "length(idempotency_key) BETWEEN 1 AND 128",
+            "length(trim(idempotency_key)) BETWEEN 1 AND 128",
             name="ck_purchase_receipt_idempotency_key_length",
         ),
         CheckConstraint(
@@ -613,6 +613,8 @@ class PurchaseReceiptIdempotency(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
 class SalesReturn(Base):
     """Return request tied to an original invoice."""
 

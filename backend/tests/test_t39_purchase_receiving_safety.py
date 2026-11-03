@@ -1999,7 +1999,8 @@ def test_purchase_receipt_idempotency_record_is_business_scoped_and_unique(purch
         ) == 2
 
 
-def test_purchase_receipt_idempotency_rejects_missing_key(purchasing_workspace):
+@pytest.mark.parametrize("missing_key", ["", "   "])
+def test_purchase_receipt_idempotency_rejects_missing_key(purchasing_workspace, missing_key):
     engine, business_id, principal = purchasing_workspace
     with Session(engine) as session:
         order, line, product = _approved_order(session, business_id, principal)
@@ -2007,7 +2008,7 @@ def test_purchase_receipt_idempotency_rejects_missing_key(purchasing_workspace):
             PurchaseReceiptIdempotency(
                 business_id=business_id,
                 purchase_order_id=order.id,
-                idempotency_key="",
+                idempotency_key=missing_key,
                 request_hash="a" * 64,
                 response_status=200,
                 response_body={"id": str(order.id)},

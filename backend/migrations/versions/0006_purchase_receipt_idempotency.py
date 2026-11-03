@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column("response_status", sa.Integer(), server_default="200", nullable=False),
         sa.Column("response_body", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.CheckConstraint("length(idempotency_key) BETWEEN 1 AND 128", name="ck_purchase_receipt_idempotency_key_length"),
+        sa.CheckConstraint("length(trim(idempotency_key)) BETWEEN 1 AND 128", name="ck_purchase_receipt_idempotency_key_length"),
         sa.CheckConstraint("length(request_hash) = 64", name="ck_purchase_receipt_idempotency_hash_length"),
         sa.CheckConstraint("response_status BETWEEN 100 AND 599", name="ck_purchase_receipt_idempotency_response_status"),
         sa.ForeignKeyConstraint(
