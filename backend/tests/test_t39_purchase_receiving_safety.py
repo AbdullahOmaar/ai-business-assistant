@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -41,6 +42,7 @@ from app.models import (
     StockMovement,
     Supplier,
 )
+import app.operations as operations_module
 from app.operations import WorkflowError, receive_purchase_order
 from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import create_product
@@ -2442,3 +2444,230 @@ def test_receipt_idempotency_record_rolls_back_with_receipt_and_key_can_retry(
             )
         ) == 1
         assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("3.000")
+
+
+
+@pytest.fixture()
+def purchasing_api(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(
+        subject=principal.subject
+    )
+    try:
+        yield TestClient(app), engine, business_id, principal
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+
+
+def _receipt_api_url(business_id, order_id):
+    return f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"
+
+
+def _receipt_side_effect_counts(session, business_id, order_id):
+    return {
+        "movements": session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.reference_id == order_id,
+                StockMovement.movement_type == "receipt",
+            )
+        ),
+        "audits": session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.target_type == "purchase_order",
+                AuditEvent.target_id == str(order_id),
+                AuditEvent.action == "purchase_order.received",
+            )
+        ),
+        "idempotency": session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.purchase_order_id == order_id,
+            )
+        ),
+    }
+
+
+def test_purchase_receipt_replay_returns_original_result_without_duplicate_stock_or_audit(
+    purchasing_api,
+):
+    client, engine, business_id, principal = purchasing_api
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        order_id, line_id = order.id, line.id
+
+    key = str(uuid4())
+    request = {"lines": [{"line_id": str(line_id), "quantity": "2.000"}]}
+    first = client.post(
+        _receipt_api_url(business_id, order_id),
+        json=request,
+        headers={"Idempotency-Key": key},
+    )
+    replay = client.post(
+        _receipt_api_url(business_id, order_id),
+        json=request,
+        headers={"Idempotency-Key": key},
+    )
+
+    assert first.status_code == 200, first.text
+    assert replay.status_code == 200, replay.text
+    assert replay.json() == first.json()
+    with Session(engine) as session:
+        saved_line = session.get(PurchaseOrderLine, line_id)
+        assert saved_line.received_quantity == Decimal("2.000")
+        assert _receipt_side_effect_counts(session, business_id, order_id) == {
+            "movements": 1,
+            "audits": 1,
+            "idempotency": 1,
+        }
+
+
+def test_purchase_receipt_reused_key_with_changed_payload_conflicts_without_side_effects(
+    purchasing_api,
+):
+    client, engine, business_id, principal = purchasing_api
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        order_id, line_id = order.id, line.id
+
+    key = str(uuid4())
+    first = client.post(
+        _receipt_api_url(business_id, order_id),
+        json={"lines": [{"line_id": str(line_id), "quantity": "2.000"}]},
+        headers={"Idempotency-Key": key},
+    )
+    assert first.status_code == 200, first.text
+
+    changed = client.post(
+        _receipt_api_url(business_id, order_id),
+        json={"lines": [{"line_id": str(line_id), "quantity": "3.000"}]},
+        headers={"Idempotency-Key": key},
+    )
+    assert changed.status_code == 409, changed.text
+    with Session(engine) as session:
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("2.000")
+        assert _receipt_side_effect_counts(session, business_id, order_id) == {
+            "movements": 1,
+            "audits": 1,
+            "idempotency": 1,
+        }
+
+
+@pytest.mark.parametrize("missing_header", [True, False])
+def test_purchase_receipt_missing_or_blank_idempotency_key_rejects_before_side_effects(
+    purchasing_api, missing_header,
+):
+    client, engine, business_id, principal = purchasing_api
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        order_id, line_id = order.id, line.id
+
+    headers = {} if missing_header else {"Idempotency-Key": "   "}
+    response = client.post(
+        _receipt_api_url(business_id, order_id),
+        json={"lines": [{"line_id": str(line_id), "quantity": "2.000"}]},
+        headers=headers,
+    )
+    assert response.status_code == 422, response.text
+    with Session(engine) as session:
+        assert session.get(PurchaseOrder, order_id).status == "approved"
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("0.000")
+        assert _receipt_side_effect_counts(session, business_id, order_id) == {
+            "movements": 0,
+            "audits": 0,
+            "idempotency": 0,
+        }
+
+
+def test_purchase_receipts_with_distinct_keys_allow_intentional_partial_deliveries(
+    purchasing_api,
+):
+    client, engine, business_id, principal = purchasing_api
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        order_id, line_id = order.id, line.id
+
+    first = client.post(
+        _receipt_api_url(business_id, order_id),
+        json={"lines": [{"line_id": str(line_id), "quantity": "2.000"}]},
+        headers={"Idempotency-Key": str(uuid4())},
+    )
+    second = client.post(
+        _receipt_api_url(business_id, order_id),
+        json={"lines": [{"line_id": str(line_id), "quantity": "3.000"}]},
+        headers={"Idempotency-Key": str(uuid4())},
+    )
+    assert first.status_code == second.status_code == 200
+    with Session(engine) as session:
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("5.000")
+        assert _receipt_side_effect_counts(session, business_id, order_id) == {
+            "movements": 2,
+            "audits": 2,
+            "idempotency": 2,
+        }
+
+
+def test_purchase_receipt_rollback_removes_idempotency_record_and_allows_same_key_retry(
+    purchasing_api, monkeypatch,
+):
+    client, engine, business_id, principal = purchasing_api
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        order_id, line_id = order.id, line.id
+
+    original_record = operations_module.record_stock_movement
+    failure = {"remaining": 1}
+
+    def record_then_fail_once(*args, **kwargs):
+        result = original_record(*args, **kwargs)
+        if failure["remaining"]:
+            failure["remaining"] -= 1
+            raise RuntimeError("injected failure after receipt movement flush")
+        return result
+
+    monkeypatch.setattr(operations_module, "record_stock_movement", record_then_fail_once)
+    key = str(uuid4())
+    request = {"lines": [{"line_id": str(line_id), "quantity": "2.000"}]}
+    with pytest.raises(RuntimeError, match="injected failure"):
+        client.post(
+            _receipt_api_url(business_id, order_id),
+            json=request,
+            headers={"Idempotency-Key": key},
+        )
+
+    with Session(engine) as session:
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("0.000")
+        assert _receipt_side_effect_counts(session, business_id, order_id) == {
+            "movements": 0,
+            "audits": 0,
+            "idempotency": 0,
+        }
+
+    monkeypatch.setattr(operations_module, "record_stock_movement", original_record)
+    retried = client.post(
+        _receipt_api_url(business_id, order_id),
+        json=request,
+        headers={"Idempotency-Key": key},
+    )
+    assert retried.status_code == 200, retried.text
+    with Session(engine) as session:
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("2.000")
+        assert _receipt_side_effect_counts(session, business_id, order_id) == {
+            "movements": 1,
+            "audits": 1,
+            "idempotency": 1,
+        }
