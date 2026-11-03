@@ -5,6 +5,7 @@ separate file so it does not overwrite Chat 4's employee/payroll feature tests.
 """
 import json
 from datetime import datetime, timezone
+from decimal import Decimal
 from uuid import UUID
 
 import pytest
@@ -18,6 +19,7 @@ from app.main import app
 import app.assistant_api as assistant_api
 from app.security import AuthenticatedPrincipal
 from app.models import Base, BusinessMembership, MembershipRole
+from app.operations import financial_summary
 
 
 OWNER = "t40-report-privacy-owner"
@@ -339,3 +341,28 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     assert owner_b_insights.json()["expenses_by_currency"] == [
         {"currency_code": "EGP", "count": 2, "total": "5100.00"}
     ]
+
+    # The internal summary helper must enforce the same payroll visibility boundary.
+    with app.state.session_factory() as session:
+        staff_internal_summary = financial_summary(
+            session,
+            principal=AuthenticatedPrincipal(STAFF),
+            business_id=UUID(business_b),
+        )
+        owner_internal_summary = financial_summary(
+            session,
+            principal=AuthenticatedPrincipal(OWNER),
+            business_id=UUID(business_b),
+        )
+    assert staff_internal_summary["expenses"] == {"EGP": Decimal("100.00")}
+    assert owner_internal_summary["expenses"] == {"EGP": Decimal("5100.00")}
+
+    # OWNER retains payroll visibility in the assistant provider context as well.
+    owner_provider_chat = read_without_side_effects(lambda: client.post(
+        f"{base_b}/assistant/chat",
+        json={"message": "Summarize recent expenses."},
+    ))
+    assert owner_provider_chat.status_code == 200, owner_provider_chat.text
+    owner_outbound = json.dumps(captured["payload"], ensure_ascii=False)
+    assert "Cross-Tenant Confidential Payroll Employee" in owner_outbound
+    assert "5000.00" in owner_outbound
