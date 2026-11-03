@@ -1980,7 +1980,7 @@ def test_purchase_receipt_idempotency_record_is_business_scoped_and_unique(purch
         )
         session.commit()
         principal_b = AuthenticatedPrincipal(subject='t39-owner-b')
-        order_b, line_b, product_b = _approved_order(session, business_b.id, principal_b)
+        order_b, _, _ = _approved_order(session, business_b.id, principal_b)
         session.add(
             PurchaseReceiptIdempotency(
                 business_id=business_b.id,
