@@ -128,3 +128,59 @@ Master reopened this narrow P1 stock-ledger integrity slice on 2026-11-03. It is
 - Master: migration graph integration, shared API/UI files, and cross-workstream verification.
 
 The migration is a draft on the feature branch only. Do not run it, apply it to Neon/production, or merge/deploy without the separate approvals and release gates.
+
+## 8. Chat 2 receipt replay regression handoff — 2026-11-03
+
+Chat 2 added six service-level regression specifications to
+`backend/tests/test_t39_purchase_receiving_safety.py` on this existing branch:
+
+1. `test_same_receipt_key_and_normalized_payload_replays_without_duplicate_effects`
+2. `test_same_receipt_key_with_changed_payload_conflicts_without_side_effects`
+3. `test_same_receipt_key_reused_for_another_order_conflicts_in_same_business`
+4. `test_missing_or_blank_receipt_key_is_rejected_without_side_effects`
+5. `test_distinct_receipt_keys_allow_intentional_later_partial_receipt`
+6. `test_receipt_idempotency_record_rolls_back_with_receipt_and_key_can_retry`
+
+The tests assume the service accepts `idempotency_key` as a keyword argument and
+raises `WorkflowError` for missing/blank keys and payload conflicts. The
+successful service result remains the PurchaseOrder result; the persisted
+idempotency record must contain the original successful response snapshot
+(`response_status=200`, non-null `response_body`). These are contract tests,
+not evidence that the service is implemented or that tests pass.
+
+### Required Chat 3 implementation contract
+
+- Add the `idempotency_key` argument to
+  `operations.receive_purchase_order()`; authenticate OWNER and tenant scope
+  before disclosing any stored result.
+- Canonicalize business ID, PO ID, sorted line IDs and normalized finite Decimal
+  quantities. Equivalent Decimal scales and request line ordering must hash
+  identically.
+- Resolve a stored same-key record before re-running lifecycle/remaining-
+  quantity validation, so a successful request can replay after the PO has
+  advanced to partially/fully received.
+- Same key + same fingerprint returns the original result without another
+  PO-line, StockMovement or AuditEvent write. Same key + different fingerprint
+  raises a domain conflict for Chat 5 to map to HTTP 409.
+- Missing/blank key raises a domain validation error before any side effect;
+  Chat 5 maps it to HTTP 422.
+- Insert the idempotency row, update PO lines, append StockMovement and
+  AuditEvent, and persist the response snapshot in one transaction. Rollback
+  must remove all of them. A concurrent unique-key loser reads the committed
+  winner response and never repeats stock effects.
+
+### Contract wording conflict — Master decision required
+
+The 2026-11-03 Master decision item 1 states uniqueness scope as
+`(business_id, purchase_order_id, idempotency_key)`, but item 4 requires reuse
+of the same key for a different PO in the same business to return HTTP 409.
+The current model and this handoff use a unique `(business_id, idempotency_key)`
+constraint, which enforces that cross-PO conflict. Chat 2 has added a regression
+for the explicit cross-PO 409 behavior but has not changed the model/migration
+constraint. Master must confirm the intended uniqueness rule before schema
+reconciliation.
+
+**Validation:** the six new tests, all existing backend tests, PostgreSQL
+concurrency, migration upgrade/downgrade, frontend tests/build, security scans
+and browser/runtime checks remain NOT RUN. The migration remains draft-only
+and has not been applied.
