@@ -133,6 +133,22 @@ def test_employee_payroll_denials_preserve_all_business_rows_and_audit_events():
                     actor=actor, method=method, url=url, expected_status=403, payload=payload
                 )
 
+        # A different tenant's OWNER must not read this business's employee/payroll lists.
+        # These collection endpoints are easy to overlook because foreign-ID mutation
+        # tests below exercise only writes and do not cover list disclosure.
+        foreign_owner_reads = [
+            ("get", f"{base_a}/employees", None),
+            ("get", f"{base_a}/payroll", None),
+        ]
+        for method, url, payload in foreign_owner_reads:
+            assert_denied_without_side_effects(
+                actor="payroll-tenant-b-owner",
+                method=method,
+                url=url,
+                expected_status=403,
+                payload=payload,
+            )
+
         foreign_attempts = [
             ("patch", f"{base_b}/employees/{employee_a}", {"name": "Cross-Tenant Rename"}),
             ("post", f"{base_b}/employees/{employee_a}/payroll", {"period": "2026-11"}),
