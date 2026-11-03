@@ -218,3 +218,44 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Persist the key/fingerprint/response snapshot in the same database transaction as PO line quantities, StockMovement and receipt AuditEvent. A failed/rolled-back receipt must leave no idempotency record.
 - A unique constraint on `(business_id, idempotency_key)` arbitrates concurrent duplicates. The service must resolve a same-key race by reading and returning the committed winner's response; it must not retry the stock mutation.
 - The Chat 2 model/migration draft is not applied to any database. Chat 3 owns atomic service transaction/concurrency implementation; Chat 5 owns required header validation, payload mismatch 409 and route tests; Master owns migration-graph integration.
+
+## Receipt replay regressions authored by Chat 2 — 2026-11-03
+
+The following service-level regression specifications were added to
+`backend/tests/test_t39_purchase_receiving_safety.py` on the existing PR #306
+branch. They call the approved service contract using an `idempotency_key`
+argument; Chat 3 owns the matching service implementation and Chat 5 owns the
+HTTP header/status adapter.
+
+- `test_same_receipt_key_and_normalized_payload_replays_without_duplicate_effects`
+  verifies canonicalization across line-order and equivalent Decimal-scale
+  differences, replay after the PO state advances, stored response retention,
+  and exactly one movement/audit effect per accepted line/request.
+- `test_same_receipt_key_with_changed_payload_conflicts_without_side_effects`
+  verifies same-key payload mismatch cannot change line quantities, stock
+  movements, receipt audit events, or idempotency identity.
+- `test_same_receipt_key_reused_for_another_order_conflicts_in_same_business`
+  verifies reuse of a key for a different PO in the same business is rejected
+  without effects on the second PO.
+- `test_missing_or_blank_receipt_key_is_rejected_without_side_effects`
+  covers missing, empty and whitespace-only keys.
+- `test_distinct_receipt_keys_allow_intentional_later_partial_receipt`
+  verifies a second intentional partial receipt uses a new key and creates
+  exactly one additional receipt operation/movement/audit.
+- `test_receipt_idempotency_record_rolls_back_with_receipt_and_key_can_retry`
+  verifies transaction rollback removes the key, PO quantity, stock movement
+  and receipt audit together, then permits retry with the same key.
+
+**Execution:** all six tests are authored but NOT RUN. They are expected to
+remain unverified until Chat 3 completes the service interface/transaction and
+Chat 5 completes HTTP header/status handling. PostgreSQL concurrency is owned
+by Chat 3 and is not covered by these SQLite-backed service specifications.
+
+**Contract wording requiring Master reconciliation before schema changes:**
+the 2026-11-03 decision item 1 says uniqueness scope is
+`(business_id, purchase_order_id, idempotency_key)`, while item 4 explicitly
+requires the same key with a different PO to return 409. The existing model and
+handoff use a unique `(business_id, idempotency_key)` constraint, and the
+cross-PO regression above encodes the explicit 409 behavior. Master must confirm
+the intended constraint semantics; Chat 2 has not changed the migration/model
+to resolve this wording conflict.
