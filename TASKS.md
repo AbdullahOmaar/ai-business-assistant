@@ -1,3 +1,21 @@
+# Master execution checkpoint — 2026-11-03 (AUTH-T41 P0 remediation candidate)
+
+- Owner direction: Project Master is the sole active coordinator/writer for the requested end-to-end takeover, including integration, release preparation and branch cleanup. This does not waive required exact-SHA validation, independent security review, CI policy, database safety, or production release gates.
+- Main baseline verified: `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`.
+- P0 finding: same-business STAFF payroll privacy exposure on expenses, report summary, dashboard, P&L, assistant insights and assistant/provider context.
+- Isolated remediation branch: `security/auth-t41-payroll-privacy-hotfix-20261103`.
+- Candidate PR: #326, OPEN / DRAFT / UNMERGED. Head at checkpoint: `2f0b74853faeeb2965f926d23db50ec292f339e7`; base `main` at `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`.
+- Changed source: `backend/app/security.py`, `backend/app/extended_api.py`, `backend/app/core_features_api.py`, `backend/app/assistant_api.py`; new test `backend/tests/test_financial_report_tenant_privacy.py`.
+- Implemented candidate: business-scoped `PayrollRecord.expense_id` visibility predicate applied before expense pagination, report/dashboard/P&L/insight aggregation and assistant local/provider context. OWNER visibility and ordinary STAFF expenses are retained. No T37 financial semantics, schema or migration changes.
+- Regression source includes two synthetic businesses, same-business OWNER/STAFF, foreign-tenant denial, per-request full persisted-row snapshots, sensitive payroll identity/ID/expense ID/reference exclusion, OWNER-only export denial, OWNER-positive derived totals and pre-pagination filtering assertions.
+- Validation: GitHub source readback/compare PASS. Focused pytest, full backend/PostgreSQL, GitLab pipeline, build and authenticated browser E2E are NOT RUN. No CI trigger/retry was issued under current freeze. Independent security review NOT RUN. Candidate remains Draft and is not merge-eligible.
+- Production: no deployment or production DB access/write/migration performed. Existing production is not accepted as demo-ready while P0 remains unresolved.
+- Branch inventory refreshed: 28 total refs (main + 27 non-main); all 27 non-main compare as diverged from current main. Their unique commits have not been reconciled. Open PR inventory: 15 at last refresh. Do not delete any non-main ref until its unique work is dispositioned.
+- Branch cleanup capability: GitHub connector exposes no delete-branch/ref action; Desktop Commander device is OFFLINE. Remote deletion is NOT RUN; never emulate deletion by moving refs.
+- Next: inspect PR #326 final diff; obtain permitted exact-head validation and independent review; resolve P0 before demo acceptance; then reconcile every branch/PR by unique commits and perform one controlled release/deployment. Recheck tool access for remote branch deletion and verify only `main` remains after authorized cleanup.
+
+---
+
 # Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
 
 ## User directive
