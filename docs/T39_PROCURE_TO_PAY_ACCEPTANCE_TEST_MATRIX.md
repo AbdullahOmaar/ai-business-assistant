@@ -268,6 +268,7 @@ The Master-approved P1 receipt idempotency contract is a stock-ledger integrity 
 
 - `test_purchase_receipt_replay_returns_original_result_without_duplicate_stock_or_audit`: same key + same canonical payload returns the original response and leaves exactly one received-quantity increment, StockMovement, receipt AuditEvent and idempotency row.
 - `test_purchase_receipt_reused_key_with_changed_payload_conflicts_without_side_effects`: same key + changed quantity returns HTTP 409 and leaves all post-first-request snapshots unchanged.
+- `test_purchase_receipt_same_key_on_another_order_conflicts_without_side_effects`: reusing a business key against a different PO returns HTTP 409 and leaves the second PO, stock and audit snapshots unchanged.
 - `test_purchase_receipt_missing_or_blank_idempotency_key_rejects_before_side_effects`: absent and whitespace-only headers return HTTP 422 before PO, stock, audit or idempotency writes.
 - `test_purchase_receipts_with_distinct_keys_allow_intentional_partial_deliveries`: distinct keys permit intentional later partial deliveries and persist one stock/audit/idempotency effect per operation.
 - `test_purchase_receipt_rollback_removes_idempotency_record_and_allows_same_key_retry`: an injected failure after a stock movement is staged rolls back the idempotency row and every receipt effect; retrying the same key can then succeed.
