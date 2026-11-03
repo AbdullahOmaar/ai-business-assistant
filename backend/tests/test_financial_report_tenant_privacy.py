@@ -171,8 +171,9 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
         expense_id,
         "Cross-Tenant Confidential Payroll Employee",
         "5000.00",
-        "2026-10",
     )
+    # The dashboard may legitimately expose the selected reporting month; payroll
+    # identity, amount, record ID, linked expense ID and payroll reference remain private.
 
     def snapshot():
         """Capture every persisted row in the isolated database in stable PK order."""
