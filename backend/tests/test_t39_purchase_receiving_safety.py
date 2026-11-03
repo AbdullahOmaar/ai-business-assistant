@@ -2567,16 +2567,16 @@ def test_purchase_receipt_reused_key_with_changed_payload_conflicts_without_side
         }
 
 
-@pytest.mark.parametrize("missing_header", [True, False])
-def test_purchase_receipt_missing_or_blank_idempotency_key_rejects_before_side_effects(
-    purchasing_api, missing_header,
+@pytest.mark.parametrize("header_value", [None, "", "   ", "not-a-uuid"])
+def test_purchase_receipt_missing_blank_or_malformed_idempotency_key_rejects_before_side_effects(
+    purchasing_api, header_value,
 ):
     client, engine, business_id, principal = purchasing_api
     with Session(engine) as session:
         order, line, product = _approved_order(session, business_id, principal)
         order_id, line_id = order.id, line.id
 
-    headers = {} if missing_header else {"Idempotency-Key": "   "}
+    headers = {} if header_value is None else {"Idempotency-Key": header_value}
     response = client.post(
         _receipt_api_url(business_id, order_id),
         json={"lines": [{"line_id": str(line_id), "quantity": "2.000"}]},
