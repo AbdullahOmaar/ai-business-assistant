@@ -11,12 +11,12 @@ Existing code includes `Supplier`, `PurchaseOrder`, `PurchaseOrderLine`, and `St
 Source review indicates the following still require proof or implementation:
 - Supplier bill/payable records, supplier payment allocations, and payable aging.
 - Rejected quantity and supplier-return/reversal workflow.
-- Idempotency protection for a repeated valid receipt request and concurrency-safe receipt posting.
+- Idempotency protection for a repeated valid receipt request and concurrency-safe receipt posting. The narrow receipt replay contract was approved by Master on 2026-11-03 as a P1 stock-ledger integrity rule; this is not T37 financial approval.
 - Cost/valuation snapshots and approved COGS integration.
 - Explicit reconciliation preventing inventory procurement from also being posted as a duplicate operating expense.
 - Full role × tenant × lifecycle matrix with protected-state and audit no-side-effect assertions.
 
-Explicitly deferred while T37 remains Draft / NOT APPROVED: supplier bills/AP/payables/payments, supplier returns/reversals, inventory valuation, landed cost, COGS, FX, tax, GL/posting and production financial mutations. Receipt idempotency semantics remain deferred until a separate source-event contract is approved.
+Explicitly deferred while T37 remains Draft / NOT APPROVED: supplier bills/AP/payables/payments, supplier returns/reversals, inventory valuation, landed cost, COGS, FX, tax, GL/posting and production financial mutations. Receipt replay idempotency is approved only for stock-ledger integrity by the 2026-11-03 Master decision. Same business + same key + same canonical payload replays the stored result without another stock/audit effect; same key with a different payload (including another PO) returns 409; missing key rejects before writes; a distinct key permits an intentional later partial receipt. The idempotency record and receipt effects must commit atomically. This does not approve supplier bills/AP/payables/payments, returns/reversals, valuation/COGS, FX, tax, GL or posting semantics.
 
 These are source-review findings, not runtime test results.
 
@@ -34,7 +34,7 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 | T39-02 | STAFF attempts owner-only approval | Denied; order, movements, balances and business audit snapshot have no mutation | Existing behavior regression |
 | T39-03 | Non-member accesses supplier/order/receipt routes, and business A owner submits business B order ID under business A context | Denied/not found; no cross-tenant reads or writes or business B side effects | Contract-independent tenant boundary regression |
 | T39-04 | Partial receipt across multiple lines | Only accepted quantities create stock effects; remaining quantity and source references reconcile | Contract-independent assertions only; state labels pending |
-| T39-05 | Same receipt request replayed with same idempotency identity | One logical receipt and one stock effect only; stable response or documented conflict | Requires T37 idempotency contract |
+| T39-05 | Same receipt request replayed with the same business-scoped idempotency key and canonical payload | Return the stored result; exactly one PO quantity update, StockMovement and receipt audit effect | Master-approved P1 stock-ledger idempotency contract (2026-11-03); not T37 financial approval |
 | T39-06 | Two concurrent receipts for the same remaining quantity | No over-receipt; exactly one request succeeds when the combined quantity exceeds the remainder; order, line, stock movement and receipt-audit snapshots reconcile | PostgreSQL regression authored in `backend/tests/test_t39_purchase_receiving_concurrency.py`; execution pending |
 | T39-07 | Receipt quantity exceeds remaining order quantity, including an invalid later line after an earlier valid line | Validate all requested lines before writes; reject atomically with no stock, order, audit, or financial side effects | Contract-independent safety invariant |
 | T39-08 | Supplier rejects part of delivered goods | Accepted and rejected quantities remain separately traceable; rejected goods never increase available stock | Requires approved rejection lifecycle |
@@ -207,3 +207,14 @@ Do not trust request-provided business identity, totals, prices, currency, or pa
 - Added OWNER-only Show/Hide inactive and Deactivate/Reactivate controls in the Supplier Directory. Inactive listing is requested only when the OWNER opts in; backend membership checks remain authoritative.
 - Supplier status is shown in each row, and the list refreshes after state changes. Workspace reset clears the inactive-list toggle.
 - Tests/build were not run per user instruction; source inspection only.
+
+## Approved receipt replay contract — 2026-11-03
+
+- Key scope: `(business_id, Idempotency-Key)` for purchase receipt operations; the canonical request fingerprint includes business ID, purchase-order ID and normalized/sorted line IDs and quantities.
+- Same key + same fingerprint: return the persisted response snapshot; do not increment received quantities or create another StockMovement/AuditEvent.
+- Same key + different fingerprint, including a different PO: HTTP 409; no new PO, line, stock or audit mutation.
+- Missing/blank key: reject before any business side effect.
+- Distinct key: a later intentional partial receipt is a new operation, subject to the remaining-quantity checks.
+- Persist the key/fingerprint/response snapshot in the same database transaction as PO line quantities, StockMovement and receipt AuditEvent. A failed/rolled-back receipt must leave no idempotency record.
+- A unique constraint on `(business_id, idempotency_key)` arbitrates concurrent duplicates. The service must resolve a same-key race by reading and returning the committed winner's response; it must not retry the stock mutation.
+- The Chat 2 model/migration draft is not applied to any database. Chat 3 owns atomic service transaction/concurrency implementation; Chat 5 owns required header validation, payload mismatch 409 and route tests; Master owns migration-graph integration.

@@ -107,3 +107,24 @@ This handoff is limited to the existing supplier/PO/stock-receipt contract. A PO
 Master owns `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`, root `TASKS.md`, and cross-feature integration. Chat 2 has not edited those shared paths. Chat 3 owns `backend/app/operations.py` and its PostgreSQL lock-order regression; Chat 5 owns `backend/app/extended_api.py` and CSV export route-level QA. Keep this handoff on the existing PR #306 branch; do not create a duplicate branch/PR.
 
 Validation state at authoring: pytest, py_compile, Angular tests/build, PostgreSQL concurrency, security scans and browser E2E are NOT RUN.
+
+## 7. Approved receipt replay idempotency contract — 2026-11-03
+
+Master reopened this narrow P1 stock-ledger integrity slice on 2026-11-03. It is separate from T37 and does not approve any financial/AP/payment/return/valuation/COGS semantics.
+
+- Required request header: `Idempotency-Key`; missing or blank values must be rejected before receipt writes.
+- Key scope: unique per business for the purchase-receipt operation: `(business_id, idempotency_key)`. The canonical SHA-256 request fingerprint includes business ID, purchase-order ID and normalized receipt lines sorted by line ID.
+- Same key + same fingerprint returns the stored response snapshot with no additional received-quantity, StockMovement or AuditEvent effect.
+- Same key + different fingerprint (including another PO) returns HTTP 409 with no new side effects.
+- A distinct key is a distinct intentional operation and may perform a later partial receipt if remaining quantities permit.
+- The idempotency row, PO line updates, StockMovement rows and receipt AuditEvent must commit or roll back together. A failed validation or transaction must not leave a key reservation behind.
+- Concurrent same-key requests must converge on one committed result; the losing request reads the winner's response after the unique-key conflict and must never reapply stock effects.
+
+### Ownership / implementation split
+
+- Chat 2: SQLAlchemy persistence model, Alembic migration draft, model/constraint regressions and this contract documentation on the existing PR #306 branch.
+- Chat 3: atomic service transaction, replay/race handling inside `backend/app/operations.py`, and PostgreSQL concurrent receipt tests.
+- Chat 5: required `Idempotency-Key` header parsing, missing-key rejection, changed-payload 409 and route-level no-side-effect tests in `backend/app/extended_api.py`.
+- Master: migration graph integration, shared API/UI files, and cross-workstream verification.
+
+The migration is a draft on the feature branch only. Do not run it, apply it to Neon/production, or merge/deploy without the separate approvals and release gates.

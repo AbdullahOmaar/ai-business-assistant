@@ -16,6 +16,8 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Index,
+    Integer,
+    JSON,
     Numeric,
     String,
     UniqueConstraint,
@@ -562,6 +564,55 @@ class PurchaseOrderLine(Base):
     )
 
 
+class PurchaseReceiptIdempotency(Base):
+    """Business-scoped replay record for one logical purchase-order receipt request.
+
+    The record and all receipt stock/audit effects must commit in the same
+    transaction. response_body may be NULL only while that transaction is
+    in progress; service code must populate it before commit.
+    """
+
+    __tablename__ = "purchase_receipt_idempotency"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["purchase_order_id", "business_id"],
+            ["purchase_orders.id", "purchase_orders.business_id"],
+            name="fk_purchase_receipt_idempotency_order_business",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "business_id", "idempotency_key",
+            name="uq_purchase_receipt_idempotency_business_key",
+        ),
+        CheckConstraint(
+            "length(idempotency_key) BETWEEN 1 AND 128",
+            name="ck_purchase_receipt_idempotency_key_length",
+        ),
+        CheckConstraint(
+            "length(request_hash) = 64",
+            name="ck_purchase_receipt_idempotency_hash_length",
+        ),
+        CheckConstraint(
+            "response_status BETWEEN 100 AND 599",
+            name="ck_purchase_receipt_idempotency_response_status",
+        ),
+        Index(
+            "ix_purchase_receipt_idempotency_order_created",
+            "business_id", "purchase_order_id", "created_at",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    purchase_order_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    # SHA-256 of the canonical business + PO + sorted receipt-line payload.
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_status: Mapped[int] = mapped_column(Integer, nullable=False, default=200)
+    response_body: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 class SalesReturn(Base):
     """Return request tied to an original invoice."""
 

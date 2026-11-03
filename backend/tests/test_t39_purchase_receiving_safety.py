@@ -4,6 +4,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -36,6 +37,7 @@ from app.models import (
     Product,
     PurchaseOrder,
     PurchaseOrderLine,
+    PurchaseReceiptIdempotency,
     StockMovement,
     Supplier,
 )
@@ -1903,3 +1905,119 @@ def test_purchase_order_list_rejects_invalid_status_query_without_side_effects(
                 del app.state.principal_resolver
         else:
             app.state.principal_resolver = previous_resolver
+
+
+def test_purchase_receipt_idempotency_record_is_business_scoped_and_unique(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        session.add(
+            PurchaseReceiptIdempotency(
+                business_id=business_id,
+                purchase_order_id=order.id,
+                idempotency_key="receipt-key-001",
+                request_hash="a" * 64,
+                response_status=200,
+                response_body={"id": str(order.id), "status": "partially_received"},
+            )
+        )
+        session.commit()
+
+        persisted = session.scalar(
+            select(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.idempotency_key == "receipt-key-001",
+            )
+        )
+        assert persisted is not None
+        assert persisted.request_hash == "a" * 64
+        assert persisted.response_body["status"] == "partially_received"
+
+        second_order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=order.supplier_id,
+            order_number="PO-T39-SAFETY-SECOND",
+            status="approved",
+            currency_code="EGP",
+            total=Decimal("10"),
+        )
+        session.add(second_order)
+        session.flush()
+        session.add(
+            PurchaseOrderLine(
+                business_id=business_id,
+                purchase_order_id=second_order.id,
+                product_id=product.id,
+                quantity=Decimal("1"),
+                unit_cost=Decimal("10"),
+                received_quantity=Decimal("0"),
+            )
+        )
+        session.commit()
+        session.add(
+            PurchaseReceiptIdempotency(
+                business_id=business_id,
+                purchase_order_id=second_order.id,
+                idempotency_key="receipt-key-001",
+                request_hash="b" * 64,
+                response_status=200,
+                response_body={"id": str(second_order.id), "status": "received"},
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()
+
+        business_b = Business(name='T39 Other Tenant', currency_code='EGP')
+        session.add(business_b)
+        session.flush()
+        session.add(
+            BusinessMembership(
+                business_id=business_b.id,
+                user_subject='t39-owner-b',
+                role=MembershipRole.OWNER,
+            )
+        )
+        session.commit()
+        principal_b = AuthenticatedPrincipal(subject='t39-owner-b')
+        order_b, line_b, product_b = _approved_order(session, business_b.id, principal_b)
+        session.add(
+            PurchaseReceiptIdempotency(
+                business_id=business_b.id,
+                purchase_order_id=order_b.id,
+                idempotency_key="receipt-key-001",
+                request_hash="c" * 64,
+                response_status=200,
+                response_body={"id": str(order_b.id), "status": "partially_received"},
+            )
+        )
+        session.commit()
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.idempotency_key == "receipt-key-001"
+            )
+        ) == 2
+
+
+def test_purchase_receipt_idempotency_rejects_missing_key(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        session.add(
+            PurchaseReceiptIdempotency(
+                business_id=business_id,
+                purchase_order_id=order.id,
+                idempotency_key="",
+                request_hash="a" * 64,
+                response_status=200,
+                response_body={"id": str(order.id)},
+            )
+        )
+        with pytest.raises(IntegrityError):
+            session.commit()
+        session.rollback()
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id
+            )
+        ) == 0
