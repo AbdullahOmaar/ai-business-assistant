@@ -9,7 +9,7 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy import create_engine
@@ -17,15 +17,7 @@ from sqlalchemy import create_engine
 from app.main import app
 import app.assistant_api as assistant_api
 from app.security import AuthenticatedPrincipal
-from app.models import (
-    AuditEvent,
-    Base,
-    BusinessMembership,
-    Employee,
-    Expense,
-    MembershipRole,
-    PayrollRecord,
-)
+from app.models import Base, BusinessMembership, MembershipRole
 
 
 OWNER = "t40-report-privacy-owner"
@@ -232,6 +224,15 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     # STAFF is also a member of B, so these assertions exercise role filtering
     # inside B rather than merely testing the outer tenant authorization (403).
     staff_b_expenses = read_without_side_effects(lambda: client.get(f"{base_b}/expenses"))
+    staff_b_page_one = read_without_side_effects(
+        lambda: client.get(f"{base_b}/expenses", params={"limit": 1})
+    )
+    staff_b_page_two = read_without_side_effects(
+        lambda: client.get(f"{base_b}/expenses", params={"limit": 1, "offset": 1})
+    )
+    staff_export = read_without_side_effects(
+        lambda: client.get(f"{base_b}/exports/expenses.csv")
+    )
     staff_b_summary = read_without_side_effects(lambda: client.get(f"{base_b}/reports/summary"))
     staff_b_dashboard = read_without_side_effects(lambda: client.get(f"{base_b}/dashboard"))
     staff_b_profit_loss = read_without_side_effects(lambda: client.get(f"{base_b}/profit-loss", params={"period": "all"}))
@@ -248,6 +249,13 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     assert [row["description"] for row in staff_b_expenses.json()] == [
         "Business B ordinary supplies"
     ]
+    assert staff_b_page_one.status_code == 200, staff_b_page_one.text
+    assert [row["description"] for row in staff_b_page_one.json()] == [
+        "Business B ordinary supplies"
+    ]
+    assert staff_b_page_two.status_code == 200, staff_b_page_two.text
+    assert staff_b_page_two.json() == []
+    assert staff_export.status_code == 403
     expected_staff_total = [{"currency_code": "EGP", "count": 1, "total": "100.00"}]
     assert staff_b_summary.json()["expenses_by_currency"] == expected_staff_total
     assert staff_b_dashboard.json()["expenses"] == expected_staff_total
@@ -259,8 +267,9 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     assert egp_profit["expense_count"] == 1
     assert staff_b_insights.json()["expenses_by_currency"] == expected_staff_total
     staff_derived_outputs = [
-        staff_b_expenses.text, staff_b_summary.text, staff_b_dashboard.text,
-        staff_b_profit_loss.text, staff_b_insights.text,
+        staff_b_expenses.text, staff_b_page_one.text, staff_b_page_two.text,
+        staff_b_summary.text, staff_b_dashboard.text, staff_b_profit_loss.text,
+        staff_b_insights.text,
     ]
     for token in sensitive_tokens:
         assert all(token not in output for output in staff_derived_outputs), token
