@@ -2671,3 +2671,62 @@ def test_purchase_receipt_rollback_removes_idempotency_record_and_allows_same_ke
             "audits": 1,
             "idempotency": 1,
         }
+
+
+
+def test_purchase_receipt_same_key_on_another_order_conflicts_without_side_effects(
+    purchasing_api,
+):
+    client, engine, business_id, principal = purchasing_api
+    with Session(engine) as session:
+        first_order, first_line, product = _approved_order(session, business_id, principal)
+        second_order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=first_order.supplier_id,
+            order_number="PO-T39-SECOND-REPLAY-SCOPE",
+            status="approved",
+            currency_code="EGP",
+            total=Decimal("50.00"),
+        )
+        session.add(second_order)
+        session.flush()
+        second_line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=second_order.id,
+            product_id=product.id,
+            quantity=Decimal("5.000"),
+            unit_cost=Decimal("10.00"),
+            received_quantity=Decimal("0.000"),
+        )
+        session.add(second_line)
+        session.commit()
+        first_order_id, first_line_id = first_order.id, first_line.id
+        second_order_id, second_line_id = second_order.id, second_line.id
+
+    key = str(uuid4())
+    first = client.post(
+        _receipt_api_url(business_id, first_order_id),
+        json={"lines": [{"line_id": str(first_line_id), "quantity": "2.000"}]},
+        headers={"Idempotency-Key": key},
+    )
+    assert first.status_code == 200, first.text
+
+    replay_on_another_order = client.post(
+        _receipt_api_url(business_id, second_order_id),
+        json={"lines": [{"line_id": str(second_line_id), "quantity": "1.000"}]},
+        headers={"Idempotency-Key": key},
+    )
+    assert replay_on_another_order.status_code == 409, replay_on_another_order.text
+    with Session(engine) as session:
+        assert session.get(PurchaseOrderLine, first_line_id).received_quantity == Decimal("2.000")
+        assert session.get(PurchaseOrderLine, second_line_id).received_quantity == Decimal("0.000")
+        assert _receipt_side_effect_counts(session, business_id, first_order_id) == {
+            "movements": 1,
+            "audits": 1,
+            "idempotency": 1,
+        }
+        assert _receipt_side_effect_counts(session, business_id, second_order_id) == {
+            "movements": 0,
+            "audits": 0,
+            "idempotency": 0,
+        }
