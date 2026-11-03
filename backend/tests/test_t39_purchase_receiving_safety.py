@@ -2092,7 +2092,7 @@ def test_same_receipt_key_and_normalized_payload_replays_without_duplicate_effec
             select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "purchase_order.received",
-                AuditEvent.target_id == order.id,
+                AuditEvent.target_id == str(order.id),
             )
         )
 
@@ -2135,7 +2135,7 @@ def test_same_receipt_key_and_normalized_payload_replays_without_duplicate_effec
             select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "purchase_order.received",
-                AuditEvent.target_id == order.id,
+                AuditEvent.target_id == str(order.id),
             )
         ) == receipts_after_first == 1
 
@@ -2169,7 +2169,7 @@ def test_same_receipt_key_with_changed_payload_conflicts_without_side_effects(
             select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "purchase_order.received",
-                AuditEvent.target_id == order.id,
+                AuditEvent.target_id == str(order.id),
             )
         )
 
@@ -2199,7 +2199,7 @@ def test_same_receipt_key_with_changed_payload_conflicts_without_side_effects(
             select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "purchase_order.received",
-                AuditEvent.target_id == order.id,
+                AuditEvent.target_id == str(order.id),
             )
         ) == receipt_audit_count == 1
         assert session.scalar(
@@ -2323,7 +2323,7 @@ def test_missing_or_blank_receipt_key_is_rejected_without_side_effects(
             select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "purchase_order.received",
-                AuditEvent.target_id == order.id,
+                AuditEvent.target_id == str(order.id),
             )
         ) == 0
         assert session.scalar(
@@ -2377,7 +2377,7 @@ def test_distinct_receipt_keys_allow_intentional_later_partial_receipt(purchasin
             select(func.count()).select_from(AuditEvent).where(
                 AuditEvent.business_id == business_id,
                 AuditEvent.action == "purchase_order.received",
-                AuditEvent.target_id == order.id,
+                AuditEvent.target_id == str(order.id),
             )
         ) == 2
 
