@@ -2022,3 +2022,423 @@ def test_purchase_receipt_idempotency_rejects_missing_key(purchasing_workspace, 
                 PurchaseReceiptIdempotency.business_id == business_id
             )
         ) == 0
+
+
+def test_same_receipt_key_and_normalized_payload_replays_without_duplicate_effects(
+    purchasing_workspace,
+):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, first_line, first_product = _approved_order(
+            session, business_id, principal, quantity=Decimal("10")
+        )
+        second_product = create_product(
+            session,
+            principal=principal,
+            business_id=business_id,
+            name="T39 Replay Second Item",
+            unit_price=Decimal("10"),
+            is_stock_tracked=True,
+        )
+        second_line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=order.id,
+            product_id=second_product.id,
+            quantity=Decimal("5"),
+            unit_cost=Decimal("10"),
+            received_quantity=Decimal("0"),
+        )
+        order.total += Decimal("50")
+        session.add(second_line)
+        session.commit()
+
+        first_payload = {
+            first_line.id: Decimal("2.0"),
+            second_line.id: Decimal("1.00"),
+        }
+        first_result = receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order.id,
+            received_quantities=first_payload,
+            idempotency_key="4b3f20d0-4d19-4f0d-b3e2-000000000001",
+        )
+        session.commit()
+        assert first_result.status == "partially_received"
+
+        stored = session.scalar(
+            select(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.idempotency_key
+                == "4b3f20d0-4d19-4f0d-b3e2-000000000001",
+            )
+        )
+        assert stored is not None
+        assert stored.response_status == 200
+        assert stored.response_body is not None
+        original_response = stored.response_body
+        movements_after_first = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.reference_id == order.id,
+                StockMovement.movement_type == "receipt",
+            )
+        )
+        receipts_after_first = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order.id,
+            )
+        )
+
+        # Reordered line IDs and equivalent Decimal scales are the same
+        # canonical payload and must replay even after the PO state advanced.
+        replay_result = receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order.id,
+            received_quantities={
+                second_line.id: Decimal("1.000"),
+                first_line.id: Decimal("2.000"),
+            },
+            idempotency_key="4b3f20d0-4d19-4f0d-b3e2-000000000001",
+        )
+        session.commit()
+
+        assert replay_result.id == first_result.id
+        assert replay_result.status == first_result.status
+        replayed = session.scalar(
+            select(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.idempotency_key
+                == "4b3f20d0-4d19-4f0d-b3e2-000000000001",
+            )
+        )
+        assert replayed.response_body == original_response
+        assert session.get(PurchaseOrderLine, first_line.id).received_quantity == Decimal("2.000")
+        assert session.get(PurchaseOrderLine, second_line.id).received_quantity == Decimal("1.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.reference_id == order.id,
+                StockMovement.movement_type == "receipt",
+            )
+        ) == movements_after_first == 2
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order.id,
+            )
+        ) == receipts_after_first == 1
+
+
+def test_same_receipt_key_with_changed_payload_conflicts_without_side_effects(
+    purchasing_workspace,
+):
+    engine, business_id, principal = purchasing_workspace
+    key = "4b3f20d0-4d19-4f0d-b3e2-000000000002"
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order.id,
+            received_quantities={line.id: Decimal("2")},
+            idempotency_key=key,
+        )
+        session.commit()
+
+        movement_count = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_id == order.id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.movement_type == "receipt",
+            )
+        )
+        receipt_audit_count = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order.id,
+            )
+        )
+
+        with pytest.raises(WorkflowError):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={line.id: Decimal("3")},
+                idempotency_key=key,
+            )
+        session.rollback()
+
+    with Session(engine) as session:
+        assert session.get(PurchaseOrder, order.id).status == "partially_received"
+        assert session.get(PurchaseOrderLine, line.id).received_quantity == Decimal("2.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_id == order.id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.movement_type == "receipt",
+            )
+        ) == movement_count == 1
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order.id,
+            )
+        ) == receipt_audit_count == 1
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.idempotency_key == key,
+            )
+        ) == 1
+
+
+def test_same_receipt_key_reused_for_another_order_conflicts_in_same_business(
+    purchasing_workspace,
+):
+    engine, business_id, principal = purchasing_workspace
+    key = "4b3f20d0-4d19-4f0d-b3e2-000000000003"
+    with Session(engine) as session:
+        first_order, first_line, product = _approved_order(
+            session, business_id, principal
+        )
+        second_order = PurchaseOrder(
+            business_id=business_id,
+            supplier_id=first_order.supplier_id,
+            order_number="PO-T39-SAFETY-OTHER",
+            status="approved",
+            currency_code="EGP",
+            total=Decimal("10"),
+        )
+        session.add(second_order)
+        session.flush()
+        second_line = PurchaseOrderLine(
+            business_id=business_id,
+            purchase_order_id=second_order.id,
+            product_id=product.id,
+            quantity=Decimal("1"),
+            unit_cost=Decimal("10"),
+            received_quantity=Decimal("0"),
+        )
+        session.add(second_line)
+        session.commit()
+
+        receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=first_order.id,
+            received_quantities={first_line.id: Decimal("1")},
+            idempotency_key=key,
+        )
+        session.commit()
+        movement_count = session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.movement_type == "receipt",
+            )
+        )
+        receipt_audit_count = session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+            )
+        )
+
+        with pytest.raises(WorkflowError):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=second_order.id,
+                received_quantities={second_line.id: Decimal("1")},
+                idempotency_key=key,
+            )
+        session.rollback()
+
+    with Session(engine) as session:
+        assert session.get(PurchaseOrderLine, second_line.id).received_quantity == Decimal("0.000")
+        assert session.get(PurchaseOrder, second_order.id).status == "approved"
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.movement_type == "receipt",
+            )
+        ) == movement_count == 1
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+            )
+        ) == receipt_audit_count == 1
+
+
+@pytest.mark.parametrize("idempotency_key", [None, "", "   "])
+def test_missing_or_blank_receipt_key_is_rejected_without_side_effects(
+    purchasing_workspace, idempotency_key
+):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        with pytest.raises(WorkflowError):
+            receive_purchase_order(
+                session,
+                principal=principal,
+                business_id=business_id,
+                purchase_order_id=order.id,
+                received_quantities={line.id: Decimal("2")},
+                idempotency_key=idempotency_key,
+            )
+        session.rollback()
+
+    with Session(engine) as session:
+        assert session.get(PurchaseOrder, order.id).status == "approved"
+        assert session.get(PurchaseOrderLine, line.id).received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_id == order.id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.movement_type == "receipt",
+            )
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order.id,
+            )
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+            )
+        ) == 0
+
+
+def test_distinct_receipt_keys_allow_intentional_later_partial_receipt(purchasing_workspace):
+    engine, business_id, principal = purchasing_workspace
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        first = receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order.id,
+            received_quantities={line.id: Decimal("4")},
+            idempotency_key="4b3f20d0-4d19-4f0d-b3e2-000000000004",
+        )
+        session.commit()
+        second = receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order.id,
+            received_quantities={line.id: Decimal("6")},
+            idempotency_key="4b3f20d0-4d19-4f0d-b3e2-000000000005",
+        )
+        session.commit()
+
+        assert first.status == "partially_received"
+        assert second.status == "received"
+        assert session.get(PurchaseOrderLine, line.id).received_quantity == Decimal("10.000")
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.purchase_order_id == order.id,
+            )
+        ) == 2
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_id == order.id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.movement_type == "receipt",
+            )
+        ) == 2
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order.id,
+            )
+        ) == 2
+
+
+def test_receipt_idempotency_record_rolls_back_with_receipt_and_key_can_retry(
+    purchasing_workspace,
+):
+    engine, business_id, principal = purchasing_workspace
+    key = "4b3f20d0-4d19-4f0d-b3e2-000000000006"
+    with Session(engine) as session:
+        order, line, product = _approved_order(session, business_id, principal)
+        order_id, line_id = order.id, line.id
+        receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line_id: Decimal("3")},
+            idempotency_key=key,
+        )
+        # The operation has flushed its receipt effects, but the caller has not
+        # committed. Rolling back must remove the idempotency row and all effects.
+        session.rollback()
+
+    with Session(engine) as session:
+        assert session.get(PurchaseOrder, order_id).status == "approved"
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("0.000")
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.idempotency_key == key,
+            )
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(StockMovement).where(
+                StockMovement.business_id == business_id,
+                StockMovement.reference_id == order_id,
+                StockMovement.reference_type == "purchase_order",
+                StockMovement.movement_type == "receipt",
+            )
+        ) == 0
+        assert session.scalar(
+            select(func.count()).select_from(AuditEvent).where(
+                AuditEvent.business_id == business_id,
+                AuditEvent.action == "purchase_order.received",
+                AuditEvent.target_id == order_id,
+            )
+        ) == 0
+
+        retried = receive_purchase_order(
+            session,
+            principal=principal,
+            business_id=business_id,
+            purchase_order_id=order_id,
+            received_quantities={line_id: Decimal("3")},
+            idempotency_key=key,
+        )
+        session.commit()
+        assert retried.status == "partially_received"
+        assert session.scalar(
+            select(func.count()).select_from(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.idempotency_key == key,
+            )
+        ) == 1
+        assert session.get(PurchaseOrderLine, line_id).received_quantity == Decimal("3.000")
