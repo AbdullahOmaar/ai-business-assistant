@@ -259,3 +259,20 @@ handoff use a unique `(business_id, idempotency_key)` constraint, and the
 cross-PO regression above encodes the explicit 409 behavior. Master must confirm
 the intended constraint semantics; Chat 2 has not changed the migration/model
 to resolve this wording conflict.
+
+
+
+## Receipt replay regression mapping — 2026-11-03
+
+The Master-approved P1 receipt idempotency contract is a stock-ledger integrity control only. The executable regression specifications now authored in the Chat 2-owned safety test module are:
+
+- `test_purchase_receipt_replay_returns_original_result_without_duplicate_stock_or_audit`: same key + same canonical payload returns the original response and leaves exactly one received-quantity increment, StockMovement, receipt AuditEvent and idempotency row.
+- `test_purchase_receipt_reused_key_with_changed_payload_conflicts_without_side_effects`: same key + changed quantity returns HTTP 409 and leaves all post-first-request snapshots unchanged.
+- `test_purchase_receipt_missing_or_blank_idempotency_key_rejects_before_side_effects`: absent and whitespace-only headers return HTTP 422 before PO, stock, audit or idempotency writes.
+- `test_purchase_receipts_with_distinct_keys_allow_intentional_partial_deliveries`: distinct keys permit intentional later partial deliveries and persist one stock/audit/idempotency effect per operation.
+- `test_purchase_receipt_rollback_removes_idempotency_record_and_allows_same_key_retry`: an injected failure after a stock movement is staged rolls back the idempotency row and every receipt effect; retrying the same key can then succeed.
+- Existing `test_purchase_receipt_idempotency_record_is_business_scoped_and_unique` and `test_purchase_receipt_idempotency_rejects_missing_key` exercise database uniqueness/tenant scope and blank-key constraints.
+
+**Implementation ownership:** these are cross-layer regression specifications. The service transaction/replay behavior is still owned by Chat 3 in `backend/app/operations.py`; required header validation and HTTP conflict/replay mapping remain owned by Chat 5 in `backend/app/extended_api.py` and its route tests. The tests intentionally fail closed until those owner handoffs land. Chat 2 did not edit either owner file.
+
+**Validation:** tests are authored but NOT RUN. No test pass is claimed. The feature migration remains draft-only and NOT APPLIED. Master retains migration-graph integration, main/base reconciliation and final verification ownership. No CI trigger/retry, merge, deployment or production database operation was performed.
