@@ -1,7 +1,7 @@
 # Authenticated API Route Inventory
 
-**Reviewed:** 2026-10-23  
-**Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, and `assistant_api.py`.  
+**Reviewed:** 2026-10-31  
+**Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, `assistant_api.py`, `platform_admin_api.py`, and `employee_payroll_api.py`.  
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
 
 
@@ -50,6 +50,7 @@
 |---|---|---|
 | GET | `/health` | Public liveness only |
 | GET | `/readyz` | Operational readiness gate; no business data |
+| GET | `/version` | Public, non-sensitive release metadata only; never expose secrets or tokens |
 
 ### Workspace and dashboard — `backend/app/core_features_api.py` (prefix `/api/v1`)
 
@@ -58,8 +59,12 @@
 | GET | `/api/v1/businesses` | Trusted principal; return only memberships for that user |
 | POST | `/api/v1/businesses` | Trusted principal; create workspace and owner membership transactionally |
 | GET | `/api/v1/businesses/{business_id}` | Active membership required |
-| PATCH | `/api/v1/businesses/{business_id}` | Active membership/role policy required |
+| PATCH | `/api/v1/businesses/{business_id}` | OWNER only; business must be active |
 | GET | `/api/v1/businesses/{business_id}/dashboard` | Active membership required; aggregates scoped to business |
+| GET | `/api/v1/businesses/{business_id}/memberships` | OWNER only; list roles within the requested business |
+| PATCH | `/api/v1/businesses/{business_id}/memberships/{membership_id}` | OWNER only; target membership must belong to business; never demote/remove the last owner |
+| DELETE | `/api/v1/businesses/{business_id}/memberships/{membership_id}` | OWNER only; target membership must belong to business; preserve at least one owner |
+| GET | `/api/v1/businesses/{business_id}/profit-loss` | Active membership required; business-scoped revenue/expense summary without cross-currency aggregation |
 
 ### Core business workflows — `backend/app/api.py` (prefix `/api/v1`)
 
@@ -67,62 +72,118 @@
 |---|---|---|
 | POST | `/api/v1/businesses/{business_id}/customers` | Membership required |
 | POST | `/api/v1/businesses/{business_id}/suppliers` | Membership required |
-| POST | `/api/v1/businesses/{business_id}/products` | Membership required |
+| POST | `/api/v1/businesses/{business_id}/products` | Membership required; positive `opening_quantity` requires OWNER before any product/stock/audit writes |
 | POST | `/api/v1/businesses/{business_id}/invoices` | Membership required; customer/product IDs must belong to same business |
-| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue` | Membership and invoice ownership required |
+| POST | `/api/v1/businesses/{business_id}/invoices/issue` | OWNER only; create and issue atomically; customer/product IDs must belong to same business |
+| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue` | OWNER only; invoice must belong to the requested business and satisfy issue lifecycle rules |
 | PATCH | `/api/v1/businesses/{business_id}/invoices/{invoice_id}` | Membership, same-business invoice, and draft-state checks required |
-| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/void` | Membership, same-business invoice, and lifecycle rules required |
-| POST | `/api/v1/businesses/{business_id}/stock-movements` | Membership and same-business product required |
-| POST | `/api/v1/businesses/{business_id}/payments` | Membership; allocations must target issued invoices in the same business |
+| POST | `/api/v1/businesses/{business_id}/invoices/{invoice_id}/void` | OWNER only; same-business invoice and void lifecycle rules required |
+| POST | `/api/v1/businesses/{business_id}/stock-movements` | OWNER only; product must belong to the requested business |
+| POST | `/api/v1/businesses/{business_id}/payments` | OWNER only; customer and invoice allocations must belong to the requested business; idempotency key enforced |
 
 ### Extended business workflows — `backend/app/extended_api.py` (prefix `/api/v1/businesses/{business_id}`)
 
-All paths below inherit the business ID in the prefix and require a trusted principal plus membership authorization.
+All paths below inherit the business ID and require a trusted principal plus active business membership. Rows marked OWNER additionally enforce the OWNER role server-side.
 
 | Method | Path suffix | Access expectation |
 |---|---|---|
+| GET | `/operations/health` | OWNER only; read-only operational snapshot, no secret values |
+| GET | `/reports/tax-summary` | Membership required; totals separated by currency |
+| POST | `/purchase-orders/{order_id}/approve` | OWNER only; draft-only transition with one audit event |
+| POST | `/imports/{entity_type}.csv/preview` | OWNER only; validate/preview without persistent writes |
+| GET | `/reports/receivables-aging` | Membership required; currency-separated outstanding balances |
+| GET | `/customers/{customer_id}/statement` | Membership and same-business customer; read-only, currency-safe |
+| GET | `/audit-events` | OWNER only; paginated and business-scoped |
+| GET | `/reports/data-integrity` | OWNER only; read-only integrity findings scoped to business |
 | POST | `/expenses` | Membership required |
 | GET | `/expenses` | Membership required; filter by business |
+| GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
+| GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |
-| POST | `/purchase-orders/{order_id}/receive` | Membership and same-business order/lines |
+| POST | `/purchase-orders/{order_id}/receive` | OWNER only; order, lines, and products must belong to the requested business |
 | POST | `/sales-returns` | Membership; invoice and invoice lines must be same-business |
-| POST | `/sales-returns/{return_id}/approve` | Membership and same-business return |
-| POST | `/recurring-invoices` | Membership; customer reference must be same-business |
-| POST | `/pricing-rules` | Membership required |
-| POST | `/notifications` | Membership required |
+| POST | `/sales-returns/{return_id}/approve` | OWNER only; same-business return and invoice/line references; lifecycle and cumulative quantity/amount checks |
+| GET | `/recurring-invoices` | Membership required; schedules scoped to the requested business |
+| POST | `/recurring-invoices` | OWNER only; any customer reference must belong to the requested business |
+| POST | `/pricing-rules` | OWNER only |
+| POST | `/notifications` | OWNER only; creation may trigger downstream delivery |
 | GET | `/notifications` | Membership required; filter by business |
-| PUT | `/settings/{setting_key}` | Membership/role policy required |
+| PUT | `/settings/{setting_key}` | OWNER only; setting key validated; business audit-event gap remains under review |
 | GET | `/reports/summary` | Membership required; aggregates scoped by business and currency |
-| GET | `/exports/{entity_type}.csv` | Membership required; export data scoped by business |
-| POST | `/imports/{entity_type}.csv` | Membership required; imported references must not cross businesses |
+| GET | `/exports/{entity_type}.csv` | OWNER only; supported export data scoped by business and CSV cells formula-neutralized |
+| POST | `/imports/{entity_type}.csv` | OWNER only; bounded CSV input, schema/row validation, business-scoped writes |
 | GET | `/customers` | Membership required; filter by business |
 | GET | `/customers/{customer_id}` | Membership and same-business customer |
 | PATCH | `/customers/{customer_id}` | Membership and same-business customer |
-| DELETE | `/customers/{customer_id}` | Membership and same-business customer |
+| DELETE | `/customers/{customer_id}` | OWNER only; same-business customer; soft-deactivate and audit |
 | GET | `/products` | Membership required; filter by business |
 | GET | `/products/{product_id}` | Membership and same-business product |
-| PATCH | `/products/{product_id}` | Membership and same-business product |
-| DELETE | `/products/{product_id}` | Membership and same-business product |
+| PATCH | `/products/{product_id}` | Same-business product; ordinary metadata is member-level, but price/stock-sensitive fields require OWNER |
+| DELETE | `/products/{product_id}` | OWNER only; same-business product; soft-deactivate and audit |
 | GET | `/payments` | Membership required; payments and allocations scoped by business |
 | GET | `/invoices/{invoice_id}` | Membership and same-business invoice/lines |
 | GET | `/invoices` | Membership required; filter by business |
 | GET | `/assistant/insights` | Membership required; read-only aggregates scoped by business |
 
-### AI assistant — `backend/app/assistant_api.py` (prefix `/api/v1/businesses/{business_id}/assistant`)
+**Sensitive derived-data note — HIGH / P1 privacy exposure (2026-10-31):** The narrow Master-approved Payroll Privacy Policy v1.0 is separate from T37: OWNER-only access to payroll-linked Expense rows and derived aggregates; STAFF retains ordinary expense access. `PayrollRecord.expense_id` is the authoritative link; mutable category/description text is not a privacy boundary. The approval is recorded in the T40/T41 Notion handoffs; the canonical T37 page remains Draft / NOT APPROVED for other shared financial semantics, and its broader authorization row still requires reconciliation. On current main, `GET /expenses` returns payroll Expense description, amount, vendor name and reference; `GET /reports/summary`, `GET /assistant/insights`, dashboard aggregates, and member-authorized `POST /assistant/chat` include payroll-linked amounts and/or employee-identifying details in derived data/provider context. The privacy filter exists in candidate T40/T41 branches but is not integrated on main or exact-SHA runtime-verified. Keep Issue #110 OPEN and treat STAFF payroll-derived visibility as a HIGH finding until the approved filter is integrated and OWNER-positive / STAFF-denied / non-member / cross-tenant regressions pass.
+
+## AI assistant — `backend/app/assistant_api.py` (prefix `/api/v1/businesses/{business_id}/assistant`)
 
 | Method | Path | Access expectation |
 |---|---|---|
 | POST | `/api/v1/businesses/{business_id}/assistant/chat` | Membership check before provider configuration/use; bounded input; reject caller-supplied system/tool roles; never expose another tenant’s records |
 
+### Platform administration — `backend/app/platform_admin_api.py` (prefix `/api/v1/platform-admin`)
+
+All routes require a trusted authenticated principal and explicit server-side platform allowlist/permission checks; workspace OWNER/STAFF roles do not grant platform access.
+
+| Method | Path | Access expectation |
+|---|---|---|
+| GET | `/api/v1/platform-admin/access` | Active delegated platform-role grant or bootstrap super-admin allowlist; return only the caller's effective roles and permissions |
+| GET | `/api/v1/platform-admin/system-status` | `view_system_status` permission; safe runtime metadata only |
+| GET | `/api/v1/platform-admin/overview` | `view_overview` permission; platform counts with financial totals separated by currency |
+| GET | `/api/v1/platform-admin/businesses` | `view_workspaces` permission; bounded, read-only workspace search |
+| GET | `/api/v1/platform-admin/businesses/{business_id}` | `view_workspaces` permission; no credentials or tokens |
+| PATCH | `/api/v1/platform-admin/businesses/{business_id}/status` | `manage_workspace_status` permission; meaningful reason and audit event required |
+| GET | `/api/v1/platform-admin/audit-events` | `view_audit` permission; bounded, read-only platform audit stream |
+| GET | `/api/v1/platform-admin/audit-events/export.csv` | `view_audit` permission; bounded, redacted export with security logging |
+| GET | `/api/v1/platform-admin/users` | `view_users` permission; Firebase account listing/search with bounded pagination |
+| POST | `/api/v1/platform-admin/users/{user_uid}/roles` | Platform super-admin only; bounded delegated roles, reason and audit trail; root admin cannot be granted in-app |
+| GET | `/api/v1/platform-admin/role-audit-events` | `view_audit` permission; read-only history of delegated platform role changes |
+
+### Employees and payroll — `backend/app/employee_payroll_api.py` (prefix `/api/v1/businesses/{business_id}`)
+
+All endpoints require OWNER membership in the requested business; employee/payroll IDs must also be scoped to that business. Payroll totals are calculated server-side. Marking payroll paid is a financial mutation and must only apply to an approved eligible record with linked expense/audit effects.
+
+| Method | Path | Access expectation |
+|---|---|---|
+| GET | `/api/v1/businesses/{business_id}/employees` | OWNER only; list employees scoped to business |
+| POST | `/api/v1/businesses/{business_id}/employees` | OWNER only; create employee in business; enforce business-scoped uniqueness and audit trail |
+| PATCH | `/api/v1/businesses/{business_id}/employees/{employee_id}` | OWNER only; employee ID must belong to business; no cross-tenant mutation |
+| GET | `/api/v1/businesses/{business_id}/payroll` | OWNER only; list payroll records and employee labels scoped to business |
+| POST | `/api/v1/businesses/{business_id}/employees/{employee_id}/payroll` | OWNER only; employee ID must belong to business; server-calculated payroll totals |
+| PATCH | `/api/v1/businesses/{business_id}/payroll/{payroll_id}` | OWNER only; payroll ID must belong to business and remain in an editable lifecycle state |
+| POST | `/api/v1/businesses/{business_id}/payroll/{payroll_id}/approve` | OWNER only; same-business payroll; enforce approval lifecycle and audit |
+| POST | `/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay` | OWNER only; same-business approved payroll; create linked expense exactly once and audit payment |
+
 ## Current regression-test evidence
 
-- [PR #51 — tenant, invoice lifecycle, and AI safety tests](https://github.com/AbdullahOmaar/ai-business-assistant/pull/51) is merged. It covers workspace/dashboard access denial, issued-invoice edit rejection, AI input bounds, missing-provider safe failure, timeout-safe failure, and source-ID filtering.
-- [PR #53 — expanded cross-tenant resource tests](https://github.com/AbdullahOmaar/ai-business-assistant/pull/53) adds passing CI coverage for customer/product/invoice/payment/expense/report/insight reads, unauthorized writes/deactivation, foreign customer/product IDs in invoice creation, and foreign invoice IDs in payment allocations. It is a separate open PR, not yet merged.
-- CI evidence for PR #53 latest tested commit: [backend tests](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39979705976), [backend container verification](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39979706021), and [combined backend/frontend CI](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/39979705944).
+- **T03 candidate (code evidence refreshed 2026-11-01):** PR #302 / `qa/foreign-resource-read-no-side-effects-20261029` contains the reviewed application/test changes at code head `c359831a7f7f62f27afcfe09984c3a78df922646`; subsequent commits only refreshed this document/PR evidence. PR base is `c464398e0a6ace77eba32aabfbdbd09091f53999`; at the code head, comparison with GitHub main `dcb0853ab06dc9271b1109db03eb84ab2e3360c8` was 53 commits ahead / 3 behind (DIVERGED). Read live PR #302 metadata for the current branch tip; this inventory is not a dynamic branch-status feed. PR remains OPEN/DRAFT/UNMERGED. GitHub mergeable=true is not authorization or proof of base reconciliation. Owner/Master must authorize and coordinate normal synchronization before exact-head validation. No merge or deployment has occurred.
+- **Route inventory:** current registered source has 79 route decorators and 79 unique method/path pairs. This inventory has 79 unique entries; exact source-to-inventory comparison reports zero missing and zero extra paths.
+- **T03 test coverage in the candidate:** `test_business_tenant_boundaries.py` includes OWNER/STAFF/non-member, foreign customer statement/report/purchase-order, supplier creation/list, and route-scope cases. Its foreign customer/product/invoice GET/PATCH/DELETE matrix now executes requests sequentially and compares every persisted row for both businesses (including Business and AuditEvent) immediately after each denial. The foreign customer-statement, PO-approval and PO-receive denials also have per-request two-tenant snapshots. The added `test_tenant_payroll_route_snapshots.py` snapshots every business-scoped row, Business and AuditEvent after each STAFF/non-member denial and foreign OWNER employee/payroll ID attempt. `test_extended_route_snapshot_matrix.py` snapshots all business rows after each non-member/STAFF denial and allowed STAFF report/statement read. `test_foreign_resource_id_side_effects.py` snapshots both tenants after rejected foreign stock, sales-return invoice/line/approval, recurring-customer, purchase-order supplier/product, and payment-allocation attempts.
+- **Existing regression coverage:** `test_foreign_business_workflows.py` covers cross-business invoice, payment, stock, purchase-order and sales-return boundaries; `test_employee_payroll_api.py` covers STAFF/non-member and cross-business employee/payroll access. The T03 candidate now extends per-request persisted-row snapshots to the previously end-of-test-only customer/product/invoice and foreign statement/PO denial cases.
+- **Static checks:** route source/inventory parity is recorded as 79/79 with zero missing/extra/duplicate paths. Earlier AST syntax checks passed on prior candidate revisions; AST has not been independently rerun on the current code head `c359831a...` (the latest `a0a5a1da...` commit changes documentation only). Full-module pytest, focused pytest and the full backend suite remain NOT RUN.
+- **CI authority:** no exact-head GitLab pipeline was found for the reviewed code head `c359831a...`; none was triggered. The T03 work package explicitly prohibits CI triggers pending Owner/Master permission. Current main `AGENTS.md` names GitLab as the sole approved CI provider; Owner/Master must reconcile the task-level restriction. CircleCI/Semaphore contexts are retired/non-authoritative.
+- **Payroll privacy integration:** current main does not yet contain the `apply_expense_visibility` predicate. Candidate implementations/tests are on PR #304 (T40) and PR #308 (T41), both still unmerged and sharing backend files; Chat 5 has independently reviewed their current heads.
 
 ## Remaining coverage gaps
 
-The route inventory is broader than current negative integration tests. Add explicit non-member and foreign-ID tests for supplier CRUD, stock movements, purchase orders/receiving, sales returns/approval, recurring invoices, pricing rules, notifications, settings/role enforcement, CSV import/export, and invoice lifecycle/payment reversal boundaries. Confirm authorization is evaluated before any external provider use or persistent mutation. Treat this inventory as a checklist to update whenever routes are added or changed.
+- **Feature-branch routes:** T39 PR #306 adds supplier detail/update/activation/export and expanded purchase-order detail/history/cancel behavior that is not part of current main's 79-route inventory. Chat 5 must extend this inventory and test foreign IDs/role boundaries after Chat 2's sequential integration; do not duplicate or edit Chat 2's branch.
+- **Platform administration:** delegated `platform_viewer` no-mutation/no-audit regression is on PR #313 and is not merged. Re-test the exact integrated head and retain OWNER/super-admin positive controls.
+- **Payroll privacy:** the narrow Payroll Privacy v1.0 candidate remains on PR #304/#308, not main. After Chat 3/4 sequential shared-file integration, retest OWNER-positive visibility vs STAFF ordinary-expense-only, non-member denial, tenant isolation, pre-pagination filtering, CSV, reports/dashboard/P&L/insights, provider payload and log redaction.
+- **Customer statement date boundaries:** T40's `customer_statement()` still filters invoice and payment-allocation timestamps using UTC `.date()` rather than the business IANA timezone. Chat 3/5 must complete the documented single-writer handoff before changing shared `extended_api.py`; add Cairo local-midnight cases for both event types.
+- **Cross-feature browser journey:** T22's authenticated OWNER/STAFF/non-member browser journey and UI-to-API persistence assertions remain queued behind T03 on PR #315.
+- **Runtime validation:** exact-head pytest/full backend suite, PostgreSQL concurrency and browser/E2E execution remain NOT RUN pending an authorized runner. Do not trigger CI while the T03 task-level prohibition remains unresolved.
 
 
 ## Current-source role and financial-integrity audit — 2026-10-28
@@ -166,3 +227,34 @@ The route inventory is broader than current negative integration tests. Add expl
 - Review found the test omitted `_configure_test_identity(engine)`; fixed on the candidate branch. The test now configures/restores identity and compares business-scoped Customer, Product, Expense, ImportJob, and AuditEvent counts before/after.
 - This complements PR #297's STAFF/non-member denial and no-side-effect checks. It is not considered verified until exact-head CircleCI backend-accounting and aggregate checks pass.
 - Local pytest is NOT RUN in the connector-only session. No production data, authorization policy, or deployment settings changed; issue #276 remains open for remaining routes and authenticated production smoke.
+
+
+## Foreign resource-ID access regression — 2026-10-29
+
+- Added `backend/tests/test_business_tenant_boundaries.py::test_owner_cannot_read_or_mutate_foreign_resource_ids_without_side_effects`.
+- A tenant-A OWNER attempts GET/PATCH/DELETE against tenant-B customer/product IDs and GET/PATCH/void against a tenant-B invoice through tenant-A routes. Foreign customer/product and invoice reads plus customer/product mutations must return 404; invoice edit/void must return 422 from the scoped workflow validation.
+- The test snapshots both tenants' audit-event totals and confirms no audit writes occur; tenant B's customer/product data and issued invoice state/number remain unchanged and readable by tenant B's OWNER.
+- The same regression seeds an unlinked issued invoice only in tenant B: tenant A's OWNER data-integrity report must not disclose its ID, while tenant B's OWNER report must include it. Both tenant row snapshots are compared after all reads and denied foreign-PO operations.
+- This closes a direct foreign-resource read/update/delete test gap for customer/product/invoice routes. It does not complete the entire route × role × tenant matrix; other routes and authenticated production smoke remain outstanding.
+- Exact-head CI and test execution are pending on the dedicated branch. Local pytest/build were not run in this connector session.
+
+
+## Candidate route-matrix regressions — 2026-10-29
+
+- On the existing PR #302 branch, `backend/tests/test_business_tenant_boundaries.py` now includes `test_purchase_order_approval_is_owner_only_and_idempotent`: STAFF and non-members must be denied; denied requests leave the order draft and add no approval audit event; OWNER approval transitions the order and writes one approval event; duplicate approval is rejected without a second event.
+- The same file includes `test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_side_effects`, exercising non-member denial for operations health, tax summary, purchase-order approval, CSV preview, receivables aging, customer statement, audit events, and data-integrity report. Each request is followed by an audit-count assertion.
+- Strengthened `test_non_member_cannot_access_or_mutate_customers_products_invoices_or_payments`: every denied GET and POST/PATCH/DELETE now immediately compares the complete protected-row snapshot (Customer, Product, Invoice, InvoiceLine, Payment, PaymentAllocation, StockMovement, AuditEvent) with the pre-request baseline, rather than checking only once after the full sequence.
+- It also includes `test_staff_owner_only_route_matrix_and_allowed_read_reports`: STAFF is denied owner-only operations-health, CSV-preview, audit-events, and data-integrity endpoints; STAFF can read tax summary, receivables aging, and a same-business customer statement. All requests assert unchanged business audit counts.
+- These tests are **implemented but not yet verified**. Exact-head CircleCI is currently not visible from the GitHub combined-status endpoint; local pytest/build are NOT RUN in this connector-only environment. Do not treat the regressions as passing until exact-head CI completes.
+- This is targeted denial coverage, not proof that every role × route × tenant combination or production behavior is verified. Authenticated production smoke remains NOT RUN.
+
+
+## Supplier creation membership and tenant regression — 2026-10-31
+
+- Added `backend/tests/test_business_tenant_boundaries.py::test_supplier_create_denies_non_members_without_side_effects_and_allows_members` on the existing PR #302 branch.
+- This complements the existing `backend/tests/test_api.py::test_nonmember_cannot_create_supplier_without_writes_or_audit_events` count-only regression; it is not a replacement or duplicate assertion.
+- A non-member attempts `POST /api/v1/businesses/{business_id}/suppliers`; the API must return HTTP 403 and the new test compares every business-scoped persisted row (including AuditEvent) before and after the denied request.
+- OWNER and STAFF positive controls then create suppliers successfully; names are normalized and exactly two `supplier.created` audit events and two tenant-owned Supplier rows are asserted.
+- The existing route uniqueness test independently checks that no HTTP method/path pair is registered more than once, protecting the canonical supplier-create route from duplicate registration.
+- The same suite now seeds a STAFF member and verifies STAFF can read the tenant's supplier, purchase-order and recurring-invoice lists while receiving only that tenant's IDs; full business-scoped row snapshots (including AuditEvent) remain unchanged after each read.
+- **Status: IMPLEMENTED, NOT YET VERIFIED.** No local pytest runner is connected and no CI pipeline was triggered; project QA policy prohibits CI triggers/retries. Do not treat this test as PASS until an authorized exact-head test execution is available.
