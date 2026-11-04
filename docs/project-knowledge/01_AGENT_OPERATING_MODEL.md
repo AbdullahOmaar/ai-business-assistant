@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.1
+version: 1.0.2
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T18:29:43Z
+last_verified_at: 2026-11-04T04:22:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -14,15 +14,15 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/AGENTS.md
-related_github_sha: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/AGENTS.md
+related_github_sha: b16d9809f3b3d9b154581c60efcc6b9629e3bce6
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT pending independent review and owner approval. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Publication state:** DRAFT pending independent review. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -65,7 +65,7 @@ Team map:
 - Chat 4 — Employees & Payroll.
 - Chat 5 — independent QA, Integration & Security; tests/reviews Chat 1–4 work and routes defects to the feature owner.
 
-Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. Respect the CircleCI freeze: no trigger/retry, no replacement CI authority and no TinyFish. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
+Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitLab CI is the sole approved test/build/security validation provider per current `AGENTS.md` and `docs/PRODUCTION_DEPLOYMENT.md`; CircleCI and Semaphore are retired and non-authoritative. Do not introduce GitHub Actions as replacement test/build CI. Any GitLab pipeline execution remains subject to the task's explicit CI authorization/freeze; no pipeline was triggered for this knowledge update. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
 
 ## 3. Auto role and workstream discovery
 
