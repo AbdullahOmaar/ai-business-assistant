@@ -12,7 +12,7 @@
 - CircleCI pipeline metadata confirms exact branch `ci/gitlab-fallback-canonical-20261030` and revision `a7fef432e8dedcf1b7ffbac24494ac727f23b02c`. The workflow's final gate requires backend/PostgreSQL tests, frontend unit tests, Angular production build, dependency audit, Playwright browser smoke, and backend container checks. Individual job logs/artifacts were not returned by the connector and still require dashboard inspection.
 - This run validates the above branch SHA only; it does not validate current main.
 - Current main SHA at this checkpoint: `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`. Main does not contain `.circleci/config.yml`, so exact-main CircleCI is NOT RUN.
-- Existing PR #318 is being reused as the CircleCI enablement candidate; no new branch or PR is being created. It will carry the CircleCI config, remove the obsolete GitLab sync-only workflow, and align AGENTS/TASKS policy.
+- Existing PR #318 is being reused as the CircleCI enablement candidate; no new branch or PR is being created. It carries CircleCI config and policy updates and removes the obsolete GitLab sync-only workflow.
 
 ## Current delivery and safety state
 - PR #318 remains OPEN/DRAFT and unmerged until its updated exact head passes CircleCI and receives independent review.

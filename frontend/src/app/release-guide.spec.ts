@@ -81,16 +81,22 @@ test('v1.3.0 release notes cover invoice payments, opening stock, and the featur
 });
 
 
-test('1.3.4 frontend release metadata is consistent in the configured project root', () => {
+test('current frontend release metadata is consistent in the configured project root', () => {
+  const packageLock = JSON.parse(readFileSync(resolve(frontendRoot, 'package-lock.json'), 'utf8'));
+  const escapedVersion = frontendPackage.version.replaceAll('.', '\\.');
+  assert.match(frontendPackage.version, /^\d+\.\d+\.\d+$/);
   assert.equal(frontendPackage.name, 'ai-business-assistant-frontend');
-  assert.equal(frontendPackage.version, '1.3.4');
-  assert.match(buildInfo, /(?:version:\s*'1\.3\.4'|"version":"1\.3\.4")/);
-  assert.match(serviceWorker, /const CACHE_NAME = 'aba-shell-v1\.3\.4-[^']+';/);
+  assert.equal(packageLock.version, frontendPackage.version);
+  assert.equal(packageLock.packages[''].version, frontendPackage.version);
+  assert.match(buildInfo, new RegExp("(?:version:\\s*'" + escapedVersion + "'|\\\"version\\\":\\\"" + escapedVersion + "\\\")"));
+  assert.match(serviceWorker, new RegExp("const CACHE_NAME = 'aba-shell-v" + escapedVersion + "-[^']+';"));
   assert.equal(RELEASE_HISTORY[0].version, frontendPackage.version);
-  assert.match(RELEASE_HISTORY[0].changesEn.join(' '), /version 1\.3\.4/i);
-  const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.3');
-  assert.ok(previousRelease, 'v1.3.3 release notes are missing');
-  assert.match(previousRelease.changesEn.join(' '), /Vercel frontend-root/i);
+  assert.match(RELEASE_HISTORY[0].changesEn.join(' '), new RegExp("version " + escapedVersion, 'i'));
+  const previousRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.4');
+  assert.ok(previousRelease, 'v1.3.4 release notes are missing');
+  const earlierRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.3');
+  assert.ok(earlierRelease, 'v1.3.3 release notes are missing');
+  assert.match(earlierRelease.changesEn.join(' '), /Vercel frontend-root/i);
   const olderRelease = RELEASE_HISTORY.find((release) => release.version === '1.3.2');
   assert.ok(olderRelease, 'v1.3.2 release notes are missing');
   assert.match(olderRelease.changesEn.join(' '), /Platform Admin/i);
@@ -98,11 +104,12 @@ test('1.3.4 frontend release metadata is consistent in the configured project ro
 });
 
 if (hasBackendPackage) {
-  test('1.3.4 release metadata is consistent across frontend and backend in a full repository checkout', () => {
+  test('frontend and backend release metadata stay aligned according to the release scope', () => {
     const backendPackage = readFileSync(resolve(repositoryRoot, 'backend/pyproject.toml'), 'utf8');
     const backendApp = readFileSync(resolve(repositoryRoot, 'backend/app/main.py'), 'utf8');
 
-    assert.match(backendPackage, /^version = "1.3.4"$/m);
-    assert.match(backendApp, /version="1.3.4"/);
+    const expectedApiVersion = RELEASE_HISTORY[0].apiVersion ?? frontendPackage.version;
+    assert.match(backendPackage, new RegExp('^version = "' + expectedApiVersion + '"$', 'm'));
+    assert.match(backendApp, new RegExp('version="' + expectedApiVersion + '"'));
   });
 }

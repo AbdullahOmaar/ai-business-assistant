@@ -1,15 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
-import { AuthService } from './auth.service';
-import { WorkspaceLoadGuard } from './workspace-load-guard';
+import { AuthService, type AuthUserSnapshot } from './auth.service';
+import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
+import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
@@ -28,6 +29,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <span class="version-pill splash-version" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
           <h1>{{ t('جارٍ تشغيل التطبيق', 'Starting the app') }}</h1>
           <p class="muted">{{ t('نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.', 'Checking configuration and your sign-in session before opening the workspace.') }}</p>
+        </main>
+      } @else if (startupFailed) {
+        <main class="auth-card">
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="brand-mark">A</div>
+          <h1>{{ t('تعذر تحميل إعدادات التطبيق', 'Unable to load app configuration') }}</h1>
+          <p class="error" role="alert">{{ error }}</p>
+          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button>
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
@@ -81,7 +90,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('الحالة التشغيلية', 'Operational health')" [attr.title]="t('الحالة التشغيلية', 'Operational health')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة', 'Health') }}</span></button> }
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || ['products','payments','expenses','employees','assistant','reports','audit','platform-admin'].includes(tab) || tab === 'release-guide'" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
@@ -96,7 +105,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
               <button class="nav-item" role="menuitem" [class.active]="tab === 'release-guide'" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
               @if (platformAdminAvailable) { <button class="nav-item" role="menuitem" [class.active]="tab === 'platform-admin'" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
-<button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button>
+@if (canAccessTab('audit')) { <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
                             <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'integrity'" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('سلامة البيانات', 'Data integrity') }}</span></button> }
               @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'taxes'" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('التقارير الضريبية', 'Tax summary') }}</span></button> }
@@ -160,6 +169,30 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 </section>
               }
               <section class="notice"><strong>{{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.', 'Totals come from saved business records. They are not a profit calculation, and different currencies are never combined.') }}</span></section>
+              <section class="panel module-launcher" aria-labelledby="module-launcher-title">
+                <div class="section-head"><div><h2 id="module-launcher-title">{{ t('كل أقسام التطبيق', 'All modules') }}</h2><p>{{ t('افتح القسم المطلوب مباشرة من مساحة العمل.', 'Open any available workspace module directly.') }}</p></div><span class="count">{{ business?.role === 'owner' ? (platformAdminAvailable ? 19 : 18) : (platformAdminAvailable ? 13 : 12) }}</span></div>
+                <div class="quick-grid">
+                  <button class="quick-card" type="button" (click)="setTab('overview')"><strong>⌂ {{ t('الرئيسية', 'Overview') }}</strong><span>{{ t('ملخص النشاط ومؤشرات العمل', 'Business summary and activity') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('customers')"><strong>♧ {{ t('العملاء', 'Customers') }}</strong><span>{{ customers.length }} {{ t('سجل', 'records') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('products')"><strong>◇ {{ t('المنتجات والمخزون', 'Products & inventory') }}</strong><span>{{ products.length }} {{ t('صنف', 'items') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('invoices')"><strong>▤ {{ t('الفواتير', 'Invoices') }}</strong><span>{{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></button>
+                  @if (canAccessTab('payments')) { <button class="quick-card" type="button" (click)="setTab('payments')"><strong>↗ {{ t('المدفوعات والتحصيل', 'Payments & collections') }}</strong><span>{{ t('تسجيل ومراجعة التحصيلات', 'Record and review collections') }}</span></button> }
+                  <button class="quick-card" type="button" (click)="setTab('expenses')"><strong>− {{ t('المصروفات', 'Expenses') }}</strong><span>{{ t('تسجيل ومراجعة المصروفات', 'Record and review expenses') }}</span></button>
+                  @if (canAccessTab('employees')) { <button class="quick-card" type="button" (click)="setTab('employees')"><strong>♙ {{ t('الموظفون والمرتبات', 'Employees & payroll') }}</strong><span>{{ t('ملفات الموظفين وسجلات المرتبات', 'Employee records and payroll') }}</span></button> }
+                  <button class="quick-card" type="button" (click)="setTab('assistant')"><strong>✦ {{ t('المساعد الذكي', 'AI assistant') }}</strong><span>{{ t('اسأل عن بيانات نشاطك', 'Ask about your business data') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('reports')"><strong>∑ {{ t('الأرباح والخسائر', 'Profit & loss') }}</strong><span>{{ t('تقارير الأداء المالي وحدودها', 'Financial reporting and limitations') }}</span></button>
+                  @if (canAccessTab('taxes')) { <button class="quick-card" type="button" (click)="setTab('taxes')"><strong>% {{ t('ملخص الضرائب', 'Tax summary') }}</strong><span>{{ t('ملخص ضريبي للقراءة فقط', 'Read-only tax summary') }}</span></button> }
+                  @if (canAccessTab('audit')) { <button class="quick-card" type="button" (click)="setTab('audit')"><strong>◷ {{ t('سجل العمليات', 'Activity log') }}</strong><span>{{ t('مراجعة أحداث النشاط', 'Review business activity events') }}</span></button> }
+                  @if (canAccessTab('integrity')) { <button class="quick-card" type="button" (click)="setTab('integrity')"><strong>⚑ {{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('مراجعة مؤشرات سلامة البيانات', 'Review data integrity indicators') }}</span></button> }
+                  <button class="quick-card" type="button" (click)="setTab('release-guide')"><strong>ⓘ {{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</strong><span>{{ t('الخصائص المتاحة وسجل الإصدارات', 'Available features and release history') }}</span></button>
+                  @if (canAccessTab('platform-admin')) { <button class="quick-card" type="button" (click)="setTab('platform-admin')"><strong>◇ {{ t('إدارة المنصة', 'Platform admin') }}</strong><span>{{ t('أدوات الإدارة المصرح بها', 'Authorized platform tools') }}</span></button> }
+                  <button class="quick-card" type="button" (click)="setTab('suppliers')"><strong>▣ {{ t('الموردون', 'Suppliers') }}</strong><span>{{ t('ملفات الموردين', 'Supplier records') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('purchases')"><strong>⇩ {{ t('المشتريات', 'Purchasing') }}</strong><span>{{ t('أوامر الشراء والاستلام', 'Purchase orders and receiving') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('recurring')"><strong>↻ {{ t('الفواتير الدورية', 'Recurring invoices') }}</strong><span>{{ t('جداول الفوترة الدورية', 'Recurring billing schedules') }}</span></button>
+                  <button class="quick-card" type="button" (click)="setTab('notifications')"><strong>♢ {{ t('الإشعارات', 'Notifications') }}</strong><span>{{ t('قائمة الإشعارات وحالاتها', 'Notification queue and statuses') }}</span></button>
+                  @if (canAccessTab('health')) { <button class="quick-card" type="button" (click)="setTab('health')"><strong>♥ {{ t('الحالة التشغيلية', 'Operational health') }}</strong><span>{{ t('مؤشرات الحالة التشغيلية', 'Operational health indicators') }}</span></button> }
+                </div>
+              </section>
               <section class="quick-grid">
                 <button class="quick-card" (click)="setTab('customers')"><strong>{{ t('العملاء', 'Customers') }}</strong><span>{{ customers.length }} {{ t('سجلات نشطة · عرض القائمة ←', 'active records · View list →') }}</span></button>
                 <button class="quick-card" (click)="setTab('products')"><strong>{{ t('المنتجات', 'Products') }}</strong><span>{{ products.length }} {{ t('سجلات نشطة · عرض الكتالوج ←', 'active records · View catalog →') }}</span></button>
@@ -726,7 +759,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:left}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
     .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:#9ca3af;line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(180px,260px);justify-content:stretch;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px;min-width:0}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
-    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:15px}.quick-card{text-align:left;padding:18px}.quick-card strong,.quick-card span{display:block}.quick-card strong{font-size:13px;margin-bottom:8px}.quick-card span{font-size:11px;color:#6b7280}
+    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:12px;margin-top:15px}.quick-card{text-align:start;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:104px;width:100%;padding:16px;background:#fff;border:1px solid #e5eaf1;border-radius:14px}.quick-card strong,.quick-card span{display:block;overflow-wrap:anywhere}.quick-card strong{font-size:13px;line-height:1.45}.quick-card span{font-size:11px;color:#6b7280;line-height:1.5}.module-launcher{margin-top:18px}.module-launcher .section-head{margin-bottom:8px}
     .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:#334155;margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover{background:#eff6ff;border-color:#93c5fd}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.35}.chat-panel{min-width:0}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-card{flex:0 0 175px}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;padding:8px}.chat-log{min-height:220px;max-height:48vh}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
     .mobile-version-strip{display:none}
     .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -908,7 +941,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
     }
   `]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
   readonly featureCatalog = FEATURE_CATALOG;
   readonly releaseHistory = RELEASE_HISTORY;
@@ -918,6 +951,7 @@ export class AppComponent implements OnInit {
   apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
+  startupFailed = false;
   setupNeeded = false;
   signedIn = false;
   platformAdminAvailable = false;
@@ -927,6 +961,13 @@ export class AppComponent implements OnInit {
   email = '';
   password = '';
   userEmail = '';
+  private authStateUnsubscribe?: () => void;
+  private authFlowInProgress = false;
+  private currentAuthUid: string | null = null;
+  private currentAuthEmail: string | null = null;
+  private businessListRequestVersion = 0;
+  private authTransitionVersion = 0;
+  private pendingAuthSnapshot: AuthUserSnapshot | null | undefined;
   tab: Tab = 'overview';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
@@ -966,7 +1007,8 @@ export class AppComponent implements OnInit {
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;
-  private statementRequestVersion = 0;
+  private readonly auditLoadGuard = new WorkspaceLoadGuard();
+  private readonly statementLoadGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1145,6 +1187,13 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.authStateUnsubscribe = this.auth.subscribeToAuthState(user => {
+      if (this.authFlowInProgress || !this.initialized) {
+        this.pendingAuthSnapshot = user;
+        return;
+      }
+      void this.handleExternalAuthState(user);
+    });
     void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -1154,6 +1203,66 @@ export class AppComponent implements OnInit {
       if (document.readyState === 'complete') void registerWorker();
       else window.addEventListener('load', () => { void registerWorker(); }, { once: true });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.authStateUnsubscribe?.();
+    this.authStateUnsubscribe = undefined;
+  }
+
+  private async handleExternalAuthState(user: AuthUserSnapshot | null): Promise<void> {
+    const nextUid = user?.uid ?? null;
+    const nextEmail = user?.email ?? null;
+    if (nextUid === this.currentAuthUid && nextEmail === this.currentAuthEmail) return;
+
+    this.currentAuthUid = nextUid;
+    this.currentAuthEmail = nextEmail;
+    const transitionVersion = ++this.authTransitionVersion;
+    this.businessListRequestVersion++;
+    this.businesses = [];
+    this.business = null;
+    this.selectedBusinessId = '';
+    this.clearWorkspaceData();
+    this.error = '';
+
+    if (!user) {
+      this.resetSignedOutState();
+      return;
+    }
+
+    this.signedIn = true;
+    this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+    this.loading = true;
+    try {
+      await this.checkPlatformAdminAccess();
+      if (transitionVersion !== this.authTransitionVersion) return;
+      await this.loadBusinesses();
+    } catch (error) {
+      if (transitionVersion === this.authTransitionVersion) this.error = this.message(error, 'auth');
+    } finally {
+      if (transitionVersion === this.authTransitionVersion) this.loading = false;
+    }
+  }
+
+  private applyPendingAuthSnapshot(): void {
+    const pending = this.pendingAuthSnapshot;
+    this.pendingAuthSnapshot = undefined;
+    if (pending === undefined) return;
+    if (pending?.uid === this.currentAuthUid && pending?.email === this.currentAuthEmail) return;
+    void this.handleExternalAuthState(pending);
+  }
+
+  private resetSignedOutState(): void {
+    this.businessListRequestVersion++;
+    this.signedIn = false;
+    this.userEmail = '';
+    this.platformAdminAvailable = false;
+    this.tab = 'overview';
+    this.businesses = [];
+    this.business = null;
+    this.selectedBusinessId = '';
+    this.clearWorkspaceData();
+    this.loading = false;
   }
 
   private async loadApiVersion(): Promise<void> {
@@ -1189,18 +1298,29 @@ export class AppComponent implements OnInit {
   }
 
   async initializeApp(): Promise<void> {
+    this.authFlowInProgress = true;
     this.initialized = false;
+    this.startupFailed = false;
     this.loading = true;
     this.error = '';
     document.documentElement.lang = this.language;
     document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
     try {
-      const config = await this.auth.getRuntimeConfig();
+      let config: Awaited<ReturnType<AuthService['getRuntimeConfig']>>;
+      try {
+        config = await this.auth.getRuntimeConfig();
+      } catch (error) {
+        this.startupFailed = true;
+        this.error = this.message(error);
+        return;
+      }
       this.setupNeeded = !config.apiBaseUrl?.trim() ||
         !config.firebase?.apiKey || !config.firebase?.authDomain ||
         !config.firebase?.projectId || !config.firebase?.appId;
       if (this.setupNeeded) return;
       const user = await this.auth.currentUser();
+      this.currentAuthUid = user?.uid ?? null;
+      this.currentAuthEmail = user?.email ?? null;
       if (user) {
         this.signedIn = true;
         this.userEmail = user.email || 'مستخدم مسجّل الدخول';
@@ -1210,8 +1330,10 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.error = this.message(error);
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
       this.initialized = true;
+      this.applyPendingAuthSnapshot();
     }
   }
 
@@ -1346,11 +1468,14 @@ export class AppComponent implements OnInit {
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
+    const requestUid = this.currentAuthUid;
     this.platformAdminAvailable = false;
     try {
       const access = await this.api.platformAdminAccess();
+      if (requestUid !== this.currentAuthUid) return;
       this.platformAdminAvailable = access.is_platform_admin === true;
     } catch {
+      if (requestUid !== this.currentAuthUid) return;
       // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
       this.platformAdminAvailable = false;
       if (this.tab === 'platform-admin') this.tab = 'overview';
@@ -1358,12 +1483,15 @@ export class AppComponent implements OnInit {
   }
 
   async submitAuth(): Promise<void> {
+    this.authFlowInProgress = true;
     this.loading = true;
     this.error = '';
     try {
       const user = this.signingUp
         ? await this.auth.signUp(this.email, this.password)
         : await this.auth.signIn(this.email, this.password);
+      this.currentAuthUid = user.uid;
+      this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
       this.userEmail = user.email || 'مستخدم مسجّل الدخول';
       await this.checkPlatformAdminAccess();
@@ -1371,62 +1499,27 @@ export class AppComponent implements OnInit {
     } catch (error) {
       this.error = this.message(error, 'auth');
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
+      this.applyPendingAuthSnapshot();
     }
   }
 
   async logout(): Promise<void> {
+    this.authFlowInProgress = true;
     this.loading = true;
     try {
       await this.auth.signOut();
-      this.signedIn = false;
-      this.platformAdminAvailable = false;
-      this.tab = 'overview';
-      this.businesses = [];
-      this.business = null;
-      this.dashboard = null;
-      this.customers = [];
-      this.products = [];
-      this.invoices = [];
-      this.payments = [];
-    this.expenses = [];
-    this.expenseMessage = '';
-    this.suppliers = [];
-    this.purchaseOrders = [];
-    this.recurringSchedules = [];
-    this.notifications = [];
-    this.operationalHealth = null;
-    this.operationsError = '';
-    this.healthError = '';
-    this.notificationTitle = '';
-    this.notificationBody = '';
-    this.supplierName = '';
-    this.purchaseOrderNumber = '';
-    this.purchaseSupplierId = '';
-    this.purchaseProductId = '';
-    this.recurringCustomerId = '';
-    this.supplierEmail = '';
-    this.supplierPhone = '';
-    this.supplierAddress = '';
-    this.purchaseQuantity = '1';
-    this.purchaseUnitCost = '0';
-    this.recurringIntervalDays = '30';
-    this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    this.recurringTimezone = 'UTC';
-    this.notificationScheduledAt = '';
-    this.notificationDeduplicationKey = 'manual-' + Date.now();
-    this.suppliersLoading = false;
-    this.purchasesLoading = false;
-    this.recurringLoading = false;
-    this.notificationsLoading = false;
-    this.healthLoading = false;
-    this.expenseSubmissionUncertain = false;
-      this.chatMessages = [];
+      this.currentAuthUid = null;
+      this.currentAuthEmail = null;
+      this.resetSignedOutState();
       this.error = '';
     } catch (error) {
       this.error = this.message(error);
     } finally {
+      this.authFlowInProgress = false;
       this.loading = false;
+      this.applyPendingAuthSnapshot();
     }
   }
 
@@ -1439,10 +1532,15 @@ export class AppComponent implements OnInit {
   }
 
   async loadBusinesses(): Promise<void> {
+    const requestVersion = ++this.businessListRequestVersion;
+    const requestUid = this.currentAuthUid;
     this.loading = true;
     this.error = '';
     try {
-      this.businesses = await this.api.listBusinesses();
+      const businesses = await this.api.listBusinesses();
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
+      this.businesses = businesses;
       if (!this.businesses.length) {
         this.business = null;
         this.selectedBusinessId = '';
@@ -1452,23 +1550,44 @@ export class AppComponent implements OnInit {
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
-      const workspaceChanged = this.business?.id !== chosen.id;
+      const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      if (workspaceChanged) this.clearWorkspaceData();
+      if (workspaceAccessChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
       this.business = null;
       this.selectedBusinessId = '';
       this.clearWorkspaceData();
       this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (requestVersion === this.businessListRequestVersion) this.loading = false;
     }
   }
 
   private clearWorkspaceData(): void {
+    // Invalidate the top-level workspace load too; otherwise an old load's finally
+    // block can still mutate loading state while a new identity is being resolved.
+    this.workspaceLoadGuard.invalidate();
     this.profitLossLoadGuard.invalidate();
+    this.auditLoadGuard.invalidate();
+    this.statementLoadGuard.invalidate();
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+    this.auditAction = '';
+    this.auditTargetType = '';
+    this.customerStatement = null;
+    this.statementLoading = false;
+    this.statementError = '';
+    this.statementVisible = false;
+    this.statementCustomerName = '';
+    this.statementCustomerId = '';
+    this.statementOffset = 0;
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.profitLoss = null;
@@ -1586,7 +1705,6 @@ export class AppComponent implements OnInit {
   }
 
   async switchBusiness(id: string): Promise<void> {
-    this.statementRequestVersion++;
     this.statementVisible = false;
     this.customerStatement = null;
     this.statementCustomerId = '';
@@ -1879,36 +1997,61 @@ export class AppComponent implements OnInit {
   }
 
   async loadAuditEvents(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.auditLoadGuard.begin();
+    const businessId = this.business.id;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role ?? null,
+      signedIn: this.signedIn,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.auditLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+      },
+    );
+
     this.auditLoading = true;
     this.auditError = '';
     try {
-      const result = await this.api.auditEvents(this.business.id, {
+      const result = await this.api.auditEvents(businessId, {
         limit: 50, offset,
         action: this.auditAction.trim() || undefined,
         target_type: this.auditTargetType.trim() || undefined
       });
+      if (!isCurrentRequest()) return;
       this.auditEvents = result.items;
       this.auditTotal = result.total;
       this.auditOffset = result.offset;
     } catch (error) {
+      if (!isCurrentRequest()) return;
       this.auditEvents = [];
       this.auditTotal = 0;
       this.auditError = this.message(error);
     } finally {
-      this.auditLoading = false;
+      if (this.auditLoadGuard.isLatest(requestVersion)) this.auditLoading = false;
     }
   }
 
+  canAccessTab(tab: Tab): boolean {
+    return canAccessWorkspaceTab(tab, this.business?.role, this.platformAdminAvailable);
+  }
+
+  isMobileMoreTab(tab: Tab): boolean {
+    return isMobileMoreTabValue(tab);
+  }
+
   setTab(tab: Tab): void {
-    if (tab === 'employees' && this.business?.role !== 'owner') { this.tab = 'overview'; return; }
-    if (tab === 'health' && this.business?.role !== 'owner') { this.tab = 'overview'; return; }
-    if (tab === 'integrity' && this.business?.role !== 'owner') {
+    if (!this.canAccessTab(tab)) {
       this.tab = 'overview';
-      return;
-    }
-    if (tab === 'platform-admin' && !this.platformAdminAvailable) {
-      this.tab = 'overview';
+      this.mobileMoreOpen = false;
       return;
     }
     this.tab = tab;
@@ -1937,23 +2080,43 @@ export class AppComponent implements OnInit {
   }
 
   async loadCustomerStatementPage(offset: number): Promise<void> {
-    if (!this.business || !this.statementCustomerId) return;
-    const requestVersion = ++this.statementRequestVersion;
+    if (!this.business || !this.statementCustomerId || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = this.statementLoadGuard.begin();
     const requestedCustomerId = this.statementCustomerId;
     const businessId = this.business.id;
+    const requestContext = {
+      workspaceId: businessId,
+      userId: this.currentAuthUid,
+      role: this.business.role ?? null,
+      signedIn: this.signedIn,
+      customerId: requestedCustomerId,
+    };
+    const isCurrentRequest = (): boolean => isCurrentTenantRequest(
+      this.statementLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+        customerId: this.statementCustomerId,
+      },
+    );
+
     this.customerStatement = null;
     this.statementOffset = offset;
     this.statementLoading = true;
     this.statementError = '';
     try {
       const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.customerStatement = result;
     } catch (error) {
-      if (requestVersion !== this.statementRequestVersion || requestedCustomerId !== this.statementCustomerId || businessId !== this.business?.id) return;
+      if (!isCurrentRequest()) return;
       this.statementError = this.message(error);
     } finally {
-      if (requestVersion === this.statementRequestVersion) this.statementLoading = false;
+      if (this.statementLoadGuard.isLatest(requestVersion)) this.statementLoading = false;
     }
   }
 

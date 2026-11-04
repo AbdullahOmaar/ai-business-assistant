@@ -10,7 +10,7 @@
 ## Required steps for each versioned release
 
 1. Pick the next appropriate semantic version. Use a patch bump for compatible fixes and a minor bump for additive user-facing features; a major bump requires a deliberate compatibility change.
-2. Align `frontend/package.json`, `backend/pyproject.toml`, and `backend/app/main.py`. The production frontend build regenerates `frontend/src/app/build-info.ts` from the frontend package version; update that file's fallback for local runs when needed.
+2. For coordinated full-stack releases, align `frontend/package.json`, `backend/pyproject.toml`, and `backend/app/main.py`. For an independently releasable frontend-only patch, bump the frontend package/lockfile and record the unchanged API version in `RELEASE_HISTORY[0].apiVersion`; do not change or redeploy the backend. The production frontend build regenerates `frontend/src/app/build-info.ts` and the PWA cache key from the frontend package version; update their fallbacks for local runs when needed.
 3. Update `frontend/src/app/release-guide.ts`:
    - Add the new version at the top of `RELEASE_HISTORY`.
    - Write a brief user-facing title and a few concrete changes in Arabic and English.
@@ -38,3 +38,19 @@ Only the version embedded in the deployed build identifies what users have actua
 - Aligned the frontend package, lockfile root metadata, backend package, and FastAPI `/version` metadata at `1.3.4`.
 - Updated the local build-info fallback, service-worker cache fallback, bilingual in-app release history, and release consistency regression tests.
 - Production status: NOT DEPLOYED until exact-main CircleCI and release gates pass and the deployment SHA/version is verified.
+
+
+## 1.3.5 — Session and tenant-state security (release candidate)
+
+- Align frontend package, lockfile root metadata, backend package, FastAPI API metadata, local build-info fallback, and PWA service-worker fallback at `1.3.5`.
+- Synchronize Firebase sign-in/sign-out/account changes across tabs; clear workspace-scoped state on identity transitions; fence delayed Audit and Customer Statement responses against stale workspace, UID, role, and selected-customer context.
+- Add regression coverage for observer lifecycle and tenant request-context transitions.
+- **Production status: NOT DEPLOYED.** This is a release candidate until GitLab exact-source validation, required review/merge gates, and Vercel deployment verification complete.
+
+## 1.3.6 — Startup reliability and workspace navigation (frontend-only release candidate)
+
+- Bumps the frontend package, lockfile, local build-info fallback, and PWA cache fallback to `1.3.6`.
+- Adds recoverable startup configuration errors/retry and rejects whitespace-only public Firebase/API settings before initialization.
+- Adds the role-aware All Modules launcher, centralized protected-tab navigation checks, and OWNER-only Activity Log visibility in the mobile More menu.
+- API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
+- **Production status: NOT DEPLOYED.** Release candidate only until exact-source GitLab checks, independent review, merge, and Web deployment verification pass.
