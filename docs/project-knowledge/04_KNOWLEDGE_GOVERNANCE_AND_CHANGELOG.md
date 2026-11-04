@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.1
+version: 1.0.2
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T18:30:01Z
+last_verified_at: 2026-11-04T04:22:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -13,7 +13,7 @@ canonical_sources:
   - https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-related_github_sha: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f
+related_github_sha: b16d9809f3b3d9b154581c60efcc6b9629e3bce6
 supersedes: none
 superseded_by: none
 ---
@@ -174,18 +174,24 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Review findings fixed in the candidate: recursive package inventory now rejects unexpected nested content and symlinked documents; metadata parsing rejects duplicate/unexpected keys; canonical sources require credential-free absolute HTTP(S) URLs; review dates cannot precede verification dates; Markdown links reject unsafe schemes and decoded paths escaping the repository.
 - The validator regression suite was expanded from 7 to 17 cases to cover these boundaries, invalid timestamps, malformed source URLs, duplicate metadata, broken links, owner/version consistency and package shape.
 - A limited static secret-pattern scan found no matches for common private-key/token/credential URL patterns. This is not a full security audit.
-- Validator execution, all 17 unit tests and S01–S11 E2E execution remain NOT RUN. CircleCI remains frozen; no CI result is claimed.
-- This review was performed by the same Project Master maintainer who authored the candidate. It is not an independent review and does not satisfy the independent-review gate. The five documents remain DRAFT pending the required review/approval decision.
+- Validator execution, all 17 unit tests and S01–S11 E2E execution remain NOT RUN. GitLab is the sole approved validation provider; no pipeline was triggered and no CI result is claimed.
+- This review was performed by the same Project Master maintainer who authored the candidate. It is not an independent review and does not satisfy the independent-review gate. Owner approval was recorded on 2026-11-04; the five documents remain DRAFT pending independent review.
 
 ## 11. Changelog
+
+### 1.0.2 — 2026-11-04 — DRAFT
+- Refreshed canonical GitHub references to main SHA `b16d9809f3b3d9b154581c60efcc6b9629e3bce6` after checking the current `AGENTS.md` and Production Deployment Runbook.
+- Corrected CI authority: GitLab CI is the sole approved validation provider; CircleCI and Semaphore are retired/non-authoritative; GitHub Actions is not a replacement test/build provider.
+- Recorded the owner's explicit approval from the Master conversation on 2026-11-04. Independent review remains outstanding, so the five-document set remains DRAFT and is not eligible for Project Sources publication.
+- Reconfirmed validator, 17 unit tests and S01–S11 E2E remain NOT RUN in this session. No CI pipeline, merge, deployment, production write or migration was triggered.
 
 ### 1.0.1 — 2026-10-30 — DRAFT
 - Clarified the Project Master as the cross-project architecture, coordination, integration, review and final-verification authority, with a mandatory bootstrap for every new/resumed Master chat and `@n`.
 - Aligned the logical team map to Chat 1–5; Chat 5 is independent QA, Integration & Security and does not become a feature owner by default. T22 remains unassigned until separately reconciled.
 - Synced the candidate role wording with the canonical Notion Agent Prompt Registry and Product & Agent Operating Model.
 - Updated the copy-ready Project Instructions draft in Notion to 1,496 characters, including safe Master fallback and the five-chat role map. Actual ChatGPT Project Instructions UI save/readback remains NOT VERIFIED.
-- Notion role/operating-model edits were read back. Independent review and Product Owner approval of this controlled knowledge candidate remain NOT RECEIVED; this package remains DRAFT and must not be published as approved.
-- Validator, unit tests and S01–S11 E2E remain NOT RUN. No CircleCI trigger/retry, merge, deployment, production write or migration.
+- Notion role/operating-model edits were read back. Owner approval is now recorded in the Master conversation (2026-11-04); independent review remains outstanding. This package remains DRAFT and must not be published as approved.
+- Validator, unit tests and S01–S11 E2E remain NOT RUN. No CI pipeline trigger, merge, deployment, production write or migration.
 
 ### 1.0.0 — 2026-10-30 — DRAFT
 - Consolidated iteration of the earlier 0.1.0 DRAFT package on `docs/project-sources-knowledge-pack-20261030`; that branch remains unmerged and is retained as historical draft evidence, not an approved predecessor.
