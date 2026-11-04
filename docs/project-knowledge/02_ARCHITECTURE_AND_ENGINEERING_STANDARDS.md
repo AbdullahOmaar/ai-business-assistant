@@ -1,19 +1,19 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.1
+version: 1.0.2
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T18:32:27Z
+last_verified_at: 2026-11-04T04:22:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/docs/ARCHITECTURE_BASELINE.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/docs/adr/ADR-001-v0-architecture.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/CONTRIBUTING.md
-related_github_sha: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/docs/ARCHITECTURE_BASELINE.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/docs/adr/ADR-001-v0-architecture.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/CONTRIBUTING.md
+related_github_sha: b16d9809f3b3d9b154581c60efcc6b9629e3bce6
 supersedes: none
 superseded_by: none
 ---
