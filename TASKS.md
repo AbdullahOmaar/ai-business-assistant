@@ -9,23 +9,23 @@
 ## Verified CircleCI state
 - CircleCI project: `gh/AbdullahOmaar/ai-business-assistant`; connected account ACTIVE.
 - PR #318 branch: `infra/github-gitlab-safe-sync-20261030`.
-- Current exact PR head: `6a7a724bcdf96a232de526e7c0e245e91e50cc2b`; branch is 8 commits ahead / 0 behind current main `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`, with no force-push.
-- PR #318 diff against current main contains only `.circleci/config.yml` (268 lines), `AGENTS.md`, and `TASKS.md`. The config runs validation only: disposable PostgreSQL/Alembic + backend pytest, frontend unit tests, Angular production build, npm/pip audits, Playwright browser smoke, backend container and backup/restore safety. No production deploy or production DB write.
-- CircleCI pipeline #2219: `f06e6dae-3494-42c4-a7bd-55f760804e01`; workflow `verify-all-changes` (`cdccd18b-e33a-4baa-8c8e-5eea482ef137`) SUCCESS at 2026-11-04T14:50:32Z on exact PR head `6a7a724bcdf96a232de526e7c0e245e91e50cc2b`.
-- All six substantive jobs and aggregate passed: backend-accounting #11377; frontend-browser-smoke #11378; frontend-unit-tests #11379; frontend-dependency-audit #11375; frontend-production-build #11374; backend-container #11376; aggregate `verify-all-changes/all-checks-passed`.
-- Backend test metadata from the immediately preceding exact-head run: 253/253 passed; browser metadata 15/15 passed. The latest run's job details and exact-SHA CircleCI contexts all report SUCCESS. Artifacts include backend pytest XML, Alembic offline SQL, pip-audit report and frontend E2E JUnit.
-- Earlier exact-head runs #2217 and #2218 also passed 7/7 on their respective PR #318 heads; do not conflate those SHAs with the current head.
-- Current main SHA remains `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`; main still does not contain `.circleci/config.yml` until PR #318 is merged.
+- Latest previously validated candidate head: `0d9838cd484a9e4c4db88942794a8e81b1363f66`; 9 commits ahead / 0 behind current main `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`; merge base equals current main; normal non-force ancestry only.
+- CircleCI pipeline #2220: `6a5601c3-fb7e-445e-bce1-7e88fcdd63a6`; workflow `verify-all-changes` (`8aed5444-c609-447f-b043-e56da8732efd`) SUCCESS at 2026-11-04T14:53:56Z on exact candidate head `0d9838cd484a9e4c4db88942794a8e81b1363f66`.
+- All six substantive jobs plus aggregate passed: frontend-production-build #11381; frontend-browser-smoke #11382; backend-container #11383; backend-accounting #11384; frontend-unit-tests #11385; frontend-dependency-audit #11386; aggregate `verify-all-changes/all-checks-passed`.
+- Backend metadata: 253/253 tests SUCCESS. Browser smoke metadata: 14 successful test cases plus one system-output trace attachment; job SUCCESS. Artifacts: `backend-pytest.xml`, `alembic-upgrade.sql`, `pip-audit.txt`, `frontend-e2e-junit.xml`.
+- PR #318 diff against current main contains only `.circleci/config.yml` (268 lines), `AGENTS.md`, and `TASKS.md`. No feature/runtime files changed. The CircleCI config validates against disposable PostgreSQL only; no production deploy or production DB write.
+- This TASKS checkpoint is a documentation-only refresh. Its resulting commit must receive its own exact-head CircleCI run; PR #318 description and Notion T01 hold the latest branch SHA and status readback.
+- Current main SHA remains `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`; main does not contain `.circleci/config.yml` until PR #318 is approved and merged.
 
 ## Current delivery and safety state
-- PR #318 remains OPEN/DRAFT/UNMERGED. CircleCI is green on the exact current head, but there is no independent APPROVED review on this head; prior formal reviews are COMMENTED on older head `99ab2f24485f9ae16e20841c066f65ced4842adb`.
+- PR #318 is OPEN/DRAFT/UNMERGED. Pipeline #2220 is green on the immediately preceding candidate head; no independent APPROVED review exists on the current branch. Prior formal review submissions are COMMENTED on older head `99ab2f24485f9ae16e20841c066f65ced4842adb`.
 - GitHub branch API reports `main.protected=false`; effective ruleset enforcement remains UNKNOWN/NOT VERIFIED. Do not merge until independent review and repository gates are evidenced.
 - PR #315 remains OPEN/DRAFT and is not the config-delivery vehicle; do not merge its diverged ERP test scope or T37-unapproved discount/tax/return assertions wholesale.
 - No GitLab pipeline was triggered. No production deployment, production database write, migration, or branch-protection change was performed.
 
 ## Next actions
-1. Chat 5 independently reviews exact PR #318 head `6a7a724bcdf96a232de526e7c0e245e91e50cc2b`; record approval or specific findings.
-2. Owner/admin verifies/configures main branch protection and required CircleCI checks; branch API currently reports `protected=false`, and ruleset enforcement is unverified.
+1. Obtain independent Chat 5 review on the exact current PR #318 head; inspect config safety and provider-policy consistency.
+2. Owner/admin verifies/configures main branch protection and required CircleCI checks; branch API currently reports `protected=false`, ruleset enforcement unverified.
 3. After independent approval and authorized merge, verify resulting main SHA and run CircleCI on that exact main SHA.
 4. Continue remaining prioritized project tasks in Notion order; preserve T37 and all production release/data gates.
 ---
