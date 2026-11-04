@@ -1,35 +1,36 @@
-# Master execution checkpoint — 2026-10-30 (CircleCI quota freeze / release hold)
+# Master execution checkpoint — 2026-11-04 (CircleCI active / GitLab inactive)
 
-## User directive
-- Do NOT trigger, rerun, retry, or otherwise execute CircleCI jobs; user confirmed the CircleCI quota is exhausted.
-- Continue repository work and prepare a production release without consuming CircleCI quota.
-- This directive does not waive security, data-integrity, required-review, or production migration safeguards.
+## Owner CI directive
+- The owner directed the project to use CircleCI and leave GitLab out of current CI validation.
+- CircleCI is the sole active test/build/security validation provider. CircleCI execution is authorized; the previous quota freeze is superseded by the owner's later direction to resume CircleCI.
+- Do not trigger, retry, or rely on GitLab pipelines or GitLab mirror status. Do not introduce GitHub Actions or Semaphore as replacement CI.
+- This provider change does not waive exact-SHA validation, independent review, tenant/security checks, financial-policy approvals, merge authorization, or separate production deployment authorization.
 
-## Verified source and delivery state
-- GitHub canonical repository: `AbdullahOmaar/ai-business-assistant`.
-- Main at inspection: `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`.
-- Frontend package: `1.3.4`; backend package: `1.3.4`; FastAPI app version: `1.3.4`. Version remains aligned; no version bump has been made.
-- Existing Vercel production deployments for Web and API are READY on the same main SHA `ae7a34b884d86e0ed26ffd64c528c1d488b956ef`. No new deployment was triggered in this checkpoint.
-- Vercel runtime inspection (API, last 24h window) reports 7 exceptions across 1 user, including PostgreSQL UndefinedTable for both `employees` and `payroll_records`; Web runtime inspection reports no runtime errors in that window.
-- The API error is a database schema/migration mismatch, not something a redeploy of unchanged application code can repair. Migration `0005_employee_payroll` adds these tables but has not been verified/applied to production. No production SQL, migration, snapshot, or restore operation was run.
-- The release runbook requires backup/restore evidence, schema revision verification, migration rehearsal, and exact candidate checks before applying production migrations.
+## Verified CircleCI state
+- CircleCI project: `gh/AbdullahOmaar/ai-business-assistant`; connected account ACTIVE.
+- PR #318 branch: `infra/github-gitlab-safe-sync-20261030`.
+- Latest previously validated candidate head: `0d9838cd484a9e4c4db88942794a8e81b1363f66`; 9 commits ahead / 0 behind current main `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`; merge base equals current main; normal non-force ancestry only.
+- CircleCI pipeline #2220: `6a5601c3-fb7e-445e-bce1-7e88fcdd63a6`; workflow `verify-all-changes` (`8aed5444-c609-447f-b043-e56da8732efd`) SUCCESS at 2026-11-04T14:53:56Z on exact candidate head `0d9838cd484a9e4c4db88942794a8e81b1363f66`.
+- All six substantive jobs plus aggregate passed: frontend-production-build #11381; frontend-browser-smoke #11382; backend-container #11383; backend-accounting #11384; frontend-unit-tests #11385; frontend-dependency-audit #11386; aggregate `verify-all-changes/all-checks-passed`.
+- Backend metadata: 253/253 tests SUCCESS. Browser smoke metadata: 14 successful test cases plus one system-output trace attachment; job SUCCESS. Artifacts: `backend-pytest.xml`, `alembic-upgrade.sql`, `pip-audit.txt`, `frontend-e2e-junit.xml`.
+- PR #318 diff against current main contains only `.circleci/config.yml` (268 lines), `AGENTS.md`, and `TASKS.md`. No feature/runtime files changed. The CircleCI config validates against disposable PostgreSQL only; no production deploy or production DB write.
+- This TASKS checkpoint is a documentation-only refresh. Its resulting commit must receive its own exact-head CircleCI run; PR #318 description and Notion T01 hold the latest branch SHA and status readback.
+- Current main SHA remains `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`; main does not contain `.circleci/config.yml` until PR #318 is approved and merged.
 
-## PR reconciliation
-- PR #313: OPEN, non-draft, mergeable=true; adds a delegated platform-viewer no-mutation/no-audit regression. No independent review; exact-head CircleCI contexts are failure (not rerun); GitHub Actions also reported failures with unavailable step logs. Not merged.
-- PR #314: OPEN, draft, mergeable=true; adds OWNER-only read-only pricing-rule listing and focused tests. Branch notes report 2 passed in an assembled sandbox, but full exact checkout / CI / review are not verified. It is explicitly PARTIALLY COMPLETE and does not implement effective dates or invoice calculation integration. Not merged.
-- PR #315: OPEN, draft, mergeable=true; adds GitLab CI fallback and repository-boundary docs. Exact-SHA GitLab pipeline/status integration remains unverified. GitLab project inspection returned HTTP 403; no GitLab pipeline was triggered. Not merged.
-- PRs #302, #304–#312 remain based on older base SHA `c464398e0a6ace77eba32aabfbdbd09091f53999`; do not merge wholesale. Reconcile/rebase and review individually.
-- CircleCI statuses remain recorded as unavailable/failing due quota; do not rerun. No required status or branch-protection settings were changed.
+## Current delivery and safety state
+- PR #318 is OPEN/DRAFT/UNMERGED. Pipeline #2220 is green on the immediately preceding candidate head; no independent APPROVED review exists on the current branch. Prior formal review submissions are COMMENTED on older head `99ab2f24485f9ae16e20841c066f65ced4842adb`.
+- GitHub branch API reports `main.protected=false`; effective ruleset enforcement remains UNKNOWN/NOT VERIFIED. Do not merge until independent review and repository gates are evidenced.
+- PR #315 remains OPEN/DRAFT and is not the config-delivery vehicle; do not merge its diverged ERP test scope or T37-unapproved discount/tax/return assertions wholesale.
+- No GitLab pipeline was triggered. No production deployment, production database write, migration, or branch-protection change was performed.
 
-## Actions and outcomes
-- Inspected current main, package/app version alignment, release history/runbook, PR #313–#315 diffs, Vercel projects/deployments, and recent API/Web runtime errors.
-- NOT RUN: CircleCI (per user directive), GitLab pipeline (GitLab returned 403), local full test/build, production database backup/restore, production migration, new Vercel deployment.
-- BLOCKED: production release that claims employee/payroll functionality until migration `0005_employee_payroll` is rehearsed against an isolated restored database and production schema/backup gates are satisfied.
-- Next highest-value action: obtain authorized, cost-safe database backup/restore and schema-revision evidence; then rehearse migration `0005_employee_payroll` in isolation. Keep CircleCI untouched and use an independently verified alternative CI path when GitLab access is restored.
-
+## Next actions
+1. Obtain independent Chat 5 review on the exact current PR #318 head; inspect config safety and provider-policy consistency.
+2. Owner/admin verifies/configures main branch protection and required CircleCI checks; branch API currently reports `protected=false`, ruleset enforcement unverified.
+3. After independent approval and authorized merge, verify resulting main SHA and run CircleCI on that exact main SHA.
+4. Continue remaining prioritized project tasks in Notion order; preserve T37 and all production release/data gates.
 ---
 
-# Current prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
+# Historical prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
 
 > This opening section is the canonical live queue. Historical sections below are retained as history and must not override current evidence. Repository-wide PR/branch totals are point-in-time snapshots unless a fresh paginated inventory is recorded.
 
