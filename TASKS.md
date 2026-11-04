@@ -1,4 +1,4 @@
-# Master execution checkpoint — 2026-11-04 (CircleCI active / GitLab inactive)
+# Master execution checkpoint — 2026-11-04 (CircleCI active / GitLab paused)
 
 ## Owner CI directive
 - The owner directed the project to use CircleCI and leave GitLab out of current CI validation.
@@ -8,25 +8,25 @@
 
 ## Verified CircleCI state
 - CircleCI project: `gh/AbdullahOmaar/ai-business-assistant`; connected account ACTIVE.
-- PR #318 existing branch: `infra/github-gitlab-safe-sync-20261030`.
-- Exact current PR head: `cac88c89d8e334f671f148ec3b8c61737c4c5e7a`; it merges current main `b16d9809f3b3d9b154581c60efcc6b9629e3bce6` as second parent. Compare: 6 commits ahead / 0 behind; no force-push.
-- PR #318 diff against current main contains only `.circleci/config.yml` (268 lines), `AGENTS.md`, and `TASKS.md`. Main previously had no CircleCI config; this PR restores it and makes CircleCI the sole active provider.
-- CircleCI pipeline #2217: `7f09790e-1494-4697-bfe8-4cfccba56c46`; workflow `verify-all-changes` (`01dd2b8d-7788-415d-b3d1-72578601a057`) SUCCESS at 2026-11-04T14:45:39Z on exact PR head `cac88c89d8e334f671f148ec3b8c61737c4c5e7a`.
-- All six substantive jobs and aggregate passed: backend-accounting #11360, frontend-browser-smoke #11362, frontend-unit-tests #11364, frontend-dependency-audit #11365, frontend-production-build #11361, backend-container #11363, and `verify-all-changes/all-checks-passed`.
-- Backend test metadata: 253/253 tests SUCCESS. Retained artifacts: `backend-pytest.xml`, `alembic-upgrade.sql`, `pip-audit.txt`, and `frontend-e2e-junit.xml`. Browser smoke passed; existing browser suite is startup/platform-admin coverage and does not satisfy the separate authenticated ERP OWNER/STAFF journey.
-- Earlier pipeline #2214 was on PR #315's branch and is not credited to this PR. Pipeline #2216 was on the pre-merge PR #318 head and is not the current exact-head evidence.
+- Prior pipeline #2214 passed on exact branch `ci/gitlab-fallback-canonical-20261030`, revision `a7fef432e8dedcf1b7ffbac24494ac727f23b02c`; this is historical supporting evidence, not the current PR #318 check.
+- PR #318 current branch: `infra/github-gitlab-safe-sync-20261030`; current validated head before this ledger-only refresh: `cac88c89d8e334f671f148ec3b8c61737c4c5e7a`.
+- CircleCI pipeline #2217: `7f09790e-1494-4697-bfe8-4cfccba56c46`; workflow `verify-all-changes` SUCCESS on the exact PR #318 head above.
+- All six substantive CircleCI jobs and aggregate passed: backend-accounting (253 pytest cases successful; disposable PostgreSQL/Alembic and pip-audit steps), frontend-unit-tests, Angular production build, frontend dependency audit, Playwright browser smoke (13 tests successful; 2 system-out trace attachment records), backend container build/import, and `all-checks-passed`.
+- Artifacts produced: backend pytest XML, Alembic offline SQL, pip-audit report, and frontend E2E JUnit.
+- Current main SHA: `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`. Main still does not contain `.circleci/config.yml`; exact-main CircleCI remains NOT RUN until the provider-transition PR is approved and merged.
+- PR #318 diff against current main contains only `.circleci/config.yml`, `AGENTS.md`, and `TASKS.md`; the GitLab sync-only workflow is absent from the candidate. PR #318 is OPEN/DRAFT, 6 commits ahead / 0 behind, mergeable=true; independent review is still required.
 
 ## Current delivery and safety state
-- PR #318 is OPEN/DRAFT/UNMERGED. Its CircleCI exact-head pipeline is green, but the formal review API has no APPROVED review on this head; prior comments refer to an older head. Independent Chat 5 review is still required.
-- Current GitHub main remains `b16d9809f3b3d9b154581c60efcc6b9629e3bce6`; it has not been modified by this PR. `main.protected=false` was returned by the GitHub branch API; effective ruleset enforcement remains UNKNOWN/NOT VERIFIED. Do not merge until independent review and repository gates are evidenced.
-- PR #315 remains OPEN/DRAFT and is not the config-delivery vehicle: it is diverged from main and contains test assertions that encode T37-unapproved discount/tax/return semantics. Do not merge it wholesale.
+- Keep PR #318 Draft/unmerged pending independent Chat 5 review of exact head `cac88c89d8e334f671f148ec3b8c61737c4c5e7a` and required repository gates.
+- PR #315 remains OPEN/DRAFT and is not the config-delivery vehicle: its branch is diverged 37 ahead / 2 behind main, has 0 formal approvals, and contains test assertions that encode T37-unapproved discount/tax/return semantics. Do not merge it wholesale.
 - No GitLab pipeline was triggered. No production deployment, production database write, migration, or branch-protection change was performed.
+- Main remains unchanged by this provider-transition work. No production release is authorized by this checkpoint.
 
 ## Next actions
-1. Obtain independent Chat 5 review on exact PR #318 head `cac88c89d8e334f671f148ec3b8c61737c4c5e7a`; keep PR Draft until formal approval.
-2. Owner/admin verifies and configures main branch protection / required CircleCI checks; branch API currently reports `protected=false`, and ruleset enforcement is unverified.
-3. After approval and authorized merge, verify the resulting main SHA and run CircleCI on that exact main SHA.
-4. Continue remaining prioritized project tasks in Notion order; keep T37 unapproved semantics and all production release/data gates unchanged.
+1. Obtain independent Chat 5 review/approval on the exact final PR #318 head.
+2. If approved and repository gates are satisfied, use the existing owner authorization to merge; then verify merge SHA and CircleCI on exact main SHA.
+3. Continue the remaining prioritized project tasks in Notion order. Do not create a new branch or PR for this provider transition.
+
 ---
 
 # Historical prioritized work queue — 2026-10-29 (live checkpoint after PR #299; CSV OWNER-positive regression candidate)
