@@ -1,20 +1,20 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.1
+version: 1.0.2
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-10-30T18:32:27Z
+last_verified_at: 2026-11-04T04:22:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/CONTRIBUTING.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/b16d9809f3b3d9b154581c60efcc6b9629e3bce6/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
-related_github_sha: d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f
+related_github_sha: b16d9809f3b3d9b154581c60efcc6b9629e3bce6
 supersedes: none
 superseded_by: none
 ---
@@ -84,11 +84,12 @@ No destructive migration, production write, snapshot/restore or production data 
 
 ## 7. CI and validation constraints
 
-- Use the repository's existing approved CI and test paths.
-- Do not introduce GitHub Actions as a replacement CI provider.
-- The repository's current owner directive in `TASKS.md` freezes CircleCI run/retry while quota is exhausted. Do not trigger, rerun or retry CircleCI until the owner lifts that restriction.
-- If the approved runner is unavailable, record checks as NOT RUN / BLOCKED and continue independent safe validation. Do not silently substitute an unapproved runner or call a local partial run equivalent to full CI.
-- Distinguish application test failures from provider, quota, permission or log-access failures.
+- GitLab CI is the sole approved test/build/security validation provider; `.gitlab-ci.yml` is the canonical pipeline definition. GitHub remains authoritative for source code, branches, PRs and release SHAs.
+- CircleCI and Semaphore are retired/non-authoritative; do not trigger, retry, wait on or require their statuses for release decisions.
+- Do not introduce GitHub Actions as replacement test/build CI. A GitHub-side sync-only workflow may transport exact refs to GitLab but must not run tests or deploy.
+- Verify all required GitLab jobs against the exact GitHub candidate SHA. If mirror SHA differs, compare and record every changed source blob SHA before treating the run as candidate validation.
+- If GitLab access or the approved pipeline is unavailable, record checks as NOT RUN / BLOCKED and continue independent safe validation. Do not treat a local partial run or unrelated mirror commit as full candidate validation.
+- Distinguish application test failures from provider, quota, permission or log-access failures. Do not trigger a pipeline as part of this documentation update.
 
 ## 8. Production deployment gates
 
