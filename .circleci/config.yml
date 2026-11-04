@@ -1,5 +1,5 @@
-# Independent CI for this private repository.
-# Runs only tests, audits, and a disposable image build; it never deploys or touches production.
+# CircleCI is the approved CI provider for this private repository.
+# Runs tests, audits, and disposable validation only; it never deploys or touches production.
 version: 2.1
 
 jobs:
