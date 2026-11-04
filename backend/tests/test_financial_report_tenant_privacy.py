@@ -383,7 +383,7 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
         expected_payroll_amount = format(stored_payroll_expense.amount, "f")
     assert payroll_csv_rows[0]["amount"] == expected_payroll_amount
     assert "Cross-Tenant Confidential Payroll Employee" in payroll_csv_rows[0]["description"]
-    assert payroll_csv_rows[0]["reference"] == str(payroll["id"])
+    assert payroll_csv_rows[0]["reference"] == f"payroll:{payroll['id']}"
     owner_b_dashboard = read_without_side_effects(lambda: client.get(f"{base_b}/dashboard"))
     owner_b_profit_loss = read_without_side_effects(lambda: client.get(f"{base_b}/profit-loss", params={"period": "all"}))
     owner_b_insights = read_without_side_effects(lambda: client.get(f"{base_b}/assistant/insights"))
