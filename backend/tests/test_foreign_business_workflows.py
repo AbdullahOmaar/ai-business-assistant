@@ -4,7 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.main import app
@@ -21,6 +21,7 @@ from app.models import (
     Product,
     PurchaseOrder,
     PurchaseOrderLine,
+    RecurringInvoiceSchedule,
     SalesReturn,
     SalesReturnLine,
     StockMovement,
@@ -147,35 +148,37 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
         assert foreign_return_response.status_code == 201, foreign_return_response.text
         foreign_return_id = UUID(foreign_return_response.json()["id"])
 
-        business_ids = [business_id, foreign_business_id]
+        tenant_ids = (business_id, foreign_business_id)
+        protected_models = (
+            BusinessMembership, Customer, Invoice, InvoiceLine, Payment,
+            PaymentAllocation, Product, StockMovement, Supplier, PurchaseOrder,
+            PurchaseOrderLine, SalesReturn, SalesReturnLine,
+            RecurringInvoiceSchedule, AuditEvent,
+        )
 
         def snapshot():
             with Session(engine) as session:
-                return (
-                    session.scalar(select(func.count()).select_from(AuditEvent).where(
-                        AuditEvent.business_id.in_(business_ids)
-                    )),
-                    session.scalar(select(func.count()).select_from(Customer)),
-                    session.scalar(select(func.count()).select_from(Supplier)),
-                    session.scalar(select(func.count()).select_from(Product)),
-                    session.scalar(select(func.count()).select_from(Invoice)),
-                    session.scalar(select(func.count()).select_from(InvoiceLine)),
-                    session.scalar(select(func.count()).select_from(PurchaseOrder)),
-                    session.scalar(select(func.count()).select_from(PurchaseOrderLine)),
-                    session.scalar(select(func.count()).select_from(SalesReturn)),
-                    session.scalar(select(func.count()).select_from(SalesReturnLine)),
-                    session.scalar(select(func.count()).select_from(Payment)),
-                    session.scalar(select(func.count()).select_from(PaymentAllocation)),
-                    session.scalar(select(func.count()).select_from(StockMovement)),
-                    session.get(Invoice, foreign_invoice_id).status,
-                    session.get(PurchaseOrder, foreign_order_id).status,
-                    session.get(PurchaseOrderLine, foreign_order_line_id).received_quantity,
-                    session.get(SalesReturn, foreign_return_id).status,
-                )
+                state = {}
+                for model in protected_models:
+                    rows = session.scalars(
+                        select(model).where(model.business_id.in_(tenant_ids))
+                    ).all()
+                    state[model.__name__] = tuple(sorted(
+                        tuple(
+                            (column.key, repr(getattr(row, column.key)))
+                            for column in model.__table__.columns
+                        )
+                        for row in rows
+                    ))
+                return state
 
         denied_attempts = [
             ("issue foreign invoice", lambda: client.post(
                 f"{local_base}/invoices/{foreign_invoice_id}/issue"
+            )),
+            ("void foreign invoice", lambda: client.post(
+                f"{local_base}/invoices/{foreign_invoice_id}/void",
+                json={"reason": "cross-business denial regression"},
             )),
             ("allocate payment to foreign invoice", lambda: client.post(
                 f"{local_base}/payments",
@@ -239,6 +242,16 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
                     }],
                 },
             )),
+            ("create return with foreign invoice line", lambda: client.post(
+                f"{local_base}/sales-returns",
+                json={
+                    "invoice_id": str(local_invoice_id),
+                    "lines": [{
+                        "invoice_line_id": str(foreign_invoice_line_id),
+                        "quantity": "0.250",
+                    }],
+                },
+            )),
             ("approve foreign sales return", lambda: client.post(
                 f"{local_base}/sales-returns/{foreign_return_id}/approve"
             )),
@@ -253,6 +266,15 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
             assert snapshot() == before, (
                 f"{name}: cross-business request changed records, stock, payments, or audit events"
             )
+
+        before_reads = snapshot()
+        invoice_list = client.get(f"{local_base}/invoices")
+        assert invoice_list.status_code == 200, invoice_list.text
+        assert "FOREIGN-INV-1" not in invoice_list.text
+        customer_export = client.get(f"{local_base}/exports/customers.csv")
+        assert customer_export.status_code == 200, customer_export.text
+        assert "Foreign customer" not in customer_export.text
+        assert snapshot() == before_reads, "tenant-scoped reads changed records or audit events"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()

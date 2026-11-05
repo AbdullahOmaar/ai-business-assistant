@@ -124,19 +124,20 @@ def test_concurrent_last_owner_demotion_and_removal_preserve_one_owner(
         demote_response = demote_future.result(timeout=30)
         remove_response = remove_future.result(timeout=30)
 
-    assert demote_response.status_code in (200, 422), demote_response.text
-    assert remove_response.status_code in (204, 422), remove_response.text
-    assert sum(response.status_code in (200, 204) for response in (
-        demote_response, remove_response
-    )) == 1, "exactly one concurrent mutation may succeed"
-
-    rejected_response = (
-        remove_response if demote_response.status_code == 200 else demote_response
+    outcome = (demote_response.status_code, remove_response.status_code)
+    assert outcome in ((200, 403), (422, 204)), (
+        f"unexpected serialized membership race outcome: {outcome}; "
+        f"demotion={demote_response.text}; removal={remove_response.text}"
     )
-    assert rejected_response.status_code == 422
-    assert rejected_response.json()["detail"] == (
-        "A workspace must retain at least one owner"
-    ), "the losing mutation must be rejected specifically by the last-owner guard"
+
+    if outcome == (200, 403):
+        assert remove_response.json()["detail"] == (
+            "Business role is not permitted for this operation"
+        ), "removal must revalidate the actor after the concurrent demotion"
+    else:
+        assert demote_response.json()["detail"] == (
+            "A workspace must retain at least one owner"
+        ), "demotion must be rejected when removal leaves the actor as the last owner"
 
     with factory() as session:
         remaining_owners = session.scalar(
