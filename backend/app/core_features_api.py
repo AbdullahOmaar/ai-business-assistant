@@ -193,6 +193,9 @@ def update_business_membership_role(
         ).one_or_none()
         if business is None:
             raise HTTPException(status_code=404, detail="Business not found")
+        # Revalidate authorization after acquiring the workspace lock. A caller
+        # whose OWNER membership was revoked while waiting must not mutate roles.
+        _authorize(session, principal, business_id, owner_only=True)
         membership = session.scalars(
             select(BusinessMembership).where(
                 BusinessMembership.id == membership_id,
@@ -249,11 +252,16 @@ def remove_business_membership(
     """Remove an existing member while preserving at least one workspace owner."""
     try:
         _authorize(session, principal, business_id, owner_only=True)
-        session.scalars(
+        business = session.scalars(
             select(Business).where(
                 Business.id == business_id, Business.is_active.is_(True)
             ).with_for_update()
         ).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        # Revalidate authorization after acquiring the workspace lock. A caller
+        # whose OWNER membership was revoked while waiting must not remove members.
+        _authorize(session, principal, business_id, owner_only=True)
         membership = session.scalars(
             select(BusinessMembership).where(
                 BusinessMembership.id == membership_id,
