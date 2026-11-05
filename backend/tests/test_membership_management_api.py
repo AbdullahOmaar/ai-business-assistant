@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 from uuid import UUID
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, MembershipRole
+from app.models import AuditEvent, Base, Business, BusinessMembership, MembershipRole
 from app.security import AuthenticatedPrincipal
 
 
@@ -146,3 +146,119 @@ def test_workspace_owner_cannot_access_another_workspaces_memberships(configured
     assert listing.status_code == 403
     assert changed.status_code == 403
     assert removed.status_code == 403
+
+
+def test_role_change_rechecks_fresh_owner_membership_after_workspace_lock(configured_client, monkeypatch):
+    import app.core_features_api as core_features_api
+
+    business_id = create_workspace(configured_client)
+    membership_id = add_member(business_id, "staff-user")
+    real_authorize = core_features_api._authorize
+    calls = 0
+
+    def revoke_owner_after_initial_auth(session, principal, requested_business_id, *, owner_only=False):
+        nonlocal calls
+        calls += 1
+        result = real_authorize(session, principal, requested_business_id, owner_only=owner_only)
+        if calls == 1:
+            session.execute(
+                update(BusinessMembership)
+                .where(
+                    BusinessMembership.business_id == requested_business_id,
+                    BusinessMembership.user_subject == principal.subject,
+                )
+                .values(role=MembershipRole.STAFF)
+                .execution_options(synchronize_session=False)
+            )
+            session.flush()
+        return result
+
+    monkeypatch.setattr(core_features_api, "_authorize", revoke_owner_after_initial_auth)
+    response = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/memberships/{membership_id}",
+        json={"role": "owner"},
+    )
+
+    assert calls == 2
+    assert response.status_code == 403
+    with app.state.session_factory() as session:
+        membership = session.get(BusinessMembership, UUID(membership_id))
+        events = session.query(AuditEvent).filter_by(
+            business_id=UUID(business_id), action="membership.role_changed"
+        ).all()
+    assert membership is not None
+    assert membership.role is MembershipRole.STAFF
+    assert events == []
+
+
+def test_member_removal_rechecks_fresh_owner_membership_after_workspace_lock(configured_client, monkeypatch):
+    import app.core_features_api as core_features_api
+
+    business_id = create_workspace(configured_client)
+    membership_id = add_member(business_id, "staff-user")
+    real_authorize = core_features_api._authorize
+    calls = 0
+
+    def revoke_owner_after_initial_auth(session, principal, requested_business_id, *, owner_only=False):
+        nonlocal calls
+        calls += 1
+        result = real_authorize(session, principal, requested_business_id, owner_only=owner_only)
+        if calls == 1:
+            session.execute(
+                update(BusinessMembership)
+                .where(
+                    BusinessMembership.business_id == requested_business_id,
+                    BusinessMembership.user_subject == principal.subject,
+                )
+                .values(role=MembershipRole.STAFF)
+                .execution_options(synchronize_session=False)
+            )
+            session.flush()
+        return result
+
+    monkeypatch.setattr(core_features_api, "_authorize", revoke_owner_after_initial_auth)
+    response = configured_client.delete(
+        f"/api/v1/businesses/{business_id}/memberships/{membership_id}"
+    )
+
+    assert calls == 2
+    assert response.status_code == 403
+    with app.state.session_factory() as session:
+        membership = session.get(BusinessMembership, UUID(membership_id))
+        events = session.query(AuditEvent).filter_by(
+            business_id=UUID(business_id), action="membership.removed"
+        ).all()
+    assert membership is not None
+    assert membership.role is MembershipRole.STAFF
+    assert events == []
+
+
+def test_member_removal_fails_closed_if_workspace_deactivates_after_initial_auth(
+    configured_client, monkeypatch
+):
+    import app.core_features_api as core_features_api
+
+    business_id = create_workspace(configured_client)
+    membership_id = add_member(business_id, "staff-user")
+
+    def deactivate_after_initial_authorization(
+        session, principal, requested_business_id, *, owner_only=False
+    ):
+        business = session.get(Business, requested_business_id)
+        business.is_active = False
+        session.flush()
+        return None
+
+    monkeypatch.setattr(core_features_api, "_authorize", deactivate_after_initial_authorization)
+    response = configured_client.delete(
+        f"/api/v1/businesses/{business_id}/memberships/{membership_id}"
+    )
+
+    assert response.status_code == 404
+    with app.state.session_factory() as session:
+        membership = session.get(BusinessMembership, UUID(membership_id))
+        events = session.query(AuditEvent).filter_by(
+            business_id=UUID(business_id), action="membership.removed"
+        ).all()
+    assert membership is not None
+    assert events == []
