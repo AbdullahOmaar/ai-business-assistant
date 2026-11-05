@@ -7,7 +7,7 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -954,3 +954,90 @@ def test_workspace_status_change_rolls_back_when_audit_commit_fails(
             AuditEvent.action == "platform.business.deactivated",
         ))
     assert event is None
+
+
+
+def test_delegated_read_only_platform_role_cannot_change_workspace_status(platform_admin_environment):
+    """A viewer may read allowlisted admin surfaces but cannot mutate business or grant state."""
+    environment = platform_admin_environment
+    subject = "firebase:test-project:read-only-platform-user"
+    engine = environment["engine"]
+    with Session(engine) as session:
+        session.add(PlatformRoleGrant(
+            user_subject=subject,
+            role="platform_viewer",
+            is_active=True,
+            granted_by_subject=ADMIN_SUBJECT,
+            last_reason="Read-only support access",
+        ))
+        session.commit()
+        business_audit_before = session.scalar(select(func.count(AuditEvent.id)))
+        platform_audit_before = session.scalar(select(func.count(PlatformAdminAuditEvent.id)))
+
+    def persisted_snapshot():
+        """Capture complete rows, not counts, for every table this denial could affect."""
+        with Session(engine) as session:
+            result = []
+            for model in (Business, PlatformRoleGrant, AuditEvent, PlatformAdminAuditEvent):
+                statement = select(model).order_by(*model.__table__.primary_key.columns)
+                rows = session.scalars(statement).all()
+                result.append((
+                    model.__tablename__,
+                    tuple(
+                        tuple(getattr(row, column.key) for column in model.__table__.columns)
+                        for row in rows
+                    ),
+                ))
+            return tuple(result)
+
+    def assert_no_side_effect(request, expected_status):
+        before = persisted_snapshot()
+        response = request()
+        assert response.status_code == expected_status, response.text
+        assert persisted_snapshot() == before, (
+            "A read-only platform_viewer request changed an existing Business, "
+            "PlatformRoleGrant, AuditEvent, or PlatformAdminAuditEvent row"
+        )
+        return response
+
+    environment["subject"]["value"] = subject
+    client = environment["client"]
+    business_id = environment["alpha_id"]
+
+    overview = assert_no_side_effect(
+        lambda: client.get("/api/v1/platform-admin/overview"), 200
+    )
+    audit_read = assert_no_side_effect(
+        lambda: client.get("/api/v1/platform-admin/audit-events"), 200
+    )
+    assert overview.status_code == 200
+    assert audit_read.status_code == 200
+
+    status_denial = assert_no_side_effect(
+        lambda: client.patch(
+            f"/api/v1/platform-admin/businesses/{business_id}/status",
+            json={"is_active": False, "reason": "Should be denied"},
+        ),
+        403,
+    )
+    role_denial = assert_no_side_effect(
+        lambda: client.post(
+            "/api/v1/platform-admin/users/new-platform-user/roles",
+            json={"role": "workspace_operator", "active": True, "reason": "Should be denied"},
+        ),
+        403,
+    )
+    assert status_denial.status_code == 403
+    assert role_denial.status_code == 403
+
+    with Session(engine) as session:
+        business = session.get(Business, UUID(business_id))
+        business_audit_after = session.scalar(select(func.count(AuditEvent.id)))
+        platform_audit_after = session.scalar(select(func.count(PlatformAdminAuditEvent.id)))
+        grant_after = session.scalar(select(func.count(PlatformRoleGrant.id)).where(
+            PlatformRoleGrant.user_subject == "firebase:test-project:new-platform-user"
+        ))
+    assert business is not None and business.is_active is True
+    assert business_audit_after == business_audit_before
+    assert platform_audit_after == platform_audit_before
+    assert grant_after == 0
