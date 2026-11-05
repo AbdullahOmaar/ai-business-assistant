@@ -1,7 +1,7 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.3
+version: 1.0.4
 status: DRAFT
 owner: Project Master / Repository Owner
 last_verified_at: 2026-11-05T00:03:00Z
@@ -14,7 +14,7 @@ canonical_sources:
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
-related_github_sha: d7ff459d9478b88a39c1b0cb944468f0ea392c37
+related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
 supersedes: none
 superseded_by: none
 ---
@@ -76,10 +76,10 @@ No destructive migration, production write, snapshot/restore or production data 
 
 - Inspect the exact branch, base/head SHA, changed files and mergeability.
 - Required checks must be green on the exact PR head; checks on another SHA or empty/unavailable checks are NOT PASS.
-- Required reviews must be independently recorded where policy requires them; comments are not approvals.
+- Only reviews explicitly required by GitHub branch protection or a separately approved security policy are mandatory; satisfy those on the exact PR head. Otherwise, a documented maintainer self-review is sufficient. Comments are not approvals where a formal approval is required.
 - Resolve material review findings and inspect the final diff for secrets, unrelated changes, authorization gaps and data-integrity risk.
 - Merge only with explicit owner authorization and all repository gates satisfied.
-- Never bypass branch protection, required reviews, frozen CI or security gates.
+- Never bypass branch protection, provider-enforced required reviews, frozen CI or security gates. Do not invent an additional independent-review requirement.
 - A Draft PR, mergeable flag, passing local subset or successful preview is not merge authorization.
 
 ## 7. CI and validation constraints
