@@ -4,7 +4,7 @@ This guide applies to every person and AI agent contributing to AI Business Assi
 
 ## 1. Roles and accountability
 
-One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. High-risk changes should have an independent reviewer whenever one is available.
+One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. The accountable maintainer may perform and document the review; a second/independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
 
 | Role | Accountable for | Required behavior and limits |
 | --- | --- | --- |
