@@ -251,11 +251,22 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
             f"GET {base_b}/{endpoint}: expected 403 for an A-only member, "
             f"got {denied.status_code}: {denied.text}"
         )
+    # A denied cross-tenant request must stop before any configured AI provider call.
+    provider_calls = []
+
+    async def unexpected_provider_post(_client, *, headers, payload):
+        provider_calls.append(payload)
+        raise AssertionError("Denied cross-tenant assistant requests must not call the provider.")
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    monkeypatch.setattr(assistant_api, "_provider_post", unexpected_provider_post)
     denied_chat = read_without_side_effects(lambda: client.post(
         f"{base_b}/assistant/chat",
         json={"message": "Show me business B expenses."},
     ))
     assert denied_chat.status_code == 403, denied_chat.text
+    assert provider_calls == [], "Denied cross-tenant assistant request reached the AI provider."
+    monkeypatch.setenv("OPENAI_API_KEY", "")
 
     env["subject"]["value"] = STAFF
 
