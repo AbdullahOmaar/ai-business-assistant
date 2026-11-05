@@ -21,6 +21,7 @@ from app.models import (
     Product,
     PurchaseOrder,
     PurchaseOrderLine,
+    RecurringInvoiceSchedule,
     SalesReturn,
     SalesReturnLine,
     StockMovement,
@@ -147,31 +148,29 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
         assert foreign_return_response.status_code == 201, foreign_return_response.text
         foreign_return_id = UUID(foreign_return_response.json()["id"])
 
-        business_ids = [business_id, foreign_business_id]
+        tenant_ids = (business_id, foreign_business_id)
+        protected_models = (
+            BusinessMembership, Customer, Invoice, InvoiceLine, Payment,
+            PaymentAllocation, Product, StockMovement, Supplier, PurchaseOrder,
+            PurchaseOrderLine, SalesReturn, SalesReturnLine,
+            RecurringInvoiceSchedule, AuditEvent,
+        )
 
         def snapshot():
             with Session(engine) as session:
-                return (
-                    session.scalar(select(func.count()).select_from(AuditEvent).where(
-                        AuditEvent.business_id.in_(business_ids)
-                    )),
-                    session.scalar(select(func.count()).select_from(Customer)),
-                    session.scalar(select(func.count()).select_from(Supplier)),
-                    session.scalar(select(func.count()).select_from(Product)),
-                    session.scalar(select(func.count()).select_from(Invoice)),
-                    session.scalar(select(func.count()).select_from(InvoiceLine)),
-                    session.scalar(select(func.count()).select_from(PurchaseOrder)),
-                    session.scalar(select(func.count()).select_from(PurchaseOrderLine)),
-                    session.scalar(select(func.count()).select_from(SalesReturn)),
-                    session.scalar(select(func.count()).select_from(SalesReturnLine)),
-                    session.scalar(select(func.count()).select_from(Payment)),
-                    session.scalar(select(func.count()).select_from(PaymentAllocation)),
-                    session.scalar(select(func.count()).select_from(StockMovement)),
-                    session.get(Invoice, foreign_invoice_id).status,
-                    session.get(PurchaseOrder, foreign_order_id).status,
-                    session.get(PurchaseOrderLine, foreign_order_line_id).received_quantity,
-                    session.get(SalesReturn, foreign_return_id).status,
-                )
+                state = {}
+                for model in protected_models:
+                    rows = session.scalars(
+                        select(model).where(model.business_id.in_(tenant_ids))
+                    ).all()
+                    state[model.__name__] = tuple(sorted(
+                        tuple(
+                            (column.key, repr(getattr(row, column.key)))
+                            for column in model.__table__.columns
+                        )
+                        for row in rows
+                    ))
+                return state
 
         denied_attempts = [
             ("issue foreign invoice", lambda: client.post(
