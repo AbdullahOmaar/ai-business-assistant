@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 from uuid import UUID
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -148,22 +148,32 @@ def test_workspace_owner_cannot_access_another_workspaces_memberships(configured
     assert removed.status_code == 403
 
 
-def test_role_change_rechecks_owner_after_workspace_lock(configured_client, monkeypatch):
+def test_role_change_rechecks_fresh_owner_membership_after_workspace_lock(configured_client, monkeypatch):
     import app.core_features_api as core_features_api
-    from app.security import AuthorizationError
 
     business_id = create_workspace(configured_client)
     membership_id = add_member(business_id, "staff-user")
+    real_authorize = core_features_api._authorize
     calls = 0
 
-    def revoke_owner_after_lock(session, principal, requested_business_id, *, owner_only=False):
+    def revoke_owner_after_initial_auth(session, principal, requested_business_id, *, owner_only=False):
         nonlocal calls
         calls += 1
+        result = real_authorize(session, principal, requested_business_id, owner_only=owner_only)
         if calls == 1:
-            return None
-        raise AuthorizationError("Business role is not permitted for this operation")
+            session.execute(
+                update(BusinessMembership)
+                .where(
+                    BusinessMembership.business_id == requested_business_id,
+                    BusinessMembership.user_subject == principal.subject,
+                )
+                .values(role=MembershipRole.STAFF)
+                .execution_options(synchronize_session=False)
+            )
+            session.flush()
+        return result
 
-    monkeypatch.setattr(core_features_api, "_authorize", revoke_owner_after_lock)
+    monkeypatch.setattr(core_features_api, "_authorize", revoke_owner_after_initial_auth)
     response = configured_client.patch(
         f"/api/v1/businesses/{business_id}/memberships/{membership_id}",
         json={"role": "owner"},
@@ -181,22 +191,32 @@ def test_role_change_rechecks_owner_after_workspace_lock(configured_client, monk
     assert events == []
 
 
-def test_member_removal_rechecks_owner_after_workspace_lock(configured_client, monkeypatch):
+def test_member_removal_rechecks_fresh_owner_membership_after_workspace_lock(configured_client, monkeypatch):
     import app.core_features_api as core_features_api
-    from app.security import AuthorizationError
 
     business_id = create_workspace(configured_client)
     membership_id = add_member(business_id, "staff-user")
+    real_authorize = core_features_api._authorize
     calls = 0
 
-    def revoke_owner_after_lock(session, principal, requested_business_id, *, owner_only=False):
+    def revoke_owner_after_initial_auth(session, principal, requested_business_id, *, owner_only=False):
         nonlocal calls
         calls += 1
+        result = real_authorize(session, principal, requested_business_id, owner_only=owner_only)
         if calls == 1:
-            return None
-        raise AuthorizationError("Business role is not permitted for this operation")
+            session.execute(
+                update(BusinessMembership)
+                .where(
+                    BusinessMembership.business_id == requested_business_id,
+                    BusinessMembership.user_subject == principal.subject,
+                )
+                .values(role=MembershipRole.STAFF)
+                .execution_options(synchronize_session=False)
+            )
+            session.flush()
+        return result
 
-    monkeypatch.setattr(core_features_api, "_authorize", revoke_owner_after_lock)
+    monkeypatch.setattr(core_features_api, "_authorize", revoke_owner_after_initial_auth)
     response = configured_client.delete(
         f"/api/v1/businesses/{business_id}/memberships/{membership_id}"
     )

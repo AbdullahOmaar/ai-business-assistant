@@ -193,8 +193,9 @@ def update_business_membership_role(
         ).one_or_none()
         if business is None:
             raise HTTPException(status_code=404, detail="Business not found")
-        # Revalidate authorization after acquiring the workspace lock. A caller
-        # whose OWNER membership was revoked while waiting must not mutate roles.
+        # Refresh ORM identity-map state before revalidation. The initial auth query
+        # may have cached OWNER membership while this request waited for the row lock.
+        session.expire_all()
         _authorize(session, principal, business_id, owner_only=True)
         membership = session.scalars(
             select(BusinessMembership).where(
@@ -259,8 +260,9 @@ def remove_business_membership(
         ).one_or_none()
         if business is None:
             raise HTTPException(status_code=404, detail="Business not found")
-        # Revalidate authorization after acquiring the workspace lock. A caller
-        # whose OWNER membership was revoked while waiting must not remove members.
+        # Refresh ORM identity-map state before revalidation. The initial auth query
+        # may have cached OWNER membership while this request waited for the row lock.
+        session.expire_all()
         _authorize(session, principal, business_id, owner_only=True)
         membership = session.scalars(
             select(BusinessMembership).where(
