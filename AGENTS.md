@@ -57,7 +57,7 @@ Stop and ask for human input only when necessary for a material product decision
 - **Create a new branch only for a genuinely new, substantial feature or a clearly independent change boundary**—for example, independently releasable work, a different security/review/permission boundary, or a change that would create material conflicts if combined. A new chat, agent, tiny fix, test, refactor, or documentation edit is not by itself a reason to create a branch.
 - If a contributor's branch already has an open PR, continue on that branch while its scope remains coherent. Do not create duplicate branches/PRs or stack feature branches unless a real dependency requires it and the coordinator records why.
 - Keep PRs focused on one coherent outcome; do not bundle unrelated features merely to avoid a branch. If the scope materially changes, finish/merge or safely close the current work before starting a separate branch.
-- Merge only after required checks pass on the exact PR head, reviews/approvals and repository rules are satisfied, and the diff has been reviewed. Never bypass branch protections. After merge, verify the merge commit and main CI before beginning the next branch.
+- Merge only after required checks pass on the exact PR head, any review/approval explicitly required by GitHub branch protection or repository rules is satisfied, the accountable maintainer has reviewed the diff, and the owner has authorized merge. There is no additional project-level independent-reviewer requirement. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
 - Branch discipline does not authorize direct pushes to protected main, unsafe merges, deleting branches with unique work, or bypassing release/security approvals.
 - Do not deploy after every commit, fix, or small task. Validate locally/CI and use previews when useful; deploy to production only for a meaningful, approved release—normally a new important feature, a deliberate feature bundle, or a critical production fix.
 - Batch related changes and tests, merge the approved release candidate, then trigger at most one production deployment per affected Vercel project for that release. Do not trigger the unaffected project. Do not retry deployment attempts repeatedly when quota, configuration, or build gates block them; diagnose first and wait for the platform limit to reset if needed.
@@ -66,7 +66,7 @@ Stop and ask for human input only when necessary for a material product decision
 - Inspect current branch, status, diff, and existing uncommitted work before editing.
 - Never discard or overwrite unrelated user changes.
 - Use a focused branch and coherent commits where supported.
-- Never bypass required checks, repository protections, reviews, or authorization.
+- Never bypass required checks, repository protections, any provider-enforced required review, or authorization. A separate independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
 - Do not commit secrets or sensitive production/customer data.
 - Avoid destructive database operations. Review migrations and rollback/recovery implications before proposing or applying them.
 - Do not run production migrations or consequential production data changes without the required explicit approval.
@@ -127,7 +127,7 @@ If the task is too large, split it into independently reviewable subtasks with e
 - **Coordinator/architect:** owns the task ledger, architecture consistency, dependency graph, scope, integration, and final report; reconciles agent outputs against repository reality.
 - **Implementation agent:** owns only its assigned files or module and must include tests/docs required by its change.
 - **Test/verification agent:** independently checks acceptance criteria, edge cases, failure paths, and regression risks; must report exact commands/results and may not claim checks it did not run.
-- **Security/review agent:** reviews authorization, tenant isolation, secrets, injection/input validation, financial correctness, dependency risk, and unintended scope.
+- **Security/review agent (when assigned):** may review authorization, tenant isolation, secrets, injection/input validation, financial correctness, dependency risk, and unintended scope; a separate reviewer is not a default merge prerequisite.
 - Begin with one implementation agent. Add parallel agents only when work is genuinely separable and file ownership/conflict boundaries are explicit.
 - Never allow multiple agents to edit the same files concurrently without a deliberate integration/locking strategy. The coordinator resolves conflicting advice and is accountable for the final result.
 - Agents must report changed files, evidence, unresolved questions, and exact next steps—not just a summary of intentions.
