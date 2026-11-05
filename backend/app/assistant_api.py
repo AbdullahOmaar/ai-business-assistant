@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
 from app.models import Business, Customer, Expense, Invoice, Product, Supplier
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.security import AuthenticatedPrincipal, AuthorizationError, apply_expense_visibility, authorize_membership
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}/assistant", tags=["AI assistant"])
 
@@ -93,7 +93,7 @@ async def chat(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
     try:
-        authorize_membership(session, principal=principal, business_id=business_id)
+        membership = authorize_membership(session, principal=principal, business_id=business_id)
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail="No access to this business workspace.") from exc
 
@@ -111,9 +111,12 @@ async def chat(
             Invoice.business_id == business_id, Invoice.status == "issued"
         ).order_by(Invoice.issue_date.desc()).limit(20)
     ).all()
+    expense_statement = select(Expense).where(Expense.business_id == business_id)
+    expense_statement = apply_expense_visibility(
+        expense_statement, business_id=business_id, role=membership.role
+    )
     expenses = session.scalars(
-        select(Expense).where(Expense.business_id == business_id)
-        .order_by(Expense.incurred_at.desc()).limit(20)
+        expense_statement.order_by(Expense.incurred_at.desc(), Expense.id.desc()).limit(20)
     ).all()
     product_count = session.scalar(select(func.count()).select_from(Product).where(
         Product.business_id == business_id, Product.is_active.is_(True)
