@@ -243,6 +243,16 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
                     }],
                 },
             )),
+            ("create return with foreign invoice line", lambda: client.post(
+                f"{local_base}/sales-returns",
+                json={
+                    "invoice_id": str(local_invoice_id),
+                    "lines": [{
+                        "invoice_line_id": str(foreign_invoice_line_id),
+                        "quantity": "0.250",
+                    }],
+                },
+            )),
             ("approve foreign sales return", lambda: client.post(
                 f"{local_base}/sales-returns/{foreign_return_id}/approve"
             )),
@@ -257,6 +267,15 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
             assert snapshot() == before, (
                 f"{name}: cross-business request changed records, stock, payments, or audit events"
             )
+
+        before_reads = snapshot()
+        invoice_list = client.get(f"{local_base}/invoices")
+        assert invoice_list.status_code == 200, invoice_list.text
+        assert "FOREIGN-INV-1" not in invoice_list.text
+        customer_export = client.get(f"{local_base}/exports/customers.csv")
+        assert customer_export.status_code == 200, customer_export.text
+        assert "Foreign customer" not in customer_export.text
+        assert snapshot() == before_reads, "tenant-scoped reads changed records or audit events"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
