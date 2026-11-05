@@ -10,7 +10,10 @@ from sqlalchemy.pool import StaticPool
 from uuid import UUID
 
 from app.main import app
-from app.models import Base, Business, Expense, Invoice, InvoiceLine, SalesReturn, SalesReturnLine
+from app.models import (
+    Base, Business, Customer, Expense, Invoice, InvoiceLine, Payment, PaymentAllocation,
+    SalesReturn, SalesReturnLine,
+)
 from app.security import AuthenticatedPrincipal
 
 
@@ -310,5 +313,84 @@ def test_business_update_rejects_invalid_timezone_name():
         )
         assert response.status_code == 422
         assert "valid IANA timezone" in response.json()["detail"]
+    finally:
+        _restore_app(engine, previous_factory, previous_resolver)
+
+
+def test_customer_statement_uses_business_local_date_boundaries_for_invoices_and_payments():
+    engine, client, previous_factory, previous_resolver = _configured_client()
+    try:
+        created = client.post(
+            "/api/v1/businesses",
+            json={
+                "name": "Cairo Statement Shop",
+                "currency_code": "EGP",
+                "timezone": "Africa/Cairo",
+            },
+        )
+        assert created.status_code == 201, created.text
+        business_id = UUID(created.json()["id"])
+        timestamps = [
+            # Cairo local Jan 15 begins at 22:00 UTC on Jan 14.
+            datetime(2026, 1, 14, 21, 59, 59, tzinfo=timezone.utc),
+            datetime(2026, 1, 14, 22, 30, 0, tzinfo=timezone.utc),
+            # Exactly local midnight at the start of Jan 16; exclusive upper bound.
+            datetime(2026, 1, 15, 22, 0, 0, tzinfo=timezone.utc),
+        ]
+        with Session(engine) as session:
+            business = session.get(Business, business_id)
+            assert business is not None
+            customer = Customer(business_id=business_id, name="Cairo statement customer")
+            session.add(customer)
+            session.flush()
+            customer_id = customer.id
+            for index, occurred_at in enumerate(timestamps):
+                invoice = Invoice(
+                    business_id=business_id,
+                    customer_id=customer.id,
+                    invoice_number=f"CAIRO-ST-{index}",
+                    status="issued",
+                    currency_code="EGP",
+                    issue_date=occurred_at,
+                    subtotal=Decimal("10.00"),
+                    discount_total=Decimal("0.00"),
+                    tax_total=Decimal("0.00"),
+                    total=Decimal("10.00"),
+                )
+                session.add(invoice)
+                session.flush()
+                payment = Payment(
+                    business_id=business_id,
+                    customer_id=customer.id,
+                    amount=Decimal("2.00"),
+                    currency_code="EGP",
+                    received_at=occurred_at,
+                    idempotency_key=f"cairo-statement-{index}",
+                )
+                session.add(payment)
+                session.flush()
+                session.add(PaymentAllocation(
+                    business_id=business_id,
+                    payment_id=payment.id,
+                    invoice_id=invoice.id,
+                    amount=Decimal("2.00"),
+                ))
+            session.commit()
+
+        response = client.get(
+            f"/api/v1/businesses/{business_id}/customers/{customer_id}/statement",
+            params={"from_date": "2026-01-15", "to_date": "2026-01-15"},
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload["total"] == 2
+        assert {item["event_type"] for item in payload["items"]} == {
+            "invoice_issued", "payment_allocation",
+        }
+        assert all(
+            item["occurred_at"].startswith("2026-01-14T22:30:00+00:00")
+            for item in payload["items"]
+        )
+        assert payload["balances_by_currency"]["EGP"] == "8.00"
     finally:
         _restore_app(engine, previous_factory, previous_resolver)

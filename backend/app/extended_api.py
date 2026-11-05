@@ -21,10 +21,11 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
-    AuditEvent, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
+    AuditEvent, Business, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
+from app.core_features_api import _day_bounds
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, apply_expense_visibility, authorize_membership
 from app.domain_rules import discounted_return_line_total, money, validate_return_amount
 from app.services import WorkflowError, create_expense
@@ -1539,6 +1540,17 @@ def customer_statement(
         if customer is None:
             raise HTTPException(status_code=404, detail="Customer not found")
 
+        business = session.get(Business, business_id)
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        start_utc, end_utc = _day_bounds(from_date, to_date, business.timezone)
+
+        def as_utc_timestamp(value: datetime) -> datetime:
+            # SQLite may return naive values for timezone-aware columns; treat those as UTC.
+            if value.tzinfo is None or value.utcoffset() is None:
+                return value.replace(tzinfo=timezone.utc)
+            return value.astimezone(timezone.utc)
+
         invoices = session.scalars(select(Invoice).where(
             Invoice.business_id == business_id,
             Invoice.customer_id == customer_id,
@@ -1550,10 +1562,10 @@ def customer_statement(
             occurred_at = item.issue_date or item.created_at
             if occurred_at is None:
                 continue
-            occurred_date = occurred_at.date()
-            if from_date is not None and occurred_date < from_date:
+            occurred_at = as_utc_timestamp(occurred_at)
+            if start_utc is not None and occurred_at < start_utc:
                 continue
-            if to_date is not None and occurred_date > to_date:
+            if end_utc is not None and occurred_at >= end_utc:
                 continue
             events.append({
                 "occurred_at": occurred_at,
@@ -1583,10 +1595,10 @@ def customer_statement(
                 occurred_at = payment.received_at or allocation.created_at
                 if occurred_at is None:
                     continue
-                occurred_date = occurred_at.date()
-                if from_date is not None and occurred_date < from_date:
+                occurred_at = as_utc_timestamp(occurred_at)
+                if start_utc is not None and occurred_at < start_utc:
                     continue
-                if to_date is not None and occurred_date > to_date:
+                if end_utc is not None and occurred_at >= end_utc:
                     continue
                 same_currency = payment.currency_code == invoice.currency_code
                 events.append({
