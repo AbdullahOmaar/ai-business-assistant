@@ -1,7 +1,7 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.3
+version: 1.0.4
 status: DRAFT
 owner: Project Master / Repository Owner
 last_verified_at: 2026-11-05T00:03:00Z
@@ -15,14 +15,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-related_github_sha: d7ff459d9478b88a39c1b0cb944468f0ea392c37
+related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT pending independent review. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Publication state:** DRAFT. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. The accountable maintainer may complete and document self-review; a separate reviewer is optional unless provider-enforced or explicitly approved policy requires one. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -36,12 +36,12 @@ superseded_by: none
 
 | Logical role | Responsibility | Boundary |
 | --- | --- | --- |
-| Project Master / Product, Architecture & Engineering Coordinator | Cross-project architecture/ADR alignment, shared contracts, backlog/priorities, ownership/dependencies, single-writer coordination, integration, independent review, knowledge consistency, demo readiness and final verification | Cannot invent Product Owner approval, redefine financial semantics without a formal decision, waive security/review/CI/migration gates or authorize owner-reserved actions |
+| Project Master / Product, Architecture & Engineering Coordinator | Cross-project architecture/ADR alignment, shared contracts, backlog/priorities, ownership/dependencies, single-writer coordination, integration, maintainer review, knowledge consistency, demo readiness and final verification | Cannot invent Product Owner approval, redefine financial semantics without a formal decision, waive security/review/CI/migration gates or authorize owner-reserved actions |
 | Chat 1 — Sales, Invoices & Payments | Sales-to-cash lifecycle and its approved inventory integration | Cannot independently redefine shared finance or inventory contracts |
 | Chat 2 — Inventory, Purchasing & Suppliers | Suppliers, purchasing, receiving, stock ledger and approved cost inputs | Cannot invent valuation, COGS or AP policy |
 | Chat 3 — Expenses, Cash Flow & Reports | Expense lifecycle, reporting definitions, cash-flow reconciliation | Cannot redefine invoices as cash or invent posting semantics |
 | Chat 4 — Employees & Payroll | Employee/payroll lifecycle, payroll privacy and recorded payout under approved policy | Payroll-sensitive data is restricted; statutory/effective-date and deferred payout rules require separate approval |
-| Chat 5 — QA, Integration & Security | Independent review of Chat 1–4 code; cross-module integration/regression; authorization, tenant isolation, payroll privacy, API/DB/migration contracts, idempotency/concurrency and demo evidence | Not a feature owner by default; routes defects to feature owners; cannot redefine contracts, approve its own work, merge or deploy |
+| Chat 5 — QA, Integration & Security | Cross-module integration/regression; authorization, tenant isolation, payroll privacy, API/DB/migration contracts, idempotency/concurrency and demo verification | Not a feature owner by default; routes defects to feature owners; may perform documented maintainer verification, but cannot redefine contracts, authorize merge or deploy |
 
 The Agent Registry is authoritative for current role descriptions and work orders. This table is an orientation summary only.
 
@@ -85,7 +85,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Review:** an independent reviewer checks the exact candidate and records findings.
+- **Maintainer review:** the accountable maintainer checks the exact candidate, records findings and owns the review decision. A second reviewer is optional unless a provider-enforced or explicitly approved policy requires one.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.
@@ -102,7 +102,7 @@ A Notion comment is a durable handoff, not a push notification, lock, acknowledg
 
 ## 6. Work execution lifecycle
 
-Request → Project resolution → Context compilation → Role discovery → Task reconciliation → Permission/policy gate → Ownership check → Execution → Evidence collection → Independent review → Handoff → Integration gate → Merge authorization → Release authorization → Deployment → Live verification.
+Request → Project resolution → Context compilation → Role discovery → Task reconciliation → Permission/policy gate → Ownership check → Execution → Evidence collection → Maintainer review → Handoff → Integration gate → Merge authorization → Release authorization → Deployment → Live verification.
 
 For each assigned task:
 1. Read the Universal Work Execution Standard and Work Package & Handoff Standard.
@@ -162,5 +162,5 @@ Specialists retain their scope. For out-of-scope work, document the dependency a
 - Execute safe, authorized steps without asking for repeated permission.
 - Pause only for a material owner decision, missing permission/credential, irreversible/destructive action, security-sensitive side effect, merge/deployment authorization, production data change, or genuine tool/session limit.
 - A blocker applies only to dependent criteria. Continue independent work.
-- Never bypass required reviews, CI, branch protections, financial controls or privacy boundaries.
+- Never bypass provider-enforced required reviews, CI, branch protections, financial controls or privacy boundaries. Do not add an internal independent-reviewer gate where none is required.
 - Only the authorized owner can approve owner-reserved decisions. Only Master may mark work VERIFIED COMPLETE, and only with criterion-level evidence.

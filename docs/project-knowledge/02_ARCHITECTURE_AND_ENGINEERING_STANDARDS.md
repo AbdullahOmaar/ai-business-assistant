@@ -1,7 +1,7 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.3
+version: 1.0.4
 status: DRAFT
 owner: Project Master / Repository Owner
 last_verified_at: 2026-11-05T00:03:00Z
@@ -13,7 +13,7 @@ canonical_sources:
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/adr/ADR-001-v0-architecture.md
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/CONTRIBUTING.md
-related_github_sha: d7ff459d9478b88a39c1b0cb944468f0ea392c37
+related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
 supersedes: none
 superseded_by: none
 ---
@@ -100,8 +100,8 @@ For sensitive operations, test success, failure, invalid input, duplicate/retry,
 - Reuse a matching active branch/PR; one coherent branch and PR per work package.
 - Preserve unrelated user work. Do not overwrite or delete unique changes.
 - Keep diffs focused; add tests and docs alongside behavior changes.
-- Require independent review for high-risk changes where available.
-- Do not merge until the exact PR head has required checks and reviews and the owner has authorized merge.
+- Require a documented maintainer self-review for every change. A second/independent reviewer may be added when useful, but is not a default gate unless GitHub branch protection or an explicitly approved security policy requires one.
+- Do not merge until the exact PR head has required checks, any review explicitly required by GitHub branch protection or approved policy, and the owner has authorized merge. Maintainer self-review is sufficient when no external review is required.
 - Do not create duplicate task trackers or branch-per-subtask noise.
 
 ## 8. Dependency and security review

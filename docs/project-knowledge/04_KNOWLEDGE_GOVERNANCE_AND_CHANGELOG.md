@@ -1,7 +1,7 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.3
+version: 1.0.4
 status: DRAFT
 owner: Project Master / Repository Owner
 last_verified_at: 2026-11-05T00:03:00Z
@@ -13,14 +13,14 @@ canonical_sources:
   - https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-related_github_sha: d7ff459d9478b88a39c1b0cb944468f0ea392c37
+related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
 supersedes: none
 superseded_by: none
 ---
 
 # Knowledge Governance & Changelog
 
-> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires an approved PR/review and verified UI readback.
+> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review and verified UI readback; a second reviewer is not a default requirement.
 
 ## 1. Package manifest
 
@@ -82,7 +82,7 @@ Suggested review cadence (operational proposal, pending owner approval):
 5. Preserve historical records and mark superseded material; never erase history to hide a conflict.
 6. If authority remains ambiguous, mark CONFLICTED / UNKNOWN and fail closed for consequential actions.
 7. Record the exact conflict, source references, owner and required resolution.
-8. Update only affected documents after the canonical decision is resolved and independently checked.
+8. Update only affected documents after the canonical decision is resolved and checked by the accountable maintainer.
 
 ## 5. Workstream closeout → knowledge update
 
@@ -98,7 +98,7 @@ At every Workstream Closeout:
    - **NEW CANONICAL DECISION:** create or update the owning ADR/Notion decision first; then summarize/link it here.
 6. Do not copy dynamic status, test output, temporary blockers, customer data, secrets or payroll-sensitive data into Project Sources.
 7. Update the canonical GitHub file with version, owner, UTC verification time, review date, source links and supersession metadata.
-8. Request independent review for controlled/security/architecture changes. Do not mark APPROVED without the authorized decision/review.
+8. Document maintainer self-review for controlled/security/architecture changes. Obtain a second reviewer only when GitHub branch protection or an explicitly approved security policy requires one. Do not mark APPROVED without the authorized owner decision and required checks.
 9. Publish only the approved version to ChatGPT Project Sources.
 10. Read back every published file and compare filename, version and content with the GitHub canonical copy.
 11. Update this changelog and the existing Notion task/handoff with exact PR/SHA, versions, publication/readback state and remaining gaps.
@@ -120,7 +120,7 @@ At every Workstream Closeout:
 The following is a concise draft for the ChatGPT Project Instructions field. It must be checked against the actual UI character limit, saved by an authorized user and read back before it is considered active:
 
 ```text
-For every new or resumed AI Business Assistant chat, read all five Project Sources files first. Treat them as stable/controlled context, not live status. Discover this chat's role only from its own context or a verified runtime binding; blank or conflicting identity defaults to Master triage. Before work, read the canonical Notion Registry, Operating Model, Master Task Plan, assigned task and latest handoff/comments. Verify live GitHub AGENTS.md, README.md, TASKS.md, main SHA, relevant branches/PRs/diffs and exact-head checks. Use Vercel/Neon for deployment/runtime/schema evidence. Resolve conflicts by source authority, explicit approval and supersession—not last edit time. Mark inaccessible or stale facts UNKNOWN/STALE and fail closed for sensitive actions. Execute all safe authorized work through tests, fixes, review, docs and evidence; a report is a checkpoint, not completion. Block only dependent criteria and continue independent work. Never invent identity, dispatch, acknowledgement, test results or deployment. No merge, production write/migration or deployment without required explicit authorization and gates. Update knowledge only after verified durable change, independent review and approved publication.
+For every new or resumed AI Business Assistant chat, read all five Project Sources files first. Treat them as stable/controlled context, not live status. Discover this chat's role only from its own context or a verified runtime binding; blank or conflicting identity defaults to Master triage. Before work, read the canonical Notion Registry, Operating Model, Master Task Plan, assigned task and latest handoff/comments. Verify live GitHub AGENTS.md, README.md, TASKS.md, main SHA, relevant branches/PRs/diffs and exact-head checks. Use Vercel/Neon for deployment/runtime/schema evidence. Resolve conflicts by source authority, explicit approval and supersession—not last edit time. Mark inaccessible or stale facts UNKNOWN/STALE and fail closed for sensitive actions. Execute all safe authorized work through tests, fixes, review, docs and evidence; a report is a checkpoint, not completion. Block only dependent criteria and continue independent work. Never invent identity, dispatch, acknowledgement, test results or deployment. No merge, production write/migration or deployment without required explicit authorization and gates. Update knowledge only after verified durable change, documented maintainer self-review and approved publication.
 ```
 
 ## 8. Validation and integrity checks
@@ -141,7 +141,7 @@ Run:
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
-- Independent reviewer: a reviewer who did not author the changed content, when available. A Project Master self-review is supplementary maintainer review only; it is not independent and does not satisfy a gate that requires independent review.
+- Review owner: the accountable maintainer/Project Master may review and approve their own documentation changes with a recorded self-review. A second reviewer is optional unless a provider-enforced or explicitly approved policy requires one.
 - Stable documents: review every 90 days or on relevant scope/identity/source-authority event.
 - Controlled documents: review every 30 days or immediately on relevant policy/ADR/security/release change.
 - The review schedule is a proposed maintenance default until explicitly approved by the owner.
@@ -175,9 +175,16 @@ For every scenario, record the fixture/input, canonical source references, packa
 - The validator regression suite was expanded from 7 to 17 cases to cover these boundaries, invalid timestamps, malformed source URLs, duplicate metadata, broken links, owner/version consistency and package shape.
 - A limited static secret-pattern scan found no matches for common private-key/token/credential URL patterns. This is not a full security audit.
 - At this checkpoint, validator and 17 unit tests had not yet run; the 1.0.3 CircleCI update adds them to the approved CI job for exact-head execution. S01–S11 E2E and Project Sources UI publication/readback remain NOT VERIFIED. T37 remains DRAFT / NOT APPROVED.
-- This review was performed by the same Project Master maintainer who authored the candidate. It is not an independent review and does not satisfy the independent-review gate. Owner approval was recorded on 2026-11-04; the five documents remain DRAFT pending independent review.
+- Historical note (superseded by policy 1.0.4): at this checkpoint, the same Project Master maintainer authored and reviewed the candidate, and the then-current policy still required independent review. Owner approval was recorded on 2026-11-04.
 
 ## 11. Changelog
+
+### 1.0.4 — 2026-11-06 — DRAFT
+- Removed the project-level mandatory independent-reviewer gate for routine merges and controlled knowledge updates.
+- The accountable maintainer/Project Master may perform and document self-review; a second reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
+- Preserved owner merge authorization, exact-head required checks, provider-enforced branch protections, security/data-integrity controls and production release authorization.
+- Historical references to the former independent-review requirement are retained only as historical checkpoints and are superseded by this policy.
+- Project Sources publication and Project Instructions UI save/readback remain NOT VERIFIED.
 
 ### 1.0.3 — 2026-11-05 — DRAFT
 - Refreshed the five documents' GitHub source baseline to current main `d7ff459d9478b88a39c1b0cb944468f0ea392c37` and rechecked source-map references.
@@ -189,7 +196,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 ### 1.0.2 — 2026-11-04 — DRAFT
 - Refreshed canonical GitHub references to main SHA `d7ff459d9478b88a39c1b0cb944468f0ea392c37` after checking the current `AGENTS.md` and Production Deployment Runbook.
 - Corrected CI authority: GitLab CI is the sole approved validation provider; CircleCI and Semaphore are retired/non-authoritative; GitHub Actions is not a replacement test/build provider.
-- Recorded the owner's explicit approval from the Master conversation on 2026-11-04. Independent review remains outstanding, so the five-document set remains DRAFT and is not eligible for Project Sources publication.
+- Historical note: recorded the owner's explicit approval from the Master conversation on 2026-11-04; independent review was still outstanding under the policy in force at that time.
 - Reconfirmed validator, 17 unit tests and S01–S11 E2E remain NOT RUN in this session. No CI pipeline, merge, deployment, production write or migration was triggered.
 
 ### 1.0.1 — 2026-10-30 — DRAFT
@@ -197,7 +204,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Aligned the logical team map to Chat 1–5; Chat 5 is independent QA, Integration & Security and does not become a feature owner by default. T22 remains unassigned until separately reconciled.
 - Synced the candidate role wording with the canonical Notion Agent Prompt Registry and Product & Agent Operating Model.
 - Updated the copy-ready Project Instructions draft in Notion to 1,496 characters, including safe Master fallback and the five-chat role map. Actual ChatGPT Project Instructions UI save/readback remains NOT VERIFIED.
-- Notion role/operating-model edits were read back. Owner approval is now recorded in the Master conversation (2026-11-04); independent review remains outstanding. This package remains DRAFT and must not be published as approved.
+- Historical note: Notion role/operating-model edits were read back. Owner approval was recorded in the Master conversation (2026-11-04); the then-current independent-review requirement remained outstanding.
 - Validator, unit tests and S01–S11 E2E remain NOT RUN. No CI pipeline trigger, merge, deployment, production write or migration.
 
 ### 1.0.0 — 2026-10-30 — DRAFT

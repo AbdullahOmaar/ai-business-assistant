@@ -1,7 +1,7 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.3
+version: 1.0.4
 status: DRAFT
 owner: Project Master / Repository Owner
 last_verified_at: 2026-11-05T00:03:00Z
@@ -14,7 +14,7 @@ canonical_sources:
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
-related_github_sha: d7ff459d9478b88a39c1b0cb944468f0ea392c37
+related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
 supersedes: none
 superseded_by: none
 ---
