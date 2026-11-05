@@ -384,6 +384,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (statementVisible) {
                   <section class="panel statement-panel">
                     <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement?.customer?.name || statementCustomerName }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></div>
+                    <div class="inline-form statement-filters">
+                      <label>{{ t('من تاريخ', 'From date') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
+                      <label>{{ t('إلى تاريخ', 'To date') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
+                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('تطبيق الفترة', 'Apply range') }}</button>
+                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('مسح الفترة', 'Clear range') }}</button>
+                    </div>
+                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('الرصيد المعروض يجمع الحركات داخل الفترة المحددة فقط، ولا يشمل رصيد ما قبل بدايتها.', 'Displayed balances sum movements inside the selected range only; they do not include the opening balance before the range.') }}</p> }
                     @if (statementLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل كشف الحساب…', 'Loading statement…') }}</p> }
                     @if (statementError) { <p class="error" role="alert">{{ statementError }}</p> }
                     @if (customerStatement) {
@@ -1007,6 +1014,8 @@ export class AppComponent implements OnInit, OnDestroy {
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;
+  statementFromDate = '';
+  statementToDate = '';
   private readonly auditLoadGuard = new WorkspaceLoadGuard();
   private readonly statementLoadGuard = new WorkspaceLoadGuard();
   products: Product[] = [];
@@ -2075,7 +2084,26 @@ export class AppComponent implements OnInit, OnDestroy {
   async loadCustomerStatement(customer: Customer): Promise<void> {
     this.statementCustomerId = customer.id;
     this.statementCustomerName = customer.name;
+    this.statementFromDate = '';
+    this.statementToDate = '';
     this.statementVisible = true;
+    await this.loadCustomerStatementPage(0);
+  }
+
+  async applyCustomerStatementFilters(): Promise<void> {
+    if (this.statementFromDate && this.statementToDate && this.statementFromDate > this.statementToDate) {
+      this.statementError = this.t(
+        'تاريخ البداية لازم يكون قبل تاريخ النهاية أو مساويًا له.',
+        'Start date must be on or before end date.'
+      );
+      return;
+    }
+    await this.loadCustomerStatementPage(0);
+  }
+
+  async clearCustomerStatementFilters(): Promise<void> {
+    this.statementFromDate = '';
+    this.statementToDate = '';
     await this.loadCustomerStatementPage(0);
   }
 
@@ -2109,7 +2137,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementLoading = true;
     this.statementError = '';
     try {
-      const result = await this.api.customerStatement(businessId, requestedCustomerId, offset);
+      const result = await this.api.customerStatement(
+        businessId, requestedCustomerId, offset,
+        this.statementFromDate || undefined,
+        this.statementToDate || undefined,
+      );
       if (!isCurrentRequest()) return;
       this.customerStatement = result;
     } catch (error) {
