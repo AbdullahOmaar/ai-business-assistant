@@ -4,8 +4,8 @@
 ## Ownership and review
 - **Task / issue ID:**
 - **Implementation owner:**
-- **Verification owner:**
-- **Security / financial reviewer (when applicable):**
+- **Maintainer self-reviewer:**
+- **Security / financial reviewer (only when explicitly required):**
 - **Release operator (when applicable):**
 
 ## Acceptance criteria
@@ -17,8 +17,8 @@
 ## Branch discipline
 - [ ] I checked existing branches and PRs before creating this branch.
 - [ ] This is my only active work branch; related small fixes/tests/docs are batched here.
-- [ ] A new branch was created only for a genuinely new substantial feature or an independent review/release boundary.
-- [ ] I did not bundle unrelated work, duplicate an existing PR, or bypass required checks/reviews.
+- [ ] A new branch was created only for a genuinely new substantial feature or a clearly separate release/security boundary.
+- [ ] I did not bundle unrelated work, duplicate an existing PR, or bypass checks/approvals required by GitHub branch protection or approved policy.
 
 ## Verification evidence
 - [ ] Commands/checks actually run are listed below.
