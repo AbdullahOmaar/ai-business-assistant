@@ -176,7 +176,7 @@ def validate() -> list[str]:
                 or parsed_source.username is not None
                 or parsed_source.password is not None
             ):
-                errors.append(f"{name}: canonical source must be an absolute credential-free HTTP(S) URL: {source!r}")
+                errors.append(f"{name}: canonical source must be an absolute HTTP(S) URL without embedded credentials: {source!r}")
 
         sha = meta.get("related_github_sha", "")
         if sha.lower() != sha or not SHA_RE.fullmatch(sha):
