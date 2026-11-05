@@ -4,7 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.main import app
