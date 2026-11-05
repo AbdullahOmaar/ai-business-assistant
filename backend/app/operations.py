@@ -21,7 +21,7 @@ from app.models import (
     Payment, PaymentAllocation, Product, PurchaseOrder, PurchaseOrderLine,
     SalesReturn, SalesReturnLine, StockMovement,
 )
-from app.security import AuthenticatedPrincipal, authorize_membership
+from app.security import AuthenticatedPrincipal, apply_expense_visibility, authorize_membership
 from app.services import WorkflowError, _audit, record_stock_movement
 
 ZERO = Decimal("0")
@@ -30,8 +30,8 @@ ZERO = Decimal("0")
 def _authorize(
     session: Session, principal: AuthenticatedPrincipal, business_id: UUID,
     *, owner_only: bool = False,
-) -> None:
-    authorize_membership(
+):
+    return authorize_membership(
         session,
         principal=principal,
         business_id=business_id,
@@ -233,7 +233,7 @@ def financial_summary(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
 ) -> dict[str, dict[str, Decimal]]:
     """Return issued invoice totals, allocated payments and expenses per currency."""
-    _authorize(session, principal, business_id)
+    membership = _authorize(session, principal, business_id)
     invoice_rows = session.execute(select(
         Invoice.currency_code, func.sum(Invoice.total),
     ).where(
@@ -245,9 +245,15 @@ def financial_summary(
         Payment.business_id == business_id,
         PaymentAllocation.business_id == business_id,
     ).group_by(Payment.currency_code)).all()
-    expense_rows = session.execute(select(
+    expense_statement = select(
         Expense.currency_code, func.sum(Expense.amount),
-    ).where(Expense.business_id == business_id).group_by(Expense.currency_code)).all()
+    ).where(Expense.business_id == business_id)
+    expense_statement = apply_expense_visibility(
+        expense_statement, business_id=business_id, role=membership.role
+    )
+    expense_rows = session.execute(
+        expense_statement.group_by(Expense.currency_code)
+    ).all()
     return {
         "issued_invoices": summarize_money_by_currency(
             (currency, Decimal(str(amount))) for currency, amount in invoice_rows
