@@ -177,6 +177,10 @@ def test_owner_cannot_mutate_foreign_business_financial_and_stock_ids():
             ("issue foreign invoice", lambda: client.post(
                 f"{local_base}/invoices/{foreign_invoice_id}/issue"
             )),
+            ("void foreign invoice", lambda: client.post(
+                f"{local_base}/invoices/{foreign_invoice_id}/void",
+                json={"reason": "cross-business denial regression"},
+            )),
             ("allocate payment to foreign invoice", lambda: client.post(
                 f"{local_base}/payments",
                 json={
