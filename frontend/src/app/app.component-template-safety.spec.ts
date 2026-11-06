@@ -1130,3 +1130,14 @@ test('workspace build metadata is presented once in the workspace context, not d
   assert.doesNotMatch(source, /\.workspace-build-card/);
   assert.match(source, /<div class="topbar-heading"><p class="eyebrow">/);
 });
+
+test('operations errors stay scoped to the module that produced them', () => {
+  assert.match(source, /operationsErrorTab: OperationsMessageTab \| null = null/);
+  for (const tab of ['notifications', 'suppliers', 'purchases', 'recurring']) {
+    assert.ok(source.includes(`@if (operationsError && operationsErrorTab === '${tab}')`), tab);
+    assert.ok(source.includes(`this.operationsErrorTab = '${tab}'`), tab + ' load/validation error scope');
+  }
+  assert.match(source, /this\.operationsErrorTab = tab;/);
+  assert.match(source, /private beginOperationsAction\(\): void \{\s*this\.operationsError = '';\s*this\.operationsErrorTab = null;/);
+  assert.match(source, /private setOperationsSuccess\(tab: OperationsMessageTab, message: string\): void \{\s*this\.operationsErrorTab = null;/);
+});
