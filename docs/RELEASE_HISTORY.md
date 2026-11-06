@@ -22,6 +22,8 @@
 
 ## History currently represented in the app
 
+- **1.3.8 (candidate)** — frontend-only demo preview improvements: complete reset, safer invoice print preview, and explicit T37 tax-policy guard; API remains 1.3.5. Candidate until exact-head CI and production deployment are verified.
+
 The app page lists these release lines based on the repository's versioned release history:
 
 - **1.3.7** — frontend accessibility patch: WCAG AA secondary-text contrast on light surfaces; deployed to production Web at main SHA `ac31d3d38f727ce24eb1b748d44a33c76344e0fd`; API remains 1.3.5.
