@@ -229,6 +229,23 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.9',
+    apiVersion: '1.3.5',
+    titleAr: 'إزالة المعاينة التجريبية المستقلة',
+    titleEn: 'Standalone preview removal',
+    changesAr: [
+      'إزالة صفحة المعاينة المستقلة ذات البيانات التوضيحية من إصدار الويب.',
+      'الإبقاء على وظائف التطبيق المتصلة دون تغيير؛ لا توجد تغييرات في API أو قاعدة البيانات.',
+      'تحديث إصدار الواجهة إلى 1.3.9 مع الإبقاء على API عند 1.3.5.',
+    ],
+    changesEn: [
+      'Removes the standalone fictional-data preview page from the web release.',
+      'Keeps the connected application workflows unchanged; no API or database behavior changes.',
+      'Updates the web UI to version 1.3.9 while the API remains at 1.3.5.',
+    ],
+  },
+
+  {
     version: '1.3.8',
     apiVersion: '1.3.5',
     titleAr: 'تحسين معاينة الميزات التجريبية',

@@ -22,6 +22,7 @@
 
 ## History currently represented in the app
 
+- **1.3.9 (release candidate; deployment pending)** — frontend-only removal of the standalone fictional-data preview route/assets from production; API remains 1.3.5. Do not describe as live until Vercel reports READY on the merged main SHA.
 - **1.3.8 (deployed)** — frontend-only demo preview improvements: complete reset, safer invoice print preview, and explicit T37 tax-policy guard; API remains 1.3.5. Deployed to production Web at main SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08` (Vercel deployment `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`, READY). `/demo/` verified HTTP 200.
 
 The app page lists these release lines based on the repository's versioned release history:
@@ -59,6 +60,13 @@ Only the version embedded in the deployed build identifies what users have actua
 - Adds the role-aware All Modules launcher, centralized protected-tab navigation checks, and OWNER-only Activity Log visibility in the mobile More menu.
 - API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
 - **Production status:** Web version 1.3.6 was deployed on main SHA `45924b5b37da917d98085487f091779317988966` before the subsequent 1.3.7 frontend patch; API remains 1.3.5.
+
+## 1.3.9 — Standalone preview removal (frontend-only release candidate)
+
+- Bumps the frontend package, lockfile, local build-info fallback, and PWA shell cache fallback to `1.3.9`.
+- Removes the standalone fictional-data preview page from the current main application release; the main branch no longer contains the preview asset.
+- API remains unchanged at `1.3.5`; no backend, database, schema, migration, authentication, or financial workflow changes are included.
+- **Production status:** PENDING. Update this record only after the merged main SHA, production alias, deployed UI version, and safe smoke checks are verified.
 
 ## 1.3.7 — Accessibility and text contrast (frontend-only production release)
 

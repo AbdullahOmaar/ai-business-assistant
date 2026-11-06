@@ -1,3 +1,17 @@
+# Frontend release 1.3.9 — preparation checkpoint (2026-11-06)
+
+- Base main SHA: `4ee7901250c7bfe9bcfec24fe112ce32d565d355`.
+- Release implementation commit: `dd7be7eed90ebc2ef4dc023b412a81b7d8cba252` on temporary branch `release/web-1.3.9-standalone-preview-removal`; PR and final exact-head validation pending.
+- Scope: frontend-only patch to ship the removal of the standalone fictional-data preview already removed from main. Frontend version `1.3.9`; API remains `1.3.5`.
+- Files changed: `frontend/package.json`, `frontend/package-lock.json`, `frontend/src/app/build-info.ts`, `frontend/public/sw.js`, `frontend/src/app/release-guide.ts`, and `docs/RELEASE_HISTORY.md`.
+- Metadata check: package.json and both root package-lock version fields are `1.3.9`; build-info fallback and PWA cache fallback are `1.3.9`; bilingual in-app release notes identify unchanged API `1.3.5`. Full npm tests, production build and CircleCI on the final PR head: PENDING.
+- No backend code, API contract, database/schema/migration, authentication, financial semantics, payroll, production data, or Neon changes are included.
+- Production deployment remains PENDING until final exact-head CircleCI, self-review, owner-authorized merge, and Vercel Web READY/SHA/version/alias verification. API must not be deployed.
+- Repository target state remains only `main`; temporary release branch must be auto-deleted after merge and final inventory rechecked.
+- T50 authenticated synthetic OWNER/STAFF two-tenant journeys and device/accessibility acceptance remain NOT RUN/BLOCKED pending a dedicated synthetic-only environment and identities.
+
+---
+
 # Demo browser acceptance closeout — 2026-11-06
 
 ## Merge and CI
