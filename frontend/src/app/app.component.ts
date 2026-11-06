@@ -2831,6 +2831,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async printInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || invoice.status !== 'issued') return;
+    const businessId = this.business.id;
+    const businessName = this.business.name;
+    const businessCurrency = this.business.currency_code;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       this.error = this.t('اسمح بفتح نافذة الطباعة من المتصفح ثم حاول مرة أخرى.', 'Allow pop-ups for printing, then try again.');
@@ -2839,7 +2842,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     try {
-      const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      const detail = await this.api.invoiceDetail(businessId, invoice.id);
+      if (this.business?.id !== businessId) {
+        printWindow.close();
+        return;
+      }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
         this.escapePrintHtml(line.quantity) + '</td><td class="number">' +
@@ -2868,7 +2875,7 @@ export class AppComponent implements OnInit, OnDestroy {
         '.actions{margin-top:24px;display:flex;gap:8px}button{padding:10px 16px;border:0;border-radius:6px;background:#111827;color:white;font-size:14px}' +
         '@page{size:auto;margin:12mm}@media print{body{padding:0}.actions{display:none}.total{break-inside:avoid}}</style></head><body>' +
         '<header><div><h1>' + labels.title + '</h1><p><strong>' + invoiceNumber + '</strong></p><p>' + labels.customer + ': ' + customer + '</p></div>' +
-        '<div><strong>' + this.escapePrintHtml(this.business.name) + '</strong><p>' + this.escapePrintHtml(this.business.currency_code) + '</p></div></header>' +
+        '<div><strong>' + this.escapePrintHtml(businessName) + '</strong><p>' + this.escapePrintHtml(businessCurrency) + '</p></div></header>' +
         '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table><div class="total">' + labels.total + ': ' + total + ' ' + currency + '</div>' +
         '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
@@ -2878,17 +2885,19 @@ export class AppComponent implements OnInit, OnDestroy {
       printWindow.focus();
     } catch (error) {
       printWindow.close();
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
   async editInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || invoice.status !== 'draft') return;
+    const businessId = this.business.id;
     this.loading = true;
     this.error = '';
     try {
-      const detail = await this.api.invoiceDetail(this.business.id, invoice.id);
+      const detail = await this.api.invoiceDetail(businessId, invoice.id);
+      if (this.business?.id !== businessId) return;
       if (!detail.lines.length || detail.lines.some(line => !line.product_id)) {
         throw new Error(this.t('تحتوي المسودة على بند غير مرتبط بمنتج؛ لم يتم تغيير الفاتورة.', 'This draft contains a line without a linked product; no changes were made.'));
       }
@@ -2899,11 +2908,12 @@ export class AppComponent implements OnInit, OnDestroy {
       const taxableBase = Number(detail.subtotal || 0) - Number(detail.discount_total || 0);
       this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
       this.invoiceMessage = '';
+      this.invoiceMessageKind = 'success';
       this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
