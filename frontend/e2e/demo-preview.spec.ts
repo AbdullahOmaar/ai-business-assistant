@@ -44,11 +44,12 @@ test('invoice preview recalculates mock lines and reset restores the initial sta
   await expect(page.locator('#paymentStatus')).toHaveText('بانتظار الدفع');
 });
 
-test('print preview opens a safe isolated popup and reports the action', async ({ page }) => {
-  const popupPromise = page.waitForEvent('popup');
+test('print preview reports a blocked popup in the correct status area', async ({ page }) => {
+  await page.evaluate(() => {
+    window.open = () => null;
+  });
+
   await page.getByRole('button', { name: 'فتح نافذة الطباعة' }).click();
-  const popup = await popupPromise;
-  await expect(popup.getByRole('heading', { name: 'فاتورة تجريبية' })).toBeVisible();
-  await expect(popup.locator('body')).toContainText('ليست فاتورة ضريبية');
-  await expect(page.locator('#printStatus')).toContainText('تم فتح نافذة طباعة الفاتورة التجريبية');
+  await expect(page.locator('#printStatus')).toContainText('المتصفح منع نافذة الطباعة');
+  await expect(page.locator('#purchaseResult')).not.toContainText('المتصفح منع نافذة الطباعة');
 });
