@@ -193,7 +193,7 @@ test('sign-in form receives the same touched and submitted invalid-control treat
 
 const colorToken = (name: string): string => {
   const line = styles.split(/\r?\n/).find(value => value.trimStart().startsWith(name + ':'));
-  const match = line?.match(/^\s*--aba-[\w-]+:\s*(#[0-9a-fA-F]{6})\s*$/);
+  const match = line?.match(/^\s*--aba-[\w-]+:\s*(#[0-9a-fA-F]{6})\s*;?\s*$/);
   assert.ok(match, \`missing six-digit color token: \${name}\`);
   return match[1];
 };
