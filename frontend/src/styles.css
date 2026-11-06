@@ -143,6 +143,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .shell textarea.ng-invalid.ng-touched:focus-visible {
   outline-color: var(--aba-color-danger-text);
 }
+.field-error {
+  display: block;
+  margin-top: var(--aba-space-1);
+  color: var(--aba-color-danger-text);
+  font-size: var(--aba-font-size-xs);
+  line-height: var(--aba-line-height-relaxed);
+  overflow-wrap: anywhere;
+}
 
 html[dir="rtl"], body { direction: rtl; }
 body { text-align: start; }
