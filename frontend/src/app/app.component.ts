@@ -392,7 +392,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                       </ul>
                     }
                   }
-                  @if (customerImportMessage) { <aba-state-message kind="success" [description]="customerImportMessage" /> }
+                  @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section>
                 <div class="list-tools"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
@@ -462,7 +462,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                       </ul>
                     }
                   }
-                  @if (importMessage) { <aba-state-message kind="success" [description]="importMessage" /> }
+                  @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section>
                 <div class="list-tools"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
@@ -1113,11 +1113,13 @@ export class AppComponent implements OnInit, OnDestroy {
   importLoading = false;
   importPreview: Awaited<ReturnType<ApiService['previewProductCsv']>> | null = null;
   importMessage = '';
+  importMessageKind: 'success' | 'warning' = 'success';
   customerImportCsvText = '';
   customerImportFileName = '';
   customerImportLoading = false;
   customerImportPreview: Awaited<ReturnType<ApiService['previewCustomerCsv']>> | null = null;
   customerImportMessage = '';
+  customerImportMessageKind: 'success' | 'warning' = 'success';
   invoiceCustomerId = '';
   invoiceProductId = '';
   invoiceQuantity = '1';
@@ -1703,11 +1705,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.importFileName = '';
     this.importPreview = null;
     this.importMessage = '';
+    this.importMessageKind = 'success';
     this.importLoading = false;
     this.customerImportCsvText = '';
     this.customerImportFileName = '';
     this.customerImportPreview = null;
     this.customerImportMessage = '';
+    this.customerImportMessageKind = 'success';
     this.customerImportLoading = false;
     this.customers = [];
     this.products = [];
@@ -2450,10 +2454,13 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async onImportFileSelected(event: Event): Promise<void> {
+    const businessId = this.business?.id;
+    if (!businessId) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     this.importPreview = null;
     this.importMessage = '';
+    this.importMessageKind = 'success';
     this.importCsvText = '';
     this.importFileName = '';
     if (!file) return;
@@ -2468,39 +2475,47 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      this.importCsvText = await file.text();
+      const csvText = await file.text();
+      if (this.business?.id !== businessId) return;
+      this.importCsvText = csvText;
       this.importFileName = file.name;
       this.error = '';
     } catch {
-      this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
+      if (this.business?.id === businessId) this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
       input.value = '';
     }
   }
 
   async previewProductImport(): Promise<void> {
     if (!this.business || !this.importCsvText || this.importLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.importCsvText;
     this.importLoading = true;
     this.importPreview = null;
     this.importMessage = '';
+    this.importMessageKind = 'success';
     this.error = '';
     try {
-      this.importPreview = await this.api.previewProductCsv(this.business.id, this.importCsvText);
+      const preview = await this.api.previewProductCsv(businessId, csvText);
+      if (this.business?.id === businessId) this.importPreview = preview;
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.importLoading = false;
+      if (this.business?.id === businessId) this.importLoading = false;
     }
   }
 
   async confirmProductImport(): Promise<void> {
     if (!this.business || !this.importCsvText || !this.importPreview?.valid || this.importLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.importCsvText;
     this.importLoading = true;
     this.importMessage = '';
+    this.importMessageKind = 'success';
     this.error = '';
     try {
-      const result = await this.api.importProductCsv(this.business.id, this.importCsvText);
-      this.products = await this.api.products(this.business.id);
-      if (this.products.length) this.invoiceProductId = this.products[0].id;
+      const result = await this.api.importProductCsv(businessId, csvText);
+      if (this.business?.id !== businessId) return;
       this.importMessage = this.t(
         `تم استيراد ${result.row_count} صف بنجاح.`,
         `Successfully imported ${result.row_count} rows.`
@@ -2508,18 +2523,35 @@ export class AppComponent implements OnInit, OnDestroy {
       this.importPreview = null;
       this.importCsvText = '';
       this.importFileName = '';
+      try {
+        const products = await this.api.products(businessId);
+        if (this.business?.id !== businessId) return;
+        this.products = products;
+        if (this.products.length) this.invoiceProductId = this.products[0].id;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.importMessageKind = 'warning';
+          this.importMessage = this.t(
+            'تم استيراد المنتجات، لكن تعذر تحديث القائمة. لا تعِد استيراد الملف؛ حدّث البيانات أولًا.',
+            'Products were imported, but the list could not refresh. Do not import the file again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.importLoading = false;
+      if (this.business?.id === businessId) this.importLoading = false;
     }
   }
 
   async onCustomerImportFileSelected(event: Event): Promise<void> {
+    const businessId = this.business?.id;
+    if (!businessId) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     this.customerImportPreview = null;
     this.customerImportMessage = '';
+    this.customerImportMessageKind = 'success';
     this.customerImportCsvText = '';
     this.customerImportFileName = '';
     if (!file) return;
@@ -2534,46 +2566,48 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      this.customerImportCsvText = await file.text();
+      const csvText = await file.text();
+      if (this.business?.id !== businessId) return;
+      this.customerImportCsvText = csvText;
       this.customerImportFileName = file.name;
       this.error = '';
     } catch {
-      this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
+      if (this.business?.id === businessId) this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
       input.value = '';
     }
   }
 
   async previewCustomerImport(): Promise<void> {
     if (!this.business || !this.customerImportCsvText || this.customerImportLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.customerImportCsvText;
     this.customerImportLoading = true;
     this.customerImportPreview = null;
     this.customerImportMessage = '';
+    this.customerImportMessageKind = 'success';
     this.error = '';
     try {
-      this.customerImportPreview = await this.api.previewCustomerCsv(
-        this.business.id, this.customerImportCsvText
-      );
+      const preview = await this.api.previewCustomerCsv(businessId, csvText);
+      if (this.business?.id === businessId) this.customerImportPreview = preview;
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.customerImportLoading = false;
+      if (this.business?.id === businessId) this.customerImportLoading = false;
     }
   }
 
   async confirmCustomerImport(): Promise<void> {
     if (!this.business || !this.customerImportCsvText ||
         !this.customerImportPreview?.valid || this.customerImportLoading) return;
+    const businessId = this.business.id;
+    const csvText = this.customerImportCsvText;
     this.customerImportLoading = true;
     this.customerImportMessage = '';
+    this.customerImportMessageKind = 'success';
     this.error = '';
     try {
-      const result = await this.api.importCustomerCsv(
-        this.business.id, this.customerImportCsvText
-      );
-      this.customers = await this.api.customers(this.business.id);
-      if (!this.invoiceCustomerId && this.customers.length) {
-        this.invoiceCustomerId = this.customers[0].id;
-      }
+      const result = await this.api.importCustomerCsv(businessId, csvText);
+      if (this.business?.id !== businessId) return;
       this.customerImportMessage = this.t(
         `تم استيراد ${result.row_count} صف بنجاح.`,
         `Successfully imported ${result.row_count} rows.`
@@ -2581,10 +2615,26 @@ export class AppComponent implements OnInit, OnDestroy {
       this.customerImportPreview = null;
       this.customerImportCsvText = '';
       this.customerImportFileName = '';
+      try {
+        const customers = await this.api.customers(businessId);
+        if (this.business?.id !== businessId) return;
+        this.customers = customers;
+        if (!this.invoiceCustomerId && this.customers.length) {
+          this.invoiceCustomerId = this.customers[0].id;
+        }
+      } catch {
+        if (this.business?.id === businessId) {
+          this.customerImportMessageKind = 'warning';
+          this.customerImportMessage = this.t(
+            'تم استيراد العملاء، لكن تعذر تحديث القائمة. لا تعِد استيراد الملف؛ حدّث البيانات أولًا.',
+            'Customers were imported, but the list could not refresh. Do not import the file again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.customerImportLoading = false;
+      if (this.business?.id === businessId) this.customerImportLoading = false;
     }
   }
 
