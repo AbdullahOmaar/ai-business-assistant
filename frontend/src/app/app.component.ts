@@ -365,7 +365,10 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
                     <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('اسم العميل مطلوب.', 'Customer name is required.') }}</small>
                   }
-                  <input [attr.aria-label]="t('بريد العميل الإلكتروني', 'Customer email')" name="customerEmail" type="email" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="customerEmail">
+                  <input #customerEmailModel="ngModel" [attr.aria-label]="t('بريد العميل الإلكتروني', 'Customer email')" name="customerEmail" type="email" maxlength="254" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
+                  @if (customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted)) {
+                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small>
+                  }
                   <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
