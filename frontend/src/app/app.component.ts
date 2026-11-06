@@ -1750,6 +1750,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementError = '';
     this.selectedBusinessId = id;
     this.business = this.businesses.find(item => item.id === id) || null;
+    // A destination visible to the previous workspace role may be restricted here.
+    if (!this.canAccessTab(this.tab)) this.tab = 'overview';
     this.clearWorkspaceData();
     this.error = '';
     await this.loadWorkspaceData();
