@@ -174,3 +174,10 @@ test('native Angular validation styles touched and submitted invalid controls wi
   assert.match(styles, /background-color: var\(--aba-color-danger-soft\)/);
   assert.match(styles, /:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\):not\(\[type="file"\]\)/);
 });
+
+
+test('inline field errors use shared semantic danger and typography tokens', () => {
+  assert.match(styles, /\.field-error\s*\{[^}]*color:\s*var\(--aba-color-danger-text\)/);
+  assert.match(styles, /\.field-error\s*\{[^}]*font-size:\s*var\(--aba-font-size-xs\)/);
+  assert.match(styles, /\.field-error\s*\{[^}]*overflow-wrap:\s*anywhere/);
+});
