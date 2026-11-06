@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
+const catalogueSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
 test('mobile bottom navigation keeps four slots and places platform admin in More', () => {
   const mobileSidebarStart = source.indexOf('.sidebar{position:fixed;inset:auto 0 0;width:100%');
@@ -22,9 +23,11 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
-  assert.match(moreMenu, /@if \(platformAdminAvailable\)/);
-  assert.match(moreMenu, /setTab\('platform-admin'\)/);
-  assert.match(moreMenu, /Platform admin/);
+  assert.match(moreMenu, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(moreMenu, /@for \(module of group\.modules; track module\.tab\)/);
+  assert.match(moreMenu, /selectMobileMoreTab\(module\.tab\)/);
+  assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
+  assert.match(moduleAccessSource, /if \(tab === 'platform-admin'\) return platformAdminAvailable;/);
   assert.match(
     source,
     /class="nav-item platform-admin-nav".{0,500}setTab\('platform-admin'\)/s,
