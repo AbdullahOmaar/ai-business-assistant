@@ -1,3 +1,17 @@
+# Release preflight fast-path — operating improvement — 2026-11-07
+
+- **Purpose:** remove late discovery of production deployment coupling, repeated read-only verification and fragmented release handoffs across Master, Chat 1–5, QA and external agents.
+- **Canonical workflow:** Notion MWOS v1.0 → “Release fast path — mandatory for every workstream”; GitHub `AGENTS.md` → “Release fast path — mandatory for every contributor and agent”; `docs/PRODUCTION_DEPLOYMENT.md` → “Release Preflight & Fast-Path Procedure”.
+- **Implementation branch:** `master/release-preflight-fast-path-20261107`, based on main `c5fe115daa72e92b4f814ee502405225e1b3dc79`.
+- **Files changed:** `AGENTS.md` (mandatory contributor/agent contract); `docs/PRODUCTION_DEPLOYMENT.md` (preflight, evidence packet, reuse/invalidation, owner decision, merge/deploy/live verification and role contract).
+- **Behavioral change:** deployment coupling and affected projects must be discovered before implementation; one exact-SHA evidence packet is maintained; unchanged evidence is reused; independent reads are parallelized; dependent writes remain serialized; owner authorization is requested once with merge/deployment impact disclosed.
+- **Safety preserved:** no gate reduction. Exact-head CircleCI, provider/repository protection, owner merge/deployment authorization, migration/backup/security/privacy and live verification remain mandatory. No production setting, data, schema or application code changed.
+- **Notion:** MWOS page updated with the same shared procedure. Readback/verification pending.
+- **Status:** IN_PROGRESS — docs branch prepared; PR review, CircleCI exact-head validation and final readback pending. Not merged; no deployment.
+- **Next:** verify branch diff and Notion readback, open/reuse one PR, inspect exact-head checks and review requirements, then update this record with the PR URL and final evidence.
+
+---
+
 # T18 merge-readiness checkpoint — 2026-11-06
 
 - **Single active branch:** `master/t18-chat-mobile-ux-20261106`. GitHub branch inventory contains only `main` and this work branch. Implementation/test head before this documentation checkpoint: `eaf274f083139771d33ffed1ed436ed8b3411ace` (143 commits ahead / 0 behind main; 14 changed files). Main/base: `e5a765083860a9141f2f2fe366858234873120e9`. Both branches are reported unprotected; ruleset details remain UNKNOWN because the API is unavailable. No open PR exists.
