@@ -518,3 +518,31 @@ test('permission-denied feedback offers a safe return home instead of retrying a
   assert.match(source, /get accessDenied\(\): boolean/);
   assert.match(source, /Your account is not authorized to access platform administration/);
 });
+
+
+test('operations forms distinguish successful mutations from failed list refreshes', () => {
+  const helpersStart = source.indexOf('private beginOperationsAction()');
+  const helpersEnd = source.indexOf('private async loadNotifications()', helpersStart);
+  const helpers = source.slice(helpersStart, helpersEnd);
+  assert.match(helpers, /private setOperationsSuccess\(tab: OperationsMessageTab/);
+  assert.match(helpers, /private setOperationsFailure\(tab: OperationsMessageTab/);
+  assert.match(helpers, /The operation succeeded, but the list could not be refreshed/);
+
+  const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
+  const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
+  const purchase = source.slice(source.indexOf('async createPurchaseOrder()'), source.indexOf('hasRemainingQuantity('));
+  const receiving = source.slice(source.indexOf('async receivePurchaseOrder('), source.indexOf('async createRecurringSchedule()'));
+  const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
+  for (const method of [notification, supplier, purchase, receiving, recurring]) {
+    assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
+      'stale operation completions must not update the newly selected workspace');
+  }
+  assert.match(notification, /delivery to recipients is not confirmed/);
+  assert.match(purchase, /No quantities have been received yet/);
+  assert.match(recurring, /does not generate invoices automatically/);
+  assert.match(receiving, /Receiving was recorded/);
+  assert.match(source, /operationsMessageTab === 'notifications'/);
+  assert.match(source, /operationsMessageTab === 'suppliers'/);
+  assert.match(source, /operationsMessageTab === 'purchases'/);
+  assert.match(source, /operationsMessageTab === 'recurring'/);
+});
