@@ -293,7 +293,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   @if (profitLossPeriod === 'custom') { <label>{{ t('من', 'From') }}<input type="date" name="profitLossStart" required [(ngModel)]="profitLossStart"></label><label>{{ t('إلى', 'To') }}<input type="date" name="profitLossEnd" required [(ngModel)]="profitLossEnd"></label> }
                   <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
                 </form>
-                @if (reportError) { <div class="error-banner" role="alert">{{ reportError }}</div> }
+                @if (reportError) { <aba-state-message kind="error" [description]="reportError" /> }
                 @if (profitLoss) {
                   <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
                   <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
@@ -311,7 +311,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="divider"></div>
                 <div class="section-head"><div><h3>{{ t('أعمار المديونيات', 'Receivables aging') }}</h3><p>{{ t('الأرصدة المتبقية حسب تاريخ الاستحقاق، مع فصل كل عملة.', 'Outstanding balances by due date, with currencies kept separate.') }}</p></div></div>
                 <form class="inline-form" (ngSubmit)="loadReceivablesAging()"><label>{{ t('التقرير حتى تاريخ', 'Report as of') }}<input type="date" name="agingAsOf" required [(ngModel)]="agingAsOf"></label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('جارٍ التحميل…', 'Loading…') : t('عرض المديونيات', 'Load receivables') }}</button></form>
-                @if (agingError) { <div class="error-banner" role="alert">{{ agingError }}</div> }
+                @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
                 @if (agingReport) {
                   <div class="section-head"><p class="muted">{{ t('تاريخ التقرير:', 'As of:') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('فاتورة', 'invoices') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                   @for (summary of agingReport.by_currency; track summary.currency_code) {
@@ -501,7 +501,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <label>{{ t('إلى تاريخ', 'End date') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
                   <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
                 </form>
-                @if (taxError) { <div class="error-banner" role="alert">{{ taxError }}</div> }
+                @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
                 @if (taxSummaryReport) {
                   <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
                   @if (!taxSummaryReport.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.')" /> }
