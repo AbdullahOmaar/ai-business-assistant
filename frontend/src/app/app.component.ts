@@ -190,9 +190,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               }
               <section class="notice"><strong>{{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.', 'Totals come from saved business records. They are not a profit calculation, and different currencies are never combined.') }}</span></section>
               <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
-                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('كل أقسام التطبيق', 'All modules')" [description]="t('افتح القسم المطلوب مباشرة من مساحة العمل.', 'Open any available workspace module directly.')" [count]="homeModuleCards.length" />
+                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('الوصول السريع', 'Quick access')" [description]="t('اختصارات للأقسام الأساسية في مساحة العمل.', 'Shortcuts to key workspace areas.')" [count]="homeQuickAccessCards.length" />
                 <div class="quick-grid">
-                  @for (module of homeModuleCards; track module.tab) {
+                  @for (module of homeQuickAccessCards; track module.tab) {
                     <aba-quick-access-card
                       [icon]="module.icon"
                       [title]="t(module.titleAr, module.titleEn)"
@@ -2356,6 +2356,14 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Home module cards share the exact same role/availability check as navigation. */
   get homeModuleCards(): readonly WorkspaceModuleCard[] {
     return WORKSPACE_MODULE_CATALOG.filter(module => this.canAccessTab(module.tab));
+  }
+
+  /** Home quick access stays focused on the five existing high-frequency destinations. */
+  get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
+    const priority = ['invoices', 'customers', 'products', 'expenses', 'reports'];
+    return this.homeModuleCards
+      .filter(module => priority.includes(module.tab))
+      .sort((left, right) => priority.indexOf(left.tab) - priority.indexOf(right.tab));
   }
 
   /** More navigation is rendered from the same role-filtered catalogue as Home. */
