@@ -7,7 +7,7 @@
 
 ## Demo preview corrections in progress
 - Branch: `fix/demo-preview-truth-and-recovery-20261106`.
-- PR #338 is OPEN against main. Exact head: `4c360aef268e0c05946cc0ee05b80432093520e5`. Latest recorded CircleCI: frontend unit tests, dependency audit and production build PASS; backend-accounting, backend-container and browser-smoke were PENDING at the last status read. Semaphore FAILURE is retired/non-authoritative.
+- PR #338 is OPEN against main. Exact head: `fa5b627437831ae4163fa8fb50523f35db61c924`. First exact-head CircleCI run: frontend unit tests, dependency audit, production build, backend-accounting and backend-container PASS; frontend-browser-smoke FAILED in the Playwright command. The E2E print-popup assertion was revised to test the deterministic popup-blocked recovery path; this new exact head is awaiting its automatic CircleCI run. Semaphore FAILURE is retired/non-authoritative.
 - `demo/index.html` now removes the partial English switch (content remains Arabic RTL), adds a complete reset action for the mutable mock state, fixes the print popup flow by not combining `window.open` with `noopener`, and reports popup-blocked/success states in a dedicated print status element.
 - The unapproved tax calculator and default percentage are removed. The demo now explicitly states that tax behavior is unavailable while T37 is DRAFT / NOT APPROVED.
 - Added `frontend/src/app/demo-preview.spec.ts` source regression tests for local-only fictional data, Arabic RTL truthfulness, popup printing, T37 tax guard and reset behavior.
