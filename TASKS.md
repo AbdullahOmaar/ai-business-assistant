@@ -1,3 +1,39 @@
+# Web 1.3.8 release CI diagnosis — 2026-11-06
+
+- PR #340: `https://github.com/AbdullahOmaar/ai-business-assistant/pull/340`.
+- First candidate head `bcf4bac4b77e8e586abb2a1c7e44987cba1953cd`.
+- Exact CircleCI: `frontend-unit-tests` FAILED; `frontend-production-build` PASS; `frontend-dependency-audit` PASS. Browser and backend jobs were still running at the first status read.
+- Root cause located from `frontend/src/app/release-guide.spec.ts`: test `current frontend release metadata is consistent in the configured project root` asserts that `RELEASE_HISTORY[0].changesEn` contains the literal phrase `version <package.json version>`. New 1.3.8 entry omitted the version text. The prior release's check expected explicit English version wording.
+- Fix: release note now states “Updates the web UI to version 1.3.8 …”; API remains 1.3.5. No change to financial logic, backend, database or migrations.
+- Latest exact-head run required; previous CI failure will not be bypassed or retried manually.
+
+---
+
+# Master release checkpoint — 2026-11-06
+
+## Verified live baseline
+- Main before this candidate: `6d4f825ebda23cf9f99337ecfcef381ad111d76d`.
+- PR #338 and #339 are merged. PR #339 published the hardened Arabic RTL feature preview to `frontend/public/demo/index.html`.
+- Production Web deployment `dpl_9hVvV4qAKoSfrH5NHB9qmaGaoZi5` is READY on main SHA `6d4f825ebda23cf9f99337ecfcef381ad111d76d`; alias `https://ai-business-assistant-web.vercel.app`.
+- `/demo/` returns HTTP 200 and was read back to confirm Reset, print status, T37 DRAFT / NOT APPROVED, no default tax calculator, no partial English toggle, and fictional local-only data.
+- Production API remains version 1.3.5 at SHA `45924b5b37da9171e0981ed727b63ba2e5e5d91802`; /health and /readyz return 200. No API, DB, migration, or production data changes in this demo delivery.
+
+## Web 1.3.8 release candidate
+- Branch: `release/web-1.3.8-demo-preview-20261106`, based on main `6d4f825ebda23cf9f99337ecfcef381ad111d76d`.
+- Candidate scope: frontend package/lockfile, build-info and service-worker fallback metadata, bilingual release guide, release history, and this task record.
+- Intended user-facing changes: demo reset/repeatability, safer print popup handling, and removal of unapproved default tax calculation. API remains 1.3.5.
+- Status: NOT RELEASED until exact-head CircleCI passes and Vercel production alias/version/SHA are verified.
+
+## Remaining blockers
+- T50 is PARTIALLY COMPLETE: no authenticated synthetic OWNER/STAFF/two-tenant journeys, restored-DB app smoke, or full mobile/PWA/accessibility acceptance.
+- T37 remains DRAFT / NOT APPROVED; no tax/GL/AP/COGS/FX/payroll semantics enabled.
+- Open #305/#306/#308/#323 retain unique feature-owned or gated work; do not merge wholesale. #306 migration collision and #308 payroll privacy/owner constraints remain.
+- Closed #307 and other archival refs are preserved because the connected GitHub toolset does not expose safe branch deletion; merged PR branches are auto-deleted.
+
+---
+
+# Historical checkpoints below — retained for audit; statuses are superseded by the current checkpoint above.
+
 # Demo production asset correction — 2026-11-06
 
 ## Production build failure diagnosis
