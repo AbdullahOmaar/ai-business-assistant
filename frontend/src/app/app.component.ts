@@ -309,7 +309,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
                 }
                 <div class="divider"></div>
-                <div class="section-head"><div><h3>{{ t('أعمار المديونيات', 'Receivables aging') }}</h3><p>{{ t('الأرصدة المتبقية حسب تاريخ الاستحقاق، مع فصل كل عملة.', 'Outstanding balances by due date, with currencies kept separate.') }}</p></div></div>
+                <aba-section-header [level]="3" [title]="t('أعمار المديونيات', 'Receivables aging')" [description]="t('الأرصدة المتبقية حسب تاريخ الاستحقاق، مع فصل كل عملة.', 'Outstanding balances by due date, with currencies kept separate.')" />
                 <form class="inline-form" (ngSubmit)="loadReceivablesAging()"><label>{{ t('التقرير حتى تاريخ', 'Report as of') }}<input type="date" name="agingAsOf" required [(ngModel)]="agingAsOf"></label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('جارٍ التحميل…', 'Loading…') : t('عرض المديونيات', 'Load receivables') }}</button></form>
                 @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
                 @if (agingReport) {
@@ -369,7 +369,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 </div>
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
-                    <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement?.customer?.name || statementCustomerName }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></div>
+                    <aba-section-header [level]="3" [title]="t('كشف حساب العميل', 'Customer statement') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></aba-section-header>
                     <div class="inline-form statement-filters">
                       <label>{{ t('من تاريخ', 'From date') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
                       <label>{{ t('إلى تاريخ', 'To date') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
@@ -638,13 +638,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 
             @if (tab === 'expenses') {
               <section abaCard class="panel">
-                <div class="section-head">
-                  <div>
-                    <h2>{{ t('تسجيل مصروف', 'Record an expense') }}</h2>
-                    <p>{{ t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.') }}</p>
-                  </div>
-                  <span class="count">{{ expenses.length }} {{ t('مصروفات', 'expenses') }}</span>
-                </div>
+                <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="expenses.length + ' ' + t('مصروفات', 'expenses')" />
                 <form class="inline-form expense-form" (ngSubmit)="createExpense()">
                   <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" required [(ngModel)]="expenseCategory">
                     <option value="General">{{ t('عام', 'General') }}</option>
