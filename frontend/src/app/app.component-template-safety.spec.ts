@@ -972,3 +972,10 @@ test('shared shell uses logical inline positioning for Arabic RTL and English LT
   assert.doesNotMatch(source, /\.shell\.english \.hero-mark\{margin-left:/);
   assert.doesNotMatch(source, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
 });
+
+test('RTL release-guide lists and mobile dock active state use logical layout', () => {
+  assert.match(source, /\.release-feature-group ul,\.release-version ul\{[^}]*padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0/);
+  assert.doesNotMatch(source, /\.shell\.english \.release-feature-group ul/);
+  assert.match(source, /\.sidebar \.nav-item\.active\{[^}]*border-inline-start:0;/);
+  assert.match(source, /\.mobile-more-menu \.nav-item\.active\{border-inline-start:3px solid/);
+});
