@@ -952,3 +952,10 @@ test('local CSV exports follow the backend owner-only export permission', () => 
   const paymentExportEnd = source.indexOf('async createPayment(): Promise<void>', paymentExportStart);
   assert.match(source.slice(paymentExportStart, paymentExportEnd), /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
 });
+
+test('workspace switcher announces the current business context accessibly', () => {
+  assert.match(source, /<section class="workspace-bar" \[attr\.aria-label\]="t\('مساحة العمل الحالية', 'Current workspace'\)"/);
+  assert.match(source, /<strong id="workspace-current-name" aria-live="polite">\{\{ business\.name \}\}<\/strong>/);
+  assert.match(source, /<select \[attr\.aria-label\]="t\('اختيار النشاط', 'Select business'\)" aria-describedby="workspace-current-name"/);
+  assert.match(source, /\(ngModelChange\)="switchBusiness\(\$event\)"/);
+});
