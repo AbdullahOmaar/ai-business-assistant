@@ -369,7 +369,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @if (customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted)) {
                     <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small>
                   }
-                  <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
+                  <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" maxlength="32" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
                 <section abaCard class="csv-import-panel" aria-label="CSV customer import">
