@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 
 test('mobile More menu has a correctly delimited active-class attribute', () => {
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
@@ -994,4 +995,14 @@ test('session and permission recovery actions remain correct after a language to
   assert.match(deniedGetter, /حسابك غير مخوّل للوصول إلى إدارة المنصة/);
   assert.match(deniedGetter, /Your account is not authorized to access platform administration/);
   assert.doesNotMatch(sessionGetter + deniedGetter, /this\.t\(/);
+});
+
+test('shared state feedback exposes correct alert, status, and reduced-motion semantics', () => {
+  assert.ok(stateMessageSource.includes("[attr.role]"));
+  assert.ok(stateMessageSource.includes("'error' ? 'alert' : 'status'"));
+  assert.ok(stateMessageSource.includes("[attr.aria-live]"));
+  assert.ok(stateMessageSource.includes("'loading' || kind() === 'success' ? 'polite' : null"));
+  assert.ok(stateMessageSource.includes('type="button"'));
+  assert.ok(stateMessageSource.includes('[disabled]="actionDisabled()"'));
+  assert.ok(stateMessageSource.includes('prefers-reduced-motion:reduce'));
 });
