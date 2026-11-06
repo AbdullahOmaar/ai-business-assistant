@@ -1006,3 +1006,35 @@ test('shared state feedback exposes correct alert, status, and reduced-motion se
   assert.ok(stateMessageSource.includes('[disabled]="actionDisabled()"'));
   assert.ok(stateMessageSource.includes('prefers-reduced-motion:reduce'));
 });
+
+test('notification and supplier forms expose localized field validation without changing optional fields', () => {
+  const notificationStart = source.indexOf('<form #notificationForm="ngForm"');
+  const notificationEnd = source.indexOf('</form>', notificationStart);
+  const notification = source.slice(notificationStart, notificationEnd);
+  assert.ok(notification.includes('notificationForm.valid && createNotification()'));
+  for (const [control, id] of [
+    ['notificationKindControl', 'notification-kind-error'],
+    ['notificationTitleControl', 'notification-title-error'],
+    ['notificationBodyControl', 'notification-body-error'],
+  ]) {
+    assert.ok(notification.includes('#' + control + '="ngModel"'), control);
+    assert.ok(notification.includes('[attr.aria-describedby]="' + control + '.invalid && (' + control + '.touched || notificationForm.submitted) ? \' ' + id + '\' : null"'.replace("? \' ", "? \'")), control + ' error association');
+    assert.ok(source.includes('id="' + id + '"'), id);
+  }
+  assert.match(notification, /name="notificationTitle" required maxlength="160"/);
+  assert.match(notification, /name="notificationBody" required maxlength="1000"/);
+  assert.match(source, /class="form-validation" aria-live="polite"/);
+
+  const supplierStart = source.indexOf('<form #supplierForm="ngForm"');
+  const supplierEnd = source.indexOf('</form>', supplierStart);
+  const supplier = source.slice(supplierStart, supplierEnd);
+  assert.ok(supplier.includes('supplierForm.valid && createSupplier()'));
+  assert.ok(supplier.includes('#supplierNameControl="ngModel"'));
+  assert.ok(supplier.includes('#supplierEmailControl="ngModel"'));
+  assert.match(supplier, /name="supplierName" required maxlength="160"/);
+  assert.match(supplier, /name="supplierEmail" type="email" maxlength="254"/);
+  assert.doesNotMatch(supplier, /name="supplierEmail"[^>]*required/);
+  assert.ok(source.includes('id="supplier-name-error"'));
+  assert.ok(source.includes('id="supplier-email-error"'));
+  assert.ok(source.includes('leave this field blank'));
+});
