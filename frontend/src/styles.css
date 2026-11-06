@@ -97,9 +97,9 @@
   --aba-focus-ring-offset: 2px;
 
   /* Layout and layering. Breakpoint values remain explicit in media queries. */
-  --aba-layout-sidebar: 256px;
-  --aba-layout-content-max: 1440px;
-  --aba-layout-mobile-nav: 64px;
+  --aba-layout-sidebar: 245px;
+  --aba-layout-content-max: 1550px;
+  --aba-layout-mobile-nav: 61px;
   --aba-z-index-sticky: 20;
   --aba-z-index-dropdown: 40;
   --aba-z-index-toast: 1000;
