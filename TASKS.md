@@ -2250,3 +2250,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact source readback confirms all three bindings and the regression assertion. Across the five frontend spec files, 122 `test()` declarations are present (121 named, no duplicate names); all remain **NOT RUN**. No CI trigger/retry was issued.
 - No PR, merge, deployment, backend/API/database/schema/migration, financial semantics or payroll changes.
 - Next: continue exact-diff source review; obtain an authorized runner/browser and explicit resolution for the CircleCI freeze before normal PR validation/merge.
+
+
+## T18 — Owner decision: CircleCI freeze lifted — 2026-11-06
+
+- The repository owner explicitly instructed: “شيل الفريز خالص وكمل شغل” (lift the CircleCI freeze completely and continue).
+- This is the effective owner decision lifting the previous CircleCI run/retry restriction recorded in the earlier T18 checkpoints. The historical freeze notes remain as history; they are superseded by this entry and must not be treated as active.
+- CircleCI remains the sole approved CI provider under `AGENTS.md` and `.circleci/config.yml`. GitHub Actions, GitLab CI, Semaphore and TinyFish are not substitutes. No branch protection, required check, maintainer review or merge gate is waived.
+- Authorized next action: allow the normal CircleCI pipeline to run for the current T18 candidate and retry failed CircleCI jobs only when a failure is observed and the retry is appropriate. Record results against the exact SHA.
+- Current implementation candidate before this decision record: `dfd9cabd1d9239628c721614d3b69c7bc06c2fc5`. This decision commit changes the task ledger only; it does not change application behavior.
+- Frontend tests, Angular build and browser/device acceptance remain **NOT RUN** until actual provider results or authorized device evidence are observed.
+- Merge remains subject to a normal PR, exact-head required checks, maintainer diff review and owner merge authorization. Production deployment remains separately unauthorized.
