@@ -24,7 +24,7 @@
 
 The app page lists these release lines based on the repository's versioned release history:
 
-- **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
+- **1.3.7** — frontend accessibility patch: improved WCAG AA contrast for secondary text on light surfaces; API remains at 1.3.5.\n- **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.\n- **1.3.5** — session synchronization and workspace data protection; current production API version is 1.3.5.\n- **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
 - **1.3.0** — release candidate: invoice payment shortcut and remaining balance, opening stock/current quantity for stock-tracked items, and this feature guide.
 - **1.2.1** — accounting and workflow improvements: stock validation and consistent invoice rounding, payment retry feedback, owner-only invoice issue/void, and clearer UI/API version information.
 - **1.2.0** — core workspace, customer/product, invoicing, payments, currency-separated reporting, stock movement, and CSV product import workflows.
@@ -53,4 +53,12 @@ Only the version embedded in the deployed build identifies what users have actua
 - Adds recoverable startup configuration errors/retry and rejects whitespace-only public Firebase/API settings before initialization.
 - Adds the role-aware All Modules launcher, centralized protected-tab navigation checks, and OWNER-only Activity Log visibility in the mobile More menu.
 - API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
-- **Production status: NOT DEPLOYED.** Release candidate only until exact-source GitLab checks, independent review, merge, and Web deployment verification pass.
+- **Production status:** Web version 1.3.6 is READY on main SHA `45924b5b37da917d98085487f091779317988966`; API remains 1.3.5.
+
+## 1.3.7 — Accessibility and text contrast (frontend-only release candidate)
+
+- Bumps the frontend package, lockfile, local build-info fallback, and PWA shell cache fallback to `1.3.7`.
+- Raises secondary text contrast on light surfaces to WCAG AA normal-text threshold (at least 4.5:1) while preserving dark-sidebar colors.
+- Adds a regression test for the affected selectors and calculated contrast ratios.
+- API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
+- **Production status: NOT DEPLOYED** until exact-head CircleCI, merge, and the Web production alias/version are verified.
