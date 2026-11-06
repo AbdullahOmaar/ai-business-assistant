@@ -776,7 +776,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .quick-grid{grid-template-columns:1fr}.workspace-bar{align-items:stretch;flex-direction:column}.workspace-bar select{max-width:none;width:100%}
       .list-tools{display:grid;grid-template-columns:1fr}.list-tools input,.list-tools select,.list-tools button{width:100%}
       .section-head{align-items:flex-start;gap:10px}.list-row{flex-wrap:wrap}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:13px;min-height:110px}.metric strong{font-size:clamp(15px,4vw,18px);overflow-wrap:anywhere}
-      .metric-grid aba-metric-card strong{font-size:clamp(15px,4vw,18px);overflow-wrap:anywhere}
+      
       .inline-form,.invoice-form{grid-template-columns:1fr}.inline-form .primary{grid-column:auto}
       .notice{flex-direction:column}.notice strong{white-space:normal}
       footer{flex-direction:column;line-height:1.6}
