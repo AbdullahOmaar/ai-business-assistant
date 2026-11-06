@@ -576,6 +576,15 @@ test('optional customer email exposes a localized format error only when invalid
   assert.match(form, /Enter a valid email address or leave this field blank\./);
 });
 
+test('customer phone input reflects the backend maximum without making it required', () => {
+  const start = source.indexOf('<form #customerForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(form, /name="customerPhone" maxlength="32"/);
+  assert.doesNotMatch(form, /name="customerPhone"[^>]*required/);
+});
+
 test('invoice void confirmation is localized for Arabic and English', () => {
   const start = source.indexOf('async voidInvoice(invoice: Invoice)');
   const end = source.indexOf('hasOutstandingBalance(', start);
