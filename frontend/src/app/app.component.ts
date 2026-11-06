@@ -11,7 +11,7 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
-import { WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
+import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
 import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
@@ -2358,12 +2358,9 @@ export class AppComponent implements OnInit, OnDestroy {
     return WORKSPACE_MODULE_CATALOG.filter(module => this.canAccessTab(module.tab));
   }
 
-  /** Home quick access stays focused on the five existing high-frequency destinations. */
+  /** Home quick access stays focused on the five existing key destinations. */
   get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
-    const priority = ['invoices', 'customers', 'products', 'expenses', 'reports'];
-    return this.homeModuleCards
-      .filter(module => priority.includes(module.tab))
-      .sort((left, right) => priority.indexOf(left.tab) - priority.indexOf(right.tab));
+    return selectHomeQuickAccessModules(this.homeModuleCards);
   }
 
   /** More navigation is rendered from the same role-filtered catalogue as Home. */
