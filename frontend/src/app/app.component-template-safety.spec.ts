@@ -979,3 +979,19 @@ test('RTL release-guide lists and mobile dock active state use logical layout', 
   assert.match(source, /\.sidebar \.nav-item\.active\{[^}]*border-inline-start:0;/);
   assert.match(source, /\.mobile-more-menu \.nav-item\.active\{border-inline-start:3px solid/);
 });
+
+test('session and permission recovery actions remain correct after a language toggle', () => {
+  const sessionStart = source.indexOf('get sessionExpired(): boolean');
+  const deniedStart = source.indexOf('get accessDenied(): boolean', sessionStart);
+  const retryStart = source.indexOf('retry(): void', deniedStart);
+  assert.ok(sessionStart >= 0 && deniedStart > sessionStart && retryStart > deniedStart);
+  const sessionGetter = source.slice(sessionStart, deniedStart);
+  const deniedGetter = source.slice(deniedStart, retryStart);
+  assert.match(sessionGetter, /انتهت صلاحية جلسة الدخول/);
+  assert.match(sessionGetter, /Your sign-in session is no longer valid/);
+  assert.match(deniedGetter, /لا تملك الصلاحية للوصول إلى مساحة العمل/);
+  assert.match(deniedGetter, /You do not have permission to access this workspace/);
+  assert.match(deniedGetter, /حسابك غير مخوّل للوصول إلى إدارة المنصة/);
+  assert.match(deniedGetter, /Your account is not authorized to access platform administration/);
+  assert.doesNotMatch(sessionGetter + deniedGetter, /this\.t\(/);
+});
