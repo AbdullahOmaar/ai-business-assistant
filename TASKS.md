@@ -1,7 +1,7 @@
 # T18 — UI/UX implementation checkpoint — 2026-11-06
 
 - **Owner directive:** The user explicitly instructed this execution to continue UI/UX work on one existing branch. This authorizes bounded frontend-only implementation on the existing Master-owned branch and supersedes the older design-only/no-code restriction for this workstream. It does not authorize CI triggers/retries, PR creation, merge, production deployment, backend/API/database/schema/migration changes, or changes to financial/payroll semantics.
-- **Single branch:** `master/t18-chat-mobile-ux-20261106`; no second branch created. Base/current main SHA: `e5a765083860a9141f2f2fe366858234873120e9`. Current branch head: `1efb6dd8747007e9b031415d6d2cd2632295d952` (55 commits ahead, 0 behind main).
+- **Single branch:** `master/t18-chat-mobile-ux-20261106`; no second branch created. Base/current main SHA: `e5a765083860a9141f2f2fe366858234873120e9`. Source implementation head: `81eb4e44e6404f115a414c6acb00a6a867c99c04`; branch head before this ledger update: `22e3834db8f744cfd82d1dec015004be112ba9b7` (56 commits ahead, 0 behind main).
 - **Existing work preserved:** the branch already contained the shared app shell, 19-destination role-filtered catalogue, grouped mobile More navigation, five shared UI primitives, and shared interaction-state migration. No parallel branch or PR exists.
 - **Design-system slice implemented:**
   - Expanded `frontend/src/styles.css` into a semantic foundation for colors/status, text, typography, spacing, radii, elevation, motion, focus, layout, navigation, hero surfaces and layering (93 unique token definitions).
