@@ -827,7 +827,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .nav-item.active .nav-icon{background:#5eead926;color:#99f6e4}
       .nav-item:active{transform:scale(.97)}
       .mobile-more-menu{
-        right:12px;
+        inset-inline-end:12px;
         bottom:calc(88px + env(safe-area-inset-bottom));
         width:min(280px,calc(100vw - 24px));
         max-height:min(62vh,520px);
@@ -840,8 +840,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
         background:#111827;
         box-shadow:0 20px 55px #02061766;
       }
-      .shell[dir="rtl"] .mobile-more-menu{right:12px;left:auto}
-      .shell[dir="ltr"] .mobile-more-menu{left:12px;right:auto}
+      .mobile-more-menu{inset-inline-start:auto}
       .mobile-more-menu .nav-item{min-height:48px;border-radius:12px}
       .main,.shell.english .main{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
       .install-floating{top:10px;right:10px;border-radius:999px;padding:9px 12px}
