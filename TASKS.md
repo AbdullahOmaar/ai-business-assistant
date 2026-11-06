@@ -2089,3 +2089,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Focused local validation: catalogue suite 7/7 PASS; strict TypeScript 5.8.3 catalogue/access check PASS; 16 static source checks PASS. Full app template safety suite, Angular build, full frontend tests and browser/device behavior NOT RUN.
 - Remaining state audit: global banners, field-level validation, permission-denied guidance, server-confirmed success, and journey-specific recovery. Do not convert a failed request into success or alter API/financial behavior.
 
+## T18 — Expense form accessibility follow-up — 2026-11-06
+
+- Continued on the existing single-writer branch `master/t18-chat-mobile-ux-20261106`; no second branch or PR was created.
+- Added bilingual field-level validation feedback for expense category, description, amount and date/time. Invalid controls expose `aria-invalid` and reference their localized message with `aria-describedby`; messages are announced through a polite live region.
+- The submit action remains available when the form is invalid so Angular can mark the form submitted and reveal feedback. The existing `expenseForm.valid && createExpense()` guard remains in place; invalid data is not sent.
+- Preserved current backend-aligned constraints: description max 500, amount greater than zero with two-decimal step, vendor max 160, reference max 128, required category and date/time. No API, payload, currency, financial or persistence behavior changed.
+- Added a focused source regression test in `frontend/src/app/expense-ui.spec.ts` and presentation styling in `frontend/src/styles.css`.
+- Commits: `6a5d167d838d2697aff36ad50697fbebda7c01dc` (template), `679fb8d6b20ee635ea9d13a1c0ac6d9b70bc1531` (regression test), `8a5e5fa9644712bbd6b5e549f371704539601fd1` (styles).
+- Readback/source assertions: **7/7 PASS**. Exact-head status contexts are empty because commits use `[skip ci]`; this is **NOT** a green CI result. The focused Node test, full frontend test suite, Angular template/build, browser/device, RTL/LTR and screen-reader acceptance remain **NOT RUN**.
+- No CI trigger/retry, PR, merge, deployment, backend/API/schema, database, migration or production change.
+- Next: continue the P0 interaction-state and responsive/RTL source audit, then pursue authorized local/browser validation. Keep merge blocked until the exact candidate has required passing validation and maintainer review.
