@@ -25,13 +25,15 @@ function contrastRatio(foreground: string, background: string): number {
 test('secondary text on light surfaces meets WCAG AA normal-text contrast', () => {
   assert.match(
     styles,
-    /:root body \.shell \.workspace-release-meta small,[\s\S]*?:root body \.shell footer span\s*\{\s*color:\s*#6b7280;/,
+    /:root body \.shell \.workspace-release-meta small,[\s\S]*?:root body \.shell footer span\s*\{\s*color:\s*var\(--aba-color-text-tertiary\);/,
   );
+  const tertiaryToken = styles.match(/--aba-color-text-tertiary:\s*(#[0-9a-fA-F]{6})\s*;/);
+  assert.ok(tertiaryToken, 'the tertiary text token must be a concrete six-digit color');
 
   for (const background of ['#f5f7fb', '#ffffff', '#f8fafc']) {
     assert.ok(
-      contrastRatio('#6b7280', background) >= 4.5,
-      `#6b7280 must reach 4.5:1 on ${background}`,
+      contrastRatio(tertiaryToken[1], background) >= 4.5,
+      `${tertiaryToken[1]} must reach 4.5:1 on ${background}`,
     );
   }
 });
