@@ -372,6 +372,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" maxlength="32" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
+                @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
                 <section abaCard class="csv-import-panel" aria-label="CSV customer import">
                   <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
@@ -441,6 +442,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label> }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
+                @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
                 <section abaCard class="csv-import-panel" aria-label="CSV product import">
                   <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
@@ -1098,6 +1100,10 @@ export class AppComponent implements OnInit, OnDestroy {
   customerName = '';
   customerEmail = '';
   customerPhone = '';
+  customerMessage = '';
+  customerMessageKind: 'success' | 'warning' = 'success';
+  productMessage = '';
+  productMessageKind: 'success' | 'warning' = 'success';
   productName = '';
   productPrice = '';
   stockTracked = false;
@@ -1777,6 +1783,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.customerName = '';
     this.customerEmail = '';
     this.customerPhone = '';
+    this.customerMessage = '';
+    this.customerMessageKind = 'success';
+    this.productMessage = '';
+    this.productMessageKind = 'success';
     this.productName = '';
     this.productPrice = '';
     this.stockTracked = false;
@@ -2405,20 +2415,37 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async createCustomer(): Promise<void> {
     if (!this.business) return;
+    const businessId = this.business.id;
     this.loading = true;
     this.error = '';
+    this.customerMessage = '';
+    this.customerMessageKind = 'success';
     try {
-      await this.api.createCustomer(this.business.id, {
+      await this.api.createCustomer(businessId, {
         name: this.customerName, email: this.customerEmail || undefined,
         phone: this.customerPhone || undefined
       });
+      if (this.business?.id !== businessId) return;
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
-      this.customers = await this.api.customers(this.business.id);
-      if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
+      this.customerMessage = this.t('تم حفظ العميل بنجاح.', 'Customer saved successfully.');
+      try {
+        const customers = await this.api.customers(businessId);
+        if (this.business?.id !== businessId) return;
+        this.customers = customers;
+        if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.customerMessageKind = 'warning';
+          this.customerMessage = this.t(
+            'تم حفظ العميل، لكن تعذر تحديث القائمة. لا تضف العميل مرة أخرى؛ حدّث البيانات أولًا.',
+            'The customer was saved, but the list could not refresh. Do not add the customer again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
@@ -2581,20 +2608,37 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async createProduct(): Promise<void> {
     if (!this.business) return;
+    const businessId = this.business.id;
     this.loading = true;
     this.error = '';
+    this.productMessage = '';
+    this.productMessageKind = 'success';
     try {
-      await this.api.createProduct(this.business.id, {
+      await this.api.createProduct(businessId, {
         name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked,
         opening_quantity: this.stockTracked ? this.productOpeningQuantity : '0'
       });
+      if (this.business?.id !== businessId) return;
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
-      this.products = await this.api.products(this.business.id);
-      if (this.products.length) this.invoiceProductId = this.products[0].id;
+      this.productMessage = this.t('تم حفظ المنتج بنجاح.', 'Product saved successfully.');
+      try {
+        const products = await this.api.products(businessId);
+        if (this.business?.id !== businessId) return;
+        this.products = products;
+        if (this.products.length) this.invoiceProductId = this.products[0].id;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.productMessageKind = 'warning';
+          this.productMessage = this.t(
+            'تم حفظ المنتج، لكن تعذر تحديث القائمة. لا تضف المنتج مرة أخرى؛ حدّث البيانات أولًا.',
+            'The product was saved, but the list could not refresh. Do not add the product again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
