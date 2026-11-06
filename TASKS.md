@@ -2112,3 +2112,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact-head status contexts remain empty due to `[skip ci]`; full frontend tests, Angular template/build, 360/390/tablet browser checks, RTL/LTR visual review, keyboard/screen-reader and Android PWA acceptance remain **NOT RUN**.
 - No CI trigger/retry, PR, merge, deployment, backend/API/schema, database, migration or production change.
 - Next: continue the remaining P0 interaction-state and responsive/accessibility audit. Merge remains gated on exact-candidate validation and maintainer review; do not bypass the CircleCI freeze or missing browser/device evidence.
+
+## T18 — Responsive RTL refinement — 2026-11-06
+
+- Continued the same T18 branch and preserved the four-slot mobile dock and existing More navigation contract.
+- Release-guide lists now use logical inline padding instead of a language-specific physical left/right override.
+- The mobile dock active item no longer inherits the desktop inline-start border marker; the dock retains its own active treatment while the More-menu destination keeps its logical inline-start marker.
+- Added source regression coverage for both responsive cases.
+- Commits: `b573476fd886241721cb2af6b446255b580da82c` (responsive RTL CSS), `edc5ff6a1fad8f91cad007c2a89f207b04787761` (regression test).
+- Static readback assertions PASS for logical list padding, removal of the English-only physical override, mobile dock marker reset and preservation of the More-menu marker. Browser visual validation remains **NOT RUN**.
+- Full frontend tests, Angular template/build, viewport/device, keyboard/screen-reader and Android PWA acceptance remain **NOT RUN**. No CI trigger/retry, PR, merge, deployment, backend/API/database or production change.
+- Next: complete source-only interaction-state/accessibility review, then seek permitted local/browser validation. Merge remains gated on required exact-head evidence and maintainer review.
