@@ -186,3 +186,137 @@ def test_supplier_create_route_is_registered_once_on_canonical_service_handler()
     assert routes[0].endpoint.__module__ == "app.api"
     assert routes[0].endpoint.__name__ == "post_supplier"
     assert "post" in app.openapi()["paths"][path]
+
+
+def test_notification_reads_are_member_scoped_and_tenant_isolated_without_side_effects():
+    """OWNER/STAFF can read only their business notifications; outsiders cannot."""
+    from uuid import UUID
+
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import Session, sessionmaker
+    from sqlalchemy.pool import StaticPool
+    from sqlalchemy import create_engine
+
+    from app.main import app
+    from app.models import Base, BusinessMembership, MembershipRole
+    from app.security import AuthenticatedPrincipal
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    subject = {"value": "notifications-a-owner"}
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject["value"])
+    client = TestClient(app)
+
+    def create_business(owner: str, name: str) -> str:
+        subject["value"] = owner
+        response = client.post(
+            "/api/v1/businesses",
+            json={"name": name, "currency_code": "EGP"},
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def create_notification(business_id: str, title: str, key: str) -> str:
+        response = client.post(
+            f"/api/v1/businesses/{business_id}/notifications",
+            json={
+                "kind": "security-test",
+                "title": title,
+                "body": f"Private notification for {title}",
+                "deduplication_key": key,
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def all_business_rows():
+        """Snapshot all persisted rows for both businesses, including notifications/audit."""
+        business_ids = (UUID(business_a), UUID(business_b))
+        with app.state.session_factory() as session:
+            snapshot = []
+            for table in Base.metadata.sorted_tables:
+                if "business_id" in table.c:
+                    statement = table.select().where(
+                        table.c.business_id.in_(business_ids)
+                    )
+                elif table.name == "businesses":
+                    statement = table.select().where(table.c.id.in_(business_ids))
+                else:
+                    continue
+                primary_key = list(table.primary_key.columns)
+                if primary_key:
+                    statement = statement.order_by(*primary_key)
+                snapshot.append((
+                    table.name,
+                    tuple(tuple(row) for row in session.execute(statement).all()),
+                ))
+            return tuple(snapshot)
+
+    try:
+        business_a = create_business("notifications-a-owner", "Notifications Tenant A")
+        notification_a = create_notification(
+            business_a, "Tenant A notice", "notifications-a-key"
+        )
+
+        business_b = create_business("notifications-b-owner", "Notifications Tenant B")
+        notification_b = create_notification(
+            business_b, "Tenant B notice", "notifications-b-key"
+        )
+
+        with Session(engine) as session:
+            session.add(BusinessMembership(
+                business_id=UUID(business_a),
+                user_subject="notifications-a-staff",
+                role=MembershipRole.STAFF,
+            ))
+            session.commit()
+
+        def read_as(principal: str, business_id: str, expected_status: int):
+            subject["value"] = principal
+            before = all_business_rows()
+            response = client.get(
+                f"/api/v1/businesses/{business_id}/notifications?limit=10"
+            )
+            assert response.status_code == expected_status, response.text
+            assert all_business_rows() == before, (
+                f"notification read for {principal} unexpectedly changed business rows or audit"
+            )
+            return response
+
+        owner_a = read_as("notifications-a-owner", business_a, 200)
+        assert [item["id"] for item in owner_a.json()] == [notification_a]
+
+        staff_a = read_as("notifications-a-staff", business_a, 200)
+        assert [item["id"] for item in staff_a.json()] == [notification_a]
+
+        foreign_owner_on_a = read_as("notifications-b-owner", business_a, 403)
+        assert "Tenant A notice" not in foreign_owner_on_a.text
+
+        outsider_on_a = read_as("notifications-outsider", business_a, 403)
+        assert "Tenant A notice" not in outsider_on_a.text
+
+        owner_b = read_as("notifications-b-owner", business_b, 200)
+        assert [item["id"] for item in owner_b.json()] == [notification_b]
+
+        foreign_owner_on_b = read_as("notifications-a-owner", business_b, 403)
+        assert "Tenant B notice" not in foreign_owner_on_b.text
+
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
