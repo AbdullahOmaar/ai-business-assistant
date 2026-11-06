@@ -1018,7 +1018,9 @@ test('notification and supplier forms expose localized field validation without 
     ['notificationBodyControl', 'notification-body-error'],
   ]) {
     assert.ok(notification.includes('#' + control + '="ngModel"'), control);
-    assert.ok(notification.includes('[attr.aria-describedby]="' + control + '.invalid && (' + control + '.touched || notificationForm.submitted) ? \' ' + id + '\' : null"'.replace("? \' ", "? \'")), control + ' error association');
+    const association = `[attr.aria-describedby]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? '${id}' : null"`;
+    assert.ok(notification.includes(association), control + ' error association');
+    assert.ok(notification.includes(`[attr.aria-invalid]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? 'true' : null"`), control + ' invalid state');
     assert.ok(source.includes('id="' + id + '"'), id);
   }
   assert.match(notification, /name="notificationTitle" required maxlength="160"/);
@@ -1031,6 +1033,9 @@ test('notification and supplier forms expose localized field validation without 
   assert.ok(supplier.includes('supplierForm.valid && createSupplier()'));
   assert.ok(supplier.includes('#supplierNameControl="ngModel"'));
   assert.ok(supplier.includes('#supplierEmailControl="ngModel"'));
+  assert.ok(supplier.includes(`[attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null"`));
+  assert.ok(supplier.includes(`[attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null"`));
+  assert.ok(supplier.includes(`[attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null"`));
   assert.match(supplier, /name="supplierName" required maxlength="160"/);
   assert.match(supplier, /name="supplierEmail" type="email" maxlength="254"/);
   assert.doesNotMatch(supplier, /name="supplierEmail"[^>]*required/);
