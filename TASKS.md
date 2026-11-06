@@ -1,3 +1,17 @@
+# T18 continuation checkpoint — 2026-11-06 17:36 UTC
+
+- **Single branch:** `master/t18-chat-mobile-ux-20261106`; no second branch or parallel PR. Base/current main SHA: `e5a765083860a9141f2f2fe366858234873120e9`. Source-code/test head before this docs-only checkpoint: `646080f71c8c24cb3915d0d8818a6ad1ec01792a` (78 commits ahead, 0 behind main).
+- **New UI recovery fixes:** authentication errors no longer show an incorrect “Retry startup” action; the existing sign-in/create-account form remains the retry path and retains its values. Switching workspaces now re-evaluates the selected destination against the newly selected workspace role and returns to Home if the previous destination is not allowed. No backend authorization behavior changed.
+- **Form validation UX:** added shared visual feedback for Angular template-driven controls after touch/invalid state and for invalid controls on submitted forms. Checkboxes, radios and file inputs are excluded. No new business validation rules or API constraints were introduced.
+- **Regression coverage added:** source tests cover authentication retry behavior, role-safe workspace switching, and touched/submitted form-validation styles. Static source assertions on the exact fetched blobs passed 9/9. This is not execution of the repository test suite.
+- **Validation:** full frontend Node tests, Angular template/production build, browser/device, keyboard and screen-reader checks remain **NOT RUN**. No authorized local checkout/runner is available in this session. Figma remains View-only; visual/structural verification remains BLOCKED / NOT RUN.
+- **CI freeze incident/evidence:** GitHub Contents API commits automatically started CircleCI for source head `646080f71c8c24cb3915d0d8818a6ad1ec01792a`; at the last read (2026-11-06 17:35:04 UTC), five CircleCI contexts were PENDING: frontend-unit-tests, frontend-browser-smoke, frontend-production-build, backend-accounting, and frontend-dependency-audit. No manual CircleCI trigger/retry was issued. Semaphore reported FAILURE but is retired/non-authoritative. Do not trigger/retry or use a replacement CI. This documentation-only commit uses `[skip ci]`.
+- **Notion reconciliation:** the T18 database row still referenced prior head `c098dac2e053390d7845b19e62360b663c95f3e5` and 1 commit ahead; that snapshot conflicts with the live GitHub branch inventory/compare. Update the canonical row to the current verified GitHub head after this checkpoint. GitHub remains authoritative for branch/head.
+- **Delivery:** no PR, merge, deployment, production/API/DB changes, migrations, financial semantics or payroll changes.
+- **Next action:** continue source-level P0 field-validation, denied-state, success/recovery and workspace-context audit on this same branch; keep all executable and rendered checks NOT RUN until a permitted runner/browser and the CI freeze status allow them.
+
+---
+
 # T18 — UI/UX implementation checkpoint — 2026-11-06
 
 - **Owner directive:** The user explicitly instructed this execution to continue UI/UX work on one existing branch. This authorizes bounded frontend-only implementation on the existing Master-owned branch and supersedes the older design-only/no-code restriction for this workstream. It does not authorize CI triggers/retries, PR creation, merge, production deployment, backend/API/database/schema/migration changes, or changes to financial/payroll semantics.
