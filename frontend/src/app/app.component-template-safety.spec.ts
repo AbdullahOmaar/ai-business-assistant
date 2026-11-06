@@ -1170,3 +1170,16 @@ test('invoice customer and dynamic line fields expose accessible localized valid
   assert.doesNotMatch(form, /\[disabled\]="[^"]*!invoiceCustomerId/);
   assert.ok(source.includes("if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length"));
 });
+
+test('payment submit remains available to reveal required-field validation', () => {
+  const start = source.indexOf('<form #paymentForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(form.includes('paymentForm.valid && createPayment()'));
+  assert.match(form, /name="paymentAmount" type="number" min="0\.01" step="0\.01"[^>]*required/);
+  assert.ok(form.includes('paymentAmountModel.invalid'));
+  assert.ok(form.includes('payment-customer-error'));
+  assert.match(form, /<button class="primary" type="submit" \[disabled\]="loading"/);
+  assert.doesNotMatch(form, /\[disabled\]="loading \|\| !paymentAmount"/);
+  assert.match(source, /if \(!this\.paymentAmount\.trim\(\) \|\| !this\.paymentCustomerId\)/);
+});
