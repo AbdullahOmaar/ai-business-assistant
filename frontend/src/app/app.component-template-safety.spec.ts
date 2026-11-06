@@ -684,3 +684,27 @@ test('payment completion cannot clear the loading state of a newly selected work
   assert.match(method, /const businessId = this\.business\.id/);
   assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 });
+
+
+test('invalid authentication, workspace, customer, payment and expense forms cannot invoke mutations', () => {
+  assert.match(source, /<form #authForm="ngForm" \(ngSubmit\)="authForm\.valid && submitAuth\(\)"/);
+  assert.match(source, /<form #workspaceForm="ngForm"[^>]*\(ngSubmit\)="workspaceForm\.valid && createWorkspace\(\)"/);
+  assert.match(source, /<form #customerForm="ngForm"[^>]*\(ngSubmit\)="customerForm\.valid && createCustomer\(\)"/);
+  assert.match(source, /<form #paymentForm="ngForm"[^>]*\(ngSubmit\)="paymentForm\.valid && createPayment\(\)"/);
+  assert.match(source, /<form #expenseForm="ngForm"[^>]*\(ngSubmit\)="expenseForm\.valid && createExpense\(\)"/);
+});
+
+test('product form exposes accessible required, non-negative price and conditional stock validation', () => {
+  const start = source.indexOf('<form #productForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(form, /\(ngSubmit\)="productForm\.valid && createProduct\(\)"/);
+  assert.match(form, /#productNameModel="ngModel"/);
+  assert.match(form, /id="product-name-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /#productPriceModel="ngModel"/);
+  assert.match(form, /type="number" min="0" step="0\.01"/);
+  assert.match(form, /id="product-price-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /#productOpeningQuantityModel="ngModel"/);
+  assert.match(form, /id="product-opening-quantity-error" class="field-error" aria-live="polite"/);
+});
