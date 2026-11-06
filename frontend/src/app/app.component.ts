@@ -67,7 +67,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
           <p class="eyebrow">{{ t('كل أعمالك في مكان واحد', 'YOUR BUSINESS, IN ONE PLACE') }}</p>
           <h1>{{ signingUp ? t('إنشاء حسابك', 'Create your account') : t('مرحبًا بعودتك', 'Welcome back') }}</h1>
           <p class="muted">{{ t('سجّل الدخول بأمان للوصول إلى مساحات العمل المصرح لك بها فقط.', 'Sign in securely to access only the workspaces you belong to.') }}</p>
-          <form #authForm="ngForm" (ngSubmit)="submitAuth()" class="stack">
+          <form #authForm="ngForm" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
             <label>{{ t('البريد الإلكتروني', 'Email address') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
               @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
                 <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('البريد الإلكتروني مطلوب.', 'Email is required.') : t('أدخل بريدًا إلكترونيًا صحيحًا.', 'Enter a valid email address.') }}</small>
@@ -153,7 +153,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             <section abaCard class="panel narrow">
               <p class="eyebrow">{{ t('ابدأ هنا', 'GET STARTED') }}</p><h2>{{ t('أنشئ مساحة عملك الأولى', 'Create your first workspace') }}</h2>
               <p class="muted">{{ t('مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.', 'This workspace belongs to your verified account. Other users cannot access it without membership.') }}</p>
-              <form #workspaceForm="ngForm" class="stack" (ngSubmit)="createWorkspace()">
+              <form #workspaceForm="ngForm" class="stack" (ngSubmit)="workspaceForm.valid && createWorkspace()">
                 <label>{{ t('اسم النشاط التجاري', 'Business name') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
                   @if (businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted)) {
                     <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t('اسم النشاط التجاري مطلوب.', 'Business name is required.') : t('اسم النشاط يجب ألا يتجاوز 160 حرفًا.', 'Business name must be 160 characters or fewer.') }}</small>
@@ -360,7 +360,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'customers') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
-                <form #customerForm="ngForm" class="inline-form" (ngSubmit)="createCustomer()">
+                <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
                   <input #customerNameModel="ngModel" [attr.aria-label]="t('اسم العميل', 'Customer name')" name="customerName" [placeholder]="t('اسم العميل', 'Customer name')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
                   @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
                     <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('اسم العميل مطلوب.', 'Customer name is required.') }}</small>
@@ -426,11 +426,19 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'products') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
-                <form class="inline-form" (ngSubmit)="createProduct()">
-                  <input [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName">
-                  <input [attr.aria-label]="t('سعر الوحدة', 'Unit price')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('سعر الوحدة', 'Unit price')" required [(ngModel)]="productPrice">
+                <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
+                  <label>{{ t('اسم المنتج', 'Product name') }}<input #productNameModel="ngModel" [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
+                    @if (productNameModel.invalid && (productNameModel.touched || productForm.submitted)) {
+                      <small id="product-name-error" class="field-error" aria-live="polite">{{ t('اسم المنتج مطلوب.', 'Product name is required.') }}</small>
+                    }
+                  </label>
+                  <label>{{ t('سعر الوحدة', 'Unit price') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('سعر الوحدة', 'Unit price')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('سعر الوحدة', 'Unit price')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
+                    @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
+                      <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('سعر الوحدة مطلوب.', 'Unit price is required.') : t('أدخل سعرًا صحيحًا لا يقل عن صفر.', 'Enter a valid unit price of zero or more.') }}</small>
+                    }
+                  </label>
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
-                  @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required></label> }
+                  @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label> }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 <section abaCard class="csv-import-panel" aria-label="CSV product import">
@@ -506,7 +514,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
                   <div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 </aba-section-header>
-                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="createPayment()">
+                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="paymentForm.valid && createPayment()">
                   <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
                   <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
                   <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
@@ -670,7 +678,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'expenses') {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="expenses.length + ' ' + t('مصروفات', 'expenses')" />
-                <form class="inline-form expense-form" (ngSubmit)="createExpense()">
+                <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
                   <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" name="expenseCategory" required [(ngModel)]="expenseCategory">
                     <option value="General">{{ t('عام', 'General') }}</option>
                     <option value="Supplies">{{ t('مستلزمات', 'Supplies') }}</option>
