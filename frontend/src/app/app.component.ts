@@ -409,7 +409,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
                 @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
-                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" aria-label="CSV customer import">
+                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')">
                   <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -479,7 +479,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" aria-label="CSV product import">
+                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')">
                   <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -521,7 +521,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select #invoiceProductModel="ngModel" [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId" [attr.aria-invalid]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'invoice-product-error-' + i : null"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>@if (invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted)) { <small [id]="'invoice-product-error-' + i" class="field-error" role="alert">{{ t('اختر منتجًا لهذا البند.', 'Choose a product for this line.') }}</small> }</label><label>{{ t('الكمية', 'Quantity') }}<input #invoiceQuantityModel="ngModel" [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity" [attr.aria-invalid]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'invoice-quantity-error-' + i : null">@if (invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted)) { <small [id]="'invoice-quantity-error-' + i" class="field-error" role="alert">{{ t('أدخل كمية لا تقل عن 0.001 وبخطوة 0.001.', 'Enter a quantity of at least 0.001 in 0.001 increments.') }}</small> }</label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
                   </div>
                   @if (invoicePreview; as preview) {
-                    <div class="invoice-preview" aria-label="Invoice totals preview" aria-live="polite">
+                    <div class="invoice-preview" [attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')" aria-live="polite">
                       <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ preview.subtotal }} {{ business.currency_code }}</strong></div>
                       <div><span>{{ t('الخصم', 'Discount') }}</span><strong>−{{ preview.discount }} {{ business.currency_code }}</strong></div>
                       <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ preview.tax }} {{ business.currency_code }}</strong></div>
