@@ -1,3 +1,21 @@
+# Demo production asset correction — 2026-11-06
+
+## Production build failure diagnosis
+- PR #338 was merged to main at `9c46d95cb60da86e75019a13836c23bee727de50` and main CircleCI passed 7/7.
+- Its first manual Web production build failed only in the Node source suite: 106 passed, 1 failed with `ENOENT /vercel/demo/index.html`.
+- Root cause: Vercel Web project root is `frontend`; the actual URL `/demo/` is served from `frontend/public/demo/index.html`. The similarly named root `demo/index.html` is not part of this project’s build root.
+- Current candidate branch copies the corrected, resettable preview from root into the deployed asset `frontend/public/demo/index.html` and points the Node source regression to `../../public/demo/index.html`.
+- It keeps the frontend static route in the deployed asset tree; no backend/API/database/schema/migration changes.
+
+## Delivery
+- Branch: `fix/demo-publish-asset-and-source-test-20261106`.
+- PR pending exact-head CircleCI.
+- Vercel Web ignore rule now watches `frontend demo`; it has been restored after the one-off build override. API ignore rule unchanged.
+- The previous production deployment attempt `dpl_BUCWw3zSbpTamH86teRmY9LXseW8` failed due to the wrong test path and did NOT replace the production alias. Current Production Web remains on v1.3.7 / prior deployed SHA until a successful deployment is verified.
+- No API deployment, production DB write or migration.
+
+---
+
 # Master demo-preview checkpoint — 2026-11-06
 
 ## Latest verified base
