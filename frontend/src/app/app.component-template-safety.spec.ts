@@ -530,7 +530,9 @@ test('operations forms distinguish successful mutations from failed list refresh
 
   const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
   const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
-  const purchase = source.slice(source.indexOf('async createPurchaseOrder()'), source.indexOf('hasRemainingQuantity('));
+  const purchaseStart = source.indexOf('async createPurchaseOrder()');
+  const purchaseEnd = source.indexOf('  hasRemainingQuantity(', purchaseStart);
+  const purchase = source.slice(purchaseStart, purchaseEnd);
   const receiving = source.slice(source.indexOf('async receivePurchaseOrder('), source.indexOf('async createRecurringSchedule()'));
   const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
   for (const method of [notification, supplier, purchase, receiving, recurring]) {
