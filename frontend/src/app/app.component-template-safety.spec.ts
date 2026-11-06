@@ -875,3 +875,67 @@ test('owner-only invoice mutations fail closed before showing confirmation or ca
   assert.match(voidMethod, /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !window\.confirm/);
   assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
 });
+
+
+test('owner-only notification and recurring creation controls stay hidden from staff while lists remain visible', () => {
+  const notificationStart = source.indexOf("@if (tab === 'notifications')");
+  const notificationEnd = source.indexOf("@if (tab === 'suppliers')", notificationStart);
+  const notificationView = source.slice(notificationStart, notificationEnd);
+  assert.ok(notificationStart >= 0 && notificationEnd > notificationStart);
+  assert.match(notificationView, /@if \(business\?\.role === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
+  assert.match(notificationView, /Only workspace owners can queue notifications/);
+  assert.match(notificationView, /@for \(item of notifications/);
+
+  const recurringStart = source.indexOf("@if (tab === 'recurring')");
+  const recurringEnd = source.indexOf("@if (tab === 'health'", recurringStart);
+  const recurringView = source.slice(recurringStart, recurringEnd);
+  assert.ok(recurringStart >= 0 && recurringEnd > recurringStart);
+  assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*<form #recurringForm="ngForm"/);
+  assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
+  assert.match(recurringView, /@for \(schedule of recurringSchedules/);
+
+  const notificationMethodStart = source.indexOf('async createNotification(): Promise<void>');
+  const notificationMethodEnd = source.indexOf('private async loadSuppliers()', notificationMethodStart);
+  assert.match(source.slice(notificationMethodStart, notificationMethodEnd), /this\.business\.role !== 'owner'/);
+  const recurringMethodStart = source.indexOf('async createRecurringSchedule(): Promise<void>');
+  const recurringMethodEnd = source.indexOf('get maxIntegrityTotal()', recurringMethodStart);
+  assert.match(source.slice(recurringMethodStart, recurringMethodEnd), /this\.business\.role !== 'owner'/);
+});
+
+test('CSV import preview and write controls are owner-only without restricting member record creation', () => {
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" aria-label="CSV customer import">/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" aria-label="CSV product import">/);
+  assert.match(source, /CSV imports are available to workspace owners only/);
+  const methods = [
+    ['async onImportFileSelected(event: Event)', 'async previewProductImport()'],
+    ['async previewProductImport()', 'async confirmProductImport()'],
+    ['async confirmProductImport()', 'async onCustomerImportFileSelected(event: Event)'],
+    ['async onCustomerImportFileSelected(event: Event)', 'async previewCustomerImport()'],
+    ['async previewCustomerImport()', 'async confirmCustomerImport()'],
+    ['async confirmCustomerImport()', 'importErrorLabel(code: string)'],
+  ];
+  for (const [startMarker, endMarker] of methods) {
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start);
+    const method = source.slice(start, end);
+    assert.ok(start >= 0 && end > start, 'expected method ' + startMarker);
+    assert.match(method, /this\.business\?\.role !== 'owner'|this\.business\.role !== 'owner'/,
+      startMarker + ' must fail closed for non-owners');
+  }
+  assert.match(source, /<form #customerForm="ngForm"[^>]*createCustomer\(\)/);
+  assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
+});
+
+test('purchase orders remain creatable by members while receiving and payment writes are owner-only', () => {
+  const purchaseStart = source.indexOf("@if (tab === 'purchases')");
+  const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
+  const purchaseView = source.slice(purchaseStart, purchaseEnd);
+  assert.match(purchaseView, /<form class="stack" \(ngSubmit\)="createPurchaseOrder\(\)">/);
+  assert.match(purchaseView, /business\?\.role === 'owner' && order\.lines\.some\(hasRemainingQuantity\)/);
+  const receiveStart = source.indexOf('async receivePurchaseOrder(order: PurchaseOrder)');
+  const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
+  assert.match(source.slice(receiveStart, receiveEnd), /this\.business\.role !== 'owner'/);
+  const paymentStart = source.indexOf('async createPayment(): Promise<void>');
+  const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
+  assert.match(source.slice(paymentStart, paymentEnd), /this\.business\.role !== 'owner'/);
+});
