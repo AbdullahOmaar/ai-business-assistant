@@ -1195,3 +1195,9 @@ test('quick-access keyboard focus fallback meets the shared semantic focus token
   assert.match(quickAccessSource, /\.aba-quick-access:focus-visible\{outline:var\(--aba-focus-ring-width, 3px\) solid var\(--aba-color-focus-ring, #2563eb\)/);
   assert.match(quickAccessSource, /:host-context\(\[dir="rtl"\]\) \.aba-quick-access__arrow\{transform:scaleX\(-1\)\}/);
 });
+
+
+test('AI chat composer placeholder follows selected language', () => {
+  assert.match(source, /\\[placeholder\\]="t\\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\\)"/);
+  assert.doesNotMatch(source, /placeholder="اكتب سؤالك عن نشاطك…"/);
+});
