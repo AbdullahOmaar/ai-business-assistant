@@ -548,3 +548,13 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(source, /operationsMessageTab === 'purchases'/);
   assert.match(source, /operationsMessageTab === 'recurring'/);
 });
+
+test('invoice void confirmation is localized for Arabic and English', () => {
+  const start = source.indexOf('async voidInvoice(invoice: Invoice)');
+  const end = source.indexOf('hasOutstandingBalance(', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start, 'invoice void method must exist');
+  assert.match(method, /window\.confirm\(this\.t\(/);
+  assert.match(method, /تأكيد إلغاء الفاتورة/);
+  assert.match(method, /Confirm voiding invoice/);
+});
