@@ -2132,3 +2132,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Static source checks confirm the expected role/live-region/action/reduced-motion expressions are present. The Node test suite itself remains **NOT RUN**.
 - Exact-head CI status, full frontend suite, Angular build/template compilation, browser/device/keyboard/screen-reader, RTL/LTR and Android PWA acceptance remain **NOT RUN**. No CI trigger/retry, PR, merge or deployment.
 - Next: finish source-only acceptance review and obtain authorized local/browser evidence; keep merge blocked until required gates are satisfied.
+
+## T18 — Focus indicator and semantic color contrast — 2026-11-06
+
+- Increased `--aba-color-focus-ring` from `#93c5fd` to `#2563eb`; updated the app-shell and shared feedback component fallback values to match. Focus indicators now exceed 3:1 against both the white surface and page background in the token calculation.
+- Added a design-token regression test that calculates WCAG contrast ratios for the semantic text/status palette (minimum 4.5:1) and focus indicator (minimum 3:1).
+- Verified from the current checked-in token values: all tested text pairs PASS (lowest 4.76:1); focus indicator is 5.17:1 on white and 4.82:1 on page background.
+- Commits: `733a490ceadd738e8784926ae779a2d4a8a10c95` (focus token), `b06ec748bc283ba00a2f4430fb0dd34d6d35aa38` (contrast test), `ae17a4838b75d6e19cdf123088921396791d4f67` (app fallback), `cccfcb08fac78808cb0b49b0af7d36e269726af4` (shared feedback fallback), `70900ac62ae2f80ad44cf29b61b1dbf5c55804ba` (token parser/test alignment).
+- Static token calculation and source readback PASS. The Node test itself remains **NOT RUN**; browser focus-ring visibility remains **NOT RUN**.
+- No CI trigger/retry, PR, merge, deployment, backend/API/schema/database or production change.
+- Next: complete the remaining source-level responsive/accessibility review and secure authorized test/browser evidence before review/merge.
