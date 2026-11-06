@@ -4,6 +4,12 @@
   --aba-color-danger-text: #991b1b;
   --aba-color-success-border: #bbf7d0;
   --aba-color-success-text: #065f46;
+  --aba-color-info-soft: #eff6ff;
+  --aba-color-info-border: #bfdbfe;
+  --aba-color-info-text: #1e40af;
+  --aba-color-warning-soft: #fffbeb;
+  --aba-color-warning-border: #fde68a;
+  --aba-color-warning-text: #92400e;
   --aba-color-text-primary: #172033;
   --aba-color-text-muted: #475569;
   --aba-color-text-secondary: #64748b;
@@ -52,4 +58,19 @@ button, input, select, textarea { font-family: inherit; }
 :root body .shell .footnote,
 :root body .shell footer span {
   color: #6b7280;
+}
+
+
+/* Projected value slots for the shared KPI card component. */
+aba-metric-card strong {
+  display: block;
+  font-size: 19px;
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+}
+aba-metric-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--aba-color-text-secondary, #64748b);
+  font-size: 10px;
 }
