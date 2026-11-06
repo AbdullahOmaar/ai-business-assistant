@@ -163,3 +163,14 @@ test('shared section headers preserve h2/h3 hierarchy for nested workspace secti
   assert.equal([...appSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 2,
     'nested receivables and customer statement sections must use h3');
 });
+
+
+test('native Angular validation styles touched and submitted invalid controls without styling untouched fields', () => {
+  assert.match(styles, /\.shell input\.ng-invalid\.ng-touched/);
+  assert.match(styles, /\.shell select\.ng-invalid\.ng-touched/);
+  assert.match(styles, /\.shell textarea\.ng-invalid\.ng-touched/);
+  assert.match(styles, /\.shell form\.ng-submitted input\.ng-invalid/);
+  assert.match(styles, /border-color: var\(--aba-color-danger-border\)/);
+  assert.match(styles, /background-color: var\(--aba-color-danger-soft\)/);
+  assert.match(styles, /:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\):not\(\[type="file"\]\)/);
+});
