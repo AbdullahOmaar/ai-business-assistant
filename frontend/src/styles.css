@@ -34,7 +34,8 @@
   --aba-color-nav-accent: #5eead4;
   --aba-color-nav-active-start: #164e63;
   --aba-color-nav-active-end: #1d4ed8;
-  --aba-color-nav-shadow: 0 18px 50px rgb(2 6 23 / 33%);
+  --aba-shadow-nav-menu: 0 18px 50px rgb(2 6 23 / 33%);
+  --aba-shadow-nav-dock: 0 -8px 28px rgb(15 23 42 / 12%);
   --aba-color-hero-start: #14243a;
   --aba-color-hero-mid: #1e3a5f;
   --aba-color-hero-end: #155e75;
