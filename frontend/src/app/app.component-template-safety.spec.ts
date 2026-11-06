@@ -472,8 +472,8 @@ test('sign-in and first-workspace forms expose localized inline errors to assist
   assert.match(authForm, /#passwordModel="ngModel"/);
   assert.match(authForm, /\[attr\.aria-invalid\]="emailModel\.invalid/);
   assert.match(authForm, /\[attr\.aria-describedby\]="emailModel\.invalid/);
-  assert.match(authForm, /id="auth-email-error" class="field-error" role="alert"/);
-  assert.match(authForm, /id="auth-password-error" class="field-error" role="alert"/);
+  assert.match(authForm, /id="auth-email-error" class="field-error" aria-live="polite"/);
+  assert.match(authForm, /id="auth-password-error" class="field-error" aria-live="polite"/);
 
   const workspaceStart = source.indexOf('<form #workspaceForm="ngForm"');
   const workspaceEnd = source.indexOf('</form>', workspaceStart);
@@ -481,7 +481,7 @@ test('sign-in and first-workspace forms expose localized inline errors to assist
   assert.ok(workspaceStart >= 0 && workspaceEnd > workspaceStart);
   assert.match(workspaceForm, /#businessNameModel="ngModel"/);
   assert.match(workspaceForm, /\[attr\.aria-invalid\]="businessNameModel\.invalid/);
-  assert.match(workspaceForm, /id="workspace-name-error" class="field-error" role="alert"/);
+  assert.match(workspaceForm, /id="workspace-name-error" class="field-error" aria-live="polite"/);
 });
 
 
