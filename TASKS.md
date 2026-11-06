@@ -2151,3 +2151,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Static calculation from the checked-in tokens: all 13 semantic text/status pairs meet 4.5:1 (minimum 4.76:1); focus indicator meets 3:1 (5.17:1 on surface, 4.82:1 on page). This calculation is not execution of the committed Node test.
 - Repository Node tests, Angular build/template compilation, browser/device focus visibility, screen-reader and RTL/LTR visual acceptance remain **NOT RUN**. Exact-head GitHub status contexts remain empty due to `[skip ci]`; CircleCI remains frozen. No CI trigger/retry, PR, merge or deployment.
 - Next: final source/diff review, then obtain an authorized runner/browser and required exact-head checks before opening a PR or attempting merge.
+
+## T18 — Expense validation test precision — 2026-11-06
+
+- Strengthened `frontend/src/app/expense-ui.spec.ts` to assert the exact `aria-invalid` and `aria-describedby` expression for each of the four expense controls, the corresponding message IDs, and every Arabic/English validation message.
+- Existing submit guard and backend-aligned limits remain asserted. This is test coverage only; runtime behavior is unchanged.
+- Commit: `4465b0ee34eafa1ca3a193357fcac8bfeba63778`.
+- Source readback confirms the four control-to-message associations and bilingual copy are present. The test itself remains **NOT RUN**.
