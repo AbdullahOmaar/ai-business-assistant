@@ -98,7 +98,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
           <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
-            <nav id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
+            <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
               @for (group of mobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleAr, group.titleEn) }}</h3>
@@ -1101,6 +1101,7 @@ export class AppComponent implements OnInit, OnDestroy {
   keyboardOpen = false;
   mobileMoreOpen = false;
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
+  @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
   private installPrompt: (Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null = null;
@@ -1308,6 +1309,16 @@ export class AppComponent implements OnInit, OnDestroy {
   selectMobileMoreTab(tab: Tab): void {
     this.setTab(tab);
     this.mobileMoreTrigger?.nativeElement.focus();
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  closeMobileMoreOnOutsidePointer(event: PointerEvent): void {
+    if (!this.mobileMoreOpen) return;
+    const target = event.target as Node | null;
+    if (!target) return;
+    if (this.mobileMoreTrigger?.nativeElement.contains(target)
+      || this.mobileMoreMenu?.nativeElement.contains(target)) return;
+    this.mobileMoreOpen = false;
   }
 
   async installApp(): Promise<void> {
