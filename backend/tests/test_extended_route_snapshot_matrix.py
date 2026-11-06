@@ -193,7 +193,6 @@ def test_notification_reads_are_member_scoped_and_tenant_isolated_without_side_e
     from uuid import UUID
 
     from fastapi.testclient import TestClient
-    from sqlalchemy import select
     from sqlalchemy.orm import Session, sessionmaker
     from sqlalchemy.pool import StaticPool
     from sqlalchemy import create_engine
