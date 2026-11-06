@@ -2261,3 +2261,19 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Current implementation candidate before this decision record: `dfd9cabd1d9239628c721614d3b69c7bc06c2fc5`. This decision commit changes the task ledger only; it does not change application behavior.
 - Frontend tests, Angular build and browser/device acceptance remain **NOT RUN** until actual provider results or authorized device evidence are observed.
 - Merge remains subject to a normal PR, exact-head required checks, maintainer diff review and owner merge authorization. Production deployment remains separately unauthorized.
+
+
+## T18 — Mobile chat UX / exact-head validation checkpoint — 2026-11-06
+
+- Owner explicitly lifted the prior CircleCI freeze on 2026-11-06. The owner decision is recorded above; CircleCI remains the sole approved validation provider.
+- PR #346: https://github.com/AbdullahOmaar/ai-business-assistant/pull/346
+- Branch: `master/t18-chat-mobile-ux-20261106`; candidate before this ledger update: `78f9a51318055baaa15b3abae9329cffd86f38ae`; base main: `e5a765083860a9141f2f2fe366858234873120e9` (236 ahead / 0 behind at this checkpoint; 23 changed files).
+- CircleCI `verify-all-changes` on candidate `78f9a51318055baaa15b3abae9329cffd86f38ae`: all six substantive jobs plus `all-checks-passed` **7/7 SUCCESS**. Job numbers: backend-accounting 13537; frontend-browser-smoke 13538; frontend-unit-tests 13539; backend-container 13540; frontend-production-build 13541; frontend-dependency-audit 13542; aggregate all-checks-passed succeeded in workflow `a269109b-dd65-4c6d-be17-f5ab76ed3734`.
+- Playwright browser smoke: all 16 tests passed, including `mobile-chat.spec.ts` (Pixel 7 Chromium emulation). The mobile chat scenario verifies empty/loading/error/retry/response, authenticated Bearer context, and composer visibility at 360x800 and reduced viewport 360x420 with the dock non-interactive.
+- Earlier failures were diagnosed and fixed: stale source assertions were aligned with the current tenant-snapshot/CSS-token/print-snapshot implementation; Angular build's missing `isCurrentTenantRequest` import was fixed with a regression assertion; browser smoke's duplicate `getByText('Demo Retail')` locator was replaced by unique `#workspace-current-name` and the test was moved to Pixel 7 emulation.
+- Diagnostic GitHub Actions on candidate `78f9a513...` also completed: 199/199 frontend Node tests, Angular production build, backend pytest and PostgreSQL migration validation succeeded. These are supplemental diagnostics only, not the approved release gate.
+- Build warning remains: initial bundle 807.63 kB, 107.63 kB over the 700 kB warning budget; Angular NG8107 optional-chain warnings remain. Do not raise the budget to hide this; record as a follow-up optimization.
+- SemaphoreCI still reports failure but is retired/non-authoritative per the project operating record; it is not a release gate and no replacement CI was used.
+- Maintainer source review was recorded as PR COMMENT review 5807689593 on an earlier candidate; refresh the review on the final post-ledger SHA before merge. Physical Android keyboard/screen-reader testing remains **NOT RUN**; Pixel 7 is browser emulation only. Figma visual review remains blocked by View-only access.
+- No backend/API/schema/migration, financial posting semantics, payroll, or production data changes. Production deployment remains separately unauthorized.
+- This ledger-only commit changes the PR head; all required CircleCI jobs must be revalidated on the new exact SHA before merge.
