@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
+const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 
 test('mobile More menu has a correctly delimited active-class attribute', () => {
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
@@ -1188,4 +1189,9 @@ test('Home KPI cards use one column on narrow mobile viewports', () => {
   assert.match(source, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
   assert.match(source, /P1 Home hierarchy: keep the four KPI cards readable as a single column on phones/);
   assert.match(source, /@media\(max-width:760px\)\{\.metric-grid\{grid-template-columns:minmax\(0,1fr\)\}\}/);
+});
+
+test('quick-access keyboard focus fallback meets the shared semantic focus token', () => {
+  assert.match(quickAccessSource, /\.aba-quick-access:focus-visible\{outline:var\(--aba-focus-ring-width, 3px\) solid var\(--aba-color-focus-ring, #2563eb\)/);
+  assert.match(quickAccessSource, /:host-context\(\[dir="rtl"\]\) \.aba-quick-access__arrow\{transform:scaleX\(-1\)\}/);
 });
