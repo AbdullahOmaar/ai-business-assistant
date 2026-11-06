@@ -1275,3 +1275,35 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
     assert owner_export.status_code == 200
     assert "Confidential Payroll Employee" in owner_export.text
 
+
+
+
+def test_staff_can_read_ordinary_expenses_when_draft_payroll_has_no_expense_link(employee_environment):
+    """A NULL payroll expense link must not hide unrelated expenses from STAFF."""
+    env = employee_environment
+    employee = _create_employee(env, name="Unlinked Draft Payroll Employee").json()
+    base = f"/api/v1/businesses/{env['business_id']}"
+    payroll = env["client"].post(
+        f"{base}/employees/{employee['id']}/payroll",
+        json={"period": "2026-11"},
+    )
+    assert payroll.status_code == 201, payroll.text
+    assert payroll.json()["expense_id"] is None
+
+    ordinary_expense = env["client"].post(
+        f"{base}/expenses",
+        json={
+            "category": "Office supplies",
+            "description": "Ordinary operating expense",
+            "amount": "100.00",
+            "currency_code": "EGP",
+            "incurred_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    assert ordinary_expense.status_code == 201, ordinary_expense.text
+
+    env["subject"]["value"] = STAFF
+    response = env["client"].get(f"{base}/expenses")
+    assert response.status_code == 200, response.text
+    assert [row["id"] for row in response.json()] == [ordinary_expense.json()["id"]]
+    assert all("Unlinked Draft Payroll Employee" not in str(row) for row in response.json())
