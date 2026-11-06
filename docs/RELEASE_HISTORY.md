@@ -24,7 +24,10 @@
 
 The app page lists these release lines based on the repository's versioned release history:
 
-- **1.3.7** — frontend accessibility patch: improved WCAG AA contrast for secondary text on light surfaces; API remains at 1.3.5.\n- **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.\n- **1.3.5** — session synchronization and workspace data protection; current production API version is 1.3.5.\n- **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
+- **1.3.7** — frontend accessibility patch: improved WCAG AA contrast for secondary text on light surfaces; API remains at 1.3.5.
+- **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.
+- **1.3.5** — session synchronization and workspace data protection; current production API version is 1.3.5.
+- **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
 - **1.3.0** — release candidate: invoice payment shortcut and remaining balance, opening stock/current quantity for stock-tracked items, and this feature guide.
 - **1.2.1** — accounting and workflow improvements: stock validation and consistent invoice rounding, payment retry feedback, owner-only invoice issue/void, and clearer UI/API version information.
 - **1.2.0** — core workspace, customer/product, invoicing, payments, currency-separated reporting, stock movement, and CSV product import workflows.
@@ -45,7 +48,7 @@ Only the version embedded in the deployed build identifies what users have actua
 - Align frontend package, lockfile root metadata, backend package, FastAPI API metadata, local build-info fallback, and PWA service-worker fallback at `1.3.5`.
 - Synchronize Firebase sign-in/sign-out/account changes across tabs; clear workspace-scoped state on identity transitions; fence delayed Audit and Customer Statement responses against stale workspace, UID, role, and selected-customer context.
 - Add regression coverage for observer lifecycle and tenant request-context transitions.
-- **Production status: NOT DEPLOYED.** This is a release candidate until GitLab exact-source validation, required review/merge gates, and Vercel deployment verification complete.
+- **Production status:** API version 1.3.5 is live on main SHA `45924b5b37da917d98085487f091779317988966`; frontend version 1.3.6 is deployed separately. CircleCI is the approved validation provider; GitLab is inactive.
 
 ## 1.3.6 — Startup reliability and workspace navigation (frontend-only release candidate)
 
