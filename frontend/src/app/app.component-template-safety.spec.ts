@@ -844,3 +844,17 @@ test('invoice issue and void actions are shown only to owners while staff retain
   assert.ok(issued.indexOf('printInvoice(invoice)') < issuedOwnerGuard, 'staff retain invoice printing');
   assert.ok(issued.indexOf('voidInvoice(invoice)') > issuedOwnerGuard, 'issued invoice voiding is owner-only');
 });
+
+
+test('owner-only invoice mutations fail closed before showing confirmation or calling the API', () => {
+  const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
+  const issueEnd = source.indexOf('async voidInvoice(invoice: Invoice)', issueStart);
+  const issue = source.slice(issueStart, issueEnd);
+  assert.match(issue, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+
+  const voidStart = source.indexOf('async voidInvoice(invoice: Invoice)');
+  const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
+  const voidMethod = source.slice(voidStart, voidEnd);
+  assert.match(voidMethod, /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !window\.confirm/);
+  assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
+});
