@@ -563,6 +563,19 @@ test('customer creation exposes a localized, associated required-name error', ()
   assert.match(form, /Customer name is required\./);
 });
 
+test('optional customer email exposes a localized format error only when invalid', () => {
+  const start = source.indexOf('<form #customerForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(form, /#customerEmailModel="ngModel"/);
+  assert.match(form, /type="email" maxlength="254"/);
+  assert.match(form, /customerEmailModel\.invalid && \(customerEmailModel\.touched \|\| customerForm\.submitted\)/);
+  assert.match(form, /id="customer-email-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا\./);
+  assert.match(form, /Enter a valid email address or leave this field blank\./);
+});
+
 test('invoice void confirmation is localized for Arabic and English', () => {
   const start = source.indexOf('async voidInvoice(invoice: Invoice)');
   const end = source.indexOf('hasOutstandingBalance(', start);
