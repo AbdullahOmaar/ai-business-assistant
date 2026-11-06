@@ -242,14 +242,14 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
     });
   });
 
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /مرحبًا بعودتك|Welcome back/ })).toBeVisible({ timeout: 20_000 });
   await page.getByLabel(/البريد الإلكتروني|Email address/).fill('owner@example.test');
   await page.getByLabel(/كلمة المرور|Password/).fill('mock-password-123');
   await page.getByRole('button', { name: /تسجيل الدخول|Sign in/ }).click();
 
-  await expect(page.getByText('Demo Retail')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
   await moreTrigger.click();
   await page.getByRole('button', { name: /المساعد الذكي|AI assistant/ }).click();
@@ -280,7 +280,7 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   // simulates the reduced visible area while the Android keyboard is open.
   await composer.fill('Keep the send control visible.');
   await composer.focus();
-  await page.setViewportSize({ width: 390, height: 420 });
+  await page.setViewportSize({ width: 360, height: 420 });
   await expect(sendButton).toBeVisible();
   const viewportLayout = await page.evaluate(() => {
     const send = document.querySelector('.chat-form button');

@@ -17,7 +17,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /mobile-chat\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-chromium',
+      testMatch: /mobile-chat\.spec\.ts/,
+      use: { ...devices['Pixel 7'] },
     },
   ],
   webServer: {
