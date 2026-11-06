@@ -484,7 +484,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
                   <button class="primary" type="submit" [disabled]="loading || !paymentAmount">{{ t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
-                @if (paymentMessage) { <p [class.error]="paymentError" [attr.role]="paymentError ? 'alert' : 'status'" aria-live="polite">{{ paymentMessage }}</p> }
+                @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list">
                   @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
@@ -1088,7 +1088,7 @@ export class AppComponent implements OnInit, OnDestroy {
   paymentAmount = '';
   paymentAllocationAmount = '';
   paymentMessage = '';
-  paymentError = false;
+  paymentMessageKind: 'info' | 'success' | 'warning' | 'error' = 'info';
   paymentInvoiceId = '';
   paymentMethod = 'cash';
   paymentReference = '';
@@ -1687,6 +1687,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentReference = '';
     this.paymentIdempotencyKey = '';
     this.paymentMessage = '';
+    this.paymentMessageKind = 'info';
     this.importCsvText = '';
     this.importFileName = '';
     this.importPreview = null;
@@ -2636,6 +2637,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentAmount = outstanding.toFixed(2);
     this.paymentAllocationAmount = outstanding.toFixed(2);
     this.paymentMessage = this.t('تم اختيار الفاتورة وتحديد الرصيد المستحق. راجع المبلغ وطريقة الدفع ثم سجّل الدفعة.', 'Invoice selected and outstanding balance filled in. Review the amount and method, then record the payment.');
+    this.paymentMessageKind = 'info';
   }
 
   async createExpense(): Promise<void> {
@@ -2758,7 +2760,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     this.paymentMessage = '';
-    this.paymentError = false;
+    this.paymentMessageKind = 'info';
     if (!this.paymentIdempotencyKey) {
       this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     }
@@ -2785,7 +2787,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.paymentReference = '';
       this.paymentIdempotencyKey = '';
       this.paymentMessage = this.t('تم تسجيل الدفعة بنجاح.', 'Payment recorded successfully.');
-      this.paymentError = false;
+      this.paymentMessageKind = 'success';
 
       try {
         const [payments, dashboard, invoices] = await Promise.all([
@@ -2803,13 +2805,14 @@ export class AppComponent implements OnInit, OnDestroy {
             'تم تسجيل الدفعة، لكن تعذر تحديث العرض. لا تعاود تسجيل الدفعة؛ حدّث البيانات أولًا.',
             'Payment was recorded, but the view could not refresh. Do not record it again; refresh the data first.'
           );
+          this.paymentMessageKind = 'warning';
         }
       }
     } catch (error) {
       // Preserve entered values and the idempotency key if the save failed or its outcome is uncertain.
       if (this.business?.id === businessId) {
         this.paymentMessage = this.message(error) || this.t('تعذر تسجيل الدفعة. لم يتم تأكيد النتيجة؛ لا تغيّر البيانات وأعد المحاولة بنفس الطلب بعد التحقق من سجل المدفوعات.', 'Could not confirm the payment. Keep the entered values and verify the payment list before retrying.');
-        this.paymentError = true;
+        this.paymentMessageKind = 'error';
       }
     } finally {
       this.loading = false;
