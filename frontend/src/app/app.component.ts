@@ -236,7 +236,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   </div>
                 }
                 } @else { <aba-state-message kind="info" [description]="t('إضافة الإشعارات متاحة لمالك مساحة العمل فقط.', 'Only workspace owners can queue notifications.')" /> }
-                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (notificationsLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" /> }
@@ -261,7 +261,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small> }
                   </div>
                 }
-                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (suppliersLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" /> }
@@ -289,7 +289,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('أدخل تكلفة وحدة تساوي صفرًا أو أكثر وبحد أقصى منزلتين عشريتين.', 'Enter a unit cost of zero or more with up to two decimal places.') }}</small> }
                   </div>
                 }
-                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
@@ -316,7 +316,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   </div>
                 }
                 } @else { <aba-state-message kind="info" [description]="t('إنشاء جداول الفواتير الدورية متاح لمالك مساحة العمل فقط.', 'Only workspace owners can create recurring invoice schedules.')" /> }
-                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsError && operationsErrorTab === 'recurring') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (recurringLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الجداول…', 'Loading schedules…')" /> }
@@ -1117,6 +1117,7 @@ export class AppComponent implements OnInit, OnDestroy {
   purchasesLoading = false;
   recurringLoading = false;
   operationsError = '';
+  operationsErrorTab: OperationsMessageTab | null = null;
   operationsMessage = '';
   operationsMessageTab: OperationsMessageTab | null = null;
   operationsWarning = '';
@@ -1773,6 +1774,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.notifications = [];
     this.operationalHealth = null;
     this.operationsError = '';
+    this.operationsErrorTab = null;
     this.operationsMessage = '';
     this.operationsMessageTab = null;
     this.operationsWarning = '';
@@ -2089,12 +2091,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private beginOperationsAction(): void {
     this.operationsError = '';
+    this.operationsErrorTab = null;
     this.operationsMessage = '';
     this.operationsMessageTab = null;
     this.operationsWarning = '';
   }
 
   private setOperationsSuccess(tab: OperationsMessageTab, message: string): void {
+    this.operationsErrorTab = null;
     this.operationsMessage = message;
     this.operationsMessageTab = tab;
   }
@@ -2108,12 +2112,13 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.operationsError = this.message(error);
+    this.operationsErrorTab = tab;
   }
 
   private async loadNotifications(): Promise<void> {
-    if(!this.business)return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
+    if(!this.business)return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';this.operationsErrorTab=null;
     try {const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;}
-    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+    catch(error){if(this.business?.id===businessId){this.operationsError=this.message(error);this.operationsErrorTab='notifications';}}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
   }
   async createNotification(): Promise<void> {
     if (!this.business || this.business.role !== 'owner' || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
@@ -2149,25 +2154,25 @@ export class AppComponent implements OnInit, OnDestroy {
   private async loadSuppliers(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
-    this.suppliersLoading = true; this.operationsError = '';
+    this.suppliersLoading = true; this.operationsError = ''; this.operationsErrorTab = null;
     try { const items = await this.api.suppliers(businessId); if (this.business?.id === businessId) this.suppliers = items; }
-    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    catch (error) { if (this.business?.id === businessId) { this.operationsError = this.message(error); this.operationsErrorTab = 'suppliers'; } }
     finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
   }
   private async loadPurchaseOrders(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
-    this.purchasesLoading = true; this.operationsError = '';
+    this.purchasesLoading = true; this.operationsError = ''; this.operationsErrorTab = null;
     try { const items = await this.api.purchaseOrders(businessId); if (this.business?.id === businessId) this.purchaseOrders = items; }
-    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    catch (error) { if (this.business?.id === businessId) { this.operationsError = this.message(error); this.operationsErrorTab = 'purchases'; } }
     finally { if (this.business?.id === businessId) this.purchasesLoading = false; }
   }
   private async loadRecurringSchedules(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
-    this.recurringLoading = true; this.operationsError = '';
+    this.recurringLoading = true; this.operationsError = ''; this.operationsErrorTab = null;
     try { const items = await this.api.recurringSchedules(businessId); if (this.business?.id === businessId) this.recurringSchedules = items; }
-    catch (error) { if (this.business?.id === businessId) this.operationsError = this.message(error); }
+    catch (error) { if (this.business?.id === businessId) { this.operationsError = this.message(error); this.operationsErrorTab = 'recurring'; } }
     finally { if (this.business?.id === businessId) this.recurringLoading = false; }
   }
   async createSupplier(): Promise<void> {
@@ -2203,6 +2208,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const unitCost = Number(this.purchaseUnitCost);
     if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
       this.operationsError = this.t('تحقق من الكمية والتكلفة.', 'Check the quantity and unit cost.');
+      this.operationsErrorTab = 'purchases';
       return;
     }
     const businessId = this.business.id;
@@ -2268,6 +2274,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const interval = Number(this.recurringIntervalDays);
     if (!Number.isInteger(interval) || interval < 1 || interval > 3650) {
       this.operationsError = this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.', 'Interval must be between 1 and 3650 days.');
+      this.operationsErrorTab = 'recurring';
       return;
     }
     const businessId = this.business.id;
