@@ -496,3 +496,15 @@ test('API authorization failures use localized, user-safe permission guidance', 
   assert.match(formatter, /You do not have permission to access this workspace or perform this action\./);
   assert.match(formatter, /Your account is not authorized to access platform administration\./);
 });
+
+
+test('expired API sessions offer sign-out and re-authentication instead of a futile data retry', () => {
+  const workspaceError = source.match(/@if \(error\) \{ <aba-state-message kind="error"[^\n]+/);
+  assert.ok(workspaceError);
+  assert.match(workspaceError[0], /sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\)/);
+  assert.match(workspaceError[0], /sessionExpired \? logout\(\) : retry\(\)/);
+  assert.match(source, /get sessionExpired\(\): boolean/);
+  const formatter = source.slice(source.indexOf('private message(error: unknown'));
+  assert.match(formatter, /Authentication required/);
+  assert.match(formatter, /Authenticated subject is missing/);
+});
