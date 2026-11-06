@@ -145,7 +145,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             <h1>{{ pageTitle }}</h1>
           </header>
 
-          @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="t('إعادة المحاولة', 'Retry')" (action)="retry()" /> }
+          @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t('تسجيل الدخول مجددًا', 'Sign in again') : t('إعادة المحاولة', 'Retry')" (action)="sessionExpired ? logout() : retry()" /> }
           @if (loading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل بيانات مساحة العمل…', 'Loading workspace data…')" /> }
 
           @if (!business) {
@@ -1571,6 +1571,13 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  get sessionExpired(): boolean {
+    return this.error === this.t(
+      'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
+      'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
+    );
+  }
+
   retry(): void {
     if (this.signedIn) {
       void this.loadBusinesses();
@@ -2943,6 +2950,12 @@ export class AppComponent implements OnInit, OnDestroy {
       return englishAuthMessages[code] || authMessages[code];
     }
     const deniedMessage = message.trim();
+    if (deniedMessage === 'Authentication required' || deniedMessage === 'Authenticated subject is missing') {
+      return this.t(
+        'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
+        'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
+      );
+    }
     if (deniedMessage === 'Platform administrator access is not granted.') {
       return this.t(
         'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
