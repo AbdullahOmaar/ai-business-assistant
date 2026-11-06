@@ -19,7 +19,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     :host{display:block;min-width:0}
     .aba-quick-access{width:100%;height:100%;min-height:104px;display:flex;align-items:flex-start;gap:var(--aba-space-3, 12px);padding:var(--aba-space-4, 16px);text-align:start;border:1px solid var(--aba-color-border, #e5eaf1);border-radius:var(--aba-radius-card, 14px);background:var(--aba-color-surface, #fff);color:var(--aba-color-text-primary, #172033);box-shadow:var(--aba-shadow-card, 0 1px 2px rgb(15 23 42 / 4%));cursor:pointer;transition:border-color var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease),box-shadow var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease),transform var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease)}
     .aba-quick-access:hover:not(:disabled){border-color:var(--aba-color-primary-border, #99f6e4);box-shadow:var(--aba-shadow-card-hover, 0 8px 22px rgb(15 23 42 / 4%));transform:translateY(-1px)}
-    .aba-quick-access:focus-visible{outline:var(--aba-focus-ring-width, 3px) solid var(--aba-color-focus-ring, #93c5fd);outline-offset:var(--aba-focus-ring-offset, 2px)}
+    .aba-quick-access:focus-visible{outline:var(--aba-focus-ring-width, 3px) solid var(--aba-color-focus-ring, #2563eb);outline-offset:var(--aba-focus-ring-offset, 2px)}
     .aba-quick-access:disabled{cursor:not-allowed;opacity:.55}
     .aba-quick-access__icon{flex:0 0 36px;width:36px;height:36px;display:grid;place-items:center;border-radius:var(--aba-radius-control, 9px);background:var(--aba-color-primary-soft, #ecfdf5);color:var(--aba-color-primary, #0f766e);font-size:var(--aba-font-size-lg, 16px)}
     .aba-quick-access__copy{display:grid;gap:var(--aba-space-1, 4px);min-width:0;flex:1}
