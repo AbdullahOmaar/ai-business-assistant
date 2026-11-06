@@ -207,7 +207,8 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'notifications') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('قائمة الإشعارات', 'Notification queue') " [description]=" t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') "><span class="count">{{ notifications.length }}</span></aba-section-header>
-                <form class="stack" (ngSubmit)="createNotification()">
+                @if (business?.role === 'owner') {
+                <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
                   <label>{{ t('نوع الإشعار', 'Notification type') }}<select name="notificationKind" required [(ngModel)]="notificationKind">
                     <option value="businesses">{{ t('مساحات العمل', 'Businesses') }}</option>
                     <option value="invoices">{{ t('الفواتير', 'Invoices') }}</option>
@@ -227,6 +228,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
                   <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('إضافة إلى قائمة الانتظار', 'Queue notification') }}</button>
                 </form>
+                } @else { <aba-state-message kind="info" [description]="t('إضافة الإشعارات متاحة لمالك مساحة العمل فقط.', 'Only workspace owners can queue notifications.')" /> }
                 @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
@@ -277,12 +279,14 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 @if (tab === 'recurring') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('جدولة الفواتير الدورية', 'Recurring invoice schedules') " [description]=" t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') "><span class="count">{{ recurringSchedules.length }}</span></aba-section-header>
-                <form class="stack" (ngSubmit)="createRecurringSchedule()">
+                @if (business?.role === 'owner') {
+                <form #recurringForm="ngForm" class="stack" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
                   <label>{{ t('العميل (اختياري)', 'Customer (optional)') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('بدون عميل محدد', 'No specific customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
                   <div class="inline-form"><label>{{ t('الفاصل بالأيام', 'Interval in days') }}<input name="recurringIntervalDays" type="number" min="1" max="3650" required [(ngModel)]="recurringIntervalDays"></label><label>{{ t('التشغيل التالي', 'Next run') }}<input name="recurringNextRunAt" type="datetime-local" required [(ngModel)]="recurringNextRunAt"></label></div>
                   <label>{{ t('المنطقة الزمنية', 'Timezone') }}<input name="recurringTimezone" required maxlength="64" [(ngModel)]="recurringTimezone"></label>
                   <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('حفظ الجدولة', 'Save schedule') }}</button>
                 </form>
+                } @else { <aba-state-message kind="info" [description]="t('إنشاء جداول الفواتير الدورية متاح لمالك مساحة العمل فقط.', 'Only workspace owners can create recurring invoice schedules.')" /> }
                 @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
@@ -373,7 +377,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
                 @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
-                <section abaCard class="csv-import-panel" aria-label="CSV customer import">
+                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" aria-label="CSV customer import">
                   <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -393,7 +397,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     }
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
-                </section>
+                </section> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (customer of filteredCustomers; track customer.id) { <article class="list-row customer-list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
@@ -443,7 +447,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                <section abaCard class="csv-import-panel" aria-label="CSV product import">
+                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" aria-label="CSV product import">
                   <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -463,13 +467,13 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     }
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
-                </section>
+                </section> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (product of filteredProducts; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('المخزون: ', 'Stock: ') + (product.stock_quantity ?? '0') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
                   @if (!filteredProducts.length) { <aba-state-message kind="empty" [description]="productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.')" /> }
                 </div>
-            </section>n>
+            </section>
             }
 
             @if (tab === 'invoices') {
@@ -2067,7 +2071,7 @@ export class AppComponent implements OnInit, OnDestroy {
     catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
   }
   async createNotification(): Promise<void> {
-    if (!this.business || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
+    if (!this.business || this.business.role !== 'owner' || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
     const businessId = this.business.id;
     this.beginOperationsAction();
     this.notificationsLoading = true;
@@ -2214,7 +2218,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   async createRecurringSchedule(): Promise<void> {
-    if (!this.business) return;
+    if (!this.business || this.business.role !== 'owner') return;
     this.beginOperationsAction();
     const interval = Number(this.recurringIntervalDays);
     if (!Number.isInteger(interval) || interval < 1 || interval > 3650) {
@@ -2455,7 +2459,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async onImportFileSelected(event: Event): Promise<void> {
     const businessId = this.business?.id;
-    if (!businessId) return;
+    if (!businessId || this.business?.role !== 'owner') return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     this.importPreview = null;
@@ -2487,7 +2491,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async previewProductImport(): Promise<void> {
-    if (!this.business || !this.importCsvText || this.importLoading) return;
+    if (!this.business || this.business.role !== 'owner' || !this.importCsvText || this.importLoading) return;
     const businessId = this.business.id;
     const csvText = this.importCsvText;
     this.importLoading = true;
@@ -2506,7 +2510,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async confirmProductImport(): Promise<void> {
-    if (!this.business || !this.importCsvText || !this.importPreview?.valid || this.importLoading) return;
+    if (!this.business || this.business.role !== 'owner' || !this.importCsvText || !this.importPreview?.valid || this.importLoading) return;
     const businessId = this.business.id;
     const csvText = this.importCsvText;
     this.importLoading = true;
@@ -2546,7 +2550,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async onCustomerImportFileSelected(event: Event): Promise<void> {
     const businessId = this.business?.id;
-    if (!businessId) return;
+    if (!businessId || this.business?.role !== 'owner') return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     this.customerImportPreview = null;
@@ -2578,7 +2582,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async previewCustomerImport(): Promise<void> {
-    if (!this.business || !this.customerImportCsvText || this.customerImportLoading) return;
+    if (!this.business || this.business.role !== 'owner' || !this.customerImportCsvText || this.customerImportLoading) return;
     const businessId = this.business.id;
     const csvText = this.customerImportCsvText;
     this.customerImportLoading = true;
@@ -2597,7 +2601,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async confirmCustomerImport(): Promise<void> {
-    if (!this.business || !this.customerImportCsvText ||
+    if (!this.business || this.business.role !== 'owner' || !this.customerImportCsvText ||
         !this.customerImportPreview?.valid || this.customerImportLoading) return;
     const businessId = this.business.id;
     const csvText = this.customerImportCsvText;
@@ -3139,7 +3143,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createPayment(): Promise<void> {
-    if (!this.business || !this.paymentAmount.trim() || !this.paymentCustomerId) {
+    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
       this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
       return;
     }
