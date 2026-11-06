@@ -461,3 +461,25 @@ test('workspace role changes cannot leave an owner-only destination selected', (
   assert.ok(roleUpdate >= 0 && accessGuard > roleUpdate && clearData > accessGuard,
     'resolve the selected workspace role before retaining the current destination or clearing data');
 });
+
+
+test('sign-in and first-workspace forms expose localized inline errors to assistive technology', () => {
+  const authStart = source.indexOf('<form #authForm="ngForm"');
+  const authEnd = source.indexOf('</form>', authStart);
+  const authForm = source.slice(authStart, authEnd);
+  assert.ok(authStart >= 0 && authEnd > authStart);
+  assert.match(authForm, /#emailModel="ngModel"/);
+  assert.match(authForm, /#passwordModel="ngModel"/);
+  assert.match(authForm, /\[attr\.aria-invalid\]="emailModel\.invalid/);
+  assert.match(authForm, /\[attr\.aria-describedby\]="emailModel\.invalid/);
+  assert.match(authForm, /id="auth-email-error" class="field-error" role="alert"/);
+  assert.match(authForm, /id="auth-password-error" class="field-error" role="alert"/);
+
+  const workspaceStart = source.indexOf('<form #workspaceForm="ngForm"');
+  const workspaceEnd = source.indexOf('</form>', workspaceStart);
+  const workspaceForm = source.slice(workspaceStart, workspaceEnd);
+  assert.ok(workspaceStart >= 0 && workspaceEnd > workspaceStart);
+  assert.match(workspaceForm, /#businessNameModel="ngModel"/);
+  assert.match(workspaceForm, /\[attr\.aria-invalid\]="businessNameModel\.invalid/);
+  assert.match(workspaceForm, /id="workspace-name-error" class="field-error" role="alert"/);
+});
