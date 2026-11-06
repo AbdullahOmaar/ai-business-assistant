@@ -12,8 +12,6 @@
 
 ---
 
----
-
 # T18 continuation checkpoint — 2026-11-06 17:45 UTC
 
 - **Single branch:** `master/t18-chat-mobile-ux-20261106`; no second branch, no open PR. Main/base: `e5a765083860a9141f2f2fe366858234873120e9`. Exact implementation/test head before this documentation checkpoint: `bf8657c77e48ad1ab6331db91ff3ebcb5911d64a` (95 commits ahead / 0 behind main; 14 changed files in branch diff).
