@@ -53,7 +53,7 @@ test('expense and notification types use selectable, localized options', () => {
 
 test('AI suggestions live outside the chat panel in a compact responsive prompt rail', () => {
   const assistantStart = source.indexOf('<div class="assistant-workspace">');
-  const chatStart = source.indexOf('<section class="panel chat-panel">', assistantStart);
+  const chatStart = source.indexOf('<section abaCard class="panel chat-panel">', assistantStart);
   const chatEnd = source.indexOf('</section>', chatStart);
   const suggestionsStart = source.indexOf('<aside class="assistant-suggestions"', chatEnd);
   const workspaceEnd = source.indexOf('</div>\n            }', suggestionsStart);
@@ -64,7 +64,7 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
   assert.ok(source.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
   assert.ok(source.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
   assert.ok(source.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
-  assert.match(source, /class="quick-card ai-quick-card"/);
+  assert.match(source, /class="suggestion-card"/);
 });
 
 test('audit actions and record types have Arabic display labels', () => {
@@ -178,12 +178,89 @@ test('workspace switch clears pending product and customer CSV imports', () => {
   }
 });
 
-test('All Modules launcher exposes workspace destinations through the guarded tab handler', () => {
+test('sidebar and More navigation reuse the central workspace visibility policy', () => {
+  const sidebarStart = source.indexOf('<aside class="sidebar"');
+  const sidebarEnd = source.indexOf('</aside>', sidebarStart);
+  const sidebar = source.slice(sidebarStart, sidebarEnd);
+  assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart);
+  assert.doesNotMatch(sidebar, /@if \(business\?\.role === 'owner'\)/);
+  assert.doesNotMatch(sidebar, /@if \(platformAdminAvailable\)/);
+  for (const tab of ['employees', 'payments', 'taxes', 'audit', 'integrity', 'health', 'platform-admin']) {
+    assert.ok(sidebar.includes(`canAccessTab('${tab}')`), tab);
+  }
+});
+
+test('mobile More navigation renders grouped destinations from the shared catalogue', () => {
+  const menuStart = source.indexOf('<nav id="mobile-more-menu"');
+  const menuEnd = source.indexOf('</nav>', menuStart);
+  const menu = source.slice(menuStart, menuEnd);
+  assert.ok(menuStart >= 0 && menuEnd > menuStart);
+  assert.doesNotMatch(menu, /role="menu(?:item)?"/);
+  assert.match(menu, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
+  assert.match(menu, /module\.icon/);
+  assert.match(menu, /t\(module\.titleAr, module\.titleEn\)/);
+  assert.match(menu, /tab === module\.tab \? 'page' : null/);
+  assert.match(source, /WORKSPACE_MODULE_GROUPS/);
+  assert.match(source, /max-height:min\(70dvh,560px\);overflow-y:auto;overscroll-behavior:contain/);
+  assert.match(source, /border-inline-start:3px solid #5eead4/);
+});
+
+test('workspace empty states use the shared accessible state component', () => {
+  assert.doesNotMatch(source, /<p class="empty">/);
+  assert.ok((source.match(/<aba-state-message kind="empty"/g) || []).length >= 13);
+  assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 11);
+  assert.doesNotMatch(source, /<p class="error" role="alert">/);
+  assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 7);
+  assert.doesNotMatch(source, /<p class="muted" role="status">/);
+});
+
+test('workspace panels reuse one section header component instead of duplicating heading markup', () => {
+  assert.ok((source.match(/<aba-section-header\b/g) || []).length >= 13);
+  assert.equal((source.match(/<div class="section-head"><div><h2>/g) || []).length, 0, 'all simple h2 section headers must use the shared component');
+});
+
+test('All Modules uses the shared role-filtered catalogue and reusable quick-access component', () => {
   assert.ok(source.includes('class="panel module-launcher"'));
-  assert.ok(source.includes('id="module-launcher-title"'));
-  assert.match(source, /canAccessTab\('payments'\)/);
-  assert.match(source, /canAccessTab\('employees'\)/);
-  assert.match(source, /canAccessTab\('audit'\)/);
-  assert.match(source, /canAccessTab\('platform-admin'\)/);
-  assert.match(source, /setTab\('overview'\)/);
+  assert.ok(source.includes('homeModuleCards.length'));
+  assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+  assert.match(source, /<aba-section-header[^>]*titleId/);
+  assert.match(source, /<aba-quick-access-card\b/);
+  assert.match(source, /activated\)="setTab\(module\.tab\)"/);
+  assert.doesNotMatch(source, /\{ business\?\.role === 'owner' \? \(platformAdminAvailable \? 19 : 18\)/);
+  assert.doesNotMatch(source, /class="quick-card"/);
+});
+
+
+test('chat requests are fenced by workspace, authenticated UID, role and request generation', () => {
+  assert.match(source, /private readonly chatRequestGuard = new WorkspaceLoadGuard\(\)/);
+  assert.match(source, /private currentChatRequestContext\(\): TenantRequestContext/);
+  assert.match(source, /runTenantScopedRequest\([\s\S]*this\.chatRequestGuard/);
+  const clearStart = source.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = source.indexOf('async createWorkspace(): Promise<void>', clearStart);
+  const clear = source.slice(clearStart, clearEnd);
+  assert.match(clear, /this\.chatRequestGuard\.invalidate\(\)/);
+  assert.match(clear, /this\.chatSending = false/);
+  assert.match(source, /if \(!requestContext\.signedIn \|\| !requestContext\.userId \|\| !requestContext\.role \|\| !requestContext\.workspaceId\) return/);
+});
+
+test('mobile chat adapts to the visual viewport and keeps the composer above the bottom dock', () => {
+  assert.match(source, /window\.visualViewport\?\.addEventListener\('resize'/);
+  assert.match(source, /window\.visualViewport\?\.removeEventListener\('resize'/);
+  assert.match(source, /--aba-keyboard-inset/);
+  assert.match(source, /\[class\.keyboard-open\]="keyboardOpen"/);
+  assert.match(source, /\.chat-form\{position:sticky;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
+  assert.match(source, /\.shell\.keyboard-open \.sidebar/);
+  assert.match(source, /\.shell:has\(\.chat-form textarea:focus\) \.sidebar/);
+  assert.match(source, /max-height:25dvh/);
+});
+
+test('chat send preserves retry draft behavior and keeps the existing API contract', () => {
+  const start = source.indexOf('async sendChat(): Promise<void>');
+  const end = source.indexOf('private message(error:', start);
+  const method = source.slice(start, end);
+  assert.match(method, /this\.api\.chat\(requestContext\.workspaceId, question, history\)/);
+  assert.match(method, /this\.chatDraft = question/);
+  assert.match(method, /onFinally: \(\) => \{\s*this\.chatSending = false;/);
+  assert.doesNotMatch(method, /this\.api\.chat\(this\.business\.id/);
 });

@@ -3,7 +3,7 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
-import { isCurrentTenantRequest, WorkspaceLoadGuard } from './workspace-load-guard';
+import { WorkspaceLoadGuard, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
@@ -11,15 +11,21 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
+import { WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
+import { AbaCardComponent } from './shared/ui/aba-card.component';
+import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
+import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
+import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
+import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
   template: `
-    <div class="shell" [class.english]="language === 'en'" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="mobileMoreOpen = false">
+    <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="mobileMoreOpen = false">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
       @if (installHelp && !isInstalled) { <div class="install-help install-help-floating" role="status">{{ t('لو لم تظهر نافذة التثبيت: افتح قائمة المتصفح ⋮ ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».', 'If no install prompt appears, open the browser menu and choose “Install app” or “Add to Home screen”.') }}<button type="button" class="secondary" (click)="installHelp = false">{{ t('حسنًا', 'Got it') }}</button></div> }
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
@@ -35,7 +41,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
           <div class="brand-mark">A</div>
           <h1>{{ t('تعذر تحميل إعدادات التطبيق', 'Unable to load app configuration') }}</h1>
-          <p class="error" role="alert">{{ error }}</p>
+          <aba-state-message kind="error" [description]="error" />
           <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button>
         </main>
       } @else if (setupNeeded) {
@@ -66,7 +72,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
           </form>
           <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
-          @if (error) { <p class="error" role="alert">{{ error }}</p><button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button> }
+          @if (error) { <aba-state-message kind="error" [description]="error" /><button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button> }
         </main>
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('التنقل الرئيسي', 'Main navigation')">
@@ -74,44 +80,41 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
-          @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('التقارير الضريبية', 'Tax summary')" [attr.title]="t('التقارير الضريبية', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
+          @if (canAccessTab('taxes')) { <button ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('العملاء', 'Customers')" [attr.title]="t('العملاء', 'Customers')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
-          @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('الموظفون والمرتبات', 'Employees & payroll')" [attr.title]="t('الموظفون والمرتبات', 'Employees & payroll')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('الموظفون', 'Employees') }}</span></button> }
-          @if (platformAdminAvailable) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('إدارة المنصة', 'Platform admin')" [attr.title]="t('إدارة المنصة', 'Platform admin')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
-@if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('سجل العمليات', 'Activity log')" [attr.title]="t('سجل العمليات', 'Activity log')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
-                    @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
+          @if (canAccessTab('employees')) { <button ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('الموظفون', 'Employees') }}</span></button> }
+          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('إدارة المنصة', 'Platform admin')" [attr.title]="t('إدارة المنصة', 'Platform admin')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
+@if (canAccessTab('audit')) { <button ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
+                    @if (canAccessTab('payments')) { <button ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المصروفات', 'Expenses')" [attr.title]="t('المصروفات', 'Expenses')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الإشعارات', 'Notifications')" [attr.title]="t('الإشعارات', 'Notifications')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الموردون', 'Suppliers')" [attr.title]="t('الموردون', 'Suppliers')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المشتريات', 'Purchasing')" [attr.title]="t('المشتريات', 'Purchasing')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('الفواتير الدورية', 'Recurring invoices')" [attr.title]="t('الفواتير الدورية', 'Recurring invoices')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الدورية', 'Recurring') }}</span></button>
-          @if (business?.role === 'owner') { <button class="nav-item mobile-extra" [attr.aria-label]="t('الحالة التشغيلية', 'Operational health')" [attr.title]="t('الحالة التشغيلية', 'Operational health')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة', 'Health') }}</span></button> }
+          @if (canAccessTab('health')) { <button ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة', 'Health') }}</span></button> }
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
-          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" aria-haspopup="menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+          <button class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" aria-controls="mobile-more-menu" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
-            <div id="mobile-more-menu" class="mobile-more-menu" role="menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'products'" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'expenses'" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
-              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'employees'" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</span></button> }
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'notifications'" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'suppliers'" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'purchases'" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'recurring'" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الفواتير الدورية', 'Recurring invoices') }}</span></button>
-              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'health'" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة التشغيلية', 'Operational health') }}</span></button> }
-              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'payments'" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'assistant'" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-              <button class="nav-item" role="menuitem" [class.active]="tab === 'release-guide'" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
-              @if (platformAdminAvailable) { <button class="nav-item" role="menuitem" [class.active]="tab === 'platform-admin'" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
-@if (canAccessTab('audit')) { <button class="nav-item" role="menuitem" [class.active]="tab === 'audit'" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
-                            <button class="nav-item" role="menuitem" [class.active]="tab === 'reports'" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
-              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'integrity'" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('سلامة البيانات', 'Data integrity') }}</span></button> }
-              @if (business?.role === 'owner') { <button class="nav-item" role="menuitem" [class.active]="tab === 'taxes'" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('التقارير الضريبية', 'Tax summary') }}</span></button> }
-              <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
-              <button class="nav-item mobile-menu-action" role="menuitem" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('تسجيل الخروج', 'Sign out') }}</span></button>
-            </div>
+            <nav id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
+              @for (group of mobileMoreGroups; track group.id) {
+                <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
+                  <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleAr, group.titleEn) }}</h3>
+                  @for (module of group.modules; track module.tab) {
+                    <button class="nav-item" type="button" [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null" (click)="setTab(module.tab)">
+                      <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span>
+                      <span>{{ t(module.titleAr, module.titleEn) }}</span>
+                    </button>
+                  }
+                </section>
+              }
+              <div class="mobile-more-actions">
+                <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
+                <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('تسجيل الخروج', 'Sign out') }}</span></button>
+              </div>
+            </nav>
           }
           <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('جلسة موثّقة', 'Verified session') }}<small>{{ t('يتحقق الخادم من صلاحيات مساحة العمل', 'The server verifies workspace permissions') }}</small></div>
         </aside>
@@ -120,7 +123,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             @defer (when tab === 'platform-admin' && platformAdminAvailable) {
               <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
             } @placeholder {
-              <section class="panel narrow" role="status" aria-live="polite">
+              <section abaCard class="panel narrow" role="status" aria-live="polite">
                 <p class="muted">{{ t('جارٍ تحميل مركز الإدارة…', 'Loading Platform Admin…') }}</p>
               </section>
             }
@@ -134,7 +137,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           @if (loading) { <p class="muted">{{ t('جارٍ تحميل بيانات مساحة العمل…', 'Loading workspace data…') }}</p> }
 
           @if (!business) {
-            <section class="panel narrow">
+            <section abaCard class="panel narrow">
               <p class="eyebrow">{{ t('ابدأ هنا', 'GET STARTED') }}</p><h2>{{ t('أنشئ مساحة عملك الأولى', 'Create your first workspace') }}</h2>
               <p class="muted">{{ t('مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.', 'This workspace belongs to your verified account. Other users cannot access it without membership.') }}</p>
               <form class="stack" (ngSubmit)="createWorkspace()">
@@ -162,48 +165,31 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               </section>
               @if (dashboard) {
                 <section class="metric-grid">
-                  <article class="metric"><span>{{ t('المبيعات بالفواتير', 'Invoiced sales') }}</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>{{ t('لا توجد مبيعات بفواتير صادرة خلال الفترة', 'No invoiced sales in this period') }}</small> }</article>
-                  <article class="metric"><span>{{ t('المدفوعات المحصّلة', 'Payments collected') }}</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('دفعة مسجلة', 'recorded payments') }}</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>{{ t('لا توجد مدفوعات مسجلة خلال الفترة', 'No payments recorded in this period') }}</small> }</article>
-                  <article class="metric"><span>{{ t('المصروفات', 'Expenses') }}</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('مصروف مسجل', 'recorded expenses') }}</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>{{ t('لا توجد مصروفات مسجلة خلال الفترة', 'No expenses recorded in this period') }}</small> }</article>
-                  <article class="metric"><span>{{ t('الأرصدة المستحقة', 'Outstanding balances') }}</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ t('الفواتير الصادرة بعد خصم المبالغ المخصصة', 'Issued invoices after allocated payments') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>{{ t('لا توجد فواتير مستحقة خلال الفترة', 'No outstanding invoices in this period') }}</small> }</article>
+                  <aba-metric-card><span metricLabel>{{ t('المبيعات بالفواتير', 'Invoiced sales') }}</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>{{ t('لا توجد مبيعات بفواتير صادرة خلال الفترة', 'No invoiced sales in this period') }}</small> }</aba-metric-card>
+                  <aba-metric-card><span metricLabel>{{ t('المدفوعات المحصّلة', 'Payments collected') }}</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('دفعة مسجلة', 'recorded payments') }}</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>{{ t('لا توجد مدفوعات مسجلة خلال الفترة', 'No payments recorded in this period') }}</small> }</aba-metric-card>
+                  <aba-metric-card><span metricLabel>{{ t('المصروفات', 'Expenses') }}</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('مصروف مسجل', 'recorded expenses') }}</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>{{ t('لا توجد مصروفات مسجلة خلال الفترة', 'No expenses recorded in this period') }}</small> }</aba-metric-card>
+                  <aba-metric-card><span metricLabel>{{ t('الأرصدة المستحقة', 'Outstanding balances') }}</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ t('الفواتير الصادرة بعد خصم المبالغ المخصصة', 'Issued invoices after allocated payments') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>{{ t('لا توجد فواتير مستحقة خلال الفترة', 'No outstanding invoices in this period') }}</small> }</aba-metric-card>
                 </section>
               }
               <section class="notice"><strong>{{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.', 'Totals come from saved business records. They are not a profit calculation, and different currencies are never combined.') }}</span></section>
-              <section class="panel module-launcher" aria-labelledby="module-launcher-title">
-                <div class="section-head"><div><h2 id="module-launcher-title">{{ t('كل أقسام التطبيق', 'All modules') }}</h2><p>{{ t('افتح القسم المطلوب مباشرة من مساحة العمل.', 'Open any available workspace module directly.') }}</p></div><span class="count">{{ business?.role === 'owner' ? (platformAdminAvailable ? 19 : 18) : (platformAdminAvailable ? 13 : 12) }}</span></div>
+              <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
+                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('كل أقسام التطبيق', 'All modules')" [description]="t('افتح القسم المطلوب مباشرة من مساحة العمل.', 'Open any available workspace module directly.')" [count]="homeModuleCards.length" />
                 <div class="quick-grid">
-                  <button class="quick-card" type="button" (click)="setTab('overview')"><strong>⌂ {{ t('الرئيسية', 'Overview') }}</strong><span>{{ t('ملخص النشاط ومؤشرات العمل', 'Business summary and activity') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('customers')"><strong>♧ {{ t('العملاء', 'Customers') }}</strong><span>{{ customers.length }} {{ t('سجل', 'records') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('products')"><strong>◇ {{ t('المنتجات والمخزون', 'Products & inventory') }}</strong><span>{{ products.length }} {{ t('صنف', 'items') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('invoices')"><strong>▤ {{ t('الفواتير', 'Invoices') }}</strong><span>{{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></button>
-                  @if (canAccessTab('payments')) { <button class="quick-card" type="button" (click)="setTab('payments')"><strong>↗ {{ t('المدفوعات والتحصيل', 'Payments & collections') }}</strong><span>{{ t('تسجيل ومراجعة التحصيلات', 'Record and review collections') }}</span></button> }
-                  <button class="quick-card" type="button" (click)="setTab('expenses')"><strong>− {{ t('المصروفات', 'Expenses') }}</strong><span>{{ t('تسجيل ومراجعة المصروفات', 'Record and review expenses') }}</span></button>
-                  @if (canAccessTab('employees')) { <button class="quick-card" type="button" (click)="setTab('employees')"><strong>♙ {{ t('الموظفون والمرتبات', 'Employees & payroll') }}</strong><span>{{ t('ملفات الموظفين وسجلات المرتبات', 'Employee records and payroll') }}</span></button> }
-                  <button class="quick-card" type="button" (click)="setTab('assistant')"><strong>✦ {{ t('المساعد الذكي', 'AI assistant') }}</strong><span>{{ t('اسأل عن بيانات نشاطك', 'Ask about your business data') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('reports')"><strong>∑ {{ t('الأرباح والخسائر', 'Profit & loss') }}</strong><span>{{ t('تقارير الأداء المالي وحدودها', 'Financial reporting and limitations') }}</span></button>
-                  @if (canAccessTab('taxes')) { <button class="quick-card" type="button" (click)="setTab('taxes')"><strong>% {{ t('ملخص الضرائب', 'Tax summary') }}</strong><span>{{ t('ملخص ضريبي للقراءة فقط', 'Read-only tax summary') }}</span></button> }
-                  @if (canAccessTab('audit')) { <button class="quick-card" type="button" (click)="setTab('audit')"><strong>◷ {{ t('سجل العمليات', 'Activity log') }}</strong><span>{{ t('مراجعة أحداث النشاط', 'Review business activity events') }}</span></button> }
-                  @if (canAccessTab('integrity')) { <button class="quick-card" type="button" (click)="setTab('integrity')"><strong>⚑ {{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('مراجعة مؤشرات سلامة البيانات', 'Review data integrity indicators') }}</span></button> }
-                  <button class="quick-card" type="button" (click)="setTab('release-guide')"><strong>ⓘ {{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</strong><span>{{ t('الخصائص المتاحة وسجل الإصدارات', 'Available features and release history') }}</span></button>
-                  @if (canAccessTab('platform-admin')) { <button class="quick-card" type="button" (click)="setTab('platform-admin')"><strong>◇ {{ t('إدارة المنصة', 'Platform admin') }}</strong><span>{{ t('أدوات الإدارة المصرح بها', 'Authorized platform tools') }}</span></button> }
-                  <button class="quick-card" type="button" (click)="setTab('suppliers')"><strong>▣ {{ t('الموردون', 'Suppliers') }}</strong><span>{{ t('ملفات الموردين', 'Supplier records') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('purchases')"><strong>⇩ {{ t('المشتريات', 'Purchasing') }}</strong><span>{{ t('أوامر الشراء والاستلام', 'Purchase orders and receiving') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('recurring')"><strong>↻ {{ t('الفواتير الدورية', 'Recurring invoices') }}</strong><span>{{ t('جداول الفوترة الدورية', 'Recurring billing schedules') }}</span></button>
-                  <button class="quick-card" type="button" (click)="setTab('notifications')"><strong>♢ {{ t('الإشعارات', 'Notifications') }}</strong><span>{{ t('قائمة الإشعارات وحالاتها', 'Notification queue and statuses') }}</span></button>
-                  @if (canAccessTab('health')) { <button class="quick-card" type="button" (click)="setTab('health')"><strong>♥ {{ t('الحالة التشغيلية', 'Operational health') }}</strong><span>{{ t('مؤشرات الحالة التشغيلية', 'Operational health indicators') }}</span></button> }
+                  @for (module of homeModuleCards; track module.tab) {
+                    <aba-quick-access-card
+                      [icon]="module.icon"
+                      [title]="t(module.titleAr, module.titleEn)"
+                      [description]="t(module.descriptionAr, module.descriptionEn)"
+                      (activated)="setTab(module.tab)" />
+                  }
                 </div>
               </section>
-              <section class="quick-grid">
-                <button class="quick-card" (click)="setTab('customers')"><strong>{{ t('العملاء', 'Customers') }}</strong><span>{{ customers.length }} {{ t('سجلات نشطة · عرض القائمة ←', 'active records · View list →') }}</span></button>
-                <button class="quick-card" (click)="setTab('products')"><strong>{{ t('المنتجات', 'Products') }}</strong><span>{{ products.length }} {{ t('سجلات نشطة · عرض الكتالوج ←', 'active records · View catalog →') }}</span></button>
-                <button class="quick-card" (click)="setTab('invoices')"><strong>{{ t('الفواتير', 'Invoices') }}</strong><span>{{ invoices.length }} {{ t('سجل · إدارة المبيعات ←', 'records · Manage sales →') }}</span></button>
-                <button class="quick-card ai-quick-card" (click)="setTab('assistant')"><strong><span aria-hidden="true">✦ </span>{{ t('اسأل مساعد الأعمال الذكي', 'Ask the AI assistant') }}</strong><span>{{ t('احصل على ملخص مبني على سجلات نشاطك', 'Get an answer grounded in your business records') }}</span></button>
-              </section>
+              
             }
 
             @if (tab === 'notifications') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('قائمة الإشعارات', 'Notification queue') }}</h2><p>{{ t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') }}</p></div><span class="count">{{ notifications.length }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('قائمة الإشعارات', 'Notification queue') " [description]=" t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') "><span class="count">{{ notifications.length }}</span></aba-section-header>
                 <form class="stack" (ngSubmit)="createNotification()">
                   <label>{{ t('نوع الإشعار', 'Notification type') }}<select name="notificationKind" required [(ngModel)]="notificationKind">
                     <option value="businesses">{{ t('مساحات العمل', 'Businesses') }}</option>
@@ -224,16 +210,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
                   <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('إضافة إلى قائمة الانتظار', 'Queue notification') }}</button>
                 </form>
-                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
-                @if (notificationsLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الإشعارات…', 'Loading notifications…') }}</p> }
-                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <p class="empty">{{ t('قائمة الإشعارات فارغة.', 'Notification queue is empty.') }}</p> }</div>
+                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (notificationsLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" /> }
+                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'suppliers') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('دليل الموردين', 'Supplier directory') }}</h2><p>{{ t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') }}</p></div><span class="count">{{ suppliers.length }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('دليل الموردين', 'Supplier directory') " [description]=" t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') "><span class="count">{{ suppliers.length }}</span></aba-section-header>
                 <form class="inline-form" (ngSubmit)="createSupplier()">
                   <input name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
                   <input name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
@@ -241,16 +227,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('العنوان', 'Address')" [placeholder]="t('العنوان (اختياري)', 'Address (optional)')" [(ngModel)]="supplierAddress">
                   <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('إضافة مورد', 'Add supplier') }}</button>
                 </form>
-                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
-                @if (suppliersLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الموردين…', 'Loading suppliers…') }}</p> }
-                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <p class="empty">{{ t('لا يوجد موردون بعد.', 'No suppliers yet.') }}</p> }</div>
+                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (suppliersLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" /> }
+                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <aba-state-message kind="empty" [description]="t('لا يوجد موردون بعد.', 'No suppliers yet.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'purchases') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('أوامر الشراء', 'Purchase orders') }}</h2><p>{{ t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') }}</p></div><span class="count">{{ purchaseOrders.length }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ purchaseOrders.length }}</span></aba-section-header>
                 <form class="stack" (ngSubmit)="createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input name="purchaseOrderNumber" required maxlength="64" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select name="purchaseSupplierId" required [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -258,34 +244,34 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <div class="inline-form"><label>{{ t('الكمية', 'Quantity') }}<input name="purchaseQuantity" type="number" min="0.001" step="0.001" required [(ngModel)]="purchaseQuantity"></label><label>{{ t('تكلفة الوحدة', 'Unit cost') }}<input name="purchaseUnitCost" type="number" min="0" step="0.01" required [(ngModel)]="purchaseUnitCost"></label></div>
                   <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('إنشاء أمر شراء', 'Create purchase order') }}</button>
                 </form>
-                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
-                @if (purchasesLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل المشتريات…', 'Loading purchasing…') }}</p> }
-                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <p class="empty">{{ t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.') }}</p> }</div>
+                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
+                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'recurring') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('جدولة الفواتير الدورية', 'Recurring invoice schedules') }}</h2><p>{{ t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') }}</p></div><span class="count">{{ recurringSchedules.length }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('جدولة الفواتير الدورية', 'Recurring invoice schedules') " [description]=" t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') "><span class="count">{{ recurringSchedules.length }}</span></aba-section-header>
                 <form class="stack" (ngSubmit)="createRecurringSchedule()">
                   <label>{{ t('العميل (اختياري)', 'Customer (optional)') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('بدون عميل محدد', 'No specific customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
                   <div class="inline-form"><label>{{ t('الفاصل بالأيام', 'Interval in days') }}<input name="recurringIntervalDays" type="number" min="1" max="3650" required [(ngModel)]="recurringIntervalDays"></label><label>{{ t('التشغيل التالي', 'Next run') }}<input name="recurringNextRunAt" type="datetime-local" required [(ngModel)]="recurringNextRunAt"></label></div>
                   <label>{{ t('المنطقة الزمنية', 'Timezone') }}<input name="recurringTimezone" required maxlength="64" [(ngModel)]="recurringTimezone"></label>
                   <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('حفظ الجدولة', 'Save schedule') }}</button>
                 </form>
-                @if (operationsError) { <p class="error" role="alert">{{ operationsError }}</p> }
-                @if (recurringLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل الجداول…', 'Loading schedules…') }}</p> }
-                <div class="list">@for (schedule of recurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!recurringSchedules.length && !recurringLoading) { <p class="empty">{{ t('لا توجد جداول بعد.', 'No schedules yet.') }}</p> }</div>
+                @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (recurringLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الجداول…', 'Loading schedules…')" /> }
+                <div class="list">@for (schedule of recurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!recurringSchedules.length && !recurringLoading) { <aba-state-message kind="empty" [description]="t('لا توجد جداول بعد.', 'No schedules yet.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'health' && business?.role === 'owner') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('الحالة التشغيلية', 'Operational health') }}</h2><p>{{ t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') }}</p></div><span class="count">{{ operationalHealth?.status || t('غير مفحوص', 'Not checked') }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('الحالة التشغيلية', 'Operational health') " [description]=" t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') "><span class="count">{{ operationalHealth?.status || t('غير مفحوص', 'Not checked') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('جارٍ الفحص…', 'Checking…') : t('تحديث الفحص', 'Refresh check') }}</button>
-                @if (healthError) { <p class="error" role="alert">{{ healthError }}</p> }
+                @if (healthError) { <aba-state-message kind="error" [description]="healthError" /> }
                 @if (operationalHealth) {
                   <div class="metric-grid">
                     <article class="metric"><span>{{ t('اتصال قاعدة البيانات', 'Database connection') }}</span><strong>{{ operationalHealth.database_connected ? t('متصل', 'Connected') : t('غير متصل', 'Unavailable') }}</strong></article>
@@ -300,8 +286,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             }
 
 @if (tab === 'reports') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('الأرباح والخسائر', 'Profit & loss') }}</h2><p>{{ t('تابع الإيرادات والمصروفات حسب الفترة، مع إبقاء كل عملة منفصلة.', 'Review revenue and expenses by period, keeping each currency separate.') }}</p></div><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('الأرباح والخسائر', 'Profit & loss') " [description]=" t('تابع الإيرادات والمصروفات حسب الفترة، مع إبقاء كل عملة منفصلة.', 'Review revenue and expenses by period, keeping each currency separate.') "><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></aba-section-header>
                 <form class="inline-form" (ngSubmit)="loadProfitLoss()">
                   <select name="profitLossPeriod" [attr.aria-label]="t('الفترة المالية', 'Reporting period')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('آخر 30 يومًا', 'Last 30 days') }}</option><option value="month">{{ t('الشهر الحالي', 'Current month') }}</option><option value="all">{{ t('كل الوقت', 'All time') }}</option><option value="custom">{{ t('فترة مخصصة', 'Custom period') }}</option></select>
                   @if (profitLossPeriod === 'custom') { <label>{{ t('من', 'From') }}<input type="date" name="profitLossStart" required [(ngModel)]="profitLossStart"></label><label>{{ t('إلى', 'To') }}<input type="date" name="profitLossEnd" required [(ngModel)]="profitLossEnd"></label> }
@@ -319,7 +305,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       <article class="metric"><span>{{ t('النتيجة قبل تكلفة البضاعة', 'Result before cost of goods') }}</span><strong>{{ row.operating_result_before_cost_of_goods }} {{ row.currency_code }}</strong><small>{{ t('إيرادات الفواتير − المصروفات المسجلة', 'Invoice revenue − recorded expenses') }}</small></article>
                     }
                   </div>
-                  @if (!profitLoss.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة أو مصروفات مسجلة في هذه الفترة.', 'No issued invoices or recorded expenses in this period.') }}</p> }
+                  @if (!profitLoss.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة أو مصروفات مسجلة في هذه الفترة.', 'No issued invoices or recorded expenses in this period.')" /> }
                   <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
                 }
                 <div class="divider"></div>
@@ -347,15 +333,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             }
 
             @if (tab === 'customers') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('قائمة العملاء', 'Customer list') }}</h2><p>{{ t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') }}</p></div><span class="count">{{ customers.length }} {{ t('عميل', 'customers') }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
                 <form class="inline-form" (ngSubmit)="createCustomer()">
                   <input [attr.aria-label]="t('اسم العميل', 'Customer name')" name="customerName" [placeholder]="t('اسم العميل', 'Customer name')" required [(ngModel)]="customerName">
                   <input [attr.aria-label]="t('بريد العميل الإلكتروني', 'Customer email')" name="customerEmail" type="email" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="customerEmail">
                   <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
-                <section class="csv-import-panel" aria-label="CSV customer import">
+                <section abaCard class="csv-import-panel" aria-label="CSV customer import">
                   <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -379,10 +365,10 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list-tools"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (customer of filteredCustomers; track customer.id) { <article class="list-row customer-list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
-                  @if (!filteredCustomers.length) { <p class="empty">{{ customerSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.') }}</p> }
+                  @if (!filteredCustomers.length) { <aba-state-message kind="empty" [description]="customerSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.')" /> }
                 </div>
                 @if (statementVisible) {
-                  <section class="panel statement-panel">
+                  <section abaCard class="panel statement-panel">
                     <div class="section-head"><div><h3>{{ t('كشف حساب العميل', 'Customer statement') }} · {{ customerStatement?.customer?.name || statementCustomerName }}</h3><p>{{ t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.') }}</p></div><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></div>
                     <div class="inline-form statement-filters">
                       <label>{{ t('من تاريخ', 'From date') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
@@ -391,8 +377,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('مسح الفترة', 'Clear range') }}</button>
                     </div>
                     @if (statementFromDate || statementToDate) { <p class="muted">{{ t('الرصيد المعروض يجمع الحركات داخل الفترة المحددة فقط، ولا يشمل رصيد ما قبل بدايتها.', 'Displayed balances sum movements inside the selected range only; they do not include the opening balance before the range.') }}</p> }
-                    @if (statementLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل كشف الحساب…', 'Loading statement…') }}</p> }
-                    @if (statementError) { <p class="error" role="alert">{{ statementError }}</p> }
+                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل كشف الحساب…', 'Loading statement…')" /> }
+                    @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
                     @if (customerStatement) {
                       <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
                       <div class="table-wrap audit-table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
@@ -403,12 +389,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                     }
                   </section>
                 }
-              </section>
+          </section>ion>
             }
 
             @if (tab === 'products') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('المنتجات والخدمات', 'Products & services') }}</h2><p>{{ t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') }}</p></div><span class="count">{{ products.length }} {{ t('منتج', 'products') }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
                 <form class="inline-form" (ngSubmit)="createProduct()">
                   <input [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName">
                   <input [attr.aria-label]="t('سعر الوحدة', 'Unit price')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('سعر الوحدة', 'Unit price')" required [(ngModel)]="productPrice">
@@ -416,7 +402,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required></label> }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
-                <section class="csv-import-panel" aria-label="CSV product import">
+                <section abaCard class="csv-import-panel" aria-label="CSV product import">
                   <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -440,14 +426,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list-tools"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch"><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (product of filteredProducts; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('المخزون: ', 'Stock: ') + (product.stock_quantity ?? '0') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
-                  @if (!filteredProducts.length) { <p class="empty">{{ productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.') }}</p> }
+                  @if (!filteredProducts.length) { <aba-state-message kind="empty" [description]="productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.')" /> }
                 </div>
-              </section>
+            </section>n>
             }
 
             @if (tab === 'invoices') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('المبيعات والفواتير', 'Sales & invoices') }}</h2><p>{{ t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') }}</p></div><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
                 <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
                 <form class="inline-form invoice-form" (ngSubmit)="createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
@@ -476,18 +462,19 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
-                  @if (!filteredInvoices.length) { <p class="empty">{{ (invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.')) }}</p> }
+                  @if (!filteredInvoices.length) { <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice.'))" /> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
             }
 
             @if (tab === 'payments' && business?.role !== 'owner') {
-              <section class="panel"><p class="error" role="alert">{{ t('تسجيل المدفوعات متاح لمالك مساحة العمل فقط. اطلب من المالك منحك الصلاحية المناسبة.', 'Recording payments is restricted to workspace owners. Ask the owner to grant the appropriate access.') }}</p></section>
+              <section abaCard class="panel"><aba-state-message kind="error" [description]="t('تسجيل المدفوعات متاح لمالك مساحة العمل فقط. اطلب من المالك منحك الصلاحية المناسبة.', 'Recording payments is restricted to workspace owners. Ask the owner to grant the appropriate access.')" /></section>
             }
             @if (tab === 'payments' && business?.role === 'owner') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('تسجيل دفعة', 'Record payment') }}</h2><p>{{ t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.') }}</p></div><div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div></div>
+              <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
+                  <div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
+                </aba-section-header>
                 <form class="inline-form payment-form" (ngSubmit)="createPayment()">
                   <input [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount">
                   <select [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>
@@ -501,14 +488,14 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list">
                   @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
-                  @if (!payments.length) { <p class="empty">{{ t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.') }}</p> }
+                  @if (!payments.length) { <aba-state-message kind="empty" [description]="t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
                 </div>
               </section>
             }
 
             @if (tab === 'taxes' && business?.role === 'owner') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('ملخص الضرائب', 'Tax summary') }}</h2><p>{{ t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.') }}</p></div></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]="t('ملخص الضرائب', 'Tax summary')" [description]="t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.')" />
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
                   <label>{{ t('من تاريخ', 'Start date') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
                   <label>{{ t('إلى تاريخ', 'End date') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
@@ -517,16 +504,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                 @if (taxError) { <div class="error-banner" role="alert">{{ taxError }}</div> }
                 @if (taxSummaryReport) {
                   <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
-                  @if (!taxSummaryReport.currencies.length) { <p class="empty">{{ t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.') }}</p> }
+                  @if (!taxSummaryReport.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.')" /> }
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
             }
 
             @if (tab === 'audit') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('سجل العمليات', 'Activity log') }}</h2><p>{{ t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.') }}</p></div><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></div>
-                <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
+              <section abaCard class="panel">
+                <aba-section-header [title]="t('سجل العمليات', 'Activity log')" [description]="t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.')"><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></aba-section-header>
+                 <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
                   <label>{{ t('نوع العملية', 'Action') }}<select name="auditAction" [(ngModel)]="auditAction">
                     <option value="">{{ t('كل العمليات', 'All actions') }}</option>
                     <option value="invoice.issued">{{ t('إصدار فاتورة', 'Invoice issued') }}</option>
@@ -571,9 +558,9 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
                 </form>
-                @if (auditError) { <p class="error" role="alert">{{ auditError }}</p> }
-                @if (auditLoading) { <p class="muted" role="status">{{ t('جارٍ تحميل السجل…', 'Loading activity…') }}</p> }
-                @if (!auditLoading && !auditEvents.length && !auditError) { <p class="empty">{{ t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.') }}</p> }
+                @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
+                @if (auditLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل السجل…', 'Loading activity…')" /> }
+                @if (!auditLoading && !auditEvents.length && !auditError) { <aba-state-message kind="empty" [description]="t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.')" /> }
                 <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
                   @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ auditActionLabel(event.action) }}</td><td>{{ auditTargetLabel(event.target_type) }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
                 </tbody></table></div>
@@ -582,7 +569,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             }
 
             @if (tab === 'release-guide') {
-              <section class="panel release-guide-panel">
+              <section abaCard class="panel release-guide-panel">
                 <div class="section-head">
                   <div>
                     <p class="eyebrow">{{ t('دليل مبسط', 'QUICK GUIDE') }}</p>
@@ -650,7 +637,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             }
 
             @if (tab === 'expenses') {
-              <section class="panel">
+              <section abaCard class="panel">
                 <div class="section-head">
                   <div>
                     <h2>{{ t('تسجيل مصروف', 'Record an expense') }}</h2>
@@ -696,16 +683,16 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                       </div>
                     </article>
                   }
-                  @if (!expenses.length) { <p class="empty">{{ t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.') }}</p> }
+                  @if (!expenses.length) { <aba-state-message kind="empty" [description]="t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.')" /> }
                 </div>
               </section>
             }
 
             @if (tab === 'integrity' && business?.role === 'owner') {
-              <section class="panel">
-                <div class="section-head"><div><h2>{{ t('مراجعة سلامة البيانات', 'Data integrity review') }}</h2><p>{{ t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') }}</p></div><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></div>
+              <section abaCard class="panel">
+                <aba-section-header [title]=" t('مراجعة سلامة البيانات', 'Data integrity review') " [description]=" t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') "><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
-                @if (integrityError) { <p class="error" role="alert">{{ integrityError }}</p> }
+                @if (integrityError) { <aba-state-message kind="error" [description]="integrityError" /> }
                 @if (dataIntegrityReport) {
                   <div class="notice warning-notice"><strong>{{ t('تحتاج مراجعة بشرية', 'Human review required') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
                   <div class="metric-grid">
@@ -724,15 +711,15 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
 
             @if (tab === 'assistant') {
               <div class="assistant-workspace">
-              <section class="panel chat-panel">
-                <div class="section-head"><div><h2>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }}</h2><p>{{ t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') }}</p></div><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></div>
+              <section abaCard class="panel chat-panel">
+                <aba-section-header [title]=" t('مساعد الأعمال الذكي', 'AI Business Assistant') " [description]=" t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') "><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></aba-section-header>
                 <div class="chat-log" aria-live="polite">
-                  @if (!chatMessages.length) { <p class="empty">{{ t('ابدأ بسؤال سريع عن نشاطك أو اختَر اقتراحًا بالأسفل.', 'Start with a quick business question or choose a suggestion below.') }}</p> }
+                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ابدأ بسؤال سريع عن نشاطك أو اختَر اقتراحًا بالأسفل.', 'Start with a quick business question or choose a suggestion below.')" /> }
                   @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span>@if (message.mode === 'local-fallback') { <small class="source-list">{{ t('وضع مجاني محدود · إجابة من سجلات النشاط', 'Free limited mode · grounded in business records') }}</small> }<p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
                 </div>
                 
-                @if (chatError) { <div class="error-banner" role="alert"><span>{{ chatError }}</span>@if (!chatConfigurationMissing) { <button class="secondary" type="button" (click)="sendChat()" [disabled]="chatSending || !chatDraft.trim()">{{ t('إعادة المحاولة', 'Retry') }}</button> }</div> }
-                @if (chatSending) { <p class="muted" role="status" aria-live="polite">{{ t('المساعد الذكي يجهّز الإجابة…', 'The AI assistant is preparing an answer…') }}</p> }
+                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('إعادة المحاولة', 'Retry')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
+                @if (chatSending) { <aba-state-message kind="loading" [description]="t('المساعد الذكي يجهّز الإجابة…', 'The AI assistant is preparing an answer…')" /> }
                 <form class="chat-form" (ngSubmit)="sendChat()"><textarea name="chatMessage" rows="2" maxlength="2000" placeholder="اكتب سؤالك عن نشاطك…" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
                 <p class="footnote">{{ t('المساعد للقراءة فقط. عند عدم إعداد مفتاح مزوّد الذكاء الاصطناعي يعمل بوضع مجاني محدود للإجابات المبنية على أحدث السجلات، ولا يُعدّ بديلًا للمساعد التوليدي الكامل.', 'Read-only assistant. Without an AI provider key, a free limited fallback answers from recent records; it is not a full generative AI replacement.') }}</p>
               </section>
@@ -766,8 +753,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.shell.english .sidebar{inset:0 0 0 auto}.shell.english .main{margin-left:0;margin-right:245px}.shell.english .nav-item{text-align:left}.shell.english .hero-mark{margin-left:4%;margin-right:0}.shell.english .chat-message.user-message{margin-right:auto;margin-left:0}.sidebar{position:fixed;inset:0 auto 0 0;width:245px;background:#111827;color:#e5e7eb;padding:26px 17px;display:flex;flex-direction:column;z-index:2}
     .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-left:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:#9ca3af;line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:#1e293b;color:#fff}.nav-item.active{background:linear-gradient(100deg,#164e63,#1d4ed8);color:#fff;box-shadow:inset 3px 0 #5eead4}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:#1e293b}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin:8px 0 0 15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-right:8px}
     .main{margin-left:245px;padding:30px clamp(18px,4vw,54px) 20px;max-width:1550px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(180px,260px);justify-content:stretch;align-items:center;gap:14px;padding:14px 17px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;margin-bottom:18px;min-width:0}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:19px;background:linear-gradient(115deg,#14243a,#1e3a5f 60%,#155e75);color:#fff}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:#cbd5e1}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-right:4%;box-shadow:0 15px 45px #02061755}
-    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric,.panel,.quick-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric{padding:17px;min-height:125px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:12px;margin-top:15px}.quick-card{text-align:start;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:104px;width:100%;padding:16px;background:#fff;border:1px solid #e5eaf1;border-radius:14px}.quick-card strong,.quick-card span{display:block;overflow-wrap:anywhere}.quick-card strong{font-size:13px;line-height:1.45}.quick-card span{font-size:11px;color:#6b7280;line-height:1.5}.module-launcher{margin-top:18px}.module-launcher .section-head{margin-bottom:8px}
-    .panel{padding:22px;margin-top:4px}.panel.narrow{max-width:650px;margin:50px auto}.panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:#334155;margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover{background:#eff6ff;border-color:#93c5fd}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.35}.chat-panel{min-width:0}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-card{flex:0 0 175px}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;padding:8px}.chat-log{min-height:220px;max-height:48vh}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
+    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric{padding:17px;min-height:125px;background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.metric-grid aba-metric-card strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric-grid aba-metric-card small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:12px;margin-top:15px}.module-launcher{margin-top:18px}
+    .panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:#334155;margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover{background:#eff6ff;border-color:#93c5fd}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.35}.chat-panel{min-width:0}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-card{flex:0 0 175px}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;padding:8px}.chat-log{min-height:220px;max-height:48vh}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-left:auto;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-right:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.error,.error-banner{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}.error-banner{margin-bottom:14px}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
     .mobile-version-strip{display:none}
     .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .list-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.list-tools input{flex:1;min-width:150px}.list-tools select{min-width:130px}
@@ -775,7 +762,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
       .mobile-version-row .version-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:5px 8px}
 
-      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:#99f6e4;color:#065f46;background:#ecfdf5;font-weight:800}.install-floating{display:block;position:fixed;top:12px;right:12px;z-index:50;box-shadow:0 6px 20px #0f172a22}.install-help-floating{display:flex;position:fixed;top:62px;right:12px;z-index:50;width:min(360px,calc(100vw - 24px));box-shadow:0 8px 28px #0f172a22}.main,.shell.english .main{padding-top:76px}.shell.install-help-open .main{padding-top:164px}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;right:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(250px,calc(100vw - 20px));padding:8px;background:#0f172a;border:1px solid #334155;border-radius:16px;box-shadow:0 18px 50px #02061755;gap:4px}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{box-shadow:inset 3px 0 #5eead4}.mobile-more-menu .mobile-menu-action{border-top:1px solid #334155;border-radius:8px;margin-top:2px}
+      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:#99f6e4;color:#065f46;background:#ecfdf5;font-weight:800}.install-floating{display:block;position:fixed;top:12px;right:12px;z-index:50;box-shadow:0 6px 20px #0f172a22}.install-help-floating{display:flex;position:fixed;top:62px;right:12px;z-index:50;width:min(360px,calc(100vw - 24px));box-shadow:0 8px 28px #0f172a22}.main,.shell.english .main{padding-top:76px}.shell.install-help-open .main{padding-top:164px}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;right:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:#0f172a;border:1px solid #334155;border-radius:16px;box-shadow:0 18px 50px #02061755;gap:8px}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid #334155;padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:#94a3b8;font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid #5eead4;box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid #334155;padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
       .global-loading{position:fixed;inset:0 0 auto;z-index:1000;height:3px;background:#ccfbf1;overflow:hidden}.global-loading>span:first-child{position:absolute;inset:0 auto 0 0;width:35%;background:#0f766e;animation:loading-sweep 1.15s ease-in-out infinite}.loading-label{position:absolute;top:10px;right:12px;background:#0f766e;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 14px #0f172a22}@keyframes loading-sweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@media(prefers-reduced-motion:reduce){.global-loading>span:first-child{animation:none;width:100%}}
     .sidebar{position:fixed;inset:auto 0 0;width:100%;min-height:0;height:auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;background:rgba(15,23,42,.97);border-top:1px solid #334155;box-shadow:0 -8px 28px #0f172a20;backdrop-filter:blur(16px);z-index:20}
       .brand,.brand>span:last-child,.nav-label,.workspace-release-meta,.sidebar-bottom{display:none}.sidebar>.mobile-extra,.sidebar>.platform-admin-nav{display:none}
@@ -791,8 +778,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .hero{padding:22px 20px;border-radius:16px}.hero h2{font-size:27px}.hero-mark{display:none}
       .quick-grid{grid-template-columns:1fr}.workspace-bar{align-items:stretch;flex-direction:column}.workspace-bar select{max-width:none;width:100%}
       .list-tools{display:grid;grid-template-columns:1fr}.list-tools input,.list-tools select,.list-tools button{width:100%}
-      .section-head{align-items:flex-start;gap:10px}.list-row{flex-wrap:wrap}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-      .metric{padding:13px;min-height:110px}.metric strong{font-size:clamp(15px,4vw,18px);overflow-wrap:anywhere}
+      .section-head{align-items:flex-start;gap:10px}.list-row{flex-wrap:wrap}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:13px;min-height:110px}.metric strong{font-size:clamp(15px,4vw,18px);overflow-wrap:anywhere}
+      .metric-grid aba-metric-card strong{font-size:clamp(15px,4vw,18px);overflow-wrap:anywhere}
       .inline-form,.invoice-form{grid-template-columns:1fr}.inline-form .primary{grid-column:auto}
       .panel{padding:15px;border-radius:13px}.notice{flex-direction:column}.notice strong{white-space:normal}
       footer{flex-direction:column;line-height:1.6}
@@ -802,7 +789,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
     .mobile-version-row{display:none}
     .invoice-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.invoice-preview>div{display:flex;flex-direction:column;gap:4px;min-width:0}.invoice-preview span{font-size:12px;color:#64748b}.invoice-preview strong{font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.invoice-preview .total{grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:10px}
     .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.statement-panel{min-width:0;max-width:100%;overflow:hidden}.statement-panel .section-head>div{min-width:0;overflow-wrap:anywhere}.statement-panel .table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}.statement-panel .table-wrap table{width:100%;min-width:680px;border-collapse:collapse;table-layout:auto}.statement-panel .table-wrap th,.statement-panel .table-wrap td{padding:10px 12px;text-align:start;white-space:nowrap;border-bottom:1px solid #edf0f5;font-size:12px}.statement-panel .table-wrap td:nth-child(3){max-width:220px;overflow-wrap:anywhere;white-space:normal}
-    @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
+    @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}.metric-grid aba-metric-card strong{font-size:16px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
     @media(max-width:760px){
       .sidebar{
@@ -945,6 +932,13 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
       .workspace-release-meta-inline{grid-column:1;justify-content:flex-start;min-width:0;text-align:start;overflow-wrap:anywhere}
       .workspace-release-meta-inline .version-pill{max-width:100%;white-space:normal;overflow-wrap:anywhere}
       .workspace-release-meta-inline small{text-align:start}
+    }
+    @media(max-width:760px){
+      .chat-form{position:sticky;bottom:calc(var(--aba-keyboard-inset,0px) + 8px);z-index:25;align-items:end;padding:8px 0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 18%)}
+      .chat-form textarea{min-height:48px;max-height:25dvh;resize:none}
+      .shell.keyboard-open .sidebar,.shell:has(.chat-form textarea:focus) .sidebar{transform:translateY(110%);pointer-events:none}
+      .shell.keyboard-open .main,.shell:has(.chat-form textarea:focus) .main{padding-bottom:12px}
+      .shell.keyboard-open .chat-log{min-height:100px;max-height:35dvh}
     }
   `]
 })
@@ -1107,6 +1101,7 @@ export class AppComponent implements OnInit, OnDestroy {
   chatSending = false;
   chatError = '';
   chatConfigurationMissing = false;
+  keyboardOpen = false;
   mobileMoreOpen = false;
   isInstalled = false;
   installHelp = false;
@@ -1196,6 +1191,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    window.visualViewport?.addEventListener('resize', this.updateKeyboardViewport);
+    window.visualViewport?.addEventListener('scroll', this.updateKeyboardViewport);
+    this.updateKeyboardViewport();
     this.authStateUnsubscribe = this.auth.subscribeToAuthState(user => {
       if (this.authFlowInProgress || !this.initialized) {
         this.pendingAuthSnapshot = user;
@@ -1217,7 +1215,19 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.authStateUnsubscribe?.();
     this.authStateUnsubscribe = undefined;
+    window.visualViewport?.removeEventListener('resize', this.updateKeyboardViewport);
+    window.visualViewport?.removeEventListener('scroll', this.updateKeyboardViewport);
+    document.documentElement.style.removeProperty('--aba-keyboard-inset');
   }
+
+  private readonly updateKeyboardViewport = (): void => {
+    const viewport = window.visualViewport;
+    const keyboardInset = viewport
+      ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      : 0;
+    document.documentElement.style.setProperty('--aba-keyboard-inset', `${Math.round(keyboardInset)}px`);
+    this.keyboardOpen = keyboardInset > 120;
+  };
 
   private async handleExternalAuthState(user: AuthUserSnapshot | null): Promise<void> {
     const nextUid = user?.uid ?? null;
@@ -1577,6 +1587,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.chatRequestGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -1655,6 +1666,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.healthLoading = false;
     this.expenseMessage = '';
     this.expenseSubmissionUncertain = false;
+    this.chatSending = false;
     this.chatMessages = [];
     this.chatDraft = '';
     this.chatError = '';
@@ -1726,6 +1738,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
+  private readonly chatRequestGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
 
@@ -2051,6 +2064,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
   canAccessTab(tab: Tab): boolean {
     return canAccessWorkspaceTab(tab, this.business?.role, this.platformAdminAvailable);
+  }
+
+  /** Home module cards share the exact same role/availability check as navigation. */
+  get homeModuleCards(): readonly WorkspaceModuleCard[] {
+    return WORKSPACE_MODULE_CATALOG.filter(module => this.canAccessTab(module.tab));
+  }
+
+  /** More navigation is rendered from the same role-filtered catalogue as Home. */
+  get mobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
+    const accessibleModules = this.homeModuleCards;
+    return WORKSPACE_MODULE_GROUPS
+      .map(group => ({
+        ...group,
+        modules: accessibleModules.filter(module => module.mobileGroup === group.id),
+      }))
+      .filter(group => group.modules.length > 0);
   }
 
   isMobileMoreTab(tab: Tab): boolean {
@@ -2796,8 +2825,21 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.sendChat();
   }
 
+  private currentChatRequestContext(): TenantRequestContext {
+    return {
+      workspaceId: this.business?.id ?? '',
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+    };
+  }
+
   async sendChat(): Promise<void> {
     if (!this.business || !this.chatDraft.trim() || this.chatSending) return;
+    const requestContext = this.currentChatRequestContext();
+    // Fail closed if the request cannot be tied to an authenticated user and current role.
+    if (!requestContext.signedIn || !requestContext.userId || !requestContext.role || !requestContext.workspaceId) return;
+
     const question = this.chatDraft.trim();
     const history = this.chatMessages.slice(-8);
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
@@ -2805,18 +2847,36 @@ export class AppComponent implements OnInit, OnDestroy {
     this.chatSending = true;
     this.chatError = '';
     this.error = '';
-    try {
-      const reply: ChatReply = await this.api.chat(this.business.id, question, history);
-      this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
-    } catch (error) {
-      this.chatMessages = this.chatMessages.slice(0, -1);
-      this.chatDraft = question;
-      const rawMessage = error instanceof Error ? error.message : '';
-      this.chatConfigurationMissing = /AI chat is not configured/i.test(rawMessage);
-      this.chatError = this.message(error);
-    } finally {
-      this.chatSending = false;
-    }
+
+    await runTenantScopedRequest(
+      this.chatRequestGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.chat(requestContext.workspaceId, question, history),
+      {
+        onSuccess: (reply: ChatReply) => {
+          this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
+        },
+        onError: error => {
+          this.chatMessages = this.chatMessages.slice(0, -1);
+          this.chatDraft = question;
+          const rawMessage = error instanceof Error ? error.message : '';
+          this.chatConfigurationMissing = /AI chat is not configured/i.test(rawMessage);
+          this.chatError = this.message(error);
+        },
+        onFinally: () => {
+          this.chatSending = false;
+        },
+        onStale: () => {
+          // The latest request lost its identity/role context without a workspace clear.
+          this.chatSending = false;
+          this.chatMessages = [];
+          this.chatDraft = '';
+          this.chatError = '';
+          this.chatConfigurationMissing = false;
+        },
+      },
+    );
   }
 
   private message(error: unknown, context: 'auth' | 'api' = 'api'): string {

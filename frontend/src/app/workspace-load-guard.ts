@@ -50,3 +50,45 @@ export function isCurrentTenantRequest(
     && requested.role === current.role
     && (requested.customerId === undefined || requested.customerId === current.customerId);
 }
+
+
+export interface TenantRequestCallbacks<T> {
+  onSuccess(value: T): void;
+  onError(error: unknown): void;
+  onFinally(): void;
+  /** Runs only when this request is still the latest, but its identity/role context changed. */
+  onStale?(): void;
+}
+
+/**
+ * Runs a tenant-scoped async operation and permits state callbacks only while
+ * its generation, workspace, authenticated UID, role, and signed-in state match.
+ */
+export async function runTenantScopedRequest<T>(
+  guard: WorkspaceLoadGuard,
+  requested: TenantRequestContext,
+  currentContext: () => TenantRequestContext,
+  operation: () => Promise<T>,
+  callbacks: TenantRequestCallbacks<T>,
+): Promise<void> {
+  const requestVersion = guard.begin();
+  const isCurrent = (): boolean =>
+    isCurrentTenantRequest(guard, requestVersion, requested, currentContext());
+
+  let outcome: { ok: true; value: T } | { ok: false; error: unknown };
+  try {
+    outcome = { ok: true, value: await operation() };
+  } catch (error) {
+    outcome = { ok: false, error };
+  }
+
+  try {
+    if (isCurrent()) {
+      if (outcome.ok) callbacks.onSuccess(outcome.value);
+      else callbacks.onError(outcome.error);
+    }
+  } finally {
+    if (isCurrent()) callbacks.onFinally();
+    else if (guard.isLatest(requestVersion)) callbacks.onStale?.();
+  }
+}

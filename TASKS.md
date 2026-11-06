@@ -1851,3 +1851,169 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Full authenticated cross-tab Firebase browser journeys and independent review remain NOT RUN. No merge, version bump, production deploy, database write, or production configuration change.
 
 - Latest GitHub exact-head status read: PR #316 head `acaa0ca4f60f5cd6e3ca3caf8ebe948aa8432527` reports six CircleCI contexts FAILURE; PR #320 head `b695eaea26724193df4e4453d625440ad9f4abe9` reports six CircleCI contexts FAILURE plus SemaphoreCI FAILURE. CircleCI remains frozen; no retry/trigger was issued. GitLab pipeline success is not GitHub-native required-check evidence. Independent review and authenticated Firebase cross-tab/account-switch browser journeys remain NOT RUN.
+
+## T18 — Master implementation checkpoint — 2026-11-06
+
+**Status:** PARTIALLY COMPLETE / IN PROGRESS. This is a focused implementation slice on a new Master-owned branch from the verified current main; it is not T18 or product completion.
+
+- **Base main:** `e5a765083860a9141f2f2fe366858234873120e9`
+- **Branch:** `master/t18-chat-mobile-ux-20261106`
+- **Implementation head before this ledger update:** `485a368c40249b45395b842fea695b86d08a7e5a`
+- **Scope:** T18 chat request identity/tenant fencing and mobile keyboard-aware composer only.
+- **Files changed:**
+  - `frontend/src/app/app.component.ts`
+  - `frontend/src/app/workspace-load-guard.ts`
+  - `frontend/src/app/workspace-load-guard.spec.ts`
+  - `frontend/src/app/app.component-template-safety.spec.ts`
+
+### Implemented in source
+
+- Capture business/workspace ID, signed-in state, Firebase UID and current workspace role at chat request time.
+- Run chat success/error/finally callbacks only while request generation and identity/role/workspace remain current.
+- Invalidate chat requests and clear sending state whenever workspace data is cleared.
+- Discard stale responses after workspace/auth changes; a current-generation role/identity mismatch clears the stale chat state without restoring the old draft.
+- Preserve current-request failure retry behavior and draft restoration.
+- Observe `visualViewport` resize/scroll and calculate keyboard inset; make the mobile composer sticky above the keyboard and hide the fixed bottom dock while the composer is focused/keyboard is open.
+- Add deferred-promise regression coverage for workspace switch, logout, same-business/different UID, role change, stale success/error/finally, superseded request generation and current-failure draft preservation.
+- Add source-level assertions for the request guard and mobile viewport layout.
+
+### Preserved boundaries
+
+- No backend authorization, API contract, route, business rule, database schema or migration changed.
+- Existing four-slot mobile navigation contract is unchanged.
+- Existing light-surface contrast correction and WCAG assertions were already present on main; not duplicated.
+- PR #323 remains closed/unmerged and was not restored or merged wholesale.
+- T42 remains Chat 1-owned; no T42 files/branch were edited.
+- T50 authenticated acceptance remains blocked pending a verified synthetic-only environment and dedicated identities.
+
+### Validation and release gates
+
+- Exact-blob focused unit tests: `node --experimental-strip-types --test workspace-load-guard.spec.ts` — **13/13 PASS**. Local `git hash-object` values matched the GitHub branch blob SHAs exactly for both `workspace-load-guard.ts` and `workspace-load-guard.spec.ts`.
+- Focused TypeScript 5.8.3 strict check of exact `workspace-load-guard.ts`: **PASS** (`tsc --noEmit --strict --target ES2022 --lib ES2022,DOM workspace-load-guard.ts`). Full Angular production build/template compilation **NOT RUN**.
+- Browser responsive checks at 360/390/412px, RTL/LTR, Android keyboard and physical-device acceptance **NOT RUN**.
+- CircleCI remains frozen; no CI trigger/retry was issued. Current-main 7/7 is baseline evidence only, not branch evidence.
+- No PR created (avoid triggering frozen CI); no merge, deployment, production write or migration.
+- Canonical Figma file URL was supplied, but Figma account access is View-seat only and Figma MCP metadata/screenshot calls are rate-limited; design-file inspection/editing is **BLOCKED**. No Figma changes or replacement file created.
+
+**Next action:** inspect the exact branch diff and run permitted local unit/build checks if an authorized runner becomes available; complete browser/Android acceptance when an authorized session exists; then coordinate the Design System/Figma handoff before broader screen implementation. Do not mark VERIFIED COMPLETE until exact-head checks and acceptance evidence exist.
+
+
+## T18 — Shared UI foundation and Home launcher consolidation — 2026-11-06
+
+**Status:** PARTIALLY COMPLETE / IN PROGRESS. This is a source implementation checkpoint on the existing Master branch. It does not complete T18 or approve the broader visual redesign.
+
+- **Base main:** `e5a765083860a9141f2f2fe366858234873120e9`.
+- **Branch:** `master/t18-chat-mobile-ux-20261106`.
+- **Implementation head before this documentation checkpoint:** `9667c3a894e678fa760ae7934c3e108cbe1ef560` (47 commits ahead / 0 behind main at checkpoint).
+- **Files in branch diff:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/app/workspace-load-guard.ts`, `frontend/src/app/workspace-load-guard.spec.ts`, `frontend/src/app/workspace-module-catalog.ts`, `frontend/src/app/workspace-module-catalog.spec.ts`, five files under `frontend/src/app/shared/ui/`, `frontend/src/styles.css`, and this ledger.
+
+### Shared UI and Clean Code implementation
+
+- Added standalone, `ChangeDetectionStrategy.OnPush` presentational components with signal inputs / outputs:
+  - `AbaCardComponent`: applied to 21 existing workspace panel sections using the `section[abaCard]` selector. Native `section` semantics and existing panel classes/attributes remain intact.
+  - `AbaMetricCardComponent`: used by the four dashboard KPI cards; labels and values are projected so page-specific data and financial meaning remain in the page.
+  - `AbaQuickAccessCardComponent`: one reusable accessible button/card for Home module destinations.
+  - `AbaSectionHeaderComponent`: reusable heading/description/count, including an explicit heading ID for `aria-labelledby`.
+  - `AbaStateMessageComponent`: common loading/error feedback; retry behavior remains owned by the caller.
+- Added semantic CSS custom properties in `frontend/src/styles.css` for text, surfaces, primary colors, borders, focus, radius and spacing. Shared components consume these tokens with fallbacks.
+- Replaced duplicated Home launcher destination markup with one typed 19-entry `WORKSPACE_MODULE_CATALOG`; the launcher count and cards derive from the same role-filtered list. Existing `canAccessWorkspaceTab` remains the presentation gate; backend authorization remains authoritative.
+- Current presentation counts from the existing access policy: STAFF 12; OWNER 18 without platform-admin availability; 19 when that capability is available.
+- Removed the duplicate second Home quick-card list. The separate AI suggestion rail remains a distinct pattern and retains its own suggestion-card UI.
+- Shared components support RTL via logical text alignment / direction-aware arrow, visible keyboard focus and reduced-motion preferences. No new routes or business workflows were added.
+
+### Focused validation
+
+- New `workspace-module-catalog.spec.ts`: **4/4 PASS** on the exact catalog source copied to a local isolated test directory; local catalog blob hash matched GitHub blob `5bac0eaa83618ba485637b280ef95cac70fbcb70`.
+- Strict TypeScript 5.8.3 check for `module-access.ts` + `workspace-module-catalog.ts`: **PASS**.
+- Existing exact-blob workspace request guard tests from the earlier T18 checkpoint: **13/13 PASS**; guard source was not changed in this UI follow-up.
+- `app.component-template-safety.spec.ts` full execution: **NOT RUN**.
+- Full frontend `npm test`: **NOT RUN**.
+- Angular production build / strict template compilation: **NOT RUN**; Angular dependencies are not installed in the available local runner.
+- Browser checks at 360/390/412px, RTL/LTR, keyboard-open layout, accessibility tree and Android Chrome/PWA acceptance: **NOT RUN**.
+- Figma visual review remains **BLOCKED** by the connected View-only seat and read limits.
+
+### CI / delivery safety
+
+- No CI job was manually triggered or retried. GitHub branch content commits caused provider status contexts to appear automatically; this was not a manual CI action. The latest read-only status snapshot on implementation head `9667c3a894e678fa760ae7934c3e108cbe1ef560` showed CircleCI frontend-production-build, frontend-browser-smoke, frontend-unit-tests, frontend-dependency-audit and backend-accounting PENDING; Semaphore reported FAILURE and remains non-authoritative / retired. Do not trigger or retry any provider.
+- No PR, merge, deployment, API contract change, backend change, database write or migration.
+- Existing T42 ownership and T50 synthetic-only acceptance boundaries remain unchanged.
+
+**Next action:** continue read-only status/source review; run the full frontend tests and Angular production build only on an authorized local runner without triggering CI; then complete RTL/LTR viewport and Android keyboard acceptance. Keep this branch unmerged and do not open a PR while required CI is frozen or exact-head validation remains incomplete.
+
+
+## T18 — Shared UI source-review follow-up — 2026-11-06
+
+- Follow-up implementation head before this note: `6fce30056677ac89c340da52b45cadc0b4176273` (57 ahead / 0 behind the verified main base).
+- Kept the shared card as a native semantic host component using only `section[abaCard]` and content projection; no custom card element replaces native sections.
+- Simplified the card primitive to visual framing only. Section headings remain a separate `AbaSectionHeaderComponent`.
+- Kept the Home module catalogue data-only. The app shell filters it through the existing `canAccessTab` method, which delegates to the established `canAccessWorkspaceTab` policy. The catalogue is presentation data, not authorization.
+- Preserved legacy `article.metric` cards used in non-dashboard reports. Dashboard KPI cards now use `aba-metric-card`; projected value typography is styled by the consuming app stylesheet because Angular component-scoped styles do not automatically style projected nodes.
+- Removed obsolete duplicate Home quick-card CSS and kept the distinct AI suggestion rail. Repaired source-level assertions so they independently verify AI suggestion cards and Home quick-access cards.
+- Exact catalog and test blob hashes: `workspace-module-catalog.ts` = `01d1c4e3a496983be4d4b15d83fcbb474ae04fe8`; `workspace-module-catalog.spec.ts` = `140fb575fe5077ea0778fead86352b1cd2250a4c`.
+- Local Node 22 catalog tests: **4/4 PASS**. Strict TypeScript 5.8.3 check for `module-access.ts` and `workspace-module-catalog.ts`: **PASS**. Full Angular compile, full frontend suite and browser/device acceptance remain **NOT RUN**.
+- Latest read-only status snapshot on implementation head `6fce30056677ac89c340da52b45cadc0b4176273`: CircleCI frontend-unit-tests, frontend-dependency-audit, backend-accounting, frontend-browser-smoke and frontend-production-build are **PENDING**; Semaphore is **FAILURE / non-authoritative retired provider**. No PR exists. Do not trigger/retry CI.
+- Final docs-only ledger commit uses `[skip ci]`; it does not authorize a PR, merge or deployment.
+
+
+## T18 — Shared UI integration source-review checkpoint — 2026-11-06
+
+- Pre-consolidation implementation head: `740217213e3250cb4d486dac3746e40f373b63d4` (68 ahead / 0 behind the verified main base). The branch is Master-owned and has no PR; its source snapshot is being consolidated into one commit without changing the implementation tree.
+- Reused `AbaSectionHeaderComponent` across 15 workspace headings; all simple H2 section headings now use the shared component. The remaining legacy `section-head` cases have distinct H3/action layouts and are intentionally preserved pending a separate visual/semantic review.
+- Payment header actions are projected through the shared header action slot; audit panel retains its native `section abaCard` host. Source checks confirm balanced native section tags, balanced shared-header tags, and valid Angular property expressions.
+- Final source review checks PASS: 21 native panel hosts, 15 shared section headings, 4 dashboard KPI components, one reusable quick-access template over the 19-item catalogue, no duplicate Home quick-card markup, and preserved legacy report metric cards.
+- Local focused evidence remains: catalog Node tests 4/4 PASS; strict TypeScript 5.8.3 catalog/access check PASS; earlier exact-blob request-guard tests 13/13 PASS. Full app component source test, full npm suite, Angular production/template build, browser and Android QA remain NOT RUN.
+- Latest read-only status snapshot on pre-consolidation implementation head `740217213e3250cb4d486dac3746e40f373b63d4`: CircleCI frontend-production-build, frontend-unit-tests, frontend-browser-smoke, backend-accounting and frontend-dependency-audit PENDING; Semaphore FAILURE is non-authoritative/retired. No manual CI trigger/retry, no PR, merge or deployment.
+- Figma visual verification remains BLOCKED by the connected View-only seat/read limits. Continue only on the same Master branch; do not open a PR or merge until authorized local/browser/device validation is complete.
+
+
+## T18 — P1 UX implementation work packages (single owner / single branch) — 2026-11-06
+
+**Owner:** Project Master (this execution). **Branch:** `master/t18-chat-mobile-ux-20261106`. Do not dispatch parallel writers or create another branch/PR. T18 remains IN PROGRESS; Phase 1 UX Blueprint is accepted as documentation only. Phase 2/3 Figma design gates remain separate and are not represented as complete.
+
+### Work packages and order
+
+| Order | Priority | Work package | Current state | Completion evidence required |
+| --- | --- | --- | --- | --- |
+| 1 | P0 | Shared UI foundation and page anatomy | PARTIALLY COMPLETE | Five shared OnPush components; 21 native card hosts; 15 shared section headings; four KPI components; one 19-destination catalogue reused by Home/More; 13 empty, 11 error and six page-loading states migrated to shared feedback. Focused tests pass; Angular build and visual regression NOT RUN |
+| 2 | P0 | App shell and role-aware navigation | PARTIALLY COMPLETE | Grouped 16 secondary destinations into five work areas from the same role-filtered catalogue; native More nav, aria-current on all 16, central canAccessTab visibility for sidebar, bounded scroll and RTL active marker. Four-slot dock and desktop sidebar structure retained. Runtime/keyboard/device QA NOT RUN |
+| 3 | P0 | App-wide interaction states and recovery | PARTIALLY COMPLETE | Shared feedback now covers 13 empty states, 11 inline alert errors, six page loading states and chat loading/error/retry. Remaining global banners, validation, denied/success and full journey recovery still need audit; preserve form input; success only after server confirmation |
+| 4 | P0 | Responsive, RTL/LTR and accessibility | NOT RUN | Browser evidence at 360/390/tablet/desktop in Arabic RTL and English LTR; keyboard, focus, touch targets, contrast, text scaling, reduced motion, safe areas and assistive-technology checks |
+| 5 | P1 | Dashboard, Customers, Products, Invoices and Payments usability | NOT STARTED | Page-level layout and interaction acceptance against existing API contracts; payment owner-only visibility; invoice totals remain distinct from collected payments; currencies stay separate |
+| 6 | P1 | Expenses, Reports, Suppliers, Purchasing, Recurring Invoices and Notifications | NOT STARTED | Consistent forms/lists/filters/states while preserving current limitations; no AP, supplier payment, receiving, cash settlement, tax or accounting semantics beyond approved scope |
+| 7 | P1 | Employees/Payroll, Platform Admin and operational views | NOT STARTED | Preserve server-side role/tenant authorization and payroll privacy; verify admin capability gating; audit, integrity and operational health remain read-only where specified |
+| 8 | P1 | Nine critical journey acceptance | NOT RUN | Execute documented journeys with OWNER/STAFF/denied paths, tenant/workspace switching and error/recovery outcomes in a safe synthetic environment; source review alone is not runtime PASS |
+| 9 | GATE | Figma Design System and high-fidelity handoff | BLOCKED / NOT STARTED | Restore authorized access to canonical AIBA Design Foundations; Phase 2 tokens/components and Phase 3 screens/prototype require separate visual review and acceptance |
+| 10 | GATE | Final QA and delivery | BLOCKED / NOT RUN | Full frontend npm tests, Angular production/template build, browser/device QA and independent review; no CI trigger/retry, PR, merge or deployment while freeze/gates remain unresolved |
+
+### Boundaries and decisions
+
+- Current 19 destinations and nine journeys are the accepted UX Blueprint inventory; their documentation acceptance does not imply rendered visual or authenticated runtime acceptance.
+- Keep the existing four-slot mobile dock and More menu until the Master reviews the updated work-area grouping direction. No new Settings/membership route or invitations.
+- Preserve current invoice/payment/expense/report meanings and currency separation. UX changes must not introduce AP, COGS, GL, posting, FX, tax, payroll, cash-settlement or supplier-payment semantics.
+- Server authorization is authoritative; hiding a card or menu item is presentation only.
+- One writer: Master on this branch. Chat 1/T42 must not edit shared `app.component.ts` or `TASKS.md` while T18 owns the integration window.
+- No CI trigger/retry, replacement CI, TinyFish, production DB write/migration, merge or deployment without the project's separate authorization and gates.
+
+**Next executable slice:** finish remaining P0 workspace-context, global banners, validation/denied/success and recovery source audit on this branch; then obtain an authorized local runner for full tests/build. If a browser/device or Figma gate is unavailable, continue independent source-level work and keep that gate explicitly BLOCKED / NOT RUN.
+
+## T18 — P0 navigation and information-architecture source slice — 2026-11-06
+
+- **Master decision:** keep the existing four-slot mobile dock (Home, Invoices, Customers, More) and group the 16 secondary destinations into five work areas in More. No destination, route or business capability was added or removed.
+- **Groups:** Products & purchasing; Finance & reports; Team & administration; Monitoring & operations; Assistant & tools.
+- The 16 secondary destinations are defined once in `WORKSPACE_MODULE_CATALOG` with a typed `mobileGroup`. `WORKSPACE_MODULE_GROUPS` defines bilingual group labels. Home and More both consume the same catalogue; `mobileMoreGroups` derives visible groups from `homeModuleCards`, which filters through the existing `canAccessTab` policy.
+- Sidebar visibility now uses `canAccessTab` for protected destinations instead of duplicating OWNER/platform-admin conditionals. `setTab` still enforces the same presentation gate; server-side authorization remains authoritative.
+- More is a native `nav` landmark with ordinary buttons (not an ARIA application `menu`), keyboard Tab navigation, `aria-expanded` / `aria-controls` on the trigger, `aria-current="page"` on active destinations, Escape dismissal, five labelled work-area groups, a bounded scroll region and logical RTL active marker.
+- More content is capped at `min(70dvh, 560px)`, scrolls internally and remains above the mobile dock/safe-area inset. Desktop sidebar and primary mobile dock structure were not redesigned in this slice.
+- Focused catalogue suite now **7/7 PASS** (exact catalog and spec blobs); strict TypeScript 5.8.3 check for `module-access.ts` and `workspace-module-catalog.ts`: **PASS**. Static navigation/source review: **17/17 PASS**.
+- Authenticated OWNER/STAFF browser behavior, actual keyboard focus restoration, 360/390/tablet device rendering, RTL/LTR screenshots and Android Chrome/PWA behavior remain **NOT RUN**. Full Angular template/build and app-wide test suite remain **NOT RUN**.
+- No route/API/backend/schema/financial changes. No CI trigger/retry, PR, merge, deployment or production write.
+
+## T18 — P0 shared interaction-state source slice — 2026-11-06
+
+- Reused `AbaStateMessageComponent` across 13 empty states, 11 simple inline alert errors, six page-level loading states and the existing chat loading/error/retry flow.
+- Empty states now expose a consistent `status` role; error states use `alert`; loading/success states use polite live announcements. Retry actions remain caller-owned; no new retry behavior or business side effect was invented.
+- Removed obsolete `.empty` CSS. Added semantic danger/success design tokens and made the state component a block-level host so projected placement remains predictable.
+- Shared state component remains standalone, OnPush and signal-driven. The app template safety suite now asserts that legacy empty/error/loading paragraphs are not reintroduced.
+- Focused local validation: catalogue suite 7/7 PASS; strict TypeScript 5.8.3 catalogue/access check PASS; 16 static source checks PASS. Full app template safety suite, Angular build, full frontend tests and browser/device behavior NOT RUN.
+- Remaining state audit: global banners, field-level validation, permission-denied guidance, server-confirmed success, and journey-specific recovery. Do not convert a failed request into success or alter API/financial behavior.
+
