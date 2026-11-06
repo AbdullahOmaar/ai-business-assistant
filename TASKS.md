@@ -2142,3 +2142,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Static token calculation and source readback PASS. The Node test itself remains **NOT RUN**; browser focus-ring visibility remains **NOT RUN**.
 - No CI trigger/retry, PR, merge, deployment, backend/API/schema/database or production change.
 - Next: complete the remaining source-level responsive/accessibility review and secure authorized test/browser evidence before review/merge.
+
+## T18 — Contrast regression parser correction — 2026-11-06
+
+- Corrected the design-token test's CSS declaration parser to accept the semicolon at the end of a CSS custom-property declaration. The first parser draft would not have matched the actual token lines; this correction is included before any test-pass claim.
+- A direct parser check against `--aba-color-focus-ring: #2563eb;` now extracts `#2563eb` successfully.
+- Commit: `071db36ec0a35498716294da7c245ff526c5e31a`.
+- Static calculation from the checked-in tokens: all 13 semantic text/status pairs meet 4.5:1 (minimum 4.76:1); focus indicator meets 3:1 (5.17:1 on surface, 4.82:1 on page). This calculation is not execution of the committed Node test.
+- Repository Node tests, Angular build/template compilation, browser/device focus visibility, screen-reader and RTL/LTR visual acceptance remain **NOT RUN**. Exact-head GitHub status contexts remain empty due to `[skip ci]`; CircleCI remains frozen. No CI trigger/retry, PR, merge or deployment.
+- Next: final source/diff review, then obtain an authorized runner/browser and required exact-head checks before opening a PR or attempting merge.
