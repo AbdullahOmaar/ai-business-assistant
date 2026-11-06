@@ -209,7 +209,7 @@ test('mobile More navigation renders grouped destinations from the shared catalo
 test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /<p class="empty">/);
   assert.ok((source.match(/<aba-state-message kind="empty"/g) || []).length >= 13);
-  assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 11);
+  assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 15);
   assert.doesNotMatch(source, /<p class="error" role="alert">/);
   assert.doesNotMatch(source, /class="error-banner"/);
   assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 8);
