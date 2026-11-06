@@ -210,7 +210,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (business?.role === 'owner') {
                 <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
                   <label>{{ t('نوع الإشعار', 'Notification type') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
-                    <option value="businesses">{{ t('مساحات العمل', 'Businesses') }}</option>
+                    <option value="business">{{ t('مساحات العمل', 'Businesses') }}</option>
                     <option value="invoices">{{ t('الفواتير', 'Invoices') }}</option>
                     <option value="payments">{{ t('المدفوعات', 'Payments') }}</option>
                     <option value="expenses">{{ t('المصروفات', 'Expenses') }}</option>
