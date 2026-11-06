@@ -1108,3 +1108,18 @@ test('custom report date filters expose localized errors and never submit invali
   assert.ok(aging.includes(`[attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null"`));
   assert.ok(source.includes('id="aging-as-of-error"'));
 });
+
+test('chat composer announces empty and whitespace-only drafts without sending a request', () => {
+  const start = source.indexOf('<form #chatForm="ngForm" class="chat-form"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(form.includes('chatForm.valid && chatDraft.trim() && sendChat()'));
+  assert.ok(form.includes('#chatMessageControl="ngModel"'));
+  assert.ok(form.includes('maxlength="2000" required'));
+  assert.ok(form.includes(`[attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-error' : null"`));
+  assert.match(form, /\[disabled\]="chatSending"/);
+  assert.doesNotMatch(form, /\[disabled\]="chatSending \|\| !chatDraft\.trim\(\)"/);
+  assert.ok(source.includes('id="chat-message-error"'));
+  assert.ok(source.includes('Enter your question before sending (up to 2000 characters).'));
+  assert.ok(source.includes("if (!this.business || !this.chatDraft.trim() || this.chatSending) return;"));
+});
