@@ -2197,3 +2197,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added a regression assertion for the default value/option match.
 - Commits: `5f7953087efea197fb9900411b6064424fb998d1` (template) and `87325cedb7a3feeec698127160dd0df3aeaeec67` (test).
 - Source readback PASS; Angular template and runtime selection behavior remain **NOT RUN**.
+
+## T18 — Focus Home dashboard on key workspace shortcuts — 2026-11-06
+
+- Replaced the Home page's all-19-destination launcher with five concise quick-access links: Invoices, Customers, Products & Services, Expenses and Reports. This removes the redundant Overview self-link and reduces duplication with the complete desktop/mobile navigation.
+- Added the pure selectHomeQuickAccessModules selector and HOME_QUICK_ACCESS_TABS order in frontend/src/app/workspace-module-catalog.ts. The selector receives the already role-filtered homeModuleCards, preserves the existing canAccessTab visibility policy, returns only destinations present in that accessible set, uses stable product-defined order and does not mutate the input.
+- The remaining authorized destinations stay available through the existing desktop sidebar and grouped mobile More navigation. No routes, roles, permissions, API contracts, business/financial behavior or backend code changed.
+- The Home section now uses bilingual “Quick access / الوصول السريع” copy and focused component-source and selector regression specs, including exact five-item ordering, role-filtered subset behavior and input immutability.
+- Commits: 7d68e2badc4c9bf9f22204bfa6e4651d22a96fdf (selector), 87606534c173b390bb0d4354afbb42a6c64ca5f0 (component), 08ab49c9f18c47b51afcad8f1bb98f0d478c6a8c (component test), 9144018582023b1b65dbad4ce2580478acdd549a (selector tests).
+- Exact-blob source readback: selector/helper, component delegation, template loop/title/count and regression test presence PASS; no duplicate test names; all 33 dynamic aria-describedby targets still resolve. This is static readback, not execution.
+- Node frontend tests, Angular template/production build, browser/device, rendered 360/390/412px RTL/LTR, keyboard/screen-reader and authenticated OWNER/STAFF/two-tenant acceptance remain NOT RUN. Desktop Commander device is OFFLINE; CircleCI trigger/retry freeze remains active and exact-head check-runs/status contexts are empty. No PR, merge, deployment, CI trigger/retry, API/DB/schema/migration or production change.
+- Next: continue source-level P1 Home/shared-shell review and exact-diff security review on this same branch. Merge remains gated; do not create a new branch until a normal authorized merge is verified.
