@@ -1,14 +1,17 @@
 # Release preflight fast-path — operating improvement — 2026-11-07
 
 - **Purpose:** remove late discovery of production deployment coupling, repeated read-only verification and fragmented release handoffs across Master, Chat 1–5, QA and external agents.
-- **Canonical workflow:** Notion MWOS v1.0 → “Release fast path — mandatory for every workstream”; GitHub `AGENTS.md` → “Release fast path — mandatory for every contributor and agent”; `docs/PRODUCTION_DEPLOYMENT.md` → “Release Preflight & Fast-Path Procedure”.
-- **Implementation branch:** `master/release-preflight-fast-path-20261107`, based on main `c5fe115daa72e92b4f814ee502405225e1b3dc79`.
-- **Files changed:** `AGENTS.md` (mandatory contributor/agent contract); `docs/PRODUCTION_DEPLOYMENT.md` (preflight, evidence packet, reuse/invalidation, owner decision, merge/deploy/live verification and role contract).
+- **Canonical workflow:** Notion [MWOS v1.0](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea) → “Release fast path — mandatory for every workstream”; GitHub [AGENTS.md](https://github.com/AbdullahOmaar/ai-business-assistant/blob/main/AGENTS.md) → “Release fast path — mandatory for every contributor and agent”; [Production Deployment Runbook](https://github.com/AbdullahOmaar/ai-business-assistant/blob/main/docs/PRODUCTION_DEPLOYMENT.md) → “Release Preflight & Fast-Path Procedure”.
+- **Implementation PR:** [#347](https://github.com/AbdullahOmaar/ai-business-assistant/pull/347), branch `master/release-preflight-fast-path-20261107`, base main `c5fe115daa72e92b4f814ee502405225e1b3dc79`. Refresh the live PR for the current head SHA before using any check evidence.
+- **Files changed:** `AGENTS.md` (mandatory contributor/agent contract); `docs/PRODUCTION_DEPLOYMENT.md` (preflight, evidence packet, reuse/invalidation, owner decision, merge/deploy/live verification and role contract); `TASKS.md` (this handoff).
 - **Behavioral change:** deployment coupling and affected projects must be discovered before implementation; one exact-SHA evidence packet is maintained; unchanged evidence is reused; independent reads are parallelized; dependent writes remain serialized; owner authorization is requested once with merge/deployment impact disclosed.
-- **Safety preserved:** no gate reduction. Exact-head CircleCI, provider/repository protection, owner merge/deployment authorization, migration/backup/security/privacy and live verification remain mandatory. No production setting, data, schema or application code changed.
-- **Notion:** MWOS page updated with the same shared procedure. Readback/verification pending.
-- **Status:** IN_PROGRESS — docs branch prepared; PR review, CircleCI exact-head validation and final readback pending. Not merged; no deployment.
-- **Next:** verify branch diff and Notion readback, open/reuse one PR, inspect exact-head checks and review requirements, then update this record with the PR URL and final evidence.
+- **Notion:** MWOS page update and readback VERIFIED on 2026-11-07; the six-step procedure and readiness labels are present.
+- **Maintainer review:** read the complete three-file PR diff. Documentation-only; no application/API/database/schema/migration/production-data/financial/payroll changes. No new permissions or bypasses.
+- **CI at prior head `d2dfdfe10856226d92b7edf2e0f12ecae33dab17`:** CircleCI frontend unit tests, dependency audit, production build and backend container SUCCESS; browser smoke and backend accounting PENDING at last read. Semaphore failure is retired/non-authoritative. A new TASKS commit changes the exact head; re-check CircleCI on the latest PR SHA.
+- **Status:** IN_PROGRESS — PR #347 open, not merged; no deployment. Required CircleCI checks incomplete and repository ruleset/protection enforcement is UNKNOWN from current access. No owner merge authorization requested for this documentation PR.
+- **Historical note:** T18 checkpoints below are preserved as dated history, not live status. PR #346 and current main/deployment state must be refreshed from GitHub/Vercel; do not infer current state from those old snapshots.
+- **Next:** verify exact-head CircleCI on the latest PR SHA, determine applicable provider/repository protection, then present one READY/BLOCKED decision packet. Merge only after explicit owner authorization and all gates.
+
 
 ---
 
