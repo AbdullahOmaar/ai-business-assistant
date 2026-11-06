@@ -19,3 +19,14 @@ body { text-align: start; }
 input, select, textarea { text-align: start; }
 button, input, select, textarea { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+
+/* WCAG AA: strengthen secondary text on light surfaces only. Dark sidebar labels
+   intentionally keep their existing light-on-dark color in app.component.ts. */
+:root body .shell .workspace-release-meta small,
+:root body .shell .metric small,
+:root body .shell .empty,
+:root body .shell .footnote,
+:root body .shell footer span {
+  color: #6b7280;
+}
