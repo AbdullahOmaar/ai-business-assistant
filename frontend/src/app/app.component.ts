@@ -2805,6 +2805,7 @@ export class AppComponent implements OnInit, OnDestroy {
   cancelInvoiceEdit(): void {
     this.editingInvoiceId = null;
     this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
     this.invoiceNumber = '';
     this.invoiceCustomerId = '';
     this.invoiceDiscountRate = '0';
@@ -2863,8 +2864,8 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
       if (this.business?.id !== businessId) return;
-      this.invoiceMessage = this.t('تم إلغاء الفاتورة بنجاح.', 'Invoice voided successfully.');
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
+      this.invoiceMessage = this.t('تم إلغاء الفاتورة بنجاح.', 'Invoice voided successfully.');
       try {
         const [invoices, dashboard, products] = await Promise.all([
           this.api.invoices(businessId),
