@@ -9,9 +9,9 @@ const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts
 
 test('workspace shell imports every tenant guard helper used by its async views', () => {
   assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
-  const guardImport = source.match(/import\\s*\\{([^}]+)\\}\\s*from '\\.\\/workspace-load-guard';/);
+  const guardImport = source.split('\n').find(line => line.includes("from './workspace-load-guard'"));
   assert.ok(guardImport, 'workspace load guard import must exist');
-  assert.match(guardImport[1], /\\bisCurrentTenantRequest\\b/);
+  assert.ok(guardImport.includes('isCurrentTenantRequest'), 'all referenced tenant guard helpers must be imported');
 });
 
 
