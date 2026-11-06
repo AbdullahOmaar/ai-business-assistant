@@ -406,10 +406,14 @@ test('mobile More closes on outside pointer interaction without stealing the new
 
 
 test('mobile More menu uses logical inline positioning for Arabic RTL and English LTR', () => {
-  const menuRuleStart = source.indexOf('.mobile-more-menu{');
-  const menuRuleEnd = source.indexOf('}', menuRuleStart);
-  const menuRule = source.slice(menuRuleStart, menuRuleEnd);
-  assert.ok(menuRuleStart >= 0);
-  assert.match(menuRule, /inset-inline-end:10px/);
-  assert.doesNotMatch(menuRule, /(?:^|;)right:10px/);
+  const menuRules = [...source.matchAll(/\.mobile-more-menu\{([^}]*)\}/g)].map(match => match[1]);
+  const positioningRules = menuRules.filter(rule => /(?:right|left|inset-inline)/.test(rule));
+  assert.ok(positioningRules.length >= 2, 'base and responsive menu rules must exist');
+  for (const rule of positioningRules) {
+    assert.doesNotMatch(rule, /(?:^|;)\s*(?:right|left):/,
+      'physical left/right offsets must not override logical alignment');
+  }
+  assert.ok(positioningRules.some(rule => rule.includes('inset-inline-end:10px')));
+  assert.ok(positioningRules.some(rule => rule.includes('inset-inline-end:12px')));
+  assert.doesNotMatch(source, /\.shell\[dir="(?:rtl|ltr)"\] \.mobile-more-menu/);
 });
