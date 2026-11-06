@@ -417,3 +417,14 @@ test('mobile More menu uses logical inline positioning for Arabic RTL and Englis
   assert.ok(positioningRules.some(rule => rule.includes('inset-inline-end:12px')));
   assert.doesNotMatch(source, /\.shell\[dir="(?:rtl|ltr)"\] \.mobile-more-menu/);
 });
+
+
+test('mobile workspace view retains the active page title when the desktop topbar is hidden', () => {
+  const desktopTopbar = source.indexOf('<header class="topbar">');
+  const mobileHeading = source.indexOf('<header class="mobile-page-heading"');
+  assert.ok(desktopTopbar >= 0 && mobileHeading > desktopTopbar);
+  assert.match(source, /<header class="mobile-page-heading" aria-live="polite" aria-atomic="true">[\s\S]*?<h1>\{\{ pageTitle \}\}<\/h1>/);
+  assert.match(source, /\.mobile-page-heading\{display:none\}/);
+  assert.match(source, /\.mobile-page-heading\{display:block/);
+  assert.match(source, /\.mobile-page-heading h1\{[^}]*overflow-wrap:anywhere/);
+});
