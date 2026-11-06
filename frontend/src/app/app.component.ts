@@ -2803,9 +2803,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async voidInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || !window.confirm(
-      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت الفاتورة عليها دفعات مخصصة، يجب استخدام إجراء ردّ المبلغ أو الإشعار الدائن بدلًا من الإلغاء المباشر.`
-    )) return;
+    if (!this.business || !window.confirm(this.t(
+      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت الفاتورة عليها دفعات مخصصة، يجب استخدام إجراء ردّ المبلغ أو الإشعار الدائن بدلًا من الإلغاء المباشر.`,
+      `Confirm voiding invoice ${invoice.invoice_number}? If payments have been allocated to this invoice, use an approved refund or credit-note process instead of voiding it directly.`
+    ))) return;
     this.loading = true;
     this.error = '';
     try {
