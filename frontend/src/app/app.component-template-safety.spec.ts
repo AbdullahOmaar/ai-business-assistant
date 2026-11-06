@@ -380,3 +380,10 @@ test('mobile More navigation restores keyboard focus after selection and Escape 
   assert.match(escapeMethod, /if \(!this\.mobileMoreOpen\) return/);
   assert.match(escapeMethod, /this\.mobileMoreTrigger\?\.nativeElement\.focus\(\)/);
 });
+
+
+test('mobile More trigger only references the menu while that menu exists', () => {
+  assert.match(source, /\[attr\.aria-expanded\]="mobileMoreOpen"/);
+  assert.match(source, /\[attr\.aria-controls\]="mobileMoreOpen \? 'mobile-more-menu' : null"/);
+  assert.match(source, /<nav id="mobile-more-menu" class="mobile-more-menu"/);
+});
