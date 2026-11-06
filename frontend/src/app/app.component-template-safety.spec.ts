@@ -508,3 +508,13 @@ test('expired API sessions offer sign-out and re-authentication instead of a fut
   assert.match(formatter, /Authentication required/);
   assert.match(formatter, /Authenticated subject is missing/);
 });
+
+
+test('permission-denied feedback offers a safe return home instead of retrying a forbidden request', () => {
+  const workspaceError = source.match(/@if \(error\) \{ <aba-state-message kind="error"[^\n]+/);
+  assert.ok(workspaceError);
+  assert.match(workspaceError[0], /accessDenied \? t\('العودة للرئيسية', 'Go to Home'\)/);
+  assert.match(workspaceError[0], /accessDenied \? setTab\('overview'\) : retry\(\)/);
+  assert.match(source, /get accessDenied\(\): boolean/);
+  assert.match(source, /Your account is not authorized to access platform administration/);
+});
