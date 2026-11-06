@@ -57,14 +57,14 @@ $('exportCsv').onclick=()=>{const csv='workspace,metric,value\nDemo Bakery,produ
 $('updateDemo').onclick=()=>{$('updateStatus').textContent='تمت محاكاة وجود تحديث. في التطبيق الحقيقي يجب التحقق من Service Worker قبل إعادة التحميل.'};
 window.addEventListener('online',()=>{$('networkState').textContent='حالة الشبكة: online'});window.addEventListener('offline',()=>{$('networkState').textContent='حالة الشبكة: offline'});
 $('roleDemo').onchange=()=>{$('roleResult').textContent='الدور المختار: '+$('roleDemo').value+' — عرض توضيحي فقط، لا توجد صلاحيات فعلية.'};
-$('printDemo').onclick=()=>{const w=window.open('','_blank');if(!w){$('printStatus').textContent='المتصفح منع نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.';return}w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>DEMO-001</title></head><body><h1>فاتورة تجريبية</h1><p>DEMO-001</p><p>ليست فاتورة ضريبية — الإجمالي 300 ج.م</p></body></html>');w.document.close();w.focus();w.print();$('printStatus').textContent='تم فتح نافذة طباعة الفاتورة التجريبية.'};
+$('printDemo').onclick=()=>{const w=window.open('','_blank');if(!w){$('printStatus').textContent='المتصفح منع نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.';return}w.opener=null;w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>DEMO-001</title></head><body><h1>فاتورة تجريبية</h1><p>DEMO-001</p><p>ليست فاتورة ضريبية — الإجمالي 300 ج.م</p></body></html>');w.document.close();w.focus();w.print();$('printStatus').textContent='تم فتح نافذة طباعة الفاتورة التجريبية.'};
 $('recurring').onchange=()=>{$('recurringResult').textContent=$('recurring').checked?'تمت معاينة جدول شهري؛ لا يوجد تنفيذ تلقائي.':'تم إيقاف المعاينة.'};
 $('purchaseDemo').onclick=()=>{$('purchaseResult').textContent='معاينة استلام من '+$('supplier').value+'؛ لم يتم تعديل المخزون الحقيقي.'};
 $('backupDemo').onclick=()=>{const data=JSON.stringify({demo:true,workspace:$('workspaceName').textContent,warning:'Fictional demo data only'},null,2);const u=URL.createObjectURL(new Blob([data],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='demo-backup.json';a.click();URL.revokeObjectURL(u);$('backupResult').textContent='تم تنزيل ملف JSON تجريبي محلي؛ لا يحتوي على بيانات حساب.'};
 $('resetDemo').onclick=()=>{
   fail=false;paid=false;lines=[{name:'قهوة',price:120,qty:1}];
   $('workspace').value='a';$('customerSearch').value='';$('product').value='120';$('qty').value='1';
-  $('stock').value='3';$('threshold').value='5';$('csv').value='سارة, sara@example.com\\nعميل بدون بريد,invalid-email';
+  $('stock').value='3';$('threshold').value='5';$('csv').value='سارة, sara@example.com\nعميل بدون بريد,invalid-email';
   $('roleDemo').selectedIndex=0;$('recurring').checked=false;$('supplier').value='مورد تجريبي';
   document.querySelectorAll('input[type="checkbox"]').forEach((checkbox,index)=>{checkbox.checked=index===1||index===2});
   $('paymentStatus').textContent='بانتظار الدفع';$('paymentStatus').className='pill warn';$('togglePayment').textContent='محاكاة استلام دفعة';
