@@ -708,3 +708,34 @@ test('product form exposes accessible required, non-negative price and condition
   assert.match(form, /#productOpeningQuantityModel="ngModel"/);
   assert.match(form, /id="product-opening-quantity-error" class="field-error" aria-live="polite"/);
 });
+
+
+test('customer creation preserves confirmed success and prevents stale workspace refreshes', () => {
+  const start = source.indexOf('async createCustomer(): Promise<void>');
+  const end = source.indexOf('async onImportFileSelected(', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const businessId = this\.business\.id/);
+  assert.match(method, /this\.api\.createCustomer\(businessId/);
+  assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
+  assert.match(method, /Customer saved successfully/);
+  assert.match(method, /The customer was saved, but the list could not refresh/);
+  assert.match(method, /Do not add the customer again/);
+  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+  assert.match(source, /<aba-state-message \[kind\]="customerMessageKind" \[description\]="customerMessage" \/>/);
+});
+
+test('product creation distinguishes saved stock setup from a failed list refresh', () => {
+  const start = source.indexOf('async createProduct(): Promise<void>');
+  const end = source.indexOf('get invoicePreview()', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const businessId = this\.business\.id/);
+  assert.match(method, /this\.api\.createProduct\(businessId/);
+  assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
+  assert.match(method, /Product saved successfully/);
+  assert.match(method, /The product was saved, but the list could not refresh/);
+  assert.match(method, /Do not add the product again/);
+  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+  assert.match(source, /<aba-state-message \[kind\]="productMessageKind" \[description\]="productMessage" \/>/);
+});
