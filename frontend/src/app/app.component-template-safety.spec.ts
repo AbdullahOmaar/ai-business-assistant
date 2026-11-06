@@ -822,3 +822,25 @@ test('invoice print and draft edit cannot mix records across a workspace switch'
   assert.match(editMethod, /if \(this\.business\?\.id !== businessId\) return;/);
   assert.match(editMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 });
+
+
+test('invoice issue and void actions are shown only to owners while staff retain draft editing and invoice printing', () => {
+  const rowStart = source.indexOf('@for (invoice of filteredInvoices');
+  const rowEnd = source.indexOf('</article> }', rowStart);
+  const row = source.slice(rowStart, rowEnd);
+  assert.ok(rowStart >= 0 && rowEnd > rowStart);
+  const draftStart = row.indexOf("@if (invoice.status === 'draft')");
+  const issuedStart = row.indexOf("@else if (invoice.status === 'issued')", draftStart);
+  const draft = row.slice(draftStart, issuedStart);
+  const issued = row.slice(issuedStart);
+  assert.ok(draftStart >= 0 && issuedStart > draftStart);
+  const ownerGuard = draft.indexOf("@if (business?.role === 'owner')");
+  assert.ok(ownerGuard >= 0, 'draft issue and void actions must be inside the owner guard');
+  assert.ok(draft.indexOf('editInvoice(invoice)') < ownerGuard, 'staff retain draft editing');
+  assert.ok(draft.indexOf('issueInvoice(invoice)') > ownerGuard, 'issuing is owner-only');
+  assert.ok(draft.indexOf('voidInvoice(invoice)') > ownerGuard, 'voiding is owner-only');
+  const issuedOwnerGuard = issued.indexOf("@if (business?.role === 'owner')");
+  assert.ok(issuedOwnerGuard >= 0, 'issued invoice void action must be owner-only');
+  assert.ok(issued.indexOf('printInvoice(invoice)') < issuedOwnerGuard, 'staff retain invoice printing');
+  assert.ok(issued.indexOf('voidInvoice(invoice)') > issuedOwnerGuard, 'issued invoice voiding is owner-only');
+});
