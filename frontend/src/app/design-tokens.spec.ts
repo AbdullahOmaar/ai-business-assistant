@@ -140,6 +140,9 @@ test('the workspace shell consumes semantic navigation and hero palette tokens',
     '--aba-color-hero-start',
     '--aba-color-hero-mid',
     '--aba-color-hero-end',
+    '--aba-layout-sidebar',
+    '--aba-layout-content-max',
+    '--aba-layout-mobile-nav',
   ];
   for (const token of requiredShellTokens) {
     assert.ok(appSource.includes(`var(${token}`), `app shell must consume ${token}`);
