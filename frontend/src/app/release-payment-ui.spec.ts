@@ -13,7 +13,7 @@ test('workspace navigation shows UI/API versions and build time in the workspace
 });
 
 test('payment controls are only exposed to workspace owners', () => {
-  assert.match(source, /business\?\.role === 'owner'.{0,400}المدفوعات/s);
+  assert.match(source, /@if \(tab === 'payments' && business\?\.role === 'owner'\)/);
   assert.match(source, /tab === 'payments' && business\?\.role !== 'owner'/);
   assert.match(source, /tab === 'payments' && business\?\.role === 'owner'/);
   assert.match(source, /Recording payments is restricted to workspace owners/);
@@ -31,7 +31,7 @@ test('payment retries preserve the idempotency key after an uncertain result', (
 
 
 test('payment API failures render a visible accessible alert in the payment panel', () => {
-  assert.match(source, /\[attr\.role\]="paymentError \? 'alert' : 'status'"/);
+  assert.match(source, /@if \(paymentMessage\) \{ <aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/> \}/);
   assert.match(source, /this\.paymentMessage = this\.message\(error\)/);
-  assert.match(source, /this\.paymentError = true/);
+  assert.match(source, /this\.paymentMessageKind = 'error'/);
 });
