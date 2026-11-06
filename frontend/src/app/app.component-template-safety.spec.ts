@@ -211,6 +211,7 @@ test('workspace empty states use the shared accessible state component', () => {
   assert.ok((source.match(/<aba-state-message kind="empty"/g) || []).length >= 13);
   assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 11);
   assert.doesNotMatch(source, /<p class="error" role="alert">/);
+  assert.doesNotMatch(source, /class="error-banner"/);
   assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 7);
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
 });
