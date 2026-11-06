@@ -2942,6 +2942,23 @@ export class AppComponent implements OnInit, OnDestroy {
       };
       return englishAuthMessages[code] || authMessages[code];
     }
+    const deniedMessage = message.trim();
+    if (deniedMessage === 'Platform administrator access is not granted.') {
+      return this.t(
+        'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
+        'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
+      );
+    }
+    if ([
+      'No active membership for this business',
+      'Business role is not permitted for this operation',
+      'No access to this business workspace.'
+    ].includes(deniedMessage) || /^(?:forbidden|permission denied|not authorized|access denied)\\b/i.test(deniedMessage)) {
+      return this.t(
+        'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
+        'You do not have permission to access this workspace or perform this action. Ask the workspace owner to review your role.'
+      );
+    }
     if (/AI chat is not configured/i.test(message)) return this.t('المساعد الذكي غير مفعّل على الخادم بعد. يلزم ضبط OPENAI_API_KEY في إعدادات Environment Variables لمشروع ai-business-assistant-api على Vercel ثم إعادة النشر. لم أضف مفتاحًا أو خدمة مدفوعة من دون موافقتك.', 'The AI assistant is not enabled on the backend yet. Set OPENAI_API_KEY in the ai-business-assistant-api Vercel project environment variables, then redeploy. No key or paid service was added without your approval.');
     if (/timed out/i.test(message)) return this.t('انتهت مهلة التحقق من إعدادات التطبيق أو جلسة الدخول. تحقق من الاتصال ثم اضغط «إعادة المحاولة».', 'App configuration or sign-in verification timed out. Check your connection, then choose Retry.');
     if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
