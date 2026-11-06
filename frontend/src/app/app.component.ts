@@ -1621,20 +1621,22 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sessionExpired(): boolean {
-    return this.error === this.t(
+    // Keep recovery behavior stable when the user changes the UI language
+    // after the original error message was created.
+    return [
       'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
       'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
-    );
+    ].includes(this.error);
   }
 
   get accessDenied(): boolean {
-    return this.error === this.t(
+    // The stored error may be in the previous language after a language toggle.
+    return [
       'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
-      'You do not have permission to access this workspace or perform this action. Ask the workspace owner to review your role.'
-    ) || this.error === this.t(
+      'You do not have permission to access this workspace or perform this action.',
       'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
       'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
-    );
+    ].includes(this.error);
   }
 
   retry(): void {
