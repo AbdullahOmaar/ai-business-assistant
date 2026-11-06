@@ -2123,3 +2123,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Static readback assertions PASS for logical list padding, removal of the English-only physical override, mobile dock marker reset and preservation of the More-menu marker. Browser visual validation remains **NOT RUN**.
 - Full frontend tests, Angular template/build, viewport/device, keyboard/screen-reader and Android PWA acceptance remain **NOT RUN**. No CI trigger/retry, PR, merge, deployment, backend/API/database or production change.
 - Next: complete source-only interaction-state/accessibility review, then seek permitted local/browser validation. Merge remains gated on required exact-head evidence and maintainer review.
+
+## T18 — Shared feedback accessibility regression guard — 2026-11-06
+
+- Extended the app template-safety suite to read the shared `AbaStateMessageComponent` source and assert its semantic feedback contract: errors use alert semantics, loading/success use polite live announcements, action controls remain buttons with caller-provided disabled state, and the spinner respects reduced-motion preferences.
+- Existing application behavior is unchanged; this adds regression coverage for the shared feedback component already used across workspace loading, empty, error and success states.
+- Commit: `7c181e143ecd232ac972db2e41decf91d813931a`.
+- Static source checks confirm the expected role/live-region/action/reduced-motion expressions are present. The Node test suite itself remains **NOT RUN**.
+- Exact-head CI status, full frontend suite, Angular build/template compilation, browser/device/keyboard/screen-reader, RTL/LTR and Android PWA acceptance remain **NOT RUN**. No CI trigger/retry, PR, merge or deployment.
+- Next: finish source-only acceptance review and obtain authorized local/browser evidence; keep merge blocked until required gates are satisfied.
