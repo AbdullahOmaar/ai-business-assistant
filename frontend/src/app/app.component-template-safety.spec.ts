@@ -572,3 +572,58 @@ test('invoice void confirmation is localized for Arabic and English', () => {
   assert.match(method, /تأكيد إلغاء الفاتورة/);
   assert.match(method, /Confirm voiding invoice/);
 });
+
+
+test('invoice mutations keep confirmed success separate from post-save refresh failures', () => {
+  const createStart = source.indexOf('async createInvoice(): Promise<void>');
+  const createEnd = source.indexOf('private escapePrintHtml(', createStart);
+  const create = source.slice(createStart, createEnd);
+  assert.ok(createStart >= 0 && createEnd > createStart);
+  assert.match(create, /const businessId = this\.business\.id/);
+  assert.match(create, /if \(this\.business\?\.id !== businessId\) return;/);
+  assert.match(create, /Invoice draft saved/);
+  assert.match(create, /The draft was saved, but the list could not refresh/);
+  assert.match(create, /Do not save it again/);
+  assert.match(create, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+
+  const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
+  const issueEnd = source.indexOf('async voidInvoice(invoice: Invoice)', issueStart);
+  const issue = source.slice(issueStart, issueEnd);
+  assert.ok(issueStart >= 0 && issueEnd > issueStart);
+  assert.match(issue, /Invoice issued successfully/);
+  assert.match(issue, /The invoice was issued, but the view could not refresh/);
+  assert.match(issue, /Do not issue it again/);
+  assert.match(issue, /this\.api\.issueInvoice\(businessId, invoice\.id\)/);
+  assert.match(issue, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+
+  const voidStart = source.indexOf('async voidInvoice(invoice: Invoice)');
+  const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
+  const voidMethod = source.slice(voidStart, voidEnd);
+  assert.ok(voidStart >= 0 && voidEnd > voidStart);
+  assert.match(voidMethod, /This screen does not process refunds or credit notes/);
+  assert.match(voidMethod, /Invoice voided successfully/);
+  assert.match(voidMethod, /The invoice was voided, but the view could not refresh/);
+  assert.match(voidMethod, /Do not void it again/);
+  assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
+  assert.match(voidMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+});
+
+test('invoice success messages support warning state and reset with workspace context', () => {
+  assert.match(source, /invoiceMessageKind: 'success' \| 'warning' = 'success'/);
+  assert.match(source, /<aba-state-message \[kind\]="invoiceMessageKind" \[description\]="invoiceMessage" \/>/);
+  assert.match(source, /this\.invoiceMessageKind = 'warning'/);
+  const resetStart = source.indexOf('private clearWorkspaceData(): void');
+  const resetEnd = source.indexOf('async createWorkspace()', resetStart);
+  const reset = source.slice(resetStart, resetEnd);
+  assert.match(reset, /this\.invoiceMessage = ''/);
+  assert.match(reset, /this\.invoiceMessageKind = 'success'/);
+});
+
+test('payment completion cannot clear the loading state of a newly selected workspace', () => {
+  const start = source.indexOf('async createPayment(): Promise<void>');
+  const end = source.indexOf('useAssistantSuggestion(', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const businessId = this\.business\.id/);
+  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+});
