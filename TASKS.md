@@ -1,3 +1,15 @@
+# T18 merge-readiness checkpoint — 2026-11-06 18:10 UTC
+
+- **Single active branch:** `master/t18-chat-mobile-ux-20261106`. Live branch inventory contains only `main` and this work branch. Branch HEAD: `2705471452698e19179a8357469e0802666d36da`; main/base: `e5a765083860a9141f2f2fe366858234873120e9`; compare: 102 commits ahead / 0 behind, 14 changed files. Branch is not protected. No open PR exists.
+- **Latest code-review correction:** the new accessible sign-in template added `#authForm="ngForm"`, while an older source regression assertion still expected the form tag without the template reference. Updated that assertion to accept both the legacy and accessible form markup. Commit: `2705471452698e19179a8357469e0802666d36da`.
+- **Static readback:** auth form/email/password error anchors are present; the updated test matcher matches the new form markup; 93 semantic token names are unique; all referenced `--aba-*` tokens are defined; owner-only workspace tabs remain guarded. These are source inspections only, **not test execution**.
+- **Validation:** frontend unit tests, Angular template/production build, browser/mobile/RTL-LTR, keyboard and screen-reader checks are **NOT RUN**. Exact HEAD GitHub combined status is `pending` with zero status contexts; check-runs count is zero. No exact-head CircleCI pipeline evidence is available.
+- **Merge gate:** user explicitly authorized merge, but merge is **BLOCKED** by the repository's mandatory exact-candidate CircleCI validation and normal PR review process. Project-level no-trigger freeze prohibits starting/retrying CircleCI in this session; branch protection read is unavailable (403), while branch inventory reports the work branch unprotected. No PR was opened because it could trigger the frozen CI workflow; no direct merge/bypass was attempted.
+- **Scope safety:** no backend/API/database/schema/migration, production data, financial semantics, payroll rules or deployment changes.
+- **Next action:** obtain an owner-approved resolution of the CI-trigger freeze conflict or an authorized exact-SHA CircleCI run, then open/update the PR, complete maintainer diff review, verify required checks and merge normally. Continue frontend-only source review on this same branch while preserving the merge gate.
+
+---
+
 # T18 continuation checkpoint — 2026-11-06 17:45 UTC
 
 - **Single branch:** `master/t18-chat-mobile-ux-20261106`; no second branch, no open PR. Main/base: `e5a765083860a9141f2f2fe366858234873120e9`. Exact implementation/test head before this documentation checkpoint: `bf8657c77e48ad1ab6331db91ff3ebcb5911d64a` (95 commits ahead / 0 behind main; 14 changed files in branch diff).
