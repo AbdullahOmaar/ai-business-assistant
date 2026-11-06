@@ -1123,3 +1123,10 @@ test('chat composer announces empty and whitespace-only drafts without sending a
   assert.ok(source.includes('Enter your question before sending (up to 2000 characters).'));
   assert.ok(source.includes("if (!this.business || !this.chatDraft.trim() || this.chatSending) return;"));
 });
+
+test('workspace build metadata is presented once in the workspace context, not duplicated in the page header', () => {
+  assert.match(source, /<div class="workspace-release-meta workspace-release-meta-inline"/);
+  assert.doesNotMatch(source, /<div class="workspace-build-card"/);
+  assert.doesNotMatch(source, /\.workspace-build-card/);
+  assert.match(source, /<div class="topbar-heading"><p class="eyebrow">/);
+});
