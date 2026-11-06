@@ -321,3 +321,24 @@ test('owner-only sidebar destinations use complete, accessible mobile-secondary 
     assert.ok(markup.includes(`setTab('${tab}')`));
   }
 });
+
+
+test('payment feedback uses the shared state component and distinguishes each outcome', () => {
+  assert.match(source, /<aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/>/);
+  assert.equal(source.includes('paymentError'), false);
+  assert.match(source, /paymentMessageKind: 'info' \| 'success' \| 'warning' \| 'error' = 'info'/);
+
+  const paymentStart = source.indexOf('async createPayment(): Promise<void>');
+  const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
+  const paymentMethod = source.slice(paymentStart, paymentEnd);
+  const mutation = paymentMethod.indexOf('await this.api.createPayment(');
+  const success = paymentMethod.indexOf("this.paymentMessageKind = 'success'");
+  const warning = paymentMethod.indexOf("this.paymentMessageKind = 'warning'");
+  const failure = paymentMethod.indexOf("this.paymentMessageKind = 'error'");
+  assert.ok(mutation >= 0 && success > mutation,
+    'success feedback must only follow the confirmed payment API response');
+  assert.ok(warning > success,
+    'a refresh failure after a confirmed save must be presented as a warning, not a failed payment');
+  assert.ok(failure > mutation,
+    'an uncertain or failed mutation must use error feedback');
+});
