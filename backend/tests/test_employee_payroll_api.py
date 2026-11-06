@@ -1281,7 +1281,9 @@ def test_staff_cannot_read_payroll_expense_through_broad_surfaces(employee_envir
 def test_staff_can_read_ordinary_expenses_when_draft_payroll_has_no_expense_link(employee_environment):
     """A NULL payroll expense link must not hide unrelated expenses from STAFF."""
     env = employee_environment
-    employee = _create_employee(env, name="Unlinked Draft Payroll Employee").json()
+    employee_response = _create_employee(env, name="Unlinked Draft Payroll Employee")
+    assert employee_response.status_code == 201, employee_response.text
+    employee = employee_response.json()
     base = f"/api/v1/businesses/{env['business_id']}"
     payroll = env["client"].post(
         f"{base}/employees/{employee['id']}/payroll",
