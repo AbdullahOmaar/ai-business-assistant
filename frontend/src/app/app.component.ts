@@ -1768,6 +1768,9 @@ export class AppComponent implements OnInit, OnDestroy {
       if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
         this.clearWorkspaceData();
         this.error = this.message(error);
+        // clearWorkspaceData invalidates the request generation, so this failure path
+        // must release the loading state itself instead of relying on the guarded finally.
+        this.loading = false;
       }
     } finally {
       if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
