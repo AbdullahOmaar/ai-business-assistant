@@ -13,6 +13,7 @@ const componentPaths = [
 const componentSources = componentPaths.map(path =>
   readFileSync(new URL(path, import.meta.url), 'utf8'),
 );
+const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
 test('semantic design tokens are defined once and cover the shared UI foundation', () => {
   const definitions = [...styles.matchAll(/^\s*(--aba-[\w-]+)\s*:/gm)].map(match => match[1]);
@@ -50,6 +51,22 @@ test('semantic design tokens are defined once and cover the shared UI foundation
     '--aba-color-warning-soft',
     '--aba-color-warning-border',
     '--aba-color-warning-text',
+    '--aba-color-nav-surface',
+    '--aba-color-nav-surface-deep',
+    '--aba-color-nav-surface-raised',
+    '--aba-color-nav-surface-glass',
+    '--aba-color-nav-border',
+    '--aba-color-nav-text',
+    '--aba-color-nav-muted',
+    '--aba-color-nav-accent',
+    '--aba-color-nav-active-start',
+    '--aba-color-nav-active-end',
+    '--aba-color-nav-shadow',
+    '--aba-color-hero-start',
+    '--aba-color-hero-mid',
+    '--aba-color-hero-end',
+    '--aba-color-hero-text',
+    '--aba-color-hero-muted',
     '--aba-font-family',
     '--aba-font-size-xs',
     '--aba-font-size-sm',
@@ -108,4 +125,22 @@ test('global foundation preserves focus visibility, reduced motion, and local Ar
   assert.match(styles, /Noto Sans Arabic/);
   assert.match(styles, /system-ui/);
   assert.match(styles, /color-scheme:\s*light/);
+});
+
+
+test('the workspace shell consumes semantic navigation and hero palette tokens', () => {
+  const requiredShellTokens = [
+    '--aba-color-nav-surface',
+    '--aba-color-nav-text',
+    '--aba-color-nav-surface-raised',
+    '--aba-color-nav-active-start',
+    '--aba-color-nav-active-end',
+    '--aba-color-nav-accent',
+    '--aba-color-hero-start',
+    '--aba-color-hero-mid',
+    '--aba-color-hero-end',
+  ];
+  for (const token of requiredShellTokens) {
+    assert.ok(appSource.includes(`var(${token}`), `app shell must consume ${token}`);
+  }
 });
