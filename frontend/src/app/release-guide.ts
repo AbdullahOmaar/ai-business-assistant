@@ -229,6 +229,22 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.7',
+    apiVersion: '1.3.5',
+    titleAr: 'تحسين وضوح النصوص وإمكانية الوصول',
+    titleEn: 'Accessibility and text contrast improvements',
+    changesAr: [
+      'تحسين تباين النصوص الثانوية في معلومات الإصدار والبطاقات والحالات الفارغة والتذييل لتسهيل القراءة.',
+      'الحفاظ على ألوان النصوص في القائمة الجانبية الداكنة دون تغيير.',
+      'تحديث إصدار الواجهة إلى 1.3.7 مع إبقاء واجهة API على 1.3.5 دون تغيير.',
+    ],
+    changesEn: [
+      'Improves secondary-text contrast in release metadata, metric cards, empty states, footnotes, and the footer.',
+      'Preserves the existing light-on-dark colors used by the dark sidebar.',
+      'Updates the web UI to version 1.3.7; the unchanged API remains on version 1.3.5.',
+    ],
+  },
+  {
     version: '1.3.6',
     apiVersion: '1.3.5',
     titleAr: 'موثوقية التشغيل والتنقل بين الأقسام',
