@@ -68,3 +68,32 @@ test('numeric amount values are stringified before trimming and local datetime d
   assert.match(ui, /expenseDate = new Date\(Date\.now\(\) - new Date\(\)\.getTimezoneOffset\(\) \* 60_000\)\.toISOString\(\)\.slice\(0, 16\)/);
   assert.match(method, /this\.expenseDate = new Date\(Date\.now\(\) - new Date\(\)\.getTimezoneOffset\(\) \* 60_000\)\.toISOString\(\)\.slice\(0, 16\)/);
 });
+
+test('expense form exposes bilingual accessible validation without blocking invalid submit feedback', () => {
+  const start = ui.indexOf('<form #expenseForm="ngForm" class="inline-form expense-form"');
+  const end = ui.indexOf('</form>', start);
+  assert.ok(start >= 0 && end > start);
+  const form = ui.slice(start, end);
+  for (const control of [
+    'expenseCategoryControl', 'expenseDescriptionControl',
+    'expenseAmountControl', 'expenseDateControl'
+  ]) {
+    assert.ok(form.includes('#' + control + '="ngModel"'), control);
+    assert.ok(form.includes(control + '.invalid'), control + ' invalid state');
+    assert.ok(form.includes(control + '.touched || expenseForm.submitted'), control + ' reveal condition');
+  }
+  for (const id of [
+    'expense-category-error', 'expense-description-error',
+    'expense-amount-error', 'expense-date-error'
+  ]) {
+    assert.ok(form.includes(id), id + ' must be associated with its control');
+    assert.ok(ui.includes('id="' + id + '"'), id + ' message must exist');
+  }
+  assert.match(ui, /class="expense-validation" aria-live="polite"/);
+  assert.match(form, /type="submit" \[disabled\]="loading \|\| expenseSubmissionUncertain"/);
+  assert.doesNotMatch(form, /!expenseCategory\.trim\(\)|!expenseDescription\.trim\(\)|!expenseAmount/);
+  assert.match(form, /name="expenseDescription" maxlength="500"/);
+  assert.match(form, /name="expenseAmount" type="number" min="0\.01" step="0\.01"/);
+  assert.match(form, /name="expenseVendor" maxlength="160"/);
+  assert.match(form, /name="expenseReference" maxlength="128"/);
+});
