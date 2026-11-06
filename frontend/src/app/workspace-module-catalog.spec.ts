@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS } from './workspace-module-catalog.ts';
+import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS } from './workspace-module-catalog.ts';
 import { canAccessWorkspaceTab, isMobileMoreTab } from './module-access.ts';
 
 const visibleModules = (role: string, platformAdminAvailable: boolean) =>
@@ -67,4 +67,28 @@ test('More menu visibility is derived from the same role policy as the Home cata
   assert.equal(secondaryCount('staff', false), 9);
   assert.equal(secondaryCount('owner', false), 15);
   assert.equal(secondaryCount('owner', true), 16);
+});
+
+test('Home quick access returns only the five key modules in product-defined order', () => {
+  const selected = selectHomeQuickAccessModules(WORKSPACE_MODULE_CATALOG);
+  assert.deepEqual(selected.map(module => module.tab), [
+    'invoices',
+    'customers',
+    'products',
+    'expenses',
+    'reports',
+  ]);
+  assert.equal(selected.length, 5);
+  assert.ok(selected.every(module => WORKSPACE_MODULE_CATALOG.some(item => item === module)));
+});
+
+test('Home quick access preserves role filtering and does not mutate its input', () => {
+  const accessible = WORKSPACE_MODULE_CATALOG.filter(module =>
+    ['customers', 'expenses', 'audit', 'platform-admin'].includes(module.tab),
+  );
+  const originalOrder = accessible.map(module => module.tab);
+  const selected = selectHomeQuickAccessModules(accessible);
+  assert.deepEqual(selected.map(module => module.tab), ['customers', 'expenses']);
+  assert.deepEqual(accessible.map(module => module.tab), originalOrder);
+  assert.ok(selected.every(module => accessible.includes(module)));
 });
