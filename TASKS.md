@@ -2158,3 +2158,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Existing submit guard and backend-aligned limits remain asserted. This is test coverage only; runtime behavior is unchanged.
 - Commit: `4465b0ee34eafa1ca3a193357fcac8bfeba63778`.
 - Source readback confirms the four control-to-message associations and bilingual copy are present. The test itself remains **NOT RUN**.
+
+## T18 — Remaining critical forms: notifications, suppliers, purchasing, recurring, reports and chat — 2026-11-06
+
+- Notification form: added field-level localized validation for type/title/body; preserved scheduled time as optional and existing title/body max lengths.
+- Supplier form: added an Angular form validity guard and accessible validation for required supplier name and optional email format. Email, phone, address remain optional; existing 160/254/32/500 character limits are unchanged.
+- Purchase order form: added a form validity guard and field-linked errors for order number, supplier, product, quantity and unit cost. Preserved existing constraints exactly (64 chars, required supplier/product, quantity min 0.001 step 0.001, unit cost min 0 step 0.01). No receiving/stock behavior changed.
+- Recurring schedule form: added field-linked errors for interval, next run and timezone; preserved customer as optional and existing interval 1–3650 / timezone max 64 constraints.
+- Reports: custom profit/loss dates and receivables aging now use form-valid guards and localized field errors. Existing date-required rules remain unchanged; tax summary and audit filters remain optional.
+- AI chat composer: added accessible name and localized feedback for empty/whitespace-only drafts; submit no longer disables the only path to reveal the error. `chatDraft.trim()` and the existing `sendChat()` guard still prevent empty requests.
+- Reused a shared `.form-validation` presentation style; no API, database, authorization, financial, stock, recurring execution, notification delivery or payroll semantics changed.
+- Commits: `66fc4af5c733f389f6709dd4f9fa7d2d468d11c2`, `0ff02a9f8604be80d3c017df0bb0fa00125a7e90`, `7556cf5b34da20869a334bbb2fb874042293222b`, `d12355bbc082c9bae9056aad24c22026688e85be`, `0b595cdbb6700085a9bbd0d7791eea9f46b2284e`, `e08273e07019ce9748bc7b76fffb6a7452680264`, `d9f89c6f1486f30ed487ac23cc30777fd2411107`, `14b8dc0d331c7ee94804fdca10287c109bfb62a1`, `a41436fbb32dc16d4d12013ab004e851604cacce`, and `76e5de7946c9c21a9be89f7e87ac06558cf2944e`.
+- Source audit: **16/16 forms inventoried**; all required forms have validity guards; optional tax/audit filters remain optional; **33/33** dynamic error-description references resolve to existing field-message IDs; **33/33** error messages have field associations; no duplicate test names; all targeted regression test source blocks are present.
+- These are source-level assertions only. Node tests, Angular template/build, browser/device, keyboard/screen-reader, authenticated OWNER/STAFF/two-tenant and PWA acceptance remain **NOT RUN**. Exact-head GitHub status remains empty due to `[skip ci]`; CircleCI remains frozen. No PR, merge, deployment, CI trigger/retry or production change.
+- Next: final diff/security review and authorized validation. Keep the existing T18 branch; do not create a new branch before a gated merge.
