@@ -3123,7 +3123,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   exportPaymentsCsv(): void {
-    if (!this.payments.length) return;
+    if (!this.business || this.business.role !== 'owner' || !this.payments.length) return;
     const headers = ['received_at', 'amount', 'currency_code', 'method', 'reference', 'allocation_count'];
     const rows = this.payments.map(payment => [
       payment.received_at,
