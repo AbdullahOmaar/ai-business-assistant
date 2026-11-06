@@ -603,6 +603,23 @@ test('invoice discount and tax rate fields expose localized accessible range err
   assert.match(form, /Enter a tax rate from 0 to 100\./);
 });
 
+test('owner payment form exposes localized accessible errors for required amount and customer', () => {
+  const start = source.indexOf('<form #paymentForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(start >= 0 && end > start, 'payment form must exist');
+  assert.match(form, /#paymentAmountModel="ngModel"/);
+  assert.match(form, /min="0\.01" step="0\.01"[^>]*required/);
+  assert.match(form, /id="payment-amount-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /#paymentCustomerModel="ngModel"/);
+  assert.match(form, /name="paymentCustomer" required/);
+  assert.match(form, /id="payment-customer-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /أدخل مبلغًا صحيحًا أكبر من صفر/);
+  assert.match(form, /Enter a positive amount/);
+  assert.match(form, /اختيار العميل مطلوب\./);
+  assert.match(form, /Choose a customer\./);
+});
+
 test('invoice void confirmation is localized for Arabic and English', () => {
   const start = source.indexOf('async voidInvoice(invoice: Invoice)');
   const end = source.indexOf('hasOutstandingBalance(', start);
