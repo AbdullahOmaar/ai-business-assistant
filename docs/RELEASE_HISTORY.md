@@ -22,7 +22,7 @@
 
 ## History currently represented in the app
 
-- **1.3.8 (candidate)** — frontend-only demo preview improvements: complete reset, safer invoice print preview, and explicit T37 tax-policy guard; API remains 1.3.5. Candidate until exact-head CI and production deployment are verified.
+- **1.3.8 (deployed)** — frontend-only demo preview improvements: complete reset, safer invoice print preview, and explicit T37 tax-policy guard; API remains 1.3.5. Deployed to production Web at main SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08` (Vercel deployment `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`, READY). `/demo/` verified HTTP 200.
 
 The app page lists these release lines based on the repository's versioned release history:
 
