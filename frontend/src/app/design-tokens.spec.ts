@@ -153,3 +153,13 @@ test('the workspace shell consumes semantic navigation and hero palette tokens',
 test('app-wide focus indicators use the same visible focus tokens as shared controls', () => {
   assert.match(appSource, /button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible\{outline:var\(--aba-focus-ring-width,3px\) solid var\(--aba-color-focus-ring,#93c5fd\);outline-offset:var\(--aba-focus-ring-offset,2px\)\}/);
 });
+
+
+test('shared section headers preserve h2/h3 hierarchy for nested workspace sections', () => {
+  const sectionHeaderSource = componentSources[3];
+  assert.match(sectionHeaderSource, /readonly level = input<2 \| 3>\(2\)/);
+  assert.match(sectionHeaderSource, /@if \(level\(\) === 3\)/);
+  assert.match(sectionHeaderSource, /<h3 \[id\]="titleId\(\) \|\| null">/);
+  assert.equal([...appSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 2,
+    'nested receivables and customer statement sections must use h3');
+});
