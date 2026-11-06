@@ -2118,9 +2118,22 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async loadNotifications(): Promise<void> {
-    if(!this.business)return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';this.operationsErrorTab=null;
-    try {const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;}
-    catch(error){if(this.business?.id===businessId){this.operationsError=this.message(error);this.operationsErrorTab='notifications';}}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+    if (!this.business) return;
+    const businessId = this.business.id;
+    this.notificationsLoading = true;
+    this.operationsError = '';
+    this.operationsErrorTab = null;
+    try {
+      const items = await this.api.notifications(businessId);
+      if (this.business?.id === businessId) this.notifications = items;
+    } catch (error) {
+      if (this.business?.id === businessId) {
+        this.operationsError = this.message(error);
+        this.operationsErrorTab = 'notifications';
+      }
+    } finally {
+      if (this.business?.id === businessId) this.notificationsLoading = false;
+    }
   }
   async createNotification(): Promise<void> {
     if (!this.business || this.business.role !== 'owner' || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
@@ -3098,7 +3111,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createExpense(): Promise<void> {
-    if (!this.business) return;
+    if (!this.business || this.expenseSubmissionUncertain) return;
     const businessId = this.business.id;
     const category = this.expenseCategory.trim();
     const description = this.expenseDescription.trim();
@@ -3116,7 +3129,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     this.expenseMessage = '';
-    this.expenseSubmissionUncertain = false;
     try {
       await this.api.createExpense(businessId, {
         category,
