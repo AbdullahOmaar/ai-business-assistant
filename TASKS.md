@@ -2189,3 +2189,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added a regression test for error scope assignment and view conditions.
 - Commits: `f079cdc1ef209a701feba5730c194e3ff091fe4e` (state/template) and `1aa07c19fc412816662a518161bd3b715c5baf69` (test).
 - Static source readback PASS for all four module guards and reset paths. Runtime test remains **NOT RUN**.
+
+## T18 — Notification default option consistency — 2026-11-06
+
+- Corrected the notification category option from `businesses` to `business`, matching the component's existing default and payload fallback. This prevents the required select from starting with a value that has no matching option.
+- Confirmed the backend `NotificationInput.kind` accepts a non-empty string (max 40); no backend enum or payload semantics were changed.
+- Added a regression assertion for the default value/option match.
+- Commits: `5f7953087efea197fb9900411b6064424fb998d1` (template) and `87325cedb7a3feeec698127160dd0df3aeaeec67` (test).
+- Source readback PASS; Angular template and runtime selection behavior remain **NOT RUN**.
