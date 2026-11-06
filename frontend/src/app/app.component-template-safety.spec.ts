@@ -448,3 +448,16 @@ test('authentication failures keep the user on the sign-in form instead of retry
   assert.doesNotMatch(authTemplate, /initializeApp\(\)|Retry startup/,
     'an auth failure must be retried through the preserved sign-in form');
 });
+
+
+test('workspace role changes cannot leave an owner-only destination selected', () => {
+  const switchStart = source.indexOf('async switchBusiness(id: string)');
+  const switchEnd = source.indexOf('private readonly workspaceLoadGuard', switchStart);
+  const switchMethod = source.slice(switchStart, switchEnd);
+  const roleUpdate = switchMethod.indexOf('this.business = this.businesses.find(item => item.id === id) || null;');
+  const accessGuard = switchMethod.indexOf("if (!this.canAccessTab(this.tab)) this.tab = 'overview';");
+  const clearData = switchMethod.indexOf('this.clearWorkspaceData();');
+  assert.ok(switchStart >= 0 && switchEnd > switchStart);
+  assert.ok(roleUpdate >= 0 && accessGuard > roleUpdate && clearData > accessGuard,
+    'resolve the selected workspace role before retaining the current destination or clearing data');
+});
