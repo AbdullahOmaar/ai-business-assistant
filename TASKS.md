@@ -2172,3 +2172,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Source audit: **16/16 forms inventoried**; all required forms have validity guards; optional tax/audit filters remain optional; **33/33** dynamic error-description references resolve to existing field-message IDs; **33/33** error messages have field associations; no duplicate test names; all targeted regression test source blocks are present.
 - These are source-level assertions only. Node tests, Angular template/build, browser/device, keyboard/screen-reader, authenticated OWNER/STAFF/two-tenant and PWA acceptance remain **NOT RUN**. Exact-head GitHub status remains empty due to `[skip ci]`; CircleCI remains frozen. No PR, merge, deployment, CI trigger/retry or production change.
 - Next: final diff/security review and authorized validation. Keep the existing T18 branch; do not create a new branch before a gated merge.
+
+## T18 — Remove duplicated build metadata — 2026-11-06
+
+- Removed the second UI/API version and build-time card from the page heading. The single workspace-release metadata region remains beside the workspace context/switcher and adapts to the mobile workspace bar.
+- Removed the now-unused duplicate card styles and mobile overrides. Startup splash release information remains a separate loading state, not a second persistent shell card.
+- Added a regression test requiring the workspace release region and preventing the page-header duplicate.
+- Commits: `8323daf42c7e1d0d65a0fd8366e1baa85c2dfaba` (template/CSS) and `6b36381188fcfc948cee6e3e5a22f2682878519b` (test).
+- Source readback confirms one persistent release metadata block in the workspace bar and no `.workspace-build-card` markup or CSS. Visual spacing still requires browser validation (**NOT RUN**).
