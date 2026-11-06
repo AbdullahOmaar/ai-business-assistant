@@ -1144,3 +1144,24 @@ test('operations errors stay scoped to the module that produced them', () => {
   assert.match(source, /private beginOperationsAction\(\): void \{\s*this\.operationsError = '';\s*this\.operationsErrorTab = null;/);
   assert.match(source, /private setOperationsSuccess\(tab: OperationsMessageTab, message: string\): void \{\s*this\.operationsErrorTab = null;/);
 });
+
+test('invoice customer and dynamic line fields expose accessible localized validation', () => {
+  const start = source.indexOf('<form #invoiceForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(form.includes('invoiceForm.valid && createInvoice()'));
+  assert.ok(form.includes('#invoiceCustomerModel="ngModel"'));
+  assert.ok(form.includes(`[attr.aria-describedby]="invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted) ? 'invoice-customer-error' : null"`));
+  assert.ok(form.includes('id="invoice-customer-error"'));
+  assert.ok(form.includes('#invoiceProductModel="ngModel"'));
+  assert.ok(form.includes(`[attr.aria-describedby]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'invoice-product-error-' + i : null"`));
+  assert.ok(form.includes(`[id]="'invoice-product-error-' + i"`));
+  assert.ok(form.includes('#invoiceQuantityModel="ngModel"'));
+  assert.ok(form.includes(`[attr.aria-describedby]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'invoice-quantity-error-' + i : null"`));
+  assert.ok(form.includes(`[id]="'invoice-quantity-error-' + i"`));
+  assert.match(form, /name="invoiceCustomer"[^>]*required/);
+  assert.match(form, /min="0\.001" step="0\.001" required \[\(ngModel\)\]="line\.quantity"/);
+  assert.match(form, /\[disabled\]="loading \|\| !products\.length \|\| !customers\.length"/);
+  assert.doesNotMatch(form, /\[disabled\]="[^"]*!invoiceCustomerId/);
+  assert.ok(source.includes("if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length"));
+});
