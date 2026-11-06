@@ -45,3 +45,11 @@ This is a standalone, interactive feature preview. It uses fictional data stored
 ## What is required for a connected ERP demo
 
 A separate isolated staging environment is required, with synthetic Owner and Staff accounts, two synthetic tenants, a documented reset/rollback procedure, and authenticated browser journeys. Production customer or payroll data must never be used. This runbook does not claim those prerequisites are complete.
+
+## Browser acceptance and build-filter verification — 2026-11-06
+
+- PR #342 added four Chromium tests against the real `/demo/` public asset, not a copied HTML string. All four passed on the exact PR head.
+- Tests cover the Arabic RTL/local-only banner and T37 guard, switching workspaces and resetting invoice/payment mock state, the isolated print popup and status message, and a 360px mobile viewport with no horizontal overflow.
+- Test job: CircleCI #12148. Exact PR head 7/7 PASS; post-merge main SHA `27c670dc8572c72569ab2e67dabc2f8d9c83360f` 7/7 PASS.
+- Vercel Web ignore-build command was refined to exclude E2E and unit-test-only changes. Local pathspec behavior and the actual Vercel canceled deployment events were verified. Runtime source and public demo asset changes still trigger builds.
+
