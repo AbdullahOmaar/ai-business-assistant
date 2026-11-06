@@ -239,3 +239,55 @@ def test_local_fallback_sources_ignore_missing_or_duplicate_source_ids():
         {},
     ]
     assert _fallback_source_ids("sales", invoices, []) == ["invoice-1"]
+
+
+@pytest.mark.parametrize(
+    "provider_payload",
+    [
+        {"choices": [{"message": {"content": "not-json-provider-secret"}}]},
+        {"unexpected": "provider-secret"},
+        {"choices": [{"message": {"content": '{"answer": "", "source_ids": []}'}}]},
+    ],
+    ids=["malformed-json", "missing-choice-envelope", "empty-answer"],
+)
+def test_assistant_malformed_provider_responses_return_safe_error(
+    monkeypatch, assistant_client, provider_payload
+):
+    """Malformed upstream payloads must fail closed without exposing provider details."""
+    import app.assistant_api as assistant_api
+
+    business_id = create_workspace(assistant_client)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return provider_payload
+
+    class MalformedAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, *args, **kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr(assistant_api.httpx, "AsyncClient", MalformedAsyncClient)
+    response = assistant_client.post(
+        f"/api/v1/businesses/{business_id}/assistant/chat",
+        json={"message": "Summarize my business."},
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == (
+        "The AI provider returned an invalid or unavailable response."
+    )
+    assert "provider-secret" not in response.text
+    assert "test-only-placeholder" not in response.text
+    assert "not-json-provider-secret" not in response.text
