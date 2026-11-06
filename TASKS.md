@@ -2100,3 +2100,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Readback/source assertions: **7/7 PASS**. Exact-head status contexts are empty because commits use `[skip ci]`; this is **NOT** a green CI result. The focused Node test, full frontend test suite, Angular template/build, browser/device, RTL/LTR and screen-reader acceptance remain **NOT RUN**.
 - No CI trigger/retry, PR, merge, deployment, backend/API/schema, database, migration or production change.
 - Next: continue the P0 interaction-state and responsive/RTL source audit, then pursue authorized local/browser validation. Keep merge blocked until the exact candidate has required passing validation and maintainer review.
+
+## T18 — Workspace context and RTL/LTR shell follow-up — 2026-11-06
+
+- Continued on the same T18 implementation branch; no branch or PR duplication.
+- Workspace context: the current workspace bar is now a named region; the current business name is a polite live region, and the workspace selector describes that current business. Selection still calls the existing `switchBusiness($event)` path; no tenant authorization or switching semantics changed.
+- RTL/LTR shell: replaced physical left/right positioning for the sidebar/main offset and key inline alignment with logical CSS properties. The sidebar and content offset now follow `inline-end`; navigation text, active marker, hero mark, user chat alignment, and supporting inline spacing follow logical direction. Removed redundant English-only physical overrides for those shared shell elements.
+- Added source regression coverage for workspace-context announcements and logical RTL/LTR layout.
+- Commits: `f21206eaf8477d90a240447eccfed45760e30a68` (workspace semantics), `f571f9c417adf30ee798b908ca57b8ae7f911660` (workspace test), `1b07c147edd4572299b62da71e02e378639648b1` (logical shell CSS), `b4e09c7f441eb9f74b87bf9a361585b6c9b5fb35` (RTL/LTR regression test).
+- Readback/static source assertions: **PASS** for workspace region/name/description, logical sidebar/content positioning, start-aligned nav text, logical active marker, logical chat alignment and removal of the corresponding physical English overrides. This is source inspection, not execution of the Node test suite or browser rendering.
+- Exact-head status contexts remain empty due to `[skip ci]`; full frontend tests, Angular template/build, 360/390/tablet browser checks, RTL/LTR visual review, keyboard/screen-reader and Android PWA acceptance remain **NOT RUN**.
+- No CI trigger/retry, PR, merge, deployment, backend/API/schema, database, migration or production change.
+- Next: continue the remaining P0 interaction-state and responsive/accessibility audit. Merge remains gated on exact-candidate validation and maintainer review; do not bypass the CircleCI freeze or missing browser/device evidence.
