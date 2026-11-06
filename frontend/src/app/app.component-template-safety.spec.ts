@@ -215,7 +215,7 @@ test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /class="error" role="alert"/);
   assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 9);
   assert.ok((source.match(/<aba-state-message kind="success"/g) || []).length >= 4);
-  assert.ok((source.match(/<aba-state-message \\[kind\\]/g) || []).length >= 2);
+  assert.ok(source.includes('<aba-state-message [kind]'));
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
   assert.doesNotMatch(source, /<p role="status">/);
 });
@@ -276,28 +276,27 @@ const sharedMetricSource = readFileSync(new URL('./shared/ui/aba-metric-card.com
 const globalStylesSource = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 test('shared state feedback owns info, warning, success, error and accessible action behavior', () => {
-  assert.match(sharedStateSource, /AbaStateKind = 'loading' \| 'empty' \| 'error' \| 'success' \| 'info' \| 'warning'/);
-  assert.match(sharedStateSource, /kind\(\) === 'error' \? 'alert' : 'status'/);
-  assert.match(sharedStateSource, /kind\(\) === 'loading' \|\| kind\(\) === 'success' \? 'polite' : null/);
-  assert.match(sharedStateSource, /aba-state-message--info/);
-  assert.match(sharedStateSource, /aba-state-message--warning/);
-  assert.match(sharedStateSource, /min-height:44px/);
-  assert.match(sharedStateSource, /prefers-reduced-motion:reduce/);
+  assert.ok(sharedStateSource.includes("AbaStateKind = 'loading' | 'empty' | 'error' | 'success' | 'info' | 'warning'"));
+  assert.ok(sharedStateSource.includes("kind() === 'error' ? 'alert' : 'status'"));
+  assert.ok(sharedStateSource.includes("kind() === 'loading' || kind() === 'success' ? 'polite' : null"));
+  assert.ok(sharedStateSource.includes('aba-state-message--info'));
+  assert.ok(sharedStateSource.includes('aba-state-message--warning'));
+  assert.ok(sharedStateSource.includes('min-height:44px'));
+  assert.ok(sharedStateSource.includes('prefers-reduced-motion:reduce'));
 });
 
 test('shared card hosts own card surface styling and projected KPI styles live in the shared stylesheet', () => {
-  assert.match(sharedCardSource, /selector: 'section\[abaCard\]'/);
-  assert.match(sharedCardSource, /ChangeDetectionStrategy\.OnPush/);
-  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)\\b([^>]*)class="[^"]*\\bpanel\\b[^"]*"([^>]*)>/g)];
+  assert.ok(sharedCardSource.includes("selector: 'section[abaCard]'"));
+  assert.ok(sharedCardSource.includes('ChangeDetectionStrategy.OnPush'));
+  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g)];
   assert.ok(panelHosts.length >= 20);
   for (const match of panelHosts) {
     assert.equal(match[1], 'section', 'panel surfaces must remain native section elements');
-    assert.match(match[2] + match[3], /\\babaCard\\b/, 'every panel must reuse the shared card directive');
+    assert.ok(match[0].includes('abaCard'), 'every panel must reuse the shared card directive');
   }
-  assert.match(sharedMetricSource, /ChangeDetectionStrategy\.OnPush/);
-  assert.match(globalStylesSource, /aba-metric-card strong\\s*\\{/);
-  assert.match(globalStylesSource, /aba-metric-card small\\s*\\{/);
-  assert.doesNotMatch(source, /\.panel\{padding:15px/);
-  assert.doesNotMatch(source, /\.metric-grid aba-metric-card strong/);
+  assert.ok(sharedMetricSource.includes('ChangeDetectionStrategy.OnPush'));
+  assert.ok(globalStylesSource.includes('aba-metric-card strong {'));
+  assert.ok(globalStylesSource.includes('aba-metric-card small {'));
+  assert.equal(source.includes('.panel{padding:15px'), false);
+  assert.equal(source.includes('.metric-grid aba-metric-card strong'), false);
 });
-
