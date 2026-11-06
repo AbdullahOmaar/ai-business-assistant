@@ -228,10 +228,9 @@ test('workspace panels reuse one section header component instead of duplicating
 
 test('Home quick access shows only the five key destinations from the shared role-filtered catalogue', () => {
   assert.ok(source.includes('class="panel module-launcher"'));
-  assert.ok(source.includes("const priority = ['invoices', 'customers', 'products', 'expenses', 'reports']"));
   assert.match(source, /get homeQuickAccessCards\(\): readonly WorkspaceModuleCard\[\]/);
-  assert.match(source, /return this\.homeModuleCards\s*\.filter\(module => priority\.includes\(module\.tab\)\)/);
-  assert.match(source, /priority\.indexOf\(left\.tab\) - priority\.indexOf\(right\.tab\)/);
+  assert.match(source, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
+  assert.match(source, /selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG/);
   assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.ok(source.includes('homeQuickAccessCards.length'));
   assert.match(source, /title]="t\('الوصول السريع', 'Quick access'\)/);
