@@ -229,6 +229,22 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.3.8',
+    apiVersion: '1.3.5',
+    titleAr: 'تحسين معاينة الميزات التجريبية',
+    titleEn: 'Feature demo preview improvements',
+    changesAr: [
+      'إضافة إعادة ضبط كاملة لتجربة المعاينة التفاعلية وبياناتها التوضيحية.',
+      'تحسين نافذة طباعة الفاتورة ومعالجة منع النوافذ المنبثقة برسالة واضحة.',
+      'إزالة حساب الضريبة الافتراضي من المعاينة حتى اعتماد سياسة T37؛ تظل واجهة API على 1.3.5.',
+    ],
+    changesEn: [
+      'Adds a full reset to the interactive feature preview and its illustrative data.',
+      'Improves invoice print preview handling and reports blocked popups clearly.',
+      'Removes the default tax calculator until T37 is approved; the API remains on 1.3.5.',
+    ],
+  },
+  {
     version: '1.3.7',
     apiVersion: '1.3.5',
     titleAr: 'تحسين وضوح النصوص وإمكانية الوصول',
