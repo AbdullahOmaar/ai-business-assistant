@@ -1,25 +1,176 @@
 :root {
+  /* Semantic colors — shared by the shell, feature pages, and reusable UI. */
+  --aba-color-primary: #0f766e;
+  --aba-color-primary-strong: #115e59;
+  --aba-color-primary-soft: #ecfdf5;
+  --aba-color-primary-border: #99f6e4;
+  --aba-color-on-primary: #ffffff;
+
+  --aba-color-text-primary: #172033;
+  --aba-color-text-muted: #475569;
+  --aba-color-text-secondary: #64748b;
+  --aba-color-text-tertiary: #6b7280;
+  --aba-color-text-inverse: #ffffff;
+
+  --aba-color-page: #f5f7fb;
+  --aba-color-surface: #ffffff;
+  --aba-color-surface-subtle: #f8fafc;
+  --aba-color-surface-hover: #f1f5f9;
+  --aba-color-border: #e5eaf1;
+  --aba-color-border-subtle: #eef2f7;
+  --aba-color-border-strong: #cbd5e1;
+  --aba-color-focus: #2563eb;
+  --aba-color-focus-ring: #2563eb;
+  --aba-color-overlay: rgb(15 23 42 / 48%);
+
+  /* Navigation and hero surfaces — preserve the current brand palette centrally. */
+  --aba-color-nav-surface: #111827;
+  --aba-color-nav-surface-deep: #0f172a;
+  --aba-color-nav-surface-raised: #1e293b;
+  --aba-color-nav-surface-glass: rgb(15 23 42 / 96%);
+  --aba-color-nav-border: #334155;
+  --aba-color-nav-text: #cbd5e1;
+  --aba-color-nav-muted: #9ca3af;
+  --aba-color-nav-accent: #5eead4;
+  --aba-color-nav-active-start: #164e63;
+  --aba-color-nav-active-end: #1d4ed8;
+  --aba-shadow-nav-menu: 0 18px 50px rgb(2 6 23 / 33%);
+  --aba-shadow-nav-dock: 0 -8px 28px rgb(15 23 42 / 12%);
+  --aba-color-hero-start: #14243a;
+  --aba-color-hero-mid: #1e3a5f;
+  --aba-color-hero-end: #155e75;
+  --aba-color-hero-text: #ffffff;
+  --aba-color-hero-muted: #cbd5e1;
+
+  --aba-color-danger-soft: #fef2f2;
+  --aba-color-danger-border: #fecaca;
+  --aba-color-danger-text: #991b1b;
+  --aba-color-success-soft: #ecfdf5;
+  --aba-color-success-border: #bbf7d0;
+  --aba-color-success-text: #065f46;
+  --aba-color-info-soft: #eff6ff;
+  --aba-color-info-border: #bfdbfe;
+  --aba-color-info-text: #1e40af;
+  --aba-color-warning-soft: #fffbeb;
+  --aba-color-warning-border: #fde68a;
+  --aba-color-warning-text: #92400e;
+
+  /* Typography — no remote font dependency; Arabic falls back to system UI. */
+  --aba-font-family: Inter, "Noto Sans Arabic", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --aba-font-size-2xs: 10px;
+  --aba-font-size-xs: 11px;
+  --aba-font-size-sm: 12px;
+  --aba-font-size-base: 14px;
+  --aba-font-size-lg: 16px;
+  --aba-font-size-xl: 19px;
+  --aba-font-size-2xl: 22px;
+  --aba-font-size-3xl: 28px;
+  --aba-line-height-tight: 1.3;
+  --aba-line-height-normal: 1.5;
+  --aba-line-height-relaxed: 1.65;
+  --aba-font-weight-regular: 400;
+  --aba-font-weight-medium: 500;
+  --aba-font-weight-semibold: 600;
+  --aba-font-weight-bold: 700;
+  --aba-letter-spacing-tight: -0.02em;
+
+  /* Spacing, shape, elevation, and motion. */
+  --aba-space-1: 4px;
+  --aba-space-2: 8px;
+  --aba-space-3: 12px;
+  --aba-space-4: 16px;
+  --aba-space-5: 20px;
+  --aba-space-6: 24px;
+  --aba-space-8: 32px;
+  --aba-space-10: 40px;
+  --aba-radius-control: 9px;
+  --aba-radius-card: 14px;
+  --aba-radius-panel: 18px;
+  --aba-radius-pill: 999px;
+  --aba-shadow-card: 0 1px 2px rgb(15 23 42 / 4%);
+  --aba-shadow-card-hover: 0 8px 22px rgb(15 23 42 / 4%);
+  --aba-shadow-popover: 0 12px 32px rgb(15 23 42 / 12%);
+  --aba-motion-fast: 150ms;
+  --aba-motion-normal: 220ms;
+  --aba-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --aba-focus-ring-width: 3px;
+  --aba-focus-ring-offset: 2px;
+
+  /* Layout and layering. Breakpoint values remain explicit in media queries. */
+  --aba-layout-sidebar: 245px;
+  --aba-layout-content-max: 1550px;
+  --aba-layout-mobile-nav: 61px;
+  --aba-z-index-sticky: 20;
+  --aba-z-index-dropdown: 40;
+  --aba-z-index-toast: 1000;
+  --aba-z-index-dialog: 1100;
+
   color-scheme: light;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #172033;
-  background: #f5f7fb;
+  font-family: var(--aba-font-family);
+  color: var(--aba-color-text-primary);
+  background: var(--aba-color-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
+
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--aba-color-text-primary);
+  background: var(--aba-color-page);
+  font-family: var(--aba-font-family);
+}
 button, input, select { font: inherit; }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 3px solid #93c5fd;
-  outline-offset: 2px;
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
+  outline-offset: var(--aba-focus-ring-offset);
+}
+
+/* Native Angular form validation: show invalid controls only after interaction. */
+.shell input.ng-invalid.ng-touched:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.shell select.ng-invalid.ng-touched,
+.shell textarea.ng-invalid.ng-touched,
+.shell form.ng-submitted input.ng-invalid:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.shell form.ng-submitted select.ng-invalid,
+.shell form.ng-submitted textarea.ng-invalid,
+.auth-card input.ng-invalid.ng-touched:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.auth-card form.ng-submitted input.ng-invalid:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.auth-card form.ng-submitted select.ng-invalid,
+.auth-card form.ng-submitted textarea.ng-invalid {
+  border-color: var(--aba-color-danger-border);
+  background-color: var(--aba-color-danger-soft);
+}
+.shell input.ng-invalid.ng-touched:focus-visible,
+.shell select.ng-invalid.ng-touched:focus-visible,
+.shell textarea.ng-invalid.ng-touched:focus-visible,
+.auth-card input.ng-invalid.ng-touched:focus-visible,
+.auth-card select.ng-invalid.ng-touched:focus-visible,
+.auth-card textarea.ng-invalid.ng-touched:focus-visible {
+  outline-color: var(--aba-color-danger-text);
+}
+.field-error {
+  display: block;
+  margin-top: var(--aba-space-1);
+  color: var(--aba-color-danger-text);
+  font-size: var(--aba-font-size-xs);
+  line-height: var(--aba-line-height-relaxed);
+  overflow-wrap: anywhere;
 }
 
 html[dir="rtl"], body { direction: rtl; }
 body { text-align: start; }
 input, select, textarea { text-align: start; }
 button, input, select, textarea { font-family: inherit; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 /* WCAG AA: strengthen secondary text on light surfaces only. Dark sidebar labels
    intentionally keep their existing light-on-dark color in app.component.ts. */
@@ -28,5 +179,56 @@ button, input, select, textarea { font-family: inherit; }
 :root body .shell .empty,
 :root body .shell .footnote,
 :root body .shell footer span {
-  color: #6b7280;
+  color: var(--aba-color-text-tertiary);
 }
+
+/* Projected value slots for the shared KPI card component. */
+aba-metric-card strong {
+  display: block;
+  font-size: var(--aba-font-size-xl);
+  font-weight: var(--aba-font-weight-bold);
+  letter-spacing: var(--aba-letter-spacing-tight);
+  overflow-wrap: anywhere;
+}
+aba-metric-card small {
+  display: block;
+  margin-top: var(--aba-space-2);
+  color: var(--aba-color-text-secondary);
+  font-size: var(--aba-font-size-2xs);
+  line-height: var(--aba-line-height-normal);
+}
+
+@media (max-width: 760px) {
+  aba-metric-card strong {
+    font-size: clamp(15px, 4vw, 18px);
+  }
+}
+
+@media (max-width: 380px) {
+  aba-metric-card strong {
+    font-size: 16px;
+  }
+}
+
+/* Expense form validation remains associated with fields without breaking its grid. */
+.expense-validation {
+  display: grid;
+  gap: var(--aba-space-1);
+  margin-top: var(--aba-space-2);
+  padding: var(--aba-space-3);
+  border: 1px solid var(--aba-color-danger-border);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-danger-soft);
+}
+.expense-validation .field-error { margin: 0; }
+
+.form-validation {
+  display: grid;
+  gap: var(--aba-space-1);
+  margin-top: var(--aba-space-2);
+  padding: var(--aba-space-3);
+  border: 1px solid var(--aba-color-danger-border);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-danger-soft);
+}
+.form-validation .field-error { margin: 0; }

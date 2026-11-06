@@ -48,7 +48,8 @@ test('ambiguous expense save outcome blocks another submit until the expense lis
   assert.ok(start >= 0 && end > start);
   const method = ui.slice(start, end);
   assert.match(method, /this\.expenseSubmissionUncertain = true/);
-  assert.match(ui, /expenseSubmissionUncertain \|\| !expenseCategory\.trim\(\)/);
+  assert.match(method, /if \(!this\.business \|\| this\.expenseSubmissionUncertain\) return;/);
+  assert.match(ui, /<button class="primary" type="submit" \[disabled\]="loading \|\| expenseSubmissionUncertain">/);
   assert.match(ui, /\[disabled\]="loading \|\| expenseSubmissionUncertain"/);
   assert.match(ui, /checkExpenseSubmissionOutcome\(\)/);
   const checkStart = ui.indexOf('async checkExpenseSubmissionOutcome(): Promise<void>');
@@ -67,4 +68,40 @@ test('numeric amount values are stringified before trimming and local datetime d
   assert.match(method, /String\(this\.expenseAmount \?\? ''\)\.trim\(\)/);
   assert.match(ui, /expenseDate = new Date\(Date\.now\(\) - new Date\(\)\.getTimezoneOffset\(\) \* 60_000\)\.toISOString\(\)\.slice\(0, 16\)/);
   assert.match(method, /this\.expenseDate = new Date\(Date\.now\(\) - new Date\(\)\.getTimezoneOffset\(\) \* 60_000\)\.toISOString\(\)\.slice\(0, 16\)/);
+});
+
+test('expense form exposes bilingual accessible validation without blocking invalid submit feedback', () => {
+  const start = ui.indexOf('<form #expenseForm="ngForm" class="inline-form expense-form"');
+  const end = ui.indexOf('</form>', start);
+  assert.ok(start >= 0 && end > start);
+  const form = ui.slice(start, end);
+  const fields = [
+    ['expenseCategoryControl', 'expense-category-error'],
+    ['expenseDescriptionControl', 'expense-description-error'],
+    ['expenseAmountControl', 'expense-amount-error'],
+    ['expenseDateControl', 'expense-date-error'],
+  ];
+  for (const [control, id] of fields) {
+    assert.ok(form.includes('#' + control + '="ngModel"'), control);
+    assert.ok(form.includes('[attr.aria-invalid]="' + control + '.invalid && (' + control + '.touched || expenseForm.submitted) ? \'true\' : null"'), control + ' invalid state');
+    assert.ok(form.includes('[attr.aria-describedby]="' + control + '.invalid && (' + control + '.touched || expenseForm.submitted) ? \'' + id + '\' : null"'), control + ' error association');
+    assert.ok(ui.includes('id="' + id + '"'), id + ' message must exist');
+  }
+  assert.match(ui, /class="expense-validation" aria-live="polite"/);
+  assert.match(form, /type="submit" \[disabled\]="loading \|\| expenseSubmissionUncertain"/);
+  assert.doesNotMatch(form, /!expenseCategory\.trim\(\)|!expenseDescription\.trim\(\)|!expenseAmount/);
+  assert.match(form, /name="expenseDescription" maxlength="500"/);
+  assert.match(form, /name="expenseAmount" type="number" min="0\.01" step="0\.01"/);
+  assert.match(form, /name="expenseVendor" maxlength="160"/);
+  assert.match(form, /name="expenseReference" maxlength="128"/);
+  for (const message of [
+    "اختر تصنيف المصروف.",
+    "Choose an expense category.",
+    "اكتب وصف المصروف (بحد أقصى 500 حرف).",
+    "Enter an expense description (up to 500 characters).",
+    "أدخل مبلغًا أكبر من صفر وبحد أقصى منزلتين عشريتين.",
+    "Enter an amount greater than zero with up to two decimal places.",
+    "اختر تاريخ ووقت المصروف.",
+    "Choose the expense date and time.",
+  ]) assert.ok(ui.includes(message), message);
 });

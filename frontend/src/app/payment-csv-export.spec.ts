@@ -15,7 +15,7 @@ function paymentExportHandler(): string {
 test('payment CSV export is owner-only and disabled when there are no payments', () => {
   assert.match(source, /@if \(tab === 'payments' && business\?\.role === 'owner'\)/);
   assert.match(source, /\(click\)="exportPaymentsCsv\(\)" \[disabled\]="!payments\.length"/);
-  assert.match(paymentExportHandler(), /if \(!this\.payments\.length\) return;/);
+  assert.match(paymentExportHandler(), /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
 });
 
 test('payment CSV export includes the full ledger fields and uses the shared safe serializer', () => {

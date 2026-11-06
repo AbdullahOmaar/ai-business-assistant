@@ -6,11 +6,17 @@ const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
 const component = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
+const access = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
+const catalogue = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
 test('employee and payroll UI is wired to the owner-only workspace tab on desktop and mobile', () => {
   assert.match(app, /type Tab = [^;]*'employees'/);
   assert.match(app, /canAccessTab\('employees'\)/);
-  assert.match(app, /role="menuitem"[^\n]*tab === 'employees'/);
+  assert.match(app, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+  assert.match(app, /get mobileMoreGroups\(\): readonly/);
+  assert.match(access, /'employees'/);
+  assert.match(access, /if \(OWNER_ONLY_TABS\.has\(tab\)\) return role === 'owner';/);
+  assert.match(catalogue, /tab: 'employees', mobileGroup: 'team-admin'/);
   assert.match(app, /canAccessTab\(tab: Tab\): boolean/);
   assert.match(app, /canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\)/);
   assert.match(app, /if \(!this\.canAccessTab\(tab\)\)/);
