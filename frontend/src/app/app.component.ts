@@ -2953,7 +2953,7 @@ export class AppComponent implements OnInit, OnDestroy {
       'No active membership for this business',
       'Business role is not permitted for this operation',
       'No access to this business workspace.'
-    ].includes(deniedMessage) || /^(?:forbidden|permission denied|not authorized|access denied)\\b/i.test(deniedMessage)) {
+    ].includes(deniedMessage) || /^(?:forbidden|permission denied|not authorized|access denied)\b/i.test(deniedMessage)) {
       return this.t(
         'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
         'You do not have permission to access this workspace or perform this action. Ask the workspace owner to review your role.'
