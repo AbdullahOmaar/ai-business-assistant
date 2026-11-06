@@ -360,3 +360,23 @@ test('workspace load failure clears stale workspace data and releases the loadin
   assert.ok(release > error && release < finallyStart,
     'the failure path must stop loading after invalidating the request generation');
 });
+
+
+test('mobile More navigation restores keyboard focus after selection and Escape dismissal', () => {
+  assert.match(source, /#mobileMoreTrigger class="nav-item mobile-more"/);
+  assert.match(source, /@ViewChild\('mobileMoreTrigger'\) private mobileMoreTrigger\?: ElementRef<HTMLButtonElement>/);
+  assert.match(source, /\(keydown\.escape\)="closeMobileMoreOnEscape\(\)"/);
+  assert.match(source, /\(click\)="selectMobileMoreTab\(module\.tab\)"/);
+
+  const selectStart = source.indexOf('selectMobileMoreTab(tab: Tab): void');
+  const selectEnd = source.indexOf('\n  }', selectStart);
+  const selectMethod = source.slice(selectStart, selectEnd);
+  assert.match(selectMethod, /this\.setTab\(tab\)/);
+  assert.match(selectMethod, /this\.mobileMoreTrigger\?\.nativeElement\.focus\(\)/);
+
+  const escapeStart = source.indexOf('closeMobileMoreOnEscape(): void');
+  const escapeEnd = source.indexOf('\n  }', escapeStart);
+  const escapeMethod = source.slice(escapeStart, escapeEnd);
+  assert.match(escapeMethod, /if \(!this\.mobileMoreOpen\) return/);
+  assert.match(escapeMethod, /this\.mobileMoreTrigger\?\.nativeElement\.focus\(\)/);
+});
