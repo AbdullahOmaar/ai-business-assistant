@@ -1,3 +1,27 @@
+# Master demo-preview checkpoint — 2026-11-06
+
+## Latest verified base
+- Base/main before this isolated demo-preview change: `5d75fb7247d60571a004db091a1ca32a5da2eb51`.
+- PR #337 merged on that base and post-merge CircleCI passed 7/7.
+- Production remains Web 1.3.7 (deployed SHA `ac31d3d38f727ce24eb1b748d44a33c76344e0fd`) and API 1.3.5 (deployed SHA `45924b5b37da9171e0981ed727b63ba2e5e5d91802`). This tests/demo-preview branch is not deployed.
+
+## Demo preview corrections in progress
+- Branch: `fix/demo-preview-truth-and-recovery-20261106`.
+- PR #338 is OPEN against main. Latest head after removing the unverified additional browser spec: `e63d6751b8e63b2bf8c654348b38b24a5df8adf5`. Two automatic exact-head CircleCI runs showed frontend unit tests, dependency audit, production build, backend-accounting and backend-container PASS, while `frontend-browser-smoke` FAILED inside `npx playwright test`. The connected CircleCI metadata did not expose the failing assertion/output; therefore the new standalone Playwright spec was removed rather than keeping an unverified test in the PR. The Node source regression test remains; this latest head is awaiting its automatic CircleCI run. Semaphore FAILURE is retired/non-authoritative.
+- `demo/index.html` now removes the partial English switch (content remains Arabic RTL), adds a complete reset action for the mutable mock state, fixes the print popup flow by not combining `window.open` with `noopener`, and reports popup-blocked/success states in a dedicated print status element.
+- The unapproved tax calculator and default percentage are removed. The demo now explicitly states that tax behavior is unavailable while T37 is DRAFT / NOT APPROVED.
+- Added `frontend/src/app/demo-preview.spec.ts` source regression tests for local-only fictional data, Arabic RTL truthfulness, popup printing, T37 tax guard and reset behavior.
+- Local Node suite / Angular build / browser E2E have NOT RUN in this connector session. CI will provide exact-head execution evidence.
+- The standalone demo remains a fictional static preview; it does not call the real API/DB or prove authenticated OWNER/STAFF or tenant-isolation workflows.
+
+## Current blockers / boundaries
+- T50 remains PARTIALLY COMPLETE. Authenticated synthetic OWNER/STAFF/two-tenant journeys, production device/PWA, keyboard/screen-reader, and restored-DB app smoke remain NOT RUN/BLOCKED.
+- No production database write or migration. No T37 financial/tax semantics enabled.
+- Open feature PRs #305/#306/#308/#323 retain unique work and remain gated; no wholesale merge or destructive branch cleanup.
+- PR #307 was closed as out-of-scope for this demo cycle; its branch is preserved as archival evidence because the connected GitHub action set exposes no remote branch deletion operation.
+
+---
+
 # Current execution checkpoint — 2026-11-06 (Master)
 
 ## Latest verified delivery
