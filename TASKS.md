@@ -1,38 +1,36 @@
-# Web 1.3.8 release CI diagnosis — 2026-11-06
+# Master demo delivery checkpoint — 2026-11-06 (verified 04:06 UTC)
 
-- PR #340: `https://github.com/AbdullahOmaar/ai-business-assistant/pull/340`.
-- First candidate head `bcf4bac4b77e8e586abb2a1c7e44987cba1953cd`.
-- Exact CircleCI: `frontend-unit-tests` FAILED; `frontend-production-build` PASS; `frontend-dependency-audit` PASS. Browser and backend jobs were still running at the first status read.
-- Root cause located from `frontend/src/app/release-guide.spec.ts`: test `current frontend release metadata is consistent in the configured project root` asserts that `RELEASE_HISTORY[0].changesEn` contains the literal phrase `version <package.json version>`. New 1.3.8 entry omitted the version text. The prior release's check expected explicit English version wording.
-- Fix: release note now states “Updates the web UI to version 1.3.8 …”; API remains 1.3.5. No change to financial logic, backend, database or migrations.
-- Latest exact-head run required; previous CI failure will not be bypassed or retried manually.
+## Overall
+- Standalone feature-preview demo: **VERIFIED COMPLETE** as a static, fictional-data showcase only. It is NOT a connected/authenticated ERP demo.
+- Main SHA: `65e431d8fa7e77aa136fca91f8cfba234c03ec08`.
+- PR #338 hardened the demo source; PR #339 published the correct asset under `frontend/public/demo/index.html`; PR #340 released Web 1.3.8. All three are merged.
+- CircleCI exact candidate head for PR #340: 7/7 PASS (`ef9f4b1a97dae81284e7b9b5dc2d21246809e123`). Post-merge main SHA: 7/7 PASS. SemaphoreCI failure is a retired/non-canonical provider and is not used as a release gate.
+- Production Web deployment: `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`, state READY, alias `https://ai-business-assistant-web.vercel.app`, deployed SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08`, frontend version 1.3.8.
+- Production `/demo/` readback: HTTP 200; confirmed Arabic RTL, fictional local-only notice, reset control, invoice print status, and T37 DRAFT / NOT APPROVED notice; default tax calculator and partial English toggle are absent.
+- Production API remains 1.3.5 at SHA `45924b5b37da9171e0981ed727b63ba2e5e5d91802`; `/health`, `/readyz`, and `/version` return HTTP 200. API deployment was correctly skipped/canceled for the frontend-only release.
+- No API behavior, production database data, schema, migration, financial posting, or payroll behavior changed in this demo release.
+
+## What the live demo demonstrates
+- Two fictional workspaces and local switching/search.
+- Local invoice line editing and totals; mock payment status only.
+- Stock alert, CSV validation preview and CSV export of fictional data.
+- Mock assistant/source explanation, mock PWA update status, mock roles, audit display, recurring invoice preview, supplier receipt preview, JSON backup download, and invoice print preview.
+- Reset restores the initial local mock state.
+- Tax is deliberately disabled until T37 is approved.
+
+## What it does NOT demonstrate
+- No login, API calls, database persistence, real authorization, OWNER/STAFF enforcement, tenant isolation, real payment, stock movement, purchasing, payroll, AI model call, service-worker update, or monitoring. These cards are explicitly illustrative and must not be treated as accepted ERP workflows.
+- T50 remains PARTIALLY COMPLETE: authenticated synthetic OWNER/STAFF/two-tenant journeys, restored-DB application smoke, and full mobile/PWA/keyboard/screen-reader acceptance remain NOT RUN.
+- T37 remains DRAFT / NOT APPROVED. No tax, GL, AP, COGS, FX, payroll, or other unapproved financial semantics are enabled.
+
+## Remaining engineering work
+- PR #323 remains OPEN and is not mergeable: its branch is 117 commits ahead / 162 behind main, with 26 files and substantial unique work. Do not merge wholesale. Selectively salvage only after reviewing each feature against current main, acceptance criteria and gates.
+- PRs #305, #306 and #308 remain open because they contain distinct feature work or approval/migration constraints; do not delete or bulk-merge them.
+- Closed archival refs such as #307 are preserved because the connected GitHub integration does not expose a safe remote branch deletion operation. Merged branches are auto-deleted by GitHub.
+- Next highest-value task: create a dedicated isolated demo environment with synthetic Owner/Staff identities and fixtures, then run authenticated browser journeys against the staging API/DB. No production data. Creating identities/records or changing the staging DB has not been performed; require explicit environment/identity authorization and rollback/reset evidence first.
 
 ---
 
-# Master release checkpoint — 2026-11-06
-
-## Verified live baseline
-- Main before this candidate: `6d4f825ebda23cf9f99337ecfcef381ad111d76d`.
-- PR #338 and #339 are merged. PR #339 published the hardened Arabic RTL feature preview to `frontend/public/demo/index.html`.
-- Production Web deployment `dpl_9hVvV4qAKoSfrH5NHB9qmaGaoZi5` is READY on main SHA `6d4f825ebda23cf9f99337ecfcef381ad111d76d`; alias `https://ai-business-assistant-web.vercel.app`.
-- `/demo/` returns HTTP 200 and was read back to confirm Reset, print status, T37 DRAFT / NOT APPROVED, no default tax calculator, no partial English toggle, and fictional local-only data.
-- Production API remains version 1.3.5 at SHA `45924b5b37da9171e0981ed727b63ba2e5e5d91802`; /health and /readyz return 200. No API, DB, migration, or production data changes in this demo delivery.
-
-## Web 1.3.8 release candidate
-- Branch: `release/web-1.3.8-demo-preview-20261106`, based on main `6d4f825ebda23cf9f99337ecfcef381ad111d76d`.
-- Candidate scope: frontend package/lockfile, build-info and service-worker fallback metadata, bilingual release guide, release history, and this task record.
-- Intended user-facing changes: demo reset/repeatability, safer print popup handling, and removal of unapproved default tax calculation. API remains 1.3.5.
-- Status: NOT RELEASED until exact-head CircleCI passes and Vercel production alias/version/SHA are verified.
-
-## Remaining blockers
-- T50 is PARTIALLY COMPLETE: no authenticated synthetic OWNER/STAFF/two-tenant journeys, restored-DB app smoke, or full mobile/PWA/accessibility acceptance.
-- T37 remains DRAFT / NOT APPROVED; no tax/GL/AP/COGS/FX/payroll semantics enabled.
-- Open #305/#306/#308/#323 retain unique feature-owned or gated work; do not merge wholesale. #306 migration collision and #308 payroll privacy/owner constraints remain.
-- Closed #307 and other archival refs are preserved because the connected GitHub toolset does not expose safe branch deletion; merged PR branches are auto-deleted.
-
----
-
-# Historical checkpoints below — retained for audit; statuses are superseded by the current checkpoint above.
 
 # Demo production asset correction — 2026-11-06
 
