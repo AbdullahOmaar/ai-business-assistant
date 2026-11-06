@@ -585,6 +585,24 @@ test('customer phone input reflects the backend maximum without making it requir
   assert.doesNotMatch(form, /name="customerPhone"[^>]*required/);
 });
 
+test('invoice discount and tax rate fields expose localized accessible range errors', () => {
+  const start = source.indexOf('<form #invoiceForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(start >= 0 && end > start, 'invoice form must exist');
+  assert.match(form, /#invoiceDiscountModel="ngModel"/);
+  assert.match(form, /#invoiceTaxModel="ngModel"/);
+  assert.match(form, /min="0" max="100" step="any" required/);
+  assert.match(form, /\[attr\.aria-invalid\]="invoiceDiscountModel\.invalid/);
+  assert.match(form, /\[attr\.aria-describedby\]="invoiceTaxModel\.invalid/);
+  assert.match(form, /id="invoice-discount-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /id="invoice-tax-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /أدخل نسبة خصم من 0 إلى 100\./);
+  assert.match(form, /Enter a discount rate from 0 to 100\./);
+  assert.match(form, /أدخل نسبة ضريبة من 0 إلى 100\./);
+  assert.match(form, /Enter a tax rate from 0 to 100\./);
+});
+
 test('invoice void confirmation is localized for Arabic and English', () => {
   const start = source.indexOf('async voidInvoice(invoice: Invoice)');
   const end = source.indexOf('hasOutstandingBalance(', start);
