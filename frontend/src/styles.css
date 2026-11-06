@@ -128,6 +128,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: var(--aba-focus-ring-offset);
 }
 
+/* Native Angular form validation: show invalid controls only after interaction. */
+.shell input.ng-invalid.ng-touched:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.shell select.ng-invalid.ng-touched,
+.shell textarea.ng-invalid.ng-touched,
+.shell form.ng-submitted input.ng-invalid:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.shell form.ng-submitted select.ng-invalid,
+.shell form.ng-submitted textarea.ng-invalid {
+  border-color: var(--aba-color-danger-border);
+  background-color: var(--aba-color-danger-soft);
+}
+.shell input.ng-invalid.ng-touched:focus-visible,
+.shell select.ng-invalid.ng-touched:focus-visible,
+.shell textarea.ng-invalid.ng-touched:focus-visible {
+  outline-color: var(--aba-color-danger-text);
+}
+
 html[dir="rtl"], body { direction: rtl; }
 body { text-align: start; }
 input, select, textarea { text-align: start; }
