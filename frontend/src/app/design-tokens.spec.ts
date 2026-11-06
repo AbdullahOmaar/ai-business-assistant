@@ -151,7 +151,7 @@ test('the workspace shell consumes semantic navigation and hero palette tokens',
 
 
 test('app-wide focus indicators use the same visible focus tokens as shared controls', () => {
-  assert.match(appSource, /button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible\{outline:var\(--aba-focus-ring-width,3px\) solid var\(--aba-color-focus-ring,#93c5fd\);outline-offset:var\(--aba-focus-ring-offset,2px\)\}/);
+  assert.match(appSource, /button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible\{outline:var\(--aba-focus-ring-width,3px\) solid var\(--aba-color-focus-ring,#2563eb\);outline-offset:var\(--aba-focus-ring-offset,2px\)\}/);
 });
 
 
@@ -192,7 +192,8 @@ test('sign-in form receives the same touched and submitted invalid-control treat
 
 
 const colorToken = (name: string): string => {
-  const match = styles.match(new RegExp('^\\\\s*' + name + ':\\\\s*(#[0-9a-fA-F]{6})', 'm'));
+  const line = styles.split(/\r?\n/).find(value => value.trimStart().startsWith(name + ':'));
+  const match = line?.match(/^\s*--aba-[\w-]+:\s*(#[0-9a-fA-F]{6})\s*$/);
   assert.ok(match, \`missing six-digit color token: \${name}\`);
   return match[1];
 };
