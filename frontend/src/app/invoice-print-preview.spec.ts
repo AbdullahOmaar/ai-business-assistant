@@ -26,7 +26,10 @@ test('print invoice escapes customer, business, invoice, and line values before 
   }
   assert.match(printMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
   assert.match(printMethod, /this\.escapePrintHtml\(line\.description\)/);
-  assert.match(printMethod, /this\.escapePrintHtml\(this\.business\.name\)/);
+  assert.match(printMethod, /const businessName = this\.business\.name/);
+  assert.match(printMethod, /const businessCurrency = this\.business\.currency_code/);
+  assert.match(printMethod, /this\.escapePrintHtml\(businessName\)/);
+  assert.match(printMethod, /this\.escapePrintHtml\(businessCurrency\)/);
   assert.match(printMethod, /printWindow\.document\.write\(/);
 });
 
