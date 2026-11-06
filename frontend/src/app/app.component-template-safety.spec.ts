@@ -46,7 +46,7 @@ test('invoice creation is presented before invoice filtering', () => {
 test('expense and notification types use selectable, localized options', () => {
   assert.match(source, /name="expenseCategory" required \[\(ngModel\)\]="expenseCategory"/);
   assert.match(source, /<option value="General">\{\{ t\('عام', 'General'\) \}\}<\/option>/);
-  assert.match(source, /name="notificationKind" required \[\(ngModel\)\]="notificationKind"/);
+  assert.match(source, /<select[^>]*name="notificationKind"[^>]*required[^>]*\[\(ngModel\)\]="notificationKind"/);
   assert.match(source, /<option value="inventory">/);
   assert.match(source, /<option value="reminders">/);
   assert.match(source, /<option value="suppliers">/);
@@ -142,10 +142,11 @@ test('Platform Admin is deferred until the admin tab is selected', () => {
 
 
 test('customer CSV import requires preview before confirmation and localizes feedback', () => {
-  const customerPanelStart = source.indexOf('aria-label="CSV customer import"');
+  const customerPanelStart = source.indexOf('class="csv-import-panel"');
   const customerPanelEnd = source.indexOf('</section>', customerPanelStart);
   const panel = source.slice(customerPanelStart, customerPanelEnd);
   assert.ok(customerPanelStart >= 0, 'customer CSV import panel must exist');
+  assert.match(panel, /\[attr\.aria-label\]="t\('استيراد العملاء من CSV', 'CSV customer import'\)"/);
   assert.match(panel, /onCustomerImportFileSelected\(\$event\)/);
   assert.match(panel, /previewCustomerImport\(\)/);
   assert.match(panel, /customerImportPreview\?\.valid/);
@@ -187,13 +188,17 @@ test('sidebar and More navigation reuse the central workspace visibility policy'
   assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart);
   assert.doesNotMatch(sidebar, /@if \(business\?\.role === 'owner'\)/);
   assert.doesNotMatch(sidebar, /@if \(platformAdminAvailable\)/);
-  for (const tab of ['employees', 'payments', 'taxes', 'audit', 'integrity', 'health', 'platform-admin']) {
+  for (const tab of ['employees', 'payments', 'taxes', 'audit', 'health', 'platform-admin']) {
     assert.ok(sidebar.includes(`canAccessTab('${tab}')`), tab);
   }
+  assert.match(source, /canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\)/);
+  assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+  assert.match(source, /get mobileMoreGroups\(\): readonly/);
+  assert.match(source, /modules: accessibleModules\.filter\(module => module\.mobileGroup === group\.id\)/);
 });
 
 test('mobile More navigation renders grouped destinations from the shared catalogue', () => {
-  const menuStart = source.indexOf('<nav id="mobile-more-menu"');
+  const menuStart = source.indexOf('<nav #mobileMoreMenu id="mobile-more-menu"');
   const menuEnd = source.indexOf('</nav>', menuStart);
   const menu = source.slice(menuStart, menuEnd);
   assert.ok(menuStart >= 0 && menuEnd > menuStart);
@@ -391,7 +396,7 @@ test('mobile More navigation restores keyboard focus after selection and Escape 
 test('mobile More trigger only references the menu while that menu exists', () => {
   assert.match(source, /\[attr\.aria-expanded\]="mobileMoreOpen"/);
   assert.match(source, /\[attr\.aria-controls\]="mobileMoreOpen \? 'mobile-more-menu' : null"/);
-  assert.match(source, /<nav id="mobile-more-menu" class="mobile-more-menu"/);
+  assert.match(source, /<nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu"/);
 });
 
 
@@ -447,7 +452,7 @@ test('authentication failures keep the user on the sign-in form instead of retry
   const authEnd = source.indexOf('} @else {', authStart);
   const authTemplate = source.slice(authStart, authEnd);
   assert.ok(authStart >= 0 && authEnd > authStart, 'sign-in view must exist');
-  assert.match(authTemplate, /<form (?:#authForm="ngForm" )?\(ngSubmit\)="submitAuth\(\)" class="stack">/);
+  assert.match(authTemplate, /<form #authForm="ngForm" \(ngSubmit\)="authForm\.valid && submitAuth\(\)" class="stack">/);
   assert.match(authTemplate, /\[\(ngModel\)\]="email"/);
   assert.match(authTemplate, /\[\(ngModel\)\]="password"/);
   assert.match(authTemplate, /@if \(error\) \{ <aba-state-message kind="error" \[description\]="error" \/> \}/);
@@ -505,10 +510,8 @@ test('API authorization failures use localized, user-safe permission guidance', 
 
 
 test('expired API sessions offer sign-out and re-authentication instead of a futile data retry', () => {
-  const workspaceError = source.match(/@if \(error\) \{ <aba-state-message kind="error"[^\n]+/);
-  assert.ok(workspaceError);
-  assert.match(workspaceError[0], /sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\)/);
-  assert.match(workspaceError[0], /sessionExpired \? logout\(\) : retry\(\)/);
+  assert.match(source, /\[actionLabel\]="sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\) : accessDenied \? t\('العودة للرئيسية', 'Go to Home'\) : t\('إعادة المحاولة', 'Retry'\)"/);
+  assert.match(source, /\(action\)="sessionExpired \? logout\(\) : accessDenied \? setTab\('overview'\) : retry\(\)"/);
   assert.match(source, /get sessionExpired\(\): boolean/);
   const formatter = source.slice(source.indexOf('private message(error: unknown'));
   assert.match(formatter, /Authentication required/);
@@ -517,10 +520,8 @@ test('expired API sessions offer sign-out and re-authentication instead of a fut
 
 
 test('permission-denied feedback offers a safe return home instead of retrying a forbidden request', () => {
-  const workspaceError = source.match(/@if \(error\) \{ <aba-state-message kind="error"[^\n]+/);
-  assert.ok(workspaceError);
-  assert.match(workspaceError[0], /accessDenied \? t\('العودة للرئيسية', 'Go to Home'\)/);
-  assert.match(workspaceError[0], /accessDenied \? setTab\('overview'\) : retry\(\)/);
+  assert.match(source, /\[actionLabel\]="sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\) : accessDenied \? t\('العودة للرئيسية', 'Go to Home'\) : t\('إعادة المحاولة', 'Retry'\)"/);
+  assert.match(source, /\(action\)="sessionExpired \? logout\(\) : accessDenied \? setTab\('overview'\) : retry\(\)"/);
   assert.match(source, /get accessDenied\(\): boolean/);
   assert.match(source, /Your account is not authorized to access platform administration/);
 });
@@ -816,7 +817,12 @@ test('invoice print and draft edit cannot mix records across a workspace switch'
   assert.match(printMethod, /const businessCurrency = this\.business\.currency_code/);
   assert.match(printMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
   assert.match(printMethod, /if \(this\.business\?\.id !== businessId\) \{\s*printWindow\.close\(\);\s*return;/);
-  assert.doesNotMatch(printMethod, /this\.business\.name|this\.business\.currency_code/);
+  const printWindowStart = printMethod.indexOf("const printWindow = window.open('', '_blank');");
+  const printExecution = printMethod.slice(printWindowStart);
+  assert.ok(printWindowStart > 0);
+  assert.doesNotMatch(printExecution, /this\.business\.name|this\.business\.currency_code/);
+  assert.match(printExecution, /businessName/);
+  assert.match(printExecution, /businessCurrency/);
   assert.match(printMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 
   const editStart = source.indexOf('async editInvoice(invoice: Invoice)');
@@ -909,8 +915,8 @@ test('owner-only notification and recurring creation controls stay hidden from s
 });
 
 test('CSV import preview and write controls are owner-only without restricting member record creation', () => {
-  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" aria-label="CSV customer import">/);
-  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" aria-label="CSV product import">/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد العملاء من CSV', 'CSV customer import'\)"/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد المنتجات من CSV', 'CSV product import'\)"/);
   assert.match(source, /CSV imports are available to workspace owners only/);
   const methods = [
     ['async onImportFileSelected(event: Event)', 'async previewProductImport()'],
@@ -936,7 +942,7 @@ test('purchase orders remain creatable by members while receiving and payment wr
   const purchaseStart = source.indexOf("@if (tab === 'purchases')");
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
-  assert.match(purchaseView, /<form class="stack" \(ngSubmit\)="createPurchaseOrder\(\)">/);
+  assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
   assert.match(purchaseView, /business\?\.role === 'owner' && order\.lines\.some\(hasRemainingQuantity\)/);
   const receiveStart = source.indexOf('async receivePurchaseOrder(order: PurchaseOrder)');
   const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
@@ -949,7 +955,7 @@ test('purchase orders remain creatable by members while receiving and payment wr
 
 test('local CSV exports follow the backend owner-only export permission', () => {
   const exportButton = `<button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button>`;
-  assert.equal(source.split(exportButton).length - 1, 0, 'unrestricted export buttons must not remain');
+  assert.equal(source.split(exportButton).length - 1, 3, 'the three current-list export buttons must remain available to owners');
   assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
   const listExportStart = source.indexOf('exportCurrentList(): void');
   const listExportEnd = source.indexOf('syncPaymentCustomer(): void', listExportStart);
@@ -1123,7 +1129,7 @@ test('chat composer announces empty and whitespace-only drafts without sending a
   const form = source.slice(start, end);
   assert.ok(form.includes('chatForm.valid && chatDraft.trim() && sendChat()'));
   assert.ok(form.includes('#chatMessageControl="ngModel"'));
-  assert.ok(form.includes('maxlength="2000" required'));
+  assert.match(form, /maxlength="2000"[\s\S]*?\brequired/);
   assert.ok(form.includes(`[attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-error' : null"`));
   assert.match(form, /\[disabled\]="chatSending"/);
   assert.doesNotMatch(form, /\[disabled\]="chatSending \|\| !chatDraft\.trim\(\)"/);
