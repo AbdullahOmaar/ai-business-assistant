@@ -798,3 +798,27 @@ test('asynchronous CSV file reads and previews cannot leak into a newly selected
   assert.match(customerPreview, /this\.api\.previewCustomerCsv\(businessId, csvText\)/);
   assert.match(customerPreview, /if \(this\.business\?\.id === businessId\) this\.customerImportPreview = preview/);
 });
+
+
+test('invoice print and draft edit cannot mix records across a workspace switch', () => {
+  const printStart = source.indexOf('async printInvoice(invoice: Invoice)');
+  const printEnd = source.indexOf('async editInvoice(invoice: Invoice)', printStart);
+  const printMethod = source.slice(printStart, printEnd);
+  assert.ok(printStart >= 0 && printEnd > printStart);
+  assert.match(printMethod, /const businessId = this\.business\.id/);
+  assert.match(printMethod, /const businessName = this\.business\.name/);
+  assert.match(printMethod, /const businessCurrency = this\.business\.currency_code/);
+  assert.match(printMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
+  assert.match(printMethod, /if \(this\.business\?\.id !== businessId\) \{\s*printWindow\.close\(\);\s*return;/);
+  assert.doesNotMatch(printMethod, /this\.business\.name|this\.business\.currency_code/);
+  assert.match(printMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+
+  const editStart = source.indexOf('async editInvoice(invoice: Invoice)');
+  const editEnd = source.indexOf('cancelInvoiceEdit(): void', editStart);
+  const editMethod = source.slice(editStart, editEnd);
+  assert.ok(editStart >= 0 && editEnd > editStart);
+  assert.match(editMethod, /const businessId = this\.business\.id/);
+  assert.match(editMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
+  assert.match(editMethod, /if \(this\.business\?\.id !== businessId\) return;/);
+  assert.match(editMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+});
