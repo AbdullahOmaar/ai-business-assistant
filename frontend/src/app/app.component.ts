@@ -164,9 +164,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               </form>
             </section>
           } @else {
-            <section class="workspace-bar">
-              <div class="workspace-current"><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong>{{ business.name }}</strong></div>
-              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
+            <section class="workspace-bar" [attr.aria-label]="t('مساحة العمل الحالية', 'Current workspace')">
+              <div class="workspace-current"><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong id="workspace-current-name" aria-live="polite">{{ business.name }}</strong></div>
+              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" aria-describedby="workspace-current-name" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
               <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('إصدار التطبيق ووقت النشر', 'App version and deployment time')">
