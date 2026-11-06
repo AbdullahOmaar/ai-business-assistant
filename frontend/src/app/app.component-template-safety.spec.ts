@@ -342,3 +342,21 @@ test('payment feedback uses the shared state component and distinguishes each ou
   assert.ok(failure > mutation,
     'an uncertain or failed mutation must use error feedback');
 });
+
+
+test('workspace load failure clears stale workspace data and releases the loading state', () => {
+  const start = source.indexOf('async loadWorkspaceData(): Promise<void>');
+  const end = source.indexOf('async refreshAfterPayrollPayment(): Promise<void>', start);
+  assert.ok(start >= 0 && end > start);
+  const method = source.slice(start, end);
+  const catchStart = method.indexOf('} catch (error) {');
+  const clear = method.indexOf('this.clearWorkspaceData();', catchStart);
+  const error = method.indexOf('this.error = this.message(error);', catchStart);
+  const release = method.indexOf('this.loading = false;', error);
+  const finallyStart = method.indexOf('} finally {', catchStart);
+
+  assert.ok(catchStart >= 0 && clear > catchStart);
+  assert.ok(error > clear);
+  assert.ok(release > error && release < finallyStart,
+    'the failure path must stop loading after invalidating the request generation');
+});
