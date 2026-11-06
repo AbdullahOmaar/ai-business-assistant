@@ -549,6 +549,20 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(source, /operationsMessageTab === 'recurring'/);
 });
 
+test('customer creation exposes a localized, associated required-name error', () => {
+  const start = source.indexOf('<form #customerForm="ngForm"');
+  const end = source.indexOf('</form>', start);
+  const form = source.slice(start, end);
+  assert.ok(start >= 0 && end > start, 'customer create form must exist');
+  assert.match(form, /#customerNameModel="ngModel"/);
+  assert.match(form, /maxlength="160"/);
+  assert.match(form, /\[attr\.aria-invalid\]="customerNameModel\.invalid/);
+  assert.match(form, /\[attr\.aria-describedby\]="customerNameModel\.invalid/);
+  assert.match(form, /id="customer-name-error" class="field-error" aria-live="polite"/);
+  assert.match(form, /اسم العميل مطلوب\./);
+  assert.match(form, /Customer name is required\./);
+});
+
 test('invoice void confirmation is localized for Arabic and English', () => {
   const start = source.indexOf('async voidInvoice(invoice: Invoice)');
   const end = source.indexOf('hasOutstandingBalance(', start);
