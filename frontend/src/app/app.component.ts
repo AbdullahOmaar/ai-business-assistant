@@ -2930,7 +2930,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business) return;
+    if (!this.business || this.business.role !== 'owner') return;
     const businessId = this.business.id;
     this.loading = true;
     this.error = '';
@@ -2967,7 +2967,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async voidInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || !window.confirm(this.t(
+    if (!this.business || this.business.role !== 'owner' || !window.confirm(this.t(
       `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت عليها دفعات مخصصة، لا تكمل الإلغاء وراجع مالك مساحة العمل قبل أي تصحيح. الشاشة دي لا تنفذ رد مبالغ أو إشعارات دائنة.`,
       `Confirm voiding invoice ${invoice.invoice_number}? If payments are allocated, stop and ask the workspace owner before making any correction. This screen does not process refunds or credit notes.`
     ))) return;
