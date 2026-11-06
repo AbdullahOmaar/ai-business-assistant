@@ -483,3 +483,16 @@ test('sign-in and first-workspace forms expose localized inline errors to assist
   assert.match(workspaceForm, /\[attr\.aria-invalid\]="businessNameModel\.invalid/);
   assert.match(workspaceForm, /id="workspace-name-error" class="field-error" role="alert"/);
 });
+
+
+test('API authorization failures use localized, user-safe permission guidance', () => {
+  const formatterStart = source.indexOf('private message(error: unknown');
+  const formatter = source.slice(formatterStart);
+  assert.ok(formatterStart >= 0);
+  assert.match(formatter, /No active membership for this business/);
+  assert.match(formatter, /Business role is not permitted for this operation/);
+  assert.match(formatter, /No access to this business workspace\./);
+  assert.match(formatter, /Platform administrator access is not granted\./);
+  assert.match(formatter, /You do not have permission to access this workspace or perform this action\./);
+  assert.match(formatter, /Your account is not authorized to access platform administration\./);
+});
