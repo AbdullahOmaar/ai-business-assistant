@@ -1,8 +1,19 @@
+# Live demo browser acceptance — 2026-11-06
+
+- Base/current main: `342d51fac546f96626944e6dc365e615f8bdbb41` (PR #341 docs-only release verification merged; post-merge CircleCI 7/7 PASS). The production Web deployment remains READY on code SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08`; the docs-only commit correctly skipped a new production deployment.
+- Branch: `test/demo-live-route-browser-acceptance-20261106`.
+- Added `frontend/e2e/demo-live-route.spec.ts` to test the actual `/demo/` static asset through the Angular dev server/Chromium, rather than loading a copied HTML string with `page.setContent`.
+- Coverage: route and Arabic RTL/local-only boundary, disabled T37 tax controls, workspace/invoice/payment mock interactions and reset, isolated invoice print popup/status, and 360px mobile horizontal overflow.
+- Exact-head CircleCI is required before merge. No local runner or manual CI trigger/retry. This is browser acceptance for the static mock only; it does not satisfy authenticated ERP/T50 acceptance.
+- No production code, API, database, schema, migration, or deployment change.
+
+---
+
 # Master demo delivery checkpoint — 2026-11-06 (verified 04:06 UTC)
 
 ## Overall
 - Standalone feature-preview demo: **VERIFIED COMPLETE** as a static, fictional-data showcase only. It is NOT a connected/authenticated ERP demo.
-- Main SHA: `65e431d8fa7e77aa136fca91f8cfba234c03ec08`.
+- Current main after PR #341: `342d51fac546f96626944e6dc365e615f8bdbb41`. Production Web deployment code SHA: `65e431d8fa7e77aa136fca91f8cfba234c03ec08`.
 - PR #338 hardened the demo source; PR #339 published the correct asset under `frontend/public/demo/index.html`; PR #340 released Web 1.3.8. All three are merged.
 - CircleCI exact candidate head for PR #340: 7/7 PASS (`ef9f4b1a97dae81284e7b9b5dc2d21246809e123`). Post-merge main SHA: 7/7 PASS. SemaphoreCI failure is a retired/non-canonical provider and is not used as a release gate.
 - Production Web deployment: `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`, state READY, alias `https://ai-business-assistant-web.vercel.app`, deployed SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08`, frontend version 1.3.8.
