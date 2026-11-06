@@ -300,3 +300,24 @@ test('shared card hosts own card surface styling and projected KPI styles live i
   assert.equal(source.includes('.panel{padding:15px'), false);
   assert.equal(source.includes('.metric-grid aba-metric-card strong'), false);
 });
+
+
+test('owner-only sidebar destinations use complete, accessible mobile-secondary navigation markup', () => {
+  assert.equal(source.includes('<button ?'), false,
+    'incomplete property bindings must never be emitted in a navigation button');
+
+  for (const tab of ['taxes', 'employees', 'audit', 'payments', 'health']) {
+    const marker = `@if (canAccessTab('${tab}'))`;
+    const start = source.indexOf(marker);
+    assert.ok(start >= 0, `${tab} must keep its existing role visibility guard`);
+    const end = source.indexOf('}', start);
+    const markup = source.slice(start, end + 1);
+    assert.match(markup, /<button class="nav-item mobile-extra"/,
+      `${tab} must remain in the More navigation on narrow screens`);
+    assert.match(markup, /\[attr\.aria-label\]=/);
+    assert.match(markup, /\[attr\.title\]=/);
+    assert.match(markup, /\[class\.active\]=/);
+    assert.match(markup, /\[attr\.aria-current\]=/);
+    assert.ok(markup.includes(`setTab('${tab}')`));
+  }
+});
