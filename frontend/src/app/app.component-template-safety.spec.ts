@@ -1023,6 +1023,9 @@ test('notification and supplier forms expose localized field validation without 
     assert.ok(notification.includes(`[attr.aria-invalid]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? 'true' : null"`), control + ' invalid state');
     assert.ok(source.includes('id="' + id + '"'), id);
   }
+  assert.match(notification, /<option value="business">/);
+  assert.doesNotMatch(notification, /<option value="businesses">/);
+  assert.match(source, /notificationKind = 'business';/);
   assert.match(notification, /name="notificationTitle" required maxlength="160"/);
   assert.match(notification, /name="notificationBody" required maxlength="1000"/);
   assert.match(source, /class="form-validation" aria-live="polite"/);
