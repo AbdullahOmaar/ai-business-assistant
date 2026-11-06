@@ -1182,3 +1182,10 @@ test('payment submit remains available to reveal required-field validation', () 
   assert.doesNotMatch(form, /\[disabled\]="loading \|\| !paymentAmount"/);
   assert.match(source, /if \(!this\.paymentAmount\.trim\(\) \|\| !this\.paymentCustomerId\)/);
 });
+
+test('Home KPI cards use one column on narrow mobile viewports', () => {
+  assert.match(source, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  assert.match(source, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
+  assert.match(source, /P1 Home hierarchy: keep the four KPI cards readable as a single column on phones/);
+  assert.match(source, /@media\(max-width:760px\)\{\.metric-grid\{grid-template-columns:minmax\(0,1fr\)\}\}/);
+});
