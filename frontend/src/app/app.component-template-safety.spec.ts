@@ -387,3 +387,19 @@ test('mobile More trigger only references the menu while that menu exists', () =
   assert.match(source, /\[attr\.aria-controls\]="mobileMoreOpen \? 'mobile-more-menu' : null"/);
   assert.match(source, /<nav id="mobile-more-menu" class="mobile-more-menu"/);
 });
+
+
+test('mobile More closes on outside pointer interaction without stealing the new focus target', () => {
+  assert.match(source, /#mobileMoreMenu id="mobile-more-menu"/);
+  assert.match(source, /@ViewChild\('mobileMoreMenu'\) private mobileMoreMenu\?: ElementRef<HTMLElement>/);
+  assert.match(source, /@HostListener\('document:pointerdown', \['\$event'\]\)/);
+
+  const start = source.indexOf('closeMobileMoreOnOutsidePointer(event: PointerEvent): void');
+  const end = source.indexOf('\n  }', start);
+  const method = source.slice(start, end);
+  assert.match(method, /this\.mobileMoreTrigger\?\.nativeElement\.contains\(target\)/);
+  assert.match(method, /this\.mobileMoreMenu\?\.nativeElement\.contains\(target\)/);
+  assert.match(method, /this\.mobileMoreOpen = false/);
+  assert.doesNotMatch(method, /\.focus\(\)/,
+    'outside pointer dismissal must not move focus away from the clicked target');
+});
