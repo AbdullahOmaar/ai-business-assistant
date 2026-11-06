@@ -209,12 +209,15 @@ test('mobile More navigation renders grouped destinations from the shared catalo
 test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /<p class="empty">/);
   assert.ok((source.match(/<aba-state-message kind="empty"/g) || []).length >= 13);
-  assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 15);
+  assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 16);
   assert.doesNotMatch(source, /<p class="error" role="alert">/);
   assert.doesNotMatch(source, /class="error-banner"/);
-  assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 8);
-  assert.doesNotMatch(source, /class="error-banner"/);
+  assert.doesNotMatch(source, /class="error" role="alert"/);
+  assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 9);
+  assert.ok((source.match(/<aba-state-message kind="success"/g) || []).length >= 4);
+  assert.ok((source.match(/<aba-state-message \\[kind\\]/g) || []).length >= 2);
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
+  assert.doesNotMatch(source, /<p role="status">/);
 });
 
 test('workspace panels reuse one section header component instead of duplicating heading markup', () => {
@@ -266,3 +269,35 @@ test('chat send preserves retry draft behavior and keeps the existing API contra
   assert.match(method, /onFinally: \(\) => \{\s*this\.chatSending = false;/);
   assert.doesNotMatch(method, /this\.api\.chat\(this\.business\.id/);
 });
+
+const sharedStateSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
+const sharedCardSource = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
+const sharedMetricSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
+const globalStylesSource = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+
+test('shared state feedback owns info, warning, success, error and accessible action behavior', () => {
+  assert.match(sharedStateSource, /AbaStateKind = 'loading' \| 'empty' \| 'error' \| 'success' \| 'info' \| 'warning'/);
+  assert.match(sharedStateSource, /kind\(\) === 'error' \? 'alert' : 'status'/);
+  assert.match(sharedStateSource, /kind\(\) === 'loading' \|\| kind\(\) === 'success' \? 'polite' : null/);
+  assert.match(sharedStateSource, /aba-state-message--info/);
+  assert.match(sharedStateSource, /aba-state-message--warning/);
+  assert.match(sharedStateSource, /min-height:44px/);
+  assert.match(sharedStateSource, /prefers-reduced-motion:reduce/);
+});
+
+test('shared card hosts own card surface styling and projected KPI styles live in the shared stylesheet', () => {
+  assert.match(sharedCardSource, /selector: 'section\[abaCard\]'/);
+  assert.match(sharedCardSource, /ChangeDetectionStrategy\.OnPush/);
+  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)\\b([^>]*)class="[^"]*\\bpanel\\b[^"]*"([^>]*)>/g)];
+  assert.ok(panelHosts.length >= 20);
+  for (const match of panelHosts) {
+    assert.equal(match[1], 'section', 'panel surfaces must remain native section elements');
+    assert.match(match[2] + match[3], /\\babaCard\\b/, 'every panel must reuse the shared card directive');
+  }
+  assert.match(sharedMetricSource, /ChangeDetectionStrategy\.OnPush/);
+  assert.match(globalStylesSource, /aba-metric-card strong\\s*\\{/);
+  assert.match(globalStylesSource, /aba-metric-card small\\s*\\{/);
+  assert.doesNotMatch(source, /\\.panel\\{padding:15px/);
+  assert.doesNotMatch(source, /\\.metric-grid aba-metric-card strong/);
+});
+
