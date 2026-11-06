@@ -434,3 +434,17 @@ test('mobile module launcher uses two balanced columns when space permits', () =
   assert.match(source, /\.quick-grid\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,240px\),1fr\)\)\}/);
   assert.match(source, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,165px\),1fr\)\)/);
 });
+
+
+test('authentication failures keep the user on the sign-in form instead of retrying app startup', () => {
+  const authStart = source.indexOf('} @else if (!signedIn) {');
+  const authEnd = source.indexOf('} @else {', authStart);
+  const authTemplate = source.slice(authStart, authEnd);
+  assert.ok(authStart >= 0 && authEnd > authStart, 'sign-in view must exist');
+  assert.match(authTemplate, /<form \(ngSubmit\)="submitAuth\(\)" class="stack">/);
+  assert.match(authTemplate, /\[\(ngModel\)\]="email"/);
+  assert.match(authTemplate, /\[\(ngModel\)\]="password"/);
+  assert.match(authTemplate, /@if \(error\) \{ <aba-state-message kind="error" \[description\]="error" \/> \}/);
+  assert.doesNotMatch(authTemplate, /initializeApp\(\)|Retry startup/,
+    'an auth failure must be retried through the preserved sign-in form');
+});
