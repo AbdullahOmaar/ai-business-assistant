@@ -483,7 +483,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
                 </form>
                 </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
-                @if (invoiceMessage) { <aba-state-message kind="success" [description]="invoiceMessage" /> }
+                @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select><button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 <div class="list">
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button><button class="secondary" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }</article> }
@@ -1105,6 +1105,7 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceDiscountRate = '0';
   invoiceTaxRate = '0';
   invoiceMessage = '';
+  invoiceMessageKind: 'success' | 'warning' = 'success';
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
@@ -1743,6 +1744,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceNumber = '';
     this.invoiceFilterCustomerId = '';
     this.editingInvoiceId = null;
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
     this.paymentCustomerId = '';
     this.paymentAmount = '';
     this.paymentAllocationAmount = '';
@@ -2660,32 +2663,54 @@ export class AppComponent implements OnInit, OnDestroy {
       this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
       return;
     }
+    const businessId = this.business.id;
+    const currencyCode = this.business.currency_code;
+    const editingInvoiceId = this.editingInvoiceId;
     this.loading = true;
     this.error = '';
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
     try {
       const invoiceNumber = this.invoiceNumber.trim() || 'INV-' + Date.now();
       const payload = {
         invoice_number: invoiceNumber,
-        currency_code: this.business.currency_code,
+        currency_code: currencyCode,
         customer_id: this.invoiceCustomerId,
         lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
         discount_rate: String(discountRate),
         tax_rate: String(taxRate),
       };
-      if (this.editingInvoiceId) {
-        await this.api.updateDraftInvoice(this.business.id, this.editingInvoiceId, payload);
+      if (editingInvoiceId) {
+        await this.api.updateDraftInvoice(businessId, editingInvoiceId, payload);
       } else {
-        await this.api.createInvoice(this.business.id, payload);
+        await this.api.createInvoice(businessId, payload);
       }
+      if (this.business?.id !== businessId) return;
+
       this.cancelInvoiceEdit();
       this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
-      this.invoices = await this.api.invoices(this.business.id);
-      this.dashboard = await this.api.dashboard(this.business.id);
       this.tab = 'invoices';
+      try {
+        const [invoices, dashboard] = await Promise.all([
+          this.api.invoices(businessId),
+          this.api.dashboard(businessId),
+        ]);
+        if (this.business?.id !== businessId) return;
+        this.invoices = invoices;
+        this.dashboard = dashboard;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.invoiceMessageKind = 'warning';
+          this.invoiceMessage = this.t(
+            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تحفظها مرة أخرى؛ حدّث البيانات أولًا.',
+            'The draft was saved, but the list could not refresh. Do not save it again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
@@ -2787,38 +2812,79 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async issueInvoice(invoice: Invoice): Promise<void> {
     if (!this.business) return;
+    const businessId = this.business.id;
     this.loading = true;
     this.error = '';
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
     try {
-      await this.api.issueInvoice(this.business.id, invoice.id);
-      this.invoiceMessage = '';
-      this.invoices = await this.api.invoices(this.business.id);
-      this.dashboard = await this.api.dashboard(this.business.id);
-      this.products = await this.api.products(this.business.id);
+      await this.api.issueInvoice(businessId, invoice.id);
+      if (this.business?.id !== businessId) return;
+      this.invoiceMessage = this.t('تم إصدار الفاتورة بنجاح.', 'Invoice issued successfully.');
+      try {
+        const [invoices, dashboard, products] = await Promise.all([
+          this.api.invoices(businessId),
+          this.api.dashboard(businessId),
+          this.api.products(businessId),
+        ]);
+        if (this.business?.id !== businessId) return;
+        this.invoices = invoices;
+        this.dashboard = dashboard;
+        this.products = products;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.invoiceMessageKind = 'warning';
+          this.invoiceMessage = this.t(
+            'تم إصدار الفاتورة، لكن تعذر تحديث العرض. لا تعاود إصدارها؛ حدّث البيانات أولًا.',
+            'The invoice was issued, but the view could not refresh. Do not issue it again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
   async voidInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || !window.confirm(this.t(
-      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت الفاتورة عليها دفعات مخصصة، يجب استخدام إجراء ردّ المبلغ أو الإشعار الدائن بدلًا من الإلغاء المباشر.`,
-      `Confirm voiding invoice ${invoice.invoice_number}? If payments have been allocated to this invoice, use the appropriate refund or credit-note process instead of voiding it directly.`
+      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت عليها دفعات مخصصة، لا تكمل الإلغاء وراجع مالك مساحة العمل قبل أي تصحيح. الشاشة دي لا تنفذ رد مبالغ أو إشعارات دائنة.`,
+      `Confirm voiding invoice ${invoice.invoice_number}? If payments are allocated, stop and ask the workspace owner before making any correction. This screen does not process refunds or credit notes.`
     ))) return;
+    const businessId = this.business.id;
     this.loading = true;
     this.error = '';
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
     try {
-      await this.api.voidInvoice(this.business.id, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
-      this.invoices = await this.api.invoices(this.business.id);
-      this.dashboard = await this.api.dashboard(this.business.id);
-      this.products = await this.api.products(this.business.id);
+      await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
+      if (this.business?.id !== businessId) return;
+      this.invoiceMessage = this.t('تم إلغاء الفاتورة بنجاح.', 'Invoice voided successfully.');
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
+      try {
+        const [invoices, dashboard, products] = await Promise.all([
+          this.api.invoices(businessId),
+          this.api.dashboard(businessId),
+          this.api.products(businessId),
+        ]);
+        if (this.business?.id !== businessId) return;
+        this.invoices = invoices;
+        this.dashboard = dashboard;
+        this.products = products;
+      } catch {
+        if (this.business?.id === businessId) {
+          this.invoiceMessageKind = 'warning';
+          this.invoiceMessage = this.t(
+            'تم إلغاء الفاتورة، لكن تعذر تحديث العرض. لا تعاود الإلغاء؛ حدّث البيانات أولًا.',
+            'The invoice was voided, but the view could not refresh. Do not void it again; refresh the data first.'
+          );
+        }
+      }
     } catch (error) {
-      this.error = this.message(error);
+      if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
@@ -3023,7 +3089,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.paymentMessageKind = 'error';
       }
     } finally {
-      this.loading = false;
+      if (this.business?.id === businessId) this.loading = false;
     }
   }
 
