@@ -1,3 +1,14 @@
+# Live demo browser acceptance — 2026-11-06
+
+- Base main: `342d51fac546f96626944e6dc365e615f8bdbb41` (PR #341 docs-only release verification merged).
+- Branch: `test/demo-live-route-browser-acceptance-20261106`.
+- Added `frontend/e2e/demo-live-route.spec.ts` to test the actual `/demo/` static asset through the Angular dev server/Chromium, rather than loading a copied HTML string with `page.setContent`.
+- Coverage: route and Arabic RTL/local-only boundary, disabled T37 tax controls, workspace/invoice/payment mock interactions and reset, isolated invoice print popup/status, and 360px mobile horizontal overflow.
+- Exact-head CircleCI is required before merge. No local runner or manual CI trigger/retry. This is browser acceptance for the static mock only; it does not satisfy authenticated ERP/T50 acceptance.
+- No production code, API, database, schema, migration, or deployment change.
+
+---
+
 # Master demo delivery checkpoint — 2026-11-06 (verified 04:06 UTC)
 
 ## Overall
