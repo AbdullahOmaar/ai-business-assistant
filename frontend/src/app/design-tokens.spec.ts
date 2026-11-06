@@ -145,3 +145,8 @@ test('the workspace shell consumes semantic navigation and hero palette tokens',
     assert.ok(appSource.includes(`var(${token}`), `app shell must consume ${token}`);
   }
 });
+
+
+test('app-wide focus indicators use the same visible focus tokens as shared controls', () => {
+  assert.match(appSource, /button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible\{outline:var\(--aba-focus-ring-width,3px\) solid var\(--aba-color-focus-ring,#93c5fd\);outline-offset:var\(--aba-focus-ring-offset,2px\)\}/);
+});
