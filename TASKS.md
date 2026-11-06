@@ -1,3 +1,34 @@
+# Current execution checkpoint — 2026-11-06 (Master continuation)
+
+## Latest verified delivery
+- Current main SHA: `45924b5b37da917d98085487f091779317988966`.
+- PR #333 merged at `45924b5b37da917d98085487f091779317988966`: `backend/tests/test_assistant_security.py` adds malformed AI-provider response regressions (safe 502; no provider diagnostic/secret leakage).
+- Exact PR-head CircleCI: 7/7 SUCCESS. Post-merge main CircleCI: 7/7 SUCCESS. Retired Semaphore failure is non-authoritative.
+- Vercel Web deployment `dpl_6bn3FZBueRpDa5s96tf5WfrCoG6x` and API deployment `dpl_F6C6sZGa8HaeTuo4oBbR94NDw9NM` are READY on the exact main SHA. Production aliases verified; API `/health`=200, `/readyz`=200, `/version` reports 1.3.5 and commit prefix 45924b5b37da. Web build reports version 1.3.6.
+- The merge of a test-only PR automatically triggered production-target builds for both Vercel projects because the current Ignore Build Step/release-marker behavior did not suppress the push. Web/API builds completed successfully; no manual deployment trigger was issued. Investigate project ignore-step configuration before the next release.
+
+## Active work — T18 / frontend accessibility
+- Branch: `fix/accessibility-light-surface-contrast-v1.3.7`, based on main `45924b5b37da917d98085487f091779317988966`.
+- Scope: frontend-only patch version 1.3.7; improve contrast only for `.workspace-release-meta small`, `.metric small`, `.empty`, `.footnote`, and `footer span` on light surfaces. Preserve dark sidebar `.light`, `.nav-label`, and `.sidebar-bottom small` colors.
+- Contrast evidence: `#6b7280` is 4.51:1 on `#f5f7fb`, 4.83:1 on white, and 4.62:1 on `#f8fafc`; existing `#9ca3af` is 2.37–2.54:1 on those backgrounds.
+- Candidate changes: global stylesheet override with specificity above component-scoped styles; new Node test asserts selectors and WCAG AA contrast; frontend package/lock/build fallback/PWA cache/release guide/docs updated to 1.3.7 with unchanged API 1.3.5.
+- Exact-head CircleCI, rendered browser/device check, merge, and production release: NOT RUN at this checkpoint.
+
+## Branch cleanup
+- PR #333 merged; GitHub ref lookup for `test/assistant-malformed-provider-response-20261106` returned 404 after merge, confirming the PR branch was auto-deleted.
+- Remaining diverged Draft PRs/branches are retained where they contain unique code, tests, migrations or audit evidence. No branch deletion has been performed.
+- The connected GitHub toolset does not expose a branch-delete/ref-delete operation. Do not emulate deletion by moving refs. Re-evaluate branch candidates after unique work is preserved; use an authorized delete operation when available.
+- PRs with T37-dependent financial semantics and competing 0006 migrations remain blocked; do not merge their migrations/tests.
+
+## Next actions
+1. Finish reviewing this T18 diff, run exact-head CircleCI and fix any failures.
+2. Merge only if CircleCI and repository/provider gates allow; verify main SHA and post-merge CircleCI.
+3. Confirm only Web deploys for the `[release-web]` release marker; inspect API Ignore Build Step behavior.
+4. Verify Web READY, alias, deployed SHA and version 1.3.7; verify PWA cache version and safe public smoke. Keep API at 1.3.5 unless backend changes are independently required.
+5. Continue P0 T03 route × role × action × tenant matrix and other accepted tasks. Preserve T37 / migration gates.
+
+---
+
 # Master execution checkpoint — 2026-11-04 (CircleCI active / GitLab inactive)
 
 ## Owner CI directive

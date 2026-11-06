@@ -24,6 +24,8 @@
 
 The app page lists these release lines based on the repository's versioned release history:
 
+- **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.
+- **1.3.5** — session synchronization and workspace data protection; current production API version is 1.3.5.
 - **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
 - **1.3.0** — release candidate: invoice payment shortcut and remaining balance, opening stock/current quantity for stock-tracked items, and this feature guide.
 - **1.2.1** — accounting and workflow improvements: stock validation and consistent invoice rounding, payment retry feedback, owner-only invoice issue/void, and clearer UI/API version information.
@@ -45,7 +47,7 @@ Only the version embedded in the deployed build identifies what users have actua
 - Align frontend package, lockfile root metadata, backend package, FastAPI API metadata, local build-info fallback, and PWA service-worker fallback at `1.3.5`.
 - Synchronize Firebase sign-in/sign-out/account changes across tabs; clear workspace-scoped state on identity transitions; fence delayed Audit and Customer Statement responses against stale workspace, UID, role, and selected-customer context.
 - Add regression coverage for observer lifecycle and tenant request-context transitions.
-- **Production status: NOT DEPLOYED.** This is a release candidate until GitLab exact-source validation, required review/merge gates, and Vercel deployment verification complete.
+- **Production status:** API version 1.3.5 is live on main SHA `45924b5b37da917d98085487f091779317988966`; frontend version 1.3.6 is deployed separately. CircleCI is the approved validation provider; GitLab is inactive.
 
 ## 1.3.6 — Startup reliability and workspace navigation (frontend-only release candidate)
 
@@ -53,4 +55,12 @@ Only the version embedded in the deployed build identifies what users have actua
 - Adds recoverable startup configuration errors/retry and rejects whitespace-only public Firebase/API settings before initialization.
 - Adds the role-aware All Modules launcher, centralized protected-tab navigation checks, and OWNER-only Activity Log visibility in the mobile More menu.
 - API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
-- **Production status: NOT DEPLOYED.** Release candidate only until exact-source GitLab checks, independent review, merge, and Web deployment verification pass.
+- **Production status:** Web version 1.3.6 is READY on main SHA `45924b5b37da917d98085487f091779317988966`; API remains 1.3.5.
+
+## 1.3.7 — Accessibility and text contrast (frontend-only release candidate)
+
+- Bumps the frontend package, lockfile, local build-info fallback, and PWA shell cache fallback to `1.3.7`.
+- Raises secondary text contrast on light surfaces to WCAG AA normal-text threshold (at least 4.5:1) while preserving dark-sidebar colors.
+- Adds a regression test for the affected selectors and calculated contrast ratios.
+- API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
+- **Production status: NOT DEPLOYED** until exact-head CircleCI, merge, and the Web production alias/version are verified.
