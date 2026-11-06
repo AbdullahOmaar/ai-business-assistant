@@ -297,7 +297,7 @@ test('shared card hosts own card surface styling and projected KPI styles live i
   assert.match(sharedMetricSource, /ChangeDetectionStrategy\.OnPush/);
   assert.match(globalStylesSource, /aba-metric-card strong\\s*\\{/);
   assert.match(globalStylesSource, /aba-metric-card small\\s*\\{/);
-  assert.doesNotMatch(source, /\\.panel\\{padding:15px/);
-  assert.doesNotMatch(source, /\\.metric-grid aba-metric-card strong/);
+  assert.doesNotMatch(source, /\.panel\{padding:15px/);
+  assert.doesNotMatch(source, /\.metric-grid aba-metric-card strong/);
 });
 
