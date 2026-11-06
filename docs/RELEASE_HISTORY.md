@@ -24,7 +24,6 @@
 
 The app page lists these release lines based on the repository's versioned release history:
 
-- **1.3.7** — frontend accessibility patch: improved WCAG AA contrast for secondary text on light surfaces; API remains at 1.3.5.
 - **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.
 - **1.3.5** — session synchronization and workspace data protection; current production API version is 1.3.5.
 - **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
