@@ -1083,3 +1083,28 @@ test('purchase order and recurring schedule forms expose accessible localized va
   assert.match(recurring, /name="recurringIntervalDays" type="number" min="1" max="3650" required/);
   assert.match(recurring, /name="recurringTimezone" required maxlength="64"/);
 });
+
+test('custom report date filters expose localized errors and never submit invalid dates', () => {
+  const profitStart = source.indexOf('<form #profitLossForm="ngForm"');
+  const profitEnd = source.indexOf('</form>', profitStart);
+  const profit = source.slice(profitStart, profitEnd);
+  assert.ok(profit.includes('profitLossForm.valid && loadProfitLoss()'));
+  for (const [control, id] of [
+    ['profitLossStartControl', 'profit-loss-start-error'],
+    ['profitLossEndControl', 'profit-loss-end-error'],
+  ]) {
+    assert.ok(profit.includes('#' + control + '="ngModel"'));
+    assert.ok(profit.includes(`[attr.aria-describedby]="${control}.invalid && (${control}.touched || profitLossForm.submitted) ? '${id}' : null"`));
+    assert.ok(profit.includes('id="' + id + '"'));
+  }
+  assert.match(profit, /name="profitLossStart" required/);
+  assert.match(profit, /name="profitLossEnd" required/);
+
+  const agingStart = source.indexOf('<form #agingForm="ngForm"');
+  const agingEnd = source.indexOf('</form>', agingStart);
+  const aging = source.slice(agingStart, agingEnd);
+  assert.ok(aging.includes('agingForm.valid && loadReceivablesAging()'));
+  assert.ok(aging.includes('#agingAsOfControl="ngModel"'));
+  assert.ok(aging.includes(`[attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null"`));
+  assert.ok(source.includes('id="aging-as-of-error"'));
+});
