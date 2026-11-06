@@ -48,7 +48,8 @@ test('ambiguous expense save outcome blocks another submit until the expense lis
   assert.ok(start >= 0 && end > start);
   const method = ui.slice(start, end);
   assert.match(method, /this\.expenseSubmissionUncertain = true/);
-  assert.match(ui, /expenseSubmissionUncertain \|\| !expenseCategory\.trim\(\)/);
+  assert.match(method, /if \(!this\.business \|\| this\.expenseSubmissionUncertain\) return;/);
+  assert.match(ui, /<button class="primary" type="submit" \[disabled\]="loading \|\| expenseSubmissionUncertain">/);
   assert.match(ui, /\[disabled\]="loading \|\| expenseSubmissionUncertain"/);
   assert.match(ui, /checkExpenseSubmissionOutcome\(\)/);
   const checkStart = ui.indexOf('async checkExpenseSubmissionOutcome(): Promise<void>');
