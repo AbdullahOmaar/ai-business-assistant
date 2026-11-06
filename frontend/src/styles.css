@@ -80,3 +80,9 @@ aba-metric-card small {
     font-size: clamp(15px, 4vw, 18px);
   }
 }
+
+@media (max-width: 380px) {
+  aba-metric-card strong {
+    font-size: 16px;
+  }
+}
