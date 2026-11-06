@@ -1,3 +1,20 @@
+# T18 — UI/UX implementation checkpoint — 2026-11-06
+
+- **Owner directive:** The user explicitly instructed this execution to continue UI/UX work on one existing branch. This authorizes bounded frontend-only implementation on the existing Master-owned branch and supersedes the older design-only/no-code restriction for this workstream. It does not authorize CI triggers/retries, PR creation, merge, production deployment, backend/API/database/schema/migration changes, or changes to financial/payroll semantics.
+- **Single branch:** `master/t18-chat-mobile-ux-20261106`; no second branch created. Base/current main SHA: `e5a765083860a9141f2f2fe366858234873120e9`. Current branch head after this checkpoint's implementation: `8e210dcb76d44fa271773d94b058aefd76e8b47a` (24 commits ahead, 0 behind main).
+- **Existing work preserved:** the branch already contained the shared app shell, 19-destination role-filtered catalogue, grouped mobile More navigation, five shared UI primitives, and shared interaction-state migration. No parallel branch or PR exists.
+- **This slice implemented:**
+  - Expanded `frontend/src/styles.css` into a semantic foundation for colors/status, text, typography, spacing, radii, elevation, motion, focus, layout and layering (76 unique token definitions).
+  - Migrated `AbaCardComponent`, `AbaMetricCardComponent`, `AbaQuickAccessCardComponent`, `AbaSectionHeaderComponent`, and `AbaStateMessageComponent` to consume the shared tokens while preserving their existing APIs and behavior.
+  - Added `frontend/src/app/design-tokens.spec.ts` to guard token uniqueness/coverage, shared primitive token usage, focus visibility, reduced motion, and local Arabic font fallback.
+- **Static consistency review:** all 76 token names are unique; every token referenced by the five migrated components is defined; all required token names in the new spec are present. Key foreground/background pairs were contrast-calculated and exceed WCAG AA 4.5:1 for normal text (primary 5.47:1, secondary 4.76:1, tertiary 4.83:1; semantic states 6.84:1–8.01:1). This is source-level/static evidence, not rendered visual QA.
+- **Validation:** new spec, full frontend Node suite, Angular template/production build, browser/device, keyboard and screen-reader checks are **NOT RUN**. CircleCI is the canonical provider, but this session must not trigger/retry it and no CircleCI connector/local runner is available. Desktop Commander device is offline. No CI result is claimed.
+- **Figma:** existing AIBA Design Foundations file remains a DRAFT; Phase 2/3 Figma acceptance is not complete. Connected Figma edit/visual verification remains blocked by the previously recorded View-only seat/read limits. No replacement Figma file was created.
+- **Delivery:** no PR; no merge; no deployment; no production/API/DB side effects. Open PR inventory was empty at the time of refresh.
+- **Next action:** continue the remaining P0 app-shell/workspace-context and global validation/denied/success/recovery audit on this same branch; add focused source tests for uncovered behavior. Keep rendered visual QA and full test/build gates explicitly NOT RUN until an authorized runner/browser becomes available.
+
+---
+
 # Frontend release 1.3.9 — preparation checkpoint (2026-11-06)
 
 - Base main SHA: `4ee7901250c7bfe9bcfec24fe112ce32d565d355`.
