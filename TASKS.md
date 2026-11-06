@@ -2239,3 +2239,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Static source/diff audit on the 15-file candidate: 19 unique destinations, five More groups, five Home shortcuts, 16 forms (14 required-field guards; tax/audit filters optional), 93 semantic tokens with 72 referenced and zero missing, 36 `aria-describedby` bindings (34 fixed IDs plus two indexed invoice-line ID pairs), and two `visualViewport` listeners each added/removed. Five frontend spec files contain 121 `test()` declarations (120 named, no duplicate names). A limited common private-key/token/credential-URL pattern scan found no matches. These are source-level checks only; all 121 tests remain **NOT RUN**. Angular template/production build, browser RTL/LTR, keyboard, screen-reader and Android PWA checks remain **NOT RUN**. No CI was triggered or retried.
 - No PR, merge, deployment, backend/API/database/schema/migration, financial semantics or payroll changes.
 - Next: continue the remaining source/diff review and obtain an authorized runner/browser plus exact-candidate CircleCI validation before PR/merge.
+
+
+## T18 — Localized accessible region names — 2026-11-06
+
+- Source review found three English-only static accessible names in Arabic mode: customer CSV import region, product CSV import region, and invoice totals preview.
+- Replaced them with the existing bilingual `t(ar, en)` binding; visible UI, CSV behavior, invoice calculations and API contracts are unchanged.
+- Added a source regression assertion for all three localized accessible names and prevention of the old static English-only labels.
+- Commits: `4da110d5ce020a83b84f30c9eb25245132d93f5f` (template fix) and `302d68af34674d00d1892b935d3b16f89c58549b` (regression assertion).
+- Exact source readback confirms all three bindings and the regression assertion. Across the five frontend spec files, 122 `test()` declarations are present (121 named, no duplicate names); all remain **NOT RUN**. No CI trigger/retry was issued.
+- No PR, merge, deployment, backend/API/database/schema/migration, financial semantics or payroll changes.
+- Next: continue exact-diff source review; obtain an authorized runner/browser and explicit resolution for the CircleCI freeze before normal PR validation/merge.
