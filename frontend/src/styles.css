@@ -209,3 +209,15 @@ aba-metric-card small {
     font-size: 16px;
   }
 }
+
+/* Expense form validation remains associated with fields without breaking its grid. */
+.expense-validation {
+  display: grid;
+  gap: var(--aba-space-1);
+  margin-top: var(--aba-space-2);
+  padding: var(--aba-space-3);
+  border: 1px solid var(--aba-color-danger-border);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-danger-soft);
+}
+.expense-validation .field-error { margin: 0; }
