@@ -1,19 +1,38 @@
-# Live demo browser acceptance — 2026-11-06
+# Demo browser acceptance closeout — 2026-11-06
 
-- Base/current main: `342d51fac546f96626944e6dc365e615f8bdbb41` (PR #341 docs-only release verification merged; post-merge CircleCI 7/7 PASS). The production Web deployment remains READY on code SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08`; the docs-only commit correctly skipped a new production deployment.
-- Branch: `test/demo-live-route-browser-acceptance-20261106`.
-- Added `frontend/e2e/demo-live-route.spec.ts` to test the actual `/demo/` static asset through the Angular dev server/Chromium, rather than loading a copied HTML string with `page.setContent`.
-- Coverage: route and Arabic RTL/local-only boundary, disabled T37 tax controls, workspace/invoice/payment mock interactions and reset, isolated invoice print popup/status, and 360px mobile horizontal overflow.
-- Exact-head CircleCI is required before merge. No local runner or manual CI trigger/retry. This is browser acceptance for the static mock only; it does not satisfy authenticated ERP/T50 acceptance.
-- No production code, API, database, schema, migration, or deployment change.
+## Merge and CI
+- PR #342 merged at main SHA `27c670dc8572c72569ab2e67dabc2f8d9c83360f`; PR branch `test/demo-live-route-browser-acceptance-20261106` was auto-deleted by GitHub.
+- Exact PR #342 head `99f074067dc6eb3fd150a83c68a735b891eca6dd`: CircleCI 7/7 PASS. Chromium job #12148 reported all four new demo tests PASS: actual `/demo/` route/local-only boundary, workspace/invoice/payment reset, isolated print popup/status, and 360px mobile no-horizontal-overflow.
+- Post-merge main SHA `27c670dc8572c72569ab2e67dabc2f8d9c83360f`: CircleCI 7/7 PASS (pipeline #2330; all six jobs plus `verify-all-changes` success). SemaphoreCI remains retired/non-canonical and is not a release gate.
+- Vercel Web and API records for this test-only commit were both CANCELED by their Ignored Build Step (verified from deployment events); production runtime was not redeployed.
+
+## Build efficiency
+- Web Vercel ignore rule now watches runtime paths but excludes `frontend/e2e`, `frontend/src/**/*.spec.ts`, and `frontend/src/**/*.test.ts`.
+- Local Git pathspec check verified test-only changes are ignored while a real `frontend/src/app/app.component.ts` or `frontend/public/demo/index.html` change still triggers a build.
+- Actual Vercel events for main SHA `27c670d` show the updated ignore command returning exit code 0 and correctly canceling the Web build. API ignore behavior also correctly canceled the test-only deployment.
+
+## Production demo
+- Web 1.3.8 remains READY at `https://ai-business-assistant-web.vercel.app`; deployed code SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08`, deployment `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`.
+- `https://ai-business-assistant-web.vercel.app/demo/` returned HTTP 200; Arabic RTL, local-only notice, reset, print status and T37 tax guard were read back.
+- API remains 1.3.5 at SHA `45924b5b37da9171e0981ed727b63ba2e5e5d91802`; `/health`, `/readyz`, and `/version` return HTTP 200.
+- No production DB writes, migrations, API changes, financial posting or payroll changes.
+
+## Remaining demo scope
+- The page is a fictional local-only preview, not a connected/authenticated ERP demo. No real API/DB persistence, auth, OWNER/STAFF enforcement, tenant isolation, payments, stock movements, payroll or AI model calls are exercised.
+- T50 remains PARTIALLY COMPLETE. Authenticated two-tenant browser journeys, restored-DB application smoke and full device/PWA/keyboard/screen-reader acceptance remain NOT RUN.
+- Existing Neon staging branch `release-staging-api-20261030` descends from the restored snapshot branch and is not verified synthetic-only; it must not be used for demo writes. No dedicated demo project/tenant or Owner/Staff test identities were provisioned.
+- Open feature PRs remain #305, #306, #308 and #323. PR #323 is diverged 117 ahead / 162 behind and contains substantial unique work; do not merge wholesale. PR #305/#306/#308 retain feature or approval/migration constraints.
+- Current branch inventory is 14 refs (main + 13 non-main). Merged PR branches auto-delete. Remaining closed/orphan branches retain unique feature, test, migration, or audit evidence; no additional branch was proven safe to delete. In particular, the 33-file Notion migration archive and T37-gated financial/tax work are preserved.
+- Next: build a truly isolated synthetic-only demo environment with dedicated Owner/Staff identities, two tenants, deterministic fixtures and reset/rollback evidence. Do not use production or restored-snapshot customer/employee data.
+
 
 ---
 
-# Master demo delivery checkpoint — 2026-11-06 (verified 04:06 UTC)
+# Historical master demo delivery checkpoint — 2026-11-06 (verified 04:06 UTC)
 
 ## Overall
 - Standalone feature-preview demo: **VERIFIED COMPLETE** as a static, fictional-data showcase only. It is NOT a connected/authenticated ERP demo.
-- Current main after PR #341: `342d51fac546f96626944e6dc365e615f8bdbb41`. Production Web deployment code SHA: `65e431d8fa7e77aa136fca91f8cfba234c03ec08`.
+- Main at that historical checkpoint after PR #341: `342d51fac546f96626944e6dc365e615f8bdbb41`. Production Web deployment code SHA: `65e431d8fa7e77aa136fca91f8cfba234c03ec08`.
 - PR #338 hardened the demo source; PR #339 published the correct asset under `frontend/public/demo/index.html`; PR #340 released Web 1.3.8. All three are merged.
 - CircleCI exact candidate head for PR #340: 7/7 PASS (`ef9f4b1a97dae81284e7b9b5dc2d21246809e123`). Post-merge main SHA: 7/7 PASS. SemaphoreCI failure is a retired/non-canonical provider and is not used as a release gate.
 - Production Web deployment: `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`, state READY, alias `https://ai-business-assistant-web.vercel.app`, deployed SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08`, frontend version 1.3.8.
