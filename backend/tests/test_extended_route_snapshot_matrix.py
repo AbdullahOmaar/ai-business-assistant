@@ -320,3 +320,144 @@ def test_notification_reads_are_member_scoped_and_tenant_isolated_without_side_e
         else:
             app.state.principal_resolver = previous_resolver
         engine.dispose()
+
+
+def test_staff_can_create_ordinary_expense_only_in_its_own_business():
+    """STAFF may record an ordinary expense in their tenant, never a foreign tenant."""
+    from datetime import datetime, timezone
+    from uuid import UUID
+
+    from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine, select
+    from sqlalchemy.orm import Session, sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from app.main import app
+    from app.models import AuditEvent, Base, BusinessMembership, MembershipRole
+    from app.security import AuthenticatedPrincipal
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    subject = {"value": "expense-a-owner"}
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject["value"])
+    client = TestClient(app)
+
+    def create_business(owner: str, name: str) -> str:
+        subject["value"] = owner
+        response = client.post(
+            "/api/v1/businesses",
+            json={"name": name, "currency_code": "EGP"},
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def all_business_rows():
+        """Snapshot every persisted row belonging to either tenant, including AuditEvent."""
+        business_ids = (UUID(business_a), UUID(business_b))
+        with app.state.session_factory() as session:
+            snapshot = []
+            for table in Base.metadata.sorted_tables:
+                if "business_id" in table.c:
+                    statement = table.select().where(
+                        table.c.business_id.in_(business_ids)
+                    )
+                elif table.name == "businesses":
+                    statement = table.select().where(table.c.id.in_(business_ids))
+                else:
+                    continue
+                primary_key = list(table.primary_key.columns)
+                if primary_key:
+                    statement = statement.order_by(*primary_key)
+                snapshot.append((
+                    table.name,
+                    tuple(tuple(row) for row in session.execute(statement).all()),
+                ))
+            return tuple(snapshot)
+
+    try:
+        business_a = create_business("expense-a-owner", "Expense Tenant A")
+        business_b = create_business("expense-b-owner", "Expense Tenant B")
+
+        with Session(engine) as session:
+            session.add(BusinessMembership(
+                business_id=UUID(business_a),
+                user_subject="expense-a-staff",
+                role=MembershipRole.STAFF,
+            ))
+            session.commit()
+
+        subject["value"] = "expense-a-staff"
+        incurred_at = datetime(2026, 11, 6, 9, 30, tzinfo=timezone.utc).isoformat()
+        own_response = client.post(
+            f"/api/v1/businesses/{business_a}/expenses",
+            json={
+                "category": "Office",
+                "description": "STAFF-recorded office supplies",
+                "amount": "12.34",
+                "currency_code": "EGP",
+                "incurred_at": incurred_at,
+                "vendor_name": "Synthetic Vendor",
+                "reference": "T03-staff-expense",
+            },
+        )
+        assert own_response.status_code == 201, own_response.text
+        own_expense = own_response.json()
+        assert own_expense["business_id"] == business_a
+        assert own_expense["amount"] == "12.34"
+        assert own_expense["description"] == "STAFF-recorded office supplies"
+
+        with Session(engine) as session:
+            events = session.scalars(select(AuditEvent).where(
+                AuditEvent.business_id == UUID(business_a),
+                AuditEvent.action == "expense.created",
+            )).all()
+            assert len(events) == 1
+            assert session.scalar(select(AuditEvent).where(
+                AuditEvent.business_id == UUID(business_b),
+            )) is None
+
+        before_foreign_write = all_business_rows()
+        foreign_response = client.post(
+            f"/api/v1/businesses/{business_b}/expenses",
+            json={
+                "category": "Office",
+                "description": "Must not cross tenant boundary",
+                "amount": "50.00",
+                "currency_code": "EGP",
+                "incurred_at": incurred_at,
+            },
+        )
+        assert foreign_response.status_code == 403, foreign_response.text
+        assert all_business_rows() == before_foreign_write, (
+            "foreign-business STAFF expense request changed business rows or audit"
+        )
+
+        subject["value"] = "expense-a-owner"
+        owner_a_expenses = client.get(f"/api/v1/businesses/{business_a}/expenses")
+        assert owner_a_expenses.status_code == 200, owner_a_expenses.text
+        assert [item["id"] for item in owner_a_expenses.json()] == [own_expense["id"]]
+
+        subject["value"] = "expense-b-owner"
+        owner_b_expenses = client.get(f"/api/v1/businesses/{business_b}/expenses")
+        assert owner_b_expenses.status_code == 200, owner_b_expenses.text
+        assert owner_b_expenses.json() == []
+
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
