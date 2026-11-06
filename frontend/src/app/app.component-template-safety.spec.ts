@@ -428,3 +428,9 @@ test('mobile workspace view retains the active page title when the desktop topba
   assert.match(source, /\.mobile-page-heading\{display:block/);
   assert.match(source, /\.mobile-page-heading h1\{[^}]*overflow-wrap:anywhere/);
 });
+
+
+test('mobile module launcher uses two balanced columns when space permits', () => {
+  assert.match(source, /\.quick-grid\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,240px\),1fr\)\)\}/);
+  assert.match(source, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,165px\),1fr\)\)/);
+});
