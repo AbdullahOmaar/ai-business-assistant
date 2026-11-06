@@ -2208,3 +2208,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Exact-blob source readback: selector/helper, component delegation, template loop/title/count and regression test presence PASS; no duplicate test names; all 33 dynamic aria-describedby targets still resolve. This is static readback, not execution.
 - Node frontend tests, Angular template/production build, browser/device, rendered 360/390/412px RTL/LTR, keyboard/screen-reader and authenticated OWNER/STAFF/two-tenant acceptance remain NOT RUN. Desktop Commander device is OFFLINE; CircleCI trigger/retry freeze remains active and exact-head check-runs/status contexts are empty. No PR, merge, deployment, CI trigger/retry, API/DB/schema/migration or production change.
 - Next: continue source-level P1 Home/shared-shell review and exact-diff security review on this same branch. Merge remains gated; do not create a new branch until a normal authorized merge is verified.
+
+## T18 — Mobile Home KPI hierarchy — 2026-11-06
+
+- Aligned the Home dashboard's responsive KPI layout with the accepted P1 Home handoff: four existing API-backed metric cards remain a single desktop row, two columns at tablet widths, and one column at phone widths up to 760px.
+- This avoids compressing currency totals and labels into two narrow cards at 360/390px. No metric, source, date basis, currency grouping, count or financial definition changed.
+- Added a source regression assertion for desktop four-column, tablet two-column and mobile single-column breakpoints.
+- Commits: cb2fc9b7871dcbe027061900b73f46e64f4ce0ea (responsive CSS) and 81e1126a87e518c0a670c60181061ab639eb81d7 (test).
+- Exact-source readback confirms the final mobile override is last in component styles and preserves the four dashboard response groups. This is static evidence only; rendered 360/390/412px RTL/LTR checks remain NOT RUN.
+- No chart, recent-activity feed, pending-work counter or attention panel was invented because no supporting current dashboard data source was verified. No backend/API/DB, financial semantics, permission or deployment changes.
