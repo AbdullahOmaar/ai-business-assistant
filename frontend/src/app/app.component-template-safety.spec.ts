@@ -226,14 +226,19 @@ test('workspace panels reuse one section header component instead of duplicating
   assert.equal((source.match(/<div class="section-head"><div><h2>/g) || []).length, 0, 'all simple h2 section headers must use the shared component');
 });
 
-test('All Modules uses the shared role-filtered catalogue and reusable quick-access component', () => {
+test('Home quick access shows only the five key destinations from the shared role-filtered catalogue', () => {
   assert.ok(source.includes('class="panel module-launcher"'));
-  assert.ok(source.includes('homeModuleCards.length'));
+  assert.ok(source.includes("const priority = ['invoices', 'customers', 'products', 'expenses', 'reports']"));
+  assert.match(source, /get homeQuickAccessCards\(\): readonly WorkspaceModuleCard\[\]/);
+  assert.match(source, /return this\.homeModuleCards\s*\.filter\(module => priority\.includes\(module\.tab\)\)/);
+  assert.match(source, /priority\.indexOf\(left\.tab\) - priority\.indexOf\(right\.tab\)/);
   assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
-  assert.match(source, /<aba-section-header[^>]*titleId/);
+  assert.ok(source.includes('homeQuickAccessCards.length'));
+  assert.match(source, /title]="t\('الوصول السريع', 'Quick access'\)/);
+  assert.match(source, /@for \(module of homeQuickAccessCards; track module\.tab\)/);
   assert.match(source, /<aba-quick-access-card\b/);
   assert.match(source, /activated\)="setTab\(module\.tab\)"/);
-  assert.doesNotMatch(source, /\{ business\?\.role === 'owner' \? \(platformAdminAvailable \? 19 : 18\)/);
+  assert.doesNotMatch(source, /homeModuleCards\.length/);
   assert.doesNotMatch(source, /class="quick-card"/);
 });
 
