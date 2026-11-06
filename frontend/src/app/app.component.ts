@@ -69,12 +69,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <form #authForm="ngForm" (ngSubmit)="submitAuth()" class="stack">
             <label>{{ t('البريد الإلكتروني', 'Email address') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
               @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
-                <small id="auth-email-error" class="field-error" role="alert">{{ emailModel.errors?.['required'] ? t('البريد الإلكتروني مطلوب.', 'Email is required.') : t('أدخل بريدًا إلكترونيًا صحيحًا.', 'Enter a valid email address.') }}</small>
+                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('البريد الإلكتروني مطلوب.', 'Email is required.') : t('أدخل بريدًا إلكترونيًا صحيحًا.', 'Enter a valid email address.') }}</small>
               }
             </label>
             <label>{{ t('كلمة المرور', 'Password') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
               @if (passwordModel.invalid && (passwordModel.touched || authForm.submitted)) {
-                <small id="auth-password-error" class="field-error" role="alert">{{ passwordModel.errors?.['required'] ? t('كلمة المرور مطلوبة.', 'Password is required.') : t('كلمة المرور يجب ألا تقل عن 6 أحرف.', 'Password must be at least 6 characters.') }}</small>
+                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t('كلمة المرور مطلوبة.', 'Password is required.') : t('كلمة المرور يجب ألا تقل عن 6 أحرف.', 'Password must be at least 6 characters.') }}</small>
               }
             </label>
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
@@ -155,7 +155,7 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
               <form #workspaceForm="ngForm" class="stack" (ngSubmit)="createWorkspace()">
                 <label>{{ t('اسم النشاط التجاري', 'Business name') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
                   @if (businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted)) {
-                    <small id="workspace-name-error" class="field-error" role="alert">{{ businessNameModel.errors?.['required'] ? t('اسم النشاط التجاري مطلوب.', 'Business name is required.') : t('اسم النشاط يجب ألا يتجاوز 160 حرفًا.', 'Business name must be 160 characters or fewer.') }}</small>
+                    <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t('اسم النشاط التجاري مطلوب.', 'Business name is required.') : t('اسم النشاط يجب ألا يتجاوز 160 حرفًا.', 'Business name must be 160 characters or fewer.') }}</small>
                   }
                 </label>
                 <label>{{ t('العملة الافتراضية', 'Default currency') }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
