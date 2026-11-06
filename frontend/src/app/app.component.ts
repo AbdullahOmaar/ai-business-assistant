@@ -66,9 +66,17 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
           <p class="eyebrow">{{ t('كل أعمالك في مكان واحد', 'YOUR BUSINESS, IN ONE PLACE') }}</p>
           <h1>{{ signingUp ? t('إنشاء حسابك', 'Create your account') : t('مرحبًا بعودتك', 'Welcome back') }}</h1>
           <p class="muted">{{ t('سجّل الدخول بأمان للوصول إلى مساحات العمل المصرح لك بها فقط.', 'Sign in securely to access only the workspaces you belong to.') }}</p>
-          <form (ngSubmit)="submitAuth()" class="stack">
-            <label>{{ t('البريد الإلكتروني', 'Email address') }}<input name="email" type="email" autocomplete="email" required [(ngModel)]="email"></label>
-            <label>{{ t('كلمة المرور', 'Password') }}<input name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password"></label>
+          <form #authForm="ngForm" (ngSubmit)="submitAuth()" class="stack">
+            <label>{{ t('البريد الإلكتروني', 'Email address') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
+              @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
+                <small id="auth-email-error" class="field-error" role="alert">{{ emailModel.errors?.['required'] ? t('البريد الإلكتروني مطلوب.', 'Email is required.') : t('أدخل بريدًا إلكترونيًا صحيحًا.', 'Enter a valid email address.') }}</small>
+              }
+            </label>
+            <label>{{ t('كلمة المرور', 'Password') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
+              @if (passwordModel.invalid && (passwordModel.touched || authForm.submitted)) {
+                <small id="auth-password-error" class="field-error" role="alert">{{ passwordModel.errors?.['required'] ? t('كلمة المرور مطلوبة.', 'Password is required.') : t('كلمة المرور يجب ألا تقل عن 6 أحرف.', 'Password must be at least 6 characters.') }}</small>
+              }
+            </label>
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
           </form>
           <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
@@ -144,8 +152,12 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
             <section abaCard class="panel narrow">
               <p class="eyebrow">{{ t('ابدأ هنا', 'GET STARTED') }}</p><h2>{{ t('أنشئ مساحة عملك الأولى', 'Create your first workspace') }}</h2>
               <p class="muted">{{ t('مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.', 'This workspace belongs to your verified account. Other users cannot access it without membership.') }}</p>
-              <form class="stack" (ngSubmit)="createWorkspace()">
-                <label>{{ t('اسم النشاط التجاري', 'Business name') }}<input name="businessName" required maxlength="160" [(ngModel)]="businessName"></label>
+              <form #workspaceForm="ngForm" class="stack" (ngSubmit)="createWorkspace()">
+                <label>{{ t('اسم النشاط التجاري', 'Business name') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
+                  @if (businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted)) {
+                    <small id="workspace-name-error" class="field-error" role="alert">{{ businessNameModel.errors?.['required'] ? t('اسم النشاط التجاري مطلوب.', 'Business name is required.') : t('اسم النشاط يجب ألا يتجاوز 160 حرفًا.', 'Business name must be 160 characters or fewer.') }}</small>
+                  }
+                </label>
                 <label>{{ t('العملة الافتراضية', 'Default currency') }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
                 <button class="primary" type="submit" [disabled]="loading">{{ t('إنشاء مساحة عمل', 'Create workspace') }}</button>
               </form>
