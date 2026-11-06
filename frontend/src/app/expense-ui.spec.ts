@@ -74,19 +74,16 @@ test('expense form exposes bilingual accessible validation without blocking inva
   const end = ui.indexOf('</form>', start);
   assert.ok(start >= 0 && end > start);
   const form = ui.slice(start, end);
-  for (const control of [
-    'expenseCategoryControl', 'expenseDescriptionControl',
-    'expenseAmountControl', 'expenseDateControl'
-  ]) {
+  const fields = [
+    ['expenseCategoryControl', 'expense-category-error'],
+    ['expenseDescriptionControl', 'expense-description-error'],
+    ['expenseAmountControl', 'expense-amount-error'],
+    ['expenseDateControl', 'expense-date-error'],
+  ];
+  for (const [control, id] of fields) {
     assert.ok(form.includes('#' + control + '="ngModel"'), control);
-    assert.ok(form.includes(control + '.invalid'), control + ' invalid state');
-    assert.ok(form.includes(control + '.touched || expenseForm.submitted'), control + ' reveal condition');
-  }
-  for (const id of [
-    'expense-category-error', 'expense-description-error',
-    'expense-amount-error', 'expense-date-error'
-  ]) {
-    assert.ok(form.includes(id), id + ' must be associated with its control');
+    assert.ok(form.includes('[attr.aria-invalid]="' + control + '.invalid && (' + control + '.touched || expenseForm.submitted) ? \'true\' : null"'), control + ' invalid state');
+    assert.ok(form.includes('[attr.aria-describedby]="' + control + '.invalid && (' + control + '.touched || expenseForm.submitted) ? \'' + id + '\' : null"'), control + ' error association');
     assert.ok(ui.includes('id="' + id + '"'), id + ' message must exist');
   }
   assert.match(ui, /class="expense-validation" aria-live="polite"/);
@@ -96,4 +93,14 @@ test('expense form exposes bilingual accessible validation without blocking inva
   assert.match(form, /name="expenseAmount" type="number" min="0\.01" step="0\.01"/);
   assert.match(form, /name="expenseVendor" maxlength="160"/);
   assert.match(form, /name="expenseReference" maxlength="128"/);
+  for (const message of [
+    "اختر تصنيف المصروف.",
+    "Choose an expense category.",
+    "اكتب وصف المصروف (بحد أقصى 500 حرف).",
+    "Enter an expense description (up to 500 characters).",
+    "أدخل مبلغًا أكبر من صفر وبحد أقصى منزلتين عشريتين.",
+    "Enter an amount greater than zero with up to two decimal places.",
+    "اختر تاريخ ووقت المصروف.",
+    "Choose the expense date and time.",
+  ]) assert.ok(ui.includes(message), message);
 });
