@@ -57,3 +57,23 @@ export const WORKSPACE_MODULE_CATALOG: readonly WorkspaceModuleCard[] = [
   { tab: 'notifications', mobileGroup: 'monitoring-operations', icon: '♢', titleAr: 'الإشعارات', titleEn: 'Notifications', descriptionAr: 'قائمة الإشعارات وحالاتها', descriptionEn: 'Notification queue and statuses' },
   { tab: 'health', mobileGroup: 'monitoring-operations', icon: '♥', titleAr: 'الحالة التشغيلية', titleEn: 'Operational health', descriptionAr: 'مؤشرات الحالة التشغيلية', descriptionEn: 'Operational health indicators' },
 ];
+
+/** Canonical high-value Home shortcuts; navigation still exposes every authorized destination. */
+export const HOME_QUICK_ACCESS_TABS: readonly WorkspaceModuleTab[] = [
+  'invoices',
+  'customers',
+  'products',
+  'expenses',
+  'reports',
+];
+
+/** Selects only the approved Home shortcuts, in a stable product-defined order. */
+export function selectHomeQuickAccessModules(
+  modules: readonly WorkspaceModuleCard[],
+): readonly WorkspaceModuleCard[] {
+  const byTab = new Map(modules.map(module => [module.tab, module] as const));
+  return HOME_QUICK_ACCESS_TABS.flatMap(tab => {
+    const module = byTab.get(tab);
+    return module ? [module] : [];
+  });
+}
