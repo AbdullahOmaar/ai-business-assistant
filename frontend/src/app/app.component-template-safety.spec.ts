@@ -959,3 +959,16 @@ test('workspace switcher announces the current business context accessibly', () 
   assert.match(source, /<select \[attr\.aria-label\]="t\('اختيار النشاط', 'Select business'\)" aria-describedby="workspace-current-name"/);
   assert.match(source, /\(ngModelChange\)="switchBusiness\(\$event\)"/);
 });
+
+test('shared shell uses logical inline positioning for Arabic RTL and English LTR', () => {
+  assert.match(source, /\.sidebar\{position:fixed;inset-block:0;inset-inline-end:0;/);
+  assert.match(source, /\.main\{margin-inline-end:var\(--aba-layout-sidebar,245px\);/);
+  assert.match(source, /\.nav-item\{[^}]*text-align:start;/);
+  assert.match(source, /\.hero-mark\{[^}]*margin-inline-start:4%;/);
+  assert.match(source, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
+  assert.match(source, /\.nav-item\.active\{[^}]*border-inline-start:3px solid/);
+  assert.doesNotMatch(source, /\.shell\.english \.sidebar\{inset:0 0 0 auto\}/);
+  assert.doesNotMatch(source, /\.shell\.english \.main\{margin-left:0;margin-right:/);
+  assert.doesNotMatch(source, /\.shell\.english \.hero-mark\{margin-left:/);
+  assert.doesNotMatch(source, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
+});
