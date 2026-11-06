@@ -15,7 +15,7 @@
 - Exact-head CircleCI, rendered browser/device check, merge, and production release: NOT RUN at this checkpoint.
 
 ## Branch cleanup
-- PR #333 merged and its branch is expected to auto-delete (verify via live ref inventory).
+- PR #333 merged; GitHub ref lookup for `test/assistant-malformed-provider-response-20261106` returned 404 after merge, confirming the PR branch was auto-deleted.
 - Remaining diverged Draft PRs/branches are retained where they contain unique code, tests, migrations or audit evidence. No branch deletion has been performed.
 - The connected GitHub toolset does not expose a branch-delete/ref-delete operation. Do not emulate deletion by moving refs. Re-evaluate branch candidates after unique work is preserved; use an authorized delete operation when available.
 - PRs with T37-dependent financial semantics and competing 0006 migrations remain blocked; do not merge their migrations/tests.
