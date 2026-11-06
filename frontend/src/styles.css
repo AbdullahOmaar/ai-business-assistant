@@ -221,3 +221,14 @@ aba-metric-card small {
   background: var(--aba-color-danger-soft);
 }
 .expense-validation .field-error { margin: 0; }
+
+.form-validation {
+  display: grid;
+  gap: var(--aba-space-1);
+  margin-top: var(--aba-space-2);
+  padding: var(--aba-space-3);
+  border: 1px solid var(--aba-color-danger-border);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-danger-soft);
+}
+.form-validation .field-error { margin: 0; }
