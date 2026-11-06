@@ -19,6 +19,7 @@ import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.compon
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
+type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
 
 @Component({
   selector: 'aba-root',
@@ -227,6 +228,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('إضافة إلى قائمة الانتظار', 'Queue notification') }}</button>
                 </form>
                 @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
+                @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (notificationsLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" /> }
                 <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
               </section>
@@ -244,6 +247,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('إضافة مورد', 'Add supplier') }}</button>
                 </form>
                 @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
+                @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (suppliersLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" /> }
                 <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <aba-state-message kind="empty" [description]="t('لا يوجد موردون بعد.', 'No suppliers yet.')" /> }</div>
               </section>
@@ -261,6 +266,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('إنشاء أمر شراء', 'Create purchase order') }}</button>
                 </form>
                 @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
+                @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
                 <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
               </section>
@@ -277,6 +284,8 @@ type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'ex
                   <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('حفظ الجدولة', 'Save schedule') }}</button>
                 </form>
                 @if (operationsError) { <aba-state-message kind="error" [description]="operationsError" /> }
+                @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
+                @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (recurringLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الجداول…', 'Loading schedules…')" /> }
                 <div class="list">@for (schedule of recurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!recurringSchedules.length && !recurringLoading) { <aba-state-message kind="empty" [description]="t('لا توجد جداول بعد.', 'No schedules yet.')" /> }</div>
               </section>
@@ -1046,6 +1055,9 @@ export class AppComponent implements OnInit, OnDestroy {
   purchasesLoading = false;
   recurringLoading = false;
   operationsError = '';
+  operationsMessage = '';
+  operationsMessageTab: OperationsMessageTab | null = null;
+  operationsWarning = '';
   supplierName = '';
   supplierEmail = '';
   supplierPhone = '';
@@ -1687,6 +1699,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.notifications = [];
     this.operationalHealth = null;
     this.operationsError = '';
+    this.operationsMessage = '';
+    this.operationsMessageTab = null;
+    this.operationsWarning = '';
     this.healthError = '';
     this.notificationTitle = '';
     this.notificationBody = '';
@@ -1992,16 +2007,63 @@ export class AppComponent implements OnInit, OnDestroy {
     finally{if(this.business?.id===businessId)this.healthLoading=false}
   }
 
+  private beginOperationsAction(): void {
+    this.operationsError = '';
+    this.operationsMessage = '';
+    this.operationsMessageTab = null;
+    this.operationsWarning = '';
+  }
+
+  private setOperationsSuccess(tab: OperationsMessageTab, message: string): void {
+    this.operationsMessage = message;
+    this.operationsMessageTab = tab;
+  }
+
+  private setOperationsFailure(tab: OperationsMessageTab, error: unknown): void {
+    if (this.operationsMessageTab === tab && this.operationsMessage) {
+      this.operationsWarning = this.t(
+        'تم تنفيذ العملية بنجاح، لكن تعذر تحديث القائمة. حدّث البيانات قبل إعادة المحاولة.',
+        'The operation succeeded, but the list could not be refreshed. Refresh the data before retrying.'
+      ) + ' ' + this.message(error);
+      return;
+    }
+    this.operationsError = this.message(error);
+  }
+
   private async loadNotifications(): Promise<void> {
     if(!this.business)return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
     try {const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;}
     catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
   }
   async createNotification(): Promise<void> {
-    if(!this.business||!this.notificationTitle.trim()||!this.notificationBody.trim())return;const businessId=this.business.id;this.notificationsLoading=true;this.operationsError='';
-    try {await this.api.createNotification(businessId,{kind:this.notificationKind.trim()||'business',title:this.notificationTitle.trim(),body:this.notificationBody.trim(),deduplication_key:this.notificationDeduplicationKey,scheduled_at:this.notificationScheduledAt?new Date(this.notificationScheduledAt).toISOString():undefined});
-      this.notificationTitle='';this.notificationBody='';this.notificationScheduledAt='';this.notificationDeduplicationKey='manual-'+Date.now();const items=await this.api.notifications(businessId);if(this.business?.id===businessId)this.notifications=items;
-    }catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)}finally{if(this.business?.id===businessId)this.notificationsLoading=false}
+    if (!this.business || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
+    const businessId = this.business.id;
+    this.beginOperationsAction();
+    this.notificationsLoading = true;
+    try {
+      await this.api.createNotification(businessId, {
+        kind: this.notificationKind.trim() || 'business',
+        title: this.notificationTitle.trim(),
+        body: this.notificationBody.trim(),
+        deduplication_key: this.notificationDeduplicationKey,
+        scheduled_at: this.notificationScheduledAt ? new Date(this.notificationScheduledAt).toISOString() : undefined,
+      });
+      if (this.business?.id !== businessId) return;
+      this.setOperationsSuccess('notifications', this.t(
+        'تمت إضافة الإشعار إلى قائمة الانتظار. لم يتم تأكيد إرساله للمستلمين.',
+        'Notification added to the queue; delivery to recipients is not confirmed.'
+      ));
+      this.notificationTitle = '';
+      this.notificationBody = '';
+      this.notificationScheduledAt = '';
+      this.notificationDeduplicationKey = 'manual-' + Date.now();
+      const items = await this.api.notifications(businessId);
+      if (this.business?.id === businessId) this.notifications = items;
+    } catch (error) {
+      if (this.business?.id === businessId) this.setOperationsFailure('notifications', error);
+    } finally {
+      if (this.business?.id === businessId) this.notificationsLoading = false;
+    }
   }
 
   private async loadSuppliers(): Promise<void> {
@@ -2030,39 +2092,125 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   async createSupplier(): Promise<void> {
     if (!this.business || !this.supplierName.trim()) return;
-    const businessId = this.business.id; this.suppliersLoading = true; this.operationsError = '';
-    try { await this.api.createSupplier(businessId,{name:this.supplierName.trim(),email:this.supplierEmail.trim()||undefined,phone:this.supplierPhone.trim()||undefined,address:this.supplierAddress.trim()||undefined});
-      this.supplierName='';this.supplierEmail='';this.supplierPhone='';this.supplierAddress='';
-      const items=await this.api.suppliers(businessId); if(this.business?.id===businessId)this.suppliers=items;
-    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.suppliersLoading=false}
+    const businessId = this.business.id;
+    this.beginOperationsAction();
+    this.suppliersLoading = true;
+    try {
+      await this.api.createSupplier(businessId, {
+        name: this.supplierName.trim(),
+        email: this.supplierEmail.trim() || undefined,
+        phone: this.supplierPhone.trim() || undefined,
+        address: this.supplierAddress.trim() || undefined,
+      });
+      if (this.business?.id !== businessId) return;
+      this.setOperationsSuccess('suppliers', this.t('تم حفظ المورد.', 'Supplier saved.'));
+      this.supplierName = '';
+      this.supplierEmail = '';
+      this.supplierPhone = '';
+      this.supplierAddress = '';
+      const items = await this.api.suppliers(businessId);
+      if (this.business?.id === businessId) this.suppliers = items;
+    } catch (error) {
+      if (this.business?.id === businessId) this.setOperationsFailure('suppliers', error);
+    } finally {
+      if (this.business?.id === businessId) this.suppliersLoading = false;
+    }
   }
   async createPurchaseOrder(): Promise<void> {
     if (!this.business || !this.purchaseSupplierId || !this.purchaseProductId) return;
-    const quantity = Number(this.purchaseQuantity), unitCost = Number(this.purchaseUnitCost);
-    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) { this.operationsError=this.t('تحقق من الكمية والتكلفة.','Check the quantity and unit cost.'); return; }
-    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
-    try { await this.api.createPurchaseOrder(businessId,{supplier_id:this.purchaseSupplierId,order_number:this.purchaseOrderNumber.trim(),currency_code:this.business.currency_code,lines:[{product_id:this.purchaseProductId,quantity:this.purchaseQuantity,unit_cost:this.purchaseUnitCost}]});
-      this.purchaseOrderNumber='';this.purchaseQuantity='1';this.purchaseUnitCost='0';
-      const items=await this.api.purchaseOrders(businessId);if(this.business?.id===businessId)this.purchaseOrders=items;
-    } catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+    this.beginOperationsAction();
+    const quantity = Number(this.purchaseQuantity);
+    const unitCost = Number(this.purchaseUnitCost);
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
+      this.operationsError = this.t('تحقق من الكمية والتكلفة.', 'Check the quantity and unit cost.');
+      return;
+    }
+    const businessId = this.business.id;
+    this.purchasesLoading = true;
+    try {
+      await this.api.createPurchaseOrder(businessId, {
+        supplier_id: this.purchaseSupplierId,
+        order_number: this.purchaseOrderNumber.trim(),
+        currency_code: this.business.currency_code,
+        lines: [{ product_id: this.purchaseProductId, quantity: this.purchaseQuantity, unit_cost: this.purchaseUnitCost }],
+      });
+      if (this.business?.id !== businessId) return;
+      this.setOperationsSuccess('purchases', this.t(
+        'تم إنشاء أمر الشراء. لم يتم استلام الكميات بعد.',
+        'Purchase order created. No quantities have been received yet.'
+      ));
+      this.purchaseOrderNumber = '';
+      this.purchaseQuantity = '1';
+      this.purchaseUnitCost = '0';
+      const items = await this.api.purchaseOrders(businessId);
+      if (this.business?.id === businessId) this.purchaseOrders = items;
+    } catch (error) {
+      if (this.business?.id === businessId) this.setOperationsFailure('purchases', error);
+    } finally {
+      if (this.business?.id === businessId) this.purchasesLoading = false;
+    }
   }
   hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
   async receivePurchaseOrder(order: PurchaseOrder): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const lines=order.lines.filter(line=>this.hasRemainingQuantity(line)).map(line=>({line_id:line.id,quantity:line.remaining_quantity}));
-    if(!lines.length)return;
-    const businessId=this.business.id;this.purchasesLoading=true;this.operationsError='';
-    try { await this.api.receivePurchaseOrder(businessId,order.id,lines); const [orders,products,dashboard]=await Promise.all([this.api.purchaseOrders(businessId),this.api.products(businessId),this.api.dashboard(businessId)]);if(this.business?.id===businessId){this.purchaseOrders=orders;this.products=products;this.dashboard=dashboard;} }
-    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.purchasesLoading=false}
+    const lines = order.lines
+      .filter(line => this.hasRemainingQuantity(line))
+      .map(line => ({ line_id: line.id, quantity: line.remaining_quantity }));
+    if (!lines.length) return;
+    const businessId = this.business.id;
+    this.beginOperationsAction();
+    this.purchasesLoading = true;
+    try {
+      await this.api.receivePurchaseOrder(businessId, order.id, lines);
+      if (this.business?.id !== businessId) return;
+      this.setOperationsSuccess('purchases', this.t('تم تسجيل الاستلام.', 'Receiving was recorded.'));
+      const [orders, products, dashboard] = await Promise.all([
+        this.api.purchaseOrders(businessId),
+        this.api.products(businessId),
+        this.api.dashboard(businessId),
+      ]);
+      if (this.business?.id === businessId) {
+        this.purchaseOrders = orders;
+        this.products = products;
+        this.dashboard = dashboard;
+      }
+    } catch (error) {
+      if (this.business?.id === businessId) this.setOperationsFailure('purchases', error);
+    } finally {
+      if (this.business?.id === businessId) this.purchasesLoading = false;
+    }
   }
   async createRecurringSchedule(): Promise<void> {
     if (!this.business) return;
-    const interval=Number(this.recurringIntervalDays);if(!Number.isInteger(interval)||interval<1||interval>3650){this.operationsError=this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.','Interval must be between 1 and 3650 days.');return;}
-    const businessId=this.business.id;this.recurringLoading=true;this.operationsError='';
-    try { await this.api.createRecurringSchedule(businessId,{customer_id:this.recurringCustomerId||null,interval_days:interval,timezone:this.recurringTimezone.trim()||'UTC',next_run_at:new Date(this.recurringNextRunAt).toISOString()});const items=await this.api.recurringSchedules(businessId);if(this.business?.id===businessId)this.recurringSchedules=items; }
-    catch(error){if(this.business?.id===businessId)this.operationsError=this.message(error)} finally{if(this.business?.id===businessId)this.recurringLoading=false}
+    this.beginOperationsAction();
+    const interval = Number(this.recurringIntervalDays);
+    if (!Number.isInteger(interval) || interval < 1 || interval > 3650) {
+      this.operationsError = this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.', 'Interval must be between 1 and 3650 days.');
+      return;
+    }
+    const businessId = this.business.id;
+    this.recurringLoading = true;
+    try {
+      await this.api.createRecurringSchedule(businessId, {
+        customer_id: this.recurringCustomerId || null,
+        interval_days: interval,
+        timezone: this.recurringTimezone.trim() || 'UTC',
+        next_run_at: new Date(this.recurringNextRunAt).toISOString(),
+      });
+      if (this.business?.id !== businessId) return;
+      this.setOperationsSuccess('recurring', this.t(
+        'تم حفظ جدول الفوترة الدورية. هذا لا يعني إنشاء الفواتير تلقائيًا.',
+        'Recurring invoice schedule saved. This does not generate invoices automatically.'
+      ));
+      const items = await this.api.recurringSchedules(businessId);
+      if (this.business?.id === businessId) this.recurringSchedules = items;
+    } catch (error) {
+      if (this.business?.id === businessId) this.setOperationsFailure('recurring', error);
+    } finally {
+      if (this.business?.id === businessId) this.recurringLoading = false;
+    }
   }
 
   get maxIntegrityTotal(): number {
@@ -2143,6 +2291,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.tab = 'overview';
       this.mobileMoreOpen = false;
       return;
+    }
+    if (this.operationsMessageTab && this.operationsMessageTab !== tab) {
+      this.operationsMessage = '';
+      this.operationsMessageTab = null;
+      this.operationsWarning = '';
     }
     this.tab = tab;
     this.error = '';
