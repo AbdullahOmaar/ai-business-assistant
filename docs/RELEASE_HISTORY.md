@@ -24,7 +24,8 @@
 
 The app page lists these release lines based on the repository's versioned release history:
 
-- **1.3.7** — frontend accessibility patch: WCAG AA secondary-text contrast on light surfaces; deployed to production Web at main SHA `ac31d3d38f727ce24eb1b748d44a33c76344e0fd`; API remains 1.3.5.\n- **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.
+- **1.3.7** — frontend accessibility patch: WCAG AA secondary-text contrast on light surfaces; deployed to production Web at main SHA `ac31d3d38f727ce24eb1b748d44a33c76344e0fd`; API remains 1.3.5.
+- **1.3.6** — startup reliability and workspace navigation; deployed to production Web at main SHA `45924b5b37da917d98085487f091779317988966`.
 - **1.3.5** — session synchronization and workspace data protection; current production API version is 1.3.5.
 - **1.3.3** — release reliability: frontend release-metadata tests now work from Vercel's configured frontend root and preserve full-repository frontend/API parity checks.
 - **1.3.0** — release candidate: invoice payment shortcut and remaining balance, opening stock/current quantity for stock-tracked items, and this feature guide.
@@ -57,7 +58,7 @@ Only the version embedded in the deployed build identifies what users have actua
 - API remains unchanged at `1.3.5`; no backend deployment, database migration, or financial/payroll rule change is included.
 - **Production status:** Web version 1.3.6 was deployed on main SHA `45924b5b37da917d98085487f091779317988966` before the subsequent 1.3.7 frontend patch; API remains 1.3.5.
 
-## 1.3.7 — Accessibility and text contrast (frontend-only release candidate)
+## 1.3.7 — Accessibility and text contrast (frontend-only production release)
 
 - Bumps the frontend package, lockfile, local build-info fallback, and PWA shell cache fallback to `1.3.7`.
 - Raises secondary text contrast on light surfaces to WCAG AA normal-text threshold (at least 4.5:1) while preserving dark-sidebar colors.
