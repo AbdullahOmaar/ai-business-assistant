@@ -739,3 +739,62 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
   assert.match(source, /<aba-state-message \[kind\]="productMessageKind" \[description\]="productMessage" \/>/);
 });
+
+
+test('product CSV import is confirmed once and reports refresh failure without inviting a duplicate import', () => {
+  const start = source.indexOf('async confirmProductImport(): Promise<void>');
+  const end = source.indexOf('async onCustomerImportFileSelected(', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const businessId = this\.business\.id/);
+  assert.match(method, /const csvText = this\.importCsvText/);
+  assert.match(method, /this\.api\.importProductCsv\(businessId, csvText\)/);
+  assert.match(method, /Successfully imported/);
+  assert.match(method, /this\.importCsvText = ''/);
+  assert.match(method, /Products were imported, but the list could not refresh/);
+  assert.match(method, /Do not import the file again/);
+  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.importLoading = false;/);
+  assert.match(source, /<aba-state-message \[kind\]="importMessageKind" \[description\]="importMessage" \/>/);
+});
+
+test('customer CSV import is workspace-scoped and cannot be repeated after a confirmed import', () => {
+  const start = source.indexOf('async confirmCustomerImport(): Promise<void>');
+  const end = source.indexOf('importErrorLabel(code: string)', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const businessId = this\.business\.id/);
+  assert.match(method, /const csvText = this\.customerImportCsvText/);
+  assert.match(method, /this\.api\.importCustomerCsv\(businessId, csvText\)/);
+  assert.match(method, /Successfully imported/);
+  assert.match(method, /this\.customerImportCsvText = ''/);
+  assert.match(method, /Customers were imported, but the list could not refresh/);
+  assert.match(method, /Do not import the file again/);
+  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.customerImportLoading = false;/);
+  assert.match(source, /<aba-state-message \[kind\]="customerImportMessageKind" \[description\]="customerImportMessage" \/>/);
+});
+
+test('asynchronous CSV file reads and previews cannot leak into a newly selected workspace', () => {
+  const productReadStart = source.indexOf('async onImportFileSelected(event: Event)');
+  const productReadEnd = source.indexOf('async previewProductImport()', productReadStart);
+  const productRead = source.slice(productReadStart, productReadEnd);
+  assert.match(productRead, /const businessId = this\.business\?\.id/);
+  assert.match(productRead, /if \(this\.business\?\.id !== businessId\) return;/);
+
+  const customerReadStart = source.indexOf('async onCustomerImportFileSelected(event: Event)');
+  const customerReadEnd = source.indexOf('async previewCustomerImport()', customerReadStart);
+  const customerRead = source.slice(customerReadStart, customerReadEnd);
+  assert.match(customerRead, /const businessId = this\.business\?\.id/);
+  assert.match(customerRead, /if \(this\.business\?\.id !== businessId\) return;/);
+
+  const previewStart = source.indexOf('async previewProductImport()');
+  const previewEnd = source.indexOf('async confirmProductImport()', previewStart);
+  const productPreview = source.slice(previewStart, previewEnd);
+  assert.match(productPreview, /this\.api\.previewProductCsv\(businessId, csvText\)/);
+  assert.match(productPreview, /if \(this\.business\?\.id === businessId\) this\.importPreview = preview/);
+
+  const customerPreviewStart = source.indexOf('async previewCustomerImport()');
+  const customerPreviewEnd = source.indexOf('async confirmCustomerImport()', customerPreviewStart);
+  const customerPreview = source.slice(customerPreviewStart, customerPreviewEnd);
+  assert.match(customerPreview, /this\.api\.previewCustomerCsv\(businessId, csvText\)/);
+  assert.match(customerPreview, /if \(this\.business\?\.id === businessId\) this\.customerImportPreview = preview/);
+});
