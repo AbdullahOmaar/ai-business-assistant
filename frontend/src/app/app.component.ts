@@ -3,7 +3,7 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } fro
 import { FormsModule } from '@angular/forms';
 import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
-import { WorkspaceLoadGuard, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
+import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
