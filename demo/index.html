@@ -12,9 +12,8 @@
 <div class="notice"><strong>ديمو مستقل — ليس نظام إنتاج.</strong> كل الأسماء والأرقام بيانات تجريبية محلية في هذه الصفحة، ولا يتم إرسالها إلى أي خادم أو تخزينها. لا تستخدمها لإدخال بيانات حقيقية.</div>
 <main class="wrap">
 <div class="toolbar">
-<label for="lang">اللغة / Language</label><select id="lang"><option value="ar">العربية — RTL</option><option value="en">English — LTR</option></select>
 <label for="workspace">مساحة العمل التجريبية</label><select id="workspace"><option value="a">مخبز النور</option><option value="b">مكتبة المستقبل</option></select>
-<button class="secondary" id="simulateFail">محاكاة فشل التحميل</button><span class="muted" id="status" role="status" aria-live="polite">بيانات الديمو جاهزة</span>
+<button class="secondary" id="resetDemo" type="button">إعادة ضبط الديمو</button><button class="secondary" id="simulateFail" type="button">محاكاة فشل التحميل</button><span class="muted" id="status" role="status" aria-live="polite">بيانات الديمو جاهزة</span>
 </div>
 <section class="grid">
 <article class="card"><h2>1. عزل مساحات العمل</h2><p class="muted">بدّل مساحة العمل لملاحظة أن البيانات المعروضة تتغير، أو حاكِ فشل التحميل.</p><div class="stat" id="workspaceName">مخبز النور</div><div id="workspaceSummary">3 منتجات تجريبية · فاتورتان</div></article>
@@ -34,10 +33,10 @@
 <article class="card"><h2>11. سجل التدقيق</h2><ul class="list"><li>09:10 — إنشاء فاتورة تجريبية</li><li>09:14 — تغيير حد المخزون</li></ul><p class="muted">سجل توضيحي، وليس سجلًا غير قابل للتعديل.</p></article>
 <article class="card"><h2>12. أدوار أعضاء الفريق</h2><label class="field">الدور التجريبي<select id="roleDemo"><option>عضو</option><option>مدير</option><option>مالك</option></select></label><div class="result" id="roleResult">صلاحيات العرض فقط؛ لا تُطبّق على أي API.</div></article>
 <article class="card"><h2>13. كشف حساب العميل</h2><table><thead><tr><th>الحركة</th><th>القيمة</th></tr></thead><tbody><tr><td>فاتورة تجريبية</td><td>500 ج.م</td></tr><tr><td>دفعة تجريبية</td><td>-200 ج.م</td></tr></tbody></table><div class="stat">المتبقي: 300 ج.م</div></article>
-<article class="card"><h2>14. معاينة وطباعة الفاتورة</h2><p>فاتورة DEMO-001 · الإجمالي 300 ج.م</p><button id="printDemo">فتح نافذة الطباعة</button><p class="muted">المحتوى توضيحي ولا ينشئ مستندًا ضريبيًا.</p></article>
+<article class="card"><h2>14. معاينة وطباعة الفاتورة</h2><p>فاتورة DEMO-001 · الإجمالي 300 ج.م</p><button id="printDemo" type="button">فتح نافذة الطباعة</button><div class="result" id="printStatus" role="status" aria-live="polite">لم تُفتح نافذة الطباعة بعد.</div><p class="muted">المحتوى توضيحي ولا ينشئ مستندًا ضريبيًا.</p></article>
 <article class="card"><h2>15. الفواتير المتكررة</h2><label><input id="recurring" type="checkbox"> تفعيل جدول شهري تجريبي</label><div class="result" id="recurringResult">لا توجد جدولة مفعلة.</div></article>
 <article class="card"><h2>16. أوامر شراء الموردين</h2><label class="field">اسم المورد<input id="supplier" value="مورد تجريبي"></label><button id="purchaseDemo">معاينة استلام</button><div class="result" id="purchaseResult">لم يتم تسجيل استلام.</div></article>
-<article class="card"><h2>17. حساب الضريبة</h2><div class="row"><label>المبلغ<input id="taxBase" type="number" value="100" min="0" style="width:90px"></label><label>الضريبة %<input id="taxRate" type="number" value="14" min="0" max="100" style="width:90px"></label><button id="taxCalc">احسب</button></div><div class="result" id="taxResult">الإجمالي مع الضريبة: 114</div><p class="muted">النسبة توضيحية وليست توصية ضريبية.</p></article>
+<article class="card"><h2>17. الضرائب والسياسات المالية</h2><div class="result" role="status">هذه الميزة غير مفعّلة في الديمو. قواعد الضرائب تحتاج اعتماد سياسة العمل أولًا؛ لا توجد نسبة افتراضية أو حساب ضريبي معتمد هنا.</div><p class="muted">T37: DRAFT / NOT APPROVED — لا تستخدم هذه الصفحة لتحديد ضريبة أو تسعير فعلي.</p></article>
 <article class="card"><h2>18. نسخة تصدير احتياطية</h2><button id="backupDemo">تنزيل ملف بيانات تجريبية</button><div class="result" id="backupResult">لا توجد نسخة احتياطية؛ لا تتضمن بيانات حقيقية.</div></article>
 <article class="card"><h2>19. تفضيلات الإشعارات</h2><label><input type="checkbox" checked> تنبيهات المخزون</label><br><label><input type="checkbox" checked> تذكير الفواتير</label><br><label><input type="checkbox"> ملخص أسبوعي</label><p class="muted">التفضيلات لا تُحفظ بعد تحديث الصفحة.</p></article>
 <article class="card"><h2>20. حالة تشغيل النظام</h2><ul class="list"><li>واجهة العرض: تعمل</li><li>API: غير متصلة بهذا الديمو</li><li>قاعدة البيانات: لم تُفحص</li><li>الأسرار: لا تُعرض</li></ul><p class="muted">تشخيص محلي فقط؛ ليس مراقبة إنتاج.</p></article>
@@ -51,7 +50,6 @@ const demo={a:{name:'مخبز النور',summary:'3 منتجات تجريبية
 let lines=[{name:'قهوة',price:120,qty:1}], paid=false, fail=false;
 function renderWorkspace(){const w=demo[$('workspace').value];$('workspaceName').textContent=w.name;$('workspaceSummary').textContent=w.summary;$('customers').replaceChildren();w.customers.filter(c=>(c.join(' ').toLowerCase()).includes($('customerSearch').value.toLowerCase())).forEach(c=>{const li=document.createElement('li');li.textContent=c.join(' — ');$('customers').append(li)});$('status').textContent=fail?'فشل تحميل محاكى: لا توجد بيانات قديمة معروضة':'بيانات الديمو جاهزة';if(fail){$('workspaceName').textContent='';$('workspaceSummary').textContent='تعذر تحميل مساحة العمل. استخدم إعادة المحاولة أو بدّل المساحة.';$('customers').replaceChildren()} }
 function renderLines(){ $('invoiceLines').replaceChildren();let total=0;lines.forEach((l,i)=>{total+=l.price*l.qty;const li=document.createElement('li');li.textContent=l.name+' × '+l.qty+' = '+(l.price*l.qty)+' ج.م ';const b=document.createElement('button');b.className='secondary';b.textContent='حذف';b.onclick=()=>{lines.splice(i,1);renderLines()};li.append(b);$('invoiceLines').append(li)});$('invoiceTotal').textContent='الإجمالي التجريبي: '+total+' ج.م';}
-$('lang').onchange=()=>{const en=$('lang').value==='en';document.documentElement.lang=en?'en':'ar';document.documentElement.dir=en?'ltr':'rtl';$('title').textContent=en?'AI Business Assistant — Feature Demo':'مساعد الأعمال الذكي — معرض المزايا';$('subtitle').textContent=en?'Interactive preview using illustrative data only.':'عرض تفاعلي للميزات المقترحة باستخدام بيانات توضيحية فقط.'};
 $('workspace').onchange=()=>{fail=false;renderWorkspace()};$('customerSearch').oninput=renderWorkspace;$('simulateFail').onclick=()=>{fail=true;renderWorkspace()};$('addLine').onclick=()=>{const q=Number($('qty').value);if(!Number.isInteger(q)||q<1||q>999){$('invoiceTotal').textContent='الكمية يجب أن تكون عددًا صحيحًا بين 1 و999.';return}const p=Number($('product').value);lines.push({name:$('product').selectedOptions[0].text.split(' — ')[0],price:p,qty:q});renderLines()};$('togglePayment').onclick=()=>{paid=!paid;$('paymentStatus').textContent=paid?'مدفوعة تجريبيًا':'بانتظار الدفع';$('paymentStatus').className=paid?'pill':'pill warn';$('togglePayment').textContent=paid?'إعادة المحاكاة':'محاكاة استلام دفعة'};
 $('checkStock').onclick=()=>{const s=Number($('stock').value),t=Number($('threshold').value);$('stockAlert').textContent=s<=t?'تنبيه: المخزون منخفض ('+s+' ≤ '+t+')':'المخزون أعلى من الحد ('+s+' > '+t+')';$('stockAlert').className=s<=t?'result':'result pill'};
 $('previewCsv').onclick=()=>{const rows=$('csv').value.split(/\r?\n/).filter(x=>x.trim());let good=0,bad=0;const out=rows.map((row,i)=>{const parts=row.split(',').map(x=>x.trim());const valid=parts.length===2&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parts[1]);if(valid)good++;else bad++;return (valid?'✓':'✗')+' صف '+(i+1)+': '+(valid?'صالح للمعاينة':'تحقق من الاسم والبريد')}).join('\n');$('csvResult').textContent=out+'\n\nصفوف صالحة: '+good+' · صفوف تحتاج تصحيحًا: '+bad+'\nلم يتم حفظ أو استيراد أي بيانات.'};
@@ -59,11 +57,25 @@ $('exportCsv').onclick=()=>{const csv='workspace,metric,value\nDemo Bakery,produ
 $('updateDemo').onclick=()=>{$('updateStatus').textContent='تمت محاكاة وجود تحديث. في التطبيق الحقيقي يجب التحقق من Service Worker قبل إعادة التحميل.'};
 window.addEventListener('online',()=>{$('networkState').textContent='حالة الشبكة: online'});window.addEventListener('offline',()=>{$('networkState').textContent='حالة الشبكة: offline'});
 $('roleDemo').onchange=()=>{$('roleResult').textContent='الدور المختار: '+$('roleDemo').value+' — عرض توضيحي فقط، لا توجد صلاحيات فعلية.'};
-$('printDemo').onclick=()=>{const w=window.open('','_blank','noopener');if(!w){$('purchaseResult').textContent='المتصفح منع النافذة المنبثقة؛ اسمح بها للمعاينة.';return}w.document.write('<title>DEMO-001</title><h1>فاتورة تجريبية</h1><p>ليست فاتورة ضريبية — الإجمالي 300 ج.م</p>');w.document.close();w.focus();w.print()};
+$('printDemo').onclick=()=>{const w=window.open('','_blank');if(!w){$('printStatus').textContent='المتصفح منع نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.';return}w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>DEMO-001</title></head><body><h1>فاتورة تجريبية</h1><p>DEMO-001</p><p>ليست فاتورة ضريبية — الإجمالي 300 ج.م</p></body></html>');w.document.close();w.focus();w.print();$('printStatus').textContent='تم فتح نافذة طباعة الفاتورة التجريبية.'};
 $('recurring').onchange=()=>{$('recurringResult').textContent=$('recurring').checked?'تمت معاينة جدول شهري؛ لا يوجد تنفيذ تلقائي.':'تم إيقاف المعاينة.'};
 $('purchaseDemo').onclick=()=>{$('purchaseResult').textContent='معاينة استلام من '+$('supplier').value+'؛ لم يتم تعديل المخزون الحقيقي.'};
-$('taxCalc').onclick=()=>{const base=Number($('taxBase').value),rate=Number($('taxRate').value);$('taxResult').textContent=base>=0&&rate>=0&&rate<=100?'ضريبة توضيحية: '+(base*rate/100).toFixed(2)+' · الإجمالي: '+(base*(1+rate/100)).toFixed(2):'تحقق من إدخال مبلغ ونسبة بين 0 و100.'};
 $('backupDemo').onclick=()=>{const data=JSON.stringify({demo:true,workspace:$('workspaceName').textContent,warning:'Fictional demo data only'},null,2);const u=URL.createObjectURL(new Blob([data],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='demo-backup.json';a.click();URL.revokeObjectURL(u);$('backupResult').textContent='تم تنزيل ملف JSON تجريبي محلي؛ لا يحتوي على بيانات حساب.'};
+$('resetDemo').onclick=()=>{
+  fail=false;paid=false;lines=[{name:'قهوة',price:120,qty:1}];
+  $('workspace').value='a';$('customerSearch').value='';$('product').value='120';$('qty').value='1';
+  $('stock').value='3';$('threshold').value='5';$('csv').value='سارة, sara@example.com\\nعميل بدون بريد,invalid-email';
+  $('roleDemo').selectedIndex=0;$('recurring').checked=false;$('supplier').value='مورد تجريبي';
+  document.querySelectorAll('input[type="checkbox"]').forEach((checkbox,index)=>{checkbox.checked=index===1||index===2});
+  $('paymentStatus').textContent='بانتظار الدفع';$('paymentStatus').className='pill warn';$('togglePayment').textContent='محاكاة استلام دفعة';
+  $('stockAlert').textContent='المخزون منخفض: 3 ≤ 5';$('stockAlert').className='result';
+  $('csvResult').textContent='لم يتم استيراد أي شيء.';$('exportStatus').textContent='لم يتم إنشاء ملف بعد.';
+  $('updateStatus').textContent='لا يوجد تحديث محاكى.';$('roleResult').textContent='صلاحيات العرض فقط؛ لا تُطبّق على أي API.';
+  $('printStatus').textContent='لم تُفتح نافذة الطباعة بعد.';$('recurringResult').textContent='لا توجد جدولة مفعلة.';
+  $('purchaseResult').textContent='لم يتم تسجيل استلام.';$('backupResult').textContent='لا توجد نسخة احتياطية؛ لا تتضمن بيانات حقيقية.';
+  $('networkState').textContent=navigator.onLine?'حالة الاتصال: متصل بالصفحة':'حالة الشبكة: offline';
+  renderWorkspace();renderLines();
+};
 renderWorkspace();renderLines();
 })();
 </script>
