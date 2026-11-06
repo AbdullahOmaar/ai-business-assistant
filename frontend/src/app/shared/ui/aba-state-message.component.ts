@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-export type AbaStateKind = 'loading' | 'empty' | 'error' | 'success';
+export type AbaStateKind = 'loading' | 'empty' | 'error' | 'success' | 'info' | 'warning';
 
 /** Consistent status feedback. Action execution and retry policy stay with the caller. */
 @Component({
@@ -8,7 +8,7 @@ export type AbaStateKind = 'loading' | 'empty' | 'error' | 'success';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="aba-state-message" [class.aba-state-message--loading]="kind() === 'loading'" [class.aba-state-message--empty]="kind() === 'empty'" [class.aba-state-message--error]="kind() === 'error'" [class.aba-state-message--success]="kind() === 'success'" [attr.role]="kind() === 'error' ? 'alert' : 'status'" [attr.aria-live]="kind() === 'loading' || kind() === 'success' ? 'polite' : null">
+    <section class="aba-state-message" [class.aba-state-message--loading]="kind() === 'loading'" [class.aba-state-message--empty]="kind() === 'empty'" [class.aba-state-message--error]="kind() === 'error'" [class.aba-state-message--success]="kind() === 'success'" [class.aba-state-message--info]="kind() === 'info'" [class.aba-state-message--warning]="kind() === 'warning'" [attr.role]="kind() === 'error' ? 'alert' : 'status'" [attr.aria-live]="kind() === 'loading' || kind() === 'success' ? 'polite' : null">
       @if (kind() === 'loading') { <span class="aba-state-message__spinner" aria-hidden="true"></span> }
       <div class="aba-state-message__copy">
         @if (title()) { <strong>{{ title() }}</strong> }
@@ -29,7 +29,11 @@ export type AbaStateKind = 'loading' | 'empty' | 'error' | 'success';
     .aba-state-message--error p{color:var(--aba-color-danger-text, #991b1b)}
     .aba-state-message--success{background:var(--aba-color-primary-soft, #ecfdf5);border-color:var(--aba-color-success-border, #bbf7d0);color:var(--aba-color-success-text, #065f46)}
     .aba-state-message--success p{color:var(--aba-color-success-text, #065f46)}
-    .aba-state-message__action{flex:0 0 auto;min-height:36px;padding:7px 12px;border:1px solid currentColor;border-radius:var(--aba-radius-control, 9px);background:transparent;color:inherit;font:inherit;font-size:12px;font-weight:650;cursor:pointer}
+    .aba-state-message--info{background:var(--aba-color-info-soft, #eff6ff);border-color:var(--aba-color-info-border, #bfdbfe);color:var(--aba-color-info-text, #1e40af)}
+    .aba-state-message--info p{color:var(--aba-color-info-text, #1e40af)}
+    .aba-state-message--warning{background:var(--aba-color-warning-soft, #fffbeb);border-color:var(--aba-color-warning-border, #fde68a);color:var(--aba-color-warning-text, #92400e)}
+    .aba-state-message--warning p{color:var(--aba-color-warning-text, #92400e)}
+    .aba-state-message__action{flex:0 0 auto;min-height:44px;padding:9px 12px;border:1px solid currentColor;border-radius:var(--aba-radius-control, 9px);background:transparent;color:inherit;font:inherit;font-size:12px;font-weight:650;cursor:pointer}
     .aba-state-message__action:focus-visible{outline:3px solid var(--aba-color-focus, #2563eb);outline-offset:2px}
     .aba-state-message__spinner{flex:0 0 18px;width:18px;height:18px;border:2px solid var(--aba-color-border-strong, #cbd5e1);border-top-color:var(--aba-color-primary, #0f766e);border-radius:50%;animation:aba-spin .75s linear infinite}
     @keyframes aba-spin{to{transform:rotate(360deg)}}
