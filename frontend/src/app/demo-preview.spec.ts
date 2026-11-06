@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
-const demo = readFileSync(new URL('../../../demo/index.html', import.meta.url), 'utf8');
+const demo = readFileSync(new URL('../../public/demo/index.html', import.meta.url), 'utf8');
 
 test('feature preview is explicitly fictional, local-only, and Arabic RTL', () => {
   assert.match(demo, /<html lang="ar" dir="rtl">/);
