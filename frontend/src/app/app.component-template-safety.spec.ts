@@ -1043,3 +1043,43 @@ test('notification and supplier forms expose localized field validation without 
   assert.ok(source.includes('id="supplier-email-error"'));
   assert.ok(source.includes('leave this field blank'));
 });
+
+test('purchase order and recurring schedule forms expose accessible localized validation', () => {
+  const purchaseStart = source.indexOf('<form #purchaseForm="ngForm"');
+  const purchaseEnd = source.indexOf('</form>', purchaseStart);
+  const purchase = source.slice(purchaseStart, purchaseEnd);
+  assert.ok(purchase.includes('purchaseForm.valid && createPurchaseOrder()'));
+  const purchaseFields = [
+    ['purchaseOrderNumberControl', 'purchase-number-error'],
+    ['purchaseSupplierControl', 'purchase-supplier-error'],
+    ['purchaseProductControl', 'purchase-product-error'],
+    ['purchaseQuantityControl', 'purchase-quantity-error'],
+    ['purchaseUnitCostControl', 'purchase-unit-cost-error'],
+  ];
+  for (const [control, id] of purchaseFields) {
+    assert.ok(purchase.includes('#' + control + '="ngModel"'), control);
+    assert.ok(purchase.includes(`[attr.aria-describedby]="${control}.invalid && (${control}.touched || purchaseForm.submitted) ? '${id}' : null"`), id);
+    assert.ok(source.includes('id="' + id + '"'), id);
+  }
+  assert.match(purchase, /name="purchaseQuantity" type="number" min="0\.001" step="0\.001" required/);
+  assert.match(purchase, /name="purchaseUnitCost" type="number" min="0" step="0\.01" required/);
+  assert.match(purchase, /purchasesLoading \|\| !suppliers\.length \|\| !products\.length/);
+
+  const recurringStart = source.indexOf('<form #recurringForm="ngForm"');
+  const recurringEnd = source.indexOf('</form>', recurringStart);
+  const recurring = source.slice(recurringStart, recurringEnd);
+  assert.ok(recurring.includes('recurringForm.valid && createRecurringSchedule()'));
+  assert.ok(recurring.includes('name="recurringCustomerId" [(ngModel)]="recurringCustomerId"'));
+  assert.doesNotMatch(recurring, /name="recurringCustomerId"[^>]*required/);
+  for (const [control, id] of [
+    ['recurringIntervalControl', 'recurring-interval-error'],
+    ['recurringNextRunControl', 'recurring-next-run-error'],
+    ['recurringTimezoneControl', 'recurring-timezone-error'],
+  ]) {
+    assert.ok(recurring.includes('#' + control + '="ngModel"'), control);
+    assert.ok(recurring.includes(`[attr.aria-describedby]="${control}.invalid && (${control}.touched || recurringForm.submitted) ? '${id}' : null"`), id);
+    assert.ok(source.includes('id="' + id + '"'), id);
+  }
+  assert.match(recurring, /name="recurringIntervalDays" type="number" min="1" max="3650" required/);
+  assert.match(recurring, /name="recurringTimezone" required maxlength="64"/);
+});
