@@ -403,3 +403,13 @@ test('mobile More closes on outside pointer interaction without stealing the new
   assert.doesNotMatch(method, /\.focus\(\)/,
     'outside pointer dismissal must not move focus away from the clicked target');
 });
+
+
+test('mobile More menu uses logical inline positioning for Arabic RTL and English LTR', () => {
+  const menuRuleStart = source.indexOf('.mobile-more-menu{');
+  const menuRuleEnd = source.indexOf('}', menuRuleStart);
+  const menuRule = source.slice(menuRuleStart, menuRuleEnd);
+  assert.ok(menuRuleStart >= 0);
+  assert.match(menuRule, /inset-inline-end:10px/);
+  assert.doesNotMatch(menuRule, /(?:^|;)right:10px/);
+});
