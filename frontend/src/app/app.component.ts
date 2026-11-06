@@ -1020,6 +1020,8 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
       .shell.keyboard-open .main,.shell:has(.chat-form textarea:focus) .main{padding-bottom:12px}
       .shell.keyboard-open .chat-log{min-height:100px;max-height:35dvh}
     }
+    /* P1 Home hierarchy: keep the four KPI cards readable as a single column on phones. */
+    @media(max-width:760px){.metric-grid{grid-template-columns:minmax(0,1fr)}}
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
