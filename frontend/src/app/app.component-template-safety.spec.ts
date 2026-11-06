@@ -153,8 +153,18 @@ test('customer CSV import requires preview before confirmation and localizes fee
   assert.match(panel, /confirmCustomerImport\(\)/);
   assert.match(source, /async previewCustomerImport\(\): Promise<void>/);
   assert.match(source, /async confirmCustomerImport\(\): Promise<void>/);
-  assert.match(source, /this\.api\.previewCustomerCsv\(\s*this\.business\.id, this\.customerImportCsvText/);
-  assert.match(source, /this\.api\.importCustomerCsv\(\s*this\.business\.id, this\.customerImportCsvText/);
+  const previewStart = source.indexOf('async previewCustomerImport(): Promise<void>');
+  const confirmStart = source.indexOf('async confirmCustomerImport(): Promise<void>', previewStart);
+  const importEnd = source.indexOf('importErrorLabel(code: string): string', confirmStart);
+  assert.ok(previewStart >= 0 && confirmStart > previewStart && importEnd > confirmStart);
+  const previewMethod = source.slice(previewStart, confirmStart);
+  const confirmMethod = source.slice(confirmStart, importEnd);
+  assert.match(previewMethod, /const businessId = this\.business\.id/);
+  assert.match(previewMethod, /const csvText = this\.customerImportCsvText/);
+  assert.match(previewMethod, /this\.api\.previewCustomerCsv\(businessId, csvText\)/);
+  assert.match(confirmMethod, /const businessId = this\.business\.id/);
+  assert.match(confirmMethod, /const csvText = this\.customerImportCsvText/);
+  assert.match(confirmMethod, /this\.api\.importCustomerCsv\(businessId, csvText\)/);
   assert.match(source, /customerImportPreview: Awaited<ReturnType<ApiService\['previewCustomerCsv'\]>>/);
 });
 
@@ -210,7 +220,7 @@ test('mobile More navigation renders grouped destinations from the shared catalo
   assert.match(menu, /tab === module\.tab \? 'page' : null/);
   assert.match(source, /WORKSPACE_MODULE_GROUPS/);
   assert.match(source, /max-height:min\(70dvh,560px\);overflow-y:auto;overscroll-behavior:contain/);
-  assert.match(source, /border-inline-start:3px solid #5eead4/);
+  assert.match(source, /border-inline-start:3px solid var\(--aba-color-nav-accent,#5eead4\)/);
 });
 
 test('workspace empty states use the shared accessible state component', () => {
