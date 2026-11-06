@@ -2180,3 +2180,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added a regression test requiring the workspace release region and preventing the page-header duplicate.
 - Commits: `8323daf42c7e1d0d65a0fd8366e1baa85c2dfaba` (template/CSS) and `6b36381188fcfc948cee6e3e5a22f2682878519b` (test).
 - Source readback confirms one persistent release metadata block in the workspace bar and no `.workspace-build-card` markup or CSS. Visual spacing still requires browser validation (**NOT RUN**).
+
+## T18 — Prevent cross-module operations error leakage — 2026-11-06
+
+- Added `operationsErrorTab` so load/action errors are associated with the module that produced them (notifications, suppliers, purchases or recurring schedules).
+- Scoped each module's error banner to its matching tab; load starts, action starts, successful actions and workspace reset clear the scope. Validation errors for purchase and recurring schedules also set their module scope.
+- Existing success/warning messages were already tab-scoped and remain unchanged. API error mapping and retry behavior are unchanged.
+- Added a regression test for error scope assignment and view conditions.
+- Commits: `f079cdc1ef209a701feba5730c194e3ff091fe4e` (state/template) and `1aa07c19fc412816662a518161bd3b715c5baf69` (test).
+- Static source readback PASS for all four module guards and reset paths. Runtime test remains **NOT RUN**.
