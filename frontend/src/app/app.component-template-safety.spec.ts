@@ -1198,6 +1198,6 @@ test('quick-access keyboard focus fallback meets the shared semantic focus token
 
 
 test('AI chat composer placeholder follows selected language', () => {
-  assert.match(source, /\\[placeholder\\]="t\\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\\)"/);
+  assert.match(source, /\[placeholder\]="t\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\)"/);
   assert.doesNotMatch(source, /placeholder="اكتب سؤالك عن نشاطك…"/);
 });
