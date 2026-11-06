@@ -2227,3 +2227,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - These are static readback assertions only. The 119 tests have NOT been executed; Angular template/production build, browser/device, rendered RTL/LTR, keyboard/screen-reader and authenticated OWNER/STAFF/two-tenant checks remain NOT RUN.
 - Exact branch-head GitHub status contexts and check-runs remain empty. CircleCI trigger/retry freeze remains active. No PR, merge, deployment, CI trigger/retry, API/DB/schema/migration or production change.
 - Next: reconcile the latest UX/T18 Notion handoff, continue the remaining source/diff review, and keep merge/new-branch sequencing gated until exact-head CircleCI validation is explicitly allowed and passes.
+
+
+## T18 — Bilingual AI composer placeholder — 2026-11-06
+
+- Source review found the AI chat textarea retained Arabic placeholder text when the app was switched to English, while its accessible name and surrounding interface were bilingual.
+- Localized the existing placeholder through the component's established `t(ar, en)` helper. No chat request, validation, API, permission, workspace or business behavior changed.
+- Added a source regression assertion for the bilingual binding and to prevent the Arabic-only literal placeholder from returning.
+- Commits: `4a61657ebe793af484f9b4bee8faba36d7fea00e` (template fix) and `a13d849ad737b69cd48242d056b4eff1e0a72f98` (regression assertion).
+- Exact branch head after implementation/test commits: `a13d849ad737b69cd48242d056b4eff1e0a72f98`. The TASKS update is documentation-only and uses `[skip ci]`.
+- Static source readback is the evidence for this slice; the new test and full frontend suite remain **NOT RUN**. Angular template/production build, browser RTL/LTR, keyboard, screen-reader and Android PWA checks remain **NOT RUN**. No CI was triggered or retried.
+- No PR, merge, deployment, backend/API/database/schema/migration, financial semantics or payroll changes.
+- Next: continue the remaining source/diff review and obtain an authorized runner/browser plus exact-candidate CircleCI validation before PR/merge.
