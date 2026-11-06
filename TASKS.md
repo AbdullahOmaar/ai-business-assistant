@@ -2217,3 +2217,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Commits: cb2fc9b7871dcbe027061900b73f46e64f4ce0ea (responsive CSS) and 81e1126a87e518c0a670c60181061ab639eb81d7 (test).
 - Exact-source readback confirms the final mobile override is last in component styles and preserves the four dashboard response groups. This is static evidence only; rendered 360/390/412px RTL/LTR checks remain NOT RUN.
 - No chart, recent-activity feed, pending-work counter or attention panel was invented because no supporting current dashboard data source was verified. No backend/API/DB, financial semantics, permission or deployment changes.
+
+## T18 — Shared quick-access focus fallback and source audit — 2026-11-06
+
+- Aligned the reusable quick-access card's fallback keyboard-focus color with the semantic focus token (#2563eb), matching the shared focus treatment when token styles are unavailable. Existing RTL arrow mirroring and reduced-motion behavior remain intact.
+- Added a source regression test for the focus fallback and RTL direction behavior.
+- Commits: a60488feefe202e198857f603dcf8784b41c4564 (shared component) and 15485707be0e4e8fb08306283c33408f6f074858 (test).
+- Exact-source audit at implementation/test head 15485707be0e4e8fb08306283c33408f6f074858: 16 forms inventoried; all 14 forms containing required controls have validity guards; the tax/audit report filters remain optional; 34/34 dynamic aria-describedby targets resolve to existing IDs; 119 source-level test declarations across five frontend spec files with no duplicate test names. Quick-access selector, mobile single-column KPI rule and focus fallback assertions are present.
+- These are static readback assertions only. The 119 tests have NOT been executed; Angular template/production build, browser/device, rendered RTL/LTR, keyboard/screen-reader and authenticated OWNER/STAFF/two-tenant checks remain NOT RUN.
+- Exact branch-head GitHub status contexts and check-runs remain empty. CircleCI trigger/retry freeze remains active. No PR, merge, deployment, CI trigger/retry, API/DB/schema/migration or production change.
+- Next: reconcile the latest UX/T18 Notion handoff, continue the remaining source/diff review, and keep merge/new-branch sequencing gated until exact-head CircleCI validation is explicitly allowed and passes.
