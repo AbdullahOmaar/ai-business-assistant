@@ -189,3 +189,49 @@ test('sign-in form receives the same touched and submitted invalid-control treat
   assert.match(styles, /\.auth-card input\.ng-invalid\.ng-touched:focus-visible/);
   assert.match(styles, /\.field-error\s*\{[^}]*color:\s*var\(--aba-color-danger-text\)/);
 });
+
+
+const colorToken = (name: string): string => {
+  const match = styles.match(new RegExp('^\\\\s*' + name + ':\\\\s*(#[0-9a-fA-F]{6})', 'm'));
+  assert.ok(match, \`missing six-digit color token: \${name}\`);
+  return match[1];
+};
+
+const relativeLuminance = (hex: string): number => {
+  const channels = hex.slice(1).match(/.{2}/g)!.map(value => parseInt(value, 16) / 255);
+  const linear = channels.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+};
+
+const contrastRatio = (foreground: string, background: string): number => {
+  const values = [relativeLuminance(foreground), relativeLuminance(background)].sort((a, b) => b - a);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+};
+
+test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-text contrast', () => {
+  const textPairs = [
+    ['--aba-color-text-primary', '--aba-color-surface'],
+    ['--aba-color-text-primary', '--aba-color-page'],
+    ['--aba-color-text-muted', '--aba-color-surface'],
+    ['--aba-color-text-secondary', '--aba-color-surface'],
+    ['--aba-color-text-tertiary', '--aba-color-surface'],
+    ['--aba-color-nav-text', '--aba-color-nav-surface'],
+    ['--aba-color-nav-muted', '--aba-color-nav-surface'],
+    ['--aba-color-hero-muted', '--aba-color-hero-mid'],
+    ['--aba-color-danger-text', '--aba-color-danger-soft'],
+    ['--aba-color-success-text', '--aba-color-success-soft'],
+    ['--aba-color-info-text', '--aba-color-info-soft'],
+    ['--aba-color-warning-text', '--aba-color-warning-soft'],
+    ['--aba-color-on-primary', '--aba-color-primary'],
+  ];
+  for (const [foreground, background] of textPairs) {
+    const ratio = contrastRatio(colorToken(foreground), colorToken(background));
+    assert.ok(ratio >= 4.5, \`\${foreground} on \${background} must be >= 4.5:1 (got \${ratio.toFixed(2)}:1)\`);
+  }
+
+  const focus = colorToken('--aba-color-focus-ring');
+  for (const surface of ['--aba-color-surface', '--aba-color-page']) {
+    const ratio = contrastRatio(focus, colorToken(surface));
+    assert.ok(ratio >= 3, \`focus indicator on \${surface} must be >= 3:1 (got \${ratio.toFixed(2)}:1)\`);
+  }
+});
