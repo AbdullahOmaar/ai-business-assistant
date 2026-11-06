@@ -5,6 +5,15 @@ import test from 'node:test';
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
+const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
+
+test('workspace shell imports every tenant guard helper used by its async views', () => {
+  assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
+  const guardImport = source.match(/import\\s*\\{([^}]+)\\}\\s*from '\\.\\/workspace-load-guard';/);
+  assert.ok(guardImport, 'workspace load guard import must exist');
+  assert.match(guardImport[1], /\\bisCurrentTenantRequest\\b/);
+});
+
 
 test('mobile More menu has a correctly delimited active-class attribute', () => {
   const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
