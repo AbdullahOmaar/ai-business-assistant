@@ -1,3 +1,14 @@
+# Web 1.3.8 release CI diagnosis — 2026-11-06
+
+- PR #340: `https://github.com/AbdullahOmaar/ai-business-assistant/pull/340`.
+- First candidate head `bcf4bac4b77e8e586abb2a1c7e44987cba1953cd`.
+- Exact CircleCI: `frontend-unit-tests` FAILED; `frontend-production-build` PASS; `frontend-dependency-audit` PASS. Browser and backend jobs were still running at the first status read.
+- Root cause located from `frontend/src/app/release-guide.spec.ts`: test `current frontend release metadata is consistent in the configured project root` asserts that `RELEASE_HISTORY[0].changesEn` contains the literal phrase `version <package.json version>`. New 1.3.8 entry omitted the version text. The prior release's check expected explicit English version wording.
+- Fix: release note now states “Updates the web UI to version 1.3.8 …”; API remains 1.3.5. No change to financial logic, backend, database or migrations.
+- Latest exact-head run required; previous CI failure will not be bypassed or retried manually.
+
+---
+
 # Master release checkpoint — 2026-11-06
 
 ## Verified live baseline
