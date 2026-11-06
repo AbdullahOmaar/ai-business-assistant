@@ -194,7 +194,7 @@ test('sign-in form receives the same touched and submitted invalid-control treat
 const colorToken = (name: string): string => {
   const line = styles.split(/\r?\n/).find(value => value.trimStart().startsWith(name + ':'));
   const match = line?.match(/^\s*--aba-[\w-]+:\s*(#[0-9a-fA-F]{6})\s*;?\s*$/);
-  assert.ok(match, \`missing six-digit color token: \${name}\`);
+  assert.ok(match, `missing six-digit color token: ${name}`);
   return match[1];
 };
 
@@ -227,12 +227,12 @@ test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-te
   ];
   for (const [foreground, background] of textPairs) {
     const ratio = contrastRatio(colorToken(foreground), colorToken(background));
-    assert.ok(ratio >= 4.5, \`\${foreground} on \${background} must be >= 4.5:1 (got \${ratio.toFixed(2)}:1)\`);
+    assert.ok(ratio >= 4.5, `${foreground} on ${background} must be >= 4.5:1 (got ${ratio.toFixed(2)}:1)`);
   }
 
   const focus = colorToken('--aba-color-focus-ring');
   for (const surface of ['--aba-color-surface', '--aba-color-page']) {
     const ratio = contrastRatio(focus, colorToken(surface));
-    assert.ok(ratio >= 3, \`focus indicator on \${surface} must be >= 3:1 (got \${ratio.toFixed(2)}:1)\`);
+    assert.ok(ratio >= 3, `focus indicator on ${surface} must be >= 3:1 (got ${ratio.toFixed(2)}:1)`);
   }
 });
