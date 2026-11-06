@@ -1201,3 +1201,11 @@ test('AI chat composer placeholder follows selected language', () => {
   assert.match(source, /\[placeholder\]="t\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\)"/);
   assert.doesNotMatch(source, /placeholder="اكتب سؤالك عن نشاطك…"/);
 });
+
+
+test('CSV import regions and invoice preview have localized accessible names', () => {
+  assert.ok(source.includes("[attr.aria-label]=\"t('استيراد العملاء من CSV', 'CSV customer import')\""));
+  assert.ok(source.includes("[attr.aria-label]=\"t('استيراد المنتجات من CSV', 'CSV product import')\""));
+  assert.ok(source.includes("[attr.aria-label]=\"t('معاينة إجمالي الفاتورة', 'Invoice totals preview')\""));
+  assert.doesNotMatch(source, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
+});
