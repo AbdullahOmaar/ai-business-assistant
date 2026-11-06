@@ -181,3 +181,11 @@ test('inline field errors use shared semantic danger and typography tokens', () 
   assert.match(styles, /\.field-error\s*\{[^}]*font-size:\s*var\(--aba-font-size-xs\)/);
   assert.match(styles, /\.field-error\s*\{[^}]*overflow-wrap:\s*anywhere/);
 });
+
+
+test('sign-in form receives the same touched and submitted invalid-control treatment as workspace forms', () => {
+  assert.match(styles, /\.auth-card input\.ng-invalid\.ng-touched/);
+  assert.match(styles, /\.auth-card form\.ng-submitted input\.ng-invalid/);
+  assert.match(styles, /\.auth-card input\.ng-invalid\.ng-touched:focus-visible/);
+  assert.match(styles, /\.field-error\s*\{[^}]*color:\s*var\(--aba-color-danger-text\)/);
+});
