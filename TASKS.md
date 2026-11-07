@@ -2693,3 +2693,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added a source regression for the mobile dock's shared navigation token usage.
 - `design-tokens.spec.ts` now has 23 test declarations. Tests/build/Playwright/rendered responsive and RTL/LTR acceptance remain NOT RUN.
 - Source commit: `001c5607ebde9ddb55a0699fef222c692729e2b8`; existing PR #348 remains OPEN / DRAFT / UNMERGED. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — feature-surface design token alignment — 2026-11-07
+
+- Platform Admin now maps its local ink/muted/line/panel/teal/background variables onto the shared semantic tokens, defines its previously missing surface-soft variable, and uses the shared focus ring. Existing permission boundaries and behavior are unchanged. Two source regression declarations cover the token contract.
+- Employee & Payroll component-local styles now consume shared tokens for surfaces, controls, typography, primary actions, success/warning/error/info states and 44px action targets. The change is presentation-only; payroll privacy, approval, payout and accounting behavior are untouched.
+- Readback: no unresolved shared token references in Platform Admin or Employee & Payroll; Payroll component CSS braces balanced; warning and success surfaces use their distinct semantic tokens. Source test declarations: Platform Admin 2, Employee/Payroll 10, App Shell design tokens 23. All authored / NOT RUN.
+- Implementation commits: Platform Admin `0a595a3e4336dcc4501495a2ace59cc755beae3d` (test correction `c8fcbe774fe1710c21cf7eb80a664a1113cb425c`); Payroll `5843b4e6ccceea2d941e47f21ef8c4c8dc7663de` and corrective semantic-surface commit `70876d61f2624d67b7fa1ce395d4429f45f1fe01`.
+- No CI trigger/retry, merge, preview or deployment. Node tests, Angular build, dependency audit, Playwright, RTL/LTR browser rendering and screen-reader acceptance remain NOT RUN.
