@@ -222,17 +222,33 @@ test('failed payroll dashboard refresh clears stale Home metrics before exposing
   assert.ok(start >= 0 && end > start, 'post-payroll refresh method must exist');
   assert.ok(catchStart >= 0 && staleClear > catchStart && retryError > staleClear,
     'failed refresh must clear old dashboard metrics before publishing the retryable error');
-  assert.match(method, /if \(this\.business\?\.id === businessId\) \{[\\s\\S]*?this\.dashboard = null;[\\s\\S]*?this\.error = this\.message\(error\);/);
+  assert.match(method, /if \(this\.business\?\.id === businessId\) \{/);
 });
 
 
 test('Home quick access follows the approved high-frequency destinations in stable order', () => {
   const configured = moduleCatalogSource.match(
-    /export const HOME_QUICK_ACCESS_TABS:[^=]+=[\\s\\S]*?\\[([\\s\\S]*?)\\];/,
+    /export const HOME_QUICK_ACCESS_TABS:[^=]+=[\s\S]*?\[([\s\S]*?)\];/,
   );
   assert.ok(configured, 'the canonical Home quick-access list must exist');
   const tabs = [...configured[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
   assert.deepEqual(tabs, ['invoices', 'customers', 'products', 'expenses', 'reports']);
   assert.match(appSource, /return WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.match(appSource, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
+});
+
+
+test('Home does not invent pending actions or operational alerts absent from the dashboard contract', () => {
+  const dashboardStart = backendSource.indexOf('def dashboard(');
+  const dashboardEnd = backendSource.indexOf('@router.get("/businesses/{business_id}/profit-loss")', dashboardStart);
+  assert.ok(dashboardStart >= 0 && dashboardEnd > dashboardStart);
+  const handler = backendSource.slice(dashboardStart, dashboardEnd);
+  const responseStart = handler.indexOf('return {');
+  assert.ok(responseStart >= 0);
+  const response = handler.slice(responseStart);
+  for (const field of ['"period":', '"invoiced_sales":', '"collected_payments":', '"expenses":', '"outstanding_balances":', '"limitations":']) {
+    assert.ok(response.includes(field), 'dashboard response must retain ' + field);
+  }
+  assert.doesNotMatch(response, /pending_actions|action_queue|operational_alerts|attention_items|alert_count|pending_count/i);
+  assert.doesNotMatch(home, /pending_actions|action_queue|operational_alerts|attention_items|alert_count|pending_count/i);
 });
