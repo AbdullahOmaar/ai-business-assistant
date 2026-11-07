@@ -300,3 +300,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Regression coverage verifies token usage and absence of the targeted repeated raw colors. The design-token source suite now has 22 test declarations.
 - 97 token definitions remain unique; the only App Shell token reference not defined in the global stylesheet is `--aba-keyboard-inset`, which is assigned dynamically by the keyboard viewport handler.
 - Source-only verification; Node tests/build/browser/rendered acceptance remain NOT RUN.
+
+
+## T18 mobile navigation dock semantic token alignment — 2026-11-07
+
+- The mobile dock now reuses shared navigation border, glass-surface, text and accent tokens; fallback colors preserve its existing palette.
+- Regression coverage checks the dock's semantic declarations. Source-only; rendered responsive and RTL/LTR acceptance remains NOT RUN.

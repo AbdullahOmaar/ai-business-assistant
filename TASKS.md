@@ -2685,3 +2685,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Static source checks: 97 unique design tokens; all shell token references resolve except the intentionally runtime-set `--aba-keyboard-inset`; CSS braces remain balanced. `design-tokens.spec.ts` now has 22 test declarations.
 - Tests/build/dependency audit/Playwright/rendered RTL/LTR and assistive-technology checks remain NOT RUN. Commit uses `[skip ci]`; no CI trigger/retry, preview, merge or deployment.
 - Source commit: `dba869fb6970ecf85839081f11ff86dbe507adf3`; existing PR #348 remains OPEN / DRAFT / UNMERGED.
+
+
+## T18 — mobile navigation dock token alignment — 2026-11-07
+
+- Replaced seven repeated mobile dock color declarations with existing semantic navigation tokens for dock border/glass surface, navigation text and active icon accent. Fallback values preserve the existing visual palette.
+- Added a source regression for the mobile dock's shared navigation token usage.
+- `design-tokens.spec.ts` now has 23 test declarations. Tests/build/Playwright/rendered responsive and RTL/LTR acceptance remain NOT RUN.
+- Source commit: `001c5607ebde9ddb55a0699fef222c692729e2b8`; existing PR #348 remains OPEN / DRAFT / UNMERGED. No CI trigger/retry, preview, merge or deployment.
