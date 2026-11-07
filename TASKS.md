@@ -2788,3 +2788,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `eab53aa19d822769de26c223f49d977db363fb0a`.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered responsive/RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry; commits use `[skip ci]`. No preview, merge or deployment.
 - **Next:** continue Home / Overview source review; rendered acceptance requires an approved online runner/browser. Keep the four API-backed currency-separated metrics and avoid unsupported trends, pending-work, aging or recent-activity data.
+
+
+## T18 — Home workspace-switch metric isolation regression — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; main base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commit:** `f6f621188796ca7dca517d50694b5ca849767ab0`; added a Home regression declaration in `frontend/src/app/home-dashboard.spec.ts`.
+- **Coverage:** asserts workspace switching calls the shared reset, the reset clears `dashboard` and invalidates the workspace-load generation, and `loadWorkspaceData()` fences stale responses against the current workspace ID before writing Home metrics. This protects the four tenant-scoped KPI groups from stale cross-workspace display.
+- **Existing implementation verified:** `switchBusiness()` resolves the destination workspace/role, clears workspace-scoped state, then reloads. The load path rejects responses whose request generation or current workspace no longer matches.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` refreshed through `9d7e927147a30c960fb98dd6b649d2a81762b403`; Home spec now has 13 source-test declarations.
+- **Validation:** source-level implementation review only; the new Node regression is authored / **NOT RUN**. Angular build, dependency audit, Playwright, rendered RTL/LTR, role/tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue the Home / Overview source-level responsive and accessibility audit. Exact-head executable/rendered acceptance remains blocked by the offline approved runner and no-CI-trigger restriction.
