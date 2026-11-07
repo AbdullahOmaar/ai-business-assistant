@@ -85,7 +85,7 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
     .release-feature-group[open]>summary:after,.release-version[open]>summary:after{content:'−'}
     .release-feature-group>summary strong{font-size:14px;flex:1 1 160px}
     .release-feature-group>summary small{flex:1 1 100%;font-size:12px;color:var(--aba-color-text-secondary,#64748b);line-height:1.5;overflow-wrap:anywhere}
-    .release-feature-group ul,.release-version ul{margin:0;padding-block-end:14px;padding-inline-start:32px;padding-inline-end:12px;display:grid;gap:10px;font-size:13px;line-height:1.55}
+    .release-feature-group ul,.release-version ul{margin:0;padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0;display:grid;gap:10px;font-size:13px;line-height:1.55}
     .release-feature-group li strong{display:block;font-size:13px}
     .release-feature-group li span{display:block;margin-top:2px;color:var(--aba-color-text-muted,#475569);font-size:12px;overflow-wrap:anywhere}
     .release-guide-footnote{margin:15px 0 0;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;line-height:1.6}

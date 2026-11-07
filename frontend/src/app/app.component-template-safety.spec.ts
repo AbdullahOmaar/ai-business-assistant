@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
@@ -1005,8 +1006,8 @@ test('shared shell uses logical inline positioning for Arabic RTL and English LT
 });
 
 test('RTL release-guide lists and mobile dock active state use logical layout', () => {
-  assert.match(source, /\.release-feature-group ul,\.release-version ul\{[^}]*padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0/);
-  assert.doesNotMatch(source, /\.shell\.english \.release-feature-group ul/);
+  assert.match(releaseGuideSource, /\.release-feature-group ul,\.release-version ul\{[^}]*padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0/);
+  assert.doesNotMatch(releaseGuideSource, /\.shell\.english \.release-feature-group ul/);
   assert.match(source, /\.sidebar \.nav-item\.active\{[^}]*border-inline-start:0;/);
   assert.match(source, /\.mobile-more-menu \.nav-item\.active\{border-inline-start:3px solid/);
 });
