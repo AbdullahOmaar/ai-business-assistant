@@ -209,3 +209,17 @@ test('Home uses one workspace-level loading announcement and a visual KPI skelet
   assert.match(home, /metric-grid--skeleton/,
     'the Home KPI hierarchy remains visible as a non-data skeleton');
 });
+
+test('failed payroll dashboard refresh clears stale Home metrics before exposing retry', () => {
+  const start = appSource.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
+  const end = appSource.indexOf('exportReceivablesAgingCsv(): void', start);
+  const method = appSource.slice(start, end);
+  const catchStart = method.indexOf('} catch (error) {');
+  const staleClear = method.indexOf('this.dashboard = null;', catchStart);
+  const retryError = method.indexOf('this.error = this.message(error);', catchStart);
+
+  assert.ok(start >= 0 && end > start, 'post-payroll refresh method must exist');
+  assert.ok(catchStart >= 0 && staleClear > catchStart && retryError > staleClear,
+    'failed refresh must clear old dashboard metrics before publishing the retryable error');
+  assert.match(method, /if \(this\.business\?\.id === businessId\) \{[\\s\\S]*?this\.dashboard = null;[\\s\\S]*?this\.error = this\.message\(error\);/);
+});
