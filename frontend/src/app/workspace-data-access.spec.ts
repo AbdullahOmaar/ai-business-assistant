@@ -29,3 +29,12 @@ test('denied direct tab navigation returns before changing the selected tab or l
     assert.ok(method.indexOf(load) > selectedTabMutation, `${load} must run only after the access guard`);
   }
 });
+
+test('workspace changes clear local operation-list searches with the previous workspace data', () => {
+  const start = source.indexOf('private clearWorkspaceData(): void');
+  const end = source.indexOf('\n  }', start);
+  const method = source.slice(start, end);
+  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
+    assert.match(method, new RegExp('this\\\\.' + field + ' = \'\';'));
+  }
+});

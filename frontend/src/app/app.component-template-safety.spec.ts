@@ -1255,3 +1255,23 @@ test('Home dashboard exposes loading, error and empty states when metrics are un
   assert.match(overview, /kind="error" \[description\]="error"/);
   assert.match(overview, /kind="empty"[^>]*No business metrics are available yet/);
 });
+
+ 
+test('operations lists filter locally by their visible business fields', () => {
+  assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
+  assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);
+  assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
+  assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
+  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
+  assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
+  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
+  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch\)/);
+  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
+    assert.match(source, new RegExp(field + ' = \'\''));
+    assert.match(source, new RegExp(field + ' = \'\'', 'g'));
+  }
+  assert.match(source, /No suppliers match this search/);
+  assert.match(source, /No purchase orders match this search/);
+  assert.match(source, /No schedules match this search/);
+  assert.match(source, /No notifications match this search/);
+});
