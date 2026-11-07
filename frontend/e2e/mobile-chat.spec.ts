@@ -8,6 +8,7 @@ const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3Q
 test('mobile chat exposes empty, loading, retry and response states and keeps its composer above the dock', async ({ page }) => {
   const uncaughtErrors: string[] = [];
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
+  const paymentRequests: string[] = [];
   let chatAttempts = 0;
   page.on('pageerror', error => uncaughtErrors.push(error.message));
   await page.addInitScript(() => window.localStorage.setItem('aba-language', 'ar'));
@@ -194,6 +195,7 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
       return;
     }
 
+    if (path === '/api/v1/businesses/business-1/payments') paymentRequests.push(path);
     if (path === '/api/v1/businesses/business-1/customers'
       || path === '/api/v1/businesses/business-1/products'
       || path === '/api/v1/businesses/business-1/invoices'
@@ -309,6 +311,7 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
 
   await expect(page.getByText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/)).toBeVisible();
   await expect(page.getByText('Your workspace has no recorded sales in this sample period.')).toBeVisible();
+  expect(paymentRequests).toEqual(['/api/v1/businesses/business-1/payments']);
   expect(chatAttempts).toBe(2);
   expect(chatRequests).toEqual([
     { businessId: 'business-1', message: 'What happened this month?', authorization: 'Bearer ' + idToken },
