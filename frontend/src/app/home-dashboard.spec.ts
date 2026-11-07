@@ -144,7 +144,7 @@ test('Home preserves the reporting-period hierarchy while KPI data is loading', 
   const loading = home.slice(loadingStart, loadingEnd);
   assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
   assert.match(loading, /dashboard-period dashboard-period--skeleton" aria-hidden="true"/);
-  assert.match(loading, /t\('ملخص النشاط', 'BUSINESS SUMMARY'\)/);
+  assert.match(loading, /t\('ملخص النشاط', 'Business summary'\)/);
   assert.match(loading, /t\('آخر 30 يومًا', 'Last 30 days'\)/);
   assert.match(loading, /dashboard-period-skeleton__details/);
   assert.match(appSource, /\.dashboard-period--skeleton\{min-height:66px\}/);
@@ -188,4 +188,14 @@ test('Home exposes its business summary as a navigable section heading', () => {
   assert.match(home, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
   assert.match(home, /<section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">[\s\S]*?<h2 class="dashboard-period__title">/);
   assert.match(appSource, /\.dashboard-period__title\{[^}]*font-size:14px/);
+});
+
+
+test('Home loading skeleton uses the current bilingual Business Summary heading', () => {
+  const loadingStart = home.indexOf('} @else if (loading) {');
+  const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
+  const loading = home.slice(loadingStart, loadingEnd);
+  assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
+  assert.match(loading, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
+  assert.doesNotMatch(loading, /BUSINESS SUMMARY/);
 });
