@@ -548,7 +548,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'payments' && business?.role !== 'owner') {
               <section abaCard class="panel"><aba-state-message kind="error" [description]="t('تسجيل المدفوعات متاح لمالك مساحة العمل فقط. اطلب من المالك منحك الصلاحية المناسبة.', 'Recording payments is restricted to workspace owners. Ask the owner to grant the appropriate access.')" /></section>
             }
-            @if (tab === 'payments' && business?.role === 'owner') {
+            @if (tab === 'payments' && business.role === 'owner') {
               <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
                   <div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 </aba-section-header>
@@ -570,7 +570,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               </section>
             }
 
-            @if (tab === 'taxes' && business?.role === 'owner') {
+            @if (tab === 'taxes' && business.role === 'owner') {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ملخص الضرائب', 'Tax summary')" [description]="t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.')" />
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
@@ -709,8 +709,8 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               </section>
             }
 
-            @if (tab === 'employees' && business?.role === 'owner' && business) {
-              @defer (when tab === 'employees' && business?.role === 'owner' && business) {
+            @if (tab === 'employees' && business.role === 'owner') {
+              @defer (when tab === 'employees' && business.role === 'owner') {
                 <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
               } @placeholder {
                 <section abaCard class="panel narrow">
@@ -749,7 +749,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('اختر تاريخ ووقت المصروف.', 'Choose the expense date and time.') }}</small> }
                   </div>
                 }
-                <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business?.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
+                <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
                 @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
                 @if (expenseSubmissionUncertain) {
                   <aba-state-message kind="error" [description]="t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.')" [actionLabel]="t('فحص قائمة المصروفات', 'Check expense list')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
@@ -770,7 +770,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               </section>
             }
 
-            @if (tab === 'integrity' && business?.role === 'owner') {
+            @if (tab === 'integrity' && business.role === 'owner') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('مراجعة سلامة البيانات', 'Data integrity review') " [description]=" t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') "><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
