@@ -504,7 +504,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Welcome back|مرحبًا بعودتك/ })).toBeVisible({ timeout: 20_000 });
-  await page.getByLabel(/Email address|البريد الإلكتروني/).fill('staff@example.test');
+  await page.getByLabel(/Email|البريد الإلكتروني/).fill('staff@example.test');
   await page.getByLabel(/Password|كلمة المرور/).fill('mock-password-123');
   await page.getByRole('button', { name: /Sign in|تسجيل الدخول/ }).click();
   await expect(page.locator('#workspace-current-name')).toHaveText('Staff Workspace', { timeout: 20_000 });
