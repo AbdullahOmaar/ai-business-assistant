@@ -191,6 +191,8 @@ test('Home reporting metadata and KPI detail text remain comfortably readable', 
   assert.match(appSource, /\.dashboard-trust-note\{[^}]*font-size:12px;line-height:1\.65/);
   assert.match(home, /dashboard-period__details/);
   assert.match(home, /class="notice dashboard-trust-note" role="note"/);
+  assert.match(home, /t\('ملاحظات على المؤشرات', 'Metric notes'\)/);
+  assert.doesNotMatch(home, /t\('سلامة البيانات', 'Data integrity'\)/);
 });
 
 
