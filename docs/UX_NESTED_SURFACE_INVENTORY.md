@@ -237,3 +237,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The no-membership branch of `loadBusinesses()` preserves Platform Admin for authorized administrators. It now explicitly returns to Overview when the refreshed platform-admin capability is absent, rather than retaining a previously active admin tab.
 - Added source regression coverage for the authorized-admin and revoked-capability branches. The actual Platform Admin component remains capability-gated; this is a navigation-state fail-closed correction, not a new access rule.
 - Test authored / **NOT RUN**; authenticated platform-admin revocation/browser acceptance remains NOT RUN.
+
+## Phase 2 — latest code-level UX checkpoint — 2026-11-07
+
+- The shared design-system layer now covers control dimensions, primary/secondary/destructive states, form controls, card/table surfaces, page/section headings, inline filters, notices, assistant messages and suggestion cards. Focus indicators include a forced-colors fallback; mobile input sizing remains 16px.
+- Latest source checkpoint: 295ea51d9355e9fb5399398af04eb924dc1fb564 on master/t18-uiux-hardening-20261107; PR #348 OPEN / DRAFT / UNMERGED; 88 ahead / 0 behind main.
+- Static source review: 96 unique tokens; balanced CSS braces/parentheses; all 13 audited text pairs >= 4.5:1 and focus pairs >= 4.82:1. Automated tests, Angular build, browser, rendered RTL/LTR and assistive technology remain NOT RUN.
+- Current exact head has zero combined status contexts and GitGuardian SUCCESS only. Earlier CircleCI on 44e913f had two failures (frontend unit tests and browser smoke) and four substantive successes; root cause UNKNOWN because job output is inaccessible. Historical results do not validate this head.
+- No preview deployment, merge, production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data changes.
