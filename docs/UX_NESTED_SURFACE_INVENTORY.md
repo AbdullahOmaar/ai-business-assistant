@@ -117,3 +117,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Notification rows previously exposed raw backend status codes and notification search only matched those codes. Added localized labels for the backend-constrained `pending`, `sent`, `failed`, and `cancelled` values and included the active-language label in local search.
 - Added Arabic regression coverage for searching `فشل الإرسال` and a template/source assertion for the displayed label.
 - Frontend presentation/search only; delivery state, workers, API and persistence are unchanged. Tests authored / **NOT RUN**.
+
+
+## Operational health status localization — 2026-11-07
+
+- The read-only Operational Health summary displayed raw API values `ok` / `degraded`. The backend route explicitly returns those two values; the UI now displays localized labels (Healthy / سليم, Degraded / يحتاج مراجعة) and keeps the existing not-checked state.
+- Added a source regression assertion for both API values and the localized template helper.
+- Frontend presentation only; the owner-only API authorization and read-only operational check are unchanged. Test authored / **NOT RUN**.

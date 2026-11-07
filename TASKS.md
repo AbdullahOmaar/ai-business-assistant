@@ -2408,3 +2408,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Extended the bilingual status UX audit to Notifications: the row now displays localized labels for the four backend-constrained statuses (`pending`, `sent`, `failed`, `cancelled`), and local search includes the localized status label.
 - Added Arabic search and template/source regression assertions.
 - **Validation:** tests authored / NOT RUN; no CircleCI trigger/retry. No delivery semantics, API, backend, DB or schema changes.
+
+
+## T18 — operational health status localization — 2026-11-07
+
+- Source audit found the owner-only read-only Operational Health page displayed raw API status values `ok` and `degraded`. Added localized display labels (Healthy / سليم; Degraded / يحتاج مراجعة) while preserving the not-checked state.
+- Added a source/template regression assertion. No API authorization or operational-health behavior changed.
+- Test authored / **NOT RUN**; no CI trigger/retry; frontend-only.

@@ -938,6 +938,12 @@ test('notification status labels are localized in the list and available to loca
   assert.match(source, /failed: 'Failed'/);
 });
 
+test('operational health status uses a localized label instead of raw API codes', () => {
+  assert.match(source, /operationalHealthStatusLabel\(operationalHealth\.status\)/);
+  assert.match(source, /status === 'ok'.*سليم/);
+  assert.match(source, /status === 'degraded'.*يحتاج مراجعة/);
+});
+
 test('purchase-order status labels are localized in the list and available to local search', () => {
   assert.match(source, /purchaseOrderStatusLabel\(order\.status\)/);
   assert.match(source, /purchaseOrderStatusLabel\(status\)/);

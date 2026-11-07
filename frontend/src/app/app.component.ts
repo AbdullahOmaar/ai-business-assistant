@@ -350,7 +350,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
 @if (tab === 'health' && business?.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('الحالة التشغيلية', 'Operational health') " [description]=" t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') "><span class="count">{{ operationalHealth?.status || t('غير مفحوص', 'Not checked') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('الحالة التشغيلية', 'Operational health') " [description]=" t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t('غير مفحوص', 'Not checked') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('جارٍ الفحص…', 'Checking…') : t('تحديث الفحص', 'Refresh check') }}</button>
                 @if (healthError) { <aba-state-message kind="error" [description]="healthError" /> }
                 @if (operationalHealth) {
@@ -1651,6 +1651,12 @@ export class AppComponent implements OnInit, OnDestroy {
       'this is an accounts-receivable aging report, not net profit or a full general ledger.': { ar: 'هذا تقرير لأعمار المديونيات وليس تقرير صافي أرباح أو دفتر أستاذ عام متكامل.', en: 'This is an accounts-receivable aging report, not net profit or a full general ledger.' }
     };
     return known[normalized]?.[this.language] || value;
+  }
+
+  operationalHealthStatusLabel(status: string): string {
+    if (status === 'ok') return this.t('سليم', 'Healthy');
+    if (status === 'degraded') return this.t('يحتاج مراجعة', 'Degraded');
+    return this.t('حالة غير محددة', 'Unknown status');
   }
 
   invoiceStatusLabel(status: string): string {
