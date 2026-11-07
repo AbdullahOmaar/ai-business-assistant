@@ -2586,3 +2586,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** added source assertion for both the capability-present and capability-absent branches.
 - **Validation:** source/readback only; test authored / **NOT RUN**. Full Node tests, Angular build, authenticated Platform Admin revocation and browser/device acceptance remain NOT RUN. No CI trigger/retry; `[skip ci]`.
 - **Scope:** frontend navigation only; no authorization policy, API/backend, database/schema, business/financial/payroll behavior, production data, merge or deployment changes.
+
+## T18 — Phase 2 UX implementation follow-up — 2026-11-07
+
+- **Latest source/branch checkpoint:** 295ea51d9355e9fb5399398af04eb924dc1fb564 on master/t18-uiux-hardening-20261107; PR #348 OPEN / DRAFT / UNMERGED; 88 commits ahead / 0 behind main.
+- **Design-system implementation in this branch:** shared 44px control target, 10px control radius and semantic field spacing; primary/secondary controls; destructive secondary actions retain danger colors; semantic card/table surfaces; consistent page/section heading scale, filters, notices, chat messages and assistant suggestion surfaces; forced-colors focus fallback. Existing mobile 16px field sizing remains.
+- **Source regression:** design-tokens.spec.ts now covers the new interaction and route-level selectors. Thirteen test declarations are present; Node tests and Angular build remain NOT RUN.
+- **Static source review:** 96 unique --aba-* tokens; balanced CSS braces/parentheses; 13 color contrast pairs >= 4.5:1 (minimum 4.76:1) and focus contrast >= 4.82:1. These are static calculations, not rendered accessibility evidence.
+- **Latest exact-head quality:** combined GitHub status has zero contexts; GitGuardian SUCCESS only. No CircleCI result is attached to 295ea51. Current exact-head tests/build/dependency audit/Playwright are NOT RUN.
+- **Historical CircleCI candidate 44e913f:** frontend-production-build, dependency-audit, backend-container and backend-accounting SUCCESS; frontend-unit-tests and frontend-browser-smoke FAILURE. Failure output was inaccessible; failing test/root cause UNKNOWN. These checks predate subsequent source changes and do not validate current head. Semaphore failure is retired/non-authoritative.
+- **Automation boundary:** initial style/test commits lacked [skip ci] and automatically started CircleCI/GitHub Actions; no manual trigger or retry was issued. Subsequent source/docs commits use [skip ci]. GitHub Actions is non-authoritative and is not substituted for CircleCI.
+- **Delivery:** no Vercel preview deployment for this branch, no merge, no production deployment, and no backend/API/database/schema/migration, financial/payroll/stock semantic or production-data changes.
+- **Remaining:** run exact-head frontend tests/build/audit/Playwright only when an approved runner/policy permits; diagnose old CircleCI failures if logs become accessible; complete rendered RTL/LTR, authenticated role/tenant, physical Android/PWA, keyboard and screen-reader acceptance. Figma Variables/component-library review remains NOT RUN/BLOCKED by View-only access.
