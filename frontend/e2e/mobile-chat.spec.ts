@@ -379,6 +379,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoid29ya3NwYWNlLXN0YWZmLXVpZCIsInVpZCI6IndvcmtzcGFjZS1zdGFmZi11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
   const paymentRequests: string[] = [];
   const unexpectedRequests: string[] = [];
+  const productCreatePayloads: Array<Record<string, unknown>> = [];
 
   await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
   await page.route('**/*', async route => {
@@ -516,12 +517,28 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Owner-only data.' }) });
       return;
     }
+    if (path === '/api/v1/businesses/staff-business-1/products' && request.method() === 'POST') {
+      productCreatePayloads.push(request.postDataJSON() as Record<string, unknown>);
+      await route.fulfill({
+        status: 201,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          id: 'staff-product-1',
+          name: 'Zero-stock product',
+          unit_price: '2.50',
+          currency_code: 'EGP',
+          is_stock_tracked: true,
+          stock_quantity: '0',
+        }),
+      });
+      return;
+    }
     if ([
       '/api/v1/businesses/staff-business-1/customers',
       '/api/v1/businesses/staff-business-1/products',
       '/api/v1/businesses/staff-business-1/invoices',
       '/api/v1/businesses/staff-business-1/expenses',
-    ].includes(path)) {
+    ].includes(path) && request.method() === 'GET') {
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
       return;
     }
@@ -563,6 +580,27 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await expect(menu).toHaveCount(0);
   await expect(moreTrigger).toHaveClass(/active/);
   await expect(moreTrigger).toBeFocused();
+
+  // A STAFF member may create a stock-tracked product, but cannot submit a
+  // positive opening-stock quantity. All API traffic remains mocked here.
+  await moreTrigger.click();
+  await menu.getByRole('button', { name: /Products & inventory/ }).click();
+  await page.getByRole('heading', { name: /Products & inventory/ }).waitFor({ state: 'visible' });
+  await page.getByRole('checkbox', { name: /Track stock/ }).check();
+  await expect(page.getByText(/Only workspace owners can set a positive opening stock quantity/)).toBeVisible();
+  await expect(page.locator('input[name="productOpeningQuantity"]')).toHaveCount(0);
+  await page.getByRole('textbox', { name: /Product name/ }).fill('Zero-stock product');
+  await page.getByRole('spinbutton', { name: /Unit price/ }).fill('2.50');
+  await page.getByRole('button', { name: /Add product/ }).click();
+  await expect.poll(() => productCreatePayloads.length).toBe(1);
+  expect(productCreatePayloads[0]).toMatchObject({
+    name: 'Zero-stock product',
+    unit_price: '2.50',
+    is_stock_tracked: true,
+    opening_quantity: '0',
+  });
+  await expect(page.getByText(/Product saved successfully/)).toBeVisible();
+
   expect(paymentRequests).toEqual([]);
   expect(unexpectedRequests).toEqual([]);
 });

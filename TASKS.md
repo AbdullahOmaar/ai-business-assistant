@@ -2343,3 +2343,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Exact-head quality:** all frontend Node tests, Angular template/production build, browser smoke and dependency audit are **NOT RUN** on the new candidate. The previous head `1ad820d9...` had five CircleCI checks SUCCESS and `frontend-browser-smoke` FAILURE; none of those statuses transfer to a new SHA. The source commit used `[skip ci]`; no CircleCI trigger/retry or replacement CI was used. The browser-smoke job output remains inaccessible; root cause UNKNOWN.
 - **Review/delivery:** source/test/docs readback only; PR remains draft. No merge, deployment, API/backend/database/schema/migration, stock ledger, financial/payroll semantics or production data changes.
 - **Next action:** retrieve the existing CircleCI browser-smoke failure details through authorized CircleCI access, then run the approved exact-head validation when the no-trigger freeze is explicitly lifted; continue the remaining responsive/RTL/LTR and role/tenant UX source review meanwhile.
+
+
+## T18 — STAFF stock-tracked product browser regression authored — 2026-11-07
+
+- On the same active branch and PR #348, extended `frontend/e2e/mobile-chat.spec.ts` to assert STAFF can open Products, enable stock tracking, cannot see a positive opening-stock input, and submits a zero opening-stock payload when creating a product.
+- The Playwright scenario mocks Firebase and the business API; no production or real workspace writes are possible from this test path.
+- Updated `docs/UX_NESTED_SURFACE_INVENTORY.md` with the authored browser coverage.
+- **NOT RUN:** Playwright/CircleCI on the candidate; browser regression must not be described as passing. The exact-head status read on parent `4d308bab3a64dcb9e8e8de19d952d40aa5c0dc15` returned zero status contexts. No CI was triggered/retried.
