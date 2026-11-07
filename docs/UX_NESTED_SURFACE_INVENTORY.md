@@ -1,6 +1,6 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `5d033a678e7f00e4c287330a6716e41426ec49c5` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `0b98a5f6d42114b02dac340fb5639436dbefc887` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
@@ -346,7 +346,7 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - No API/backend/database/schema/migration, business/financial/payroll/stock semantics or permission changes. No CI trigger/retry, merge, preview or production deployment.
 
 
-## T18 Home / Overview dashboard hierarchy and metric-basis refinement — 2026-11-07 — `5d033a678e7f00e4c287330a6716e41426ec49c5`
+## T18 Home / Overview dashboard hierarchy and metric-basis refinement — 2026-11-07 — `0b98a5f6d42114b02dac340fb5639436dbefc887`
 
 - Replaced the large decorative dark Home hero with a compact neutral period strip showing the backend-returned start date, end date and business timezone. The label reflects the existing backend default of the last 30 business-local calendar days; no client-generated date range or new period selector was introduced.
 - Preserved all four verified API metric groups: invoiced sales, collected payments, expenses and outstanding balances. Each currency remains a separate row. Added the exact source-time basis to the first three metrics and retained the recorded-allocation basis for outstanding balances; no outstanding count is fabricated.
