@@ -2443,3 +2443,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Hardened the localized PO, notification and operational-health status helpers: known backend values use bilingual labels, while unknown non-empty values remain visible as raw text for diagnosis instead of being hidden behind a generic label.
 - Added source assertions for fallback behavior. No API/domain semantics changed.
 - Tests authored / **NOT RUN**; no CI trigger/retry.
+
+
+## T18 — assistant citation bilingual display — 2026-11-07
+
+- Localized the assistant source-list heading and invoice/expense source-type labels for Arabic and English; expense citation category uses the same localized category helper as the Expenses list.
+- Preserved unknown source types and source IDs. No assistant response or citation authorization semantics changed.
+- Added source/template regression assertions; tests **NOT RUN**; no CI trigger/retry.

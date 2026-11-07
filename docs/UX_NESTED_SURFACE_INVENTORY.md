@@ -150,3 +150,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Localized Purchase Order, Notification and Operational Health labels now preserve a non-empty unknown backend status string instead of replacing it with a generic "Unknown status" label. This keeps newly introduced/legacy values visible while known values remain localized.
 - Added source assertions for the unknown-value fallback. No status transition or backend behavior changed; tests authored / **NOT RUN**.
+
+
+## Assistant source citation localization — 2026-11-07
+
+- Assistant citations previously used Arabic-only "المصادر/فاتورة/مصروف" labels even in English mode, and displayed fixed expense category codes verbatim. The citation header/type labels are now bilingual and expense category names reuse the localized category helper.
+- Backend source types are currently `invoice` and `expense`; unknown types remain visible as returned. No assistant response, citation membership or API behavior changed.
+- Added source/template regression assertions. Test authored / **NOT RUN**.

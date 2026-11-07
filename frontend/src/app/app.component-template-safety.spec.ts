@@ -931,6 +931,13 @@ test('CSV import preview and write controls are owner-only without restricting m
   assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
 });
 
+test('assistant source citations use bilingual labels and localized expense categories', () => {
+  assert.match(source, /t\('المصادر:', 'Sources:'\)/);
+  assert.match(source, /source\.type === 'invoice' \? t\('فاتورة', 'Invoice'\)/);
+  assert.match(source, /source\.type === 'expense' \? t\('مصروف', 'Expense'\)/);
+  assert.match(source, /expenseCategoryLabel\(source\.category\)/);
+});
+
 test('expense categories are localized in the list and available to local search', () => {
   assert.match(source, /expenseCategoryLabel\(expense\.category\)/);
   assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
