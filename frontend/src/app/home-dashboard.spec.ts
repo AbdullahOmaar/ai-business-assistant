@@ -76,3 +76,20 @@ test('shared metric cards style projected amounts and source-basis notes legibly
   assert.match(metricCardSource, /aba-metric-card__values \.metric-basis/);
   assert.match(metricCardSource, /overflow-wrap:anywhere/);
 });
+
+
+test('Home keeps the full role-filtered module directory discoverable but collapsed by default', () => {
+  assert.match(home, /<details class="module-directory-disclosure">/);
+  assert.match(home, /<summary class="module-directory-summary">/);
+  assert.doesNotMatch(home, /<details[^>]*\bopen\b/);
+  assert.match(appSource, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+  assert.match(appSource, /selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
+  assert.match(home, /homeModuleCards/);
+});
+
+test('Home shortcuts remain compact on mobile and trust copy is visually neutral', () => {
+  assert.match(appSource, /\.quick-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(appSource, /@media\(max-width:360px\)\{\.quick-grid\{grid-template-columns:minmax\(0,1fr\)\)/);
+  assert.match(home, /dashboard-trust-note" role="note"/);
+  assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
+});
