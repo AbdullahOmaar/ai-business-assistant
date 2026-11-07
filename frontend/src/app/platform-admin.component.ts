@@ -106,7 +106,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
               <article class="panel">
                 <div class="panel-heading"><div><h3>{{ t('حالات الفواتير', 'Invoice status') }}</h3><p>{{ t('عدد وإجمالي كل حالة مع فصل العملة', 'Counts and totals grouped by currency and status') }}</p></div></div>
                 @if (data.invoices.by_currency_and_status.length) {
-                  <div class="table-wrap compact-table"><table><thead><tr><th>{{ t('العملة', 'Currency') }}</th><th>{{ t('الحالة', 'Status') }}</th><th>{{ t('عدد', 'Count') }}</th><th>{{ t('الإجمالي', 'Total') }}</th></tr></thead><tbody>
+                  <div class="table-wrap compact-table" role="region" tabindex="0" [attr.aria-label]="t('ملخص الفواتير حسب العملة والحالة', 'Invoice summary by currency and status')"><table><thead><tr><th>{{ t('العملة', 'Currency') }}</th><th>{{ t('الحالة', 'Status') }}</th><th>{{ t('عدد', 'Count') }}</th><th>{{ t('الإجمالي', 'Total') }}</th></tr></thead><tbody>
                     @for (row of data.invoices.by_currency_and_status; track row.currency_code + row.status) {
                       <tr><td><strong>{{ row.currency_code }}</strong></td><td><span class="status-pill">{{ statusLabel(row.status) }}</span></td><td>{{ row.count }}</td><td class="amount">{{ money(row.total) }}</td></tr>
                     }
@@ -133,7 +133,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
           @if (businessesError) { <div class="notice error" role="alert">{{ businessesError }} <button class="text-action" type="button" (click)="loadBusinesses(businessOffset)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
           @if (!businessesLoading && !businessesError && !businesses.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">▦</span><h3>{{ t('لا توجد نتائج', 'No workspaces found') }}</h3><p>{{ t('جرّب تغيير البحث أو الفلتر.', 'Try changing the search term or filter.') }}</p></div> }
           @if (businesses.length) {
-            <div class="table-wrap"><table><thead><tr><th>{{ t('مساحة العمل', 'Workspace') }}</th><th>{{ t('الحالة', 'Status') }}</th><th>{{ t('العملة', 'Currency') }}</th><th>{{ t('الأعضاء', 'Members') }}</th><th>{{ t('تاريخ الإنشاء', 'Created') }}</th><th>{{ t('إجراء', 'Action') }}</th></tr></thead><tbody>
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('قائمة مساحات العمل، جدول قابل للتمرير أفقيًا', 'Workspace directory, horizontally scrollable table')"><table><thead><tr><th>{{ t('مساحة العمل', 'Workspace') }}</th><th>{{ t('الحالة', 'Status') }}</th><th>{{ t('العملة', 'Currency') }}</th><th>{{ t('الأعضاء', 'Members') }}</th><th>{{ t('تاريخ الإنشاء', 'Created') }}</th><th>{{ t('إجراء', 'Action') }}</th></tr></thead><tbody>
               @for (item of businesses; track item.id) {
                 <tr><td><button type="button" class="business-link" (click)="openBusiness(item)"><strong>{{ item.name }}</strong><small>{{ item.contact_email || item.phone || item.id }}</small></button></td><td><span class="status-pill" [class.status-active]="item.is_active" [class.status-inactive]="!item.is_active"><span class="status-dot"></span>{{ item.is_active ? t('نشطة', 'Active') : t('معطّلة', 'Inactive') }}</span></td><td>{{ item.currency_code }}</td><td>{{ item.member_count }}</td><td>{{ formatDate(item.created_at) }}</td><td><button type="button" class="outline-button small-button" (click)="openBusiness(item)">{{ t('التفاصيل', 'Details') }}</button></td></tr>
               }
@@ -149,7 +149,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
               <div class="divider"></div>
               <div class="panel-heading"><div><h3>{{ t('عضويات مساحة العمل', 'Workspace memberships') }}</h3><p>{{ t('لا تظهر كلمات مرور أو رموز جلسات. أسماء الملفات غير متاحة في نموذج البيانات الحالي.', 'No passwords or session tokens are exposed. Profile names are not available in the current data model.') }}</p></div><span class="read-only">{{ detail.memberships.length }} {{ t('عضوية', 'memberships') }}</span></div>
               @if (detail.memberships.length) {
-                <div class="table-wrap compact-table"><table><thead><tr><th>{{ t('هوية المستخدم', 'User subject') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('تاريخ الانضمام', 'Joined') }}</th></tr></thead><tbody>
+                <div class="table-wrap compact-table" role="region" tabindex="0" [attr.aria-label]="t('أعضاء مساحة العمل', 'Workspace memberships')"><table><thead><tr><th>{{ t('هوية المستخدم', 'User subject') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('تاريخ الانضمام', 'Joined') }}</th></tr></thead><tbody>
                   @for (member of detail.memberships; track member.id) { <tr><td class="subject">{{ member.user_subject }}</td><td><span class="role-pill">{{ roleLabel(member.role) }}</span></td><td>{{ formatDate(member.created_at) }}</td></tr> }
                 </tbody></table></div>
               } @else { <p class="empty-state">{{ t('لا توجد عضويات.', 'No memberships found.') }}</p> }
@@ -179,7 +179,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
           @if (auditError) { <div class="notice error" role="alert">{{ auditError }} <button type="button" class="text-action" (click)="loadAudit(auditOffset)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
           @if (!auditLoading && !auditError && !auditEvents.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">◷</span><h3>{{ t('لا توجد أحداث مطابقة', 'No matching events') }}</h3><p>{{ t('سيظهر هنا نشاط الإدارة المسجل.', 'Recorded admin activity will appear here.') }}</p></div> }
           @if (auditEvents.length) {
-            <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('الشركة', 'Workspace') }}</th><th>{{ t('المنفذ', 'Actor') }}</th><th>{{ t('الكيان', 'Target') }}</th><th>{{ t('الملخص', 'Summary') }}</th></tr></thead><tbody>
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('سجل نشاط المنصة، جدول قابل للتمرير أفقيًا', 'Platform activity log, horizontally scrollable table')"><table><thead><tr><th>{{ t('التاريخ', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('الشركة', 'Workspace') }}</th><th>{{ t('المنفذ', 'Actor') }}</th><th>{{ t('الكيان', 'Target') }}</th><th>{{ t('الملخص', 'Summary') }}</th></tr></thead><tbody>
               @for (event of auditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td><span class="status-pill">{{ auditActionLabel(event.action) }}</span></td><td><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject">{{ event.actor_subject || '—' }}</td><td>{{ auditTargetLabel(event.target_type) }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell">{{ event.change_summary || '—' }}</td></tr> }
             </tbody></table></div>
             <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('من', 'of') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(previousPageOffset(auditOffset))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
@@ -204,7 +204,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
           @if (usersError) { <div class="notice error" role="alert">{{ usersError }} <button type="button" class="text-action" (click)="loadUsers(userPageIndex)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
           @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ t('لا توجد حسابات مطابقة', 'No matching accounts') }}</h3><p>{{ t('جرّب بريدًا كاملًا أو UID صحيحًا، أو امسح البحث لعرض القائمة.', 'Try an exact email or UID, or clear search to browse the directory.') }}</p></div> }
           @if (!usersLoading && users.length) {
-            <div class="table-wrap">
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('دليل المستخدمين، جدول قابل للتمرير أفقيًا', 'User directory, horizontally scrollable table')">
               <table class="user-directory-table">
                 <thead><tr><th>{{ t('المستخدم', 'User') }}</th><th>{{ t('حالة الحساب', 'Account status') }}</th><th>{{ t('صلاحيات المنصة', 'Platform roles') }}</th><th>{{ t('مساحات العمل', 'Workspace memberships') }}</th><th>{{ t('الإجراء', 'Action') }}</th></tr></thead>
                 <tbody>
@@ -266,7 +266,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
             @if (roleAuditError) { <div class="notice error" role="alert">{{ roleAuditError }}</div> }
             @if (!roleAuditLoading && !roleAuditError && !roleAuditEvents.length) { <p class="muted">{{ t('لا توجد تغييرات صلاحيات مسجلة حتى الآن.', 'No platform role changes recorded yet.') }}</p> }
             @if (roleAuditEvents.length) {
-              <div class="table-wrap"><table><thead><tr><th>{{ t('التوقيت', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('المستخدم المستهدف', 'Target user') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('السبب', 'Reason') }}</th><th>{{ t('المنفّذ', 'Actor') }}</th></tr></thead><tbody>
+              <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('سجل تغييرات صلاحيات المنصة، جدول قابل للتمرير أفقيًا', 'Platform role history, horizontally scrollable table')"><table><thead><tr><th>{{ t('التوقيت', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('المستخدم المستهدف', 'Target user') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('السبب', 'Reason') }}</th><th>{{ t('المنفّذ', 'Actor') }}</th></tr></thead><tbody>
                 @for (event of roleAuditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td>{{ auditActionLabel(event.action) }}</td><td class="subject">{{ event.target_subject }}</td><td>{{ platformRoleLabel(event.role) }}</td><td class="summary-cell">{{ event.reason }}</td><td class="subject">{{ event.actor_subject }}</td></tr> }
               </tbody></table></div>
             }

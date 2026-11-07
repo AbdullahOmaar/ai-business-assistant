@@ -2655,3 +2655,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** one focused source test declaration added; authored / **NOT RUN**. Frontend Node tests, Angular build, dependency audit, Playwright, rendered responsive/RTL/LTR and assistive-technology checks remain **NOT RUN**.
 - **CI/release:** commit message uses `[skip ci]`; no CircleCI trigger/retry, replacement CI, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
 - **Next:** continue source audit of shared component and nested-page responsive constraints; run exact-head validation only after the CI trigger/retry freeze is explicitly lifted and an approved runner/browser is available.
+
+
+## T18 — keyboard-accessible horizontally scrollable tables — 2026-11-07
+
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `8df911cfbd477261167d3bde28b4f8bd5f0ba8b5`; PR #348 remains OPEN / DRAFT / UNMERGED.
+- **Finding:** wide data tables use horizontal overflow on narrow screens, but their scroll containers were not focusable or exposed as named regions. Keyboard users could not reliably reach the horizontal scroll surface.
+- **Implementation:** the two workspace table wrappers and six Platform Admin table wrappers now use `role="region"`, `tabindex="0"` and localized accessible names. Shared focus styling includes the table region and Windows forced-colors fallback.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/platform-admin.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/styles.css`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Regression:** source assertions cover all table wrappers in both templates and shared focus/forced-colors styling; authored / **NOT RUN**. Frontend Node tests, Angular build, dependency audit, Playwright, keyboard browser and screen-reader checks remain **NOT RUN**.
+- **CI/release:** commit uses `[skip ci]`; no CI trigger/retry, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
+- **Next:** continue shared accessibility/responsive source review; obtain authorized runner and CI-freeze resolution for exact-head automated and rendered acceptance.

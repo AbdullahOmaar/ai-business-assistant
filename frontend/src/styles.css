@@ -317,6 +317,11 @@ aba-metric-card small {
   border-radius: var(--aba-radius-card);
 }
 
+:root body .shell .table-wrap:focus-visible {
+  outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
+  outline-offset: var(--aba-focus-ring-offset);
+}
+
 :root body .shell .table-wrap th {
   background: var(--aba-color-surface-subtle);
   color: var(--aba-color-text-muted);
@@ -332,7 +337,8 @@ aba-metric-card small {
   :root body .shell input:focus-visible,
   :root body .shell select:focus-visible,
   :root body .shell textarea:focus-visible,
-  :root body .shell summary:focus-visible {
+  :root body .shell summary:focus-visible,
+  :root body .shell .table-wrap:focus-visible {
     outline: 2px solid Highlight;
     outline-offset: 2px;
     box-shadow: none;

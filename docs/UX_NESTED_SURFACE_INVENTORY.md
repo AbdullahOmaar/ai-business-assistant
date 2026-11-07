@@ -6,6 +6,7 @@
 
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
+| Keyboard-accessible data tables | Horizontally scrollable workspace and Platform Admin tables expose named regions, accept keyboard focus, and show a visible focus ring including forced-colors mode | `app.component-template-safety.spec.ts` named-region assertions; `design-tokens.spec.ts` focus/forced-colors assertions | Keyboard-only horizontal scroll, NVDA/VoiceOver announcements and rendered 360/390px acceptance |
 | Shared section headers | Shared h2/h3 hierarchy across Home and nested module sections; long Arabic/English titles wrap safely; narrow-screen layout stacks actions below heading copy and aligns them to the logical start | `design-tokens.spec.ts` shared section-header hierarchy and narrow-screen layout cases | Rendered 360/390px RTL/LTR, action wrapping and screen-reader heading navigation |
 | Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning; refreshed membership/platform role revalidates the active tab before scoped data reload; Firebase App/Auth runtime SDK loads in a separate chunk after runtime-config validation | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts`, `auth-lazy-loading.spec.ts` | Verify initial bundle budget after build; browser keyboard/screen-reader run; physical Android/PWA |
 | Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); shared quick-access cards retain their 104px minimum height and card radius independently of global action-button sizing; dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
@@ -277,3 +278,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The shared component now wraps long h2/h3 titles and switches to a single-column layout at 600px and below. Projected actions occupy a full-width row aligned to the logical start, preserving RTL/LTR behavior; tablet/desktop layout is unchanged.
 - Added a focused source regression declaration in `frontend/src/app/design-tokens.spec.ts`.
 - Test declaration is authored / **NOT RUN**. No rendered screenshot or browser/device acceptance is claimed.
+
+
+## Latest keyboard-accessible table refinement — 2026-11-07 — `8df911cfbd477261167d3bde28b4f8bd5f0ba8b5`
+
+- Workspace Activity Log, Customer Statement, and Platform Admin data-table scroll containers now expose localized accessible region names and `tabindex="0"`, allowing keyboard users to focus and horizontally scroll wide tables.
+- Global focus styling covers the table regions and retains a Windows forced-colors system outline.
+- Added source regression assertions across both workspace and Platform Admin templates, plus a design-token focus regression.
+- Tests are authored / **NOT RUN**; screen-reader, keyboard-browser and physical-device acceptance remain **NOT RUN**.

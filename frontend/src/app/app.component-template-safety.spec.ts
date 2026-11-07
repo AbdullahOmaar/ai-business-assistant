@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
+const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
@@ -1438,4 +1439,17 @@ test('customer statement event types use bilingual labels while preserving unkno
   assert.match(source, /invoice_issued: \{ ar: 'إصدار فاتورة', en: 'Invoice issued' \}/);
   assert.match(source, /payment_allocation: \{ ar: 'تخصيص دفعة', en: 'Payment allocation' \}/);
   assert.match(source, /currency_mismatch_allocation: \{ ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' \}/);
+});
+
+
+test('horizontally scrollable workspace and platform tables are named keyboard-accessible regions', () => {
+  for (const [surface, componentSource] of [['workspace', source], ['platform admin', platformAdminSource]] as const) {
+    const wrappers = [...componentSource.matchAll(/<div class="table-wrap[^"]*"[^>]*>/g)].map(match => match[0]);
+    assert.ok(wrappers.length > 0, `${surface} must retain its table wrappers`);
+    for (const wrapper of wrappers) {
+      assert.match(wrapper, /role="region"/, `${surface} table wrapper must expose a region`);
+      assert.match(wrapper, /tabindex="0"/, `${surface} table wrapper must be keyboard focusable`);
+      assert.match(wrapper, /\[attr\.aria-label\]=/, `${surface} table wrapper must have a localized accessible name`);
+    }
+  }
 });
