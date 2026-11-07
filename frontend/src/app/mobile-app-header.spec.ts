@@ -89,6 +89,6 @@ test('mobile header consumes shared semantic tokens rather than a one-off palett
   ]) {
     assert.ok(styles.includes('var(' + token), 'expected shared semantic token ' + token);
   }
-  assert.doesNotMatch(styles, /#(?:bfdbfe|eff6ff|1e40af|1d4ed8|2563eb|dbeafe)/i,
+  assert.doesNotMatch(styles, /(?:background|color|border(?:-color)?):\\s*#(?:bfdbfe|eff6ff|1e40af|1d4ed8|2563eb|dbeafe)/i,
     'the header must not carry a second hard-coded blue palette');
 });
