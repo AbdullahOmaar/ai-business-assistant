@@ -86,7 +86,12 @@ test('a successful payroll payment refreshes the workspace expense list and dash
   assert.match(refresh, /this\.api\.expenses\(businessId\)/);
   assert.match(refresh, /this\.api\.dashboard\(businessId\)/);
   assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
-  assert.match(refresh, /if \(this\.business\?\.id === businessId\) this\.error = this\.message\(error\)/);
+  const catchStart = refresh.indexOf('} catch (error) {');
+  const staleMetricsClear = refresh.indexOf('this.dashboard = null;', catchStart);
+  const refreshError = refresh.indexOf('this.error = this.message(error);', catchStart);
+  assert.match(refresh, /if \(this\.business\?\.id === businessId\) \{/);
+  assert.ok(catchStart >= 0 && staleMetricsClear > catchStart && refreshError > staleMetricsClear,
+    'failed refresh must clear old Home metrics before showing the error');
 });
 
 
@@ -125,4 +130,18 @@ test('employee search distinguishes an empty directory from no matching results'
   assert.match(component, /employeeSearch\.trim\(\) \? t\('لا يوجد موظفون مطابقون للبحث\.'/);
   assert.match(component, /No matching employees found/);
   assert.match(component, /No employees have been added yet/);
+});
+
+
+test('owner-only payroll view stays behind its deferred loading boundary', () => {
+  const start = app.indexOf("@if (tab === 'employees' && business.role === 'owner') {");
+  const end = app.indexOf("@if (tab === 'expenses')", start);
+  assert.ok(start >= 0 && end > start);
+  const block = app.slice(start, end);
+  assert.match(block, /@defer \(when tab === 'employees' && business\.role === 'owner'\)/);
+  assert.match(block, /@placeholder/);
+  assert.match(block, /<aba-state-message kind="loading"/);
+  assert.equal((app.match(/<aba-employee-payroll\b/g) || []).length, 1);
+  assert.match(app, /import \{ EmployeePayrollComponent \} from '\.\/employee-payroll\.component';/);
+  assert.match(component, /standalone: true/);
 });
