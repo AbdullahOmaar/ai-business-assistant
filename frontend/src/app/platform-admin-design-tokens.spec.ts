@@ -34,3 +34,18 @@ test('Platform Admin notice variants preserve success, warning, and error semant
   assert.match(source, /class="notice error"/);
   assert.match(source, /class="notice warn"/);
 });
+
+
+test('Platform Admin status and notice colors use shared semantic variants', () => {
+  for (const declaration of [
+    '.status-active{background:var(--aba-color-success-soft',
+    '.status-inactive{background:var(--aba-color-danger-soft',
+    '.runtime-good{color:var(--aba-color-success-text',
+    '.runtime-bad{color:var(--aba-color-danger-text',
+    '.notice.error{color:var(--aba-color-danger-text',
+    '.notice.success{color:var(--aba-color-success-text',
+    '.notice.warn{display:block;color:var(--aba-color-warning-text',
+    '.caution strong{font-size:12px;color:var(--aba-color-warning-text',
+    '.data-note{display:flex;gap:10px;align-items:flex-start;color:var(--aba-color-info-text',
+  ]) assert.ok(source.includes(declaration), `missing semantic status declaration: ${declaration}`);
+});
