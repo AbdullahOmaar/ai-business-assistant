@@ -123,6 +123,7 @@ export class AbaMobileAppHeaderComponent {
   requestLanguageToggle(): void {
     this.profileMenuOpen = false;
     this.languageToggleRequested.emit();
+    queueMicrotask(() => this.profileTrigger?.nativeElement.focus());
   }
 
   requestSignOut(): void {
