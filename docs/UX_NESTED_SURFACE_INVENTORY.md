@@ -220,3 +220,14 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - After resolving the refreshed workspace role, the shell now revalidates the active tab through the existing `canAccessTab` / `setTab('overview')` policy before loading workspace data. This also closes the mobile More surface through the existing `setTab` behavior.
 - Added source regression coverage for ordering relative to role assignment and workspace-data reset. No authorization rule or backend contract changed; server authorization remains authoritative.
 - Test authored / **NOT RUN**; browser role-transition acceptance remains NOT RUN.
+
+## Phase 2 — shared interaction foundation (code-level implementation start) — 2026-11-07
+
+- Reused the existing semantic token layer; added --aba-control-height (44px), --aba-control-radius (10px) and --aba-control-padding-inline (12px).
+- Added shared high-specificity presentation rules for shell buttons, primary/secondary states, text fields/selects/textareas, card-like surfaces, table headers/hover and Windows forced-colors focus indicators.
+- Kept the existing mobile 16px form-control font rule so the redesign does not reintroduce mobile browser zoom.
+- Regression coverage added to design-tokens.spec.ts. Static source checks: token uniqueness, required token presence, CSS brace balance and expected selector/test presence PASS. Automated tests, Angular build, browser/RTL/LTR rendering and accessibility/device acceptance NOT RUN.
+- Source checkpoint: 44e913fd4dee773fda5b7d53b2ed83aa0968be3e; branch master/t18-uiux-hardening-20261107; PR #348 OPEN / DRAFT / UNMERGED.
+- Figma Variables, component library and visual/structural review remain NOT RUN/BLOCKED by current View-only access. This is not Figma Phase 2 acceptance.
+- Provider note: CircleCI and non-authoritative GitHub Actions automation started after the two source commits; no manual CI trigger/retry was issued. Read the exact-SHA results before relying on them. Follow-up documentation commits use [skip ci].
+- No backend/API/database/schema/migration, business/financial/payroll/stock semantics, production data, merge or production deployment changes.
