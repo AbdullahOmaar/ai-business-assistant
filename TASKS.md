@@ -2838,3 +2838,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `cb16f98992cec846e9c03842a86e8ad16545a982`.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, OWNER/STAFF/two-tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. Desktop Commander remains Offline; no CI trigger/retry. No preview, merge or deployment.
 - **Next:** continue Home source review; preserve only the four source-backed currency-separated KPI groups and keep unsupported charts/alerts/activity/aging out. Rendered acceptance remains blocked by the approved runner/browser availability.
+
+
+## T18 — Home loading announcement deduplication — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `283d19b4ba5f05e396f3ee32c328310df18deff0` removes the Home-specific loading live-status component while preserving the visual period/KPI skeleton; `c1bd1c62a25123d6eb5b008ea6d9d5b4a35a5cde` updates the Home loading-state regression to assert the single shared workspace-level loading announcement and adds a dedicated duplicate-announcement guard.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX/accessibility rationale:** the app shell already announces workspace loading once. The Home branch previously emitted a second live loading status at the same time. The Home skeleton remains visible but aria-hidden, while the shared status component is the sole announcement; error/retry remains handled by the existing shell-level state.
+- **Regression:** Home spec now has 17 source-test declarations; authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `30b410a9909afb0eef5f9c8383b54d5d6b229bda`.
+- **Static source readback:** 12 focused assertions PASS on code head `c1bd1c62a25123d6eb5b008ea6d9d5b4a35a5cde`: exactly one shared loading status, no Home duplicate, period/KPI skeleton retained, 4 named KPI groups, localized semantic heading, quick access + role-filtered module directory, 12px detail copy, tenant stale-response fence, and 17 Home test declarations. Static inspection only; not test execution.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, OWNER/STAFF/two-tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. Desktop Commander remains Offline; current session instruction prohibits CI triggers/retries. No preview, merge or deployment.
+- **Next:** continue the Home responsive/accessibility source audit; preserve the current API-only metric contract and do not invent attention, trends, aging or recent activity. Keep PR Draft and do not merge/deploy without separate authorization.
