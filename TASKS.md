@@ -2876,3 +2876,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `6f1600f01f7d824140cc3ea613ca95600543c903`.
 - **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR and 360/390/tablet/desktop touch verification remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** complete source-only Home review and exact-head reconciliation; physical/browser acceptance remains dependent on an authorized online runner/device.
+
+
+## T18 — Release impact preflight — 2026-11-07
+
+- **Candidate:** `fe1cbbb9669b0052fc06f179184717c9e893f684`; branch `master/t18-uiux-hardening-20261107`; PR #348 OPEN / DRAFT / UNMERGED; base/main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; 202 commits ahead / 0 behind; 35 changed paths.
+- **Scope:** all PR paths are frontend source/tests plus `TASKS.md` and UX inventory. No backend/API/database/schema/migration, financial/payroll/stock semantics or production data changes.
+- **Vercel impact:** both Web and API projects are Git-linked. Current latest main SHA `8f2e326fce39fe45f4aebe0f1820576e45b75483` generated production-target Git hooks for both; both were CANCELED by Ignore Build Step. Historical frontend-only main SHA `c5fe115daa72e92b4f814ee502405225e1b3dc79` recorded Web READY and API CANCELED. A merge of this frontend-only PR may auto-trigger Web production deployment; API is expected to be ignored based on historical evidence, but current exact ignore settings are not exposed. This is a release-impact warning, not authorization.
+- **Preview:** branch-filtered Vercel Web/API deployment lists both return zero; no branch preview exists.
+- **Exact-head checks:** combined GitHub status zero contexts; no workflow runs or PR reviews. NOT PASS. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain NOT RUN. Desktop Commander is Offline.
+- **Gates:** active session instruction prohibits CI trigger/retry. No merge or production deployment authorization. Keep PR Draft. If merge is later authorized, disclose possible automatic Web production deployment and obtain the separate deployment decision before merge.
