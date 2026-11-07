@@ -326,3 +326,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Platform Admin status chips, runtime health, notices, caution/data-note surfaces and read-only/empty-state accents now use shared semantic status tokens.
 - Platform Admin design-token suite has 5 source test declarations. Tests and rendered acceptance remain NOT RUN.
+
+
+## T18 empty vs filtered states — 2026-11-07
+
+- Platform Admin user and workspace directories distinguish empty directories, filter misses and out-of-range pages; Payroll distinguishes an empty employee directory from a search miss.
+- Regression declarations: Platform Admin user management 8, Employee/Payroll 12, App Shell design tokens 23. Authored / NOT RUN.

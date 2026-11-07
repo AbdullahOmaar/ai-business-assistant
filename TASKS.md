@@ -2720,3 +2720,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Global notice variants continue to distinguish generic info, success, error/danger and warning states across App Shell, Platform Admin and Payroll.
 - Tests/build/browser/device/screen-reader acceptance remain NOT RUN. No role or permission behavior changed; no CI trigger/retry, merge, preview or deployment.
 - Source commit: `8b5e1929d09dcb74fdcb8b3ca899104ec0d012bd`; existing PR #348 OPEN / DRAFT / UNMERGED.
+
+
+## T18 — empty and filtered states for admin directories — 2026-11-07
+
+- Platform Admin user directory now distinguishes an empty account directory from an exact-email/UID search miss.
+- Platform Admin workspace directory now distinguishes filtered no-match results, an out-of-range page, and a genuinely empty directory; copy is bilingual.
+- Payroll employee search now distinguishes an empty employee directory from no matching search results.
+- Source regressions: Platform Admin user-management suite 8 declarations; Employee/Payroll suite 12; App Shell design-token suite 23. All authored / NOT RUN.
+- No API, pagination, search, role or data semantics changed; only empty-state messaging. No CI trigger/retry, preview, merge or deployment.
+- Source commit: `1597288d1f21622341aa232bf5298f366adb275f`; existing PR #348 OPEN / DRAFT / UNMERGED.
