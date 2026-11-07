@@ -416,3 +416,57 @@ aba-metric-card small {
     font-size: clamp(20px, 5.5vw, 25px);
   }
 }
+
+
+/* Authentication and nested form surfaces share the same semantic foundation. */
+:root body .shell .auth-card,
+:root body .shell .setup-card {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-panel);
+  background: var(--aba-color-surface);
+  box-shadow: var(--aba-shadow-popover);
+}
+
+:root body .shell .auth-card h1,
+:root body .shell .setup-card h1 {
+  color: var(--aba-color-text-primary);
+  line-height: var(--aba-line-height-tight);
+}
+
+:root body .shell .auth-card > p,
+:root body .shell .setup-card > p:not(.eyebrow) {
+  color: var(--aba-color-text-secondary);
+}
+
+:root body .shell .invoice-create-disclosure {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .invoice-create-disclosure > summary {
+  background: var(--aba-color-surface);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .invoice-create-disclosure > summary:after {
+  background: var(--aba-color-primary-soft);
+  color: var(--aba-color-primary-strong);
+}
+
+:root body .shell .invoice-create-disclosure > .invoice-form {
+  border-top-color: var(--aba-color-border-subtle);
+}
+
+:root body .shell .invoice-line-row,
+:root body .shell .aging-buckets > div {
+  border-color: var(--aba-color-border-subtle);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .version-pill {
+  border-color: var(--aba-color-border-strong);
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-muted);
+}
