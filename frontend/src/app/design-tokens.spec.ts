@@ -266,3 +266,20 @@ test('destructive secondary actions retain semantic danger styling', () => {
   assert.ok(styles.includes('color: var(--aba-color-danger-text)'));
   assert.ok(styles.includes('background: var(--aba-color-danger-soft)'));
 });
+
+
+test('route-level headings, filters, notices, and assistant messages share semantic surfaces', () => {
+  for (const selector of [
+    ':root body .shell .topbar h1',
+    ':root body .shell .section-head h2',
+    ':root body .shell .count',
+    ':root body .shell .inline-form',
+    ':root body .shell .notice',
+    ':root body .shell .chat-message.user-message',
+    ':root body .shell .suggestion-card:hover',
+  ]) assert.ok(styles.includes(selector), `missing shared UX selector: ${selector}`);
+
+  assert.ok(styles.includes('font-size: clamp(var(--aba-font-size-2xl)'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+  assert.ok(styles.includes('background: var(--aba-color-primary-soft)'));
+});
