@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { filterCustomers, filterInvoices, filterProducts } from './record-filters.ts';
+import { filterCustomers, filterInvoices, filterNotifications, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
 
 test('filters customers by name, email, and phone case-insensitively', () => {
   const customers = [
@@ -35,13 +35,6 @@ test('combines invoice text, status, and customer filters', () => {
   assert.deepEqual(filterInvoices(invoices, '', 'paid').map(x => x.id), ['2']);
 });
 
-
-import {
-  filterNotifications,
-  filterPurchaseOrders,
-  filterRecurringSchedules,
-  filterSuppliers,
-} from './record-filters.ts';
 
 test('filters suppliers by name and optional contact fields', () => {
   const suppliers = [
