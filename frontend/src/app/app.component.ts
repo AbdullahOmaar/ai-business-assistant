@@ -1094,6 +1094,7 @@ export class AppComponent implements OnInit, OnDestroy {
   signingUp = false;
   loading = false;
   error = '';
+  homeDashboardError = '';
   email = '';
   password = '';
   userEmail = '';
@@ -1906,6 +1907,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementOffset = 0;
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
+    this.homeDashboardError = '';
     this.profitLoss = null;
     this.taxSummaryReport = null;
     this.dataIntegrityReport = null;
@@ -2077,6 +2079,7 @@ export class AppComponent implements OnInit, OnDestroy {
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
+      this.homeDashboardError = '';
       this.profitLoss = null;
       this.customers = عميل;
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
@@ -2110,12 +2113,14 @@ export class AppComponent implements OnInit, OnDestroy {
       if (this.business?.id !== businessId) return;
       this.expenses = expenses;
       this.dashboard = dashboard;
+      this.homeDashboardError = '';
       this.profitLoss = null;
     } catch (error) {
       if (this.business?.id === businessId) {
         // A failed refresh must not leave pre-payment dashboard metrics visible as current.
         this.dashboard = null;
-        this.error = this.message(error);
+        this.homeDashboardError = this.message(error);
+        this.error = this.homeDashboardError;
       }
     }
   }
@@ -2620,7 +2625,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.operationsWarning = '';
     }
     this.tab = tab;
-    this.error = '';
+    this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();
     if (tab === 'taxes' && this.business?.role === 'owner') void this.loadTaxSummary();
