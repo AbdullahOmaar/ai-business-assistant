@@ -2504,3 +2504,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Replaced the role-audit action ternary with the shared bilingual audit helper and added explicit `platform.user_role.granted` / `platform.user_role.revoked` labels.
 - Added exhaustive source-level unit coverage for all current backend audit action and target values (including membership, employee/payroll, notification and platform-admin events), while preserving unknown-value fallback.
 - No audit storage, role-grant/revocation, authorization or backend behavior changed. Tests **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 exact-head evidence checkpoint — affa12e44737bf7cc51f28696350e3106a4469f6 — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base main `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Source candidate:** `affa12e44737bf7cc51f28696350e3106a4469f6`; 72 commits ahead / 0 behind; 24 changed paths (frontend, tests and UX documentation only).
+- **Latest UX coverage:** 19-destination role-filtered module catalogue; mobile More and chat keyboard viewport handling; OWNER-only opening stock and PO receipt; localized invoice, PO, notification, payment, expense and operational-health values/search; bilingual assistant citations; Customer Statement event types; shared audit labels covering all current backend AuditEvent and PlatformAdminAuditEvent action/target values; Home duplicate error announcement removed.
+- **Static source review:** 16 forms; required controls carry accessible descriptions; form buttons have explicit types; no duplicate static IDs. These are source inspections, not rendered acceptance.
+- **Authored tests:** source/component and filter tests for the listed behaviors, including exhaustive audit vocabulary and feature guide. **NOT RUN**.
+- **Exact-head quality:** GitGuardian SUCCESS only; combined status zero contexts. Frontend Node tests, Angular build, dependency audit and Playwright **NOT RUN**. CI triggers/retries prohibited by current session instruction; no CI triggered.
+- **Delivery:** all changed paths remain frontend/docs/TASKS. No backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview for the branch.
+- **Remaining:** rendered responsive and RTL/LTR checks; authenticated OWNER/STAFF/two-tenant journeys; keyboard/screen-reader and physical Android/PWA; exact-head test/build/browser/dependency evidence; review of any future backend event values. Keep PR Draft.
