@@ -2543,3 +2543,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Firebase app/auth functions remain the same; sign-in, sign-up, observer, token and sign-out behavior is unchanged. Failed SDK chunk loading clears the promise so a later retry can re-attempt the import.
 - Added source regression coverage for type-only imports, dynamic import boundaries, runtime-config ordering and retry reset.
 - **Bundle impact is UNVERIFIED until Angular build runs.** No bundle budget was raised. Tests/build NOT RUN; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 P0 initial-bundle source checkpoint — 51542d513c97ff93c12dd5fa05183b9346c9a0c1 — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; 76 commits ahead / 0 behind; 26 changed paths.
+- **Source change:** `AuthService` no longer has runtime static imports from `@firebase/app` or `@firebase/auth`. It uses a cached dynamic-import promise only after `runtime-config.json` validates; the promise resets on import failure. Auth observer, sign-in, sign-up, token and sign-out APIs are unchanged.
+- **Regression:** added `auth-lazy-loading.spec.ts` to assert type-only imports, dynamic imports, config-before-SDK ordering and retry reset.
+- **Bundle result:** NOT MEASURED. Initial bundle reduction and Angular budget compliance are **UNVERIFIED** until an Angular production build and bundle analysis run. Budget was not raised.
+- **Exact-head checks:** GitGuardian SUCCESS only; combined status zero contexts. Node tests, Angular build, dependency audit and Playwright **NOT RUN**. CI triggers/retries remain prohibited by current session instruction.
+- **Scope:** 26 changed paths, frontend/tests/docs/TASKS only. No backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview.
+- **Remaining:** run exact-head tests/build/bundle analysis/browser/tenant/device acceptance when an authorized runner is available; keep PR Draft.
