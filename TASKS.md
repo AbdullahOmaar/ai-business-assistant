@@ -2436,3 +2436,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Updated the existing nested-surface inventory rows for Payments/Expenses, Purchasing/Notifications and Reports/Operational Health to reflect the new localized display/search behavior.
 - No application code changed in this documentation checkpoint; tests remain NOT RUN.
+
+
+## T18 — preserve unknown status values in localized labels — 2026-11-07
+
+- Hardened the localized PO, notification and operational-health status helpers: known backend values use bilingual labels, while unknown non-empty values remain visible as raw text for diagnosis instead of being hidden behind a generic label.
+- Added source assertions for fallback behavior. No API/domain semantics changed.
+- Tests authored / **NOT RUN**; no CI trigger/retry.

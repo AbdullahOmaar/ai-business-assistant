@@ -144,3 +144,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Updated the existing Payments/Expenses, Purchasing/Notifications and Reports/Operational Health rows to reflect the new bilingual labels and search behavior; did not create duplicate tracker rows.
 - Payment methods and expense categories remain presentation labels over unchanged stored values. Purchase-order, notification and operational-health labels map only to backend-supported status enums.
 - Mobile keyboard regression now asserts visual viewport bounds. All browser/device acceptance remains NOT RUN.
+
+
+## Unknown status fallback preserved — 2026-11-07
+
+- Localized Purchase Order, Notification and Operational Health labels now preserve a non-empty unknown backend status string instead of replacing it with a generic "Unknown status" label. This keeps newly introduced/legacy values visible while known values remain localized.
+- Added source assertions for the unknown-value fallback. No status transition or backend behavior changed; tests authored / **NOT RUN**.

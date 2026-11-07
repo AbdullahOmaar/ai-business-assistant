@@ -1579,7 +1579,7 @@ export class AppComponent implements OnInit, OnDestroy {
       failed: 'Failed',
       cancelled: 'Cancelled',
     };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('حالة غير محددة', 'Unknown status');
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t('حالة غير محددة', 'Unknown status');
   }
 
   notificationKindLabel(kind: string): string {
@@ -1700,7 +1700,7 @@ export class AppComponent implements OnInit, OnDestroy {
   operationalHealthStatusLabel(status: string): string {
     if (status === 'ok') return this.t('سليم', 'Healthy');
     if (status === 'degraded') return this.t('يحتاج مراجعة', 'Degraded');
-    return this.t('حالة غير محددة', 'Unknown status');
+    return status || this.t('حالة غير محددة', 'Unknown status');
   }
 
   invoiceStatusLabel(status: string): string {
@@ -1724,7 +1724,7 @@ export class AppComponent implements OnInit, OnDestroy {
       received: 'Received',
       cancelled: 'Cancelled',
     };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('حالة غير محددة', 'Unknown status');
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t('حالة غير محددة', 'Unknown status');
   }
 
   get pageTitle(): string {

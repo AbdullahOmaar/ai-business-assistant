@@ -950,12 +950,14 @@ test('notification status labels are localized in the list and available to loca
   assert.match(source, /notificationStatusLabel\(status\)/);
   assert.match(source, /failed: 'فشل الإرسال'/);
   assert.match(source, /failed: 'Failed'/);
+  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
 });
 
 test('operational health status uses a localized label instead of raw API codes', () => {
   assert.match(source, /operationalHealthStatusLabel\(operationalHealth\.status\)/);
   assert.match(source, /status === 'ok'.*سليم/);
   assert.match(source, /status === 'degraded'.*يحتاج مراجعة/);
+  assert.match(source, /return status \|\| this\.t\('حالة غير محددة', 'Unknown status'\)/);
 });
 
 test('purchase-order status labels are localized in the list and available to local search', () => {
@@ -963,6 +965,7 @@ test('purchase-order status labels are localized in the list and available to lo
   assert.match(source, /purchaseOrderStatusLabel\(status\)/);
   assert.match(source, /partially_received: 'مستلم جزئيًا'/);
   assert.match(source, /partially_received: 'Partially received'/);
+  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
 });
 
 test('purchase orders remain creatable by members while receiving and payment writes are owner-only', () => {
