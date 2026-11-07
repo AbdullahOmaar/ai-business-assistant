@@ -507,9 +507,12 @@ test('loss of platform-admin access with no workspace memberships returns to Ove
   const noMembershipEnd = loadMethod.indexOf('const chosen =', noMembershipStart);
   const noMembershipBranch = loadMethod.slice(noMembershipStart, noMembershipEnd);
   assert.ok(noMembershipStart >= 0 && noMembershipEnd > noMembershipStart);
-  assert.match(noMembershipBranch, /if \(this\.platformAdminAvailable\) this\.tab = 'platform-admin';/);
+  assert.match(noMembershipBranch, /if \(this\.platformAdminAvailable\) this\.setTab\('platform-admin'\);/,
+    'authorized admins without workspace memberships must enter Platform Admin through the shared navigation handler');
   assert.match(noMembershipBranch, /else this\.setTab\('overview'\);/,
     'revoked platform-admin capability must not leave the former admin tab active');
+  assert.match(source.slice(source.indexOf('setTab(tab: Tab): void'), source.indexOf('get statementBalanceEntries()', source.indexOf('setTab(tab: Tab): void'))), /this\.mobileMoreOpen = false/,
+    'both no-membership destinations must use the handler that closes More');
 });
 
 test('membership and platform-role refreshes also fail closed on an inaccessible active destination', () => {

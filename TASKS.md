@@ -2598,3 +2598,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Automation boundary:** initial style/test commits lacked [skip ci] and automatically started CircleCI/GitHub Actions; no manual trigger or retry was issued. Subsequent source/docs commits use [skip ci]. GitHub Actions is non-authoritative and is not substituted for CircleCI.
 - **Delivery:** no Vercel preview deployment for this branch, no merge, no production deployment, and no backend/API/database/schema/migration, financial/payroll/stock semantic or production-data changes.
 - **Remaining:** run exact-head frontend tests/build/audit/Playwright only when an approved runner/policy permits; diagnose old CircleCI failures if logs become accessible; complete rendered RTL/LTR, authenticated role/tenant, physical Android/PWA, keyboard and screen-reader acceptance. Figma Variables/component-library review remains NOT RUN/BLOCKED by View-only access.
+
+## T18 — shared navigation handler for no-membership destinations — 2026-11-07
+
+- Refined the no-membership `loadBusinesses()` path so both the authorized Platform Admin destination and the revoked-capability Overview fallback call `setTab()` instead of assigning `tab` directly.
+- This preserves the existing destination/capability behavior while also applying the shared operations-message cleanup and mobile More dismissal.
+- Regression coverage now asserts both branches use the shared handler and that the handler closes More. Test authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+- No new authorization policy, backend/API/DB/schema, financial/payroll semantics, production writes, merge or deployment.

@@ -245,3 +245,8 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Static source review: 96 unique tokens; balanced CSS braces/parentheses; all 13 audited text pairs >= 4.5:1 and focus pairs >= 4.82:1. Automated tests, Angular build, browser, rendered RTL/LTR and assistive technology remain NOT RUN.
 - Current exact head has zero combined status contexts and GitGuardian SUCCESS only. Earlier CircleCI on 44e913f had two failures (frontend unit tests and browser smoke) and four substantive successes; root cause UNKNOWN because job output is inaccessible. Historical results do not validate this head.
 - No preview deployment, merge, production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data changes.
+
+## No-membership navigation uses the shared tab handler — 2026-11-07
+
+- Both authorized Platform Admin and revoked-capability Overview destinations now route through `setTab()`. This keeps active-state cleanup, More-menu dismissal and shared navigation behavior consistent when a refreshed account has no workspace memberships.
+- Added a source regression assertion that both branches use `setTab()` and the shared handler closes More. Test authored / **NOT RUN**.
