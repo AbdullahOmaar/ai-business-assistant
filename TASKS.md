@@ -2711,3 +2711,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Source regressions: App Shell design-token suite 23 declarations, Platform Admin design-token suite 4, Employee/Payroll UI suite 11. Authored / NOT RUN.
 - Static readback: notice variant selectors present, Payroll success/warning token declarations correct, mobile heading rules present, component CSS braces balanced. No rendered browser/device claim.
 - Source commit: `27a0ced47d44bccbcb0cc6bef0347a64804db917`; existing PR #348 OPEN / DRAFT / UNMERGED. CI trigger/retry, preview, merge and deployment remain NOT RUN.
+
+
+## T18 — Platform Admin status palette consolidation — 2026-11-07
+
+- Platform Admin status chips, runtime health indicators, notices, caution blocks, data notes, read-only badges and empty-state accents now use shared success/danger/warning/info/primary semantic tokens with preserved fallback colors.
+- Added a source regression covering the shared status palette. Platform Admin design-token suite now contains 5 test declarations.
+- Global notice variants continue to distinguish generic info, success, error/danger and warning states across App Shell, Platform Admin and Payroll.
+- Tests/build/browser/device/screen-reader acceptance remain NOT RUN. No role or permission behavior changed; no CI trigger/retry, merge, preview or deployment.
+- Source commit: `8b5e1929d09dcb74fdcb8b3ca899104ec0d012bd`; existing PR #348 OPEN / DRAFT / UNMERGED.

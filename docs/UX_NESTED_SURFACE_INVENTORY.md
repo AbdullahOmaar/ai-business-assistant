@@ -320,3 +320,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Generic notices use informational styling; explicit success, error/danger and warning variants retain their semantic tokens across App Shell, Platform Admin and Payroll.
 - Employee/Payroll and Platform Admin custom section headers now stack actions and counts below 600px to protect long localized titles.
 - Source test declarations: App Shell 23, Platform Admin 4, Employee/Payroll 11. Authored / NOT RUN; rendered RTL/LTR, keyboard and assistive-technology acceptance remains NOT RUN.
+
+
+## T18 Platform Admin status palette consolidation — 2026-11-07
+
+- Platform Admin status chips, runtime health, notices, caution/data-note surfaces and read-only/empty-state accents now use shared semantic status tokens.
+- Platform Admin design-token suite has 5 source test declarations. Tests and rendered acceptance remain NOT RUN.
