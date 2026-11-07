@@ -433,7 +433,7 @@ aba-metric-card small {
   line-height: var(--aba-line-height-tight);
 }
 
-:root body .shell .auth-card > p,
+:root body .shell .auth-card > p:not(.eyebrow),
 :root body .shell .setup-card > p:not(.eyebrow) {
   color: var(--aba-color-text-secondary);
 }

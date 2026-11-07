@@ -299,6 +299,8 @@ test('authentication and nested form surfaces use semantic tokens', () => {
   assert.ok(styles.includes('box-shadow: var(--aba-shadow-popover)'));
   assert.ok(styles.includes('background: var(--aba-color-surface-subtle)'));
   assert.ok(styles.includes('color: var(--aba-color-primary-strong)'));
+  assert.ok(styles.includes(':root body .shell .auth-card > p:not(.eyebrow)'));
+  assert.ok(styles.includes(':root body .shell .setup-card > p:not(.eyebrow)'));
 });
 
 
