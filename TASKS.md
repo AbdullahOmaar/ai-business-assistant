@@ -2776,3 +2776,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Notion review:** the UX Workstream and T18 records confirm the mobile-only Hybrid Modern top-section direction and its current implementation. No distinct pending suggestion text was exposed in page comments; the connected Notion suggested-edit status is `upgrade_required`, so no unseen suggestion is treated as reviewed or approved.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered 360/390/412 RTL/LTR, safe-area/install prompt, keyboard, screen-reader and physical Android/PWA checks **NOT RUN**. No CI trigger/retry; code commits carry `[skip ci]`. No preview, merge or deployment.
 - **Next:** continue Home / Overview source-level responsive/accessibility review as the next priority. Keep the four API-backed currency-separated metrics and do not invent trends, pending-work, aging or recent-activity data. Rendered acceptance remains blocked by the unavailable approved runner/browser.
+
+
+## T18 — Home reporting-period loading hierarchy — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; main base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `d30ade7a03870dcb19e6d7cf459b28f4286bf5c0` added a compact non-data reporting-period skeleton to the Home loading branch; `bbd738e33a16610584b2313ce35e28df772a7dc3` localized its visible labels in Arabic/English; `d8633aecf7ab6ea0c82e6eedc84bcac9575a3f00` added the Home regression declaration.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** the Home period/date/timezone hierarchy now retains its shape while the Dashboard response is loading, reducing top-of-page layout shift. Skeleton is `aria-hidden`; the existing localized loading state remains the screen-reader announcement. No dates, timezone, metrics or business data are fabricated.
+- **Regression:** Home spec now has 12 source-test declarations. Static source readback on the code head verified the bilingual skeleton, loading-branch placement, CSS sizing, four named KPI cards and omission of unsupported data panels (9 focused assertions). This is not Node test execution.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `eab53aa19d822769de26c223f49d977db363fb0a`.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered responsive/RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry; commits use `[skip ci]`. No preview, merge or deployment.
+- **Next:** continue Home / Overview source review; rendered acceptance requires an approved online runner/browser. Keep the four API-backed currency-separated metrics and avoid unsupported trends, pending-work, aging or recent-activity data.
