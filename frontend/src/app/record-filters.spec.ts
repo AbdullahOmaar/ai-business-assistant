@@ -113,4 +113,5 @@ test('filters payments by visible receipt details and allocation state without c
   assert.deepEqual(filterPayments(payments, 'unallocated', customer).map(x => x.id), ['p2']);
   assert.deepEqual(filterPayments(payments, 'allocated', customer).map(x => x.id), ['p1']);
   assert.deepEqual(filterPayments(payments, 'bank_transfer', customer).map(x => x.id), ['p2']);
+  assert.deepEqual(filterPayments(payments, 'تحويل بنكي', customer, method => method === 'bank_transfer' ? 'تحويل بنكي' : method).map(x => x.id), ['p2']);
 });

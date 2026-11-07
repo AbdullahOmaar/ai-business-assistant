@@ -124,3 +124,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The read-only Operational Health summary displayed raw API values `ok` / `degraded`. The backend route explicitly returns those two values; the UI now displays localized labels (Healthy / سليم, Degraded / يحتاج مراجعة) and keeps the existing not-checked state.
 - Added a source regression assertion for both API values and the localized template helper.
 - Frontend presentation only; the owner-only API authorization and read-only operational check are unchanged. Test authored / **NOT RUN**.
+
+
+## Payment method labels localized — 2026-11-07
+
+- Payment list previously displayed controlled API method codes (`cash`, `bank_transfer`, `card`, `wallet`, `other`) verbatim, even though the create form already offered Arabic/English labels. The list now reuses localized labels, and local search matches the localized method name.
+- Added Arabic search regression coverage for `تحويل بنكي` and a source/template assertion for the method label.
+- No payment/collection/allocation semantics or API payload values changed; only display/search labels changed. Test authored / **NOT RUN**.

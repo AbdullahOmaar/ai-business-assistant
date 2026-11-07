@@ -594,7 +594,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list-tools operations-search"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
                 <div class="list">
-                  @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
+                  @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method ? paymentMethodLabel(payment.method) : t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
                   @if (!filteredPayments.length) { <aba-state-message kind="empty" [description]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.', 'No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
                 </div>
               </section>
@@ -1308,7 +1308,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredPayments(): Payment[] {
-    return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id));
+    return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id), method => this.paymentMethodLabel(method));
   }
 
   exportCurrentList(): void {
@@ -1520,6 +1520,24 @@ export class AppComponent implements OnInit, OnDestroy {
       this.initialized = true;
       this.applyPendingAuthSnapshot();
     }
+  }
+
+  paymentMethodLabel(method: string): string {
+    const labelsAr: Record<string, string> = {
+      cash: 'نقدًا',
+      bank_transfer: 'تحويل بنكي',
+      card: 'بطاقة',
+      wallet: 'محفظة إلكترونية',
+      other: 'أخرى',
+    };
+    const labelsEn: Record<string, string> = {
+      cash: 'Cash',
+      bank_transfer: 'Bank transfer',
+      card: 'Card',
+      wallet: 'E-wallet',
+      other: 'Other',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[method] || method;
   }
 
   notificationStatusLabel(status: string): string {

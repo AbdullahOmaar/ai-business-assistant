@@ -2415,3 +2415,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Source audit found the owner-only read-only Operational Health page displayed raw API status values `ok` and `degraded`. Added localized display labels (Healthy / سليم; Degraded / يحتاج مراجعة) while preserving the not-checked state.
 - Added a source/template regression assertion. No API authorization or operational-health behavior changed.
 - Test authored / **NOT RUN**; no CI trigger/retry; frontend-only.
+
+
+## T18 — payment method label localization — 2026-11-07
+
+- Source audit found the payment form already translated controlled method options, but saved payment rows displayed raw method codes and search only matched the API value.
+- Added Arabic/English display labels for `cash`, `bank_transfer`, `card`, `wallet`, `other`; local search now also matches the localized label.
+- Added Arabic search and template/source regression assertions. API payload values remain unchanged.
+- Tests authored / **NOT RUN**; no CI trigger/retry; no financial/payment semantics changed.

@@ -931,6 +931,13 @@ test('CSV import preview and write controls are owner-only without restricting m
   assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
 });
 
+test('payment methods are localized in the list and available to local search', () => {
+  assert.match(source, /paymentMethodLabel\(payment\.method\)/);
+  assert.match(source, /method => this\.paymentMethodLabel\(method\)/);
+  assert.match(source, /bank_transfer: 'تحويل بنكي'/);
+  assert.match(source, /bank_transfer: 'Bank transfer'/);
+});
+
 test('notification status labels are localized in the list and available to local search', () => {
   assert.match(source, /notificationStatusLabel\(item\.status\)/);
   assert.match(source, /notificationStatusLabel\(status\)/);

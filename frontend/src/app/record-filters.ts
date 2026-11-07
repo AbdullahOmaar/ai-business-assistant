@@ -175,6 +175,7 @@ export function filterPayments<T extends PaymentSearchItem>(
   items: readonly T[],
   query: string,
   customerName: (customerId: string) => string,
+  methodLabel: (method: string) => string = method => method,
 ): T[] {
   const q = normalized(query);
   return items.filter(item => {
@@ -182,7 +183,7 @@ export function filterPayments<T extends PaymentSearchItem>(
     const searchable = [
       item.amount, item.currency_code, item.received_at,
       item.customer_id ? customerName(item.customer_id) : '',
-      item.method, item.reference, item.allocations.length,
+      item.method, item.method ? methodLabel(item.method) : '', item.reference, item.allocations.length,
     ];
     const allocationLabels = item.allocations.length
       ? ['allocated', 'مخصصة']
