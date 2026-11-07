@@ -541,7 +541,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   const staffModuleCount = await staffModuleDirectory.locator('aba-quick-access-card').count();
   const staffModuleCountLabel = await page.locator('.module-directory .count').textContent();
   expect(Number(staffModuleCountLabel?.trim())).toBe(staffModuleCount);
-  for (const restricted of [/Payments/, /Employees & Payroll/, /Tax summary/, /Activity log/, /Data integrity/, /Operational health/]) {
+  for (const restricted of [/payments/i, /employees/i, /tax summary/i, /activity log/i, /data integrity/i, /operational health/i]) {
     await expect(staffModuleDirectory.getByRole('button', { name: restricted })).toHaveCount(0);
   }
 
