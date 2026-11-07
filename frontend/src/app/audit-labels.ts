@@ -34,6 +34,8 @@ const AUDIT_ACTION_LABELS: Record<string, { ar: string; en: string }> = {
   'payroll.paid': { ar: 'تسجيل صرف المرتب', en: 'Payroll payout recorded' },
   'platform.business.activated': { ar: 'تفعيل مساحة عمل', en: 'Workspace activated' },
   'platform.business.deactivated': { ar: 'إيقاف مساحة عمل', en: 'Workspace deactivated' },
+  'platform.user_role.granted': { ar: 'منح صلاحية منصة', en: 'Platform role granted' },
+  'platform.user_role.revoked': { ar: 'إلغاء صلاحية منصة', en: 'Platform role revoked' },
 };
 
 const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {

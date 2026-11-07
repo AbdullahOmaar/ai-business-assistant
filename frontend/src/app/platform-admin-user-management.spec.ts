@@ -44,3 +44,9 @@ test('platform activity audit uses the shared bilingual action and target labels
   assert.match(source, /auditActionLabel\(event\.action\)/);
   assert.match(source, /auditTargetLabel\(event\.target_type\)/);
 });
+
+
+test('platform role audit uses the shared bilingual action vocabulary', () => {
+  assert.match(source, /auditActionLabel\(event\.action\)/);
+  assert.doesNotMatch(source, /event\.action === 'platform\.user_role\.granted'/);
+});

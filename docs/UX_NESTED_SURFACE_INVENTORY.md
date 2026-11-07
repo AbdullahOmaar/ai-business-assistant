@@ -193,3 +193,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Extended shared bilingual audit labels after comparing all current backend AuditEvent writer literals across operations, extended/core features, platform admin and employee/payroll APIs.
 - Added membership role/removal, employee, payroll lifecycle, platform workspace activation/deactivation, and their target types. Unknown future codes still fall back to raw values.
 - Tests authored / **NOT RUN**; no backend changes.
+
+
+## Platform role audit label consistency — 2026-11-07
+
+- The dedicated Platform Admin role-grant/revocation history now uses the same shared bilingual action map as workspace and platform activity audit.
+- Added exhaustive helper assertions for every current backend AuditEvent and PlatformAdminAuditEvent action/target value. Unknown future values continue to fall back to raw text.
+- Tests authored / **NOT RUN**.

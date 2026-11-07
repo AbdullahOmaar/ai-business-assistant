@@ -267,7 +267,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
             @if (!roleAuditLoading && !roleAuditError && !roleAuditEvents.length) { <p class="muted">{{ t('لا توجد تغييرات صلاحيات مسجلة حتى الآن.', 'No platform role changes recorded yet.') }}</p> }
             @if (roleAuditEvents.length) {
               <div class="table-wrap"><table><thead><tr><th>{{ t('التوقيت', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('المستخدم المستهدف', 'Target user') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('السبب', 'Reason') }}</th><th>{{ t('المنفّذ', 'Actor') }}</th></tr></thead><tbody>
-                @for (event of roleAuditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td>{{ event.action === 'platform.user_role.granted' ? t('منح صلاحية', 'Role granted') : t('إلغاء صلاحية', 'Role revoked') }}</td><td class="subject">{{ event.target_subject }}</td><td>{{ platformRoleLabel(event.role) }}</td><td class="summary-cell">{{ event.reason }}</td><td class="subject">{{ event.actor_subject }}</td></tr> }
+                @for (event of roleAuditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td>{{ auditActionLabel(event.action) }}</td><td class="subject">{{ event.target_subject }}</td><td>{{ platformRoleLabel(event.role) }}</td><td class="summary-cell">{{ event.reason }}</td><td class="subject">{{ event.actor_subject }}</td></tr> }
               </tbody></table></div>
             }
           </article>
