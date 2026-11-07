@@ -12,6 +12,7 @@ import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
+import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
 import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
@@ -24,7 +25,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -272,7 +273,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
 @if (tab === 'purchases') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ purchaseOrders.length }}</span></aba-section-header>
+                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ purchaseOrders.length }}</span></aba-section-header>
                 <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -293,7 +294,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
-                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
+                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
               </section>
             }
 
@@ -510,7 +511,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
             @if (tab === 'invoices') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
+                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
                 <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
                 <form #invoiceForm="ngForm" class="inline-form invoice-form" (ngSubmit)="invoiceForm.valid && createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
@@ -538,7 +539,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <div class="list">
-                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
+                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
                   @if (!filteredInvoices.length) { <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.'))" /> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
@@ -761,6 +762,43 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
           }
         </main>
       }
+      @if (pendingInvoiceVoid) {
+        <aba-confirm-dialog
+          [title]="t('تأكيد إلغاء الفاتورة', 'Confirm invoice void') + ' · ' + pendingInvoiceVoid.invoice_number"
+          [message]="t('سيتم تغيير حالة الفاتورة إلى ملغاة.', 'This will mark the invoice as void.')"
+          [warning]="t('إذا كانت هناك دفعات مخصصة، توقف وراجع مالك مساحة العمل. هذه الشاشة لا تنفذ رد مبالغ أو إشعارات دائنة.', 'If payments are allocated, stop and review with the workspace owner. This screen does not process refunds or credit notes.')"
+          [confirmLabel]="t('إلغاء الفاتورة', 'Void invoice')"
+          [cancelLabel]="t('الاحتفاظ بالفاتورة', 'Keep invoice')"
+          [busyLabel]="t('جارٍ الإلغاء...', 'Voiding...')"
+          [busy]="loading"
+          [confirmDisabled]="!!invoiceVoidError"
+          [error]="invoiceVoidError"
+          [tone]="'danger'"
+          [returnFocusTo]="confirmationReturnFocus"
+          [focusFallbackId]="'invoices-section-heading'"
+          (confirmed)="confirmInvoiceVoid()"
+          (cancelled)="cancelInvoiceVoid()" />
+      }
+      @if (pendingPurchaseReceipt) {
+        <aba-confirm-dialog
+          [title]="t('تأكيد استلام أمر الشراء', 'Confirm purchase receipt') + ' · ' + pendingPurchaseReceipt.order_number"
+          [message]="t('سيتم تسجيل الكميات المتبقية أدناه وتحديث المخزون عبر عملية الاستلام الحالية.', 'This will record the remaining quantities below and update stock through the existing receiving workflow.')"
+          [warning]="t('راجع كل كمية قبل التأكيد. إذا لم تتأكد من النتيجة، حدّث حالة الأمر قبل أي محاولة أخرى.', 'Review every quantity before confirming. If the result is uncertain, refresh the order status before any retry.')"
+          [detailsTitle]="t('الكميات المتبقية التي سيتم استلامها', 'Remaining quantities to receive')"
+          [details]="pendingPurchaseReceiptDetails"
+          [confirmLabel]="t('تسجيل الاستلام', 'Record receipt')"
+          [cancelLabel]="t('مراجعة لاحقًا', 'Review later')"
+          [busyLabel]="t('جارٍ التسجيل...', 'Recording...')"
+          [busy]="purchasesLoading"
+          [confirmDisabled]="!!purchaseReceiptError"
+          [error]="purchaseReceiptError"
+          [tone]="'warning'"
+          [returnFocusTo]="confirmationReturnFocus"
+          [focusFallbackId]="'purchases-section-heading'"
+          (confirmed)="confirmPurchaseOrderReceipt()"
+          (cancelled)="cancelPurchaseOrderReceipt()" />
+      }
+
     </div>
   `,
   styles: [`
@@ -1116,6 +1154,11 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceTaxRate = '0';
   invoiceMessage = '';
   invoiceMessageKind: 'success' | 'warning' = 'success';
+  pendingInvoiceVoid: Invoice | null = null;
+  invoiceVoidError = '';
+  pendingPurchaseReceipt: PurchaseOrder | null = null;
+  purchaseReceiptError = '';
+  confirmationReturnFocus: HTMLElement | null = null;
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
@@ -1659,6 +1702,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.confirmationReturnFocus = null;
     this.chatRequestGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
@@ -2194,31 +2242,66 @@ export class AppComponent implements OnInit, OnDestroy {
   hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
-  async receivePurchaseOrder(order: PurchaseOrder): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+  requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent): void {
+    if (!this.business || this.business.role !== 'owner' || !order.lines.some(line => this.hasRemainingQuantity(line))) return;
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.pendingPurchaseReceipt = order;
+    this.purchaseReceiptError = '';
+    this.confirmationReturnFocus = event.currentTarget as HTMLElement;
+  }
+
+  cancelPurchaseOrderReceipt(): void {
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.confirmationReturnFocus = null;
+  }
+
+  get pendingPurchaseReceiptDetails(): string[] {
+    return (this.pendingPurchaseReceipt?.lines || [])
+      .filter(line => this.hasRemainingQuantity(line))
+      .map(line => `${this.productNameFor(line.product_id)} · ${line.remaining_quantity} ${this.t('وحدة', 'units')}`);
+  }
+
+  async confirmPurchaseOrderReceipt(): Promise<void> {
+    const order = this.pendingPurchaseReceipt;
+    if (!order || !this.business || this.business.role !== 'owner' || this.purchasesLoading) return;
     const lines = order.lines
       .filter(line => this.hasRemainingQuantity(line))
       .map(line => ({ line_id: line.id, quantity: line.remaining_quantity }));
-    if (!lines.length) return;
+    if (!lines.length) {
+      this.cancelPurchaseOrderReceipt();
+      return;
+    }
     const businessId = this.business.id;
     this.beginOperationsAction();
     this.purchasesLoading = true;
+    this.purchaseReceiptError = '';
     try {
       await this.api.receivePurchaseOrder(businessId, order.id, lines);
       if (this.business?.id !== businessId) return;
+      this.pendingPurchaseReceipt = null;
+      this.confirmationReturnFocus = null;
       this.setOperationsSuccess('purchases', this.t('تم تسجيل الاستلام.', 'Receiving was recorded.'));
-      const [orders, products, dashboard] = await Promise.all([
-        this.api.purchaseOrders(businessId),
-        this.api.products(businessId),
-        this.api.dashboard(businessId),
-      ]);
-      if (this.business?.id === businessId) {
-        this.purchaseOrders = orders;
-        this.products = products;
-        this.dashboard = dashboard;
+      try {
+        const [orders, products, dashboard] = await Promise.all([
+          this.api.purchaseOrders(businessId),
+          this.api.products(businessId),
+          this.api.dashboard(businessId),
+        ]);
+        if (this.business?.id === businessId) {
+          this.purchaseOrders = orders;
+          this.products = products;
+          this.dashboard = dashboard;
+        }
+      } catch (error) {
+        if (this.business?.id === businessId) this.setOperationsFailure('purchases', error);
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.setOperationsFailure('purchases', error);
+      if (this.business?.id === businessId) {
+        this.setOperationsFailure('purchases', error);
+        this.purchaseReceiptError = this.operationsError || this.message(error);
+      }
     } finally {
       if (this.business?.id === businessId) this.purchasesLoading = false;
     }
@@ -2983,19 +3066,35 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  async voidInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || this.business.role !== 'owner' || !window.confirm(this.t(
-      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت عليها دفعات مخصصة، لا تكمل الإلغاء وراجع مالك مساحة العمل قبل أي تصحيح. الشاشة دي لا تنفذ رد مبالغ أو إشعارات دائنة.`,
-      `Confirm voiding invoice ${invoice.invoice_number}? If payments are allocated, stop and ask the workspace owner before making any correction. This screen does not process refunds or credit notes.`
-    ))) return;
+  requestInvoiceVoid(invoice: Invoice, event: MouseEvent): void {
+    if (!this.business || this.business.role !== 'owner' || !['draft', 'issued'].includes(invoice.status)) return;
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.pendingInvoiceVoid = invoice;
+    this.invoiceVoidError = '';
+    this.confirmationReturnFocus = event.currentTarget as HTMLElement;
+  }
+
+  cancelInvoiceVoid(): void {
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.confirmationReturnFocus = null;
+  }
+
+  async confirmInvoiceVoid(): Promise<void> {
+    const invoice = this.pendingInvoiceVoid;
+    if (!invoice || !this.business || this.business.role !== 'owner' || this.loading) return;
     const businessId = this.business.id;
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
     this.invoiceMessageKind = 'success';
+    this.invoiceVoidError = '';
     try {
       await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
       if (this.business?.id !== businessId) return;
+      this.pendingInvoiceVoid = null;
+      this.confirmationReturnFocus = null;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
       this.invoiceMessage = this.t('تم إلغاء الفاتورة بنجاح.', 'Invoice voided successfully.');
       try {
@@ -3018,7 +3117,14 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (this.business?.id === businessId) {
+        this.invoiceVoidError = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'تعذر تأكيد نتيجة الإلغاء. لا تعاود المحاولة قبل تحديث حالة الفاتورة.',
+          'Could not confirm the void result. Do not retry until the invoice status is refreshed.'
+        );
+      }
     } finally {
       if (this.business?.id === businessId) this.loading = false;
     }
