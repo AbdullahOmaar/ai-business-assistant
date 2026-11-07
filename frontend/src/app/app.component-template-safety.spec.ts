@@ -1234,3 +1234,21 @@ test('CSV import regions and invoice preview have localized accessible names', (
   assert.ok(source.includes("[attr.aria-label]=\"t('معاينة إجمالي الفاتورة', 'Invoice totals preview')\""));
   assert.doesNotMatch(source, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
 });
+
+
+test('OWNER payroll view is loaded only after selecting Employees', () => {
+  const start = source.indexOf("@defer (when tab === 'employees' && business?.role === 'owner' && business)");
+  const placeholder = source.indexOf("} @placeholder {", start);
+  const end = source.indexOf("\n            }", placeholder);
+  assert.ok(start >= 0 && placeholder > start && end > placeholder,
+    'the employee payroll view must have an explicit navigation-triggered defer boundary');
+  const deferredView = source.slice(start, placeholder);
+  assert.match(deferredView, /<aba-employee-payroll\b/);
+  assert.equal((source.match(/<aba-employee-payroll\b/g) || []).length, 1,
+    'the payroll component must not be referenced outside its lazy boundary');
+  const loadingView = source.slice(placeholder, end);
+  assert.match(loadingView, /aba-state-message kind="loading"/);
+  assert.match(loadingView, /Loading employees &amp; payroll|Loading employees & payroll/);
+  assert.match(source, /imports: \[[^\]]*EmployeePayrollComponent/);
+  assert.match(source, /@if \(tab === 'employees' && business\?\.role === 'owner' && business\)/);
+});
