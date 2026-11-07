@@ -290,13 +290,13 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
     </section>
   `,
   styles: [`
-    :host{display:block;min-width:0;color:#142333}
+    :host{display:block;min-width:0;color:var(--aba-color-text-primary,#172033)}
     *{box-sizing:border-box}
     button,input,select,textarea{font:inherit}
     button{cursor:pointer}
     button:disabled{opacity:.55;cursor:not-allowed}
-    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
-    .admin-shell{--ink:#142333;--muted:#637487;--line:#e2e9ef;--panel:#fff;--teal:#0e766e;--background:#f6f9fb;display:grid;gap:20px;min-width:0;color:var(--ink);font-size:14px;padding:2px 0 12px}
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}
+    .admin-shell{--ink:var(--aba-color-text-primary,#172033);--muted:var(--aba-color-text-secondary,#64748b);--line:var(--aba-color-border,#e5eaf1);--panel:var(--aba-color-surface,#fff);--teal:var(--aba-color-primary,#0f766e);--background:var(--aba-color-page,#f5f7fb);--surface-soft:var(--aba-color-surface-subtle,#f8fafc);display:grid;gap:20px;min-width:0;color:var(--ink);font-size:14px;padding:2px 0 12px}
     .admin-shell.english{direction:ltr}
     .admin-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:10px 0 20px;border-bottom:1px solid var(--line);min-width:0}
     .heading{min-width:0}.eyebrow{margin:0 0 7px;color:#0e766e;font-size:10px;font-weight:800;letter-spacing:.11em}.heading h1{margin:0;color:#12253a;font-size:clamp(25px,3vw,32px);line-height:1.15;letter-spacing:-.04em}.heading p:not(.eyebrow){color:var(--muted);font-size:13px;line-height:1.6;max-width:620px;margin:10px 0 0}
