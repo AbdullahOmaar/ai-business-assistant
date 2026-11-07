@@ -2872,7 +2872,7 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Code commits:** `70109da62ee05b7484075e06c4c650d290dcdf41` gives the native Home All Modules disclosure summary a 44px minimum touch target; `3d8c84ec6609f48aa2041cb22e13335196bc98ff` guards that minimum in the Home regression spec.
 - **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
 - **UX rationale:** the collapsed module-directory summary is the primary tap/click target for revealing the full role-filtered module list. It previously relied on text + a 32px decorative toggle for its height; the new 44px minimum aligns it with the header's touch-target baseline without changing native `details/summary` keyboard behavior.
-- **Regression:** Home spec now has 18 source-test declarations; authored / **NOT RUN**.
+- **Regression:** Home spec now has 17 source-test declarations; authored / **NOT RUN**.
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `6f1600f01f7d824140cc3ea613ca95600543c903`.
 - **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR and 360/390/tablet/desktop touch verification remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** complete source-only Home review and exact-head reconciliation; physical/browser acceptance remains dependent on an authorized online runner/device.
