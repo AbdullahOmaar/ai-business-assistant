@@ -59,7 +59,7 @@ import type { Business } from '../../api.service';
           @if (showGreeting) {
             <p class="greeting">{{ t('أهلاً بعودتك', 'Welcome back') }}</p>
           }
-          <h1>{{ pageTitle }}</h1>
+          <h1 aria-live="polite" aria-atomic="true">{{ pageTitle }}</h1>
         </div>
         <button class="assistant-shortcut" type="button"
           [attr.aria-label]="t('افتح المساعد الذكي', 'Open AI assistant')"
