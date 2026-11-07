@@ -2522,3 +2522,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Matched the membership audit target label to the backend's actual `business_membership` target type for role changes and removals.
 - Added the emitted value to exhaustive bilingual target tests; generic membership alias retained for legacy values. Tests **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 exact source checkpoint — 39a24862637968145d7e93503db474771162c864 — 2026-11-07
+
+- **Delivery:** existing branch `master/t18-uiux-hardening-20261107`, PR #348 OPEN / DRAFT / UNMERGED. No duplicate branch or PR.
+- **Audit vocabulary cross-check:** compared all current backend AuditEvent and PlatformAdminAuditEvent action literals across operations, extended/core features, services, employee/payroll and platform-admin APIs. All 34 current action values and 17 emitted AuditEvent target types have bilingual mappings; unknown values retain raw fallback. Dedicated platform role history uses the same helper.
+- **Customer Statement:** all three current backend event types have bilingual labels; balances and event values are unchanged.
+- **Home:** shared page-level error/retry is the only dashboard failure alert; true-empty state is hidden while error exists.
+- **Static source review:** 16 forms, required controls accessible, form buttons have explicit types, no duplicate static IDs. Not rendered/browser acceptance.
+- **Tests:** source/filter/helper/feature-guide regression tests authored, including exhaustive audit action/target coverage. **NOT RUN**.
+- **Exact-head quality:** GitGuardian Security Checks only; combined status zero contexts. Frontend tests, Angular build, dependency audit, Playwright **NOT RUN**. CI trigger/retry prohibited by current session instructions.
+- **Scope:** frontend/docs/TASKS only; no backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview.
+- **Remaining:** run exact-head tests/build/browser/dependency validation when an authorized runner is available; responsive RTL/LTR, OWNER/STAFF/two-tenant, keyboard/screen-reader and physical Android/PWA acceptance. Keep PR Draft.
