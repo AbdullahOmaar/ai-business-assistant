@@ -2945,3 +2945,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **P0 measurement:** source-level lazy-loading intent is present, but emitted chunk separation, initial bundle size/budget and Angular NG8107 diagnostics remain **NOT VERIFIED / NOT RUN** because no authorized build execution is available in this session. Do not remove nullable guards without exact compiler diagnostics.
 - **Validation:** source inspection only; Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, OWNER/STAFF/two-tenant, screen-reader and Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** complete remaining Home source audit, then exact-head release preflight; obtain authorized build/browser/device evidence before any VERIFIED COMPLETE claim.
+
+
+## T18 — Home quick access compact-link refinement — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** the Home page showed the same five high-frequency destinations as full `aba-quick-access-card` cards and repeated them in the full All Modules card grid. UX-SPEC-01 calls for concise shortcut links, not a second competing module-card grid.
+- **Fix:** `frontend/src/app/app.component.ts` commit `f46602fbc19494bf03d263323b9a3e6d61445e3b` changes Quick Access into a named navigation region with five compact native buttons; desktop uses a wrapping link row, mobile uses two columns and a single column at 360px, all links have 44px minimum targets and visible focus. The full role-filtered All Modules disclosure retains every authorized destination.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `22f533acd88db0ffb04fb9402453cab06188e888` guards the compact-link structure, non-duplication, 44px target, focus styling and responsive layout. Home spec remains 20 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `4bfd384de092b5745fb66a9083d18dd7a3af38fb`.
+- **Scope:** no route, module, API, backend, authorization, business data or financial semantics changed.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete remaining Home source review, reconcile latest exact head, then candidate-ready preflight without promoting NOT RUN checks.
