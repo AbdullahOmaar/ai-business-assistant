@@ -117,10 +117,16 @@ export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
   customerName: (customerId: string) => string,
 ): T[] {
   const q = normalized(query);
-  return items.filter(item => !q || [
-    item.customer_id ? customerName(item.customer_id) : '',
-    item.interval_days, item.timezone, item.next_run_at, ...(item.is_active ? ['active', 'نشطة'] : ['inactive', 'متوقفة']),
-  ].some(value => normalized(value).includes(q)));
+  return items.filter(item => {
+    if (!q) return true;
+    const searchable = [
+      item.customer_id ? customerName(item.customer_id) : '',
+      item.interval_days, item.timezone, item.next_run_at,
+    ];
+    const stateLabels = item.is_active ? ['active', 'نشطة'] : ['inactive', 'متوقفة'];
+    return searchable.some(value => normalized(value).includes(q))
+      || stateLabels.some(value => normalized(value) === q);
+  });
 }
 
 export function filterNotifications<T extends NotificationSearchItem>(
@@ -168,10 +174,17 @@ export function filterPayments<T extends PaymentSearchItem>(
   customerName: (customerId: string) => string,
 ): T[] {
   const q = normalized(query);
-  return items.filter(item => !q || [
-    item.amount, item.currency_code, item.received_at,
-    item.customer_id ? customerName(item.customer_id) : '',
-    item.method, item.reference, item.allocations.length,
-    item.allocations.length ? 'allocated' : 'unallocated',
-  ].some(value => normalized(value).includes(q)));
+  return items.filter(item => {
+    if (!q) return true;
+    const searchable = [
+      item.amount, item.currency_code, item.received_at,
+      item.customer_id ? customerName(item.customer_id) : '',
+      item.method, item.reference, item.allocations.length,
+    ];
+    const allocationLabels = item.allocations.length
+      ? ['allocated', 'مخصصة']
+      : ['unallocated', 'غير مخصصة'];
+    return searchable.some(value => normalized(value).includes(q))
+      || allocationLabels.some(value => normalized(value) === q);
+  });
 }
