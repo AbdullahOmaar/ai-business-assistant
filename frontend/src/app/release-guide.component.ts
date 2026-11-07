@@ -41,10 +41,11 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
         }
       </div>
 
-      <aba-section-header
-        class="release-history-title"
-        [title]="t('سجل الإصدارات', 'Version history')"
-        [description]="t('كل إصدار يعرض الإضافات والتحسينات الجديدة فقط.', 'Each version lists only its new additions and improvements.')" />
+      <div class="release-history-title">
+        <aba-section-header
+          [title]="t('سجل الإصدارات', 'Version history')"
+          [description]="t('كل إصدار يعرض الإضافات والتحسينات الجديدة فقط.', 'Each version lists only its new additions and improvements.')" />
+      </div>
       <div class="release-history">
         @for (release of releaseHistory; track release.version) {
           <details class="release-version" [open]="release.version === appVersion">
