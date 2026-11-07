@@ -2321,3 +2321,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Existing Platform Admin is already in an `@defer` block. Do not regress its lazy boundary.
 - No backend/API/database/schema/migration, financial semantics, payroll rules, authorization policy, production data or deployment changes are in scope.
 - Initial branch creation and task registration are not implementation completion. Keep T18 PARTIALLY COMPLETE until every applicable criterion has evidence.
+
+## T18 UI/UX engineering checkpoint — 2026-11-07
+
+- Active branch: `master/t18-uiux-hardening-20261107`; draft PR #348; base main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; checkpoint head `7f347ee0991ec2af15ba6e7211fb20bb412e8ada` (43 ahead / 0 behind at readback).
+- Implemented on this single branch: role-filtered full Home module directory plus five shortcuts; dashboard loading/error/empty states; accessible shared confirmation dialog for invoice void and PO receipt; explicit preliminary-report, incurred-expense and in-app payroll-payout wording; local search across payments, expenses, suppliers, purchase orders, recurring schedules and notifications; Arabic/English filter labels; workspace-switch search reset; prior mobile navigation/access and lazy-loading fixes retained.
+- Source/test inventory: `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- Exact-head CI at checkpoint: CircleCI frontend unit tests, production build, dependency audit, backend container and backend accounting SUCCESS; frontend browser smoke PENDING. GitHub Actions backend/frontend and dependency security scan SUCCESS. Semaphore remains retired/non-authoritative.
+- No merge, production deployment, API/backend/schema/migration or financial-rule change.
+- Remaining gates: finish CircleCI browser smoke; authenticated synthetic OWNER/STAFF/second-tenant/non-member journeys; Android Chrome/PWA keyboard/safe-area/RTL/LTR and screen-reader acceptance; Figma visual review remains BLOCKED by View-only access. UX-06 duplicate version metadata awaits rendered evidence. Phase 2/3 design work remains gated.
+- Next action: complete exact-head browser smoke, continue route-by-route nested-surface audit, then prepare the authorized authenticated/device test plan. Do not merge or deploy without separate authorization.
