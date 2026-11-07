@@ -138,6 +138,16 @@ export class AbaMobileAppHeaderComponent {
     this.profileTrigger?.nativeElement.focus();
   }
 
+  @HostListener('document:focusin', ['$event'])
+  closeProfileMenuOnOutsideFocus(event: FocusEvent): void {
+    if (!this.profileMenuOpen) return;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    const accountMenu = this.host.nativeElement.querySelector('.account-menu');
+    if (this.profileTrigger?.nativeElement.contains(target) || accountMenu?.contains(target)) return;
+    this.profileMenuOpen = false;
+  }
+
   @HostListener('document:pointerdown', ['$event'])
   closeProfileMenuOnOutsidePointer(event: PointerEvent): void {
     if (!this.profileMenuOpen) return;

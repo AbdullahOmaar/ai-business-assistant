@@ -117,3 +117,17 @@ test('mobile account menu dismisses when another header control is activated', (
   assert.match(source, /this\.profileTrigger\?\.nativeElement\.contains\(target\) \|\| accountMenu\?\.contains\(target\)/);
   assert.doesNotMatch(source, /this\.host\.nativeElement\.contains\(target\)/);
 });
+
+
+test('mobile account menu closes when keyboard focus leaves without stealing focus', () => {
+  assert.match(source, /@HostListener\('document:focusin', \['\\$event'\]\)/);
+  const handlerStart = source.indexOf('closeProfileMenuOnOutsideFocus');
+  const handlerEnd = source.indexOf('\\n  }', handlerStart);
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart, 'expected an outside-focus dismissal handler');
+  const handler = source.slice(handlerStart, handlerEnd);
+  assert.match(handler, /if \(!this\.profileMenuOpen\) return/);
+  assert.match(handler, /const target = event\.target/);
+  assert.match(handler, /this\.profileTrigger\?\.nativeElement\.contains\(target\) \|\| accountMenu\?\.contains\(target\)/);
+  assert.match(handler, /this\.profileMenuOpen = false/);
+  assert.doesNotMatch(handler, /\.focus\(\)/, 'Tab navigation must remain on the newly focused control');
+});

@@ -361,3 +361,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Remaining: rendered desktop/tablet/mobile RTL/LTR, multi-currency long values, real OWNER/STAFF and tenant journeys, keyboard/screen-reader, 200% zoom and physical Android/PWA acceptance remain **NOT RUN**.
 
 - Follow-up source corrections: each KPI now has a visible localized label in the dedicated `metricLabel` projection, with values/counts/basis notes kept in the value projection; empty currency groups use a neutral dash rather than an unqualified monetary zero; business-local start/end dates are explicitly LTR-isolated. Home source test declarations: 11; broad static source readback: 27/27 PASS on `9e41a9468721fca0f34614a62ab6ffb80704c209`. Runtime test/build/browser acceptance remains NOT RUN.
+
+
+## Mobile account-menu keyboard dismissal — 2026-11-07
+
+- The mobile account popover closes when keyboard focus moves outside both its trigger and its content, complementing the existing Escape and outside-pointer behavior.
+- Tab-out does not force focus back to the trigger; the next focused control remains active. Escape continues to restore focus to the trigger.
+- Regression file: `frontend/src/app/mobile-app-header.spec.ts` (10 source-test declarations), authored / **NOT RUN**.
+- Rendered keyboard, screen-reader, browser and physical-device acceptance remain **NOT RUN**.

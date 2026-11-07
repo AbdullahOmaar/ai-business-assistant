@@ -2985,3 +2985,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** `frontend/src/app/mobile-app-header.spec.ts` commit `c79e9bffa84e8d3950773d4f0d802044061acb25` guards focus return after language change and semantic surface-token use. Header spec remains 9 authored declarations; **NOT RUN**.
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `c389aa959516e52796ade234f4e4f9735df7ce5d`.
 - **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Mobile account-menu keyboard dismissal — 2026-11-07
+
+- **Finding:** the mobile account popover closed on Escape and outside pointer input, but stayed open when a keyboard user tabbed from its last action to a control outside the popover.
+- **Fix:** the existing mobile header listens for document-level focus changes and closes the popover only when focus leaves both the profile trigger and popover content. Tab-out does not restore focus to the trigger; Escape retains its existing focus-return behavior.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` adds a source guard for focus-out dismissal, internal-focus preservation and no focus stealing. Header spec now has 10 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the keyboard dismissal behavior.
+- **Scope:** presentation and regression only; no routes, API, authorization, workspace, financial, payroll or business behavior changed.
+- **Validation:** source readback only. Full Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, merge or deployment.
