@@ -854,7 +854,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.ok(notificationStart >= 0 && notificationEnd > notificationStart);
   assert.match(notificationView, /@if \(business\?\.role === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
   assert.match(notificationView, /Only workspace owners can queue notifications/);
-  assert.match(notificationView, /@for \(item of notifications/);
+  assert.match(notificationView, /@for \(item of filteredNotifications/);
 
   const recurringStart = source.indexOf("@if (tab === 'recurring')");
   const recurringEnd = source.indexOf("@if (tab === 'health'", recurringStart);
@@ -862,7 +862,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.ok(recurringStart >= 0 && recurringEnd > recurringStart);
   assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*<form #recurringForm="ngForm"/);
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
-  assert.match(recurringView, /@for \(schedule of recurringSchedules/);
+  assert.match(recurringView, /@for \(schedule of filteredRecurringSchedules/);
 
   const notificationMethodStart = source.indexOf('async createNotification(): Promise<void>');
   const notificationMethodEnd = source.indexOf('private async loadSuppliers()', notificationMethodStart);
@@ -1277,4 +1277,9 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /No purchase orders match this search/);
   assert.match(source, /No schedules match this search/);
   assert.match(source, /No notifications match this search/);
+});
+
+
+test('customer section markup does not render stray closing-tag text', () => {
+  assert.doesNotMatch(source, /<\\/section>ion>/);
 });

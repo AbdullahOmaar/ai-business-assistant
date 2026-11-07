@@ -480,7 +480,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     }
                   </section>
                 }
-          </section>ion>
+          </section>
             }
 
             @if (tab === 'products') {
