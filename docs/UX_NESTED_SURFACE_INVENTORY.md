@@ -1,6 +1,6 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test baseline refreshed after the opening-stock UX fix at commit `31d49daf7ff382a8cf065a9c11ed6eeebab83f54` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `d92e08d2c2bc1b23156835efec2479db4910c9b7` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
@@ -24,13 +24,13 @@
 
 ## UX finding disposition
 
-- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; rendered screenshots remain NOT RUN.
+- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; generic notices use informational semantics, warning notices retain warning semantics, and destructive actions retain danger semantics; rendered screenshots remain NOT RUN.
 - **UX-02 More-menu focus:** source-level outside close, Escape, focus restoration and RTL/LTR positioning are covered; assistive-technology acceptance remains NOT RUN.
 - **UX-03 mobile viewport/keyboard:** NOT RUN; needs 360/390px browser and installed-PWA keyboard/safe-area evidence.
 - **UX-04 authenticated journeys:** BLOCKED / NOT RUN; no approved isolated synthetic environment and identities are available.
 - **UX-05 module count:** addressed in source by deriving the Home directory count from `homeModuleCards.length`; the catalogue has 19 destinations, while the visible count is role- and platform-admin-availability-dependent.
 - **UX-06 duplicate version metadata:** do not change without rendered desktop/mobile evidence; NOT RUN.
-- **UX-07 reduced motion:** global reduced-motion CSS and shared-component fallbacks exist; rendered OS/browser verification remains NOT RUN.
+- **UX-07 reduced motion:** global reduced-motion CSS and shared-component fallbacks exist; forced-colors focus fallback also includes the native disclosure summary; rendered OS/browser and assistive-technology verification remain NOT RUN.
 - **UX-08 nested surfaces:** inventory above maps current major nested interactions and source tests. It does not certify every nested surface or browser behavior.
 
 ## Historical exact-head validation checkpoint — 2026-11-07 — `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`
