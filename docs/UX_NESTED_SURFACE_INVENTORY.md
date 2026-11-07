@@ -6,7 +6,7 @@
 
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
-| Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning; Firebase App/Auth runtime SDK loads in a separate chunk after runtime-config validation | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts`, `auth-lazy-loading.spec.ts` | Verify initial bundle budget after build; browser keyboard/screen-reader run; physical Android/PWA |
+| Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning; refreshed membership/platform role revalidates the active tab before scoped data reload; Firebase App/Auth runtime SDK loads in a separate chunk after runtime-config validation | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts`, `auth-lazy-loading.spec.ts` | Verify initial bundle budget after build; browser keyboard/screen-reader run; physical Android/PWA |
 | Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
 | Customers CSV import | Preview is separate from execution; valid preview gates confirmation; workspace switch clears pending import; owner-only import actions | `app.component-template-safety.spec.ts` customer-import cases | Browser file picker, preview table overflow, focus and retry |
 | Stock-tracked product creation | Workspace members can create products; only OWNER sees the positive opening-stock input. STAFF can still create a stock-tracked product with zero opening stock. The payload also defaults to zero for non-owners, and the value is cleared when workspace/role context changes. The backend remains authoritative and rejects positive opening stock for STAFF before product/stock/audit writes. | `app.component-template-safety.spec.ts` OWNER-only field/payload/reset regression; `mobile-chat.spec.ts` mocks a STAFF product creation and asserts `opening_quantity: 0` | Browser regression authored, NOT RUN; authenticated OWNER/STAFF request-denial and no-side-effect proof; physical mobile rendering |
@@ -212,3 +212,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Firebase App/Auth runtime imports are now dynamic and occur after runtime config validation; the SDK promise is cached and resets on load failure.
 - Initial-bundle reduction is a source-level intent only; exact output size and lazy chunk behavior remain **NOT VERIFIED** until Angular build and bundle analysis run.
+
+
+## Fail-closed navigation after membership refresh — 2026-11-07
+
+- The interactive workspace-switch path already redirected an active destination when the refreshed role no longer allowed it; the asynchronous `loadBusinesses()` membership refresh path did not apply that same guard.
+- After resolving the refreshed workspace role, the shell now revalidates the active tab through the existing `canAccessTab` / `setTab('overview')` policy before loading workspace data. This also closes the mobile More surface through the existing `setTab` behavior.
+- Added source regression coverage for ordering relative to role assignment and workspace-data reset. No authorization rule or backend contract changed; server authorization remains authoritative.
+- Test authored / **NOT RUN**; browser role-transition acceptance remains NOT RUN.

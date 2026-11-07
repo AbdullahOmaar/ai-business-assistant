@@ -1811,6 +1811,9 @@ export class AppComponent implements OnInit, OnDestroy {
       const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
+      // A membership or platform-role refresh can invalidate the currently selected tab.
+      // Reuse the same navigation guard as interactive tab changes before reloading data.
+      if (!this.canAccessTab(this.tab)) this.setTab('overview');
       if (workspaceAccessChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {

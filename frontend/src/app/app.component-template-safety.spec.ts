@@ -499,6 +499,23 @@ test('workspace role changes cannot leave an owner-only destination selected', (
     'resolve the selected workspace role before retaining the current destination or clearing data');
 });
 
+test('membership and platform-role refreshes also fail closed on an inaccessible active destination', () => {
+  const loadStart = source.indexOf('async loadBusinesses(): Promise<void>');
+  const loadEnd = source.indexOf('private clearWorkspaceData(): void', loadStart);
+  const loadMethod = source.slice(loadStart, loadEnd);
+  const roleUpdate = loadMethod.indexOf('this.business = chosen;');
+  const accessGuard = loadMethod.indexOf("if (!this.canAccessTab(this.tab)) this.setTab('overview');");
+  const clearData = loadMethod.indexOf('if (workspaceAccessChanged) this.clearWorkspaceData();');
+  const setTabStart = source.indexOf('setTab(tab: Tab): void');
+  const setTabEnd = source.indexOf('get statementBalanceEntries()', setTabStart);
+  const setTabMethod = source.slice(setTabStart, setTabEnd);
+  assert.ok(loadStart >= 0 && loadEnd > loadStart);
+  assert.ok(roleUpdate >= 0 && accessGuard > roleUpdate && clearData > accessGuard,
+    'apply the refreshed membership role before revalidating the active destination and clearing scoped data');
+  assert.match(setTabMethod, /if \(!this\.canAccessTab\(tab\)\)/);
+  assert.match(setTabMethod, /this\.mobileMoreOpen = false/);
+});
+
 
 test('sign-in and first-workspace forms expose localized inline errors to assistive technology', () => {
   const authStart = source.indexOf('<form #authForm="ngForm"');
