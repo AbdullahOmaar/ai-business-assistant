@@ -2995,3 +2995,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the keyboard dismissal behavior.
 - **Scope:** presentation and regression only; no routes, API, authorization, workspace, financial, payroll or business behavior changed.
 - **Validation:** source readback only. Full Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, merge or deployment.
+
+
+## T18 — Mobile account-menu keyboard dismissal and exact-head checkpoint — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; implementation head before this documentation update `f785eaadf364dd6843ad511638aca96d60f88c02`; 247 commits / 35 changed paths.
+- **UI fix:** mobile account popover now dismisses when keyboard focus leaves both its trigger and content; Tab-out preserves the next focused control, while Escape keeps focus restoration to the trigger.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` has 10 authored declarations. Corrected the new source matcher to use the actual newline boundary and a literal `$event` decorator check. Focused static source readback: 6/6 checks PASS. This is not Node test execution.
+- **Validation:** exact candidate check-runs currently expose GitGuardian Security Checks SUCCESS only; combined GitHub status has zero contexts. Frontend Node suite, Angular production build, dependency audit and Playwright are **NOT RUN**. Rendered RTL/LTR, OWNER/STAFF/two-tenant, keyboard/screen-reader, zoom and physical Android/PWA remain **NOT RUN**.
+- **CI authority conflict:** current Project Instructions prohibit CircleCI triggers/retries. This conflicts with the historical TASKS.md entry recording an Owner lift of the CircleCI freeze on 2026-11-06. No CI trigger/retry or replacement provider was used; keep exact-head CI **BLOCKED / NOT RUN** until the controlling instruction is reconciled.
+- **Runner:** Desktop Commander is Offline. No new Vercel sandbox was provisioned or resumed; no local build/test result is claimed.
+- **Release impact:** PR is frontend-only. Vercel Web and API are both Git-linked; current production Web alias resolves to READY SHA `c5fe115daa72e92b4f814ee502405225e1b3dc79`, API alias to READY SHA `3692d26ae358a6f5e6836ca646ddfdd41a449066`. Latest main SHA `8f2e326fce39fe45f4aebe0f1820576e45b75483` created CANCELED production-target records for both projects. No preview exists for this branch. Exact project Ignore Build Step behavior is not exposed by current Vercel read access; do not assume API is unaffected without rechecking release configuration.
+- **Scope:** no backend/API/database/schema/migration, financial/payroll semantics or production data changes. No merge, release marker, deployment or alias change.
+- **Next:** complete exact diff/source review, reconcile CI authorization/runner, then run required exact-head checks and rendered acceptance before release prep. Merge and production deployment remain separate authorized steps.

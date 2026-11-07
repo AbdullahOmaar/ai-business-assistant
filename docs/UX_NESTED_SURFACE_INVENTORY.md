@@ -369,3 +369,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Tab-out does not force focus back to the trigger; the next focused control remains active. Escape continues to restore focus to the trigger.
 - Regression file: `frontend/src/app/mobile-app-header.spec.ts` (10 source-test declarations), authored / **NOT RUN**.
 - Rendered keyboard, screen-reader, browser and physical-device acceptance remain **NOT RUN**.
+
+
+## Mobile account-menu keyboard dismissal — regression matcher correction — 2026-11-07
+
+- The source regression now checks the exact `document:focusin` HostListener via a literal source string and locates the handler using the actual newline boundary.
+- Focused static source readback: 6/6 assertions PASS; authored Node test execution remains **NOT RUN**.
