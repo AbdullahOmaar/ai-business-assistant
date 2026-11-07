@@ -2113,7 +2113,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.dashboard = dashboard;
       this.profitLoss = null;
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (this.business?.id === businessId) {
+        // A failed refresh must not leave pre-payment dashboard metrics visible as current.
+        this.dashboard = null;
+        this.error = this.message(error);
+      }
     }
   }
 
