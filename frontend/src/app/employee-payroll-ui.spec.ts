@@ -119,3 +119,10 @@ test('payroll section headings stack cleanly on narrow screens', () => {
   assert.match(component, /@media\(max-width:600px\)\{\.section-head\{display:grid;grid-template-columns:minmax\(0,1fr\);gap:8px\}/);
   assert.match(component, /\.section-head \.count\{justify-self:start\}/);
 });
+
+
+test('employee search distinguishes an empty directory from no matching results', () => {
+  assert.match(component, /employeeSearch\.trim\(\) \? t\('لا يوجد موظفون مطابقون للبحث\.'/);
+  assert.match(component, /No matching employees found/);
+  assert.match(component, /No employees have been added yet/);
+});

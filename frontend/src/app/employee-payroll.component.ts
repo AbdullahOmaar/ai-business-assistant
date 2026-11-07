@@ -81,7 +81,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </article>
         }
         @if (!filteredEmployees.length && !busy && !error) {
-          <p class="empty">{{ t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') }}</p>
+          <p class="empty">{{ employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') : t('لم تتم إضافة موظفين بعد.', 'No employees have been added yet.') }}</p>
         }
       </div>
 
