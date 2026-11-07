@@ -1237,7 +1237,7 @@ test('CSV import regions and invoice preview have localized accessible names', (
 
 
 test('OWNER payroll view is loaded only after selecting Employees', () => {
-  const start = source.indexOf("@defer (when tab === 'employees' && business?.role === 'owner' && business)");
+  const start = source.indexOf("@defer (when tab === 'employees' && business.role === 'owner')");
   const placeholder = source.indexOf("} @placeholder {", start);
   const end = source.indexOf("\n            }", placeholder);
   assert.ok(start >= 0 && placeholder > start && end > placeholder,
@@ -1250,7 +1250,7 @@ test('OWNER payroll view is loaded only after selecting Employees', () => {
   assert.match(loadingView, /aba-state-message kind="loading"/);
   assert.match(loadingView, /Loading employees &amp; payroll|Loading employees & payroll/);
   assert.match(source, /imports: \[[^\]]*EmployeePayrollComponent/);
-  assert.match(source, /@if \(tab === 'employees' && business\?\.role === 'owner' && business\)/);
+  assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\)/);
 });
 
 
