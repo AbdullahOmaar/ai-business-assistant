@@ -250,3 +250,12 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Both authorized Platform Admin and revoked-capability Overview destinations now route through `setTab()`. This keeps active-state cleanup, More-menu dismissal and shared navigation behavior consistent when a refreshed account has no workspace memberships.
 - Added a source regression assertion that both branches use `setTab()` and the shared handler closes More. Test authored / **NOT RUN**.
+
+## T18 shared presentation continuation — exact head 136b65a — 2026-11-07
+
+- Added semantic styling for auth/setup cards, invoice disclosure/line rows, aging buckets, CSV import surfaces/errors, warning notices, helper/footnote contrast, install actions and reduced-motion behavior.
+- Existing semantic token names/values are preserved; total is now 96 unique tokens (93 existing + 3 control tokens). 16 source test declarations cover the added styles. Tests/build/browser rendering remain NOT RUN.
+- Static source checks pass for token uniqueness, CSS brace/parenthesis balance, expected selectors and selected contrast pairs. No rendered RTL/LTR or screen-reader acceptance is implied.
+- Current branch/PR: master/t18-uiux-hardening-20261107 / #348 OPEN / DRAFT / UNMERGED; exact head 136b65a09b84bc3176a80a1f18bffffa8e22b94f.
+- **Phase-gate clarification:** the user's instruction authorizes this bounded T18 code-level implementation only. It does not mark the UX workstream's formal Phase 1 gate accepted or Phase 2/3 completed/started. Figma Variables/component library, high-fidelity screens/prototype and visual/usability sign-off remain NOT RUN/BLOCKED by View-only access and missing rendered acceptance.
+- Exact-head aggregate status has zero contexts; GitGuardian SUCCESS only. No CircleCI trigger/retry, preview deployment, merge or production deployment.
