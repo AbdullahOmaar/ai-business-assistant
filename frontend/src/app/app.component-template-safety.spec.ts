@@ -1281,5 +1281,5 @@ test('operations lists filter locally by their visible business fields', () => {
 
 
 test('customer section markup does not render stray closing-tag text', () => {
-  assert.doesNotMatch(source, /<\\/section>ion>/);
+  assert.equal(source.includes('</section>ion>'), false);
 });
