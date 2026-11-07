@@ -14,6 +14,8 @@ const componentSources = componentPaths.map(path =>
   readFileSync(new URL(path, import.meta.url), 'utf8'),
 );
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const appStylesStart = appSource.lastIndexOf('styles: [`');
+const appStyles = appSource.slice(appStylesStart, appSource.indexOf('`]', appStylesStart));
 
 test('semantic design tokens are defined once and cover the shared UI foundation', () => {
   const definitions = [...styles.matchAll(/^\s*(--aba-[\w-]+)\s*:/gm)].map(match => match[1]);
@@ -377,4 +379,23 @@ test('keyboard-scrollable table regions receive the shared visible focus treatme
   assert.ok(forcedColors.includes(':root body .shell .table-wrap:focus-visible'));
   assert.ok(forcedColors.includes(':root body .shell .chat-log:focus-visible'));
   assert.ok(forcedColors.includes('outline: 2px solid Highlight'));
+});
+
+
+test('shared shell surfaces reuse semantic color tokens', () => {
+  for (const declaration of [
+    'color:var(--aba-color-text-inverse,#fff)',
+    'color:var(--aba-color-text-tertiary,#6b7280)',
+    'color:var(--aba-color-text-muted,#334155)',
+    'color:var(--aba-color-text-secondary,#64748b)',
+    'color:var(--aba-color-nav-muted,#9ca3af)',
+    'background:var(--aba-color-surface-subtle,#f8fafc)',
+    'background:var(--aba-color-surface,#fff)',
+    'background:var(--aba-color-primary,#0f766e)',
+    'background:var(--aba-color-nav-surface-raised,#1e293b)',
+    'border:1px solid var(--aba-color-border-subtle,#e2e8f0)',
+  ]) assert.ok(appStyles.includes(declaration), `missing semantic shell declaration: ${declaration}`);
+  for (const raw of ['color:#6b7280', 'color:#334155', 'color:#64748b', 'color:#4b5563', 'color:#9ca3af', 'background:#f8fafc', 'background:#0f766e', 'background:#1e293b']) {
+    assert.equal(appStyles.includes(raw), false, `raw shell color should use a semantic token: ${raw}`);
+  }
 });
