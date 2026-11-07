@@ -102,3 +102,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Corrected the mocked Android keyboard acceptance in `frontend/e2e/mobile-chat.spec.ts`: it now compares both the send button and textarea bottom edges with `visualViewport.offsetTop + visualViewport.height`, not `window.innerHeight`.
 - The previous assertion could pass while the keyboard covered the composer because the layout viewport still includes the keyboard area. This change strengthens the test; it does not alter application behavior or claim physical-device coverage.
 - Playwright remains authored / **NOT RUN** until an authorized runner is available. The scenario uses mocked Firebase/API only.
+
+
+## Bilingual invoice and purchase-order status search/display — 2026-11-07
+
+- Source audit found invoice local search matched only backend status codes even though the list displays localized status labels. Purchase-order rows displayed raw backend status codes and their local search matched only those codes.
+- Added localized status-label callbacks to invoice and purchase-order local filters; added a bilingual Purchase Order status label for the five current backend-constrained values (`draft`, `approved`, `partially_received`, `received`, `cancelled`) and use it in the list.
+- Added Arabic search regression assertions for invoice `صادرة` and purchase-order `مستلم جزئيًا`, plus a template/source assertion for the displayed PO label.
+- Frontend-only presentation/search behavior; no API, backend, database, workflow or financial semantics changed. Tests are authored / **NOT RUN**.

@@ -33,6 +33,7 @@ test('combines invoice text, status, and customer filters', () => {
   assert.deepEqual(filterInvoices(invoices, 'inv-00', 'issued', 'c1').map(x => x.id), ['1', '3']);
   assert.deepEqual(filterInvoices(invoices, 'usd', 'all').map(x => x.id), ['2']);
   assert.deepEqual(filterInvoices(invoices, '', 'paid').map(x => x.id), ['2']);
+  assert.deepEqual(filterInvoices(invoices, 'صادرة', 'all', '', status => status === 'issued' ? 'صادرة' : status).map(x => x.id), ['1', '3']);
 });
 
 
@@ -60,6 +61,7 @@ test('filters purchase orders by order, supplier, product, status and line quant
   assert.deepEqual(filterPurchaseOrders(orders, 'coffee', supplier, product).map(x => x.id), ['p1']);
   assert.deepEqual(filterPurchaseOrders(orders, 'partial', supplier, product).map(x => x.id), ['p1']);
   assert.deepEqual(filterPurchaseOrders(orders, '6', supplier, product).map(x => x.id), ['p1']);
+  assert.deepEqual(filterPurchaseOrders(orders, 'مستلم جزئيًا', supplier, product, status => status === 'partial' ? 'مستلم جزئيًا' : status).map(x => x.id), ['p1']);
 });
 
 test('filters recurring schedules by customer, interval, timezone and state', () => {

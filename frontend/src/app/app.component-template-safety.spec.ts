@@ -931,6 +931,13 @@ test('CSV import preview and write controls are owner-only without restricting m
   assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
 });
 
+test('purchase-order status labels are localized in the list and available to local search', () => {
+  assert.match(source, /purchaseOrderStatusLabel\(order\.status\)/);
+  assert.match(source, /purchaseOrderStatusLabel\(status\)/);
+  assert.match(source, /partially_received: 'مستلم جزئيًا'/);
+  assert.match(source, /partially_received: 'Partially received'/);
+});
+
 test('purchase orders remain creatable by members while receiving and payment writes are owner-only', () => {
   const purchaseStart = source.indexOf("@if (tab === 'purchases')");
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);

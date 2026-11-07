@@ -315,7 +315,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
                 <div class="list-tools operations-search"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
-                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.status === 'draft' && order.lines.some(hasRemainingQuantity)) { <small class="muted">{{ t('أمر الشراء مسودة؛ لا يمكن تسجيل الاستلام قبل الاعتماد.', 'This order is a draft; receiving is unavailable until it is approved.') }}</small> } @if (business?.role === 'owner' && canReceivePurchaseOrder(order)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
+                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ purchaseOrderStatusLabel(order.status) }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.status === 'draft' && order.lines.some(hasRemainingQuantity)) { <small class="muted">{{ t('أمر الشراء مسودة؛ لا يمكن تسجيل الاستلام قبل الاعتماد.', 'This order is a draft; receiving is unavailable until it is approved.') }}</small> } @if (business?.role === 'owner' && canReceivePurchaseOrder(order)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
               </section>
             }
 
@@ -1274,7 +1274,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId);
+    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status));
   }
 
   get filteredSuppliers(): Supplier[] {
@@ -1287,6 +1287,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.purchaseSearch,
       id => this.supplierNameFor(id),
       id => this.productNameFor(id),
+      status => this.purchaseOrderStatusLabel(status),
     );
   }
 
@@ -1640,6 +1641,24 @@ export class AppComponent implements OnInit, OnDestroy {
     const labelsAr: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
     const labelsEn: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided', paid: 'Paid', overdue: 'Overdue' };
     return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('غير محددة', 'Unknown');
+  }
+
+  purchaseOrderStatusLabel(status: string): string {
+    const labelsAr: Record<string, string> = {
+      draft: 'مسودة',
+      approved: 'معتمد',
+      partially_received: 'مستلم جزئيًا',
+      received: 'مستلم بالكامل',
+      cancelled: 'ملغي',
+    };
+    const labelsEn: Record<string, string> = {
+      draft: 'Draft',
+      approved: 'Approved',
+      partially_received: 'Partially received',
+      received: 'Received',
+      cancelled: 'Cancelled',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('حالة غير محددة', 'Unknown status');
   }
 
   get pageTitle(): string {

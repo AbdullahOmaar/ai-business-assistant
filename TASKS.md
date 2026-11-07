@@ -2392,3 +2392,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Source review found the mobile chat Playwright scenario compared the send button against `window.innerHeight`, which includes the simulated keyboard-covered region. That could pass even if the composer was hidden behind the Android keyboard.
 - Updated the same scenario to assert both send button and textarea remain above the actual `visualViewport` bottom. The application already positions the sticky composer using the measured keyboard inset; no runtime behavior changed.
 - **Validation:** test source updated and readback pending; Playwright and CI **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`.
+
+
+## T18 — bilingual invoice / purchase-order status UX — 2026-11-07
+
+- Route-level source audit found invoice search did not include the localized invoice status already shown in the list; purchase-order list rendered raw status codes (`partially_received`, etc.) and search could not match Arabic labels.
+- Added optional status-label search callbacks to `filterInvoices()` and `filterPurchaseOrders()`; wired the current localized invoice/PO label into search. Added Arabic/English labels for the five statuses constrained by the current backend PurchaseOrder model and used the label in the purchase-order row.
+- Added Arabic filter regression assertions and a source/template assertion for the localized PO label.
+- **Validation:** source changes/tests readback only; frontend Node tests, Angular build and Playwright **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`.
+- No domain behavior or backend/API/database/schema/migration/financial/payroll behavior changed.
