@@ -268,6 +268,12 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
   await expect(page.locator('.quick-grid > aba-quick-access-card')).toHaveCount(5);
 
+  const ownerModuleDirectory = page.locator('.module-directory-grid');
+  const ownerModuleCount = await ownerModuleDirectory.locator('aba-quick-access-card').count();
+  const ownerModuleCountLabel = await page.locator('.module-directory .count').textContent();
+  expect(Number(ownerModuleCountLabel?.trim())).toBe(ownerModuleCount);
+  expect(ownerModuleCount).toBeGreaterThan(0);
+
   const assertNoHorizontalOverflow = async (label: string) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow, label).toBe(false);
@@ -530,6 +536,14 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await page.getByLabel(/Password|كلمة المرور/).fill('mock-password-123');
   await page.getByRole('button', { name: /Sign in|تسجيل الدخول/ }).click();
   await expect(page.locator('#workspace-current-name')).toHaveText('Staff Workspace', { timeout: 20_000 });
+
+  const staffModuleDirectory = page.locator('.module-directory-grid');
+  const staffModuleCount = await staffModuleDirectory.locator('aba-quick-access-card').count();
+  const staffModuleCountLabel = await page.locator('.module-directory .count').textContent();
+  expect(Number(staffModuleCountLabel?.trim())).toBe(staffModuleCount);
+  for (const restricted of [/Payments/, /Employees & Payroll/, /Tax summary/, /Activity log/, /Data integrity/, /Operational health/]) {
+    await expect(staffModuleDirectory.getByRole('button', { name: restricted })).toHaveCount(0);
+  }
 
   const moreTrigger = page.getByRole('button', { name: /More sections|المزيد من الأقسام/ });
   await moreTrigger.click();
