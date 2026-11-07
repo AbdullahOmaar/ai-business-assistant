@@ -1266,9 +1266,12 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
   assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch\)/);
+  const clearStart = source.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = source.indexOf('\n  }', clearStart);
+  const clear = source.slice(clearStart, clearEnd);
   for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
-    assert.match(source, new RegExp(field + ' = \'\''));
-    assert.match(source, new RegExp(field + ' = \'\'', 'g'));
+    assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
+    assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
   }
   assert.match(source, /No suppliers match this search/);
   assert.match(source, /No purchase orders match this search/);

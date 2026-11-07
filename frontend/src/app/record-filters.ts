@@ -119,13 +119,17 @@ export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
   const q = normalized(query);
   return items.filter(item => !q || [
     item.customer_id ? customerName(item.customer_id) : '',
-    item.interval_days, item.timezone, item.next_run_at, item.is_active ? 'active' : 'inactive',
+    item.interval_days, item.timezone, item.next_run_at, ...(item.is_active ? ['active', 'نشطة'] : ['inactive', 'متوقفة']),
   ].some(value => normalized(value).includes(q)));
 }
 
-export function filterNotifications<T extends NotificationSearchItem>(items: readonly T[], query: string): T[] {
+export function filterNotifications<T extends NotificationSearchItem>(
+  items: readonly T[],
+  query: string,
+  kindLabel: (kind: string) => string = kind => kind,
+): T[] {
   const q = normalized(query);
   return items.filter(item => !q || [
-    item.title, item.body, item.kind, item.status, item.scheduled_at, item.created_at,
+    item.title, item.body, item.kind, kindLabel(item.kind), item.status, item.scheduled_at, item.created_at,
   ].some(value => normalized(value).includes(q)));
 }

@@ -1289,7 +1289,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredNotifications(): NotificationRecord[] {
-    return filterNotifications(this.notifications, this.notificationSearch);
+    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind));
   }
 
   exportCurrentList(): void {

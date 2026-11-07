@@ -78,6 +78,8 @@ test('filters recurring schedules by customer, interval, timezone and state', ()
   assert.deepEqual(filterRecurringSchedules(schedules, 'nour', customer).map(x => x.id), ['r1']);
   assert.deepEqual(filterRecurringSchedules(schedules, 'africa/cairo', customer).map(x => x.id), ['r1']);
   assert.deepEqual(filterRecurringSchedules(schedules, 'inactive', customer).map(x => x.id), ['r2']);
+  assert.deepEqual(filterRecurringSchedules(schedules, 'نشطة', customer).map(x => x.id), ['r1']);
+  assert.deepEqual(filterRecurringSchedules(schedules, 'متوقفة', customer).map(x => x.id), ['r2']);
 });
 
 test('filters notifications by title, message, kind and delivery status', () => {
@@ -88,4 +90,5 @@ test('filters notifications by title, message, kind and delivery status', () => 
   assert.deepEqual(filterNotifications(notifications, 'invoice').map(x => x.id), ['n1']);
   assert.deepEqual(filterNotifications(notifications, 'coffee').map(x => x.id), ['n2']);
   assert.deepEqual(filterNotifications(notifications, 'failed').map(x => x.id), ['n2']);
+  assert.deepEqual(filterNotifications(notifications, 'فواتير', kind => kind === 'invoices' ? 'الفواتير' : kind).map(x => x.id), ['n1']);
 });

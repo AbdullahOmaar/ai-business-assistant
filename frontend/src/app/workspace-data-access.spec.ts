@@ -35,6 +35,6 @@ test('workspace changes clear local operation-list searches with the previous wo
   const end = source.indexOf('\n  }', start);
   const method = source.slice(start, end);
   for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
-    assert.match(method, new RegExp('this\\\\.' + field + ' = \'\';'));
+    assert.ok(method.includes(`this.${field} = '';`), `${field} is reset on workspace change`);
   }
 });
