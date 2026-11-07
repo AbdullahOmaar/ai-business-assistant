@@ -1,6 +1,6 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `e54664b0dc0e10b1265d45f2b9d0b1e3a20be6dc` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `4bd5585df6d7ddbfdf543d677122ec4dd48823ab` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
@@ -335,7 +335,7 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Regression declarations: Platform Admin user management 8, Employee/Payroll 12, App Shell design tokens 23. Authored / NOT RUN.
 
 
-## T18 Mobile Hybrid Modern app header — 2026-11-07 — `276cde861f5283a94aaec1fd6633bebfd8e865e3`
+## T18 Mobile Hybrid Modern app header — 2026-11-07 — `4bd5585df6d7ddbfdf543d677122ec4dd48823ab`
 
 - Implemented the accepted mobile-only Hybrid Modern top-section direction as a small standalone `AbaMobileAppHeaderComponent`, rather than expanding the root AppComponent template or attempting a broad AppShell refactor.
 - Header displays the app mark/name, generated UI version from `APP_BUILD_INFO`, current workspace name, existing workspace selector when more than one workspace is available, current page title, and a concise greeting only on Home.
