@@ -399,3 +399,13 @@ test('shared shell surfaces reuse semantic color tokens', () => {
     assert.equal(appStyles.includes(raw), false, `raw shell color should use a semantic token: ${raw}`);
   }
 });
+
+
+test('mobile navigation dock reuses the shared navigation palette', () => {
+  for (const declaration of [
+    'border:1px solid var(--aba-color-nav-border,#334155)',
+    'background:var(--aba-color-nav-surface-glass,rgb(15 23 42 / 96%))',
+    'color:var(--aba-color-nav-text,#cbd5e1)',
+    'color:var(--aba-color-primary-border,#99f6e4)',
+  ]) assert.ok(appStyles.includes(declaration));
+});
