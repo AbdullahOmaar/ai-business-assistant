@@ -2860,7 +2860,7 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/app/mobile-app-header.spec.ts`.
 - **UX rationale:** notification/profile controls and account-menu actions were already 44px, while the brand button inherited 38px and workspace/assistant controls were 40px. Aligning the remaining controls removes inconsistent touch-target sizing without changing behavior or navigation.
 - **Regression:** mobile header spec now has 7 source-test declarations; authored / **NOT RUN**.
-- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` row updated through `38e8ae73911ddd9c5d640b975aaca81788205031`; subsequent baseline/count normalization is recorded in `17855de5f5540188028d1ae48023d96cb6769272`.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` row and evidence baseline normalized through `01f201eed15852a6b159bbf1181656b02845f1a5`.
 - **Static readback:** 5 focused source assertions PASS for brand, workspace selector, assistant shortcut, notification/profile and account-menu targets. This is not browser/device testing.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** continue the Home / header source audit and preserve the accepted Hybrid Modern layout; verify rendered touch targets and safe-area behavior on a real mobile browser when an authorized runner/device is available.
