@@ -171,3 +171,12 @@ test('Home clears tenant-scoped metrics before loading another workspace', () =>
   assert.ok(loadStart >= 0 && loadEnd > loadStart);
   assert.match(load, /this\.workspaceLoadGuard\.isCurrent\(loadVersion, this\.business\?\.id, id\)/);
 });
+
+
+test('Home reporting metadata and KPI detail text remain comfortably readable', () => {
+  assert.match(appSource, /\.dashboard-period__details\{[^}]*font-size:12px/);
+  assert.match(appSource, /\.metric-grid aba-metric-card small\{font-size:12px;line-height:1\.55\}/);
+  assert.match(appSource, /\.dashboard-trust-note\{[^}]*font-size:12px;line-height:1\.65/);
+  assert.match(home, /dashboard-period__details/);
+  assert.match(home, /class="notice dashboard-trust-note" role="note"/);
+});
