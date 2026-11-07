@@ -40,7 +40,7 @@ import type { Business } from '../../api.service';
       <div class="workspace-context">
         <div class="workspace-copy">
           <span class="context-label">{{ t('مساحة العمل الحالية', 'Current workspace') }}</span>
-          <strong>{{ workspaceName }}</strong>
+          <strong aria-live="polite" aria-atomic="true">{{ workspaceName }}</strong>
         </div>
         @if (businesses.length > 1) {
           <label class="workspace-switch">
