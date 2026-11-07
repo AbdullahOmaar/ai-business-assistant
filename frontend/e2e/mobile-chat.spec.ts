@@ -519,7 +519,10 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   ]) {
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
-  await expect(menu.getByRole('button', { name: /App guide & versions/ })).toHaveAttribute('aria-current', 'page', { timeout: 1 });
+  await menu.getByRole('button', { name: /App guide & versions/ }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(moreTrigger).toHaveClass(/active/);
+  await expect(moreTrigger).toBeFocused();
   expect(paymentRequests).toEqual([]);
   expect(unexpectedRequests).toEqual([]);
 });
