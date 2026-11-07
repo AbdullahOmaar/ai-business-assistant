@@ -1,0 +1,48 @@
+:host { display: none; min-width: 0; }
+
+.mobile-app-header {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin-block: 0 18px;
+  padding: 12px;
+  overflow: visible;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 68%, #eff6ff 100%);
+  box-shadow: var(--aba-shadow-card, 0 1px 2px rgb(15 23 42 / 4%));
+  color: var(--aba-color-text-primary, #172033);
+}
+.mobile-app-header.install-cta-visible { margin-block-start: 44px; }
+.brand-row, .header-actions, .brand-button, .page-context { display: flex; align-items: center; min-width: 0; }
+.brand-row { gap: 8px; }
+.brand-button { flex: 1 1 auto; gap: 9px; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: start; }
+.brand-mark { display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; font-size: 18px; font-weight: 900; }
+.brand-copy { display: grid; min-width: 0; gap: 1px; }
+.brand-copy strong { overflow-wrap: anywhere; font-size: 13px; line-height: 1.35; font-weight: 800; }
+.brand-copy small { color: var(--aba-color-text-secondary, #64748b); font-size: 9px; line-height: 1.3; letter-spacing: .02em; }
+.version-pill { flex: 0 0 auto; padding: 5px 7px; border: 1px solid #bfdbfe; border-radius: 999px; background: #eff6ff; color: #1e40af; font-size: 10px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.header-actions { flex: 0 0 auto; gap: 5px; }
+.icon-button, .profile-trigger { display: grid; flex: 0 0 44px; width: 44px; height: 44px; place-items: center; padding: 0; border: 1px solid var(--aba-color-border, #e5eaf1); border-radius: 13px; background: #ffffff; color: var(--aba-color-text-primary, #172033); font-size: 20px; }
+.profile-avatar { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px; background: #dbeafe; color: #1d4ed8; font-size: 13px; font-weight: 800; }
+.workspace-context { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; padding: 10px 11px; border: 1px solid #dbeafe; border-radius: 13px; background: rgb(239 246 255 / 72%); }
+.workspace-copy { display: grid; gap: 3px; min-width: 0; }
+.context-label { color: var(--aba-color-text-secondary, #64748b); font-size: 10px; font-weight: 700; }
+.workspace-copy strong { min-width: 0; overflow-wrap: anywhere; color: var(--aba-color-text-primary, #172033); font-size: 12px; line-height: 1.45; }
+.workspace-switch { display: block; min-width: 0; }
+.workspace-switch select { width: 100%; max-width: 124px; min-width: 78px; min-height: 40px; padding: 7px 8px; border-color: #bfdbfe; border-radius: 10px; background: #ffffff; color: #1e40af; font-size: 10px; font-weight: 700; }
+.page-context { justify-content: space-between; gap: 10px; }
+.page-copy { min-width: 0; flex: 1 1 auto; }
+.greeting { margin: 0 0 3px; color: #2563eb; font-size: 11px; font-weight: 800; }
+.page-copy h1 { margin: 0; color: var(--aba-color-text-primary, #172033); font-size: clamp(18px, 5vw, 22px); font-weight: 800; line-height: 1.35; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.assistant-shortcut { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px; min-height: 40px; max-width: 132px; padding: 8px 10px; border: 1px solid #bfdbfe; border-radius: 11px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.assistant-shortcut span:first-child { font-size: 14px; }
+.account-menu { position: absolute; z-index: 60; inset-block-start: 58px; inset-inline-end: 10px; display: grid; gap: 7px; width: min(260px, calc(100vw - 48px)); padding: 11px; border: 1px solid var(--aba-color-border, #e5eaf1); border-radius: 14px; background: #ffffff; box-shadow: 0 14px 38px rgb(15 23 42 / 16%); }
+.account-email { margin: 0; padding: 4px 5px 9px; border-bottom: 1px solid var(--aba-color-border-subtle, #eef2f7); color: var(--aba-color-text-secondary, #64748b); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; text-align: start; }
+.account-action { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 8px 10px; border: 0; border-radius: 9px; background: var(--aba-color-surface-subtle, #f8fafc); color: var(--aba-color-text-primary, #172033); font-size: 12px; font-weight: 700; text-align: start; }
+.sign-out-action { color: var(--aba-color-danger-text, #991b1b); background: var(--aba-color-danger-soft, #fef2f2); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (max-width: 760px) { :host { display: block; } }
+@media (max-width: 380px) { .mobile-app-header { gap: 10px; padding: 10px; } .brand-mark { flex-basis: 34px; width: 34px; height: 34px; } .brand-copy strong { font-size: 12px; } .assistant-shortcut { max-width: 112px; padding-inline: 8px; } }

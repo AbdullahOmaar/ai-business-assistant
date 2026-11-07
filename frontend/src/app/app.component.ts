@@ -19,6 +19,7 @@ import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
 import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
@@ -26,7 +27,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -143,11 +144,6 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             <div class="topbar-heading"><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
             <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
-          <header class="mobile-page-heading" aria-live="polite" aria-atomic="true">
-            <p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p>
-            <h1>{{ pageTitle }}</h1>
-          </header>
-
           @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t('تسجيل الدخول مجددًا', 'Sign in again') : accessDenied ? t('العودة للرئيسية', 'Go to Home') : t('إعادة المحاولة', 'Retry')" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
           @if (loading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل بيانات مساحة العمل…', 'Loading workspace data…')" /> }
 
@@ -176,6 +172,22 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 <small>{{ t('وقت بناء النسخة:', 'Build time:') }} {{ buildTimeLabel }}</small>
               </div>
             </section>
+            <aba-mobile-app-header
+              [language]="language"
+              [appVersion]="appVersion"
+              [workspaceName]="business.name"
+              [businesses]="businesses"
+              [selectedBusinessId]="selectedBusinessId"
+              [pageTitle]="pageTitle"
+              [userEmail]="userEmail"
+              [showGreeting]="tab === 'overview'"
+              [showInstallButton]="!isInstalled && !installHelp"
+              (homeRequested)="setTab('overview')"
+              (businessChange)="switchBusiness($event)"
+              (notificationsRequested)="setTab('notifications')"
+              (assistantRequested)="setTab('assistant')"
+              (languageToggleRequested)="toggleLanguage()"
+              (signOutRequested)="logout()" />
 
             @if (tab === 'overview') {
               <section class="hero">
@@ -1030,6 +1042,8 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     }
     /* P1 Home hierarchy: keep the four KPI cards readable as a single column on phones. */
     @media(max-width:760px){.metric-grid{grid-template-columns:minmax(0,1fr)}}
+    /* The extracted Hybrid Modern header replaces the old mobile workspace/page header only. */
+    @media(max-width:760px){.workspace-bar{display:none!important}.mobile-page-heading{display:none!important}}
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
