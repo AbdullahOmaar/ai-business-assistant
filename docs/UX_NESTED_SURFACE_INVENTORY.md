@@ -15,11 +15,11 @@
 | Invoice print | Issued-invoice-only print action; escaped business/customer/invoice/line content; popup-blocked and detail errors surfaced | `invoice-print-preview.spec.ts` | Real browser popup/print rendering in RTL and LTR |
 | Invoice void confirmation | Shared accessible dialog; OWNER guard; explicit void warning; no refund/credit-note implication; focus return and uncertain-result protection | `confirmation-dialog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF denial and rendered keyboard test |
 | Purchase receipt confirmation | Shared dialog; OWNER-only; Receive available only for approved/partially_received orders with remaining quantity; Draft shows a bilingual explanation and no Receive control; line quantities reviewed; request/confirm re-check eligibility; uncertain result blocks unsafe retry | `confirmation-dialog.spec.ts`, `app.component-template-safety.spec.ts` | Rendered OWNER draft/approved/partial states; authenticated OWNER/STAFF journey and no-side-effect evidence |
-| Payments and expenses | Local search over visible receipt/expense details; separate no-match vs no-record state; search clears on workspace change | `record-filters.spec.ts`, `workspace-data-access.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated data visibility and mobile list usability |
-| Suppliers, purchase orders, recurring schedules, notifications | Local search over visible fields; localized empty/no-match states; allocation/active-state search uses exact state labels | `record-filters.spec.ts`, `app.component-template-safety.spec.ts` | Large-list performance and rendered mobile behavior |
+| Payments and expenses | Bilingual payment-method and fixed expense-category labels in rows and local search; search over visible receipt/expense details; separate no-match vs no-record state; search clears on workspace change | `record-filters.spec.ts` Arabic method/category cases, `app.component-template-safety.spec.ts` localized-label assertions, `workspace-data-access.spec.ts` | Authenticated data visibility and mobile list usability |
+| Suppliers, purchase orders, recurring schedules, notifications | Local search over visible fields; purchase-order and notification status labels/search are bilingual; recurring/allocation state search uses exact state labels; localized empty/no-match states | `record-filters.spec.ts` Arabic status cases, `app.component-template-safety.spec.ts` localized status assertions | Large-list performance and rendered mobile behavior |
 | Employees and payroll | Lazy-loaded only on owner Employees route; payout action explicitly records an in-app event and does not claim a bank transfer | `employee-payroll-ui.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF salary privacy and actual workflow |
 | Release Guide and Platform Admin | Lazy-loaded only when selected; Platform Admin remains a separate permission domain | `release-guide.spec.ts`, `platform-admin-helpers.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated platform-admin and workspace-role journeys |
-| Reports, Tax, Activity Log, Integrity, Operational Health | Source-level loading/error/empty/permission states and currency/basis limitations retained | `app.component-template-safety.spec.ts`, `data-integrity-ui.spec.ts`, `release-guide.spec.ts` | Authenticated OWNER/STAFF/second-tenant journeys; report basis review |
+| Reports, Tax, Activity Log, Integrity, Operational Health | Source-level loading/error/empty/permission states and currency/basis limitations retained; Operational Health API `ok`/`degraded` status is localized | `app.component-template-safety.spec.ts`, `data-integrity-ui.spec.ts`, `release-guide.spec.ts` | Authenticated OWNER/STAFF/second-tenant journeys; report basis review |
 
 ## UX finding disposition
 
@@ -138,3 +138,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Expense category values are selected from a fixed bilingual option set, but saved expense rows displayed the stored English code in Arabic mode. The row now displays the matching Arabic/English label and local search includes that label.
 - Added Arabic search regression coverage for `نقل ومواصلات` and a source/template assertion for category label usage.
 - Stored category values and expense semantics remain unchanged. Test authored / **NOT RUN**.
+
+## Nested-surface inventory reconciliation — 2026-11-07
+
+- Updated the existing Payments/Expenses, Purchasing/Notifications and Reports/Operational Health rows to reflect the new bilingual labels and search behavior; did not create duplicate tracker rows.
+- Payment methods and expense categories remain presentation labels over unchanged stored values. Purchase-order, notification and operational-health labels map only to backend-supported status enums.
+- Mobile keyboard regression now asserts visual viewport bounds. All browser/device acceptance remains NOT RUN.

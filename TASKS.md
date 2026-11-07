@@ -2431,3 +2431,8 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added a localized category label for each current UI option; saved rows and local search now use the label while preserving the stored API category value.
 - Added Arabic search and template/source regression assertions. No expense or cash-settlement semantics changed.
 - Tests authored / **NOT RUN**; no CI trigger/retry.
+
+## T18 — inventory row reconciliation — 2026-11-07
+
+- Updated the existing nested-surface inventory rows for Payments/Expenses, Purchasing/Notifications and Reports/Operational Health to reflect the new localized display/search behavior.
+- No application code changed in this documentation checkpoint; tests remain NOT RUN.
