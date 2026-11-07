@@ -139,3 +139,69 @@ A successful migration test against a disposable PostgreSQL database is not evid
 - `PATCH /api/v1/platform-admin/businesses/{id}/status` requires an explanatory reason and records a business-scoped audit event in the same database transaction. It disables/enables workspace access via the existing membership authorization behavior; it does not delete the workspace, its membership rows, invoices, payments, or other records. Treat the audit event and change as one commit.
 - The existing workspace `OWNER` and `STAFF` roles do not imply platform access. This screen does not create Firebase users, invite platform admins, mutate membership roles, or change invoice/payment/allocation balances because the current application has no safe user-directory/invitation or privileged financial-correction workflow.
 - Before allowing production use, add the allowlist only through the platform’s secret/configuration settings after explicit identity verification; then test the `403` denial cases and authorized access against a non-production deployment. Do not enable it with a guessed UID.
+
+
+## Release Preflight & Fast-Path Procedure (mandatory)
+
+The goal is to remove avoidable waiting and repeated discovery without weakening any gate. Apply this procedure to every substantive work package before implementation reaches merge readiness.
+
+### 1. Preflight — discover release impact early
+
+At task start, record a compact release profile on the existing Notion task / GitHub PR:
+- Current main/base SHA, working branch and accountable owner.
+- Likely affected applications/projects (Web/API/etc.) and explicitly unaffected projects.
+- Whether GitHub merge to main automatically triggers production deployment for each affected Vercel project; confirm Git integration, production branch, release markers, Ignore Build Step and project root/dependency boundaries.
+- Whether schema/migration, secrets/configuration, paid resources, production data, or external side effects are involved.
+- Applicable CircleCI workflow, required exact-head jobs and any active execution freeze/authorization.
+- Required owner decisions: merge authorization, production deployment authorization, and any separate production data/migration approval.
+
+Do this once before coding. Recheck only when a relevant configuration, scope, branch/base or release target changes. Never defer deployment-coupling discovery until after the owner says “merge”.
+
+### 2. Candidate Ready — one evidence packet, exact SHA
+
+Maintain one current packet in the existing task/PR rather than scattering evidence across repeated status messages:
+- PR URL, base SHA, exact head SHA, changed-file inventory and merge-base/divergence.
+- Acceptance criteria mapped to tests and results.
+- CircleCI workflow URL and substantive job outcomes on the exact head.
+- Current review submissions and provider/repository-enforced requirements (a comment is not an approval).
+- Diff/security/data-integrity review, migrations and production side-effect assessment.
+- Release profile: affected projects, automatic deployment behavior, release markers/ignore rules, and explicit non-targets.
+- NOT RUN / BLOCKED checks with the precise reason and remaining owner decision.
+
+Use a clear state: **NOT READY**, **READY TO MERGE**, or **READY TO MERGE + DEPLOY**. Never call it ready while a required gate is unknown or failed.
+
+### 3. Evidence reuse and efficient orchestration
+
+- Reuse checks only while their exact tested SHA and relevant workflow/configuration remain valid.
+- A new commit invalidates exact-head checks; a base update may invalidate merge/conflict evidence and any checks whose semantics depend on the merged result. Recompute only affected evidence.
+- Run independent read-only lookups concurrently: PR metadata/diff, reviews, exact-head CI, deployment configuration and task acceptance. Do not serialize unrelated reads.
+- Serialize dependent writes: branch/PR edits, merges, release-marker commits and deployment actions. Read back each result before starting its dependent action.
+- Avoid polling unrelated projects or repeating unchanged health/runtime queries. Poll only the affected deployment until terminal state, then perform one complete verification pass.
+- Treat ignored/canceled deployment due to a configured Ignore Build Step as “not deployed / intentionally skipped”, not as a build failure. Confirm the intended project was or was not affected.
+
+### 4. Owner decision — ask once, at the right time
+
+Before asking for merge approval, send one concise decision packet with:
+1. PR and exact head SHA.
+2. Required checks/reviews and their current result.
+3. Merge impact, including whether merge automatically deploys to production and which project(s).
+4. Explicit production/migration/data side effects (or none).
+5. The exact authorization requested.
+
+If merge auto-deploys, disclose this **before merge** and obtain the owner authorization required for that coupled action in advance. If deployment is separate/manual, keep merge and production deployment approvals separate. Never infer either approval from a generic “looks good”, green CI, or mergeability.
+
+### 5. Merge, deploy and verify
+
+After authorization and all gates:
+- Merge exactly once through the normal repository path; do not bypass branch protections.
+- Verify PR merged state, merge commit SHA, updated main SHA and required main checks.
+- Trigger/allow deployment only for affected projects and only under the recorded authorization. Do not deploy unchanged projects.
+- Verify terminal deployment state, production alias, exact deployed SHA/version, API readiness/version endpoints where applicable, safe authenticated journey smoke tests and runtime errors.
+- Record skipped projects, NOT RUN checks, warnings, rollback/recovery notes and remaining acceptance criteria.
+- Keep the task PARTIALLY COMPLETE until every applicable live criterion is evidenced.
+
+### 6. Role contract
+
+This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the reviewer/QA validates the evidence; Master coordinates cross-project release; only the authorized owner grants reserved approvals. A maintainer self-review is the default; request another reviewer only if repository/provider protection or a separate explicit owner-approved security policy requires it.
+
+**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, CircleCI restrictions, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.

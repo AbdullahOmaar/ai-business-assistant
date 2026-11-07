@@ -174,3 +174,19 @@ If the task is too large, split it into independently reviewable subtasks with e
 - Keep GitHub as the source of truth for code, PRs, and Issues; CircleCI is the sole CI evidence provider; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
 - The audit plan is read-only planning until the user explicitly authorizes implementation. Do not infer approval to fix application code, merge PRs, or deploy from the existence of the plan.
 - After each substantial session, update `TASKS.md` with actual evidence, checks run/not run, blockers, branch/commit/PR, and one next action. Update `docs/AUDIT_MASTER_PLAN.md` when findings, priorities, decisions, or acceptance criteria change. Never mark a task VERIFIED without evidence.
+
+
+## Release fast path — mandatory for every contributor and agent
+
+Use the **Release Preflight → Candidate Ready → Owner Decision → Merge → Deploy → Live Verify** workflow in `docs/PRODUCTION_DEPLOYMENT.md` for every PR that may reach production.
+
+- Discover release impact **before implementation**, not after the user says merge: inspect affected Vercel projects, Git integration/automatic production deploy behavior, release markers, Ignore Build Step rules, migrations, and whether merge itself deploys. Record affected and intentionally unaffected projects in the task/PR.
+- Keep one current release evidence packet on the existing task/PR: base SHA, exact head SHA, changed paths, merge-base/divergence, relevant tests, CircleCI workflow and substantive jobs on that exact head, current review state, security/data-impact review, deployment impact, and NOT RUN items.
+- Reuse valid evidence while the exact head and relevant configuration remain unchanged. A new commit, changed base, changed workflow/configuration, or changed release target invalidates only the affected evidence; do not restart unrelated checks or re-read unchanged sources without a reason.
+- Parallelize independent read-only inspections (PR/review/check state, deployment configuration, diff inventory); serialize dependent writes and wait for each write result before the next.
+- Before requesting approval, present one concise **READY / BLOCKED** decision packet. Ask only for the specific missing owner authorization. If merge automatically triggers production deployment, disclose that coupling before merge and obtain the required release authorization up front; never surprise the owner after merge.
+- After approval, merge once through the normal repository path, verify the merge commit and main checks, then monitor only the affected deployment(s). Distinguish skipped/ignored builds from build failures. Verify production alias, deployed SHA/version, health/readiness and relevant safe smoke tests.
+- Do not equate merge, Vercel READY, HTTP 200, preview success, or green CI alone with production verification. Keep incomplete criteria open.
+- This fast path removes duplicate investigation and late surprises; it does **not** waive owner authorization, provider-enforced protections, required exact-head checks/reviews, CircleCI policy, security/data-integrity controls, or separate production authorization.
+
+- Batch related implementation, tests and documentation into one coherent commit/candidate before requesting CI or opening the PR. Do not create one commit per file or micro-edit when a single safe commit is possible: each pushed head can trigger another full CircleCI run. Once the candidate CI starts, avoid changing its head unless a real fix is required; if it changes, validate the new exact SHA and do not reuse stale results.

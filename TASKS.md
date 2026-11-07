@@ -1,3 +1,20 @@
+# Release preflight fast-path — operating improvement — 2026-11-07
+
+- **Purpose:** remove late discovery of production deployment coupling, repeated read-only verification and fragmented release handoffs across Master, Chat 1–5, QA and external agents.
+- **Canonical workflow:** Notion [MWOS v1.0](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea) → “Release fast path — mandatory for every workstream”; GitHub [AGENTS.md](https://github.com/AbdullahOmaar/ai-business-assistant/blob/main/AGENTS.md) → “Release fast path — mandatory for every contributor and agent”; [Production Deployment Runbook](https://github.com/AbdullahOmaar/ai-business-assistant/blob/main/docs/PRODUCTION_DEPLOYMENT.md) → “Release Preflight & Fast-Path Procedure”.
+- **Implementation PR:** [#347](https://github.com/AbdullahOmaar/ai-business-assistant/pull/347), branch `master/release-preflight-fast-path-20261107`, base main `c5fe115daa72e92b4f814ee502405225e1b3dc79`. Refresh the live PR for the current head SHA before using any check evidence.
+- **Files changed:** `AGENTS.md` (mandatory contributor/agent contract); `docs/PRODUCTION_DEPLOYMENT.md` (preflight, evidence packet, reuse/invalidation, owner decision, merge/deploy/live verification and role contract); `TASKS.md` (this handoff).
+- **Behavioral change:** deployment coupling and affected projects must be discovered before implementation; one exact-SHA evidence packet is maintained; unchanged evidence is reused; independent reads are parallelized; dependent writes remain serialized; owner authorization is requested once with merge/deployment impact disclosed.
+- **Notion:** MWOS page update and readback VERIFIED on 2026-11-07; the six-step procedure and readiness labels are present.
+- **Maintainer review:** read the complete three-file PR diff. Documentation-only; no application/API/database/schema/migration/production-data/financial/payroll changes. No new permissions or bypasses.
+- **CI at prior head `d2dfdfe10856226d92b7edf2e0f12ecae33dab17`:** CircleCI frontend unit tests, dependency audit, production build and backend container SUCCESS; browser smoke and backend accounting PENDING at last read. Semaphore failure is retired/non-authoritative. A new TASKS commit changes the exact head; re-check CircleCI on the latest PR SHA.
+- **Status:** IN_PROGRESS — PR #347 open, not merged; no deployment. Required CircleCI checks incomplete and repository ruleset/protection enforcement is UNKNOWN from current access. No owner merge authorization requested for this documentation PR.
+- **Historical note:** T18 checkpoints below are preserved as dated history, not live status. PR #346 and current main/deployment state must be refreshed from GitHub/Vercel; do not infer current state from those old snapshots.
+- **Next:** verify exact-head CircleCI on the latest PR SHA, determine applicable provider/repository protection, then present one READY/BLOCKED decision packet. Merge only after explicit owner authorization and all gates.
+
+
+---
+
 # T18 merge-readiness checkpoint — 2026-11-06
 
 - **Single active branch:** `master/t18-chat-mobile-ux-20261106`. GitHub branch inventory contains only `main` and this work branch. Implementation/test head before this documentation checkpoint: `eaf274f083139771d33ffed1ed436ed8b3411ace` (143 commits ahead / 0 behind main; 14 changed files). Main/base: `e5a765083860a9141f2f2fe366858234873120e9`. Both branches are reported unprotected; ruleset details remain UNKNOWN because the API is unavailable. No open PR exists.
