@@ -283,3 +283,20 @@ test('route-level headings, filters, notices, and assistant messages share seman
   assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
   assert.ok(styles.includes('background: var(--aba-color-primary-soft)'));
 });
+
+
+test('authentication and nested form surfaces use semantic tokens', () => {
+  for (const selector of [
+    ':root body .shell .auth-card',
+    ':root body .shell .setup-card',
+    ':root body .shell .invoice-create-disclosure',
+    ':root body .shell .invoice-create-disclosure > summary:after',
+    ':root body .shell .invoice-line-row',
+    ':root body .shell .aging-buckets > div',
+    ':root body .shell .version-pill',
+  ]) assert.ok(styles.includes(selector), `missing semantic surface selector: ${selector}`);
+
+  assert.ok(styles.includes('box-shadow: var(--aba-shadow-popover)'));
+  assert.ok(styles.includes('background: var(--aba-color-surface-subtle)'));
+  assert.ok(styles.includes('color: var(--aba-color-primary-strong)'));
+});
