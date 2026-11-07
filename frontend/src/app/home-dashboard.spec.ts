@@ -56,6 +56,9 @@ test('Home reports the backend business-local period without generating a client
   assert.match(home, /dashboard\.period\.start_date/);
   assert.match(home, /dashboard\.period\.end_date/);
   assert.match(home, /dashboard\.period\.timezone/);
+  assert.ok(home.includes('<bdi dir="ltr">{{ dashboard.period.start_date || \'—\' }}</bdi>'));
+  assert.ok(home.includes('<bdi dir="ltr">{{ dashboard.period.end_date || \'—\' }}</bdi>'));
+
   assert.match(home, /Last 30 days/);
   assert.match(apiSource, /dashboard\(businessId: string\): Promise<Dashboard>/);
   assert.match(apiSource, /backend applies the default 30-day window using the business's timezone/);

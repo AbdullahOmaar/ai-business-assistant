@@ -196,7 +196,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     <strong>{{ t('آخر 30 يومًا', 'Last 30 days') }}</strong>
                   </div>
                   <div class="dashboard-period__details">
-                    <span>{{ t('من', 'From') }} <bdi>{{ dashboard.period.start_date || '—' }}</bdi> {{ t('إلى', 'to') }} <bdi>{{ dashboard.period.end_date || '—' }}</bdi></span>
+                    <span>{{ t('من', 'From') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('إلى', 'to') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
                     <span>{{ t('التوقيت المحلي للنشاط', 'Business timezone') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
                   </div>
                 </section>
