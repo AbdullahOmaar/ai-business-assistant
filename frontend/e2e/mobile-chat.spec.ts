@@ -250,9 +250,48 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   await page.getByRole('button', { name: /تسجيل الدخول|Sign in/ }).click();
 
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
+  await expect(page.locator('.quick-grid > aba-quick-access-card')).toHaveCount(5);
+
+  const assertNoHorizontalOverflow = async (label: string) => {
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    expect(overflow, label).toBe(false);
+  };
+  for (const width of [360, 390, 412, 768, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
+  }
+
+  await page.setViewportSize({ width: 360, height: 800 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
   await moreTrigger.click();
-  await page.getByRole('button', { name: /المساعد الذكي|AI assistant/ }).click();
+  await page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ }).click();
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toHaveClass(/active/);
+  await expect(moreTrigger).toBeFocused();
+  await expect(page.getByRole('heading', { name: /دليل التطبيق والإصدارات|App guide & versions/ })).toBeVisible();
+
+  await moreTrigger.click();
+  const guideMenuItem = page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ });
+  await expect(guideMenuItem).toHaveClass(/active/);
+  await expect(guideMenuItem).toHaveAttribute('aria-current', 'page');
+  const languageAction = page.locator('#mobile-more-menu .mobile-menu-action').first();
+  await expect(languageAction).toContainText('English');
+  await languageAction.click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  for (const width of [360, 390, 412, 768, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
+  }
+
+  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await page.setViewportSize({ width: 360, height: 800 });
+  await moreTrigger.click();
+  await page.locator('#mobile-more-menu').getByRole('button', { name: /المساعد الذكي|AI assistant/ }).click();
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toHaveClass(/active/);
 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/)).toBeVisible();
