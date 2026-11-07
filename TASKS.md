@@ -2799,3 +2799,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` refreshed through `9d7e927147a30c960fb98dd6b649d2a81762b403`; Home spec now has 13 source-test declarations.
 - **Validation:** source-level implementation review only; the new Node regression is authored / **NOT RUN**. Angular build, dependency audit, Playwright, rendered RTL/LTR, role/tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** continue the Home / Overview source-level responsive and accessibility audit. Exact-head executable/rendered acceptance remains blocked by the offline approved runner and no-CI-trigger restriction.
+
+
+## T18 — Home metric detail readability — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `37d6bb4a32d176e33f0527a433a418f5e5d650d3` adjusts Home reporting-period metadata, KPI count/source-basis copy and the data-integrity note to 12px with readable line-height; `f4b95fa773ec99f962877ff7e161c3e1267471f1` adds a source regression declaration.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** improves legibility of secondary but decision-relevant Home context without changing the compact hierarchy, KPI values, API contract, currency treatment or financial meaning. The Home-only selector overrides the global 10px metric-small default for count/basis content; the reporting period and trust caveat also use 12px.
+- **Regression:** Home spec now has 14 source-test declarations and asserts the three 12px readability rules. Authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `5ed677e1094952c9639f0f84b2dd443597c758c1`.
+- **Static source readback:** 16 focused assertions PASS on exact code head `f4b95fa773ec99f962877ff7e161c3e1267471f1`, covering 4 source-backed KPI cards, currency isolation, 4/2/1 responsive hierarchy, readable detail copy, loading skeleton, no unsupported panels, tenant reset/stale-response fence and mobile-header semantic tokens. This is not Node test execution.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry; commits use `[skip ci]`. No preview, merge or deployment.
+- **Next:** continue the Home / Overview source review and verify the latest exact-head status/provider access. Figma visual authoring remains blocked by Starter + View seat; suggested-edit discovery on the UX Workstream returns `upgrade_required`, so no unseen suggestion is treated as reviewed.
