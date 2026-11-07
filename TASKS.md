@@ -2910,3 +2910,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Static readback:** 5 focused source assertions PASS for trigger/menu containment, removal of host-wide containment, live page-title attributes, regression declarations and inventory evidence. This is static inspection, not executable test evidence.
 - **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, real pointer/keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** resume the Home / Overview source review; preserve the approved four-metric/API-only data contract and keep rendered acceptance separate.
+
+
+## T18 — Home stale-metric refresh recovery — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** `refreshAfterPayrollPayment()` updated Home dashboard metrics and Expenses together, but on any failed request it left the previous `dashboard` object in place. The shared error/retry banner appeared while old KPI values remained visible without a source freshness timestamp.
+- **Fix:** `frontend/src/app/app.component.ts` commit `33fd232335a3adee09962c4b11a396851862bc17` clears the current workspace's dashboard metrics before setting the retryable error. The existing OWNER-only and same-workspace guards remain unchanged. No API, backend, database, financial calculation, payroll state, or recorded expense changed.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `dc0b9b50176340c237ffb6930344c9666078ef28` verifies the refresh catch is tenant-guarded and clears dashboard data before exposing the error/retry action. Home spec now has 18 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `74f720bb22ac12dd4c857f607e7ba193cf7e8dc4`.
+- **Static readback:** 8/8 focused assertions PASS across owner guard, tenant guard, dashboard clear ordering, retryable error and regression declaration. This is source inspection, not executed test evidence.
+- **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, authenticated OWNER/STAFF/two-tenant, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue Home source audit; keep all NOT RUN acceptance open and retain PR Draft.
