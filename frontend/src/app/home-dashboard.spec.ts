@@ -47,8 +47,8 @@ test('Home KPI cards render visible localized labels separately from projected v
     assert.ok(home.includes('<span id="' + id + '" metricLabel>{{ t(\'' + arabic + '\', \'' + english + '\') }}</span>'),
       id + ' must contain a visible localized metric label');
   }
-  assert.match(metricCardSource, /ng-content select="\\[metricLabel\\]"/);
-  assert.match(metricCardSource, /<ng-content \\/>/,
+  assert.ok(metricCardSource.includes('ng-content select="[metricLabel]"'));
+  assert.ok(metricCardSource.includes('<ng-content />'),
     'amounts, counts and basis notes must flow into the value slot, not the label slot');
 });
 
@@ -64,11 +64,16 @@ test('Home reports the backend business-local period without generating a client
 });
 
 test('empty Home metric groups do not imply a currency-less monetary zero', () => {
-  const emptyGroups = home.match(/@if \(!dashboard\\.(?:invoiced_sales|collected_payments|expenses|outstanding_balances)\\.length\) \{ <strong>—<\\/strong>/g) ?? [];
+  const fields = ['invoiced_sales', 'collected_payments', 'expenses', 'outstanding_balances'];
+  const emptyGroups = fields.filter(field =>
+    home.includes('@if (!dashboard.' + field + '.length) { <strong>—</strong>'),
+  );
   assert.equal(emptyGroups.length, 4,
     'empty metric groups use a neutral placeholder because no currency amount exists to label');
-  assert.doesNotMatch(home, /@if \(!dashboard\\.(?:invoiced_sales|collected_payments|expenses|outstanding_balances)\\.length\) \{ <strong>0<\\/strong>/,
-    'do not render an unqualified zero with no currency code');
+  for (const field of fields) {
+    assert.ok(!home.includes('@if (!dashboard.' + field + '.length) { <strong>0</strong>'),
+      field + ' must not render an unqualified zero with no currency code');
+  }
 });
 
 test('Home explains each metric source timestamp and keeps financial meanings distinct', () => {
