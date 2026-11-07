@@ -2821,6 +2821,6 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
 - **UX rationale:** adds a navigable H2 under the page H1, making the Home reporting/metric section discoverable through heading navigation while keeping the compact period strip and its loading skeleton structurally consistent.
 - **Regression:** Home spec now has 15 source-test declarations; new declaration asserts both ready and loading headings and the 14px semantic heading style. Authored / **NOT RUN**.
-- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `df2bb06f37c43e2119b4764bf193765e4df72270`.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `580704a107b10a451d2b0cded20d76f0f1079cc7` (evidence-baseline normalization after the semantic-heading row update).
 - **Validation:** source readback only; no Node test/build/browser execution. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** continue Home source/accessibility audit and re-read exact-head status; do not add charts/alerts/activity/aging without a verified API source and approved metric definition.
