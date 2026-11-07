@@ -214,8 +214,8 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               } @else if (loading) {
                 <section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">
                   <div class="dashboard-period__heading">
-                    <span class="eyebrow">BUSINESS SUMMARY</span>
-                    <strong>Last 30 days</strong>
+                    <span class="eyebrow">{{ t('ملخص النشاط', 'BUSINESS SUMMARY') }}</span>
+                    <strong>{{ t('آخر 30 يومًا', 'Last 30 days') }}</strong>
                   </div>
                   <div class="dashboard-period-skeleton__details">
                     <span></span><span></span>
