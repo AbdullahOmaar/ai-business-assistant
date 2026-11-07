@@ -2932,3 +2932,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` refreshed through `6bfa983884a78ce33b07bf5ca31eac2413e935e7`.
 - **Static readback:** 11/11 focused assertions PASS across Home KPI contract, unsupported-panel exclusions, tenant/role guards, stale-refresh recovery and quick-access mapping. This is not execution of Node tests or rendered UI.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright and rendered RTL/LTR/mobile viewport acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Home action-source disposition and payroll lazy-boundary guard — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Home contract readback:** the current `GET /businesses/{id}/dashboard` response contains only period/timezone, invoiced sales, collected payments, expenses, outstanding balances and limitations. It has no pending-action or operational-alert aggregate.
+- **Fail-closed UX decision:** keep pending-action/alert UI omitted until a versioned source contract and actionable-state semantics are approved. Draft invoices, PO draft/approval states, pending notification metadata, recurring schedules, payroll states, data-integrity exceptions and readiness snapshots are not interchangeable alerts; no count, due date, urgency or delivery claim is fabricated.
+- **Quick access:** the five UX-SPEC-01 shortcuts (Invoices, Customers, Products, Expenses, Reports) are a curated navigation subset of the 19 unique module destinations, filtered through the existing role policy. They do not create duplicate workflows.
+- **Home regressions:** `home-dashboard.spec.ts` now has 20 authored declarations, including exact quick-access order, stale-metric clearing after failed payroll refresh, and a source guard against unsupported pending/alert aggregates. **NOT RUN**.
+- **Payroll lazy boundary:** `EmployeePayrollComponent` is standalone, directly imported from its own file, and has one template reference inside the OWNER-only `@defer` block with placeholder/loading states. `employee-payroll-ui.spec.ts` now has 12 authored declarations, including the deferred-boundary and stale-refresh guard. **NOT RUN**.
+- **P0 measurement:** source-level lazy-loading intent is present, but emitted chunk separation, initial bundle size/budget and Angular NG8107 diagnostics remain **NOT VERIFIED / NOT RUN** because no authorized build execution is available in this session. Do not remove nullable guards without exact compiler diagnostics.
+- **Validation:** source inspection only; Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, OWNER/STAFF/two-tenant, screen-reader and Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete remaining Home source audit, then exact-head release preflight; obtain authorized build/browser/device evidence before any VERIFIED COMPLETE claim.
