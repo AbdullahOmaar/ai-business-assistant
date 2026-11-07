@@ -1252,3 +1252,19 @@ test('OWNER payroll view is loaded only after selecting Employees', () => {
   assert.match(source, /imports: \[[^\]]*EmployeePayrollComponent/);
   assert.match(source, /@if \(tab === 'employees' && business\?\.role === 'owner' && business\)/);
 });
+
+
+test('workspace-owned views rely on the non-null business context after the empty-workspace guard', () => {
+  assert.match(source, /@if \(!business\) \{/);
+  assert.match(source, /@if \(tab === 'payments' && business\.role === 'owner'\) \{/);
+  assert.match(source, /@if \(tab === 'taxes' && business\.role === 'owner'\) \{/);
+  assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\) \{/);
+  assert.match(source, /@defer \(when tab === 'employees' && business\.role === 'owner'\)/);
+  assert.match(source, /\{\{ business\.currency_code \}\}/);
+  assert.match(source, /@if \(tab === 'integrity' && business\.role === 'owner'\) \{/);
+  assert.doesNotMatch(source, /tab === 'payments' && business\?\.role === 'owner'/);
+  assert.doesNotMatch(source, /tab === 'taxes' && business\?\.role === 'owner'/);
+  assert.doesNotMatch(source, /tab === 'employees' && business\?\.role/);
+  assert.doesNotMatch(source, /tab === 'integrity' && business\?\.role === 'owner'/);
+  assert.doesNotMatch(source, /\{\{ business\?\.currency_code \}\}/);
+});
