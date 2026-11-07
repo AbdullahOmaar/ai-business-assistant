@@ -98,7 +98,7 @@ test('Home preserves quick access, the role-filtered module directory and safe l
   assert.match(home, /homeQuickAccessCards/);
   assert.match(home, /homeModuleCards/);
   assert.match(home, /metric-grid--skeleton/);
-  assert.match(home, /kind="loading"/);
+  assert.match(appSource, /@if \(loading\) \{ <aba-state-message kind="loading"/);
   assert.match(home, /kind="empty"/);
   assert.match(home, /!error/);
 });
@@ -198,4 +198,13 @@ test('Home loading skeleton uses the current bilingual Business Summary heading'
   assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
   assert.match(loading, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
   assert.doesNotMatch(loading, /BUSINESS SUMMARY/);
+});
+
+
+test('Home uses one workspace-level loading announcement and a visual KPI skeleton', () => {
+  assert.match(appSource, /@if \(loading\) \{ <aba-state-message kind="loading" \[description\]="t\('جارٍ تحميل بيانات مساحة العمل…', 'Loading workspace data…'\)" \/> \}/);
+  assert.doesNotMatch(home, /aba-state-message kind="loading"/,
+    'the Home branch must not duplicate the shared workspace loading announcement');
+  assert.match(home, /metric-grid--skeleton/,
+    'the Home KPI hierarchy remains visible as a non-data skeleton');
 });
