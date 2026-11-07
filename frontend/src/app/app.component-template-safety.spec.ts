@@ -1338,13 +1338,18 @@ test('Home lists every role-authorized module in addition to the five quick-acce
   assert.match(source, /return WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
 });
 
-test('Home dashboard exposes loading, error and empty states when metrics are unavailable', () => {
+test('Home dashboard uses the shared page-level error and retry banner without duplicate alert announcements', () => {
   const start = source.indexOf("@if (tab === 'overview')");
   const end = source.indexOf("@if (tab === 'notifications')", start);
   const overview = source.slice(start, end);
+  const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error"');
+  assert.ok(sharedError >= 0, 'the shared workspace error banner must remain available');
+  assert.match(source.slice(sharedError, sharedError + 650), /\[actionLabel\].*Retry/);
   assert.match(overview, /kind="loading"[^>]*Loading business metrics/);
-  assert.match(overview, /kind="error" \[description\]="error"/);
-  assert.match(overview, /kind="empty"[^>]*No business metrics are available yet/);
+  assert.doesNotMatch(overview, /kind="error" \[description\]="error"/,
+    'the Home metrics panel must not repeat the same global error alert');
+  assert.match(overview, /@else if \(!error\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
+    'the empty state must not mislabel a failed dashboard load as a genuine empty result');
 });
 
  
@@ -1385,4 +1390,11 @@ test('payment and expense lists expose local search and distinguish no-match fro
   assert.match(source, /No expenses match this search/);
   assert.match(source, /name="paymentSearch" type="search"/);
   assert.match(source, /name="expenseSearch" type="search"/);
+});
+
+
+test('notification kind localization covers the current business form value and legacy plural value', () => {
+  assert.match(source, /<option value="business">/);
+  assert.match(source, /business: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
+  assert.match(source, /businesses: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
 });

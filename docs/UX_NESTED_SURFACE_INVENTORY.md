@@ -7,7 +7,7 @@
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
 | Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts` | Browser keyboard and screen-reader run; physical Android/PWA |
-| Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); dashboard loading/error/empty states | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
+| Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
 | Customers CSV import | Preview is separate from execution; valid preview gates confirmation; workspace switch clears pending import; owner-only import actions | `app.component-template-safety.spec.ts` customer-import cases | Browser file picker, preview table overflow, focus and retry |
 | Stock-tracked product creation | Workspace members can create products; only OWNER sees the positive opening-stock input. STAFF can still create a stock-tracked product with zero opening stock. The payload also defaults to zero for non-owners, and the value is cleared when workspace/role context changes. The backend remains authoritative and rejects positive opening stock for STAFF before product/stock/audit writes. | `app.component-template-safety.spec.ts` OWNER-only field/payload/reset regression; `mobile-chat.spec.ts` mocks a STAFF product creation and asserts `opening_quantity: 0` | Browser regression authored, NOT RUN; authenticated OWNER/STAFF request-denial and no-side-effect proof; physical mobile rendering |
 | Products CSV import | Preview/validation before confirmation; confirmed import is not repeated after ambiguous refresh | `app.component-template-safety.spec.ts` product-import cases | Browser file picker and large-file behavior |
@@ -158,3 +158,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Assistant citations previously used Arabic-only "المصادر/فاتورة/مصروف" labels even in English mode, and displayed fixed expense category codes verbatim. The citation header/type labels are now bilingual and expense category names reuse the localized category helper.
 - Backend source types are currently `invoice` and `expense`; unknown types remain visible as returned. No assistant response, citation membership or API behavior changed.
 - Added source/template regression assertions. Test authored / **NOT RUN**.
+
+
+## Home error ownership and notification-kind parity — 2026-11-07
+
+- The shared workspace error banner is the sole owner of dashboard load failures and the retry action. The Home metrics panel no longer repeats the same alert; its empty state is gated on the absence of an error.
+- Notification kind localization now covers the actual current form value `business` and retains `businesses` for legacy records.
+- The in-app feature catalogue now documents the bilingual payment, expense, invoice, PO, notification and operational-health labels/search behavior. No release version was advanced; this remains an unreleased PR candidate.
+- Source regression tests are authored / **NOT RUN**.

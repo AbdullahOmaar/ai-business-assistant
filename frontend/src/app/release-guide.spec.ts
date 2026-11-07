@@ -163,3 +163,23 @@ test('finance guide distinguishes preliminary operating result and incurred expe
   assert.match(finance.features.map(feature => feature.detailEn).join(' '), /does not mark the expense as paid/i);
   assert.match(finance.features.map(feature => feature.titleEn).join(' '), /Preliminary operating result/);
 });
+
+
+test('feature catalogue describes bilingual transaction and operational status labels', () => {
+  const sections = new Map(FEATURE_CATALOG.map(section => [section.id, section] as const));
+  const payments = sections.get('payments')!;
+  assert.match(payments.features.map(feature => feature.titleEn).join(' '), /Payment method labels/);
+  assert.match(payments.features.map(feature => feature.detailEn).join(' '), /selected language/i);
+
+  const finance = sections.get('finance')!;
+  assert.match(finance.features.map(feature => feature.detailEn).join(' '), /category names use the selected language/i);
+
+  const purchasing = sections.get('purchasing')!;
+  assert.match(purchasing.features.map(feature => feature.titleEn).join(' '), /Purchase-order status labels/);
+
+  const notifications = sections.get('notifications')!;
+  assert.match(notifications.features.map(feature => feature.detailEn).join(' '), /types and statuses in the selected language/i);
+
+  const health = sections.get('health')!;
+  assert.match(health.features.map(feature => feature.detailEn).join(' '), /operational status shown in the selected language/i);
+});

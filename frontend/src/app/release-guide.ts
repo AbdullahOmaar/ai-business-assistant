@@ -103,8 +103,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'إصدار وإلغاء الفاتورة',
         titleEn: 'Issue and void',
-        detailAr: 'تُطبّق قواعد حالة الفاتورة والصلاحيات قبل تنفيذ العملية.',
-        detailEn: 'Invoice state and permissions are checked before the action is applied.',
+        detailAr: 'تظهر حالة الفاتورة باللغة المختارة، وتُطبّق قواعد الحالة والصلاحيات قبل التنفيذ.',
+        detailEn: 'Invoice statuses use the selected language; state and permissions are checked before actions are applied.',
       },
     ],
   },
@@ -120,6 +120,12 @@ export const FEATURE_CATALOG = [
         titleEn: 'Record a payment',
         detailAr: 'سجّل المبلغ والعميل وطريقة الدفع والمرجع الاختياري.',
         detailEn: 'Record amount, customer, payment method, and optional reference.',
+      },
+      {
+        titleAr: 'طرق الدفع',
+        titleEn: 'Payment method labels',
+        detailAr: 'تظهر طرق الدفع باللغة المختارة ويمكن البحث باسم الطريقة المعروض.',
+        detailEn: 'Payment methods use the selected language and can be searched by their displayed labels.',
       },
       {
         titleAr: 'سداد الفاتورة',
@@ -145,8 +151,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'تسجيل المصروفات',
         titleEn: 'Record expenses',
-        detailAr: 'سجّل التصنيف والوصف والمبلغ والعملة والتاريخ؛ تسجيل المصروف لا يعني أنه تم دفعه.',
-        detailEn: 'Record category, description, amount, currency, and date; this does not mark the expense as paid.',
+        detailAr: 'سجّل التصنيف والوصف والمبلغ والعملة والتاريخ؛ تظهر أسماء التصنيفات باللغة المختارة، وتسجيل المصروف لا يعني أنه تم دفعه.',
+        detailEn: 'Record category, description, amount, currency, and date; category names use the selected language, and this does not mark the expense as paid.',
       },
       {
         titleAr: 'نتيجة التشغيل الأولية',
@@ -191,6 +197,12 @@ export const FEATURE_CATALOG = [
         detailEn: 'Link an order to a supplier and product, then review quantity, unit cost, total, received quantity, and remaining quantity.',
       },
       {
+        titleAr: 'حالات أوامر الشراء',
+        titleEn: 'Purchase-order status labels',
+        detailAr: 'تظهر الحالات المعروفة باللغة المختارة، وتظل القيم غير المعروفة ظاهرة للمراجعة.',
+        detailEn: 'Known statuses use the selected language; unknown values remain visible for diagnosis.',
+      },
+      {
         titleAr: 'استلام الكميات المتبقية',
         titleEn: 'Receive remaining quantities',
         detailAr: 'تسجيل الاستلام ينشئ حركة مخزون، ويظل الإجراء متاحًا للمالك فقط.',
@@ -214,8 +226,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'متابعة الحالة المحفوظة',
         titleEn: 'Review stored status',
-        detailAr: 'راجع الإشعارات وحالتها وموعدها دون اعتبار ذلك تأكيدًا على وصولها للمستلم.',
-        detailEn: 'Review each notification and its stored status; this does not confirm delivery to a recipient.',
+        detailAr: 'راجع الإشعارات وحالتها وموعدها باللغة المختارة دون اعتبار ذلك تأكيدًا على وصولها للمستلم.',
+        detailEn: 'Review notification types and statuses in the selected language; this does not confirm delivery to a recipient.',
       },
     ],
   },
@@ -292,8 +304,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'فحص الخدمات الأساسية',
         titleEn: 'Core service checks',
-        detailAr: 'راجع حالة اتصال قاعدة البيانات وإعدادات الذكاء الاصطناعي وعمال الإشعارات والفواتير الدورية.',
-        detailEn: 'Review database connectivity and the configured state of AI, notification delivery, and recurring-invoice workers.',
+        detailAr: 'راجع اتصال قاعدة البيانات وإعدادات الخدمات، مع عرض الحالة التشغيلية باللغة المختارة.',
+        detailEn: 'Review database connectivity and service settings, with operational status shown in the selected language.',
       },
     ],
   },

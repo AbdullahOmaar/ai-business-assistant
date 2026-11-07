@@ -2462,3 +2462,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Corrected the assistant surface row separator in `docs/UX_NESTED_SURFACE_INVENTORY.md` so it is a distinct Markdown table row.
 - No application code changed. Tests NOT RUN.
+
+
+## T18 — Home error recovery and notification kind parity — 2026-11-07
+
+- Removed the duplicate Home-local error alert; the shared page-level error banner remains the single error/recovery announcement. Home empty state appears only when there is no error.
+- Added the actual notification form kind `business` to the bilingual label map and retained `businesses` for legacy values.
+- Updated the in-app feature catalogue to describe the current bilingual list/search labels; no release version or deployed release note was added.
+- Added source and feature-guide regression assertions. Tests **NOT RUN**; no CI trigger/retry; commit uses `[skip ci]`. No backend/API/financial/payroll semantics changed.

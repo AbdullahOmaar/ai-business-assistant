@@ -190,9 +190,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 </section>
               } @else if (loading) {
                 <aba-state-message kind="loading" [description]="t('جارٍ تحميل مؤشرات النشاط…', 'Loading business metrics…')" />
-              } @else if (error) {
-                <aba-state-message kind="error" [description]="error" />
-              } @else {
+              } @else if (!error) {
                 <aba-state-message kind="empty" [description]="t('لا توجد مؤشرات نشاط متاحة حاليًا.', 'No business metrics are available yet.')" />
               }
               <section class="notice"><strong>{{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.', 'Totals come from saved business records. They are not a profit calculation, and different currencies are never combined.') }}</span></section>
@@ -1584,6 +1582,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   notificationKindLabel(kind: string): string {
     const labels: Record<string, { ar: string; en: string }> = {
+      business: { ar: 'مساحات العمل', en: 'Businesses' },
       businesses: { ar: 'مساحات العمل', en: 'Businesses' },
       invoices: { ar: 'الفواتير', en: 'Invoices' },
       payments: { ar: 'المدفوعات', en: 'Payments' },
