@@ -2967,3 +2967,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Refresh recovery:** Home now retains a failed post-payroll dashboard-refresh error when the user navigates away and back, and clears it after a successful dashboard load or workspace reset. The existing same-workspace guard remains in place; no payroll or financial records are changed.
 - **Evidence:** source-only inspection. No Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader or physical Android/PWA execution. No CI trigger/retry, preview, merge or deployment.
 - **Next:** complete the remaining Home source audit, then reconcile the exact PR head and release impact before any promotion.
+
+
+## T18 — Home refresh banner success recovery — 2026-11-07
+
+- **Finding:** after a payroll-triggered Home dashboard refresh failed, the retryable Home error was correctly retained across navigation. On a later successful refresh, the stored `homeDashboardError` was cleared but the shared `error` banner could remain visible on the current page.
+- **Fix:** `frontend/src/app/app.component.ts` commit `f4df92f3cacf94f374163162dee08d5299344593` now clears the shared banner only when it still equals the stored Home refresh error, then clears `homeDashboardError`. An unrelated page-level error is preserved.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `8143c218c3f266f1331fb7703d70440d7df6b6ed` extends the refresh recovery test to guard success ordering and ensure unrelated errors are not cleared. Home spec remains 21 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `1453840d7ce22ca5781d3c6a3074642dbb84677a`.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, authenticated OWNER/STAFF/two-tenant, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
