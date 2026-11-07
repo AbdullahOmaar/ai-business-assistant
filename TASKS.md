@@ -2294,3 +2294,30 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Maintainer source review was recorded as PR COMMENT review 5807689593 on an earlier candidate; refresh the review on the final post-ledger SHA before merge. Physical Android keyboard/screen-reader testing remains **NOT RUN**; Pixel 7 is browser emulation only. Figma visual review remains blocked by View-only access.
 - No backend/API/schema/migration, financial posting semantics, payroll, or production data changes. Production deployment remains separately unauthorized.
 - This ledger-only commit changes the PR head; all required CircleCI jobs must be revalidated on the new exact SHA before merge.
+
+
+## T18 — UI/UX hardening continuation — 2026-11-07
+
+**Status: IN_PROGRESS / parent T18 remains PARTIALLY COMPLETE. Owner: Project Master. Single active branch: `master/t18-uiux-hardening-20261107`. Base: `8f2e326fce39fe45f4aebe0f1820576e45b75483`.**
+
+### Current-main reconciliation
+- The prior T18 branch `master/t18-chat-mobile-ux-20261106` was integrated by PR #346 (merge commit `c5fe115daa72e92b4f814ee502405225e1b3dc79`). It is not an active branch; GitHub branch inventory currently contains only `main`, and open PR inventory is empty.
+- Current main is `8f2e326fce39fe45f4aebe0f1820576e45b75483` after PR #347. PR #346's shared UI foundations, 19-destination role-filtered catalogue, five Home shortcuts, shared state components, mobile More navigation, localized form validation and Pixel 7 emulated chat smoke are already integrated; do not recreate them.
+- Latest exact-main CircleCI status on `8f2e326...`: frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke, backend-accounting, backend-container and aggregate all-checks-passed are SUCCESS. Semaphore failure is retired/non-authoritative. Vercel deployments created for the docs-only PR #347 were canceled by Ignore Build Step; no new production deployment or live UI acceptance is claimed.
+- Last observed T18 frontend build warning (PR #346 candidate): initial bundle 807.63 kB against 700 kB warning budget; Angular NG8107 optional-chain warnings. Do not raise the budget. Confirm diagnostics on the current candidate before changing code.
+- Remaining external acceptance: physical Android keyboard/screen-reader testing NOT RUN; Figma visual review BLOCKED by View-only access. Pixel 7 Playwright emulation is not physical-device evidence.
+
+### Single-branch execution checklist
+1. **P0 — Reduce initial bundle safely:** inspect current lazy boundaries and build diagnostics; defer heavy role-gated UI that is only needed after navigation; preserve OWNER-only payroll and platform-admin access; add regression coverage; measure actual initial bundle after build.
+2. **P0 — Resolve Angular NG8107:** capture exact current compiler diagnostics; correct only template optional-chains proven unnecessary by strict template types; preserve null-safe behavior where values are genuinely nullable; add focused source/template regression coverage.
+3. **P1 — 19-route UX audit:** reconcile current route catalogue with rendered shell and page templates; review navigation, hierarchy, forms, filters, tables, action feedback, empty/error/retry and permission-denied states. No new routes or unsupported capabilities.
+4. **P1 — Responsive and bilingual acceptance:** cover 360/390/412px, tablet and desktop; Arabic RTL and English LTR; focus restoration, keyboard navigation, touch targets, safe areas and text scaling. Add automated browser coverage where feasible.
+5. **P1 — Critical journeys:** verify current documented journeys for OWNER, STAFF, denied access and workspace switching in a synthetic/non-production context. No production test writes.
+6. **Gates — Physical device and Figma:** keep Android physical keyboard/screen-reader and Figma visual review explicitly NOT RUN/BLOCKED until device access and appropriate Figma permissions are available. Continue all independent source/test work meanwhile.
+7. **Final verification:** run frontend unit tests, production build, dependency audit and browser smoke through approved CircleCI on the exact candidate SHA; review full diff; update this ledger and T18 Notion evidence. No merge or production deployment without separate authorization.
+
+### Initial implementation target
+- Current `app.component.ts` eagerly imports `EmployeePayrollComponent` and renders it only when the OWNER selects Employees. Evaluate Angular `@defer` for this isolated view to move it out of the initial bundle; preserve the existing role guard and provide an accessible localized loading placeholder.
+- Existing Platform Admin is already in an `@defer` block. Do not regress its lazy boundary.
+- No backend/API/database/schema/migration, financial semantics, payroll rules, authorization policy, production data or deployment changes are in scope.
+- Initial branch creation and task registration are not implementation completion. Keep T18 PARTIALLY COMPLETE until every applicable criterion has evidence.
