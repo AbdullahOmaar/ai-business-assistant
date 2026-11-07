@@ -26,7 +26,7 @@
 
 ## UX finding disposition
 
-- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; generic notices use informational semantics, warning notices retain warning semantics, and destructive actions retain danger semantics; rendered screenshots remain NOT RUN.
+- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; 64 repeated App Shell color declarations now reuse semantic tokens; generic notices use informational semantics, warning notices retain warning semantics, and destructive actions retain danger semantics; rendered screenshots remain NOT RUN.
 - **UX-02 More-menu focus:** source-level outside close, Escape, focus restoration and RTL/LTR positioning are covered; assistive-technology acceptance remains NOT RUN.
 - **UX-03 mobile viewport/keyboard:** NOT RUN; needs 360/390px browser and installed-PWA keyboard/safe-area evidence.
 - **UX-04 authenticated journeys:** BLOCKED / NOT RUN; no approved isolated synthetic environment and identities are available.
@@ -292,3 +292,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - The bounded chat history now exposes `role="log"`, a localized accessible name and keyboard focus, so users can scroll long conversations without relying on pointer/touch input.
 - Shared focus styling covers normal and forced-colors modes. Automated source regression declarations were added; execution and screen-reader verification remain **NOT RUN**.
+
+
+## T18 App Shell semantic color consolidation — 2026-11-07 — `dba869fb6970ecf85839081f11ff86dbe507adf3`
+
+- Centralized 64 repeated hard-coded App Shell color declarations onto the existing design tokens while retaining fallback colors and visual values.
+- Regression coverage verifies token usage and absence of the targeted repeated raw colors. The design-token source suite now has 22 test declarations.
+- 97 token definitions remain unique; the only App Shell token reference not defined in the global stylesheet is `--aba-keyboard-inset`, which is assigned dynamically by the keyboard viewport handler.
+- Source-only verification; Node tests/build/browser/rendered acceptance remain NOT RUN.

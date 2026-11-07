@@ -2676,3 +2676,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/styles.css`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
 - **Regression:** source assertions added / **NOT RUN**. Full Node tests, Angular build, Playwright, keyboard-only browser and screen-reader acceptance remain **NOT RUN**.
 - **CI/release:** `[skip ci]`; no CI trigger/retry, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
+
+
+## T18 — shared app-shell semantic color token consolidation — 2026-11-07
+
+- Replaced 64 repeated hard-coded color declarations across the App Shell with existing semantic tokens for inverse/tertiary/muted/secondary/navigation text, primary and raised navigation surfaces, subtle/white surfaces, and subtle borders. Existing fallback colors are retained; rendered colors are unchanged.
+- Added a source regression to verify the shell uses the shared tokens and no longer repeats the targeted raw color values.
+- Static source checks: 97 unique design tokens; all shell token references resolve except the intentionally runtime-set `--aba-keyboard-inset`; CSS braces remain balanced. `design-tokens.spec.ts` now has 22 test declarations.
+- Tests/build/dependency audit/Playwright/rendered RTL/LTR and assistive-technology checks remain NOT RUN. Commit uses `[skip ci]`; no CI trigger/retry, preview, merge or deployment.
+- Source commit: `dba869fb6970ecf85839081f11ff86dbe507adf3`; existing PR #348 remains OPEN / DRAFT / UNMERGED.
