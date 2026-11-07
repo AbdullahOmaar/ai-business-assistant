@@ -248,7 +248,7 @@ test('workspace empty states use the shared accessible state component', () => {
 });
 
 test('workspace panels reuse one section header component instead of duplicating heading markup', () => {
-  assert.ok((source.match(/<aba-section-header\b/g) || []).length >= 13);
+  assert.ok((source.match(/<aba-section-header\b/g) || []).length + (releaseGuideSource.match(/<aba-section-header\b/g) || []).length >= 13);
   assert.equal((source.match(/<div class="section-head"><div><h2>/g) || []).length, 0, 'all simple h2 section headers must use the shared component');
 });
 
@@ -319,7 +319,7 @@ test('shared state feedback owns info, warning, success, error and accessible ac
 test('shared card hosts own card surface styling and projected KPI styles live in the shared stylesheet', () => {
   assert.ok(sharedCardSource.includes("selector: 'section[abaCard]'"));
   assert.ok(sharedCardSource.includes('ChangeDetectionStrategy.OnPush'));
-  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g)];
+  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g), ...releaseGuideSource.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g)];
   assert.ok(panelHosts.length >= 20);
   for (const match of panelHosts) {
     assert.equal(match[1], 'section', 'panel surfaces must remain native section elements');
