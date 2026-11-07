@@ -2851,3 +2851,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Static source readback:** 12 focused assertions PASS on code head `c1bd1c62a25123d6eb5b008ea6d9d5b4a35a5cde`: exactly one shared loading status, no Home duplicate, period/KPI skeleton retained, 4 named KPI groups, localized semantic heading, quick access + role-filtered module directory, 12px detail copy, tenant stale-response fence, and 17 Home test declarations. Static inspection only; not test execution.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, OWNER/STAFF/two-tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. Desktop Commander remains Offline; current session instruction prohibits CI triggers/retries. No preview, merge or deployment.
 - **Next:** continue the Home responsive/accessibility source audit; preserve the current API-only metric contract and do not invent attention, trends, aging or recent activity. Keep PR Draft and do not merge/deploy without separate authorization.
+
+
+## T18 — Mobile header 44px touch-target alignment — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `edd4442eb4266ecccc3be3836c694c4f3e52be4c` sets the mobile brand action, workspace selector and assistant shortcut to a 44px minimum height; `1bf7413c015e05f2e59873ce048bf9ff6b40af66` adds source regressions for all interactive header target sizes.
+- **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/app/mobile-app-header.spec.ts`.
+- **UX rationale:** notification/profile controls and account-menu actions were already 44px, while the brand button inherited 38px and workspace/assistant controls were 40px. Aligning the remaining controls removes inconsistent touch-target sizing without changing behavior or navigation.
+- **Regression:** mobile header spec now has 7 source-test declarations; authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` row updated through `38e8ae73911ddd9c5d640b975aaca81788205031`; subsequent baseline/count normalization is recorded in `17855de5f5540188028d1ae48023d96cb6769272`.
+- **Static readback:** 5 focused source assertions PASS for brand, workspace selector, assistant shortcut, notification/profile and account-menu targets. This is not browser/device testing.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue the Home / header source audit and preserve the accepted Hybrid Modern layout; verify rendered touch targets and safe-area behavior on a real mobile browser when an authorized runner/device is available.
