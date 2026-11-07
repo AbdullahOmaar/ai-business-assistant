@@ -2626,3 +2626,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Static readback:** 97 unique `--aba-*` tokens; all CSS variable references resolve; CSS braces balanced; selectors and test declarations present. Static checks only; Node tests, Angular build, dependency audit, Playwright and rendered screenshots are NOT RUN.
 - **Delivery:** commits use `[skip ci]`; no CI trigger/retry, preview, merge or production deployment. No API/backend/DB/schema/migration, permission, financial/payroll/stock semantics or production data changes.
 - **Next:** continue route-level presentation and accessibility review; exact-head automated and rendered acceptance remain gated by the active CI trigger freeze and unavailable interactive device/browser runner.
+
+
+## T18 — confirmation and install-help semantic refinement — 2026-11-07
+
+- Generic explanatory notices and install-help guidance now use informational blue tokens; warning notices remain amber, install CTA remains success-accented, and destructive controls retain danger treatment.
+- Shared confirmation dialog now references defined warning/danger semantic tokens rather than undefined token names with fallback-only colors. Warning and error copy use their corresponding semantic text colors.
+- Added a forced-colors focus fallback for the dialog container when focus trapping has no enabled action button.
+- Regression: existing design-token notice test updated to assert informational install-help; confirmation-dialog.spec.ts adds a semantic-token/forced-colors source test. All are authored / NOT RUN.
+- Source checks passed before write: no remaining undefined warning/danger token names in the dialog, semantic selectors present, balanced component CSS.
+- No backend/API/domain/financial/payroll/stock semantics changed; no CI trigger/retry, merge, preview or production deployment.

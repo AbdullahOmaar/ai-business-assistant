@@ -382,9 +382,9 @@ aba-metric-card small {
 }
 
 :root body .shell .install-help {
-  border-color: var(--aba-color-success-border);
-  background: var(--aba-color-success-soft);
-  color: var(--aba-color-success-text);
+  border-color: var(--aba-color-info-border);
+  background: var(--aba-color-info-soft);
+  color: var(--aba-color-info-text);
 }
 
 :root body .shell .chat-log {
