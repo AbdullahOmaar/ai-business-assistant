@@ -345,3 +345,11 @@ test('generic notices use neutral informational semantics while warnings stay di
   assert.ok(styles.includes(':root body .shell .install-help'));
   assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
 });
+
+
+test('forced-colors focus fallback includes the native disclosure control', () => {
+  const forcedColors = styles.slice(styles.indexOf('@media (forced-colors: active)'));
+  assert.ok(forcedColors.includes(':root body .shell summary:focus-visible'));
+  assert.ok(forcedColors.includes('outline: 2px solid Highlight'));
+  assert.ok(forcedColors.includes('box-shadow: none'));
+});
