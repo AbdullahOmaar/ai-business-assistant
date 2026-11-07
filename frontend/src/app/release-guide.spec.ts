@@ -113,3 +113,43 @@ if (hasBackendPackage) {
     assert.match(backendApp, new RegExp('version="' + expectedApiVersion + '"'));
   });
 }
+
+
+test('feature catalogue covers every current user-facing destination group', () => {
+  const ids = new Set(FEATURE_CATALOG.map(section => section.id));
+  for (const id of [
+    'workspace', 'customers', 'products', 'invoices', 'payments', 'finance',
+    'employees-payroll', 'assistant', 'admin', 'suppliers', 'purchasing',
+    'notifications', 'recurring', 'taxes', 'integrity', 'health',
+  ]) {
+    assert.ok(ids.has(id), `Current destination is missing from the feature guide: ${id}`);
+  }
+  assert.equal(ids.size, 16);
+});
+
+test('feature guide preserves operational and financial limitations', () => {
+  const sections = new Map(FEATURE_CATALOG.map(section => [section.id, section]));
+  const purchasing = sections.get('purchasing')!;
+  assert.match(purchasing.noteEn, /receiving.*stock movements/i);
+  assert.match(purchasing.noteEn, /does not provide supplier bills or supplier payments/i);
+
+  const notifications = sections.get('notifications')!;
+  assert.match(notifications.noteEn, /metadata and status only/i);
+  assert.match(notifications.noteEn, /requires a configured provider and deployed delivery worker/i);
+  assert.match(notifications.features.map(feature => feature.detailEn).join(' '), /does not confirm delivery/i);
+
+  const recurring = sections.get('recurring')!;
+  assert.match(recurring.noteEn, /schedule settings only/i);
+  assert.match(recurring.noteEn, /does not mean an invoice was generated/i);
+
+  const taxes = sections.get('taxes')!;
+  assert.match(taxes.noteEn, /saved tax totals/i);
+  assert.match(taxes.noteEn, /does not recalculate historical taxes/i);
+
+  const integrity = sections.get('integrity')!;
+  assert.match(integrity.noteEn, /read-only/i);
+  assert.match(integrity.noteEn, /does not correct or mutate records automatically/i);
+
+  const health = sections.get('health')!;
+  assert.match(health.noteEn, /reveals no secrets and changes no business data/i);
+});

@@ -163,6 +163,141 @@ export const FEATURE_CATALOG = [
     ],
   },
   {
+    id: 'suppliers',
+    titleAr: 'الموردون',
+    titleEn: 'Suppliers',
+    noteAr: 'دليل الموردين مرتبط بمساحة العمل الحالية ويُستخدم لاختيار المورد في أوامر الشراء. لا يتضمن هذا القسم فواتير موردين أو تسجيل مدفوعات لهم.',
+    noteEn: 'The supplier directory belongs to the current workspace and supplies vendor choices for purchase orders. It does not include supplier bills or supplier payments.',
+    features: [
+      {
+        titleAr: 'دليل الموردين',
+        titleEn: 'Supplier directory',
+        detailAr: 'أضف اسم المورد وبيانات التواصل الاختيارية، وراجع السجلات المرتبطة بمساحة العمل.',
+        detailEn: 'Add a supplier name and optional contact details, then review records for the current workspace.',
+      },
+    ],
+  },
+  {
+    id: 'purchasing',
+    titleAr: 'أوامر الشراء',
+    titleEn: 'Purchase orders',
+    noteAr: 'تُسجل أوامر الشراء المورد والمنتجات والكميات والتكلفة. استلام الكميات المتبقية يسجل حركة مخزون ومتاح للمالك فقط؛ لا يعرض هذا القسم فواتير موردين أو مدفوعات لهم.',
+    noteEn: 'Purchase orders record suppliers, products, quantities, and unit cost. Receiving remaining quantities records stock movements and is owner-only; this section does not provide supplier bills or supplier payments.',
+    features: [
+      {
+        titleAr: 'إنشاء ومراجعة أمر شراء',
+        titleEn: 'Create and review purchase orders',
+        detailAr: 'اربط الأمر بمورد ومنتج، وراجع الكمية والتكلفة والإجمالي والكميات المستلمة والمتبقية.',
+        detailEn: 'Link an order to a supplier and product, then review quantity, unit cost, total, received quantity, and remaining quantity.',
+      },
+      {
+        titleAr: 'استلام الكميات المتبقية',
+        titleEn: 'Receive remaining quantities',
+        detailAr: 'تسجيل الاستلام ينشئ حركة مخزون، ويظل الإجراء متاحًا للمالك فقط.',
+        detailEn: 'Recording receipt creates a stock movement; this action is restricted to workspace owners.',
+      },
+    ],
+  },
+  {
+    id: 'notifications',
+    titleAr: 'قائمة الإشعارات',
+    titleEn: 'Notification queue',
+    noteAr: 'القائمة تحفظ بيانات الإشعار وحالته فقط. إضافة إشعار متاحة للمالك، أما التسليم الفعلي فيحتاج مزود إرسال وعامل تسليم منشورًا.',
+    noteEn: 'The queue stores notification metadata and status only. Owners can queue notifications; actual delivery requires a configured provider and deployed delivery worker.',
+    features: [
+      {
+        titleAr: 'إضافة إشعار إلى القائمة',
+        titleEn: 'Queue a notification',
+        detailAr: 'حدد النوع والعنوان والمحتوى، ويمكنك إضافة موعد اختياري.',
+        detailEn: 'Choose a type, title, and message, with an optional scheduled time.',
+      },
+      {
+        titleAr: 'متابعة الحالة المحفوظة',
+        titleEn: 'Review stored status',
+        detailAr: 'راجع الإشعارات وحالتها وموعدها دون اعتبار ذلك تأكيدًا على وصولها للمستلم.',
+        detailEn: 'Review each notification and its stored status; this does not confirm delivery to a recipient.',
+      },
+    ],
+  },
+  {
+    id: 'recurring',
+    titleAr: 'الفواتير الدورية',
+    titleEn: 'Recurring invoices',
+    noteAr: 'هذا القسم يحفظ إعدادات الجدولة فقط. إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا، لذلك حفظ الجدول لا يعني تنفيذ فاتورة.',
+    noteEn: 'This section stores schedule settings only. Automatic invoice generation requires a deployed scheduler worker, so saving a schedule does not mean an invoice was generated.',
+    features: [
+      {
+        titleAr: 'إعداد الجدولة',
+        titleEn: 'Configure a schedule',
+        detailAr: 'حدد الفاصل بالأيام وموعد التشغيل التالي والمنطقة الزمنية، ويمكن ربط الجدول بعميل اختياري.',
+        detailEn: 'Set the interval in days, next run time, and timezone, with an optional customer.',
+      },
+      {
+        titleAr: 'صلاحية إنشاء الجداول',
+        titleEn: 'Schedule permissions',
+        detailAr: 'إنشاء جداول الفواتير الدورية متاح لمالك مساحة العمل فقط.',
+        detailEn: 'Only workspace owners can create recurring invoice schedules.',
+      },
+    ],
+  },
+  {
+    id: 'taxes',
+    titleAr: 'ملخص الضرائب',
+    titleEn: 'Tax summary',
+    noteAr: 'يعرض إجماليات الضرائب المحفوظة على الفواتير الصادرة مع فصل العملات. لا يعيد حساب الضرائب التاريخية ولا يمثل إقرارًا ضريبيًا.',
+    noteEn: 'Shows saved tax totals on issued invoices with currencies kept separate. It does not recalculate historical taxes or provide a tax filing.',
+    features: [
+      {
+        titleAr: 'تقرير حسب الفترة',
+        titleEn: 'Period summary',
+        detailAr: 'حدد فترة التقرير وراجع إجمالي الضريبة وعدد الفواتير الصادرة لكل عملة.',
+        detailEn: 'Choose a reporting period and review saved tax totals and issued-invoice counts for each currency.',
+      },
+      {
+        titleAr: 'صلاحية الوصول',
+        titleEn: 'Access permissions',
+        detailAr: 'ملخص الضرائب متاح لمالك مساحة العمل فقط.',
+        detailEn: 'The tax summary is available to workspace owners only.',
+      },
+    ],
+  },
+  {
+    id: 'integrity',
+    titleAr: 'مراجعة سلامة البيانات',
+    titleEn: 'Data integrity review',
+    noteAr: 'تقرير قراءة فقط يحدد سجلات تحتاج مراجعة بشرية. لا يصحح البيانات أو يغير السجلات تلقائيًا، وهو متاح للمالك فقط.',
+    noteEn: 'A read-only report identifies records that need human review. It does not correct or mutate records automatically and is available to owners only.',
+    features: [
+      {
+        titleAr: 'فحص السجلات',
+        titleEn: 'Record checks',
+        detailAr: 'اعرض الفواتير الصادرة غير المرتبطة بعميل والتخصيصات التي تختلف فيها العملة أو هوية العميل.',
+        detailEn: 'Review issued invoices without a customer and payment allocations with currency or customer mismatches.',
+      },
+      {
+        titleAr: 'مراجعة النتائج',
+        titleEn: 'Review findings',
+        detailAr: 'تنقل بين صفحات النتائج وتعامل معها كمؤشرات للمراجعة، وليس كإصلاح تلقائي.',
+        detailEn: 'Navigate result pages and treat findings as review indicators, not automatic repairs.',
+      },
+    ],
+  },
+  {
+    id: 'health',
+    titleAr: 'الحالة التشغيلية',
+    titleEn: 'Operational health',
+    noteAr: 'فحص قراءة فقط لحالة الاتصال وإعدادات الخدمات الأساسية. لا يكشف الأسرار ولا يغير بيانات النشاط، وهو متاح للمالك فقط.',
+    noteEn: 'A read-only check of connectivity and core service configuration. It reveals no secrets and changes no business data; access is owner-only.',
+    features: [
+      {
+        titleAr: 'فحص الخدمات الأساسية',
+        titleEn: 'Core service checks',
+        detailAr: 'راجع حالة اتصال قاعدة البيانات وإعدادات الذكاء الاصطناعي وعمال الإشعارات والفواتير الدورية.',
+        detailEn: 'Review database connectivity and the configured state of AI, notification delivery, and recurring-invoice workers.',
+      },
+    ],
+  },
+  {
     id: 'employees-payroll',
     titleAr: 'الموظفون والمرتبات',
     titleEn: 'Employees & payroll',
