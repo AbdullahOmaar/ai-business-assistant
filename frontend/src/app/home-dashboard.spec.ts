@@ -136,3 +136,16 @@ test('Home shortcuts remain compact on mobile and trust copy is visually neutral
   assert.match(home, /dashboard-trust-note" role="note"/);
   assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
 });
+
+
+test('Home preserves the reporting-period hierarchy while KPI data is loading', () => {
+  const loadingStart = home.indexOf('} @else if (loading) {');
+  const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
+  const loading = home.slice(loadingStart, loadingEnd);
+  assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
+  assert.match(loading, /dashboard-period dashboard-period--skeleton" aria-hidden="true"/);
+  assert.match(loading, /t\('ملخص النشاط', 'BUSINESS SUMMARY'\)/);
+  assert.match(loading, /t\('آخر 30 يومًا', 'Last 30 days'\)/);
+  assert.match(loading, /dashboard-period-skeleton__details/);
+  assert.match(appSource, /\.dashboard-period--skeleton\{min-height:66px\}/);
+});
