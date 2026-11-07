@@ -2367,3 +2367,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Consolidated the purchase-order receipt state acceptance into the existing `Purchase receipt confirmation` row in `docs/UX_NESTED_SURFACE_INVENTORY.md`; removed the temporary standalone table row appended during the fix.
 - No application behavior changed in this documentation checkpoint.
 - Repository tests/build remain NOT RUN; no CI trigger/retry. PR #348 remains OPEN / DRAFT / UNMERGED.
+
+
+## T18 exact branch evidence refresh — 2026-11-07
+
+- **Source baseline refreshed:** `17594661bb6214db81b5fb696e6245d1f0d1aac1` on `master/t18-uiux-hardening-20261107`; PR #348 is OPEN / DRAFT / UNMERGED, with 20 changed files and 53 commits at this readback. Branch inventory contains only `main` and this active work branch.
+- **UI outcomes in this branch:** OWNER-only positive opening-stock input with STAFF zero-quantity fallback; Receive remaining is limited to OWNER orders in `approved` / `partially_received` states with remaining quantities, while drafts show localized explanation. Neither change alters backend authorization or domain rules.
+- **Authored regression coverage:** `app.component-template-safety.spec.ts` includes source-level checks for both UI contracts; `mobile-chat.spec.ts` includes a mocked STAFF create-product Playwright scenario asserting `opening_quantity: "0"`.
+- **Exact-head quality:** current combined status returned zero contexts (NOT PASS). Frontend Node tests, Angular production build, dependency audit and Playwright are **NOT RUN** on this source baseline. No CircleCI trigger/retry or replacement CI was used; documentation/source commits use `[skip ci]`.
+- **Historical failure:** CircleCI `frontend-browser-smoke` failed on previous head `1ad820d9fcd1d306772fd99f34c6be2a67020d1a`; five other CircleCI jobs were SUCCESS on that old SHA. Failing output is inaccessible, so root cause remains UNKNOWN. Do not transfer old results to current head.
+- **Delivery:** maintainer review submissions are empty; no merge, deployment, production data or database operations performed. T18 remains IN_PROGRESS / PARTIALLY COMPLETE.
+- **Remaining:** responsive rendered checks, RTL/LTR visual acceptance, authenticated OWNER/STAFF/two-tenant journeys, keyboard/screen-reader and physical Android/PWA remain NOT RUN/BLOCKED; Figma visual review remains blocked by View-only access.

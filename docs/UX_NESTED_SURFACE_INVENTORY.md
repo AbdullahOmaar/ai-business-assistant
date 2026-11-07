@@ -79,3 +79,12 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The prior Angular UI showed Receive for any OWNER order with remaining quantity, including `draft`. Updated the UI to show a draft-state explanation and expose Receive only for approved/partially received orders with remaining quantities.
 - Added the same eligibility guard to the dialog-opening and confirmation handlers. No approval action, backend rule, API contract, stock movement or business lifecycle was added/changed.
 - Source regression test authored; browser rendering and tests remain **NOT RUN**.
+
+
+## Exact-source checkpoint — 2026-11-07 — source baseline `17594661bb6214db81b5fb696e6245d1f0d1aac1`
+
+- Confirmed two frontend-only UX defects against current main contracts: positive product opening stock is OWNER-only; purchase-order receipt is valid only for `approved` or `partially_received` status with remaining quantity.
+- Source implementation and regression coverage are present on the active T18 branch. STAFF stock-tracked product create is covered by an authored mocked Playwright assertion for `opening_quantity: "0"`; purchase order source test covers status eligibility and draft feedback.
+- The following are **authored / NOT RUN**: frontend Node tests, Angular template/production build, Playwright, dependency audit and authenticated/browser/device accessibility acceptance.
+- Exact-source combined status at this baseline returned zero status contexts; no CI run was triggered. Earlier CircleCI results on `1ad820d9...` are historical and included a failed `frontend-browser-smoke`; root cause UNKNOWN from inaccessible logs.
+- No backend/API/database/schema/migration, business-rule or stock-ledger change; no merge or deployment.
