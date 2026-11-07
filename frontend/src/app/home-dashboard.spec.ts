@@ -36,6 +36,22 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
     'the API does not return an outstanding-balance count');
 });
 
+test('Home KPI cards render visible localized labels separately from projected values', () => {
+  const labels = [
+    ['metric-invoiced-sales-label', 'المبيعات بالفواتير', 'Invoiced sales'],
+    ['metric-collected-payments-label', 'التحصيلات', 'Collected payments'],
+    ['metric-expenses-label', 'المصروفات', 'Expenses'],
+    ['metric-outstanding-balances-label', 'المبالغ المستحقة', 'Outstanding balances'],
+  ];
+  for (const [id, arabic, english] of labels) {
+    assert.ok(home.includes('<span id="' + id + '" metricLabel>{{ t(\'' + arabic + '\', \'' + english + '\') }}</span>'),
+      id + ' must contain a visible localized metric label');
+  }
+  assert.match(metricCardSource, /ng-content select="\\[metricLabel\\]"/);
+  assert.match(metricCardSource, /<ng-content \\/>/,
+    'amounts, counts and basis notes must flow into the value slot, not the label slot');
+});
+
 test('Home reports the backend business-local period without generating a client date window', () => {
   assert.match(home, /dashboard\.period\.start_date/);
   assert.match(home, /dashboard\.period\.end_date/);
