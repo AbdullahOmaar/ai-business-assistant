@@ -45,6 +45,7 @@ test('semantic design tokens are defined once and cover the shared UI foundation
     '--aba-color-success-soft',
     '--aba-color-success-border',
     '--aba-color-success-text',
+    '--aba-color-info',
     '--aba-color-info-soft',
     '--aba-color-info-border',
     '--aba-color-info-text',
