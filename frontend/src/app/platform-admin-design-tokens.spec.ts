@@ -21,3 +21,9 @@ test('Platform Admin local theme tokens resolve through the shared semantic foun
 test('Platform Admin focus states use the shared visible focus ring tokens', () => {
   assert.match(source, /button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible\{outline:var\(--aba-focus-ring-width,3px\) solid var\(--aba-color-focus-ring,#2563eb\);outline-offset:var\(--aba-focus-ring-offset,2px\)\}/);
 });
+
+
+test('Platform Admin section headings stack actions on narrow screens', () => {
+  assert.match(source, /@media\(max-width:600px\)\{\.section-heading\{display:grid;grid-template-columns:minmax\(0,1fr\);gap:8px\}/);
+  assert.match(source, /\.section-heading>\.outline-button\{max-width:100%;justify-self:start\}/);
+});
