@@ -186,3 +186,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Cross-checked the shared audit label map against backend AuditEvent writers and added the emitted `notification.queued` action and `notification` target labels.
 - Unknown future action/target values remain visible unchanged. Tests authored / **NOT RUN**.
+
+
+## Audit vocabulary cross-check — 2026-11-07
+
+- Extended shared bilingual audit labels after comparing all current backend AuditEvent writer literals across operations, extended/core features, platform admin and employee/payroll APIs.
+- Added membership role/removal, employee, payroll lifecycle, platform workspace activation/deactivation, and their target types. Unknown future codes still fall back to raw values.
+- Tests authored / **NOT RUN**; no backend changes.

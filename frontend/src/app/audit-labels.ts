@@ -24,6 +24,16 @@ const AUDIT_ACTION_LABELS: Record<string, { ar: string; en: string }> = {
   'data_import.completed': { ar: 'اكتمال استيراد البيانات', en: 'Data import completed' },
   'pricing_rule.created': { ar: 'إنشاء قاعدة تسعير', en: 'Pricing rule created' },
   'notification.queued': { ar: 'إضافة إشعار إلى القائمة', en: 'Notification queued' },
+  'membership.role_changed': { ar: 'تغيير دور العضوية', en: 'Membership role changed' },
+  'membership.removed': { ar: 'إزالة عضوية مساحة العمل', en: 'Workspace membership removed' },
+  'employee.created': { ar: 'إضافة موظف', en: 'Employee created' },
+  'employee.updated': { ar: 'تعديل بيانات موظف', en: 'Employee updated' },
+  'payroll.created': { ar: 'إنشاء مسودة مرتب', en: 'Payroll draft created' },
+  'payroll.updated': { ar: 'تعديل مسودة مرتب', en: 'Payroll draft updated' },
+  'payroll.approved': { ar: 'اعتماد المرتب', en: 'Payroll approved' },
+  'payroll.paid': { ar: 'تسجيل صرف المرتب', en: 'Payroll payout recorded' },
+  'platform.business.activated': { ar: 'تفعيل مساحة عمل', en: 'Workspace activated' },
+  'platform.business.deactivated': { ar: 'إيقاف مساحة عمل', en: 'Workspace deactivated' },
 };
 
 const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {
@@ -41,6 +51,9 @@ const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {
   pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
   business: { ar: 'نشاط تجاري', en: 'Business' },
   notification: { ar: 'إشعار', en: 'Notification' },
+  membership: { ar: 'عضوية', en: 'Membership' },
+  employee: { ar: 'موظف', en: 'Employee' },
+  payroll: { ar: 'مرتب', en: 'Payroll' },
 };
 
 export function auditActionLabel(action: string, language: AuditLanguage): string {

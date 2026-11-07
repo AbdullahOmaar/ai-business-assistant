@@ -2490,3 +2490,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Cross-checked backend AuditEvent writer literals and added bilingual labels for the existing `notification.queued` action and `notification` target in the shared audit label map.
 - No event creation, queue delivery, API or backend behavior changed. Tests authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 — complete current backend AuditEvent label coverage — 2026-11-07
+
+- Cross-checked backend AuditEvent writer literals and added bilingual labels for membership role changes/removal, employee create/update, payroll create/update/approve/pay, and platform workspace activate/deactivate.
+- Added matching target labels for membership, employee and payroll. Existing unknown-value fallback remains.
+- No backend, payroll, membership, permission or financial semantics changed. Tests authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.

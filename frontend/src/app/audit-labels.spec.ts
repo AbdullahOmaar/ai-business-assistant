@@ -18,3 +18,19 @@ test('notification queue audit events use bilingual action labels', () => {
   assert.equal(auditActionLabel('notification.queued', 'ar'), 'إضافة إشعار إلى القائمة');
   assert.equal(auditActionLabel('notification.queued', 'en'), 'Notification queued');
 });
+
+test('membership, employee, payroll, and workspace-admin audit events use bilingual labels', () => {
+  assert.equal(auditActionLabel('membership.role_changed', 'ar'), 'تغيير دور العضوية');
+  assert.equal(auditActionLabel('membership.removed', 'en'), 'Workspace membership removed');
+  assert.equal(auditActionLabel('employee.created', 'ar'), 'إضافة موظف');
+  assert.equal(auditActionLabel('employee.updated', 'en'), 'Employee updated');
+  assert.equal(auditActionLabel('payroll.created', 'ar'), 'إنشاء مسودة مرتب');
+  assert.equal(auditActionLabel('payroll.updated', 'en'), 'Payroll draft updated');
+  assert.equal(auditActionLabel('payroll.approved', 'ar'), 'اعتماد المرتب');
+  assert.equal(auditActionLabel('payroll.paid', 'en'), 'Payroll payout recorded');
+  assert.equal(auditActionLabel('platform.business.activated', 'ar'), 'تفعيل مساحة عمل');
+  assert.equal(auditActionLabel('platform.business.deactivated', 'en'), 'Workspace deactivated');
+  assert.equal(auditTargetLabel('membership', 'ar'), 'عضوية');
+  assert.equal(auditTargetLabel('employee', 'en'), 'Employee');
+  assert.equal(auditTargetLabel('payroll', 'ar'), 'مرتب');
+});
