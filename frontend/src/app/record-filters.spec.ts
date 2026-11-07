@@ -86,6 +86,7 @@ test('filters notifications by title, message, kind and delivery status', () => 
   assert.deepEqual(filterNotifications(notifications, 'invoice').map(x => x.id), ['n1']);
   assert.deepEqual(filterNotifications(notifications, 'coffee').map(x => x.id), ['n2']);
   assert.deepEqual(filterNotifications(notifications, 'failed').map(x => x.id), ['n2']);
+  assert.deepEqual(filterNotifications(notifications, 'فشل الإرسال', kind => kind, status => status === 'failed' ? 'فشل الإرسال' : status).map(x => x.id), ['n2']);
   assert.deepEqual(filterNotifications(notifications, 'فواتير', kind => kind === 'invoices' ? 'الفواتير' : kind).map(x => x.id), ['n1']);
 });
 

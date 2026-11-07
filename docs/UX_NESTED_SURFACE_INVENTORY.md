@@ -110,3 +110,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Added localized status-label callbacks to invoice and purchase-order local filters; added a bilingual Purchase Order status label for the five current backend-constrained values (`draft`, `approved`, `partially_received`, `received`, `cancelled`) and use it in the list.
 - Added Arabic search regression assertions for invoice `صادرة` and purchase-order `مستلم جزئيًا`, plus a template/source assertion for the displayed PO label.
 - Frontend-only presentation/search behavior; no API, backend, database, workflow or financial semantics changed. Tests are authored / **NOT RUN**.
+
+
+## Notification status labels localized — 2026-11-07
+
+- Notification rows previously exposed raw backend status codes and notification search only matched those codes. Added localized labels for the backend-constrained `pending`, `sent`, `failed`, and `cancelled` values and included the active-language label in local search.
+- Added Arabic regression coverage for searching `فشل الإرسال` and a template/source assertion for the displayed label.
+- Frontend presentation/search only; delivery state, workers, API and persistence are unchanged. Tests authored / **NOT RUN**.

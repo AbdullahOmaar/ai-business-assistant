@@ -135,10 +135,11 @@ export function filterNotifications<T extends NotificationSearchItem>(
   items: readonly T[],
   query: string,
   kindLabel: (kind: string) => string = kind => kind,
+  statusLabel: (status: string) => string = status => status,
 ): T[] {
   const q = normalized(query);
   return items.filter(item => !q || [
-    item.title, item.body, item.kind, kindLabel(item.kind), item.status, item.scheduled_at, item.created_at,
+    item.title, item.body, item.kind, kindLabel(item.kind), item.status, statusLabel(item.status), item.scheduled_at, item.created_at,
   ].some(value => normalized(value).includes(q)));
 }
 

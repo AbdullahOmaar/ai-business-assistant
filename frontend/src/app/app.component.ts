@@ -260,7 +260,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (notificationsLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" /> }
                 <div class="list-tools operations-search"><input name="notificationSearch" type="search" [attr.aria-label]="t('البحث في الإشعارات', 'Search notifications')" [placeholder]="t('ابحث بالعنوان أو المحتوى أو النوع أو الحالة…', 'Search by title, message, type or status…')" [(ngModel)]="notificationSearch"></div>
-                <div class="list">@for (item of filteredNotifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!filteredNotifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.', 'No notifications match this search.') : t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
+                <div class="list">@for (item of filteredNotifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ notificationStatusLabel(item.status) }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!filteredNotifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.', 'No notifications match this search.') : t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
               </section>
             }
 
@@ -1300,7 +1300,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredNotifications(): NotificationRecord[] {
-    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind));
+    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status));
   }
 
   get filteredExpenses(): Expense[] {
@@ -1520,6 +1520,22 @@ export class AppComponent implements OnInit, OnDestroy {
       this.initialized = true;
       this.applyPendingAuthSnapshot();
     }
+  }
+
+  notificationStatusLabel(status: string): string {
+    const labelsAr: Record<string, string> = {
+      pending: 'قيد الانتظار',
+      sent: 'تم الإرسال',
+      failed: 'فشل الإرسال',
+      cancelled: 'ملغي',
+    };
+    const labelsEn: Record<string, string> = {
+      pending: 'Pending',
+      sent: 'Sent',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('حالة غير محددة', 'Unknown status');
   }
 
   notificationKindLabel(kind: string): string {

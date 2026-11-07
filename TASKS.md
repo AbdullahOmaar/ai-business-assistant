@@ -2401,3 +2401,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added Arabic filter regression assertions and a source/template assertion for the localized PO label.
 - **Validation:** source changes/tests readback only; frontend Node tests, Angular build and Playwright **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`.
 - No domain behavior or backend/API/database/schema/migration/financial/payroll behavior changed.
+
+
+## T18 — notification status localization — 2026-11-07
+
+- Extended the bilingual status UX audit to Notifications: the row now displays localized labels for the four backend-constrained statuses (`pending`, `sent`, `failed`, `cancelled`), and local search includes the localized status label.
+- Added Arabic search and template/source regression assertions.
+- **Validation:** tests authored / NOT RUN; no CircleCI trigger/retry. No delivery semantics, API, backend, DB or schema changes.
