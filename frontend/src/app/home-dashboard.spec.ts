@@ -180,3 +180,12 @@ test('Home reporting metadata and KPI detail text remain comfortably readable', 
   assert.match(home, /dashboard-period__details/);
   assert.match(home, /class="notice dashboard-trust-note" role="note"/);
 });
+
+
+test('Home exposes its business summary as a navigable section heading', () => {
+  assert.equal(home.split('<h2 class="dashboard-period__title">').length - 1, 1,
+    'the ready Home period section must expose one level-two heading');
+  assert.match(home, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
+  assert.match(home, /<section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">[\s\S]*?<h2 class="dashboard-period__title">/);
+  assert.match(appSource, /\.dashboard-period__title\{[^}]*font-size:14px/);
+});
