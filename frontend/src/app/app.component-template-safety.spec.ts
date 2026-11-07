@@ -1268,3 +1268,17 @@ test('workspace-owned views rely on the non-null business context after the empt
   assert.doesNotMatch(source, /tab === 'integrity' && business\?\.role === 'owner'/);
   assert.doesNotMatch(source, /\{\{ business\?\.currency_code \}\}/);
 });
+
+
+test('release guide content is loaded only after navigating to the guide', () => {
+  const start = source.indexOf("@defer (when tab === 'release-guide')");
+  const placeholder = source.indexOf("} @placeholder {", start);
+  const end = source.indexOf("\n            }", placeholder);
+  assert.ok(start >= 0 && placeholder > start && end > placeholder,
+    'release guide must have an explicit navigation-triggered defer boundary');
+  assert.match(source.slice(start, placeholder), /<aba-release-guide\b/);
+  assert.equal((source.match(/<aba-release-guide\b/g) || []).length, 1);
+  assert.match(source, /import \{ ReleaseGuideComponent \} from '\.\/release-guide\.component';/);
+  assert.match(source, /imports: \[[^\]]*ReleaseGuideComponent/);
+  assert.doesNotMatch(source, /import \{ FEATURE_CATALOG, RELEASE_HISTORY \} from '\.\/release-guide';/);
+});

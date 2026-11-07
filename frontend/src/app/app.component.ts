@@ -7,9 +7,9 @@ import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, 
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
-import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
+import { ReleaseGuideComponent } from './release-guide.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -24,7 +24,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -646,67 +646,13 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             }
 
             @if (tab === 'release-guide') {
-              <section abaCard class="panel release-guide-panel">
-                <div class="section-head">
-                  <div>
-                    <p class="eyebrow">{{ t('دليل مبسط', 'QUICK GUIDE') }}</p>
-                    <h2>{{ t('مميزات التطبيق والإصدارات', 'App features & versions') }}</h2>
-                    <p>{{ t('اعرف الموجود في التطبيق، ثم افتح الإصدار لمعرفة ما أُضيف مقارنة بالإصدارات السابقة.', 'Browse what the app offers, then open a version to see what changed from earlier releases.') }}</p>
-                  </div>
-                  <span class="version-pill">{{ t('إصدار الواجهة', 'UI version') }} · v{{ appVersion }}</span>
-                </div>
-
-                <h3 class="release-guide-heading">{{ t('المميزات المتاحة', 'Available features') }}</h3>
-                <p class="footnote">{{ t('افتح القسم الذي تحتاجه فقط. بعض الأدوات تعتمد على صلاحية الحساب أو إعداد الخدمة.', 'Open only the section you need. Some tools depend on your account permissions or service setup.') }}</p>
-                <div class="release-guide-groups">
-                  @for (group of featureCatalog; track group.id) {
-                    <details class="release-feature-group">
-                      <summary>
-                        <strong>{{ t(group.titleAr, group.titleEn) }}</strong>
-                        <small>{{ t(group.noteAr, group.noteEn) }}</small>
-                      </summary>
-                      <ul>
-                        @for (feature of group.features; track feature.titleEn) {
-                          <li>
-                            <strong>{{ t(feature.titleAr, feature.titleEn) }}</strong>
-                            <span>{{ t(feature.detailAr, feature.detailEn) }}</span>
-                          </li>
-                        }
-                      </ul>
-                    </details>
-                  }
-                </div>
-
-                <div class="section-head release-history-title">
-                  <div>
-                    <h2>{{ t('سجل الإصدارات', 'Version history') }}</h2>
-                    <p>{{ t('كل إصدار يعرض الإضافات والتحسينات الجديدة فقط.', 'Each version lists only its new additions and improvements.') }}</p>
-                  </div>
-                </div>
-                <div class="release-history">
-                  @for (release of releaseHistory; track release.version) {
-                    <details class="release-version" [open]="release.version === appVersion">
-                      <summary>
-                        <span class="version-pill">v{{ release.version }}</span>
-                        <strong>{{ t(release.titleAr, release.titleEn) }}</strong>
-                        @if (release.version === appVersion) {
-                          <span class="count">{{ t('الإصدار الحالي', 'Current version') }}</span>
-                        }
-                      </summary>
-                      @if (language === 'ar') {
-                        <ul>
-                          @for (change of release.changesAr; track change) { <li>{{ change }}</li> }
-                        </ul>
-                      } @else {
-                        <ul>
-                          @for (change of release.changesEn; track change) { <li>{{ change }}</li> }
-                        </ul>
-                      }
-                    </details>
-                  }
-                </div>
-                <p class="footnote">{{ t('يتم تحديث هذا الدليل عند تجهيز إصدار جديد. الميزات التي تتطلب صلاحية أو إعدادًا تظهر ملاحظتها داخل قسمها.', 'This guide is updated for each new version. Features requiring permissions or setup are identified in their section.') }}</p>
-              </section>
+              @defer (when tab === 'release-guide') {
+                <aba-release-guide [language]="language" [appVersion]="appVersion" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('جارٍ تحميل دليل التطبيق…', 'Loading the app guide…')" />
+                </section>
+              }
             }
 
             @if (tab === 'employees' && business.role === 'owner') {
@@ -819,18 +765,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
   styles: [`
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}button,input,select,textarea{font:inherit}
-    .release-guide-heading{margin:18px 0 4px;font-size:16px}.release-history-title{margin-top:26px}
-    .release-guide-groups,.release-history{display:grid;gap:10px;margin:12px 0 22px;min-width:0}
-    .release-feature-group,.release-version{border:1px solid #dbe4ea;border-radius:13px;background:#fff;min-width:0;overflow:hidden}
-    .release-feature-group>summary,.release-version>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;list-style:none;cursor:pointer;padding:13px 14px}
-    .release-feature-group>summary::-webkit-details-marker,.release-version>summary::-webkit-details-marker{display:none}
-    .release-feature-group>summary:after,.release-version>summary:after{content:'＋';margin-inline-start:auto;display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:8px;background:#f1f5f9;color:#334155}
-    .release-feature-group[open]>summary:after,.release-version[open]>summary:after{content:'−'}
-    .release-feature-group>summary strong{font-size:14px;flex:1 1 160px}.release-feature-group>summary small{flex:1 1 100%;font-size:12px;color:#64748b;line-height:1.5;overflow-wrap:anywhere}
-    .release-feature-group ul,.release-version ul{margin:0;padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0;display:grid;gap:10px;font-size:13px;line-height:1.55}
     
-    .release-feature-group li strong{display:block;font-size:13px}.release-feature-group li span{display:block;margin-top:2px;color:#475569;font-size:12px;overflow-wrap:anywhere}
-    .release-version>summary strong{font-size:14px;flex:1 1 160px}.release-version ul{padding-top:2px}.release-version .count{font-size:11px}
     .csv-import-panel{display:grid;gap:10px;margin:18px 0;padding:14px;border:1px solid #d1d5db;border-radius:12px;background:#f8fafc}.csv-import-panel h3,.csv-import-panel p{margin:0}.csv-import-panel h3{font-size:15px}.csv-import-panel p,.csv-import-panel small{font-size:12px;line-height:1.5;color:#4b5563}.csv-import-actions{display:flex;flex-wrap:wrap;gap:8px}.csv-import-errors{margin:0;padding-inline-start:22px;font-size:12px;color:#991b1b;display:grid;gap:5px;overflow-wrap:anywhere}.invoice-lines{display:grid;gap:10px;flex-basis:100%;width:100%}.invoice-lines-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.invoice-line-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc}.invoice-line-row label{display:grid;gap:5px;min-width:0}.invoice-line-row select,.invoice-line-row input{width:100%;min-width:0}@media(max-width:600px){.invoice-line-row{grid-template-columns:minmax(0,1fr) minmax(88px,.65fr)}.invoice-line-row button{grid-column:1/-1;justify-self:start}}.topbar-heading{display:grid;gap:5px;min-width:0}.invoice-create-disclosure{margin:14px 0 18px;border:1px solid #cbd5e1;border-radius:16px;background:#f8fafc;overflow:hidden}.invoice-create-disclosure>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;background:#fff;font-weight:800;color:#0f172a}.invoice-create-disclosure>summary::-webkit-details-marker{display:none}.invoice-create-disclosure>summary:after{content:'＋';display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:#ccfbf1;color:#115e59;font-size:19px}.invoice-create-disclosure[open]>summary:after{content:'−'}.invoice-create-disclosure>summary small{font-weight:500;color:#64748b;font-size:11px}.invoice-create-disclosure>.invoice-form{padding:14px;border-top:1px solid #e2e8f0}.customer-invoice-filter{padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.customer-invoice-filter label{width:100%;min-width:0}.customer-invoice-filter select{width:100%;min-width:0}.list-row{min-width:0;flex-wrap:wrap;gap:12px}.list-row .grow{min-width:120px;overflow-wrap:anywhere}.list-row>strong{overflow-wrap:anywhere;max-width:100%}.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:12px}.table-wrap table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0}.table-wrap th,.table-wrap td{padding:11px 12px;text-align:start;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}.table-wrap th{position:sticky;top:0;background:#f1f5f9;color:#334155;font-size:12px;white-space:nowrap}.table-wrap tbody tr:nth-child(even){background:#f8fafc}.table-wrap tbody tr:last-child td{border-bottom:0}@media(max-width:600px){.topbar-heading{width:100%}.invoice-create-disclosure>summary{align-items:flex-start;flex-wrap:wrap}.invoice-create-disclosure>summary small{flex:1 1 100%;order:2}.invoice-create-disclosure>.invoice-form{display:grid;grid-template-columns:minmax(0,1fr)}.list-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start}.list-row .grow{min-width:0}.list-row>button,.list-row>strong{grid-column:2;justify-self:start}.table-wrap table{min-width:760px}}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}
     .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:#f8fafc}.warning-notice{border-color:#f59e0b;background:#fffbeb}.divider{height:1px;background:#e5e7eb;margin:22px 0}
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.sidebar{position:fixed;inset-block:0;inset-inline-end:0;width:var(--aba-layout-sidebar,245px);background:var(--aba-color-nav-surface,#111827);color:var(--aba-color-text-inverse,#e5e7eb);padding:26px 17px;display:flex;flex-direction:column;z-index:2}
@@ -964,8 +899,6 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     .shell input[type="number"]{font-variant-numeric:tabular-nums}
     .shell label{min-width:0;gap:6px}
     .list-row{min-width:0;overflow-wrap:anywhere}
-    .release-guide-panel .release-guide-groups,.release-guide-panel .release-history{gap:12px}
-    .release-guide-panel .release-feature-group>summary,.release-guide-panel .release-version>summary{min-height:48px}
     .assistant-suggestions{padding:12px;border:1px solid #dbeafe;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#eff6ff)}
     .assistant-suggestions .suggestion-card{min-height:68px}
     .auth-retry{margin-top:12px}
@@ -1032,8 +965,6 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 })
 export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
-  readonly featureCatalog = FEATURE_CATALOG;
-  readonly releaseHistory = RELEASE_HISTORY;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   readonly buildTimeLabel = APP_BUILD_INFO.builtAt ? new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' }).format(new Date(APP_BUILD_INFO.builtAt)) : 'وقت البناء غير متاح';
   apiVersionLabel = 'غير متاح';
