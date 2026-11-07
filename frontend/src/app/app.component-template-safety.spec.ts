@@ -1265,7 +1265,7 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
   assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch\)/);
+  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch, kind => this\.notificationKindLabel\(kind\)\)/);
   const clearStart = source.indexOf('private clearWorkspaceData(): void');
   const clearEnd = source.indexOf('\n  }', clearStart);
   const clear = source.slice(clearStart, clearEnd);
