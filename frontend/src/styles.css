@@ -336,3 +336,83 @@ aba-metric-card small {
     box-shadow: none;
   }
 }
+
+
+/* Route-level visual consistency: headings, nested surfaces and assistant messages. */
+:root body .shell .topbar h1,
+:root body .shell .mobile-page-heading h1 {
+  color: var(--aba-color-text-primary);
+  font-size: clamp(var(--aba-font-size-2xl), 2.2vw, var(--aba-font-size-3xl));
+  line-height: var(--aba-line-height-tight);
+  letter-spacing: var(--aba-letter-spacing-tight);
+}
+
+:root body .shell .section-head h2,
+:root body .shell .panel h2 {
+  color: var(--aba-color-text-primary);
+  line-height: var(--aba-line-height-tight);
+}
+
+:root body .shell .section-head p,
+:root body .shell .muted {
+  color: var(--aba-color-text-secondary);
+  line-height: var(--aba-line-height-relaxed);
+}
+
+:root body .shell .count {
+  background: var(--aba-color-primary-soft);
+  color: var(--aba-color-primary-strong);
+}
+
+:root body .shell .inline-form,
+:root body .shell .customer-invoice-filter,
+:root body .shell .invoice-preview,
+:root body .shell .setup-steps {
+  border-color: var(--aba-color-border-subtle);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .notice,
+:root body .shell .install-help {
+  border-color: var(--aba-color-success-border);
+  background: var(--aba-color-success-soft);
+  color: var(--aba-color-success-text);
+}
+
+:root body .shell .chat-log {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface);
+}
+
+:root body .shell .chat-message {
+  border: 1px solid var(--aba-color-border-subtle);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .chat-message.user-message {
+  border-color: var(--aba-color-primary-border);
+  background: var(--aba-color-primary-soft);
+}
+
+:root body .shell .suggestion-card {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .suggestion-card:hover {
+  border-color: var(--aba-color-primary);
+  background: var(--aba-color-surface-hover);
+}
+
+@media (max-width: 760px) {
+  :root body .shell .topbar h1,
+  :root body .shell .mobile-page-heading h1 {
+    font-size: clamp(20px, 5.5vw, 25px);
+  }
+}
