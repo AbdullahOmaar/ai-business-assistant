@@ -286,6 +286,7 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
   }
 
+  await page.setViewportSize({ width: 360, height: 800 });
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
