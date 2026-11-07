@@ -2564,3 +2564,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`.
 - **Validation:** readback/static source review only; regression authored / **NOT RUN**. Full frontend tests, Angular build, browser role-transition, keyboard/screen-reader and authenticated OWNER/STAFF acceptance remain **NOT RUN**.
 - **Delivery boundary:** no API/backend/database/schema, new permission policy, financial/payroll semantics, production data, CI trigger/retry, merge or deployment. Commit uses `[skip ci]`.
+
+## T18 — Phase 2 code-level interaction foundation — 2026-11-07
+
+- **Existing work item:** continue master/t18-uiux-hardening-20261107 / PR #348 (OPEN / DRAFT / UNMERGED); no duplicate branch or PR.
+- **Source implementation checkpoint:** 44e913fd4dee773fda5b7d53b2ed83aa0968be3e (source commits 6cf233187d2f389ba637bfe500965ce6f8bc7325 and 44e913fd4dee773fda5b7d53b2ed83aa0968be3e).
+- **Files:** frontend/src/styles.css, frontend/src/app/design-tokens.spec.ts.
+- **Implemented:** added semantic control tokens for 44px minimum control height, 10px control radius and 12px inline padding; standardized shell buttons, primary/secondary states, text/select/textarea controls, shared card surfaces and table headers/hover; added Windows forced-colors focus fallback. Existing mobile 16px input rule is preserved to avoid browser auto-zoom.
+- **Regression:** added a design-token source test covering unique token definitions, control/surface selectors, forced-colors fallback and mobile input sizing.
+- **Static readback:** unique token names, required new token definitions, balanced CSS braces, expected style selectors and test presence all PASS. These are source checks only; Node tests, Angular build, dependency audit, Playwright and rendered acceptance are NOT RUN.
+- **Exact-head provider observation on source SHA 44e913f:** GitGuardian SUCCESS; CircleCI frontend-unit-tests, production-build, dependency-audit, browser-smoke and backend-accounting statuses PENDING at the observed read. GitHub Actions dependency/backend/frontend workflows were IN_PROGRESS and are non-authoritative for this repository. No manual CI trigger/retry was issued; the two source commits were not marked [skip ci], so provider automation started from the push. Do not use these runs as evidence until their exact-SHA outcomes are read and the approved CircleCI gate is confirmed. Subsequent documentation commits use [skip ci].
+- **Deployment:** Vercel returned zero preview deployments for this branch at the read time. No merge or production deployment.
+- **Design gate:** code-level interaction foundation work has started under the user-authorized T18 UI implementation. Figma Variables/component-library delivery and visual verification remain NOT RUN/BLOCKED by View-only access; this code work does not claim Figma Phase 2 acceptance.
+- **Boundaries:** no backend/API/database/schema/migration, product scope, financial/payroll/stock semantics or production data changes.
+- **Next:** continue the route-level visual consistency pass on existing frontend presentation files; keep PR Draft and preserve separate exact-head, rendered, authenticated, Android/PWA and screen-reader acceptance gates.
