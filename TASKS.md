@@ -2812,3 +2812,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Static source readback:** 16 focused assertions PASS on exact code head `f4b95fa773ec99f962877ff7e161c3e1267471f1`, covering 4 source-backed KPI cards, currency isolation, 4/2/1 responsive hierarchy, readable detail copy, loading skeleton, no unsupported panels, tenant reset/stale-response fence and mobile-header semantic tokens. This is not Node test execution.
 - **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry; commits use `[skip ci]`. No preview, merge or deployment.
 - **Next:** continue the Home / Overview source review and verify the latest exact-head status/provider access. Figma visual authoring remains blocked by Starter + View seat; suggested-edit discovery on the UX Workstream returns `upgrade_required`, so no unseen suggestion is treated as reviewed.
+
+
+## T18 — Home semantic section heading — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `ec3e806cd15d99372831963e3357aa5169ba27f6` replaces the visual-only Home Business Summary eyebrow with a real level-two heading in both ready and loading layouts; `f5ff4eccb77438e94349f1f8f6476c85832671f8` adds heading-hierarchy coverage; `12a106d5ab40df7b02fba72112cf0966b9fb437c` corrects the regression to assert both ready and skeleton headings.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** adds a navigable H2 under the page H1, making the Home reporting/metric section discoverable through heading navigation while keeping the compact period strip and its loading skeleton structurally consistent.
+- **Regression:** Home spec now has 15 source-test declarations; new declaration asserts both ready and loading headings and the 14px semantic heading style. Authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `df2bb06f37c43e2119b4764bf193765e4df72270`.
+- **Validation:** source readback only; no Node test/build/browser execution. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue Home source/accessibility audit and re-read exact-head status; do not add charts/alerts/activity/aging without a verified API source and approved metric definition.
