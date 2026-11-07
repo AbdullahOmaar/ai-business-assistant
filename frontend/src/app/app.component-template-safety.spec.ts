@@ -253,17 +253,23 @@ test('workspace panels reuse one section header component instead of duplicating
 });
 
 test('Home quick access shows only the five key destinations from the shared role-filtered catalogue', () => {
+  const overviewStart = source.indexOf("@if (tab === 'overview')");
+  const overviewEnd = source.indexOf("@if (tab === 'notifications')", overviewStart);
+  const overview = source.slice(overviewStart, overviewEnd);
+  const quickStart = overview.indexOf("Quick access");
+  const directoryStart = overview.indexOf("All workspace modules");
+  const quickAccess = overview.slice(quickStart, directoryStart);
   assert.ok(source.includes('class="panel module-launcher"'));
   assert.match(source, /get homeQuickAccessCards\(\): readonly WorkspaceModuleCard\[\]/);
   assert.match(source, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
   assert.match(source, /selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG/);
   assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
-  assert.ok(source.includes('homeQuickAccessCards.length'));
-  assert.match(source, /title]="t\('الوصول السريع', 'Quick access'\)/);
-  assert.match(source, /@for \(module of homeQuickAccessCards; track module\.tab\)/);
-  assert.match(source, /<aba-quick-access-card\b/);
-  assert.match(source, /activated\)="setTab\(module\.tab\)"/);
-  assert.doesNotMatch(source, /homeModuleCards\.length/);
+  assert.ok(quickAccess.includes('homeQuickAccessCards.length'));
+  assert.match(quickAccess, /@for \(module of homeQuickAccessCards; track module\.tab\)/);
+  assert.doesNotMatch(quickAccess, /homeModuleCards/);
+  assert.match(overview, /@for \(module of homeModuleCards; track module\.tab\)/);
+  assert.match(overview, /All workspace modules/);
+  assert.match(overview, /activated\)="setTab\(module\.tab\)"/);
   assert.doesNotMatch(source, /class="quick-card"/);
 });
 
