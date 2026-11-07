@@ -101,3 +101,8 @@ test('mobile header interactive controls meet the 44px touch-target baseline', (
   assert.match(styles, /\.icon-button, \.profile-trigger \{[^}]*height: 44px/);
   assert.match(styles, /\.account-action \{[^}]*min-height: 44px/);
 });
+
+
+test('mobile page title changes are announced politely without moving focus', () => {
+  assert.match(source, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
+});
