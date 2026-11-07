@@ -3,7 +3,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input
 @Component({
   selector: 'aba-confirm-dialog',
   standalone: true,
-  template: \`
+  template: `
     <div class="confirm-backdrop" (click)="onBackdropClick($event)">
       <section
         #dialog
@@ -41,8 +41,8 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input
         </div>
       </section>
     </div>
-  \`,
-  styles: [\`
+  `,
+  styles: [`
     :host{position:fixed;inset:0;z-index:5000;display:block;direction:inherit}
     .confirm-backdrop{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(15,23,42,.58);backdrop-filter:blur(4px);overscroll-behavior:contain}
     .confirm-dialog{display:grid;grid-template-columns:42px minmax(0,1fr);gap:15px;width:min(100%,560px);max-height:calc(100dvh - 32px);overflow:auto;padding:22px;border:1px solid var(--aba-color-border-strong,#cbd5e1);border-radius:18px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);box-shadow:0 24px 64px rgba(15,23,42,.24);outline:none}
@@ -64,7 +64,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input
     .confirm-actions button:disabled{opacity:.55;cursor:not-allowed}
     .confirm-actions button:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:3px}
     @media(max-width:480px){.confirm-dialog{grid-template-columns:1fr;padding:17px;border-radius:15px}.confirm-mark{width:34px;height:34px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr}.confirm-actions button{min-width:0}}
-  \`],
+  `],
 })
 export class AbaConfirmDialogComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() title = '';
