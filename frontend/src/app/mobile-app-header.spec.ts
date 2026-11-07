@@ -27,6 +27,8 @@ test('mobile app header is an isolated standalone presentation component with ex
 
 test('mobile header uses the dynamic build version and existing workspace records only', () => {
   assert.match(source, /v\{\{ appVersion \}\}/);
+  assert.match(source, /@if \(businesses\.length > 1\) \{/);
+  assert.match(source, /<label class="workspace-switch">[\s\S]*?<select/);
   assert.match(source, /\[ngModel\]="selectedBusinessId"/);
   assert.match(source, /businessChange\.emit\(\$event\)/);
   assert.match(source, /business\.name/);
