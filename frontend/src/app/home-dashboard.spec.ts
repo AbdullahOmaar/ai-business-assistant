@@ -235,6 +235,14 @@ test('failed payroll dashboard refresh clears stale Home metrics before exposing
   assert.ok(catchStart >= 0 && staleClear > catchStart && retryError > staleClear,
     'failed refresh must clear old dashboard metrics before publishing the retryable error');
   assert.match(method, /if \(this\.business\?\.id === businessId\) \{/);
+
+  const successfulDashboard = method.indexOf('this.dashboard = dashboard;');
+  const clearResolvedBanner = method.indexOf("if (this.error === this.homeDashboardError) this.error = '';");
+  const clearHomeError = method.indexOf("this.homeDashboardError = '';", clearResolvedBanner);
+  assert.ok(successfulDashboard >= 0 && clearResolvedBanner > successfulDashboard && clearHomeError > clearResolvedBanner,
+    'a successful refresh clears only the matching Home refresh banner before clearing its stored error');
+  assert.doesNotMatch(method, /this\.error = '';/,
+    'success must not erase an unrelated page-level error');
 });
 
 
