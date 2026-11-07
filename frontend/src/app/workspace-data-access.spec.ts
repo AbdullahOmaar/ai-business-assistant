@@ -16,7 +16,7 @@ test('workspace bootstrap fetches payment records only for roles authorized to o
 
 test('denied direct tab navigation returns before changing the selected tab or loading route data', () => {
   const start = source.indexOf('setTab(tab: Tab): void {');
-  const end = source.indexOf('\n  get statementBalanceEntries:', start);
+  const end = source.indexOf('\n  get statementBalanceEntries():', start);
   assert.ok(start >= 0 && end > start, 'central tab navigation method must exist');
   const method = source.slice(start, end);
   const guard = method.indexOf('if (!this.canAccessTab(tab))');
