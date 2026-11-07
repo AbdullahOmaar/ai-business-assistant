@@ -133,3 +133,45 @@ export function filterNotifications<T extends NotificationSearchItem>(
     item.title, item.body, item.kind, kindLabel(item.kind), item.status, item.scheduled_at, item.created_at,
   ].some(value => normalized(value).includes(q)));
 }
+
+
+export interface ExpenseSearchItem {
+  category: string;
+  description: string;
+  amount: string | number;
+  currency_code: string;
+  incurred_at: string;
+  vendor_name?: string | null;
+  reference?: string | null;
+}
+
+export interface PaymentSearchItem {
+  amount: string | number;
+  currency_code: string;
+  received_at: string;
+  customer_id?: string | null;
+  method?: string | null;
+  reference?: string | null;
+  allocations: readonly { invoice_id: string; amount: string | number }[];
+}
+
+export function filterExpenses<T extends ExpenseSearchItem>(items: readonly T[], query: string): T[] {
+  const q = normalized(query);
+  return items.filter(item => !q || [
+    item.category, item.description, item.amount, item.currency_code, item.incurred_at, item.vendor_name, item.reference,
+  ].some(value => normalized(value).includes(q)));
+}
+
+export function filterPayments<T extends PaymentSearchItem>(
+  items: readonly T[],
+  query: string,
+  customerName: (customerId: string) => string,
+): T[] {
+  const q = normalized(query);
+  return items.filter(item => !q || [
+    item.amount, item.currency_code, item.received_at,
+    item.customer_id ? customerName(item.customer_id) : '',
+    item.method, item.reference, item.allocations.length,
+    item.allocations.length ? 'allocated' : 'unallocated',
+  ].some(value => normalized(value).includes(q)));
+}

@@ -1283,3 +1283,15 @@ test('operations lists filter locally by their visible business fields', () => {
 test('customer section markup does not render stray closing-tag text', () => {
   assert.equal(source.includes('</section>ion>'), false);
 });
+
+
+test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
+  assert.match(source, /get filteredPayments\(\): Payment\[\]/);
+  assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
+  assert.match(source, /filterPayments\(this\.payments, this\.paymentSearch/);
+  assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch\)/);
+  assert.match(source, /No payments match this search/);
+  assert.match(source, /No expenses match this search/);
+  assert.match(source, /name="paymentSearch" type="search"/);
+  assert.match(source, /name="expenseSearch" type="search"/);
+});

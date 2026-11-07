@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { filterCustomers, filterInvoices, filterNotifications, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
 
 test('filters customers by name, email, and phone case-insensitively', () => {
   const customers = [
@@ -84,4 +84,28 @@ test('filters notifications by title, message, kind and delivery status', () => 
   assert.deepEqual(filterNotifications(notifications, 'coffee').map(x => x.id), ['n2']);
   assert.deepEqual(filterNotifications(notifications, 'failed').map(x => x.id), ['n2']);
   assert.deepEqual(filterNotifications(notifications, 'فواتير', kind => kind === 'invoices' ? 'الفواتير' : kind).map(x => x.id), ['n1']);
+});
+
+
+test('filters expenses by category, description, amount, currency, vendor and reference', () => {
+  const expenses = [
+    { id: 'e1', category: 'Transport', description: 'Delivery fuel', amount: '450.00', currency_code: 'EGP', incurred_at: '2026-11-01', vendor_name: 'Nile Station', reference: 'TR-1' },
+    { id: 'e2', category: 'Rent', description: 'Office rent', amount: '5000.00', currency_code: 'EGP', incurred_at: '2026-11-02', vendor_name: null, reference: null },
+  ];
+  assert.deepEqual(filterExpenses(expenses, 'delivery').map(x => x.id), ['e1']);
+  assert.deepEqual(filterExpenses(expenses, 'nile station').map(x => x.id), ['e1']);
+  assert.deepEqual(filterExpenses(expenses, 'TR-1').map(x => x.id), ['e1']);
+  assert.deepEqual(filterExpenses(expenses, '5000').map(x => x.id), ['e2']);
+});
+
+test('filters payments by visible receipt details and allocation state without changing records', () => {
+  const payments = [
+    { id: 'p1', amount: '120', currency_code: 'EGP', received_at: '2026-11-01', customer_id: 'c1', method: 'cash', reference: 'RC-1', allocations: [{ invoice_id: 'i1', amount: '120' }] },
+    { id: 'p2', amount: '50', currency_code: 'USD', received_at: '2026-11-02', customer_id: null, method: 'bank_transfer', reference: null, allocations: [] },
+  ];
+  const customer = (id: string) => id === 'c1' ? 'Nour Shop' : '';
+  assert.deepEqual(filterPayments(payments, 'nour', customer).map(x => x.id), ['p1']);
+  assert.deepEqual(filterPayments(payments, 'RC-1', customer).map(x => x.id), ['p1']);
+  assert.deepEqual(filterPayments(payments, 'unallocated', customer).map(x => x.id), ['p2']);
+  assert.deepEqual(filterPayments(payments, 'bank_transfer', customer).map(x => x.id), ['p2']);
 });

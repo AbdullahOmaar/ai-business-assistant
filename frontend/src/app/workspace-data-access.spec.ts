@@ -38,3 +38,12 @@ test('workspace changes clear local operation-list searches with the previous wo
     assert.ok(method.includes(`this.${field} = '';`), `${field} is reset on workspace change`);
   }
 });
+
+
+test('workspace changes also clear payment and expense search state', () => {
+  const start = source.indexOf('private clearWorkspaceData(): void');
+  const end = source.indexOf('\n  }', start);
+  const method = source.slice(start, end);
+  assert.ok(method.includes("this.paymentSearch = '';"));
+  assert.ok(method.includes("this.expenseSearch = '';"));
+});

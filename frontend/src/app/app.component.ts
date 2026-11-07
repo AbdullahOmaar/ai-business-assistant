@@ -6,7 +6,7 @@ import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
-import { filterCustomers, filterInvoices, filterNotifications, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
@@ -573,7 +573,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             }
             @if (tab === 'payments' && business.role === 'owner') {
               <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
-                  <div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
+                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 </aba-section-header>
                 <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="paymentForm.valid && createPayment()">
                   <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
@@ -586,9 +586,10 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 </form>
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
+                <div class="list-tools operations-search"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
                 <div class="list">
-                  @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
-                  @if (!payments.length) { <aba-state-message kind="empty" [description]="t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
+                  @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
+                  @if (!filteredPayments.length) { <aba-state-message kind="empty" [description]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.', 'No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
                 </div>
               </section>
             }
@@ -690,7 +691,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
             @if (tab === 'expenses') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="expenses.length + ' ' + t('مصروفات', 'expenses')" />
+                <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('مصروفات', 'expenses')" />
                 <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
                   <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
                     <option value="General">{{ t('عام', 'General') }}</option>
@@ -724,8 +725,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (expenseSubmissionUncertain) {
                   <aba-state-message kind="error" [description]="t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.')" [actionLabel]="t('فحص قائمة المصروفات', 'Check expense list')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
+                <div class="list-tools operations-search"><input name="expenseSearch" type="search" [attr.aria-label]="t('البحث في المصروفات', 'Search expenses')" [placeholder]="t('ابحث بالتصنيف أو الوصف أو المورد أو المرجع…', 'Search by category, description, vendor or reference…')" [(ngModel)]="expenseSearch"></div>
                 <div class="list">
-                  @for (expense of expenses; track expense.id) {
+                  @for (expense of filteredExpenses; track expense.id) {
                     <article class="list-row">
                       <div class="expense-mark" aria-hidden="true">−</div>
                       <div class="grow">
@@ -735,7 +737,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                       </div>
                     </article>
                   }
-                  @if (!expenses.length) { <aba-state-message kind="empty" [description]="t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.')" /> }
+                  @if (!filteredExpenses.length) { <aba-state-message kind="empty" [description]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.', 'No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.')" /> }
                 </div>
               </section>
             }
@@ -1098,6 +1100,8 @@ export class AppComponent implements OnInit, OnDestroy {
   customerSearch = '';
   productSearch = '';
   invoiceSearch = '';
+  paymentSearch = '';
+  expenseSearch = '';
   supplierSearch = '';
   purchaseSearch = '';
   recurringSearch = '';
@@ -1290,6 +1294,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get filteredNotifications(): NotificationRecord[] {
     return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind));
+  }
+
+  get filteredExpenses(): Expense[] {
+    return filterExpenses(this.expenses, this.expenseSearch);
+  }
+
+  get filteredPayments(): Payment[] {
+    return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id));
   }
 
   exportCurrentList(): void {
@@ -1813,6 +1825,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.recurringSchedules = [];
     this.notifications = [];
     this.supplierSearch = '';
+    this.paymentSearch = '';
+    this.expenseSearch = '';
     this.purchaseSearch = '';
     this.recurringSearch = '';
     this.notificationSearch = '';
