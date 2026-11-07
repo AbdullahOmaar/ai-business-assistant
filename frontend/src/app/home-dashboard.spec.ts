@@ -132,9 +132,19 @@ test('Home keeps the full role-filtered module directory discoverable but collap
   assert.match(home, /homeModuleCards/);
 });
 
-test('Home shortcuts remain compact on mobile and trust copy is visually neutral', () => {
-  assert.match(appSource, /\.quick-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(appSource, /@media\(max-width:360px\)\{\.quick-grid\{grid-template-columns:minmax\(0,1fr\)\)/);
+test('Home quick access uses compact links instead of a second module-card grid', () => {
+  const navStart = home.indexOf('<nav class="home-shortcut-list"');
+  const navEnd = home.indexOf('</nav>', navStart);
+  const shortcuts = home.slice(navStart, navEnd);
+  assert.ok(navStart >= 0 && navEnd > navStart, 'Home must expose a named quick-shortcut navigation region');
+  assert.match(shortcuts, /<button class="home-shortcut-link"/);
+  assert.doesNotMatch(shortcuts, /aba-quick-access-card/,
+    'quick shortcuts must remain compact links, not a duplicate module-card surface');
+  assert.match(appSource, /\.home-shortcut-list\{display:flex;flex-wrap:wrap/);
+  assert.match(appSource, /\.home-shortcut-link\{[^}]*min-height:44px/);
+  assert.match(appSource, /\.home-shortcut-link:focus-visible/);
+  assert.match(appSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(appSource, /@media\(max-width:360px\)\{\.home-shortcut-list\{grid-template-columns:minmax\(0,1fr\)\)/);
   assert.match(home, /dashboard-trust-note" role="note"/);
   assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
 });
