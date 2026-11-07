@@ -17,6 +17,11 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
     assert.ok(home.includes('dashboard.' + field), 'expected source-backed metric ' + field);
   }
   assert.equal((home.match(/<aba-metric-card>/g) || []).length, 4);
+  for (const id of ['metric-invoiced-sales-label', 'metric-collected-payments-label', 'metric-expenses-label', 'metric-outstanding-balances-label']) {
+    assert.ok(home.includes('role="group" aria-labelledby="' + id + '"'));
+    assert.ok(home.includes('id="' + id + '" metricLabel'));
+  }
+
   assert.match(home, /item\.currency_code/);
   assert.equal(home.split('<bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi>').length - 1, 4,
     'each currency amount must retain its LTR number/code order inside an isolated bidi run');
