@@ -99,6 +99,9 @@ test('semantic design tokens are defined once and cover the shared UI foundation
     '--aba-easing-standard',
     '--aba-focus-ring-width',
     '--aba-focus-ring-offset',
+    '--aba-control-height',
+    '--aba-control-radius',
+    '--aba-control-padding-inline',
     '--aba-layout-sidebar',
     '--aba-layout-content-max',
     '--aba-layout-mobile-nav',
@@ -235,4 +238,23 @@ test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-te
     const ratio = contrastRatio(focus, colorToken(surface));
     assert.ok(ratio >= 3, `focus indicator on ${surface} must be >= 3:1 (got ${ratio.toFixed(2)}:1)`);
   }
+});
+
+
+test('Phase 2 interaction foundation centralizes touch targets, form controls, and shared surfaces', () => {
+  for (const token of ['--aba-control-height', '--aba-control-radius', '--aba-control-padding-inline']) {
+    assert.equal(styles.split('\n').filter(line => line.trimStart().startsWith(token + ':')).length, 1,
+      `${token} must be defined exactly once`);
+  }
+
+  assert.ok(styles.includes(':root body .shell button:not(.nav-item):not(.mobile-more)'));
+  assert.ok(styles.includes('min-height: var(--aba-control-height)'));
+  assert.ok(styles.includes(':root body .shell input:not([type="checkbox"])'));
+  assert.ok(styles.includes(':root body .shell select'));
+  assert.ok(styles.includes('border-radius: var(--aba-control-radius)'));
+  assert.ok(styles.includes(':root body .shell .primary:hover:not(:disabled)'));
+  assert.ok(styles.includes(':root body .shell .secondary:hover:not(:disabled)'));
+  assert.ok(styles.includes(':root body .shell .table-wrap tbody tr:hover'));
+  assert.ok(styles.includes('@media (forced-colors: active)'));
+  assert.ok(appSource.includes('input,select,textarea{font-size:16px!important;min-height:44px}'));
 });
