@@ -2976,3 +2976,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `8143c218c3f266f1331fb7703d70440d7df6b6ed` extends the refresh recovery test to guard success ordering and ensure unrelated errors are not cleared. Home spec remains 21 authored declarations; **NOT RUN**.
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `1453840d7ce22ca5781d3c6a3074642dbb84677a`.
 - **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, authenticated OWNER/STAFF/two-tenant, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Mobile account-menu focus and surface refinement — 2026-11-07
+
+- **Finding:** the account menu's language action removed the focused menu button while leaving focus restoration implicit; the popover also used a raw white background instead of the shared surface token.
+- **Fix:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.ts` commit `f6fa4f599f4584d6224f54bf53743f74f474b4e6` restores focus to the profile trigger in a microtask after emitting the language change. `aba-mobile-app-header.component.css` commit `ed1cbec70f69843b7351a2f52fdc7131d51b76be` uses `--aba-color-surface` for the account popover.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` commit `c79e9bffa84e8d3950773d4f0d802044061acb25` guards focus return after language change and semantic surface-token use. Header spec remains 9 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `c389aa959516e52796ade234f4e4f9735df7ce5d`.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
