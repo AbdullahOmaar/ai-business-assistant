@@ -12,7 +12,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       <div class="section-head">
         <div>
           <h2>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</h2>
-          <p>{{ t('إدارة ملفات الموظفين وتجهيز المرتبات واعتمادها وصرفها. بيانات الرواتب متاحة لمالك مساحة العمل فقط.', 'Manage employee profiles, prepare payroll, approve it and mark it paid. Salary data is restricted to workspace owners.') }}</p>
+          <p>{{ t('إدارة ملفات الموظفين وتجهيز المرتبات واعتمادها وتسجيل الصرف داخل النظام. هذا الإجراء لا ينفذ تحويلًا بنكيًا، وبيانات الرواتب متاحة لمالك مساحة العمل فقط.', 'Manage employee profiles, prepare payroll, approve it and record the payout in this app. This does not initiate a bank transfer. Salary data is restricted to workspace owners.') }}</p>
         </div>
         <span class="count">{{ employees.length }} {{ t('موظف', 'employees') }}</span>
       </div>
@@ -143,7 +143,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
                 <strong>{{ payroll.employee_name }} · {{ payroll.period }} · {{ payroll.net_pay }} {{ currencyCode }}</strong>
                 <small>{{ t('أساسي', 'Base') }} {{ payroll.base_salary }} + {{ t('بدلات', 'allowances') }} {{ payroll.allowances }} + {{ t('مكافآت', 'bonuses') }} {{ payroll.bonuses }} − {{ t('خصومات', 'deductions') }} {{ payroll.deductions }}</small>
                 <span class="status" [class.inactive]="payroll.status !== 'paid'">{{ payrollStatusLabel(payroll.status) }}</span>
-                @if (payroll.status === 'paid' && payroll.paid_at) { <small>{{ t('تاريخ الصرف', 'Paid at') }} · {{ payroll.paid_at | date:'mediumDate' }}</small> }
+                @if (payroll.status === 'paid' && payroll.paid_at) { <small>{{ t('وقت تسجيل الصرف', 'Payout recorded at') }} · {{ payroll.paid_at | date:'mediumDate' }}</small> }
               </div>
               <div class="actions">
                 @if (payroll.status === 'draft') {
@@ -151,7 +151,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
                   <button class="secondary" type="button" (click)="approvePayroll(payroll)" [disabled]="busy || !!operationId">{{ t('اعتماد', 'Approve') }}</button>
                 }
                 @if (payroll.status === 'approved') {
-                  <button class="primary" type="button" (click)="payPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تأكيد الصرف', 'Mark paid') }}</button>
+                  <button class="primary" type="button" (click)="payPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تسجيل الصرف داخل النظام', 'Record payout in app') }}</button>
                 }
               </div>
             </article>
@@ -295,7 +295,7 @@ export class EmployeePayrollComponent implements OnChanges {
     const labels: Record<EmployeePayrollRecord['status'], { ar: string; en: string }> = {
       draft: { ar: 'مسودة', en: 'Draft' },
       approved: { ar: 'معتمد', en: 'Approved' },
-      paid: { ar: 'تم الصرف', en: 'Paid' }
+      paid: { ar: 'تم تسجيل الصرف', en: 'Payout recorded' }
     };
     return labels[status][this.language];
   }
@@ -524,7 +524,7 @@ export class EmployeePayrollComponent implements OnChanges {
     try {
       await this.api.payPayroll(businessId, record.id);
       if (this.businessId !== businessId) return;
-      this.message = this.t('تم تسجيل الصرف وربطه بمصروف رواتب واحد.', 'Payment recorded and linked to one Payroll expense.');
+      this.message = this.t('تم تسجيل الصرف داخل النظام وربطه بمصروف رواتب واحد؛ لم يتم إرسال تحويل بنكي.', 'Payout recorded in the app and one linked Payroll expense was created. No bank transfer is sent.');
       this.payrollPaid.emit();
       await this.loadEmployeesAndPayroll();
     } catch (error) {

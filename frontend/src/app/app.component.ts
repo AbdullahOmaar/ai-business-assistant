@@ -88,7 +88,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('نتيجة التشغيل الأولية', 'Preliminary operating result')" [attr.title]="t('نتيجة التشغيل الأولية', 'Preliminary operating result')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('نتيجة التشغيل الأولية', 'Preliminary operating result') }}</span></button>
           @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('الضرائب', 'Tax summary')" [attr.title]="t('الضرائب', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
@@ -345,7 +345,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
 @if (tab === 'reports') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('الأرباح والخسائر', 'Profit & loss') " [description]=" t('تابع الإيرادات والمصروفات حسب الفترة، مع إبقاء كل عملة منفصلة.', 'Review revenue and expenses by period, keeping each currency separate.') "><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('نتيجة التشغيل الأولية', 'Preliminary operating result') " [description]=" t('نتيجة أولية مبنية على إيرادات الفواتير الصادرة والمصروفات المسجلة، ولا تخصم تكلفة البضاعة المباعة.', 'Preliminary result based on issued-invoice revenue and recorded expenses; cost of goods sold is not deducted.') "><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></aba-section-header>
                 <form #profitLossForm="ngForm" class="inline-form" (ngSubmit)="profitLossForm.valid && loadProfitLoss()">
                   <select name="profitLossPeriod" [attr.aria-label]="t('الفترة المالية', 'Reporting period')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('آخر 30 يومًا', 'Last 30 days') }}</option><option value="month">{{ t('الشهر الحالي', 'Current month') }}</option><option value="all">{{ t('كل الوقت', 'All time') }}</option><option value="custom">{{ t('فترة مخصصة', 'Custom period') }}</option></select>
                   @if (profitLossPeriod === 'custom') {
@@ -695,6 +695,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('اختر تاريخ ووقت المصروف.', 'Choose the expense date and time.') }}</small> }
                   </div>
                 }
+                <p class="expense-cash-semantics">{{ t('تسجيل المصروف يوثق وقت تحمّله، ولا يعني أنه تم دفعه أو تسويته نقديًا.', 'Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled.') }}</p>
                 <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
                 @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
                 @if (expenseSubmissionUncertain) {
@@ -918,6 +919,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
       .invoice-form label:has(input[type="number"]) input{width:100%}
       .expense-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
       .expense-form input[name="expenseDescription"],.expense-form input[name="expenseDate"]{grid-column:1/-1}
+      .expense-cash-semantics{margin:10px 0 0;padding:9px 11px;border-inline-start:3px solid var(--aba-color-info,#3b82f6);border-radius:8px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:12px;line-height:1.55}
       .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
       .metric{padding:12px;min-height:105px}
       .metric strong{font-size:17px}
@@ -1532,9 +1534,9 @@ export class AppComponent implements OnInit, OnDestroy {
     const titles: Record<Tab, string> = {
       overview: 'نظرة عامة على النشاط', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', expenses: 'المصروفات', employees: 'الموظفون والمرتبات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
+      payments: 'المدفوعات', expenses: 'المصروفات', employees: 'الموظفون والمرتبات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'نتيجة التشغيل الأولية', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', employees: 'Employees & payroll', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Profit & loss', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', employees: 'Employees & payroll', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Preliminary operating result', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {

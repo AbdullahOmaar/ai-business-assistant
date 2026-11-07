@@ -139,20 +139,20 @@ export const FEATURE_CATALOG = [
     id: 'finance',
     titleAr: 'المصروفات والتقارير',
     titleEn: 'Expenses & reports',
-    noteAr: 'نتيجة الأرباح والخسائر المعروضة مبدئية ما دامت تكلفة البضاعة غير مرتبطة بالكامل بالمبيعات.',
-    noteEn: 'Profit/loss is preliminary while cost of goods sold is not fully linked to sales.',
+    noteAr: 'نتيجة التشغيل المعروضة مبدئية: تعتمد على إيرادات الفواتير الصادرة والمصروفات المسجلة، ولا تخصم تكلفة البضاعة المباعة ولا تمثل النقد المحصل.',
+    noteEn: 'The operating result is preliminary: it uses issued-invoice revenue and recorded expenses; it does not deduct cost of goods sold or represent cash collected.',
     features: [
       {
         titleAr: 'تسجيل المصروفات',
         titleEn: 'Record expenses',
-        detailAr: 'سجّل التصنيف والوصف والمبلغ والعملة والتاريخ.',
-        detailEn: 'Record category, description, amount, currency, and date.',
+        detailAr: 'سجّل التصنيف والوصف والمبلغ والعملة والتاريخ؛ تسجيل المصروف لا يعني أنه تم دفعه.',
+        detailEn: 'Record category, description, amount, currency, and date; this does not mark the expense as paid.',
       },
       {
-        titleAr: 'الأرباح والخسائر',
-        titleEn: 'Profit & loss',
-        detailAr: 'راجع الإيرادات والمصروفات حسب الفترة والعملة، مع توضيح حدود التقرير.',
-        detailEn: 'Review revenue and expenses by period and currency, with report limitations shown.',
+        titleAr: 'نتيجة التشغيل الأولية',
+        titleEn: 'Preliminary operating result',
+        detailAr: 'راجع إيرادات الفواتير الصادرة والمصروفات المسجلة حسب الفترة والعملة؛ التقرير لا يمثل صافي الربح أو النقد المحصل.',
+        detailEn: 'Review issued-invoice revenue and recorded expenses by period and currency; this is not a net-profit or cash-collection report.',
       },
       {
         titleAr: 'الأرصدة المستحقة',

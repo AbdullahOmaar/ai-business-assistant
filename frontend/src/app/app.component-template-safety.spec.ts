@@ -1283,3 +1283,10 @@ test('release guide content is loaded only after navigating to the guide', () =>
   assert.match(source, /imports: \[[^\]]*ReleaseGuideComponent/);
   assert.doesNotMatch(source, /import \{ FEATURE_CATALOG, RELEASE_HISTORY \} from '\.\/release-guide';/);
 });
+
+
+test('reports and expense forms disclose their preliminary and incurred-not-paid semantics', () => {
+  assert.match(source, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
+  assert.match(source, /cost of goods sold is not deducted/);
+  assert.match(source, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
+});

@@ -153,3 +153,13 @@ test('feature guide preserves operational and financial limitations', () => {
   const health = sections.get('health')!;
   assert.match(health.noteEn, /reveals no secrets and changes no business data/i);
 });
+
+
+test('finance guide distinguishes preliminary operating result and incurred expenses from cash and net profit', () => {
+  const finance = FEATURE_CATALOG.find(section => section.id === 'finance');
+  assert.ok(finance);
+  assert.match(finance.noteEn, /issued-invoice revenue and recorded expenses/i);
+  assert.match(finance.noteEn, /does not deduct cost of goods sold or represent cash collected/i);
+  assert.match(finance.features.map(feature => feature.detailEn).join(' '), /does not mark the expense as paid/i);
+  assert.match(finance.features.map(feature => feature.titleEn).join(' '), /Preliminary operating result/);
+});

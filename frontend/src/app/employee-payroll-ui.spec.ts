@@ -88,3 +88,13 @@ test('a successful payroll payment refreshes the workspace expense list and dash
   assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
   assert.match(refresh, /if \(this\.business\?\.id === businessId\) this\.error = this\.message\(error\)/);
 });
+
+
+test('payroll payout wording describes an in-app record and never implies a bank transfer', () => {
+  assert.match(component, /Record payout in app/);
+  assert.match(component, /Payout recorded in the app/);
+  assert.match(component, /No bank transfer is sent/);
+  assert.match(component, /Payout recorded/);
+  assert.doesNotMatch(component, /Mark paid/);
+  assert.match(component, /تسجيل الصرف داخل النظام/);
+});
