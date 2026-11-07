@@ -128,7 +128,7 @@ test('feature catalogue covers every current user-facing destination group', () 
 });
 
 test('feature guide preserves operational and financial limitations', () => {
-  const sections = new Map(FEATURE_CATALOG.map(section => [section.id, section]));
+  const sections = new Map(FEATURE_CATALOG.map(section => [section.id, section] as const));
   const purchasing = sections.get('purchasing')!;
   assert.match(purchasing.noteEn, /receiving.*stock movements/i);
   assert.match(purchasing.noteEn, /does not provide supplier bills or supplier payments/i);
