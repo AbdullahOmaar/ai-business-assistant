@@ -1453,3 +1453,11 @@ test('horizontally scrollable workspace and platform tables are named keyboard-a
     }
   }
 });
+
+
+test('AI assistant conversation history is a named keyboard-scrollable log region', () => {
+  const log = source.match(/<div class="chat-log"[^>]*>/)?.[0] ?? '';
+  assert.match(log, /role="log"/);
+  assert.match(log, /tabindex="0"/);
+  assert.match(log, /\[attr\.aria-label\]=/);
+});

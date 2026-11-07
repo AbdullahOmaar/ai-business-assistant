@@ -372,8 +372,9 @@ test('shared quick-access cards keep their card-specific dimensions', () => {
 
 
 test('keyboard-scrollable table regions receive the shared visible focus treatment', () => {
-  assert.match(styles, /:root body \.shell \.table-wrap:focus-visible\s*\{[^}]*outline:/);
+  assert.match(styles, /:root body \.shell \.table-wrap:focus-visible,\s*:root body \.shell \.chat-log:focus-visible\s*\{[^}]*outline:/);
   const forcedColors = styles.slice(styles.indexOf('@media (forced-colors: active)'));
   assert.ok(forcedColors.includes(':root body .shell .table-wrap:focus-visible'));
+  assert.ok(forcedColors.includes(':root body .shell .chat-log:focus-visible'));
   assert.ok(forcedColors.includes('outline: 2px solid Highlight'));
 });

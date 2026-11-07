@@ -2666,3 +2666,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** source assertions cover all table wrappers in both templates and shared focus/forced-colors styling; authored / **NOT RUN**. Frontend Node tests, Angular build, dependency audit, Playwright, keyboard browser and screen-reader checks remain **NOT RUN**.
 - **CI/release:** commit uses `[skip ci]`; no CI trigger/retry, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
 - **Next:** continue shared accessibility/responsive source review; obtain authorized runner and CI-freeze resolution for exact-head automated and rendered acceptance.
+
+
+## T18 — keyboard access for AI conversation history — 2026-11-07
+
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `657cce352b25f168ae4d0747674296144f107b74`; PR #348 remains OPEN / DRAFT / UNMERGED.
+- **Finding:** the assistant conversation history is a bounded `overflow:auto` region. It had a polite live announcement but no log role, accessible name or keyboard focus target.
+- **Implementation:** the history now exposes `role="log"`, `tabindex="0"` and a localized Arabic/English name. Shared focus indicators cover chat history and wide tables, including forced-colors mode.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/styles.css`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Regression:** source assertions added / **NOT RUN**. Full Node tests, Angular build, Playwright, keyboard-only browser and screen-reader acceptance remain **NOT RUN**.
+- **CI/release:** `[skip ci]`; no CI trigger/retry, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
