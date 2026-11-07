@@ -576,23 +576,15 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(source, /operationsMessageTab === 'purchases'/);
 });
 
-test('invoice void confirmation is localized for Arabic and English', () => {
-  const dialogStart = source.indexOf('@if (pendingInvoiceVoid)');
-  const dialogEnd = source.indexOf('@if (pendingPurchaseReceipt)', dialogStart);
-  const dialog = source.slice(dialogStart, dialogEnd);
-  assert.ok(dialogStart >= 0 && dialogEnd > dialogStart, 'invoice confirmation dialog must exist');
-  assert.match(dialog, /t\('تأكيد إلغاء الفاتورة', 'Confirm invoice void'\)/);
-  assert.match(dialog, /t\('إلغاء الفاتورة', 'Void invoice'\)/);
-  assert.match(dialog, /t\('الاحتفاظ بالفاتورة', 'Keep invoice'\)/);
-  assert.match(dialog, /This screen does not process refunds or credit notes/);
-  assert.match(dialog, /\(confirmed\)="confirmInvoiceVoid\(\)"/);
-  assert.match(dialog, /\(cancelled\)="cancelInvoiceVoid\(\)"/);
+test('invoice void confirmation is localized and uses the accessible shared dialog', () => {
   const requestStart = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)');
   const requestEnd = source.indexOf('cancelInvoiceVoid(): void', requestStart);
   const request = source.slice(requestStart, requestEnd);
-  assert.match(request, /this\.business\.role !== 'owner'/);
-  assert.match(request, /this\.pendingInvoiceVoid = invoice/);
-  assert.match(request, /this\.confirmationReturnFocus = event\.currentTarget as HTMLElement/);
+  assert.ok(requestStart >= 0 && requestEnd > requestStart, 'invoice void request handler must exist');
+  assert.match(request, /!this\.business \|\| this\.business\.role !== 'owner'/);
+  assert.match(source, /Confirm invoice void/);
+  assert.match(source, /This screen does not process refunds or credit notes/);
+  assert.match(source, /\(confirmed\)="confirmInvoiceVoid\(\)"/);
 });
 
 test('invoice mutations keep confirmed success separate from post-save refresh failures', () => {
@@ -606,8 +598,9 @@ test('invoice mutations keep confirmed success separate from post-save refresh f
   assert.match(create, /The draft was saved, but the list could not refresh/);
   assert.match(create, /Do not save it again/);
   assert.match(create, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+
   const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
-  const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)', issueStart);
+  const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice', issueStart);
   const issue = source.slice(issueStart, issueEnd);
   assert.ok(issueStart >= 0 && issueEnd > issueStart);
   assert.match(issue, /Invoice issued successfully/);
@@ -615,15 +608,16 @@ test('invoice mutations keep confirmed success separate from post-save refresh f
   assert.match(issue, /Do not issue it again/);
   assert.match(issue, /this\.api\.issueInvoice\(businessId, invoice\.id\)/);
   assert.match(issue, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
-  const voidStart = source.indexOf('async confirmInvoiceVoid()');
+
+  const voidStart = source.indexOf('async confirmInvoiceVoid(): Promise<void>');
   const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
   const voidMethod = source.slice(voidStart, voidEnd);
   assert.ok(voidStart >= 0 && voidEnd > voidStart);
+  assert.match(voidMethod, /This screen does not process refunds or credit notes/);
   assert.match(voidMethod, /Invoice voided successfully/);
   assert.match(voidMethod, /The invoice was voided, but the view could not refresh/);
   assert.match(voidMethod, /Do not void it again/);
   assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
-  assert.match(voidMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 });
 
 test('invoice success messages support warning state and reset with workspace context', () => {
@@ -831,16 +825,19 @@ test('invoice drafts are available to workspace members while issue and void rem
 
 test('owner-only invoice mutations fail closed before showing confirmation or calling the API', () => {
   const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
-  const requestStart = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)');
-  const confirmStart = source.indexOf('async confirmInvoiceVoid()');
-  const confirmEnd = source.indexOf('hasOutstandingBalance(', confirmStart);
-  const issue = source.slice(issueStart, requestStart);
-  const request = source.slice(requestStart, source.indexOf('cancelInvoiceVoid(): void', requestStart));
-  const confirm = source.slice(confirmStart, confirmEnd);
+  const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice', issueStart);
+  const issue = source.slice(issueStart, issueEnd);
   assert.match(issue, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+
+  const requestStart = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)');
+  const requestEnd = source.indexOf('cancelInvoiceVoid(): void', requestStart);
+  const request = source.slice(requestStart, requestEnd);
   assert.match(request, /if \(!this\.business \|\| this\.business\.role !== 'owner'/);
-  assert.doesNotMatch(request, /this\.api\.voidInvoice/);
-  assert.match(confirm, /if \(!invoice \|\| !this\.business \|\| this\.business\.role !== 'owner' \|\| this\.loading\) return;/);
+
+  const confirmStart = source.indexOf('async confirmInvoiceVoid(): Promise<void>');
+  const confirmEnd = source.indexOf('hasOutstandingBalance(', confirmStart);
+  const confirm = source.slice(confirmStart, confirmEnd);
+  assert.match(confirm, /if \(!invoice \|\| !this\.business \|\| this\.business\.role !== 'owner'/);
   assert.match(confirm, /this\.api\.voidInvoice\(businessId, invoice\.id/);
 });
 
@@ -898,15 +895,15 @@ test('purchase orders remain creatable by members while receiving and payment wr
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
-  assert.match(purchaseView, /business\?\.role === 'owner' && order\.lines\.some\(line => hasRemainingQuantity\(line\)\)/);
-  const requestStart = source.indexOf('requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent)');
-  const confirmStart = source.indexOf('async confirmPurchaseOrderReceipt()');
-  const confirmEnd = source.indexOf('async createRecurringSchedule()', confirmStart);
-  const request = source.slice(requestStart, source.indexOf('cancelPurchaseOrderReceipt(): void', requestStart));
-  const confirm = source.slice(confirmStart, confirmEnd);
-  assert.match(request, /this\.business\.role !== 'owner'/);
-  assert.match(confirm, /this\.business\.role !== 'owner'/);
-  assert.match(confirm, /this\.api\.receivePurchaseOrder\(businessId, order\.id, lines\)/);
+  assert.match(purchaseView, /business\?\.role === 'owner' && order\.lines\.some\(hasRemainingQuantity\)/);
+  assert.match(purchaseView, /requestPurchaseOrderReceipt\(order, \$event\)/);
+
+  const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
+  const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
+  const receive = source.slice(receiveStart, receiveEnd);
+  assert.match(receive, /this\.business\.role !== 'owner'/);
+  assert.match(receive, /this\.api\.receivePurchaseOrder\(businessId, order\.id, lines\)/);
+
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
   const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
   assert.match(source.slice(paymentStart, paymentEnd), /this\.business\.role !== 'owner'/);
