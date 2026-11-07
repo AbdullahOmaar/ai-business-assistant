@@ -2554,3 +2554,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Exact-head checks:** GitGuardian SUCCESS only; combined status zero contexts. Node tests, Angular build, dependency audit and Playwright **NOT RUN**. CI triggers/retries remain prohibited by current session instruction.
 - **Scope:** 26 changed paths, frontend/tests/docs/TASKS only. No backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview.
 - **Remaining:** run exact-head tests/build/bundle analysis/browser/tenant/device acceptance when an authorized runner is available; keep PR Draft.
+
+
+## T18 — fail-closed active tab after membership/platform-role refresh — 2026-11-07
+
+- **Finding:** the interactive workspace-switch path already revalidated the active destination after a role change, but the asynchronous `loadBusinesses()` membership/auth refresh path did not.
+- **Implementation:** commit `510c38d68e6190d377ef922bd8b92eef66885c75` updates the selected workspace/role, then applies the existing `canAccessTab()` policy via `setTab('overview')` before clearing/reloading workspace data. This also closes More through the existing `setTab()` behavior.
+- **Regression:** extended `app.component-template-safety.spec.ts` to assert role assignment → access revalidation → workspace reset ordering and the existing setTab guard.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- **Validation:** readback/static source review only; regression authored / **NOT RUN**. Full frontend tests, Angular build, browser role-transition, keyboard/screen-reader and authenticated OWNER/STAFF acceptance remain **NOT RUN**.
+- **Delivery boundary:** no API/backend/database/schema, new permission policy, financial/payroll semantics, production data, CI trigger/retry, merge or deployment. Commit uses `[skip ci]`.
