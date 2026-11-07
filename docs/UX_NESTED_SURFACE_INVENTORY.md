@@ -95,3 +95,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The opening-stock source regression now asserts that `loadBusinesses()` compares both workspace ID and `business.role`, then calls `clearWorkspaceData()` when either changes.
 - This proves the existing OWNER-to-STAFF role refresh clears the OWNER-only quantity. The `createProduct()` payload still independently forces zero for non-owners as defense in depth.
 - Authored source regression is **NOT RUN**; no CI trigger/retry.
+
+
+## Mobile keyboard viewport regression tightened — 2026-11-07
+
+- Corrected the mocked Android keyboard acceptance in `frontend/e2e/mobile-chat.spec.ts`: it now compares both the send button and textarea bottom edges with `visualViewport.offsetTop + visualViewport.height`, not `window.innerHeight`.
+- The previous assertion could pass while the keyboard covered the composer because the layout viewport still includes the keyboard area. This change strengthens the test; it does not alter application behavior or claim physical-device coverage.
+- Playwright remains authored / **NOT RUN** until an authorized runner is available. The scenario uses mocked Firebase/API only.

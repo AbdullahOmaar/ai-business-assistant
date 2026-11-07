@@ -2385,3 +2385,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Expanded the product opening-stock regression to assert `loadBusinesses()` detects `business.role` changes and clears workspace-local form state, in addition to checking the reset itself and the non-owner zero payload.
 - This is test/documentation coverage for existing behavior; no additional app behavior changed.
 - Test remains **NOT RUN**; commit uses `[skip ci]`, and no CI trigger/retry was issued.
+
+
+## T18 — mobile keyboard visibility assertion corrected — 2026-11-07
+
+- Source review found the mobile chat Playwright scenario compared the send button against `window.innerHeight`, which includes the simulated keyboard-covered region. That could pass even if the composer was hidden behind the Android keyboard.
+- Updated the same scenario to assert both send button and textarea remain above the actual `visualViewport` bottom. The application already positions the sticky composer using the measured keyboard inset; no runtime behavior changed.
+- **Validation:** test source updated and readback pending; Playwright and CI **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`.

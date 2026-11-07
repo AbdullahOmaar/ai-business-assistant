@@ -353,11 +353,16 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   await expect(sendButton).toBeVisible();
   const viewportLayout = await page.evaluate(() => {
     const send = document.querySelector('.chat-form button');
+    const composer = document.querySelector('.chat-form textarea');
     const dock = document.querySelector('.sidebar');
-    if (!send || !dock) return null;
-    const rect = send.getBoundingClientRect();
+    const visualViewport = window.visualViewport;
+    if (!send || !composer || !dock || !visualViewport) return null;
+    const sendRect = send.getBoundingClientRect();
+    const composerRect = composer.getBoundingClientRect();
     return {
-      sendBottom: rect.bottom,
+      sendBottom: sendRect.bottom,
+      composerBottom: composerRect.bottom,
+      visualViewportBottom: visualViewport.offsetTop + visualViewport.height,
       viewportHeight: window.innerHeight,
       dockPointerEvents: getComputedStyle(dock).pointerEvents,
       dockTransform: getComputedStyle(dock).transform,
@@ -365,7 +370,11 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
     };
   });
   expect(viewportLayout).not.toBeNull();
-  expect(viewportLayout!.sendBottom).toBeLessThanOrEqual(viewportLayout!.viewportHeight + 1);
+  // The layout viewport includes the keyboard area. Compare against the
+  // visual viewport instead, otherwise a composer hidden behind the keyboard
+  // can still pass this assertion.
+  expect(viewportLayout!.sendBottom).toBeLessThanOrEqual(viewportLayout!.visualViewportBottom + 1);
+  expect(viewportLayout!.composerBottom).toBeLessThanOrEqual(viewportLayout!.visualViewportBottom + 1);
   expect(viewportLayout!.dockPointerEvents).toBe('none');
   expect(viewportLayout!.keyboardInset).toBe('280px');
   expect(uncaughtErrors).toEqual([]);
