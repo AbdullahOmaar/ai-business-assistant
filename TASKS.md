@@ -2456,3 +2456,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Added the previously unlisted AI assistant route as a distinct row in the existing UX nested-surface inventory, documenting its empty/loading/error/retry behavior and bilingual source citation labels.
 - No application behavior changed in this documentation checkpoint.
+
+
+## T18 — inventory formatting correction — 2026-11-07
+
+- Corrected the assistant surface row separator in `docs/UX_NESTED_SURFACE_INVENTORY.md` so it is a distinct Markdown table row.
+- No application code changed. Tests NOT RUN.
