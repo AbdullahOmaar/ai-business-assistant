@@ -1,12 +1,13 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `6d62e0daa544cbf69d0ba2b5b3dd7f76e87da0ee` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `34a7662da8a1d0b3a55cee0168c645c4ac18ee2f` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
 | Keyboard-accessible data tables | Horizontally scrollable workspace and Platform Admin tables expose named regions, accept keyboard focus, and show a visible focus ring including forced-colors mode | `app.component-template-safety.spec.ts` named-region assertions; `design-tokens.spec.ts` focus/forced-colors assertions | Keyboard-only horizontal scroll, NVDA/VoiceOver announcements and rendered 360/390px acceptance |
+| Mobile Hybrid Modern app header | Mobile-only compact brand/name and build-sourced UI version; current workspace name with the existing selector only when multiple workspaces exist; current page title and Home-only greeting; notification and assistant shortcuts; account menu reuses existing language/sign-out actions; existing install CTA remains clear of the header | `mobile-app-header.spec.ts` source regressions for component bindings, version/workspace sources, route reuse, keyboard-dismissable account menu, RTL/overflow and notification-contract honesty | Rendered 360/390/412px RTL/LTR comparison; long workspace/page names; real workspace switch and stale-data fencing; profile menu keyboard/outside click; install prompt/help placement; safe-area and screen-reader verification. Unread badge intentionally omitted until the API exposes a read/unread field |
 | Shared section headers | Shared h2/h3 hierarchy across Home and nested module sections; long Arabic/English titles wrap safely; narrow-screen layout stacks actions below heading copy and aligns them to the logical start | `design-tokens.spec.ts` shared section-header hierarchy and narrow-screen layout cases | Rendered 360/390px RTL/LTR, action wrapping and screen-reader heading navigation |
 | Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning; refreshed membership/platform role revalidates the active tab before scoped data reload; Firebase App/Auth runtime SDK loads in a separate chunk after runtime-config validation | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts`, `auth-lazy-loading.spec.ts` | Verify initial bundle budget after build; browser keyboard/screen-reader run; physical Android/PWA |
 | Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); shared quick-access cards retain their 104px minimum height and card radius independently of global action-button sizing; dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
@@ -332,3 +333,14 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Platform Admin user and workspace directories distinguish empty directories, filter misses and out-of-range pages; Payroll distinguishes an empty employee directory from a search miss.
 - Regression declarations: Platform Admin user management 8, Employee/Payroll 12, App Shell design tokens 23. Authored / NOT RUN.
+
+
+## T18 Mobile Hybrid Modern app header — 2026-11-07 — `34a7662da8a1d0b3a55cee0168c645c4ac18ee2f`
+
+- Implemented the accepted mobile-only Hybrid Modern top-section direction as a small standalone `AbaMobileAppHeaderComponent`, rather than expanding the root AppComponent template or attempting a broad AppShell refactor.
+- Header displays the app mark/name, generated UI version from `APP_BUILD_INFO`, current workspace name, existing workspace selector when more than one workspace is available, current page title, and a concise greeting only on Home.
+- Notification and AI shortcuts route to the existing tabs. The account avatar opens a keyboard-dismissible account-options group that reuses the existing language-toggle and sign-out actions. The current `NotificationRecord` contract has no read/unread field; no unread badge/count is fabricated.
+- The old mobile page heading and workspace bar are replaced on mobile only. Desktop topbar/workspace bar, lower dashboard, KPI cards, bottom navigation, route/permission/API behavior and data semantics remain unchanged. The install CTA remains outside the component and the header reserves space to avoid overlap.
+- Focused source regression file: `frontend/src/app/mobile-app-header.spec.ts`; included by the existing `node --experimental-strip-types --test src/app/*.spec.ts` script glob. Test is authored / **NOT RUN**.
+- Rendered 360/390/412px RTL/LTR, safe-area, profile menu interaction, workspace-switch runtime, keyboard/screen-reader and screenshot comparison remain **NOT RUN**. No Figma artifact was created.
+- No API/backend/database/schema/migration, business/financial/payroll/stock semantics or permission changes. No CI trigger/retry, merge, preview or production deployment.
