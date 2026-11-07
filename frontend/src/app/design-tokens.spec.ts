@@ -248,7 +248,9 @@ test('Phase 2 interaction foundation centralizes touch targets, form controls, a
       `${token} must be defined exactly once`);
   }
 
-  assert.ok(styles.includes(':root body .shell button:not(.nav-item):not(.mobile-more)'));
+  assert.ok(styles.includes(':root body .shell button:not(.nav-item):not(.mobile-more):not(.aba-quick-access)'));
+  assert.match(componentSources[2], /min-height:104px/);
+  assert.match(componentSources[2], /border-radius:var\\(--aba-radius-card/);
   assert.ok(styles.includes('min-height: var(--aba-control-height)'));
   assert.ok(styles.includes(':root body .shell input:not([type="checkbox"])'));
   assert.ok(styles.includes(':root body .shell select'));
@@ -352,4 +354,11 @@ test('forced-colors focus fallback includes the native disclosure control', () =
   assert.ok(forcedColors.includes(':root body .shell summary:focus-visible'));
   assert.ok(forcedColors.includes('outline: 2px solid Highlight'));
   assert.ok(forcedColors.includes('box-shadow: none'));
+});
+
+
+test('shared quick-access cards keep their card-specific dimensions', () => {
+  assert.ok(styles.includes('button:not(.nav-item):not(.mobile-more):not(.aba-quick-access)'));
+  assert.match(componentSources[2], /min-height:104px/);
+  assert.match(componentSources[2], /border-radius:var\(--aba-radius-card/);
 });

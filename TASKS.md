@@ -2636,3 +2636,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Regression: existing design-token notice test updated to assert informational install-help; confirmation-dialog.spec.ts adds a semantic-token/forced-colors source test. All are authored / NOT RUN.
 - Source checks passed before write: no remaining undefined warning/danger token names in the dialog, semantic selectors present, balanced component CSS.
 - No backend/API/domain/financial/payroll/stock semantics changed; no CI trigger/retry, merge, preview or production deployment.
+
+
+## T18 — preserve quick-access card sizing under global control normalization — 2026-11-07
+
+- Source review found the global 44px button / 10px radius normalization also matched the shared quick-access card button, overriding its intended 104px card height and card-radius styling.
+- Excluded `.aba-quick-access` from the global control normalization so the shared navigation card retains its own 104px minimum height and card radius while normal action buttons keep the 44px target.
+- Added a source regression asserting both the exclusion and the component-specific dimensions.
+- Test authored / NOT RUN; no CI trigger/retry, merge or deployment. No behavior, route, role, API or domain semantics changed.

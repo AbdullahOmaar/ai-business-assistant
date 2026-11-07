@@ -239,7 +239,7 @@ aba-metric-card small {
 
 
 /* Phase 2 interaction foundation: consistent controls and surfaces across modules. */
-:root body .shell button:not(.nav-item):not(.mobile-more) {
+:root body .shell button:not(.nav-item):not(.mobile-more):not(.aba-quick-access) {
   min-height: var(--aba-control-height);
   border-radius: var(--aba-control-radius);
 }
