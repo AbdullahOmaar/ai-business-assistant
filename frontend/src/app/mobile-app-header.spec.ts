@@ -16,6 +16,9 @@ test('mobile app header is an isolated standalone presentation component with ex
   assert.match(source, /@Input\(\) selectedBusinessId = ''/);
   assert.match(source, /@Input\(\) pageTitle = ''/);
   assert.match(source, /@Input\(\) showGreeting = false/);
+  assert.match(source, /@if \(showGreeting\) \{/);
+  assert.match(source, /t\('أهلاً بعودتك', 'Welcome back'\)/);
+  assert.match(appSource, /\[showGreeting\]="tab === 'overview'"/);
   for (const output of ['homeRequested', 'businessChange', 'notificationsRequested', 'assistantRequested', 'languageToggleRequested', 'signOutRequested']) {
     assert.ok(source.includes('@Output() ' + output + ' = new EventEmitter'), 'expected output contract for ' + output);
   }
