@@ -332,3 +332,16 @@ test('reduced-motion preference disables nonessential interaction motion', () =>
   assert.ok(styles.includes('animation: none !important'));
   assert.ok(styles.includes(':root body .shell .global-loading > span:first-child'));
 });
+
+
+test('generic notices use neutral informational semantics while warnings stay distinct', () => {
+  assert.ok(styles.includes(':root body .shell .notice {'));
+  assert.ok(styles.includes('border-color: var(--aba-color-info-border)'));
+  assert.ok(styles.includes('background: var(--aba-color-info-soft)'));
+  assert.ok(styles.includes('color: var(--aba-color-info-text)'));
+  assert.ok(styles.includes(':root body .shell .warning-notice'));
+  assert.ok(styles.includes('background: var(--aba-color-warning-soft)'));
+  assert.ok(styles.includes('color: var(--aba-color-warning-text)'));
+  assert.ok(styles.includes(':root body .shell .install-help'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+});

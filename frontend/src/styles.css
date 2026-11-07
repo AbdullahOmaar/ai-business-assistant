@@ -374,7 +374,12 @@ aba-metric-card small {
   background: var(--aba-color-surface-subtle);
 }
 
-:root body .shell .notice,
+:root body .shell .notice {
+  border-color: var(--aba-color-info-border);
+  background: var(--aba-color-info-soft);
+  color: var(--aba-color-info-text);
+}
+
 :root body .shell .install-help {
   border-color: var(--aba-color-success-border);
   background: var(--aba-color-success-soft);
