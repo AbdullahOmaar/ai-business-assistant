@@ -258,3 +258,11 @@ test('Phase 2 interaction foundation centralizes touch targets, form controls, a
   assert.ok(styles.includes('@media (forced-colors: active)'));
   assert.ok(appSource.includes('input,select,textarea{font-size:16px!important;min-height:44px}'));
 });
+
+
+test('destructive secondary actions retain semantic danger styling', () => {
+  assert.ok(styles.includes(':root body .shell .secondary.danger'));
+  assert.ok(styles.includes(':root body .shell .secondary.danger:hover:not(:disabled)'));
+  assert.ok(styles.includes('color: var(--aba-color-danger-text)'));
+  assert.ok(styles.includes('background: var(--aba-color-danger-soft)'));
+});
