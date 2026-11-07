@@ -71,3 +71,24 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.match(appSource, /\.workspace-bar\{display:none!important\}/);
   assert.doesNotMatch(appSource, /class="mobile-page-heading"/);
 });
+
+
+test('mobile header consumes shared semantic tokens rather than a one-off palette', () => {
+  for (const token of [
+    '--aba-color-surface',
+    '--aba-color-surface-subtle',
+    '--aba-color-info-soft',
+    '--aba-color-info-border',
+    '--aba-color-info-text',
+    '--aba-color-primary-soft',
+    '--aba-color-primary-border',
+    '--aba-color-primary-strong',
+    '--aba-color-primary',
+    '--aba-shadow-popover',
+    '--aba-z-index-dropdown',
+  ]) {
+    assert.ok(styles.includes('var(' + token), 'expected shared semantic token ' + token);
+  }
+  assert.doesNotMatch(styles, /#(?:bfdbfe|eff6ff|1e40af|1d4ed8|2563eb|dbeafe)/i,
+    'the header must not carry a second hard-coded blue palette');
+});
