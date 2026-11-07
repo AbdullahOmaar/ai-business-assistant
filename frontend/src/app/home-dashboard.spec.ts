@@ -6,6 +6,7 @@ const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), '
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const backendSource = readFileSync(new URL('../../../backend/app/core_features_api.py', import.meta.url), 'utf8');
 const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
+const moduleCatalogSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
 const homeStart = appSource.indexOf("@if (tab === 'overview') {");
 const homeEnd = appSource.indexOf("@if (tab === 'notifications')", homeStart);
@@ -222,4 +223,16 @@ test('failed payroll dashboard refresh clears stale Home metrics before exposing
   assert.ok(catchStart >= 0 && staleClear > catchStart && retryError > staleClear,
     'failed refresh must clear old dashboard metrics before publishing the retryable error');
   assert.match(method, /if \(this\.business\?\.id === businessId\) \{[\\s\\S]*?this\.dashboard = null;[\\s\\S]*?this\.error = this\.message\(error\);/);
+});
+
+
+test('Home quick access follows the approved high-frequency destinations in stable order', () => {
+  const configured = moduleCatalogSource.match(
+    /export const HOME_QUICK_ACCESS_TABS:[^=]+=[\\s\\S]*?\\[([\\s\\S]*?)\\];/,
+  );
+  assert.ok(configured, 'the canonical Home quick-access list must exist');
+  const tabs = [...configured[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
+  assert.deepEqual(tabs, ['invoices', 'customers', 'products', 'expenses', 'reports']);
+  assert.match(appSource, /return WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+  assert.match(appSource, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
 });
