@@ -2516,3 +2516,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Exact-head quality:** GitGuardian SUCCESS only; combined status zero contexts. Frontend Node tests, Angular build, dependency audit and Playwright **NOT RUN**. CI triggers/retries prohibited by current session instruction; no CI triggered.
 - **Delivery:** all changed paths remain frontend/docs/TASKS. No backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview for the branch.
 - **Remaining:** rendered responsive and RTL/LTR checks; authenticated OWNER/STAFF/two-tenant journeys; keyboard/screen-reader and physical Android/PWA; exact-head test/build/browser/dependency evidence; review of any future backend event values. Keep PR Draft.
+
+
+## T18 — exact workspace membership audit target — 2026-11-07
+
+- Matched the membership audit target label to the backend's actual `business_membership` target type for role changes and removals.
+- Added the emitted value to exhaustive bilingual target tests; generic membership alias retained for legacy values. Tests **NOT RUN**; no CI trigger/retry; `[skip ci]`.

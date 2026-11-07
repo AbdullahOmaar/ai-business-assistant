@@ -53,6 +53,7 @@ const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {
   pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
   business: { ar: 'نشاط تجاري', en: 'Business' },
   notification: { ar: 'إشعار', en: 'Notification' },
+  business_membership: { ar: 'عضوية مساحة العمل', en: 'Workspace membership' },
   membership: { ar: 'عضوية', en: 'Membership' },
   employee: { ar: 'موظف', en: 'Employee' },
   payroll: { ar: 'مرتب', en: 'Payroll' },

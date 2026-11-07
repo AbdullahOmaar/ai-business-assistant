@@ -37,7 +37,7 @@ test('membership, employee, payroll, and workspace-admin audit events use biling
 
 test('all current backend audit action and target values have bilingual labels', () => {
   const actions = ["invoice.issued","invoice.created","invoice.draft_updated","invoice.voided","payment.recorded","expense.created","customer.created","customer.updated","customer.deactivated","product.created","product.updated","product.deactivated","stock.movement_recorded","supplier.created","purchase_order.created","purchase_order.approved","purchase_order.received","sales_return.created","sales_return.approved","recurring_invoice_schedule.created","data_import.completed","pricing_rule.created","notification.queued","membership.role_changed","membership.removed","employee.created","employee.updated","payroll.created","payroll.updated","payroll.approved","payroll.paid","platform.business.activated","platform.business.deactivated","platform.user_role.granted","platform.user_role.revoked"];
-  const targets = ["invoice","payment","expense","customer","product","supplier","stock_movement","purchase_order","sales_return","recurring_invoice_schedule","import_job","pricing_rule","business","notification","membership","employee","payroll"];
+  const targets = ["invoice","payment","expense","customer","product","supplier","stock_movement","purchase_order","sales_return","recurring_invoice_schedule","import_job","pricing_rule","business","notification","business_membership","membership","employee","payroll"];
   for (const action of actions) {
     assert.notEqual(auditActionLabel(action, 'ar'), action, `Missing Arabic audit action label: ${action}`);
     assert.notEqual(auditActionLabel(action, 'en'), action, `Missing English audit action label: ${action}`);

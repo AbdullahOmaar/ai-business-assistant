@@ -200,3 +200,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The dedicated Platform Admin role-grant/revocation history now uses the same shared bilingual action map as workspace and platform activity audit.
 - Added exhaustive helper assertions for every current backend AuditEvent and PlatformAdminAuditEvent action/target value. Unknown future values continue to fall back to raw text.
 - Tests authored / **NOT RUN**.
+
+
+## Workspace membership audit target label — 2026-11-07
+
+- Backend source confirms membership role changes/removals emit `target_type=business_membership`; added the exact bilingual target label while retaining the generic membership alias.
+- Exhaustive audit target test now covers the emitted target value. Tests **NOT RUN**.
