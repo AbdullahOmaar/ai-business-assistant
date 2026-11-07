@@ -2450,3 +2450,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Localized the assistant source-list heading and invoice/expense source-type labels for Arabic and English; expense citation category uses the same localized category helper as the Expenses list.
 - Preserved unknown source types and source IDs. No assistant response or citation authorization semantics changed.
 - Added source/template regression assertions; tests **NOT RUN**; no CI trigger/retry.
+
+
+## T18 — AI assistant surface added to nested inventory — 2026-11-07
+
+- Added the previously unlisted AI assistant route as a distinct row in the existing UX nested-surface inventory, documenting its empty/loading/error/retry behavior and bilingual source citation labels.
+- No application behavior changed in this documentation checkpoint.
