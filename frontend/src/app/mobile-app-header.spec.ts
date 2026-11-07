@@ -120,7 +120,7 @@ test('mobile account menu dismisses when another header control is activated', (
 
 
 test('mobile account menu closes when keyboard focus leaves without stealing focus', () => {
-  assert.match(source, /@HostListener\('document:focusin', \['\$event'\]\)/);
+  assert.ok(source.includes("@HostListener('document:focusin', ['$event'])"));
   const handlerStart = source.indexOf('closeProfileMenuOnOutsideFocus(event: FocusEvent): void {');
   const handlerEnd = source.indexOf('\n  }', handlerStart);
   assert.ok(handlerStart >= 0 && handlerEnd > handlerStart, 'expected an outside-focus dismissal handler');
