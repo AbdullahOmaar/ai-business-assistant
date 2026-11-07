@@ -202,6 +202,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .actions button{min-height:var(--aba-control-height,44px);padding:7px 10px;font-size:12px}
     .status{display:inline-flex;margin-top:5px;padding:4px 8px;border-radius:999px;background:var(--aba-color-success-soft,#dcfce7);color:var(--aba-color-success-text,#166534);font-size:11px;font-weight:700}
     .status.inactive{background:var(--aba-color-surface-hover,#f1f5f9);color:var(--aba-color-text-muted,#475569)}
+    @media(max-width:600px){.section-head{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.section-head .count{justify-self:start}}
     @media(max-width:760px){
       .employee-panel{padding:15px;border-radius:13px}
       .section-head{align-items:flex-start}
