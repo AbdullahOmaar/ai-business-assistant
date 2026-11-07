@@ -1226,3 +1226,26 @@ test('reports and expense forms disclose their preliminary and incurred-not-paid
   assert.match(source, /cost of goods sold is not deducted/);
   assert.match(source, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
 });
+
+
+test('Home lists every role-authorized module in addition to the five quick-access shortcuts', () => {
+  const start = source.indexOf("@if (tab === 'overview')");
+  const end = source.indexOf("@if (tab === 'notifications')", start);
+  const overview = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(overview, /homeQuickAccessCards/);
+  assert.match(overview, /All workspace modules/);
+  assert.match(overview, /@for \(module of homeModuleCards; track module\.tab\)/);
+  assert.match(overview, /homeModuleCards\.length/);
+  assert.match(source, /get homeModuleCards\(\): readonly WorkspaceModuleCard\[\]/);
+  assert.match(source, /return WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+});
+
+test('Home dashboard exposes loading, error and empty states when metrics are unavailable', () => {
+  const start = source.indexOf("@if (tab === 'overview')");
+  const end = source.indexOf("@if (tab === 'notifications')", start);
+  const overview = source.slice(start, end);
+  assert.match(overview, /kind="loading"[^>]*Loading business metrics/);
+  assert.match(overview, /kind="error" \[description\]="error"/);
+  assert.match(overview, /kind="empty"[^>]*No business metrics are available yet/);
+});
