@@ -47,6 +47,14 @@ test('Home reports the backend business-local period without generating a client
   assert.match(backendSource, /"timezone": timezone_name/);
 });
 
+test('empty Home metric groups do not imply a currency-less monetary zero', () => {
+  const emptyGroups = home.match(/@if \(!dashboard\\.(?:invoiced_sales|collected_payments|expenses|outstanding_balances)\\.length\) \{ <strong>—<\\/strong>/g) ?? [];
+  assert.equal(emptyGroups.length, 4,
+    'empty metric groups use a neutral placeholder because no currency amount exists to label');
+  assert.doesNotMatch(home, /@if \(!dashboard\\.(?:invoiced_sales|collected_payments|expenses|outstanding_balances)\\.length\) \{ <strong>0<\\/strong>/,
+    'do not render an unqualified zero with no currency code');
+});
+
 test('Home explains each metric source timestamp and keeps financial meanings distinct', () => {
   assert.match(home, /By invoice issue date/);
   assert.match(home, /By payment received time/);
