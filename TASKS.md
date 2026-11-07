@@ -2886,3 +2886,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Preview:** branch-filtered Vercel Web/API deployment lists both return zero; no branch preview exists.
 - **Exact-head checks:** combined GitHub status zero contexts; no workflow runs or PR reviews. NOT PASS. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain NOT RUN. Desktop Commander is Offline.
 - **Gates:** active session instruction prohibits CI trigger/retry. No merge or production deployment authorization. Keep PR Draft. If merge is later authorized, disclose possible automatic Web production deployment and obtain the separate deployment decision before merge.
+
+
+## T18 — Mobile page-title live announcement regression — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** the old mobile page heading had a polite live announcement; after the page heading moved into `AbaMobileAppHeaderComponent`, the extracted `h1` no longer announced destination changes. This was a source-level accessibility regression, not a reproduced screen-reader incident.
+- **Fix:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.ts` now marks the dynamic page-title `h1` as `aria-live="polite" aria-atomic="true"`; no focus movement or navigation behavior changed.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` adds the explicit page-title announcement guard. Header spec now has 8 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the behavior and source/test baseline through `f5e6ba6feb8684effa93e6ece73c07707b7bbe85`.
+- **Static readback:** 4 focused source assertions PASS (dynamic h1 live attributes, exact regression assertion, header test count, inventory evidence/count). This is static inspection, not execution.
+- **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader, responsive 360/390/412px and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue Home source review; then exact-head Candidate Ready packet refresh without promoting NOT RUN checks.
