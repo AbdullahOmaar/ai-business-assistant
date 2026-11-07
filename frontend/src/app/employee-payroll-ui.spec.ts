@@ -36,7 +36,7 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
 });
 
 test('employee/payroll styles are component-local and responsive instead of relying on parent encapsulated CSS', () => {
-  assert.match(component, /\.employee-panel\{min-width:0;background:#fff;border:1px solid/);
+  assert.match(component, /\.employee-panel\{min-width:0;background:var\(--aba-color-surface,#fff\);border:1px solid var\(--aba-color-border/);
   assert.match(component, /\.primary,\.secondary\{/);
   assert.match(component, /\.section-head\{/);
   assert.match(component, /\.list-row\{/);
@@ -97,4 +97,15 @@ test('payroll payout wording describes an in-app record and never implies a bank
   assert.match(component, /Payout recorded/);
   assert.doesNotMatch(component, /Mark paid/);
   assert.match(component, /تسجيل الصرف داخل النظام/);
+});
+
+
+test('employee and payroll surfaces consume shared semantic status and control tokens', () => {
+  for (const token of [
+    '--aba-color-text-primary', '--aba-color-border', '--aba-color-text-tertiary',
+    '--aba-color-primary', '--aba-color-on-primary', '--aba-color-primary-strong',
+    '--aba-color-danger-text', '--aba-color-danger-soft', '--aba-color-success-text',
+    '--aba-color-warning-text', '--aba-color-info-text', '--aba-control-height',
+  ]) assert.ok(component.includes(token), `missing shared payroll token: ${token}`);
+  assert.match(component, /\.employee-panel\{min-width:0;background:var\(--aba-color-surface/);
 });
