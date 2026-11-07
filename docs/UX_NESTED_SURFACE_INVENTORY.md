@@ -1,13 +1,13 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `d92e08d2c2bc1b23156835efec2479db4910c9b7` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `6d62e0daa544cbf69d0ba2b5b3dd7f76e87da0ee` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
 | Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning; refreshed membership/platform role revalidates the active tab before scoped data reload; Firebase App/Auth runtime SDK loads in a separate chunk after runtime-config validation | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts`, `auth-lazy-loading.spec.ts` | Verify initial bundle budget after build; browser keyboard/screen-reader run; physical Android/PWA |
-| Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
+| Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); shared quick-access cards retain their 104px minimum height and card radius independently of global action-button sizing; dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
 | Customers CSV import | Preview is separate from execution; valid preview gates confirmation; workspace switch clears pending import; owner-only import actions | `app.component-template-safety.spec.ts` customer-import cases | Browser file picker, preview table overflow, focus and retry |
 | Stock-tracked product creation | Workspace members can create products; only OWNER sees the positive opening-stock input. STAFF can still create a stock-tracked product with zero opening stock. The payload also defaults to zero for non-owners, and the value is cleared when workspace/role context changes. The backend remains authoritative and rejects positive opening stock for STAFF before product/stock/audit writes. | `app.component-template-safety.spec.ts` OWNER-only field/payload/reset regression; `mobile-chat.spec.ts` mocks a STAFF product creation and asserts `opening_quantity: 0` | Browser regression authored, NOT RUN; authenticated OWNER/STAFF request-denial and no-side-effect proof; physical mobile rendering |
 | Products CSV import | Preview/validation before confirmation; confirmed import is not repeated after ambiguous refresh | `app.component-template-safety.spec.ts` product-import cases | Browser file picker and large-file behavior |
@@ -259,3 +259,12 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Current branch/PR: master/t18-uiux-hardening-20261107 / #348 OPEN / DRAFT / UNMERGED; exact head 136b65a09b84bc3176a80a1f18bffffa8e22b94f.
 - **Phase-gate clarification:** the user's instruction authorizes this bounded T18 code-level implementation only. It does not mark the UX workstream's formal Phase 1 gate accepted or Phase 2/3 completed/started. Figma Variables/component library, high-fidelity screens/prototype and visual/usability sign-off remain NOT RUN/BLOCKED by View-only access and missing rendered acceptance.
 - Exact-head aggregate status has zero contexts; GitGuardian SUCCESS only. No CircleCI trigger/retry, preview deployment, merge or production deployment.
+
+## T18 — shared component sizing and semantic color readback — 2026-11-07
+
+- Source review verified 97 unique design tokens and no unresolved token references across global styles, shared UI components and the confirmation dialog.
+- Generic explanatory notices and install-help guidance use informational blue tokens; warning notices remain amber; install CTA remains success-accented; destructive controls remain danger-styled.
+- Confirmation dialog now uses defined warning/danger text tokens and exposes a system-color focus outline for the dialog container in forced-colors mode.
+- Global action-button normalization excludes the shared quick-access card so its intended 104px minimum height and card radius are not overridden.
+- Source regression inventory: 19 declarations in design-tokens.spec.ts and 3 in confirmation-dialog.spec.ts. Tests are authored / NOT RUN; build and rendered checks remain NOT RUN.
+- Source implementation commits: `766b2d77ddd43bd1565f5f1c3854d4ef85cba56c`, `282ef1f84847b696143838c0227b33b72a697729`, `6d62e0daa544cbf69d0ba2b5b3dd7f76e87da0ee`. Existing PR #348 remains OPEN / DRAFT / UNMERGED.

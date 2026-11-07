@@ -2620,9 +2620,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 ## T18 — notice semantics and forced-colors disclosure focus — 2026-11-07
 
 - **Current source head before this ledger update:** `d92e08d2c2bc1b23156835efec2479db4910c9b7`; existing branch `master/t18-uiux-hardening-20261107`, PR #348 OPEN / DRAFT / UNMERGED.
-- **Notice hierarchy:** generic `.notice` surfaces now use informational tokens, `.notice.warning-notice` retains warning tokens, and install-help remains success-styled. This removes a misleading success-green treatment from report limitations and data-integrity explanatory copy.
+- **Notice hierarchy:** generic `.notice` surfaces and install-help guidance use informational tokens, `.notice.warning-notice` retains warning tokens, and the install CTA remains success-accented. This removes a misleading success-green treatment from report limitations and data-integrity explanatory copy.
 - **Keyboard/high-contrast:** Windows forced-colors focus fallback now includes native `summary:focus-visible`, so the invoice disclosure trigger retains a visible system-color outline.
-- **Regression coverage:** two new source tests cover generic/info vs warning/success semantic separation and disclosure focus in forced-colors mode. `design-tokens.spec.ts` now contains 18 test declarations.
+- **Regression coverage:** two new source tests cover generic/info vs warning semantic separation and disclosure focus in forced-colors mode. `design-tokens.spec.ts` now contains 19 test declarations; `confirmation-dialog.spec.ts` contains 3.
 - **Static readback:** 97 unique `--aba-*` tokens; all CSS variable references resolve; CSS braces balanced; selectors and test declarations present. Static checks only; Node tests, Angular build, dependency audit, Playwright and rendered screenshots are NOT RUN.
 - **Delivery:** commits use `[skip ci]`; no CI trigger/retry, preview, merge or production deployment. No API/backend/DB/schema/migration, permission, financial/payroll/stock semantics or production data changes.
 - **Next:** continue route-level presentation and accessibility review; exact-head automated and rendered acceptance remain gated by the active CI trigger freeze and unavailable interactive device/browser runner.
