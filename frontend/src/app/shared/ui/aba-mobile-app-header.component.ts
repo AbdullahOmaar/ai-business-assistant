@@ -141,7 +141,9 @@ export class AbaMobileAppHeaderComponent {
   closeProfileMenuOnOutsidePointer(event: PointerEvent): void {
     if (!this.profileMenuOpen) return;
     const target = event.target;
-    if (!(target instanceof Node) || this.host.nativeElement.contains(target)) return;
+    if (!(target instanceof Node)) return;
+    const accountMenu = this.host.nativeElement.querySelector('.account-menu');
+    if (this.profileTrigger?.nativeElement.contains(target) || accountMenu?.contains(target)) return;
     this.profileMenuOpen = false;
   }
 }
