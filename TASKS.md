@@ -2898,3 +2898,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Static readback:** 4 focused source assertions PASS (dynamic h1 live attributes, exact regression assertion, header test count, inventory evidence/count). This is static inspection, not execution.
 - **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader, responsive 360/390/412px and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** continue Home source review; then exact-head Candidate Ready packet refresh without promoting NOT RUN checks.
+
+
+## T18 — Mobile account-menu sibling-action dismissal — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** the account-menu outside-pointer handler treated the entire header host as an inside click. Pressing another header action (assistant, notifications, brand or workspace selector) therefore left the account popover open because those sibling controls are inside the same host.
+- **Fix:** `AbaMobileAppHeaderComponent.closeProfileMenuOnOutsidePointer()` now preserves the menu only for pointer targets inside the profile trigger or account menu itself. A sibling header action closes the popover on pointerdown before its normal click/change handler runs; menu actions and Escape behavior remain unchanged.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` adds a source guard for the trigger/menu-only containment check and rejects the old broad host containment. Header spec now has 9 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records this behavior together with the page-title live-announcement fix through source/test commit `f90cd95ccf4979c81d4157aa38d9f0bce0fca720`.
+- **Static readback:** 5 focused source assertions PASS for trigger/menu containment, removal of host-wide containment, live page-title attributes, regression declarations and inventory evidence. This is static inspection, not executable test evidence.
+- **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, real pointer/keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** resume the Home / Overview source review; preserve the approved four-metric/API-only data contract and keep rendered acceptance separate.
