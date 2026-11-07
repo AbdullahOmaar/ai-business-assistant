@@ -149,3 +149,25 @@ test('Home preserves the reporting-period hierarchy while KPI data is loading', 
   assert.match(loading, /dashboard-period-skeleton__details/);
   assert.match(appSource, /\.dashboard-period--skeleton\{min-height:66px\}/);
 });
+
+
+test('Home clears tenant-scoped metrics before loading another workspace', () => {
+  const switchStart = appSource.indexOf('async switchBusiness(id: string)');
+  const switchEnd = appSource.indexOf('private readonly workspaceLoadGuard', switchStart);
+  const switchMethod = appSource.slice(switchStart, switchEnd);
+  assert.ok(switchStart >= 0 && switchEnd > switchStart);
+  assert.match(switchMethod, /this\.clearWorkspaceData\(\)/);
+
+  const clearStart = appSource.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = appSource.indexOf('async createWorkspace(): Promise<void>', clearStart);
+  const reset = appSource.slice(clearStart, clearEnd);
+  assert.ok(clearStart >= 0 && clearEnd > clearStart);
+  assert.match(reset, /this\.dashboard = null/);
+  assert.match(reset, /this\.workspaceLoadGuard\.invalidate\(\)/);
+
+  const loadStart = appSource.indexOf('async loadWorkspaceData(): Promise<void>');
+  const loadEnd = appSource.indexOf('async refreshAfterPayrollPayment(): Promise<void>', loadStart);
+  const load = appSource.slice(loadStart, loadEnd);
+  assert.ok(loadStart >= 0 && loadEnd > loadStart);
+  assert.match(load, /this\.workspaceLoadGuard\.isCurrent\(loadVersion, this\.business\?\.id, id\)/);
+});
