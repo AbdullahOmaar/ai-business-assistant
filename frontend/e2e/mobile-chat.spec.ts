@@ -338,3 +338,188 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   expect(viewportLayout!.dockPointerEvents).toBe('none');
   expect(uncaughtErrors).toEqual([]);
 });
+
+
+test('STAFF mobile navigation hides owner-only modules and does not request payment records', async ({ page }) => {
+  const apiBaseUrl = 'https://mock-api.test';
+  const projectId = 'mock-project';
+  const staffUid = 'workspace-staff-uid';
+  const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoid29ya3NwYWNlLXN0YWZmLXVpZCIsInVpZCI6IndvcmtzcGFjZS1zdGFmZi11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
+  const paymentRequests: string[] = [];
+  const unexpectedRequests: string[] = [];
+
+  await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
+  await page.route('**/*', async route => {
+    const hostname = new URL(route.request().url()).hostname;
+    const allowedHosts = new Set([
+      '127.0.0.1', 'localhost', 'mock-api.test',
+      'identitytoolkit.googleapis.com', 'securetoken.googleapis.com',
+    ]);
+    if (allowedHosts.has(hostname)) await route.fallback();
+    else await route.abort();
+  });
+  await page.route('**/runtime-config.json', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        apiBaseUrl,
+        firebase: { apiKey: 'test-api-key', authDomain: projectId + '.firebaseapp.com', projectId, appId: '1:123:web:mock-app' },
+      }),
+    });
+  });
+
+  const firebaseHeaders = {
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': '*',
+    'content-type': 'application/json',
+  };
+  await page.route('https://identitytoolkit.googleapis.com/**', async route => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: firebaseHeaders });
+      return;
+    }
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith('/accounts:signInWithPassword')) {
+      await route.fulfill({
+        status: 200,
+        headers: firebaseHeaders,
+        body: JSON.stringify({
+          kind: 'identitytoolkit#VerifyPasswordResponse',
+          localId: staffUid,
+          email: 'staff@example.test',
+          displayName: 'Workspace Staff',
+          idToken,
+          refreshToken: 'mock-refresh-token',
+          expiresIn: '3600',
+          registered: true,
+        }),
+      });
+      return;
+    }
+    if (path.endsWith('/accounts:lookup')) {
+      await route.fulfill({
+        status: 200,
+        headers: firebaseHeaders,
+        body: JSON.stringify({
+          users: [{
+            localId: staffUid,
+            email: 'staff@example.test',
+            emailVerified: true,
+            displayName: 'Workspace Staff',
+            lastLoginAt: '1793059200000',
+            createdAt: '1790812800000',
+            providerUserInfo: [{ providerId: 'password', federatedId: 'staff@example.test', email: 'staff@example.test', rawId: 'staff@example.test' }],
+          }],
+        }),
+      });
+      return;
+    }
+    await route.fulfill({ status: 200, headers: firebaseHeaders, body: JSON.stringify({ users: [] }) });
+  });
+  await page.route('https://securetoken.googleapis.com/**', async route => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: firebaseHeaders });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      headers: firebaseHeaders,
+      body: JSON.stringify({
+        access_token: idToken, id_token: idToken, expires_in: '3600',
+        token_type: 'Bearer', refresh_token: 'mock-refresh-token',
+        user_id: staffUid, project_id: projectId,
+      }),
+    });
+  });
+
+  const corsHeaders = {
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
+    'access-control-allow-headers': '*',
+    'access-control-max-age': '600',
+    'content-type': 'application/json',
+  };
+  await page.route(apiBaseUrl + '/**', async route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: corsHeaders });
+      return;
+    }
+    if (path === '/version') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ version: '1.3.9', commit: 'e2e-test', environment: 'test' }) });
+      return;
+    }
+    if (path === '/api/v1/platform-admin/access') {
+      await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Platform administrator access is not granted.' }) });
+      return;
+    }
+    if (path === '/api/v1/businesses' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify([{
+          id: 'staff-business-1', name: 'Staff Workspace', currency_code: 'EGP',
+          locale: 'en-US', timezone: 'Africa/Cairo', role: 'staff',
+        }]),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/dashboard') {
+      await route.fulfill({
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          period: { start_date: null, end_date: null, timezone: 'Africa/Cairo' },
+          invoiced_sales: [], collected_payments: [], expenses: [], outstanding_balances: [],
+        }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/payments') {
+      paymentRequests.push(path);
+      await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Owner-only data.' }) });
+      return;
+    }
+    if ([
+      '/api/v1/businesses/staff-business-1/customers',
+      '/api/v1/businesses/staff-business-1/products',
+      '/api/v1/businesses/staff-business-1/invoices',
+      '/api/v1/businesses/staff-business-1/expenses',
+    ].includes(path)) {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
+      return;
+    }
+    unexpectedRequests.push(request.method() + ' ' + path);
+    await route.fulfill({ status: 404, headers: corsHeaders, body: JSON.stringify({ detail: 'Unexpected mocked API request.' }) });
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Welcome back|مرحبًا بعودتك/ })).toBeVisible({ timeout: 20_000 });
+  await page.getByLabel(/Email address|البريد الإلكتروني/).fill('staff@example.test');
+  await page.getByLabel(/Password|كلمة المرور/).fill('mock-password-123');
+  await page.getByRole('button', { name: /Sign in|تسجيل الدخول/ }).click();
+  await expect(page.locator('#workspace-current-name')).toHaveText('Staff Workspace', { timeout: 20_000 });
+
+  const moreTrigger = page.getByRole('button', { name: /More sections|المزيد من الأقسام/ });
+  await moreTrigger.click();
+  const menu = page.locator('#mobile-more-menu');
+  for (const restricted of [
+    /Payments & collections/, /Employees & payroll/, /Tax summary/,
+    /Activity log/, /Data integrity/, /Operational health/,
+  ]) {
+    await expect(menu.getByRole('button', { name: restricted })).toHaveCount(0);
+  }
+  for (const available of [
+    /Suppliers/, /Purchasing/, /Recurring invoices/, /Notifications/, /App guide & versions/,
+  ]) {
+    await expect(menu.getByRole('button', { name: available })).toBeVisible();
+  }
+  await expect(menu.getByRole('button', { name: /App guide & versions/ })).toHaveAttribute('aria-current', 'page', { timeout: 1 });
+  expect(paymentRequests).toEqual([]);
+  expect(unexpectedRequests).toEqual([]);
+});

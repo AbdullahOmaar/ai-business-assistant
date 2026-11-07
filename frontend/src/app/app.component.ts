@@ -1906,8 +1906,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     try {
+      const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
       const [dashboard, عميل, منتج, فاتورة, دفعة, مصروفات] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id), this.api.expenses(id)
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
