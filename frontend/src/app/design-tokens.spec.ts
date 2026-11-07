@@ -319,3 +319,13 @@ test('helper, warning, import and install surfaces use semantic contrast tokens'
   assert.ok(styles.includes('color: var(--aba-color-text-tertiary)'));
   assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
 });
+
+
+test('reduced-motion preference disables nonessential interaction motion', () => {
+  assert.ok(styles.includes('/* Shared interactive controls honor reduced-motion preferences. */'));
+  assert.ok(styles.includes(':root body .shell button'));
+  assert.ok(styles.includes(':root body .shell .suggestion-card'));
+  assert.ok(styles.includes('transition: none !important'));
+  assert.ok(styles.includes('animation: none !important'));
+  assert.ok(styles.includes(':root body .shell .global-loading > span:first-child'));
+});
