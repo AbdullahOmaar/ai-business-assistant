@@ -1,6 +1,6 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, commit `7f347ee0991ec2af15ba6e7211fb20bb412e8ada` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test baseline refreshed after the opening-stock UX fix at commit `31d49daf7ff382a8cf065a9c11ed6eeebab83f54` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
@@ -32,7 +32,7 @@
 - **UX-07 reduced motion:** global reduced-motion CSS and shared-component fallbacks exist; rendered OS/browser verification remains NOT RUN.
 - **UX-08 nested surfaces:** inventory above maps current major nested interactions and source tests. It does not certify every nested surface or browser behavior.
 
-## Exact-head validation checkpoint
+## Historical exact-head validation checkpoint — 2026-11-07 — `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`
 
 For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
@@ -53,3 +53,12 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - No Vercel preview deployment was available for this branch. Production was not changed.
 - No API/backend/schema/migration/financial/payroll-rule changes were made by this UI/UX workstream.
 - Phase 2 full Design System and Phase 3 high-fidelity Figma work remain governed by the UX workstream gates; this T18 engineering work does not claim those phases started or were accepted.
+
+
+## Current candidate validation — 2026-11-07 — `31d49daf7ff382a8cf065a9c11ed6eeebab83f54`
+
+- This candidate adds the OWNER-only positive opening-stock affordance, the STAFF zero-opening-stock fallback, workspace reset protection, a source regression test, and this UX inventory update.
+- The source regression test is authored but **NOT RUN**. Frontend Node tests, Angular build, browser smoke and dependency audit are **NOT RUN on this SHA**.
+- The immediately preceding PR head `1ad820d9fcd1d306772fd99f34c6be2a67020d1a` had five CircleCI checks SUCCESS and `frontend-browser-smoke` FAILURE. Those results are historical for that SHA and do not validate this candidate.
+- No CircleCI trigger/retry was issued. The implementation commit used `[skip ci]` under the active no-trigger instruction. The browser-smoke failure output is unavailable through the current connected tools; its root cause remains UNKNOWN.
+- Rendered OWNER/STAFF, mobile and assistive-technology acceptance remains NOT RUN/BLOCKED.

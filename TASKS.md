@@ -2331,3 +2331,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - No merge, production deployment, API/backend/schema/migration or financial-rule change.
 - Remaining gates: finish CircleCI browser smoke; authenticated synthetic OWNER/STAFF/second-tenant/non-member journeys; Android Chrome/PWA keyboard/safe-area/RTL/LTR and screen-reader acceptance; Figma visual review remains BLOCKED by View-only access. UX-06 duplicate version metadata awaits rendered evidence. Phase 2/3 design work remains gated.
 - Next action: obtain/inspect the exact CircleCI browser-smoke failure and fix it on this branch; meanwhile continue route-by-route nested-surface source audit and prepare the authorized authenticated/device test plan. Do not merge or deploy without separate authorization.
+
+
+## T18 continuation — OWNER-only opening-stock UX alignment — 2026-11-07
+
+- **Work package:** T18 — MVP Frontend, Mobile & Arabic RTL UX. Existing branch only: `master/t18-uiux-hardening-20261107`; existing PR #348 remains OPEN / DRAFT / UNMERGED.
+- **Source implementation commit:** `31d49daf7ff382a8cf065a9c11ed6eeebab83f54` (parent `1ad820d9fcd1d306772fd99f34c6be2a67020d1a`).
+- **Implemented:** positive opening-stock input is shown only to OWNER; STAFF can create a stock-tracked product with zero opening stock; product payload forces zero for non-owners even if stale component state exists; the OWNER-only quantity resets on workspace/role context change. No API permission or stock rule was changed.
+- **Files in implementation commit:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- **Regression coverage:** test authored for OWNER-only input, STAFF fallback payload and workspace reset. The test file was read back from GitHub and its reset-method boundary assertion was corrected in this continuation.
+- **Exact-head quality:** all frontend Node tests, Angular template/production build, browser smoke and dependency audit are **NOT RUN** on the new candidate. The previous head `1ad820d9...` had five CircleCI checks SUCCESS and `frontend-browser-smoke` FAILURE; none of those statuses transfer to a new SHA. The source commit used `[skip ci]`; no CircleCI trigger/retry or replacement CI was used. The browser-smoke job output remains inaccessible; root cause UNKNOWN.
+- **Review/delivery:** source/test/docs readback only; PR remains draft. No merge, deployment, API/backend/database/schema/migration, stock ledger, financial/payroll semantics or production data changes.
+- **Next action:** retrieve the existing CircleCI browser-smoke failure details through authorized CircleCI access, then run the approved exact-head validation when the no-trigger freeze is explicitly lifted; continue the remaining responsive/RTL/LTR and role/tenant UX source review meanwhile.

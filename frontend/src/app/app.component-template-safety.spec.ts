@@ -720,7 +720,7 @@ test('positive opening stock is OWNER-only while STAFF can create tracked produc
     'non-owners and unresolved roles must submit zero opening stock');
 
   const resetStart = source.indexOf('private clearWorkspaceData(): void');
-  const resetEnd = source.indexOf('\\n  }', resetStart);
+  const resetEnd = source.indexOf('\n  }', resetStart);
   const resetMethod = source.slice(resetStart, resetEnd);
   assert.match(resetMethod, /this\.productOpeningQuantity = '0'/,
     'an owner-only quantity must not survive a workspace or role change');
