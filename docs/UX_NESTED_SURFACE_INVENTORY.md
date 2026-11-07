@@ -174,3 +174,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Workspace Activity Log and Platform Admin activity audit now share one bilingual action/target label helper; unknown action/target values remain visible unchanged.
 - Updated the in-app guide and inventory rows. These are display-only changes; no audit event, customer statement balance, permission or API contract changed.
 - Source/unit regressions are authored / **NOT RUN**.
+
+
+## Customer Statement guide parity — 2026-11-07
+
+- Updated the existing Customers feature-guide entry to describe bilingual Customer Statement event-type labels; no new feature or release version was introduced.
+- Feature-guide regression authored / **NOT RUN**.

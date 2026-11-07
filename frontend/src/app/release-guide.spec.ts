@@ -190,3 +190,10 @@ test('admin guide documents bilingual audit action and target labels', () => {
   assert.ok(admin);
   assert.match(admin.features.map(feature => feature.detailEn).join(' '), /action and target labels use the selected language/i);
 });
+
+
+test('customer guide documents bilingual statement event labels', () => {
+  const customers = FEATURE_CATALOG.find(section => section.id === 'customers');
+  assert.ok(customers);
+  assert.match(customers.features.map(feature => feature.detailEn).join(' '), /event types shown in the selected language/i);
+});

@@ -2478,3 +2478,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Extracted the existing workspace audit action/target map into a shared pure helper and reused it in Platform Admin activity audit; raw unknown action/target values remain visible unchanged.
 - Updated the in-app feature guide and nested-surface inventory. No audit, balance, permission, API, backend or financial behavior changed.
 - Tests authored / **NOT RUN**; no CI trigger/retry; commit uses `[skip ci]`.
+
+
+## T18 — Customer Statement feature-guide parity — 2026-11-07
+
+- Updated the existing Customers feature-guide detail to describe bilingual statement event labels, matching the current frontend implementation.
+- Added a feature-guide source regression. **NOT RUN**; no CI trigger/retry; no release version bump.

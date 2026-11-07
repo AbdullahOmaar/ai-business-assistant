@@ -43,8 +43,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'كشف حساب العميل',
         titleEn: 'Customer statement',
-        detailAr: 'راجع الحركات والأرصدة حسب العملة والفترة.',
-        detailEn: 'Review transactions and balances by currency and period.',
+        detailAr: 'راجع الحركات والأرصدة حسب العملة والفترة، مع عرض أنواع الحركات باللغة المختارة.',
+        detailEn: 'Review transactions and balances by currency and period, with event types shown in the selected language.',
       },
     ],
   },
