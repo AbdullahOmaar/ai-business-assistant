@@ -2957,3 +2957,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Scope:** no route, module, API, backend, authorization, business data or financial semantics changed.
 - **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** complete remaining Home source review, reconcile latest exact head, then candidate-ready preflight without promoting NOT RUN checks.
+
+
+## T18 — Home metric-caveat copy and persistent refresh recovery — 2026-11-07
+
+- **Finding:** the Home note was labelled “Data integrity” / `سلامة البيانات`, although its content explains KPI interpretation and limitations rather than reporting an integrity-check result.
+- **Copy refinement:** `frontend/src/app/app.component.ts` commit `ed3aa93f13f1910a4e7985ef12ee12ba5c66048b` now labels it “Metric notes” / `ملاحظات على المؤشرات`. The financial caveat text and all metric calculations remain unchanged.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `56e6aa19ec40653def60a028864ff2c63b5f7a46` guards the accurate bilingual label. Home spec now has 21 authored declarations; **NOT RUN**.
+- **Refresh recovery:** Home now retains a failed post-payroll dashboard-refresh error when the user navigates away and back, and clears it after a successful dashboard load or workspace reset. The existing same-workspace guard remains in place; no payroll or financial records are changed.
+- **Evidence:** source-only inspection. No Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader or physical Android/PWA execution. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete the remaining Home source audit, then reconcile the exact PR head and release impact before any promotion.
