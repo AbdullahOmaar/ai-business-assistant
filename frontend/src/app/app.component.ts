@@ -710,7 +710,13 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             }
 
             @if (tab === 'employees' && business?.role === 'owner' && business) {
-              <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
+              @defer (when tab === 'employees' && business?.role === 'owner' && business) {
+                <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموظفين والمرتبات…', 'Loading employees & payroll…')" />
+                </section>
+              }
             }
 
             @if (tab === 'expenses') {
