@@ -2351,3 +2351,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - The Playwright scenario mocks Firebase and the business API; no production or real workspace writes are possible from this test path.
 - Updated `docs/UX_NESTED_SURFACE_INVENTORY.md` with the authored browser coverage.
 - **NOT RUN:** Playwright/CircleCI on the candidate; browser regression must not be described as passing. The exact-head status read on parent `4d308bab3a64dcb9e8e8de19d952d40aa5c0dc15` returned zero status contexts. No CI was triggered/retried.
+
+
+## T18 — Purchase-order receipt affordance aligned with current backend lifecycle — 2026-11-07
+
+- **Finding:** the Angular template exposed OWNER "Receive remaining" for any order with remaining quantity, including drafts. Current main backend `backend/app/operations.py` rejects receipt unless status is `approved` or `partially_received`.
+- **UI change:** the button is now visible only for OWNER + approved/partially-received + remaining quantities. Draft orders with remaining quantity show a localized explanation that receiving is unavailable until approval.
+- **Safety:** dialog-opening and confirmation handlers re-check the same eligibility predicate. No approval UI was invented; no API/backend, stock or business lifecycle rule changed.
+- **Regression coverage authored:** source test asserts both allowed statuses, remaining quantity, draft explanatory copy, template eligibility and handler guards.
+- **Validation:** source read/write assertions only; repository tests and build **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`. Current candidate remains draft PR #348, unmerged and undeployed.

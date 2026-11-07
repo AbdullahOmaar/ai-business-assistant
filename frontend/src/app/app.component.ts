@@ -315,7 +315,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
                 <div class="list-tools operations-search"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
-                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
+                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.status === 'draft' && order.lines.some(hasRemainingQuantity)) { <small class="muted">{{ t('أمر الشراء مسودة؛ لا يمكن تسجيل الاستلام قبل الاعتماد.', 'This order is a draft; receiving is unavailable until it is approved.') }}</small> } @if (business?.role === 'owner' && canReceivePurchaseOrder(order)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
               </section>
             }
 
@@ -2317,10 +2317,14 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
+  canReceivePurchaseOrder(order: PurchaseOrder): boolean {
+    return (order.status === 'approved' || order.status === 'partially_received') &&
+      order.lines.some(line => this.hasRemainingQuantity(line));
+  }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
   requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent): void {
-    if (!this.business || this.business.role !== 'owner' || !order.lines.some(line => this.hasRemainingQuantity(line))) return;
+    if (!this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order)) return;
     this.pendingInvoiceVoid = null;
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = order;
@@ -2342,7 +2346,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async confirmPurchaseOrderReceipt(): Promise<void> {
     const order = this.pendingPurchaseReceipt;
-    if (!order || !this.business || this.business.role !== 'owner' || this.purchasesLoading) return;
+    if (!order || !this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order) || this.purchasesLoading) return;
     const lines = order.lines
       .filter(line => this.hasRemainingQuantity(line))
       .map(line => ({ line_id: line.id, quantity: line.remaining_quantity }));

@@ -927,13 +927,25 @@ test('purchase orders remain creatable by members while receiving and payment wr
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
-  assert.match(purchaseView, /business\?\.role === 'owner' && order\.lines\.some\(hasRemainingQuantity\)/);
+  assert.match(purchaseView, /business\?\.role === 'owner' && canReceivePurchaseOrder\(order\)/);
+  assert.match(purchaseView, /order\.status === 'draft'.*This order is a draft; receiving is unavailable until it is approved/);
+  const eligibilityStart = source.indexOf('canReceivePurchaseOrder(order: PurchaseOrder): boolean');
+  const eligibilityEnd = source.indexOf('supplierNameFor(', eligibilityStart);
+  const eligibility = source.slice(eligibilityStart, eligibilityEnd);
+  assert.ok(eligibilityStart >= 0 && eligibilityEnd > eligibilityStart);
+  assert.match(eligibility, /order\.status === 'approved'/);
+  assert.match(eligibility, /order\.status === 'partially_received'/);
+  assert.match(eligibility, /order\.lines\.some\(line => this\.hasRemainingQuantity\(line\)\)/);
   assert.match(purchaseView, /requestPurchaseOrderReceipt\(order, \$event\)/);
 
   const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
   const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
   const receive = source.slice(receiveStart, receiveEnd);
   assert.match(receive, /this\.business\.role !== 'owner'/);
+  assert.match(receive, /!this\.canReceivePurchaseOrder\(order\)/);
+  const requestStart = source.indexOf('requestPurchaseOrderReceipt(order: PurchaseOrder');
+  const requestEnd = source.indexOf('cancelPurchaseOrderReceipt()', requestStart);
+  assert.match(source.slice(requestStart, requestEnd), /!this\.canReceivePurchaseOrder\(order\)/);
   assert.match(receive, /this\.api\.receivePurchaseOrder\(businessId, order\.id, lines\)/);
 
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');

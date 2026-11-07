@@ -69,3 +69,13 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Extended the existing mocked STAFF mobile-navigation Playwright scenario to open Products, enable stock tracking, confirm the positive-opening-stock input is absent, and create a product.
 - The mock captures the POST payload and asserts `is_stock_tracked: true` and `opening_quantity: "0"`. The scenario uses only mocked Firebase/API endpoints; it does not contact production or write business data.
 - Browser regression is authored but **NOT RUN**. Exact-candidate CircleCI remains NOT RUN / no status contexts on the current source head; no trigger/retry was issued.
+
+
+| Purchase-order receipt state | OWNER Receive action is available only for `approved` and `partially_received` orders with remaining quantities. Draft orders show a bilingual explanation and no Receive action. Frontend guards re-check the status before opening and confirming the receipt dialog; backend remains authoritative. | `app.component-template-safety.spec.ts` status-helper, draft-copy, request and confirm guards | Rendered OWNER draft/approved/partial states; authenticated no-side-effect verification |
+
+## Purchase-order receipt state alignment — 2026-11-07
+
+- Confirmed against current main `backend/app/operations.py`: receipt is accepted only when order status is `approved` or `partially_received`; all other states are rejected before stock movements.
+- The prior Angular UI showed Receive for any OWNER order with remaining quantity, including `draft`. Updated the UI to show a draft-state explanation and expose Receive only for approved/partially received orders with remaining quantities.
+- Added the same eligibility guard to the dialog-opening and confirmation handlers. No approval action, backend rule, API contract, stock movement or business lifecycle was added/changed.
+- Source regression test authored; browser rendering and tests remain **NOT RUN**.
