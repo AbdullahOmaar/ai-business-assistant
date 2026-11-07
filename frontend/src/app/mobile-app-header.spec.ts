@@ -106,3 +106,10 @@ test('mobile header interactive controls meet the 44px touch-target baseline', (
 test('mobile page title changes are announced politely without moving focus', () => {
   assert.match(source, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
 });
+
+
+test('mobile account menu dismisses when another header control is activated', () => {
+  assert.match(source, /const accountMenu = this\.host\.nativeElement\.querySelector\('\.account-menu'\)/);
+  assert.match(source, /this\.profileTrigger\?\.nativeElement\.contains\(target\) \|\| accountMenu\?\.contains\(target\)/);
+  assert.doesNotMatch(source, /this\.host\.nativeElement\.contains\(target\)/);
+});
