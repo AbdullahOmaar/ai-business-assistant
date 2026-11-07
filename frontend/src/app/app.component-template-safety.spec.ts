@@ -701,6 +701,32 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.match(source, /<aba-state-message \[kind\]="productMessageKind" \[description\]="productMessage" \/>/);
 });
 
+test('positive opening stock is OWNER-only while STAFF can create tracked products at zero', () => {
+  const stockStart = source.indexOf('@if (stockTracked) {');
+  const stockEnd = source.indexOf('<button class="primary" type="submit"', stockStart);
+  const stockControls = source.slice(stockStart, stockEnd);
+  assert.ok(stockStart >= 0 && stockEnd > stockStart, 'stock-tracked product controls must exist');
+  const ownerGuard = stockControls.indexOf("@if (business?.role === 'owner')");
+  const openingStockField = stockControls.indexOf('name="productOpeningQuantity"');
+  assert.ok(ownerGuard >= 0 && openingStockField > ownerGuard,
+    'the positive opening-stock input must be inside the OWNER-only guard');
+  assert.match(stockControls, /Only workspace owners can set a positive opening stock quantity/);
+  assert.match(stockControls, /zero opening stock/);
+
+  const createStart = source.indexOf('async createProduct(): Promise<void>');
+  const createEnd = source.indexOf('get invoicePreview()', createStart);
+  const createMethod = source.slice(createStart, createEnd);
+  assert.match(createMethod, /opening_quantity: this\.stockTracked && this\.business\.role === 'owner' \? this\.productOpeningQuantity : '0'/,
+    'non-owners and unresolved roles must submit zero opening stock');
+
+  const resetStart = source.indexOf('private clearWorkspaceData(): void');
+  const resetEnd = source.indexOf('\\n  }', resetStart);
+  const resetMethod = source.slice(resetStart, resetEnd);
+  assert.match(resetMethod, /this\.productOpeningQuantity = '0'/,
+    'an owner-only quantity must not survive a workspace or role change');
+});
+
+
 
 test('product CSV import is confirmed once and reports refresh failure without inviting a duplicate import', () => {
   const start = source.indexOf('async confirmProductImport(): Promise<void>');

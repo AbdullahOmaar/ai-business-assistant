@@ -498,7 +498,13 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     }
                   </label>
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
-                  @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label> }
+                  @if (stockTracked) {
+                    @if (business?.role === 'owner') {
+                      <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label>
+                    } @else {
+                      <small class="muted">{{ t('يمكنك متابعة المخزون برصيد افتتاحي صفر. تسجيل كمية افتتاحية أكبر من صفر متاح لمالك مساحة العمل فقط.', 'You can track stock with zero opening stock. Only workspace owners can set a positive opening stock quantity.') }}</small>
+                    }
+                  }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
@@ -1802,6 +1808,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.taxError = '';
     this.taxLoading = false;
     this.agingReport = null;
+    // Never carry an OWNER-only opening-stock value into another workspace or role.
+    this.productOpeningQuantity = '0';
     // Import previews are workspace-scoped; never carry a pending CSV into another business.
     this.importCsvText = '';
     this.importFileName = '';
@@ -2834,7 +2842,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await this.api.createProduct(businessId, {
         name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked,
-        opening_quantity: this.stockTracked ? this.productOpeningQuantity : '0'
+        opening_quantity: this.stockTracked && this.business.role === 'owner' ? this.productOpeningQuantity : '0'
       });
       if (this.business?.id !== businessId) return;
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
