@@ -1,10 +1,5 @@
 import { Injectable } from '@angular/core';
-import { getApp, getApps, initializeApp } from '@firebase/app';
 import type { FirebaseApp } from '@firebase/app';
-import {
-  createUserWithEmailAndPassword, getAuth, onAuthStateChanged,
-  signInWithEmailAndPassword, signOut
-} from '@firebase/auth';
 import type { Auth, User } from '@firebase/auth';
 import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer';
 import { validateRuntimeConfig, type RuntimeConfig } from './runtime-config';
@@ -12,9 +7,15 @@ export type { RuntimeConfig } from './runtime-config';
 
 export interface AuthUserSnapshot { uid: string; email: string | null; }
 
+type FirebaseModules = {
+  app: typeof import('@firebase/app');
+  auth: typeof import('@firebase/auth');
+};
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private configPromise?: Promise<RuntimeConfig>;
+  private firebaseModulesPromise?: Promise<FirebaseModules>;
   private auth: Auth | null = null;
   private authReady?: Promise<void>;
   private authStateUnsubscribe?: () => void;
@@ -69,18 +70,19 @@ export class AuthService {
         !config.firebase?.projectId || !config.firebase?.appId) {
       throw new Error('Firebase web-app settings are missing in runtime-config.json.');
     }
+    const { app: firebaseApp, auth: firebaseAuth } = await this.loadFirebaseModules();
     if (!this.auth) {
       const appName = 'aba-web';
-      const app: FirebaseApp = getApps().some(item => item.name === appName)
-        ? getApp(appName)
-        : initializeApp(config.firebase, appName);
-      this.auth = getAuth(app);
+      const app: FirebaseApp = firebaseApp.getApps().some(item => item.name === appName)
+        ? firebaseApp.getApp(appName)
+        : firebaseApp.initializeApp(config.firebase, appName);
+      this.auth = firebaseAuth.getAuth(app);
     }
     // Keep the Firebase observer alive so cross-tab sign-in/sign-out changes
     // update the cached user after the initial session check.
     if (!this.authReady) {
       this.authReady = observeAuthState<User>(
-        (onUser, onError) => onAuthStateChanged(this.auth!, onUser, onError),
+        (onUser, onError) => firebaseAuth.onAuthStateChanged(this.auth!, onUser, onError),
         user => { this.updateUser(user ?? null); },
         _error => {
           this.updateUser(null);
@@ -108,14 +110,16 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<User> {
     await this.initialize();
-    const credential = await signInWithEmailAndPassword(this.auth!, email.trim(), password);
+    const { auth } = await this.loadFirebaseModules();
+    const credential = await auth.signInWithEmailAndPassword(this.auth!, email.trim(), password);
     this.updateUser(credential.user);
     return credential.user;
   }
 
   async signUp(email: string, password: string): Promise<User> {
     await this.initialize();
-    const credential = await createUserWithEmailAndPassword(this.auth!, email.trim(), password);
+    const { auth } = await this.loadFirebaseModules();
+    const credential = await auth.createUserWithEmailAndPassword(this.auth!, email.trim(), password);
     this.updateUser(credential.user);
     return credential.user;
   }
@@ -128,12 +132,26 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     await this.initialize();
-    await signOut(this.auth!);
+    const { auth } = await this.loadFirebaseModules();
+    await auth.signOut(this.auth!);
     this.updateUser(null);
   }
 
   subscribeToAuthState(listener: (user: AuthUserSnapshot | null) => void): () => void {
     return this.authState.subscribe(listener);
+  }
+
+  private loadFirebaseModules(): Promise<FirebaseModules> {
+    if (!this.firebaseModulesPromise) {
+      this.firebaseModulesPromise = Promise.all([
+        import('@firebase/app'),
+        import('@firebase/auth'),
+      ]).then(([app, auth]) => ({ app, auth })).catch(error => {
+        this.firebaseModulesPromise = undefined;
+        throw error;
+      });
+    }
+    return this.firebaseModulesPromise;
   }
 
   private updateUser(user: User | null): void {

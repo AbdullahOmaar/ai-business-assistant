@@ -2535,3 +2535,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Exact-head quality:** GitGuardian Security Checks only; combined status zero contexts. Frontend tests, Angular build, dependency audit, Playwright **NOT RUN**. CI trigger/retry prohibited by current session instructions.
 - **Scope:** frontend/docs/TASKS only; no backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview.
 - **Remaining:** run exact-head tests/build/browser/dependency validation when an authorized runner is available; responsive RTL/LTR, OWNER/STAFF/two-tenant, keyboard/screen-reader and physical Android/PWA acceptance. Keep PR Draft.
+
+
+## T18 P0 — defer Firebase runtime SDK from initial bundle — 2026-11-07
+
+- Replaced eager runtime imports of `@firebase/app` and `@firebase/auth` in `AuthService` with a cached dynamic-import promise invoked only after `runtime-config.json` validates.
+- Firebase app/auth functions remain the same; sign-in, sign-up, observer, token and sign-out behavior is unchanged. Failed SDK chunk loading clears the promise so a later retry can re-attempt the import.
+- Added source regression coverage for type-only imports, dynamic import boundaries, runtime-config ordering and retry reset.
+- **Bundle impact is UNVERIFIED until Angular build runs.** No bundle budget was raised. Tests/build NOT RUN; no CI trigger/retry; `[skip ci]`.
