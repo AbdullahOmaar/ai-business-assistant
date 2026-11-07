@@ -2917,8 +2917,18 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
 - **Finding:** `refreshAfterPayrollPayment()` updated Home dashboard metrics and Expenses together, but on any failed request it left the previous `dashboard` object in place. The shared error/retry banner appeared while old KPI values remained visible without a source freshness timestamp.
 - **Fix:** `frontend/src/app/app.component.ts` commit `33fd232335a3adee09962c4b11a396851862bc17` clears the current workspace's dashboard metrics before setting the retryable error. The existing OWNER-only and same-workspace guards remain unchanged. No API, backend, database, financial calculation, payroll state, or recorded expense changed.
-- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `dc0b9b50176340c237ffb6930344c9666078ef28` verifies the refresh catch is tenant-guarded and clears dashboard data before exposing the error/retry action. Home spec now has 18 authored declarations; **NOT RUN**.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `dc0b9b50176340c237ffb6930344c9666078ef28` verifies the refresh catch is tenant-guarded and clears dashboard data before exposing the error/retry action. Home spec now has 19 authored declarations, including the quick-access order guard; **NOT RUN**.
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `74f720bb22ac12dd4c857f607e7ba193cf7e8dc4`.
 - **Static readback:** 8/8 focused assertions PASS across owner guard, tenant guard, dashboard clear ordering, retryable error and regression declaration. This is source inspection, not executed test evidence.
 - **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, authenticated OWNER/STAFF/two-tenant, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** continue Home source audit; keep all NOT RUN acceptance open and retain PR Draft.
+
+
+## T18 — Home quick-access UX contract regression — 2026-11-07
+
+- **Design source:** existing Notion UX-SPEC-01 specifies five compact high-frequency Home shortcuts: Invoices, Customers, Products, Expenses, Reports. No new route or capability is introduced.
+- **Current implementation readback:** `HOME_QUICK_ACCESS_TABS` matches the exact order; `selectHomeQuickAccessModules()` selects only those destinations from `homeModuleCards`, which is already filtered through `canAccessTab()`.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` adds a guard for the five exact destinations, stable order and existing role filter. Home spec now has 19 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` refreshed through `6bfa983884a78ce33b07bf5ca31eac2413e935e7`.
+- **Static readback:** 11/11 focused assertions PASS across Home KPI contract, unsupported-panel exclusions, tenant/role guards, stale-refresh recovery and quick-access mapping. This is not execution of Node tests or rendered UI.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright and rendered RTL/LTR/mobile viewport acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
