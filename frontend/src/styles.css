@@ -269,6 +269,18 @@ aba-metric-card small {
   background: var(--aba-color-surface-hover);
 }
 
+/* Destructive secondary actions keep their semantic warning treatment. */
+:root body .shell .secondary.danger {
+  border-color: var(--aba-color-danger-border);
+  background: var(--aba-color-danger-soft);
+  color: var(--aba-color-danger-text);
+}
+
+:root body .shell .secondary.danger:hover:not(:disabled) {
+  border-color: var(--aba-color-danger-text);
+  background: var(--aba-color-danger-soft);
+}
+
 :root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
 :root body .shell select,
 :root body .shell textarea {
