@@ -1,6 +1,6 @@
 # T18 UI/UX Nested Surface Inventory
 
-**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `1b7062fa9d795b02cd183e4f063de60ef9fd83f5` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
+**Evidence baseline:** GitHub branch `master/t18-uiux-hardening-20261107`, source/test readback through `7d5015943549d895763e0540a8fd5ab04a57f544` (2026-11-07). This is source/test evidence, not a rendered product-acceptance claim.
 
 ## Implemented source surfaces and regression coverage
 
