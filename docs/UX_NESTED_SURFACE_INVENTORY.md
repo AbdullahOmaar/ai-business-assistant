@@ -7,7 +7,7 @@
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
 | Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts` | Browser keyboard and screen-reader run; physical Android/PWA |
-| Home | Five quick shortcuts plus the full role-authorized 19-destination module directory; dashboard loading/error/empty states | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
+| Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); dashboard loading/error/empty states | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
 | Customers CSV import | Preview is separate from execution; valid preview gates confirmation; workspace switch clears pending import; owner-only import actions | `app.component-template-safety.spec.ts` customer-import cases | Browser file picker, preview table overflow, focus and retry |
 | Products CSV import | Preview/validation before confirmation; confirmed import is not repeated after ambiguous refresh | `app.component-template-safety.spec.ts` product-import cases | Browser file picker and large-file behavior |
 | Invoice line editor and totals preview | Dynamic line validation and estimated totals; draft creation distinct from issue; totals remain server-authoritative | `app.component-template-safety.spec.ts` invoice line/validation cases | Rendered mobile editing and long product names |
@@ -26,7 +26,7 @@
 - **UX-02 More-menu focus:** source-level outside close, Escape, focus restoration and RTL/LTR positioning are covered; assistive-technology acceptance remains NOT RUN.
 - **UX-03 mobile viewport/keyboard:** NOT RUN; needs 360/390px browser and installed-PWA keyboard/safe-area evidence.
 - **UX-04 authenticated journeys:** BLOCKED / NOT RUN; no approved isolated synthetic environment and identities are available.
-- **UX-05 module count:** addressed in source by deriving the Home directory count from `homeModuleCards.length`; regression tests compare the registry-backed list.
+- **UX-05 module count:** addressed in source by deriving the Home directory count from `homeModuleCards.length`; the catalogue has 19 destinations, while the visible count is role- and platform-admin-availability-dependent.
 - **UX-06 duplicate version metadata:** do not change without rendered desktop/mobile evidence; NOT RUN.
 - **UX-07 reduced motion:** global reduced-motion CSS and shared-component fallbacks exist; rendered OS/browser verification remains NOT RUN.
 - **UX-08 nested surfaces:** inventory above maps current major nested interactions and source tests. It does not certify every nested surface or browser behavior.
@@ -40,13 +40,13 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - CircleCI `frontend-dependency-audit`: SUCCESS.
 - CircleCI `backend-container`: SUCCESS.
 - CircleCI `backend-accounting`: SUCCESS.
-- CircleCI `frontend-browser-smoke`: PENDING at this checkpoint.
+- CircleCI `frontend-browser-smoke`: FAILED on code SHA `7f347ee0991ec2af15ba6e7211fb20bb412e8ada` (job 13902). The current connected tools do not expose CircleCI's failing test output, so the exact failing test/root cause is UNKNOWN and must not be guessed.
 - GitHub Actions backend/frontend workflow and dependency security scan: SUCCESS.
 - Semaphore: failure is retired/non-authoritative under current CI policy.
 
 ## Explicitly not accepted yet
 
-- Authenticated OWNER, STAFF, second-workspace OWNER and non-member browser journeys: NOT RUN.
+- Authenticated OWNER, STAFF, second-workspace OWNER and non-member browser journeys: NOT RUN. The failing browser-smoke job is a separate CI failure; its root cause remains UNKNOWN until job output is inspected.
 - Physical Android Chrome, installed PWA, keyboard-open, safe-area, landscape and screen-reader checks: NOT RUN.
 - Figma visual/structural review: BLOCKED by View-only access/read restriction.
 - No Vercel preview deployment was available for this branch. Production was not changed.
