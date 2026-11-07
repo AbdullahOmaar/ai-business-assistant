@@ -23,6 +23,7 @@ const AUDIT_ACTION_LABELS: Record<string, { ar: string; en: string }> = {
   'recurring_invoice_schedule.created': { ar: 'إنشاء جدول فاتورة دورية', en: 'Recurring invoice schedule created' },
   'data_import.completed': { ar: 'اكتمال استيراد البيانات', en: 'Data import completed' },
   'pricing_rule.created': { ar: 'إنشاء قاعدة تسعير', en: 'Pricing rule created' },
+  'notification.queued': { ar: 'إضافة إشعار إلى القائمة', en: 'Notification queued' },
 };
 
 const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {
@@ -39,6 +40,7 @@ const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {
   import_job: { ar: 'عملية استيراد', en: 'Import job' },
   pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
   business: { ar: 'نشاط تجاري', en: 'Business' },
+  notification: { ar: 'إشعار', en: 'Notification' },
 };
 
 export function auditActionLabel(action: string, language: AuditLanguage): string {

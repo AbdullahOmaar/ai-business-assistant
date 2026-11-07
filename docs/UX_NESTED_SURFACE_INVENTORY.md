@@ -180,3 +180,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Updated the existing Customers feature-guide entry to describe bilingual Customer Statement event-type labels; no new feature or release version was introduced.
 - Feature-guide regression authored / **NOT RUN**.
+
+
+## Notification audit vocabulary completion — 2026-11-07
+
+- Cross-checked the shared audit label map against backend AuditEvent writers and added the emitted `notification.queued` action and `notification` target labels.
+- Unknown future action/target values remain visible unchanged. Tests authored / **NOT RUN**.

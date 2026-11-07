@@ -2484,3 +2484,9 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - Updated the existing Customers feature-guide detail to describe bilingual statement event labels, matching the current frontend implementation.
 - Added a feature-guide source regression. **NOT RUN**; no CI trigger/retry; no release version bump.
+
+
+## T18 — notification audit event localization — 2026-11-07
+
+- Cross-checked backend AuditEvent writer literals and added bilingual labels for the existing `notification.queued` action and `notification` target in the shared audit label map.
+- No event creation, queue delivery, API or backend behavior changed. Tests authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.
