@@ -2423,3 +2423,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added Arabic/English display labels for `cash`, `bank_transfer`, `card`, `wallet`, `other`; local search now also matches the localized label.
 - Added Arabic search and template/source regression assertions. API payload values remain unchanged.
 - Tests authored / **NOT RUN**; no CI trigger/retry; no financial/payment semantics changed.
+
+
+## T18 — expense category localization — 2026-11-07
+
+- Source audit found fixed expense category codes (General, Supplies, Rent, Utilities, Transport, Marketing, Payroll, Maintenance, Other) were displayed raw in saved rows despite bilingual create-form options.
+- Added a localized category label for each current UI option; saved rows and local search now use the label while preserving the stored API category value.
+- Added Arabic search and template/source regression assertions. No expense or cash-settlement semantics changed.
+- Tests authored / **NOT RUN**; no CI trigger/retry.

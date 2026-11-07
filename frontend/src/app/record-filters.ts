@@ -164,10 +164,14 @@ export interface PaymentSearchItem {
   allocations: readonly { invoice_id: string; amount: string | number }[];
 }
 
-export function filterExpenses<T extends ExpenseSearchItem>(items: readonly T[], query: string): T[] {
+export function filterExpenses<T extends ExpenseSearchItem>(
+  items: readonly T[],
+  query: string,
+  categoryLabel: (category: string) => string = category => category,
+): T[] {
   const q = normalized(query);
   return items.filter(item => !q || [
-    item.category, item.description, item.amount, item.currency_code, item.incurred_at, item.vendor_name, item.reference,
+    item.category, categoryLabel(item.category), item.description, item.amount, item.currency_code, item.incurred_at, item.vendor_name, item.reference,
   ].some(value => normalized(value).includes(q)));
 }
 

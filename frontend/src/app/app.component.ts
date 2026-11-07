@@ -737,7 +737,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     <article class="list-row">
                       <div class="expense-mark" aria-hidden="true">−</div>
                       <div class="grow">
-                        <strong>{{ expense.category }} · {{ expense.amount }} {{ expense.currency_code }}</strong>
+                        <strong>{{ expenseCategoryLabel(expense.category) }} · {{ expense.amount }} {{ expense.currency_code }}</strong>
                         <small>{{ expense.description }} · {{ expense.incurred_at | date:'medium' }}</small>
                         <small>{{ expense.vendor_name || t('بدون مورد', 'No vendor') }}{{ expense.reference ? ' · ' + expense.reference : '' }}</small>
                       </div>
@@ -1304,7 +1304,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredExpenses(): Expense[] {
-    return filterExpenses(this.expenses, this.expenseSearch);
+    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category));
   }
 
   get filteredPayments(): Payment[] {
@@ -1520,6 +1520,32 @@ export class AppComponent implements OnInit, OnDestroy {
       this.initialized = true;
       this.applyPendingAuthSnapshot();
     }
+  }
+
+  expenseCategoryLabel(category: string): string {
+    const labelsAr: Record<string, string> = {
+      General: 'عام',
+      Supplies: 'مستلزمات',
+      Rent: 'إيجار',
+      Utilities: 'مرافق وفواتير',
+      Transport: 'نقل ومواصلات',
+      Marketing: 'تسويق',
+      Payroll: 'رواتب',
+      Maintenance: 'صيانة',
+      Other: 'أخرى',
+    };
+    const labelsEn: Record<string, string> = {
+      General: 'General',
+      Supplies: 'Supplies',
+      Rent: 'Rent',
+      Utilities: 'Utilities',
+      Transport: 'Transport',
+      Marketing: 'Marketing',
+      Payroll: 'Payroll',
+      Maintenance: 'Maintenance',
+      Other: 'Other',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[category] || category;
   }
 
   paymentMethodLabel(method: string): string {

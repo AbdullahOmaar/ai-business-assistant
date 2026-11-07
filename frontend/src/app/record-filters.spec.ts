@@ -98,6 +98,7 @@ test('filters expenses by category, description, amount, currency, vendor and re
   ];
   assert.deepEqual(filterExpenses(expenses, 'delivery').map(x => x.id), ['e1']);
   assert.deepEqual(filterExpenses(expenses, 'nile station').map(x => x.id), ['e1']);
+  assert.deepEqual(filterExpenses(expenses, 'نقل ومواصلات', category => category === 'Transport' ? 'نقل ومواصلات' : category).map(x => x.id), ['e1']);
   assert.deepEqual(filterExpenses(expenses, 'TR-1').map(x => x.id), ['e1']);
   assert.deepEqual(filterExpenses(expenses, '5000').map(x => x.id), ['e2']);
 });
