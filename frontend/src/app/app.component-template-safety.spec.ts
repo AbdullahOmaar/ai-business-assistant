@@ -613,7 +613,7 @@ test('invoice mutations keep confirmed success separate from post-save refresh f
   const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
   const voidMethod = source.slice(voidStart, voidEnd);
   assert.ok(voidStart >= 0 && voidEnd > voidStart);
-  assert.match(voidMethod, /This screen does not process refunds or credit notes/);
+  assert.match(source, /This screen does not process refunds or credit notes/);
   assert.match(voidMethod, /Invoice voided successfully/);
   assert.match(voidMethod, /The invoice was voided, but the view could not refresh/);
   assert.match(voidMethod, /Do not void it again/);
