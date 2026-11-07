@@ -262,3 +262,25 @@ test('Home does not invent pending actions or operational alerts absent from the
   assert.doesNotMatch(response, /pending_actions|action_queue|operational_alerts|attention_items|alert_count|pending_count/i);
   assert.doesNotMatch(home, /pending_actions|action_queue|operational_alerts|attention_items|alert_count|pending_count/i);
 });
+
+
+test('Home retains a failed dashboard-refresh error when navigating away and back', () => {
+  const setTabStart = appSource.indexOf('setTab(tab: Tab): void {');
+  const setTabEnd = appSource.indexOf('get statementBalanceEntries():', setTabStart);
+  const setTab = appSource.slice(setTabStart, setTabEnd);
+  const refreshStart = appSource.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
+  const refreshEnd = appSource.indexOf('exportReceivablesAgingCsv(): void', refreshStart);
+  const refresh = appSource.slice(refreshStart, refreshEnd);
+  const clearStart = appSource.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = appSource.indexOf('async createWorkspace(): Promise<void>', clearStart);
+  const clear = appSource.slice(clearStart, clearEnd);
+
+  assert.ok(setTabStart >= 0 && setTabEnd > setTabStart);
+  assert.match(setTab, /this\.error = tab === 'overview' && this\.homeDashboardError \? this\.homeDashboardError : '';/);
+  assert.match(refresh, /this\.homeDashboardError = this\.message\(error\);/);
+  assert.match(refresh, /this\.homeDashboardError = '';/);
+  assert.match(clear, /this\.homeDashboardError = '';/,
+    'workspace changes must discard the previous workspace Home refresh error');
+  assert.match(appSource, /this\.dashboard = dashboard;\s*this\.homeDashboardError = '';/,
+    'a successful workspace dashboard load must clear the preserved error');
+});
