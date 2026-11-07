@@ -122,6 +122,7 @@ test('shared metric cards style projected amounts and source-basis notes legibly
 
 test('Home keeps the full role-filtered module directory discoverable but collapsed by default', () => {
   assert.match(home, /<details class="module-directory-disclosure">/);
+  assert.match(appSource, /\.module-directory-summary\{[^}]*min-height:44px/);
   assert.match(home, /<summary class="module-directory-summary">/);
   assert.match(home, /<h2 id="module-directory-title">/);
   assert.doesNotMatch(home, /<details[^>]*\bopen\b/);
