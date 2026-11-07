@@ -88,3 +88,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The following are **authored / NOT RUN**: frontend Node tests, Angular template/production build, Playwright, dependency audit and authenticated/browser/device accessibility acceptance.
 - Exact-source combined status at this baseline returned zero status contexts; no CI run was triggered. Earlier CircleCI results on `1ad820d9...` are historical and included a failed `frontend-browser-smoke`; root cause UNKNOWN from inaccessible logs.
 - No backend/API/database/schema/migration, business-rule or stock-ledger change; no merge or deployment.
+
+
+## Explicit membership-role reset regression — 2026-11-07
+
+- The opening-stock source regression now asserts that `loadBusinesses()` compares both workspace ID and `business.role`, then calls `clearWorkspaceData()` when either changes.
+- This proves the existing OWNER-to-STAFF role refresh clears the OWNER-only quantity. The `createProduct()` payload still independently forces zero for non-owners as defense in depth.
+- Authored source regression is **NOT RUN**; no CI trigger/retry.

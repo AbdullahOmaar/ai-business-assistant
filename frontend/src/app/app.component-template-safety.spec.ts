@@ -724,6 +724,15 @@ test('positive opening stock is OWNER-only while STAFF can create tracked produc
   const resetMethod = source.slice(resetStart, resetEnd);
   assert.match(resetMethod, /this\.productOpeningQuantity = '0'/,
     'an owner-only quantity must not survive a workspace or role change');
+
+  const businessesStart = source.indexOf('async loadBusinesses(): Promise<void>');
+  const businessesEnd = source.indexOf('private clearWorkspaceData(): void', businessesStart);
+  const businessesMethod = source.slice(businessesStart, businessesEnd);
+  assert.ok(businessesStart >= 0 && businessesEnd > businessesStart);
+  assert.match(businessesMethod, /this\.business\?\.role !== chosen\.role/,
+    'a workspace membership-role change must be detected');
+  assert.match(businessesMethod, /if \(workspaceAccessChanged\) this\.clearWorkspaceData\(\)/,
+    'a workspace or role change must clear the previous context');
 });
 
 

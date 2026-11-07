@@ -2378,3 +2378,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Historical failure:** CircleCI `frontend-browser-smoke` failed on previous head `1ad820d9fcd1d306772fd99f34c6be2a67020d1a`; five other CircleCI jobs were SUCCESS on that old SHA. Failing output is inaccessible, so root cause remains UNKNOWN. Do not transfer old results to current head.
 - **Delivery:** maintainer review submissions are empty; no merge, deployment, production data or database operations performed. T18 remains IN_PROGRESS / PARTIALLY COMPLETE.
 - **Remaining:** responsive rendered checks, RTL/LTR visual acceptance, authenticated OWNER/STAFF/two-tenant journeys, keyboard/screen-reader and physical Android/PWA remain NOT RUN/BLOCKED; Figma visual review remains blocked by View-only access.
+
+
+## T18 — membership-role reset assertion added — 2026-11-07
+
+- Expanded the product opening-stock regression to assert `loadBusinesses()` detects `business.role` changes and clears workspace-local form state, in addition to checking the reset itself and the non-owner zero payload.
+- This is test/documentation coverage for existing behavior; no additional app behavior changed.
+- Test remains **NOT RUN**; commit uses `[skip ci]`, and no CI trigger/retry was issued.
