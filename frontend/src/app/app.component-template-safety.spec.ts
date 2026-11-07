@@ -1386,7 +1386,7 @@ test('Home dashboard uses the shared page-level error and retry banner without d
     'the empty state must not mislabel a failed dashboard load as a genuine empty result');
 });
 
- 
+
 test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
   assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);

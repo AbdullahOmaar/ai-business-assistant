@@ -51,7 +51,7 @@ export function filterInvoices<T extends InvoiceSearchItem>(
   );
 }
 
- 
+
 export interface SupplierSearchItem {
   name: string;
   email?: string | null;

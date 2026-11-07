@@ -3008,3 +3008,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Release impact:** PR is frontend-only. Vercel Web and API are both Git-linked; current production Web alias resolves to READY SHA `c5fe115daa72e92b4f814ee502405225e1b3dc79`, API alias to READY SHA `3692d26ae358a6f5e6836ca646ddfdd41a449066`. Latest main SHA `8f2e326fce39fe45f4aebe0f1820576e45b75483` created CANCELED production-target records for both projects. No preview exists for this branch. Exact project Ignore Build Step behavior is not exposed by current Vercel read access; do not assume API is unaffected without rechecking release configuration.
 - **Scope:** no backend/API/database/schema/migration, financial/payroll semantics or production data changes. No merge, release marker, deployment or alias change.
 - **Next:** complete exact diff/source review, reconcile CI authorization/runner, then run required exact-head checks and rendered acceptance before release prep. Merge and production deployment remain separate authorized steps.
+
+
+## T18 — Final diff hygiene correction — 2026-11-07
+
+- Exact PR head before cleanup: `1b6926014f00c542398dba5193fe70d09a970b8c`.
+- Full PR patch scan found two whitespace-only added lines with trailing spaces in `frontend/src/app/app.component-template-safety.spec.ts` and `frontend/src/app/record-filters.ts`.
+- Removed trailing whitespace only; no runtime behavior or business semantics changed.
+- Static PR-patch whitespace scan before this correction found exactly 2 instances. Re-run `git diff --check` / exact-head tests remain **NOT RUN** because the authorized runner/CI conflict remains unresolved.
