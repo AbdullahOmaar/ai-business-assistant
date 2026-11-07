@@ -300,3 +300,22 @@ test('authentication and nested form surfaces use semantic tokens', () => {
   assert.ok(styles.includes('background: var(--aba-color-surface-subtle)'));
   assert.ok(styles.includes('color: var(--aba-color-primary-strong)'));
 });
+
+
+test('helper, warning, import and install surfaces use semantic contrast tokens', () => {
+  for (const selector of [
+    ':root body .shell .csv-import-panel',
+    ':root body .shell .csv-import-errors',
+    ':root body .shell .warning-notice',
+    ':root body .shell .divider',
+    ':root body .shell .footnote',
+    ':root body .shell .metric small',
+    ':root body .shell footer span',
+    ':root body .shell .install-button',
+  ]) assert.ok(styles.includes(selector), `missing semantic helper selector: ${selector}`);
+
+  assert.ok(styles.includes('color: var(--aba-color-danger-text)'));
+  assert.ok(styles.includes('color: var(--aba-color-warning-text)'));
+  assert.ok(styles.includes('color: var(--aba-color-text-tertiary)'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+});
