@@ -16,7 +16,7 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
   for (const field of ['invoiced_sales', 'collected_payments', 'expenses', 'outstanding_balances']) {
     assert.ok(home.includes('dashboard.' + field), 'expected source-backed metric ' + field);
   }
-  assert.equal((home.match(/<aba-metric-card>/g) || []).length, 4);
+  assert.equal(home.split('<aba-metric-card role="group"').length - 1, 4);
   for (const id of ['metric-invoiced-sales-label', 'metric-collected-payments-label', 'metric-expenses-label', 'metric-outstanding-balances-label']) {
     assert.ok(home.includes('role="group" aria-labelledby="' + id + '"'));
     assert.ok(home.includes('id="' + id + '" metricLabel'));
