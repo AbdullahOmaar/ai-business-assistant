@@ -95,6 +95,9 @@
   --aba-easing-standard: cubic-bezier(0.2, 0, 0, 1);
   --aba-focus-ring-width: 3px;
   --aba-focus-ring-offset: 2px;
+  --aba-control-height: 44px;
+  --aba-control-radius: 10px;
+  --aba-control-padding-inline: 12px;
 
   /* Layout and layering. Breakpoint values remain explicit in media queries. */
   --aba-layout-sidebar: 245px;
@@ -232,3 +235,92 @@ aba-metric-card small {
   background: var(--aba-color-danger-soft);
 }
 .form-validation .field-error { margin: 0; }
+
+
+/* Phase 2 interaction foundation: consistent controls and surfaces across modules. */
+:root body .shell button:not(.nav-item):not(.mobile-more) {
+  min-height: var(--aba-control-height);
+  border-radius: var(--aba-control-radius);
+}
+
+:root body .shell .primary {
+  min-height: var(--aba-control-height);
+  border-color: var(--aba-color-primary);
+  border-radius: var(--aba-control-radius);
+  background: var(--aba-color-primary);
+  color: var(--aba-color-on-primary);
+}
+
+:root body .shell .primary:hover:not(:disabled) {
+  border-color: var(--aba-color-primary-strong);
+  background: var(--aba-color-primary-strong);
+}
+
+:root body .shell .secondary {
+  min-height: var(--aba-control-height);
+  border-color: var(--aba-color-border-strong);
+  border-radius: var(--aba-control-radius);
+  background: var(--aba-color-surface);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .secondary:hover:not(:disabled) {
+  border-color: var(--aba-color-border-strong);
+  background: var(--aba-color-surface-hover);
+}
+
+:root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell select,
+:root body .shell textarea {
+  min-height: var(--aba-control-height);
+  padding-inline: var(--aba-control-padding-inline);
+  border: 1px solid var(--aba-color-border-strong);
+  border-radius: var(--aba-control-radius);
+  background: var(--aba-color-surface);
+  color: var(--aba-color-text-primary);
+  font-size: var(--aba-font-size-base);
+  line-height: var(--aba-line-height-normal);
+}
+
+:root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus-visible,
+:root body .shell select:focus-visible,
+:root body .shell textarea:focus-visible {
+  border-color: var(--aba-color-focus-ring);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 16%);
+}
+
+:root body .shell .panel,
+:root body .shell .metric,
+:root body .shell .workspace-bar,
+:root body .shell .assistant-suggestions,
+:root body .shell .invoice-preview {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  box-shadow: var(--aba-shadow-card);
+}
+
+:root body .shell .table-wrap {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+}
+
+:root body .shell .table-wrap th {
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-muted);
+}
+
+:root body .shell .table-wrap tbody tr:hover {
+  background: var(--aba-color-surface-hover);
+}
+
+@media (forced-colors: active) {
+  :root body .shell button:focus-visible,
+  :root body .shell a:focus-visible,
+  :root body .shell input:focus-visible,
+  :root body .shell select:focus-visible,
+  :root body .shell textarea:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
