@@ -27,3 +27,10 @@ test('Platform Admin section headings stack actions on narrow screens', () => {
   assert.match(source, /@media\(max-width:600px\)\{\.section-heading\{display:grid;grid-template-columns:minmax\(0,1fr\);gap:8px\}/);
   assert.match(source, /\.section-heading>\.outline-button\{max-width:100%;justify-self:start\}/);
 });
+
+
+test('Platform Admin notice variants preserve success, warning, and error semantics', () => {
+  assert.match(source, /class="notice success"/);
+  assert.match(source, /class="notice error"/);
+  assert.match(source, /class="notice warn"/);
+});

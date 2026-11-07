@@ -18,7 +18,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       </div>
 
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
-      @if (message) { <p class="notice" role="status">{{ message }}</p> }
+      @if (message) { <p class="notice success-notice" role="status">{{ message }}</p> }
 
       <form class="employee-form" (ngSubmit)="saveEmployee()">
         <label>{{ t('اسم الموظف', 'Employee name') }}

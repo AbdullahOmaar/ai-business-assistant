@@ -108,6 +108,7 @@ test('employee and payroll surfaces consume shared semantic status and control t
     '--aba-color-warning-text', '--aba-color-warning-soft', '--aba-color-info-text', '--aba-control-height',
   ]) assert.ok(component.includes(token), `missing shared payroll token: ${token}`);
   assert.match(component, /\.employee-panel\{min-width:0;background:var\(--aba-color-surface/);
+  assert.match(component, /class="notice success-notice"/);
   assert.ok(component.includes('background:var(--aba-color-success-soft,#ecfdf5)'));
   assert.ok(component.includes('background:var(--aba-color-warning-soft,#fffbeb)'));
   assert.equal(component.includes(')beb'), false);

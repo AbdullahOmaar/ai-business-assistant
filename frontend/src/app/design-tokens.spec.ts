@@ -355,6 +355,12 @@ test('generic notices use neutral informational semantics while warnings stay di
   assert.ok(styles.includes('color: var(--aba-color-warning-text)'));
   assert.ok(styles.includes(':root body .shell .install-help'));
   assert.ok(styles.includes('background: var(--aba-color-info-soft)'));
+  assert.ok(styles.includes(':root body .shell .notice.success'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+  assert.ok(styles.includes(':root body .shell .notice.error'));
+  assert.ok(styles.includes('background: var(--aba-color-danger-soft)'));
+  assert.ok(styles.includes(':root body .shell .notice.warn'));
+  assert.ok(styles.includes('background: var(--aba-color-warning-soft)'));
 });
 
 

@@ -395,6 +395,27 @@ aba-metric-card small {
   color: var(--aba-color-info-text);
 }
 
+:root body .shell .notice.success,
+:root body .shell .notice.success-notice {
+  border-color: var(--aba-color-success-border);
+  background: var(--aba-color-success-soft);
+  color: var(--aba-color-success-text);
+}
+
+:root body .shell .notice.error {
+  border-color: var(--aba-color-danger-border);
+  background: var(--aba-color-danger-soft);
+  color: var(--aba-color-danger-text);
+}
+
+:root body .shell .notice.warn,
+:root body .shell .notice.warning-notice {
+  border-color: var(--aba-color-warning-border);
+  background: var(--aba-color-warning-soft);
+  color: var(--aba-color-warning-text);
+}
+
+
 :root body .shell .chat-log {
   border-color: var(--aba-color-border);
   border-radius: var(--aba-radius-card);
