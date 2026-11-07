@@ -11,7 +11,21 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   const paymentRequests: string[] = [];
   let chatAttempts = 0;
   page.on('pageerror', error => uncaughtErrors.push(error.message));
-  await page.addInitScript(() => window.localStorage.setItem('aba-language', 'ar'));
+  await page.addInitScript(() => {
+    window.localStorage.setItem('aba-language', 'ar');
+    const testWindow = window as Window & { __abaTestKeyboardInset?: number };
+    testWindow.__abaTestKeyboardInset = 0;
+    // Model the Android visual viewport separately from Playwright's layout viewport.
+    const visualViewport = new EventTarget();
+    Object.defineProperties(visualViewport, {
+      height: {
+        configurable: true,
+        get: () => Math.max(0, window.innerHeight - (testWindow.__abaTestKeyboardInset || 0)),
+      },
+      offsetTop: { configurable: true, get: () => 0 },
+    });
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: visualViewport });
+  });
 
   // All external dependencies are mocked. The test cannot contact Firebase production
   // or the real business API, and it never writes to a real workspace.
@@ -319,11 +333,17 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
     { businessId: 'business-1', message: 'What happened this month?', authorization: 'Bearer ' + idToken },
   ]);
 
-  // Focusing the composer hides the fixed mobile dock; shrinking the viewport
-  // simulates the reduced visible area while the Android keyboard is open.
+  // Focusing the composer hides the fixed mobile dock. Simulate the Android
+  // visual viewport inset separately because Playwright resizing changes both viewports.
   await composer.fill('Keep the send control visible.');
   await composer.focus();
   await page.setViewportSize({ width: 360, height: 420 });
+  await page.evaluate(() => {
+    const testWindow = window as Window & { __abaTestKeyboardInset?: number };
+    testWindow.__abaTestKeyboardInset = 280;
+    window.visualViewport?.dispatchEvent(new Event('resize'));
+  });
+  await expect(page.locator('.shell')).toHaveClass(/keyboard-open/);
   await expect(sendButton).toBeVisible();
   const viewportLayout = await page.evaluate(() => {
     const send = document.querySelector('.chat-form button');
@@ -335,11 +355,13 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
       viewportHeight: window.innerHeight,
       dockPointerEvents: getComputedStyle(dock).pointerEvents,
       dockTransform: getComputedStyle(dock).transform,
+      keyboardInset: getComputedStyle(document.documentElement).getPropertyValue('--aba-keyboard-inset').trim(),
     };
   });
   expect(viewportLayout).not.toBeNull();
   expect(viewportLayout!.sendBottom).toBeLessThanOrEqual(viewportLayout!.viewportHeight + 1);
   expect(viewportLayout!.dockPointerEvents).toBe('none');
+  expect(viewportLayout!.keyboardInset).toBe('280px');
   expect(uncaughtErrors).toEqual([]);
 });
 
