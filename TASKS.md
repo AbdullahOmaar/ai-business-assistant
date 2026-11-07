@@ -2824,3 +2824,17 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `580704a107b10a451d2b0cded20d76f0f1079cc7` (evidence-baseline normalization after the semantic-heading row update).
 - **Validation:** source readback only; no Node test/build/browser execution. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
 - **Next:** continue Home source/accessibility audit and re-read exact-head status; do not add charts/alerts/activity/aging without a verified API source and approved metric definition.
+
+
+## T18 — Home loading-heading regression alignment — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Pre-edit head:** `5493306d5859a6614ec4c51891c75dde682a5efd`.
+- **Code commit:** `bb7f079e84b30e9a1ad2eb2b2ee2464ab386b2ef` updates the Home loading-skeleton source regression to expect the current bilingual heading label `Business summary` (matching the ready state) and adds an explicit stale-copy guard.
+- **Files:** `frontend/src/app/home-dashboard.spec.ts`.
+- **Finding:** the implementation had correctly changed the old visual eyebrow to a semantic H2, but the pre-existing loading-branch assertion still expected the old uppercase English label. The assertion was stale and would fail if executed. This fix aligns the test with the actual localized UI contract; it does not change runtime behavior.
+- **Source readback:** 16 focused assertions PASS on code head `bb7f079e84b30e9a1ad2eb2b2ee2464ab386b2ef`: four KPI groups, distinct localized labels, currency-isolated amounts, no invented outstanding count, ready/loading bilingual heading, no stale heading copy, semantic heading tests, mobile two-column / narrow one-column quick access, and tenant stale-response fence. This is static source inspection only.
+- **Regression suite:** `home-dashboard.spec.ts` now contains 16 authored test declarations. Node execution **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `cb16f98992cec846e9c03842a86e8ad16545a982`.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, OWNER/STAFF/two-tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. Desktop Commander remains Offline; no CI trigger/retry. No preview, merge or deployment.
+- **Next:** continue Home source review; preserve only the four source-backed currency-separated KPI groups and keep unsupported charts/alerts/activity/aging out. Rendered acceptance remains blocked by the approved runner/browser availability.
