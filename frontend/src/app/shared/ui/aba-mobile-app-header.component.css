@@ -8,7 +8,6 @@
   min-width: 0;
   margin-block: 0 18px;
   padding: 12px;
-  padding-block-start: max(12px, env(safe-area-inset-top, 0px));
   overflow: visible;
   border: 1px solid var(--aba-color-border, #e5eaf1);
   border-radius: 18px;
@@ -16,7 +15,6 @@
   box-shadow: var(--aba-shadow-card, 0 1px 2px rgb(15 23 42 / 4%));
   color: var(--aba-color-text-primary, #172033);
 }
-.mobile-app-header.install-cta-visible { margin-block-start: 44px; }
 .brand-row, .header-actions, .brand-button, .page-context { display: flex; align-items: center; min-width: 0; }
 .brand-row { gap: 8px; }
 .brand-button { flex: 1 1 auto; gap: 9px; min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; text-align: start; }

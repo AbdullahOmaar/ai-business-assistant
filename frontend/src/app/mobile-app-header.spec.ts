@@ -61,11 +61,13 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.match(styles, /@media \(max-width: 380px\)/);
   assert.match(styles, /min-width: 0/);
   assert.match(styles, /overflow-wrap: anywhere/);
-  assert.match(styles, /env\\(safe-area-inset-top/);
+  assert.match(appSource, /env\\(safe-area-inset-top/);
+  assert.match(appSource, /install-cta-visible/);
+  assert.match(appSource, /shell\\.install-help-open \\.main/);
   assert.match(source, /aria-live="polite" aria-atomic="true"/);
+  assert.doesNotMatch(styles, /install-cta-visible|safe-area-inset-top/);
   assert.match(styles, /inset-inline-end/);
   assert.match(styles, /min-height: 44px/);
-  assert.match(styles, /margin-block-start: 44px/);
   assert.match(appSource, /\.workspace-bar\{display:none!important\}/);
   assert.doesNotMatch(appSource, /class="mobile-page-heading"/);
 });

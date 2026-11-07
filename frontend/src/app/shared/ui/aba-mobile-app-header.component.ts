@@ -8,7 +8,7 @@ import type { Business } from '../../api.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section class="mobile-app-header" [class.install-cta-visible]="showInstallButton"
+    <section class="mobile-app-header"
       [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
       [attr.aria-label]="t('رأس التطبيق ومساحة العمل', 'App and workspace header')">
       <div class="brand-row">
@@ -95,7 +95,6 @@ export class AbaMobileAppHeaderComponent {
   @Input() pageTitle = '';
   @Input() userEmail = '';
   @Input() showGreeting = false;
-  @Input() showInstallButton = false;
 
   @Output() homeRequested = new EventEmitter<void>();
   @Output() businessChange = new EventEmitter<string>();
