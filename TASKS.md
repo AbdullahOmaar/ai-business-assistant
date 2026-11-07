@@ -2644,3 +2644,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Excluded `.aba-quick-access` from the global control normalization so the shared navigation card retains its own 104px minimum height and card radius while normal action buttons keep the 44px target.
 - Added a source regression asserting both the exclusion and the component-specific dimensions.
 - Test authored / NOT RUN; no CI trigger/retry, merge or deployment. No behavior, route, role, API or domain semantics changed.
+
+
+## T18 — responsive shared section-header hierarchy — 2026-11-07
+
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `290c3d56fc285719b3ae4a4ef4bf47c35a8b2e86`; existing PR #348 remains OPEN / DRAFT / UNMERGED. No new branch or PR created.
+- **Finding:** the shared section heading and projected count/action controls shared a single horizontal flex row at narrow widths. Long localized or dynamic titles could compete with controls for available width; this was a source-level layout risk, not a rendered defect claim.
+- **Implementation:** long h2/h3 titles now use safe wrapping; at 600px and below the shared header uses a single-column layout with controls on a full-width row aligned to the logical start. RTL/LTR uses logical alignment; tablet/desktop layout is unchanged.
+- **Files:** `frontend/src/app/shared/ui/aba-section-header.component.ts`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Regression:** one focused source test declaration added; authored / **NOT RUN**. Frontend Node tests, Angular build, dependency audit, Playwright, rendered responsive/RTL/LTR and assistive-technology checks remain **NOT RUN**.
+- **CI/release:** commit message uses `[skip ci]`; no CircleCI trigger/retry, replacement CI, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
+- **Next:** continue source audit of shared component and nested-page responsive constraints; run exact-head validation only after the CI trigger/retry freeze is explicitly lifted and an approved runner/browser is available.

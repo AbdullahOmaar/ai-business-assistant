@@ -168,6 +168,13 @@ test('shared section headers preserve h2/h3 hierarchy for nested workspace secti
     'nested receivables and customer statement sections must use h3');
 });
 
+test('shared section headers stack heading copy and actions on narrow screens without clipping long localized titles', () => {
+  const sectionHeaderSource = componentSources[3];
+  assert.match(sectionHeaderSource, /\.aba-section-header h2,\.aba-section-header h3\{overflow-wrap:anywhere\}/);
+  assert.match(sectionHeaderSource, /@media\(max-width:600px\)\{[\s\S]*\.aba-section-header\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(sectionHeaderSource, /\.aba-section-header__actions\{width:100%;min-width:0;justify-content:flex-start\}/);
+});
+
 
 test('native Angular validation styles touched and submitted invalid controls without styling untouched fields', () => {
   assert.match(styles, /\.shell input\.ng-invalid\.ng-touched/);

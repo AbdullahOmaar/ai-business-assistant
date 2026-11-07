@@ -6,6 +6,7 @@
 
 | Surface | Current source behavior | Existing regression evidence | Remaining acceptance |
 |---|---|---|---|
+| Shared section headers | Shared h2/h3 hierarchy across Home and nested module sections; long Arabic/English titles wrap safely; narrow-screen layout stacks actions below heading copy and aligns them to the logical start | `design-tokens.spec.ts` shared section-header hierarchy and narrow-screen layout cases | Rendered 360/390px RTL/LTR, action wrapping and screen-reader heading navigation |
 | Shared shell and mobile More | Central role-aware module registry; active secondary destinations; Escape/outside close; focus restoration; logical RTL/LTR positioning; refreshed membership/platform role revalidates the active tab before scoped data reload; Firebase App/Auth runtime SDK loads in a separate chunk after runtime-config validation | `module-access.spec.ts`, `mobile-navigation.spec.ts`, `app.component-template-safety.spec.ts`, `auth-lazy-loading.spec.ts` | Verify initial bundle budget after build; browser keyboard/screen-reader run; physical Android/PWA |
 | Home | Five quick shortcuts plus the role-authorized directory over the 19-destination catalogue (actual visible count varies by workspace role and platform-admin availability); shared quick-access cards retain their 104px minimum height and card radius independently of global action-button sizing; dashboard loading/empty states; shared page-level error/retry banner owns failures to avoid duplicate alert announcements | `workspace-module-catalog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF rendered visibility |
 | Customers CSV import | Preview is separate from execution; valid preview gates confirmation; workspace switch clears pending import; owner-only import actions | `app.component-template-safety.spec.ts` customer-import cases | Browser file picker, preview table overflow, focus and retry |
@@ -268,3 +269,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Global action-button normalization excludes the shared quick-access card so its intended 104px minimum height and card radius are not overridden.
 - Source regression inventory: 19 declarations in design-tokens.spec.ts and 3 in confirmation-dialog.spec.ts. Tests are authored / NOT RUN; build and rendered checks remain NOT RUN.
 - Source implementation commits: `766b2d77ddd43bd1565f5f1c3854d4ef85cba56c`, `282ef1f84847b696143838c0227b33b72a697729`, `6d62e0daa544cbf69d0ba2b5b3dd7f76e87da0ee`. Existing PR #348 remains OPEN / DRAFT / UNMERGED.
+
+
+## Latest section-header responsive refinement — 2026-11-07 — `290c3d56fc285719b3ae4a4ef4bf47c35a8b2e86`
+
+- Source review identified a narrow-screen layout risk: section heading copy and projected actions shared one horizontal flex row, so long localized/dynamic titles could compete with counts or action buttons for width.
+- The shared component now wraps long h2/h3 titles and switches to a single-column layout at 600px and below. Projected actions occupy a full-width row aligned to the logical start, preserving RTL/LTR behavior; tablet/desktop layout is unchanged.
+- Added a focused source regression declaration in `frontend/src/app/design-tokens.spec.ts`.
+- Test declaration is authored / **NOT RUN**. No rendered screenshot or browser/device acceptance is claimed.
