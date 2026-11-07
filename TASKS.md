@@ -2702,3 +2702,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Readback: no unresolved shared token references in Platform Admin or Employee & Payroll; Payroll component CSS braces balanced; warning and success surfaces use their distinct semantic tokens. Source test declarations: Platform Admin 2, Employee/Payroll 10, App Shell design tokens 23. All authored / NOT RUN.
 - Implementation commits: Platform Admin `0a595a3e4336dcc4501495a2ace59cc755beae3d` (test correction `c8fcbe774fe1710c21cf7eb80a664a1113cb425c`); Payroll `5843b4e6ccceea2d941e47f21ef8c4c8dc7663de` and corrective semantic-surface commit `70876d61f2624d67b7fa1ce395d4429f45f1fe01`.
 - No CI trigger/retry, merge, preview or deployment. Node tests, Angular build, dependency audit, Playwright, RTL/LTR browser rendering and screen-reader acceptance remain NOT RUN.
+
+
+## T18 — feature status semantics and mobile section hierarchy — 2026-11-07
+
+- Global notice surfaces now distinguish informational default, success, danger/error, and warning variants. Platform Admin's existing `notice success/error/warn` states are preserved by higher-specificity shared token rules; Payroll success messages now declare `success-notice`, while its warning remains warning-colored.
+- Employee & Payroll section headings stack into one column at 600px and below; count badges align to the logical start. Platform Admin section headings/actions also stack at 600px and below.
+- Source regressions: App Shell design-token suite 23 declarations, Platform Admin design-token suite 4, Employee/Payroll UI suite 11. Authored / NOT RUN.
+- Static readback: notice variant selectors present, Payroll success/warning token declarations correct, mobile heading rules present, component CSS braces balanced. No rendered browser/device claim.
+- Source commit: `27a0ced47d44bccbcb0cc6bef0347a64804db917`; existing PR #348 OPEN / DRAFT / UNMERGED. CI trigger/retry, preview, merge and deployment remain NOT RUN.

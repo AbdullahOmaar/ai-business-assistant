@@ -26,7 +26,7 @@
 
 ## UX finding disposition
 
-- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; 64 repeated App Shell color declarations now reuse semantic tokens; generic notices use informational semantics, warning notices retain warning semantics, and destructive actions retain danger semantics; rendered screenshots remain NOT RUN.
+- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; 64 repeated App Shell color declarations now reuse semantic tokens; info/success/danger/warning notice variants retain distinct semantic colors across App Shell, Platform Admin and Payroll; rendered screenshots remain NOT RUN.
 - **UX-02 More-menu focus:** source-level outside close, Escape, focus restoration and RTL/LTR positioning are covered; assistive-technology acceptance remains NOT RUN.
 - **UX-03 mobile viewport/keyboard:** NOT RUN; needs 360/390px browser and installed-PWA keyboard/safe-area evidence.
 - **UX-04 authenticated journeys:** BLOCKED / NOT RUN; no approved isolated synthetic environment and identities are available.
@@ -313,3 +313,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Platform Admin's local design variables now reference the shared semantic token system, including surface-soft and focus-ring tokens. Its permission domain remains separate.
 - Employee & Payroll component-local styling now uses shared surface, control, typography and status tokens; action targets use the shared 44px control height. No payroll business or privacy behavior changed.
 - Source tests: Platform Admin 2, Employee/Payroll 10. Authored / NOT RUN; browser, keyboard and assistive-technology acceptance remains NOT RUN.
+
+
+## T18 status notice semantics and feature mobile headings — 2026-11-07
+
+- Generic notices use informational styling; explicit success, error/danger and warning variants retain their semantic tokens across App Shell, Platform Admin and Payroll.
+- Employee/Payroll and Platform Admin custom section headers now stack actions and counts below 600px to protect long localized titles.
+- Source test declarations: App Shell 23, Platform Admin 4, Employee/Payroll 11. Authored / NOT RUN; rendered RTL/LTR, keyboard and assistive-technology acceptance remains NOT RUN.
