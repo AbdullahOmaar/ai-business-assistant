@@ -3033,6 +3033,8 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 
 - **Review:** the accepted Hybrid Modern top section includes a concise greeting only where appropriate. The component already gates the greeting with `showGreeting`, and the app passes `tab === 'overview'`; the regression previously guarded the input contract but not the app binding.
 - **Regression:** `frontend/src/app/mobile-app-header.spec.ts` commit `8b7b167a4e274c76d2e1f78330f5d96e25debeca` now asserts the greeting renders only when the Home flag is true and retains its bilingual copy. The suite remains 10 authored declarations; **NOT RUN**.
+- **Workspace context:** the same existing regression now also guards that the workspace selector is rendered only when more than one business is available; the current workspace name remains visible for single-workspace accounts.
+- **Follow-up regression commit:** `b3f45ffa8a9949ac616ef074a1ed543d732c71a5` guards multi-workspace selector visibility and its labelled native select; the suite remains 10 authored declarations.
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` commit `b68bd8d550c498c470ca12471cb19781db7f0d5c` corrects the header spec count to 10 and records the Home-only greeting guard.
 - **Scope:** source regression and UX inventory only; no runtime behavior, route, API, authorization, financial/payroll or release semantics changed.
 - **Validation:** static source readback only; full Node tests/build/audit/Playwright and rendered RTL/LTR/device/screen-reader acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
