@@ -2578,3 +2578,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Design gate:** code-level interaction foundation work has started under the user-authorized T18 UI implementation. Figma Variables/component-library delivery and visual verification remain NOT RUN/BLOCKED by View-only access; this code work does not claim Figma Phase 2 acceptance.
 - **Boundaries:** no backend/API/database/schema/migration, product scope, financial/payroll/stock semantics or production data changes.
 - **Next:** continue the route-level visual consistency pass on existing frontend presentation files; keep PR Draft and preserve separate exact-head, rendered, authenticated, Android/PWA and screen-reader acceptance gates.
+
+## T18 — no-membership Platform Admin navigation revocation guard — 2026-11-07
+
+- **Finding:** when `loadBusinesses()` returned no workspace memberships, it selected Platform Admin if authorized but did not change the active tab when `platformAdminAvailable` was false. The admin component was still capability-gated, but the navigation state could retain a revoked destination.
+- **Fix:** the no-membership branch now preserves the Platform Admin destination only while the explicit capability is true; otherwise it routes to Overview through the existing `setTab()` path.
+- **Regression:** added source assertion for both the capability-present and capability-absent branches.
+- **Validation:** source/readback only; test authored / **NOT RUN**. Full Node tests, Angular build, authenticated Platform Admin revocation and browser/device acceptance remain NOT RUN. No CI trigger/retry; `[skip ci]`.
+- **Scope:** frontend navigation only; no authorization policy, API/backend, database/schema, business/financial/payroll behavior, production data, merge or deployment changes.

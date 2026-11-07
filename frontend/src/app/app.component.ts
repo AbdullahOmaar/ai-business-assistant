@@ -1804,7 +1804,9 @@ export class AppComponent implements OnInit, OnDestroy {
         this.selectedBusinessId = '';
         this.clearWorkspaceData();
         // Keep the global control plane accessible to admins without workspace memberships.
+        // If the platform capability was revoked, do not retain its previously selected tab.
         if (this.platformAdminAvailable) this.tab = 'platform-admin';
+        else this.setTab('overview');
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];

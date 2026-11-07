@@ -231,3 +231,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Figma Variables, component library and visual/structural review remain NOT RUN/BLOCKED by current View-only access. This is not Figma Phase 2 acceptance.
 - Provider note: CircleCI and non-authoritative GitHub Actions automation started after the two source commits; no manual CI trigger/retry was issued. Read the exact-SHA results before relying on them. Follow-up documentation commits use [skip ci].
 - No backend/API/database/schema/migration, business/financial/payroll/stock semantics, production data, merge or production deployment changes.
+
+## Platform-admin capability revocation with no workspace memberships — 2026-11-07
+
+- The no-membership branch of `loadBusinesses()` preserves Platform Admin for authorized administrators. It now explicitly returns to Overview when the refreshed platform-admin capability is absent, rather than retaining a previously active admin tab.
+- Added source regression coverage for the authorized-admin and revoked-capability branches. The actual Platform Admin component remains capability-gated; this is a navigation-state fail-closed correction, not a new access rule.
+- Test authored / **NOT RUN**; authenticated platform-admin revocation/browser acceptance remains NOT RUN.
