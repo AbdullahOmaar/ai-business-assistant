@@ -3016,3 +3016,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Full PR patch scan found two whitespace-only added lines with trailing spaces in `frontend/src/app/app.component-template-safety.spec.ts` and `frontend/src/app/record-filters.ts`.
 - Removed trailing whitespace only; no runtime behavior or business semantics changed.
 - Static PR-patch whitespace scan before this correction found exactly 2 instances. Re-run `git diff --check` / exact-head tests remain **NOT RUN** because the authorized runner/CI conflict remains unresolved.
+
+
+## T18 — Home All Modules disclosure semantics — 2026-11-07
+
+- **Finding:** the Home All Modules native `<summary>` contained an `<h2>`. The summary content model is phrasing content; a nested heading element is invalid even though the section was labelled and the control remained keyboard-operable.
+- **Fix:** `frontend/src/app/app.component.ts` commit `af778107784bf910e478b3421f3b6da2908ab126` replaces the nested heading with a `span[role="heading"][aria-level="2"]` and a dedicated title class. The visible title, section `aria-labelledby`, native disclosure behavior and 44px touch target are preserved.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `32e8d80f877328563f8c6ec9f7f67b8b05e665d7` guards the ARIA level-two heading, phrasing-only summary content and title styling. Existing Home spec count remains 21 declarations; assertion is added to the existing disclosure test. Authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated in `d98165db12218d5ff9734dcef41e613372d3befa`.
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED. Base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Scope:** Home template/CSS, source regression and UX inventory only. No route, API/backend, authorization, schema, financial/payroll, production-data or release behavior changed.
+- **Validation:** source readback only. Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical device acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
