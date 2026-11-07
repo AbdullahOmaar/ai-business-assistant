@@ -202,7 +202,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
           </form>
           @if (usersLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل الحسابات من Firebase…', 'Loading accounts from Firebase…') }}</div> }
           @if (usersError) { <div class="notice error" role="alert">{{ usersError }} <button type="button" class="text-action" (click)="loadUsers(userPageIndex)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
-          @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ t('لا توجد حسابات مطابقة', 'No matching accounts') }}</h3><p>{{ t('جرّب بريدًا كاملًا أو UID صحيحًا، أو امسح البحث لعرض القائمة.', 'Try an exact email or UID, or clear search to browse the directory.') }}</p></div> }
+          @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ userQuery.trim() ? t('لا توجد حسابات مطابقة', 'No matching accounts') : t('لا توجد حسابات مسجلة بعد', 'No user accounts are registered yet') }}</h3><p>{{ userQuery.trim() ? t('جرّب بريدًا كاملًا أو UID صحيحًا، أو امسح البحث لعرض القائمة.', 'Try an exact email or UID, or clear search to browse the directory.') : t('ستظهر حسابات Firebase المسجلة هنا عند توفرها.', 'Registered Firebase accounts will appear here when available.') }}</p></div> }
           @if (!usersLoading && users.length) {
             <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('دليل المستخدمين، جدول قابل للتمرير أفقيًا', 'User directory, horizontally scrollable table')">
               <table class="user-directory-table">

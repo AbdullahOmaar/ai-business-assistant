@@ -50,3 +50,11 @@ test('platform role audit uses the shared bilingual action vocabulary', () => {
   assert.match(source, /auditActionLabel\(event\.action\)/);
   assert.doesNotMatch(source, /event\.action === 'platform\.user_role\.granted'/);
 });
+
+
+test('user directory distinguishes an empty directory from an exact-search miss', () => {
+  assert.match(source, /userQuery\.trim\(\) \? t\('لا توجد حسابات مطابقة'/);
+  assert.match(source, /No matching accounts/);
+  assert.match(source, /No user accounts are registered yet/);
+  assert.match(source, /Registered Firebase accounts will appear here when available/);
+});
