@@ -14,7 +14,7 @@
 | Invoice line editor and totals preview | Dynamic line validation and estimated totals; draft creation distinct from issue; totals remain server-authoritative | `app.component-template-safety.spec.ts` invoice line/validation cases | Rendered mobile editing and long product names |
 | Invoice print | Issued-invoice-only print action; escaped business/customer/invoice/line content; popup-blocked and detail errors surfaced | `invoice-print-preview.spec.ts` | Real browser popup/print rendering in RTL and LTR |
 | Invoice void confirmation | Shared accessible dialog; OWNER guard; explicit void warning; no refund/credit-note implication; focus return and uncertain-result protection | `confirmation-dialog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF denial and rendered keyboard test |
-| Purchase receipt confirmation | Shared dialog; OWNER guard; line quantities reviewed before receipt; uncertain result blocks unsafe retry | `confirmation-dialog.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF journey and no-side-effect evidence |
+| Purchase receipt confirmation | Shared dialog; OWNER-only; Receive available only for approved/partially_received orders with remaining quantity; Draft shows a bilingual explanation and no Receive control; line quantities reviewed; request/confirm re-check eligibility; uncertain result blocks unsafe retry | `confirmation-dialog.spec.ts`, `app.component-template-safety.spec.ts` | Rendered OWNER draft/approved/partial states; authenticated OWNER/STAFF journey and no-side-effect evidence |
 | Payments and expenses | Local search over visible receipt/expense details; separate no-match vs no-record state; search clears on workspace change | `record-filters.spec.ts`, `workspace-data-access.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated data visibility and mobile list usability |
 | Suppliers, purchase orders, recurring schedules, notifications | Local search over visible fields; localized empty/no-match states; allocation/active-state search uses exact state labels | `record-filters.spec.ts`, `app.component-template-safety.spec.ts` | Large-list performance and rendered mobile behavior |
 | Employees and payroll | Lazy-loaded only on owner Employees route; payout action explicitly records an in-app event and does not claim a bank transfer | `employee-payroll-ui.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF salary privacy and actual workflow |
@@ -71,7 +71,7 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Browser regression is authored but **NOT RUN**. Exact-candidate CircleCI remains NOT RUN / no status contexts on the current source head; no trigger/retry was issued.
 
 
-| Purchase-order receipt state | OWNER Receive action is available only for `approved` and `partially_received` orders with remaining quantities. Draft orders show a bilingual explanation and no Receive action. Frontend guards re-check the status before opening and confirming the receipt dialog; backend remains authoritative. | `app.component-template-safety.spec.ts` status-helper, draft-copy, request and confirm guards | Rendered OWNER draft/approved/partial states; authenticated no-side-effect verification |
+
 
 ## Purchase-order receipt state alignment — 2026-11-07
 

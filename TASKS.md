@@ -2360,3 +2360,10 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Safety:** dialog-opening and confirmation handlers re-check the same eligibility predicate. No approval UI was invented; no API/backend, stock or business lifecycle rule changed.
 - **Regression coverage authored:** source test asserts both allowed statuses, remaining quantity, draft explanatory copy, template eligibility and handler guards.
 - **Validation:** source read/write assertions only; repository tests and build **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`. Current candidate remains draft PR #348, unmerged and undeployed.
+
+
+## UX inventory structure tidy-up — 2026-11-07
+
+- Consolidated the purchase-order receipt state acceptance into the existing `Purchase receipt confirmation` row in `docs/UX_NESTED_SURFACE_INVENTORY.md`; removed the temporary standalone table row appended during the fix.
+- No application behavior changed in this documentation checkpoint.
+- Repository tests/build remain NOT RUN; no CI trigger/retry. PR #348 remains OPEN / DRAFT / UNMERGED.
