@@ -3027,3 +3027,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED. Base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
 - **Scope:** Home template/CSS, source regression and UX inventory only. No route, API/backend, authorization, schema, financial/payroll, production-data or release behavior changed.
 - **Validation:** source readback only. Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical device acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Mobile header Home-only greeting regression — 2026-11-07
+
+- **Review:** the accepted Hybrid Modern top section includes a concise greeting only where appropriate. The component already gates the greeting with `showGreeting`, and the app passes `tab === 'overview'`; the regression previously guarded the input contract but not the app binding.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` commit `8b7b167a4e274c76d2e1f78330f5d96e25debeca` now asserts the greeting renders only when the Home flag is true and retains its bilingual copy. The suite remains 10 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` commit `b68bd8d550c498c470ca12471cb19781db7f0d5c` corrects the header spec count to 10 and records the Home-only greeting guard.
+- **Scope:** source regression and UX inventory only; no runtime behavior, route, API, authorization, financial/payroll or release semantics changed.
+- **Validation:** static source readback only; full Node tests/build/audit/Playwright and rendered RTL/LTR/device/screen-reader acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
