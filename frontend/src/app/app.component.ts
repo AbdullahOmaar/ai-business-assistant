@@ -2113,6 +2113,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (this.business?.id !== businessId) return;
       this.expenses = expenses;
       this.dashboard = dashboard;
+      if (this.error === this.homeDashboardError) this.error = '';
       this.homeDashboardError = '';
       this.profitLoss = null;
     } catch (error) {
