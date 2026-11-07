@@ -19,8 +19,8 @@
 | Suppliers, purchase orders, recurring schedules, notifications | Local search over visible fields; purchase-order and notification status labels/search are bilingual; recurring/allocation state search uses exact state labels; localized empty/no-match states | `record-filters.spec.ts` Arabic status cases, `app.component-template-safety.spec.ts` localized status assertions | Large-list performance and rendered mobile behavior |
 | AI assistant | Bilingual empty/loading/error/retry states; assistant source list localizes source heading/type and reuses expense category labels; source records remain those supplied by the backend | `mobile-chat.spec.ts`, `app.component-template-safety.spec.ts` bilingual source citation assertion | Authenticated tenant-scoped source correctness, keyboard/screen-reader and physical mobile acceptance |
 | Employees and payroll | Lazy-loaded only on owner Employees route; payout action explicitly records an in-app event and does not claim a bank transfer | `employee-payroll-ui.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated OWNER/STAFF salary privacy and actual workflow |
-| Release Guide and Platform Admin | Lazy-loaded only when selected; Platform Admin remains a separate permission domain | `release-guide.spec.ts`, `platform-admin-helpers.spec.ts`, `app.component-template-safety.spec.ts` | Authenticated platform-admin and workspace-role journeys |
-| Reports, Tax, Activity Log, Integrity, Operational Health | Source-level loading/error/empty/permission states and currency/basis limitations retained; Operational Health API `ok`/`degraded` status is localized | `app.component-template-safety.spec.ts`, `data-integrity-ui.spec.ts`, `release-guide.spec.ts` | Authenticated OWNER/STAFF/second-tenant journeys; report basis review |
+| Release Guide and Platform Admin | Lazy-loaded only when selected; Platform Admin remains a separate permission domain; activity audit action/target labels use the shared bilingual vocabulary | `release-guide.spec.ts`, `platform-admin-user-management.spec.ts`, `audit-labels.spec.ts` | Authenticated platform-admin and workspace-role journeys |
+| Reports, Tax, Customer Statement, Activity Log, Integrity, Operational Health | Source-level loading/error/empty/permission states and currency/basis limitations retained; Customer Statement event types and Operational Health status use bilingual labels | `app.component-template-safety.spec.ts`, `data-integrity-ui.spec.ts`, `release-guide.spec.ts` | Authenticated OWNER/STAFF/second-tenant journeys; report basis review |
 
 ## UX finding disposition
 
@@ -166,3 +166,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Notification kind localization now covers the actual current form value `business` and retains `businesses` for legacy records.
 - The in-app feature catalogue now documents the bilingual payment, expense, invoice, PO, notification and operational-health labels/search behavior. No release version was advanced; this remains an unreleased PR candidate.
 - Source regression tests are authored / **NOT RUN**.
+
+
+## Customer statement and platform audit label consistency — 2026-11-07
+
+- Customer Statement event types now display bilingual labels for the three values emitted by the current backend route: `invoice_issued`, `payment_allocation`, and `currency_mismatch_allocation`. Unknown values remain visible unchanged.
+- Workspace Activity Log and Platform Admin activity audit now share one bilingual action/target label helper; unknown action/target values remain visible unchanged.
+- Updated the in-app guide and inventory rows. These are display-only changes; no audit event, customer statement balance, permission or API contract changed.
+- Source/unit regressions are authored / **NOT RUN**.

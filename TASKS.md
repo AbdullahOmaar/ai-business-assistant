@@ -2470,3 +2470,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added the actual notification form kind `business` to the bilingual label map and retained `businesses` for legacy values.
 - Updated the in-app feature catalogue to describe the current bilingual list/search labels; no release version or deployed release note was added.
 - Added source and feature-guide regression assertions. Tests **NOT RUN**; no CI trigger/retry; commit uses `[skip ci]`. No backend/API/financial/payroll semantics changed.
+
+
+## T18 — Customer Statement and Platform Admin audit labels — 2026-11-07
+
+- Localized the three Customer Statement event types returned by the backend while preserving unknown future values.
+- Extracted the existing workspace audit action/target map into a shared pure helper and reused it in Platform Admin activity audit; raw unknown action/target values remain visible unchanged.
+- Updated the in-app feature guide and nested-surface inventory. No audit, balance, permission, API, backend or financial behavior changed.
+- Tests authored / **NOT RUN**; no CI trigger/retry; commit uses `[skip ci]`.

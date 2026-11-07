@@ -1398,3 +1398,11 @@ test('notification kind localization covers the current business form value and 
   assert.match(source, /business: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
   assert.match(source, /businesses: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
 });
+
+
+test('customer statement event types use bilingual labels while preserving unknown values', () => {
+  assert.match(source, /customerStatementEventLabel\(event\.event_type\)/);
+  assert.match(source, /invoice_issued: \{ ar: 'إصدار فاتورة', en: 'Invoice issued' \}/);
+  assert.match(source, /payment_allocation: \{ ar: 'تخصيص دفعة', en: 'Payment allocation' \}/);
+  assert.match(source, /currency_mismatch_allocation: \{ ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' \}/);
+});

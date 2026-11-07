@@ -361,8 +361,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'سجل العمليات',
         titleEn: 'Activity log',
-        detailAr: 'راجع سجل النشاط المتاح لصلاحية مالك مساحة العمل.',
-        detailEn: 'Review activity entries available to workspace owners.',
+        detailAr: 'راجع سجل النشاط المتاح لمالك مساحة العمل؛ تظهر أسماء العمليات والكيانات باللغة المختارة.',
+        detailEn: 'Review activity entries available to workspace owners; action and target labels use the selected language.',
       },
       {
         titleAr: 'إدارة المنصة',

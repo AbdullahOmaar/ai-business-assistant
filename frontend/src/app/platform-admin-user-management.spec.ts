@@ -38,3 +38,9 @@ test('the user directory supports narrow-screen scrolling and mobile navigation'
   assert.match(source, /user-directory-table\{min-width:850px\}/);
   assert.match(source, /@media\(max-width:760px\)/);
 });
+
+
+test('platform activity audit uses the shared bilingual action and target labels', () => {
+  assert.match(source, /auditActionLabel\(event\.action\)/);
+  assert.match(source, /auditTargetLabel\(event\.target_type\)/);
+});

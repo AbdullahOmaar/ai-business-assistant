@@ -183,3 +183,10 @@ test('feature catalogue describes bilingual transaction and operational status l
   const health = sections.get('health')!;
   assert.match(health.features.map(feature => feature.detailEn).join(' '), /operational status shown in the selected language/i);
 });
+
+
+test('admin guide documents bilingual audit action and target labels', () => {
+  const admin = FEATURE_CATALOG.find(section => section.id === 'admin');
+  assert.ok(admin);
+  assert.match(admin.features.map(feature => feature.detailEn).join(' '), /action and target labels use the selected language/i);
+});

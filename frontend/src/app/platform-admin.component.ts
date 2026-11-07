@@ -7,6 +7,7 @@ import {
   PlatformRole, PlatformRoleAuditEvent, PlatformSystemStatus
 } from './api.service';
 import { hasMeaningfulPlatformAdminReason } from './platform-admin-helpers';
+import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
 
 type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissions';
 
@@ -179,7 +180,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
           @if (!auditLoading && !auditError && !auditEvents.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">◷</span><h3>{{ t('لا توجد أحداث مطابقة', 'No matching events') }}</h3><p>{{ t('سيظهر هنا نشاط الإدارة المسجل.', 'Recorded admin activity will appear here.') }}</p></div> }
           @if (auditEvents.length) {
             <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('الشركة', 'Workspace') }}</th><th>{{ t('المنفذ', 'Actor') }}</th><th>{{ t('الكيان', 'Target') }}</th><th>{{ t('الملخص', 'Summary') }}</th></tr></thead><tbody>
-              @for (event of auditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td><span class="status-pill">{{ event.action }}</span></td><td><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject">{{ event.actor_subject || '—' }}</td><td>{{ event.target_type }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell">{{ event.change_summary || '—' }}</td></tr> }
+              @for (event of auditEvents; track event.id) { <tr><td class="date-cell">{{ formatDate(event.created_at) }}</td><td><span class="status-pill">{{ auditActionLabel(event.action) }}</span></td><td><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject">{{ event.actor_subject || '—' }}</td><td>{{ auditTargetLabel(event.target_type) }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell">{{ event.change_summary || '—' }}</td></tr> }
             </tbody></table></div>
             <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('من', 'of') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(previousPageOffset(auditOffset))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
           }
@@ -480,6 +481,14 @@ export class PlatformAdminComponent implements OnInit {
     return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
       dateStyle: 'medium', timeStyle: 'short'
     }).format(date);
+  }
+
+  auditActionLabel(action: string): string {
+    return formatAuditActionLabel(action, this.language);
+  }
+
+  auditTargetLabel(target: string): string {
+    return formatAuditTargetLabel(target, this.language);
   }
 
   statusLabel(status: string): string {
