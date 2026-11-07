@@ -52,6 +52,8 @@ test('mobile account entry is keyboard-dismissible and reuses existing language 
   assert.match(source, /@HostListener\('document:pointerdown'/);
   assert.match(source, /this\.languageToggleRequested\.emit\(\)/);
   assert.match(source, /this\.signOutRequested\.emit\(\)/);
+  assert.match(source, /requestLanguageToggle\(\): void \{[\s\S]*?this\.languageToggleRequested\.emit\(\);[\s\S]*?queueMicrotask\(\(\) => this\.profileTrigger\?\.nativeElement\.focus\(\)\);/,
+    'closing the language menu must restore focus to the profile trigger after the language update');
   assert.match(appSource, /\(languageToggleRequested\)="toggleLanguage\(\)"/);
   assert.match(appSource, /\(signOutRequested\)="logout\(\)"/);
 });
@@ -91,6 +93,8 @@ test('mobile header consumes shared semantic tokens rather than a one-off palett
   }
   assert.doesNotMatch(styles, /(?:background|color|border(?:-color)?):\s*#(?:bfdbfe|eff6ff|1e40af|1d4ed8|2563eb|dbeafe)/i,
     'the header must not carry a second hard-coded blue palette');
+  assert.match(styles, /\.account-menu \{[^}]*background: var\(--aba-color-surface, #ffffff\)/,
+    'the account popover must use the shared surface token');
 });
 
 
