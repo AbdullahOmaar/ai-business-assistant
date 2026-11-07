@@ -25,3 +25,12 @@ test('confirmation actions are explicit, cancellable, and disabled while busy or
   assert.match(source, /cancelled\.emit\(\)/);
   assert.match(source, /event\.target === event\.currentTarget && !this\.busy/);
 });
+
+
+test('confirmation dialog uses defined semantic warning and danger tokens', () => {
+  assert.match(source, /--aba-color-warning-text/);
+  assert.match(source, /--aba-color-danger-text/);
+  assert.doesNotMatch(source, /--aba-color-(?:warning|danger)(?=,)/);
+  assert.match(source, /@media\(forced-colors:active\)/);
+  assert.match(source, /outline:2px solid Highlight/);
+});
