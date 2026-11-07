@@ -125,7 +125,9 @@ test('Home keeps the full role-filtered module directory discoverable but collap
   assert.match(home, /<details class="module-directory-disclosure">/);
   assert.match(appSource, /\.module-directory-summary\{[^}]*min-height:44px/);
   assert.match(home, /<summary class="module-directory-summary">/);
-  assert.match(home, /<h2 id="module-directory-title">/);
+  assert.match(home, /<span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">/);
+  assert.doesNotMatch(home, /<summary[^>]*>[\s\S]*?<h[1-6]\b/, 'native summary content must stay phrasing-only');
+  assert.match(appSource, /\.module-directory-summary__title\{margin:0;/);
   assert.doesNotMatch(home, /<details[^>]*\bopen\b/);
   assert.match(appSource, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.match(appSource, /selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
