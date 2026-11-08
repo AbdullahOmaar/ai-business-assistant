@@ -46,6 +46,28 @@ test('payroll post-payment refresh discards responses after owner role, identity
     'workspace/role changes must invalidate pending payroll refresh responses');
 });
 
+test('owner-only integrity and health loads discard late responses after role or identity changes', () => {
+  const integrityStart = source.indexOf('async loadDataIntegrity(offset = 0): Promise<void>');
+  const integrityEnd = source.indexOf('\n  async loadOperationalHealth()', integrityStart);
+  assert.ok(integrityStart >= 0 && integrityEnd > integrityStart);
+  const integrity = source.slice(integrityStart, integrityEnd);
+  assert.match(integrity, /requestContext\.role !== 'owner'/);
+  assert.match(integrity, /runTenantScopedRequest\(\s*this\.dataIntegrityLoadGuard/);
+
+  const healthStart = source.indexOf('async loadOperationalHealth(): Promise<void>');
+  const healthEnd = source.indexOf('\n  private beginOperationsAction()', healthStart);
+  assert.ok(healthStart >= 0 && healthEnd > healthStart);
+  const health = source.slice(healthStart, healthEnd);
+  assert.match(health, /requestContext\.role !== 'owner'/);
+  assert.match(health, /runTenantScopedRequest\(\s*this\.operationalHealthLoadGuard/);
+
+  const clearStart = source.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = source.indexOf('\n  }', clearStart);
+  const reset = source.slice(clearStart, clearEnd);
+  assert.ok(reset.includes('this.dataIntegrityLoadGuard.invalidate()'));
+  assert.ok(reset.includes('this.operationalHealthLoadGuard.invalidate()'));
+});
+
 test('workspace changes clear local operation-list searches with the previous workspace data', () => {
   const start = source.indexOf('private clearWorkspaceData(): void');
   const end = source.indexOf('\n  }', start);

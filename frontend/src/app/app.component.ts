@@ -1886,6 +1886,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.confirmationReturnFocus = null;
     this.chatRequestGuard.invalidate();
     this.payrollRefreshGuard.invalidate();
+    this.dataIntegrityLoadGuard.invalidate();
+    this.operationalHealthLoadGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2062,6 +2064,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
+  private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
+  private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
 
@@ -2263,29 +2267,51 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async loadDataIntegrity(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const businessId = this.business.id;
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
     this.integrityLoading = true;
     this.integrityError = '';
     this.integrityOffset = offset;
-    try {
-      const result = await this.api.dataIntegrity(businessId, offset);
-      if (this.business?.id !== businessId) return;
-      this.dataIntegrityReport = result;
-    } catch (error) {
-      if (this.business?.id !== businessId) return;
-      this.dataIntegrityReport = null;
-      this.integrityError = this.message(error);
-    } finally {
-      if (this.business?.id === businessId) this.integrityLoading = false;
-    }
+    await runTenantScopedRequest(
+      this.dataIntegrityLoadGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.dataIntegrity(requestContext.workspaceId, offset),
+      {
+        onSuccess: result => { this.dataIntegrityReport = result; },
+        onError: error => {
+          this.dataIntegrityReport = null;
+          this.integrityError = this.message(error);
+        },
+        onFinally: () => { this.integrityLoading = false; },
+        onStale: () => { this.integrityLoading = false; },
+      },
+    );
   }
 
   async loadOperationalHealth(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const businessId=this.business.id;this.healthLoading=true;this.healthError='';
-    try { const result=await this.api.operationsHealth(businessId);if(this.business?.id===businessId)this.operationalHealth=result; }
-    catch(error){if(this.business?.id===businessId){this.operationalHealth=null;this.healthError=this.message(error)}}
-    finally{if(this.business?.id===businessId)this.healthLoading=false}
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
+    this.healthLoading = true;
+    this.healthError = '';
+    await runTenantScopedRequest(
+      this.operationalHealthLoadGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.operationsHealth(requestContext.workspaceId),
+      {
+        onSuccess: result => { this.operationalHealth = result; },
+        onError: error => {
+          this.operationalHealth = null;
+          this.healthError = this.message(error);
+        },
+        onFinally: () => { this.healthLoading = false; },
+        onStale: () => { this.healthLoading = false; },
+      },
+    );
   }
 
   private beginOperationsAction(): void {

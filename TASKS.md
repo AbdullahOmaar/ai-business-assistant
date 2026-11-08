@@ -3073,3 +3073,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** `workspace-data-access.spec.ts` asserts the refresh uses the tenant/role guard and workspace reset invalidates its generation. The existing `workspace-load-guard.spec.ts` already exercises OWNER→STAFF response rejection and same-workspace identity changes.
 - **Scope:** Master-owned `app.component.ts`, source regression and TASKS only. No Chat 4 payroll component files, API/backend/schema/migration, payroll calculation, approval/payout semantics or production data changed.
 - **Validation:** source readback to follow. This commit uses `[skip ci]` under the current CI trigger/retry freeze; exact-head CircleCI and runtime/browser acceptance remain NOT RUN until the freeze is explicitly lifted. Parent `6a308cc` CircleCI success does not validate this new head.
+
+
+## T18 — Fence OWNER-only integrity and health responses across role changes — 2026-11-08
+
+- **Finding:** the Data Integrity and Operational Health loaders checked only workspace ID after awaiting OWNER-only endpoints. A late response could repopulate their sensitive/restricted view after the same business membership changed to STAFF.
+- **Fix:** both loaders now use separate `runTenantScopedRequest` generations with workspace, authenticated UID, role and signed-in context. `clearWorkspaceData()` invalidates both guards; stale callbacks cannot restore restricted report/health state.
+- **Regression:** `workspace-data-access.spec.ts` asserts both loaders use their dedicated tenant guards and workspace reset invalidates them. Existing `workspace-load-guard.spec.ts` tests OWNER→STAFF and same-workspace UID changes.
+- **Scope:** Master-owned shell, source regression and TASKS only. No Chat 4 payroll component, API/backend authorization, schema/migration, financial semantics or production data changes.
+- **Validation:** source readback to follow. Commit uses `[skip ci]` under the current CI trigger/retry freeze; exact-head CI/tests/build/browser remain NOT RUN. Parent CircleCI evidence does not validate the new SHA.
