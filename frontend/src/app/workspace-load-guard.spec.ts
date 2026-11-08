@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { WorkspaceLoadGuard, runTenantScopedRequest, type TenantRequestContext } from './workspace-load-guard.ts';
+import { isCurrentTenantRequest, WorkspaceLoadGuard, runTenantScopedRequest, type TenantRequestContext } from './workspace-load-guard.ts';
 
 test('accepts only the newest request generation', () => {
   const guard = new WorkspaceLoadGuard();
@@ -204,4 +204,15 @@ test('current chat failure invokes retry handler so the draft can be preserved',
     });
   assert.equal(draft, 'retry this question');
   assert.equal(finalized, 1);
+});
+
+
+test('rejects a delayed workspace response after an auth transition for the same user and workspace', () => {
+  const guard = new WorkspaceLoadGuard();
+  const requested = {
+    workspaceId: 'business-a', userId: 'owner-a', role: 'owner',
+    signedIn: true, authTransitionVersion: 4,
+  };
+  const current = { ...requested, authTransitionVersion: 5 };
+  assert.equal(isCurrentTenantRequest(guard, guard.begin(), requested, current), false);
 });

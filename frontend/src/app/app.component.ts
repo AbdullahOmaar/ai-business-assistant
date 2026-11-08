@@ -20,6 +20,9 @@ import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.c
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
+import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
+import { invoiceDraftLinesFromExisting } from './invoice-draft';
+import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
@@ -27,7 +30,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [class.install-cta-visible]="!isInstalled && !installHelp" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -583,29 +586,26 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'invoices') {
               <section abaCard class="panel">
                 <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
-                <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
-                <form #invoiceForm="ngForm" class="inline-form invoice-form" (ngSubmit)="invoiceForm.valid && createInvoice()">
-                  <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
-                  <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select #invoiceCustomerModel="ngModel" name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId" [attr.aria-invalid]="invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted) ? 'invoice-customer-error' : null"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select>@if (invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted)) { <small id="invoice-customer-error" class="field-error" role="alert">{{ t('اختيار العميل مطلوب لحفظ الفاتورة.', 'Choose a customer before saving the invoice.') }}</small> }</label>
-                  <label>{{ t('الخصم (%)', 'Discount (%)') }}<input #invoiceDiscountModel="ngModel" name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate" [attr.aria-invalid]="invoiceDiscountModel.invalid && (invoiceDiscountModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceDiscountModel.invalid && (invoiceDiscountModel.touched || invoiceForm.submitted) ? 'invoice-discount-error' : null">@if (invoiceDiscountModel.invalid && (invoiceDiscountModel.touched || invoiceForm.submitted)) { <small id="invoice-discount-error" class="field-error" aria-live="polite">{{ t('أدخل نسبة خصم من 0 إلى 100.', 'Enter a discount rate from 0 to 100.') }}</small> }</label>
-                  <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input #invoiceTaxModel="ngModel" name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate" [attr.aria-invalid]="invoiceTaxModel.invalid && (invoiceTaxModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceTaxModel.invalid && (invoiceTaxModel.touched || invoiceForm.submitted) ? 'invoice-tax-error' : null">@if (invoiceTaxModel.invalid && (invoiceTaxModel.touched || invoiceForm.submitted)) { <small id="invoice-tax-error" class="field-error" aria-live="polite">{{ t('أدخل نسبة ضريبة من 0 إلى 100.', 'Enter a tax rate from 0 to 100.') }}</small> }</label>
-                  <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة بند', 'Add line') }} +</button></div>
-                    @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select #invoiceProductModel="ngModel" [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId" [attr.aria-invalid]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'invoice-product-error-' + i : null"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>@if (invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted)) { <small [id]="'invoice-product-error-' + i" class="field-error" role="alert">{{ t('اختر منتجًا لهذا البند.', 'Choose a product for this line.') }}</small> }</label><label>{{ t('الكمية', 'Quantity') }}<input #invoiceQuantityModel="ngModel" [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity" [attr.aria-invalid]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'invoice-quantity-error-' + i : null">@if (invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted)) { <small [id]="'invoice-quantity-error-' + i" class="field-error" role="alert">{{ t('أدخل كمية لا تقل عن 0.001 وبخطوة 0.001.', 'Enter a quantity of at least 0.001 in 0.001 increments.') }}</small> }</label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
-                  </div>
-                  @if (invoicePreview; as preview) {
-                    <div class="invoice-preview" [attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')" aria-live="polite">
-                      <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ preview.subtotal }} {{ business.currency_code }}</strong></div>
-                      <div><span>{{ t('الخصم', 'Discount') }}</span><strong>−{{ preview.discount }} {{ business.currency_code }}</strong></div>
-                      <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ preview.tax }} {{ business.currency_code }}</strong></div>
-                      <div class="total"><span>{{ t('الإجمالي التقديري', 'Estimated total') }}</span><strong>{{ preview.total }} {{ business.currency_code }}</strong></div>
-                    </div>
-                  } @else {
-                    <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
-                  }
-                  <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
-                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length">{{ t('حفظ كمسودة', 'Save draft') }}</button>
-                  @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
-                </form>
+                <div class="invoice-toolbar"><details class="invoice-create-disclosure" [open]="invoiceCreateOpen" (toggle)="onInvoiceCreateToggle($event)"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
+                <div class="inline-form invoice-form">
+                  <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" [(ngModel)]="invoiceDiscountRate" [disabled]="invoiceDraftSaving || !!invoiceDraftSummary"></label>
+                  <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" [(ngModel)]="invoiceTaxRate" [disabled]="invoiceDraftSaving || !!invoiceDraftSummary"></label>
+                  <aba-invoice-draft-editor
+                    [language]="language"
+                    [products]="products"
+                    [customers]="customers"
+                    [currencyCode]="business.currency_code"
+                    [invoiceNumber]="invoiceNumber"
+                    [customerId]="invoiceCustomerId"
+                    [saving]="invoiceDraftSaving"
+                    [serverSummary]="invoiceDraftSummary"
+                    [initialLines]="invoiceDraftInitialLines"
+                    [draftRevision]="invoiceDraftRevision"
+                    [editing]="!!editingInvoiceId"
+                    (saveDraft)="saveInvoiceDraft($event)"
+                    (newDraft)="startNewInvoiceDraft()"
+                  />
+                </div>
                 </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
                 @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
@@ -1269,6 +1269,11 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
+  invoiceCreateOpen = false;
+  invoiceDraftSaving = false;
+  invoiceDraftSummary: InvoiceDraftServerSummary | null = null;
+  invoiceDraftInitialLines: InvoiceDraftLine[] | null = null;
+  invoiceDraftRevision = 0;
   paymentCustomerId = '';
   paymentAmount = '';
   paymentAllocationAmount = '';
@@ -1903,6 +1908,13 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.invoiceSaveGuard.invalidate();
+    this.invoiceEditRequestGuard.invalidate();
+    this.invoiceDraftSaving = false;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = false;
     this.pendingInvoiceVoid = null;
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = null;
@@ -2073,6 +2085,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async switchBusiness(id: string): Promise<void> {
+    if (this.invoiceDraftSaving) {
+      this.error = this.t('انتظر حتى يكتمل حفظ مسودة الفاتورة قبل تغيير مساحة العمل.', 'Wait for the invoice draft save to finish before switching workspaces.');
+      return;
+    }
     this.statementVisible = false;
     this.customerStatement = null;
     this.statementCustomerId = '';
@@ -2094,6 +2110,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
+  private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
+  private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
     const loadVersion = this.workspaceLoadGuard.begin();
@@ -3065,50 +3083,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
-    if (!this.business || !this.invoiceLines.length) return null;
-    const parseScaled = (value: string | number, scale: number): bigint | null => {
-      const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
-      if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
-      const fraction = (match[2] || '').padEnd(scale, '0');
-      return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
-    };
-    const roundHalfUp = (numerator: bigint, denominator: bigint): bigint =>
-      (numerator + denominator / 2n) / denominator;
-    const formatCents = (cents: bigint): string =>
-      `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
-
-    // Preserve precision when rates are reconstructed from saved totals.
-    const discountRate = parseScaled(this.invoiceDiscountRate, 12);
-    const taxRate = parseScaled(this.invoiceTaxRate, 12);
-    if (discountRate === null || taxRate === null ||
-        discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
-
-    // Match the backend's per-line money() policy: round each quantity × price
-    // to cents with ROUND_HALF_UP, then sum the rounded line totals.
-    let subtotalCents = 0n;
-    for (const line of this.invoiceLines) {
-      const product = this.products.find(item => item.id === line.productId);
-      const quantityMilli = parseScaled(line.quantity, 3);
-      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
-      if (!product || quantityMilli === null || quantityMilli <= 0n ||
-          unitPriceCents === null) return null;
-      const lineMilliCents = quantityMilli * unitPriceCents;
-      subtotalCents += roundHalfUp(lineMilliCents, 1000n);
-      if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    }
-    const rateDenominator = 100n * 1_000_000_000_000n;
-    const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
-    const taxableCents = subtotalCents - discountCents;
-    const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
-    return {
-      subtotal: formatCents(subtotalCents),
-      discount: formatCents(discountCents),
-      tax: formatCents(taxCents),
-      total: formatCents(taxableCents + taxCents),
-    };
-  }
-
   private deriveRate(amount: string | undefined, base: string | undefined): string {
     const cents = (raw: string | undefined): bigint | null => {
       const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(raw || '0').trim());
@@ -3124,78 +3098,98 @@ export class AppComponent implements OnInit, OnDestroy {
     return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
   }
 
-  addInvoiceLine(): void {
-    if (this.loading || !this.products.length) return;
-    this.invoiceLines = [...this.invoiceLines, { productId: '', quantity: '1' }];
+  onInvoiceCreateToggle(event: Event): void {
+    this.invoiceCreateOpen = (event.currentTarget as HTMLDetailsElement).open;
   }
 
-  removeInvoiceLine(index: number): void {
-    if (this.loading || this.invoiceLines.length <= 1) return;
-    this.invoiceLines = this.invoiceLines.filter((_, lineIndex) => lineIndex !== index);
+  startNewInvoiceDraft(): void {
+    if (this.invoiceDraftSaving) return;
+    this.editingInvoiceId = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = true;
+    this.invoiceNumber = '';
+    this.invoiceCustomerId = '';
+    this.invoiceDiscountRate = '0';
+    this.invoiceTaxRate = '0';
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
+    this.error = '';
   }
 
-  async createInvoice(): Promise<void> {
-    if (!this.business) return;
+  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
+    if (!this.business || !this.signedIn || !this.currentAuthUid || this.invoiceDraftSaving) return;
     const discountRate = Number(this.invoiceDiscountRate);
     const taxRate = Number(this.invoiceTaxRate);
-    if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length ||
-        this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) ||
-        !Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
+    if (!Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
         !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
-      this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
+      this.error = this.t('أدخل نسب خصم وضريبة صحيحة من 0 إلى 100.', 'Enter valid discount and tax rates from 0 to 100.');
       return;
     }
     const businessId = this.business.id;
-    const currencyCode = this.business.currency_code;
+    const requestVersion = this.invoiceSaveGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceSaveGuard, requestVersion, requestContext);
     const editingInvoiceId = this.editingInvoiceId;
+    this.invoiceDraftSaving = true;
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
-    this.invoiceMessageKind = 'success';
+    this.invoiceDraftSummary = null;
     try {
-      const invoiceNumber = this.invoiceNumber.trim() || 'INV-' + Date.now();
-      const payload = {
-        invoice_number: invoiceNumber,
-        currency_code: currencyCode,
-        customer_id: this.invoiceCustomerId,
-        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
-        discount_rate: String(discountRate),
-        tax_rate: String(taxRate),
+      const request = { ...payload, discount_rate: String(discountRate), tax_rate: String(taxRate) };
+      const saved = editingInvoiceId
+        ? await this.api.updateDraftInvoice(businessId, editingInvoiceId, request)
+        : await this.api.createInvoice(businessId, request);
+      if (!isCurrent()) return;
+      this.invoiceNumber = payload.invoice_number;
+      this.invoiceCustomerId = payload.customer_id;
+      this.invoiceDraftSummary = {
+        currency_code: saved.currency_code,
+        subtotal: saved.subtotal ?? null,
+        discount_total: saved.discount_total ?? null,
+        tax_total: saved.tax_total ?? null,
+        total: saved.total,
       };
-      if (editingInvoiceId) {
-        await this.api.updateDraftInvoice(businessId, editingInvoiceId, payload);
-      } else {
-        await this.api.createInvoice(businessId, payload);
-      }
-      if (this.business?.id !== businessId) return;
-
-      this.cancelInvoiceEdit();
-      this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
-      this.tab = 'invoices';
+      this.invoiceMessage = editingInvoiceId
+        ? this.t('تم تحديث مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft updated. Displayed totals came from the server.')
+        : this.t('تم حفظ مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft saved. Displayed totals came from the server.');
+      this.invoiceMessageKind = 'success';
+      this.invoiceCreateOpen = true;
       try {
         const [invoices, dashboard] = await Promise.all([
           this.api.invoices(businessId),
           this.api.dashboard(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
+        if (!isCurrent()) return;
         this.invoices = invoices;
         this.dashboard = dashboard;
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
           this.invoiceMessage = this.t(
-            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تحفظها مرة أخرى؛ حدّث البيانات أولًا.',
-            'The draft was saved, but the list could not refresh. Do not save it again; refresh the data first.'
+            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تعاود الحفظ؛ حدّث البيانات أولًا.',
+            'Draft saved, but the list could not refresh. Do not save it again; refresh the data first.'
           );
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) {
+        this.error = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'تعذر تأكيد حفظ المسودة. راجع حالة الفاتورة قبل إعادة المحاولة.',
+          'Could not confirm the draft save. Check the invoice status before retrying.'
+        );
+      }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) {
+        this.invoiceDraftSaving = false;
+        this.loading = false;
+      }
     }
   }
-
 
   private escapePrintHtml(value: unknown): string {
     return String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -3265,15 +3259,19 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   async editInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || invoice.status !== 'draft') return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || invoice.status !== 'draft' || this.invoiceDraftSaving) return;
     const businessId = this.business.id;
+    const requestVersion = this.invoiceEditRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceEditRequestGuard, requestVersion, requestContext);
     this.loading = true;
+    this.invoiceDraftSaving = true;
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
-      if (this.business?.id !== businessId) return;
-      if (!detail.lines.length || detail.lines.some(line => !line.product_id)) {
-        throw new Error(this.t('تحتوي المسودة على بند غير مرتبط بمنتج؛ لم يتم تغيير الفاتورة.', 'This draft contains a line without a linked product; no changes were made.'));
+      if (!isCurrent()) return;
+      if (!detail.lines.length) {
+        throw new Error(this.t('لا تحتوي المسودة على بنود قابلة للتعديل.', 'This draft has no editable invoice lines.'));
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
@@ -3283,24 +3281,34 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
       this.invoiceMessage = '';
       this.invoiceMessageKind = 'success';
-      this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
+      this.invoiceDraftSummary = null;
+      this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
+      this.invoiceDraftRevision += 1;
+      this.invoiceCreateOpen = true;
+      this.tab = 'invoices';
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) {
+        this.loading = false;
+        this.invoiceDraftSaving = false;
+      }
     }
   }
 
   cancelInvoiceEdit(): void {
+    if (this.invoiceDraftSaving) return;
     this.editingInvoiceId = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = false;
     this.invoiceMessage = '';
     this.invoiceMessageKind = 'success';
     this.invoiceNumber = '';
     this.invoiceCustomerId = '';
     this.invoiceDiscountRate = '0';
     this.invoiceTaxRate = '0';
-    this.invoiceQuantity = '1';
-    this.invoiceLines = [{ productId: '', quantity: '1' }];
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
@@ -3613,6 +3621,30 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.chatSending || !question.trim()) return;
     this.chatDraft = question;
     void this.sendChat();
+  }
+
+  private captureTenantRequest(workspaceId: string): TenantRequestContext {
+    return {
+      workspaceId,
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+      authTransitionVersion: this.authTransitionVersion,
+    };
+  }
+
+  private isCurrentTenantOperation(
+    guard: WorkspaceLoadGuard,
+    requestVersion: number,
+    requested: TenantRequestContext,
+  ): boolean {
+    return isCurrentTenantRequest(guard, requestVersion, requested, {
+      workspaceId: this.business?.id ?? '',
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+      authTransitionVersion: this.authTransitionVersion,
+    });
   }
 
   private currentChatRequestContext(): TenantRequestContext {
