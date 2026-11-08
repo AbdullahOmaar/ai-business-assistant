@@ -1,4 +1,4 @@
-import { isDefinitiveNoWriteHttpStatus } from './api-request-error';
+import { isDefinitiveNoWriteHttpStatus } from './api-request-error.ts';
 
 export interface PaymentAllocationPayload {
   invoice_id: string;
