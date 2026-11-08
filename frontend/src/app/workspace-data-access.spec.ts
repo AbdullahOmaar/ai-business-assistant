@@ -48,7 +48,7 @@ test('payroll post-payment refresh discards responses after owner role, identity
 
 test('owner-only tax summary discards stale responses and invalidates pending ranges', () => {
   const start = source.indexOf('async loadTaxSummary(): Promise<void>');
-  const end = source.indexOf('\n  async loadDataIntegrity()', start);
+  const end = source.indexOf('\n  async loadDataIntegrity(offset = 0)', start);
   assert.ok(start >= 0 && end > start);
   const method = source.slice(start, end);
   assert.match(method, /requestContext\.role !== 'owner'/);

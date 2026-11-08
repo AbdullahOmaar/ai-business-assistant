@@ -2143,6 +2143,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.homeDashboardError = this.message(error);
           this.error = this.homeDashboardError;
         },
+        onFinally: () => undefined,
       },
     );
   }
