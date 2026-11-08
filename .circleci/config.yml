@@ -2,6 +2,9 @@
 # Runs tests, audits, and disposable validation only; it never deploys or touches production.
 version: 2.1
 
+orbs:
+  slack: circleci/slack@6.1.3
+
 jobs:
   backend-accounting:
     docker:
@@ -92,6 +95,14 @@ jobs:
           path: /tmp/alembic-upgrade.sql
           destination: alembic-upgrade.sql
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   frontend-unit-tests:
     docker:
       - image: cimg/node:22.12
@@ -114,6 +125,14 @@ jobs:
             cd frontend
             npm test
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   frontend-production-build:
     docker:
       - image: cimg/node:22.12
@@ -142,6 +161,14 @@ jobs:
             cd frontend
             npx ng build
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   frontend-dependency-audit:
     docker:
       - image: cimg/node:22.12
@@ -167,6 +194,14 @@ jobs:
           path: /tmp/npm-audit.txt
           destination: npm-audit.txt
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   backend-container:
     docker:
       - image: cimg/base:stable
@@ -189,6 +224,14 @@ jobs:
             docker build --pull --tag ai-business-assistant-backend:ci ./backend
             docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   dependency-audit-python:
     docker:
       - image: cimg/python:3.12
@@ -202,6 +245,14 @@ jobs:
             python -m pip install --upgrade pip pip-audit
             pip-audit -r backend/requirements.txt
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   dependency-audit-frontend:
     docker:
       - image: cimg/node:22.12
@@ -218,6 +269,14 @@ jobs:
             npm audit --audit-level=high
 
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   frontend-browser-smoke:
     docker:
       - image: mcr.microsoft.com/playwright:v1.55.0-noble
@@ -240,18 +299,32 @@ jobs:
           path: frontend/test-results/e2e-junit.xml
           destination: frontend-e2e-junit.xml
 
+      - slack/notify:
+          channel: C0CFWGM87HC
+          event: fail
+          template: basic_fail_1
+          branch_pattern: main
+          invert_match: true
+          thread_id: << pipeline.id >>
+          ignore_errors: true
   all-checks-passed:
     type: no-op
 
 workflows:
   verify-all-changes:
     jobs:
-      - backend-accounting
-      - frontend-unit-tests
-      - frontend-production-build
-      - frontend-dependency-audit
-      - frontend-browser-smoke
-      - backend-container
+      - backend-accounting:
+          context: slack-secrets
+      - frontend-unit-tests:
+          context: slack-secrets
+      - frontend-production-build:
+          context: slack-secrets
+      - frontend-dependency-audit:
+          context: slack-secrets
+      - frontend-browser-smoke:
+          context: slack-secrets
+      - backend-container:
+          context: slack-secrets
       - all-checks-passed:
           requires:
             - backend-accounting
@@ -270,5 +343,7 @@ workflows:
               only:
                 - main
     jobs:
-      - dependency-audit-python
-      - dependency-audit-frontend
+      - dependency-audit-python:
+          context: slack-secrets
+      - dependency-audit-frontend:
+          context: slack-secrets
