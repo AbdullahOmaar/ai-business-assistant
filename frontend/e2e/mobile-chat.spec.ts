@@ -342,6 +342,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await page.setViewportSize({ width: 360, height: 800 });
+  // Selecting a language closes the More menu; reopen it before choosing the assistant.
+  await moreTrigger.click();
   await expect(page.locator('#mobile-more-menu')).toBeVisible();
   await page.locator('#mobile-more-menu').getByRole('button', { name: /المساعد الذكي|AI assistant/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);

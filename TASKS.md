@@ -3240,3 +3240,5 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Responsive assertion synchronization:** the KPI host elements were present at initial 360px load but were briefly absent immediately after a 320px viewport change. The browser helper now waits for the four KPI hosts after each resize before measuring computed grid columns, so the assertion observes the settled Angular render.
 
 - **LTR browser-test correction:** CircleCI #14350 proved the responsive Home assertion was still running on the App Guide page after language toggle, so no Home KPI hosts existed. The test now returns to Home using the mobile header's explicit Go to Home action and waits for four KPIs before measuring LTR grids. This fixes test navigation, not application data behavior.
+
+- **Browser-smoke menu-state correction:** after changing the language back to Arabic, the mobile More menu is closed by design. The test now explicitly reopens it before asserting visibility and selecting AI Assistant; the previous timeout was a missing test interaction, not an application failure.
