@@ -3244,3 +3244,5 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Browser-smoke menu-state correction:** after changing the language back to Arabic, the mobile More menu is closed by design. The test now explicitly reopens it before asserting visibility and selecting AI Assistant; the previous timeout was a missing test interaction, not an application failure.
 
 - **Mobile menu regression-test correction:** after returning from App Guide to Home, the test explicitly reopens More before switching back to Arabic. This prevents a stale assumption that the menu stays open after Home navigation.
+
+- **Browser-smoke menu-state follow-up:** the latest run confirmed that changing back to Arabic can leave the More menu mounted; blindly clicking the trigger then closes it. The E2E now checks whether the menu is already present and reopens only when absent, then selects AI Assistant. This aligns the test with the actual toggle state instead of assuming a close/open behavior.
