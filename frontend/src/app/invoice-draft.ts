@@ -124,7 +124,7 @@ export function toInvoiceDraftPayload(
 export function localizeInvoiceDraftValidationMessage(message: string, language: 'ar' | 'en'): string {
   if (language !== 'ar') return message;
   const arabic: Record<string, string> = {
-    'Enter an invoice number of 1 to 80 characters.': 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.',
+    'Enter an invoice number of 1 to 64 characters.': 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.',
     'Choose a valid customer.': 'اختَر عميلًا صحيحًا.',
     'Enter a valid three-letter currency code.': 'أدخل رمز عملة صحيحًا من ثلاثة أحرف.',
     'Add at least one invoice line.': 'أضف بندًا واحدًا على الأقل للفاتورة.',

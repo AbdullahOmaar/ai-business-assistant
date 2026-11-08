@@ -1530,6 +1530,7 @@ def test_invoice_number_and_line_description_limits_match_persisted_columns_with
             },
         )
         assert accepted.status_code == 201, accepted.text
+        accepted_invoice_id = UUID(accepted.json()["id"])
 
         with Session(engine) as session:
             invoice_count = session.scalar(select(func.count()).select_from(Invoice))
@@ -1558,10 +1559,40 @@ def test_invoice_number_and_line_description_limits_match_persisted_columns_with
         )
         assert rejected_description.status_code == 422
 
+        update_url = f"{base}/{accepted_invoice_id}"
+        rejected_update_number = client.patch(
+            update_url,
+            json={
+                "invoice_number": "N" * 65,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "Valid line", "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_update_number.status_code == 422
+
+        rejected_update_description = client.patch(
+            update_url,
+            json={
+                "invoice_number": "N" * 64,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "x" * 301, "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_update_description.status_code == 422
+
         with Session(engine) as session:
             assert session.scalar(select(func.count()).select_from(Invoice)) == invoice_count
             assert session.scalar(select(func.count()).select_from(InvoiceLine)) == line_count
             assert session.scalar(select(func.count()).select_from(AuditEvent)) == audit_count
+            saved_invoice = session.get(Invoice, accepted_invoice_id)
+            saved_line = session.scalars(
+                select(InvoiceLine).where(InvoiceLine.invoice_id == accepted_invoice_id)
+            ).one()
+            assert saved_invoice is not None
+            assert saved_invoice.invoice_number == "N" * 64
+            assert saved_line.description == "x" * 300
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
