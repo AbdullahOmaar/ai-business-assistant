@@ -42,6 +42,18 @@ test('Preview builds reject the known Production API or Firebase project', () =>
   }), /isolated non-Production project/);
 });
 
+test('Preview builds reject Production API host aliases including case and trailing-dot forms', () => {
+  const env = {
+    VERCEL_ENV: 'preview',
+    ABA_PREVIEW_API_BASE_URL: 'https://AI-BUSINESS-ASSISTANT-API.VERCEL.APP./',
+    ABA_PREVIEW_FIREBASE_API_KEY: 'public-test-key',
+    ABA_PREVIEW_FIREBASE_AUTH_DOMAIN: 'synthetic-project.firebaseapp.com',
+    ABA_PREVIEW_FIREBASE_PROJECT_ID: 'synthetic-project',
+    ABA_PREVIEW_FIREBASE_APP_ID: '1:123:web:synthetic',
+  };
+  assert.throws(() => createPreviewRuntimeConfig(env), /isolated non-Production HTTPS service/);
+});
+
 test('Preview builds use only the complete isolated synthetic configuration', () => {
   assert.deepEqual(createPreviewRuntimeConfig({
     VERCEL_ENV: 'preview',
