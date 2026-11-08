@@ -206,6 +206,6 @@ After authorization and all gates:
 
 ### 6. Role contract
 
-This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the reviewer/QA validates the evidence; Master coordinates cross-project release; only the authorized owner grants reserved approvals. A maintainer self-review is the default; request another reviewer only if repository/provider protection or a separate explicit owner-approved security policy requires it.
+This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the reviewer/QA validates the evidence; Master coordinates cross-project release; only the authorized owner grants reserved approvals. A documented maintainer full-diff review is mandatory. A second reviewer is not a default ordinary-merge requirement unless provider protection or separate explicit Owner-approved security policy requires it. This does not waive the separate independent non-author review required before canonical controlled Project Knowledge publication/update.
 
 **Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, CircleCI restrictions, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.

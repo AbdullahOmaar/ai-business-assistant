@@ -80,7 +80,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If a runner/quota is unavailable, record the evidence and use an already-authorized alternative; do not repeatedly retry exhausted CI capacity or bypass the gate.
+- If CircleCI or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute another CI provider or treat a local partial run as full CircleCI evidence. Manual reruns require a documented diagnosis, changed condition and explicit Owner authorization after any active freeze is lifted.
 
 ## 6. Required handoff report
 
