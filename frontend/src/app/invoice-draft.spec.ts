@@ -173,13 +173,13 @@ test('keeps invoice line descriptions within the persisted 300-character column 
 
 test('recovers an uncertain draft edit by stable invoice ID even when its number changed', () => {
   const invoices = [
-    { id: 'invoice-a', invoice_number: 'INV-OLD', customer_id: 'c1' },
-    { id: 'invoice-b', invoice_number: 'INV-NEW', customer_id: 'c1' },
+    { id: 'invoice-a', invoice_number: 'INV-OLD', customer_id: 'old-customer' },
+    { id: 'invoice-b', invoice_number: 'INV-NEW', customer_id: 'new-customer' },
   ];
-  const pending = { editingInvoiceId: 'invoice-a', invoiceNumber: 'INV-NEW', customerId: 'c1' };
+  const pending = { editingInvoiceId: 'invoice-a', invoiceNumber: 'INV-NEW', customerId: 'new-customer' };
   assert.equal(findInvoiceDraftRecoveryMatch(invoices, pending)?.id, 'invoice-a');
   assert.equal(
-    findInvoiceDraftRecoveryMatch(invoices, { ...pending, customerId: 'foreign-customer' }),
+    findInvoiceDraftRecoveryMatch(invoices, { ...pending, editingInvoiceId: 'missing-id' }),
     null,
   );
 });

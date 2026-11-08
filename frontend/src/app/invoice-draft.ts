@@ -214,9 +214,7 @@ export function findInvoiceDraftRecoveryMatch<T extends {
   pending: Pick<InvoiceDraftOutcomeSnapshot, 'editingInvoiceId' | 'invoiceNumber' | 'customerId'>,
 ): T | null {
   if (pending.editingInvoiceId) {
-    return invoices.find(invoice =>
-      invoice.id === pending.editingInvoiceId && invoice.customer_id === pending.customerId
-    ) ?? null;
+    return invoices.find(invoice => invoice.id === pending.editingInvoiceId) ?? null;
   }
   return invoices.find(invoice =>
     invoice.invoice_number === pending.invoiceNumber && invoice.customer_id === pending.customerId
