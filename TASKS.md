@@ -3223,3 +3223,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Release safety:** no API/backend, database, schema, migration, financial business rule, production data, merge or Production alias change. Vercel Preview-only project settings were adjusted to restore build compatibility (ignore-build-step reset to automatic; Node.js 24.x). No SSO setting was changed. No merge or Production promotion performed.
 - **Review:** Master patch review found presentation/CSS and source-contract test changes only, with no API, DB, financial posting or authorization logic changes; no blocking defect identified in the patch. Independent/required maintainer review and rendered visual QA remain outstanding.
 - **Status:** PARTIALLY COMPLETE — implementation and Preview build are delivered; release is BLOCKED pending failure diagnosis, rendered mobile acceptance, required maintainer review and exact-head aggregate PASS.
+
+
+## Mobile Home / keyboard-smoke remediation — 2026-11-08
+
+- **Exact failure:** CircleCI browser-smoke job #14324 on candidate `b234e563e391f55627263fc0975e2492de4bf17d` failed `mobile-chat.spec.ts` at the visual-viewport assertion; `sendBottom=334.5` while the mocked visual viewport bottom was 140px. Retry #1 reproduced the same failure. The other 16 browser-smoke cases passed.
+- **Root cause:** the mobile chat composer used `position: sticky`; it remained at the content-flow position when the simulated Android keyboard reduced the visual viewport. The app already computed the 280px keyboard inset correctly, but sticky positioning did not pin the composer to the visible viewport.
+- **Fix:** preserve sticky behavior with the keyboard closed; while `.shell.keyboard-open` is active, pin `.chat-form` using `position: fixed`, logical 12px side insets, and `bottom: calc(var(--aba-keyboard-inset) + 8px)`. Give the fixed composer an opaque surface, border and elevation.
+- **Regression coverage:** source test asserts the keyboard-open fixed-position contract. Browser smoke now checks the Home KPI, quick-access and module-directory grids remain two columns at 320/360/390/412px in both Arabic RTL and English LTR, confirms four KPI cards, 44px header controls, no horizontal overflow, and retains the keyboard-composer assertion.
+- **Scope:** frontend shell + browser/source regression tests + this task ledger only. No API/backend, database/schema/migration, financial semantics, permissions, production data, or Vercel settings changed.
+- **Validation:** exact-head CircleCI and Preview verification will run on the resulting commit; prior checks are stale for the new SHA. Production merge/deploy not performed.
+- **Provider policy:** CircleCI is the sole required CI provider. SemaphoreCI's historical failure is non-authoritative and is not a release gate.

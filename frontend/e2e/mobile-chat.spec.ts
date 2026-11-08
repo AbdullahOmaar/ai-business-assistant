@@ -301,9 +301,10 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   await languageAction.click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-  for (const width of [360, 390, 412, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
+    if (width <= 412) await assertHomeMobileGrid(width);
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
