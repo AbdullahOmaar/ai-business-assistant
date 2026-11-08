@@ -1,3 +1,17 @@
+# Owner-authorized integration operating rules — 2026-11-08
+
+- **Decision:** the Owner authorized Master to apply the process corrections from the integration-delay audit. Canonical operational rules are recorded in Notion Universal Work Execution Standard and Work Package & Handoff Standard; this commit mirrors them to repository guidance.
+- **Governance branch:** `master/integration-operating-rules-20261108`, based on main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; this is a separate documentation/policy review boundary. Existing PR #348 is intentionally untouched and frozen from additional writes while this policy branch is active.
+- **PR #348 live baseline at audit:** OPEN / DRAFT / UNMERGED, branch `master/t18-uiux-hardening-20261107`, head `3ed5f7a35b771253fb94f95a46ce4c7c827ab5e5`, 277 commits, 44 paths, +5,091 / -504. Exact-head CircleCI 7/7 SUCCESS. Semaphore is retired/non-authoritative.
+- **Disposition:** keep #348 DRAFT. Its review surface exceeds the new review-planning targets; full maintainer review plus rendered RTL/LTR/responsive, accessibility and Android/PWA acceptance remain outstanding/NOT RUN. Current comparison had 0 commits behind and mergeable=true; no active merge conflict was evidenced.
+- **New policy:** PR review target 15 changed paths OR 800 non-generated lines (planning thresholds, not hard caps); larger candidates need genuine splitting or a staged-review plan. Shared files require a named primary writer/path boundary. CircleCI exact-SHA only, full maintainer review, no default second reviewer except provider/explicit security policy, and separate Owner merge/deployment approvals.
+- **Safety:** no CI trigger/retry, merge, deployment, branch rewrite, production DB action, migration or business-rule change was made in this governance change.
+- **Known enforcement gap:** last recorded `main.protected=false`; ruleset API readback 403. Effective protection remains UNKNOWN until Owner/Admin UI readback.
+- **Project Sources / Instructions:** uploaded Project Sources are still v1.0.0 DRAFT and were not replaced by GitHub/Notion writes. ChatGPT Project Instructions also require separate UI update/readback; no sync claim is made.
+- **Next:** verify the policy documentation PR and exact-head evidence without touching #348; request independent knowledge review before any canonical publish/merge. Owner/Admin to verify GitHub branch protection via UI.
+
+---
+
 # Release preflight fast-path — operating improvement — 2026-11-07
 
 - **Purpose:** remove late discovery of production deployment coupling, repeated read-only verification and fragmented release handoffs across Master, Chat 1–5, QA and external agents.

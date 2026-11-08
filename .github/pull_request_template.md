@@ -1,39 +1,82 @@
 ## Summary
-<!-- What user-visible behavior or defect does this change address? -->
+<!-- User-visible outcome, defect addressed, and why this is one coherent work package. -->
 
-## Ownership and review
-- **Task / issue ID:**
-- **Implementation owner:**
-- **Maintainer self-reviewer:**
-- **Security / financial reviewer (only when explicitly required):**
-- **Release operator (when applicable):**
+## Ownership and scope
+- **Canonical task / issue ID and Notion link:**
+- **Accountable Feature Owner:**
+- **Actual primary writer:**
+- **Maintainer reviewer:**
+- **Additional reviewer:** N/A unless enforced by provider or required by a separate explicit Owner-approved policy
+- **Owned paths / shared-path boundary:**
+- **Out of scope / explicit deferrals:**
+
+## Candidate identity and PR size
+- **Base branch / exact base SHA:**
+- **Head branch / exact current head SHA:**
+- **Changed paths / non-generated changed lines:**
+- **Review budget:** within 15 paths / 800 lines OR staged-review plan below
+- **Reason for exceeding target (if applicable):**
+- **Staged review batches, order, dependencies and per-batch evidence (if applicable):**
+- **Generated / lockfile files and rationale:**
 
 ## Acceptance criteria
-- [ ] The requested outcome is implemented end to end.
-- [ ] Related UI/API/persistence/authorization behavior is covered where applicable.
-- [ ] Tests were added or updated for new behavior and important regressions.
-- [ ] Documentation and TASKS.md were updated where appropriate.
+- [ ] User-visible outcome implemented end to end.
+- [ ] Positive, negative, failure/recovery and edge paths covered where applicable.
+- [ ] Authorization and tenant-isolation behavior verified where applicable.
+- [ ] Data integrity, idempotency, auditability and side effects reviewed where applicable.
+- [ ] Documentation and TASKS.md updated where appropriate.
 
-## Branch discipline
-- [ ] I checked existing branches and PRs before creating this branch.
-- [ ] This is my only active work branch; related small fixes/tests/docs are batched here.
-- [ ] A new branch was created only for a genuinely new substantial feature or a clearly separate release/security boundary.
-- [ ] I did not bundle unrelated work, duplicate an existing PR, or bypass checks/approvals required by GitHub branch protection or approved policy.
+## Branch and writer coordination
+- [ ] Existing branches and PRs checked; related scope reused where possible.
+- [ ] This is the contributor's only active writing branch, or the independent-boundary exception is documented.
+- [ ] One primary writer is named for each shared/coordination-sensitive path.
+- [ ] No overlapping active writer claim; manual claim is understood not to be a lock.
+- [ ] No unrelated scope, duplicate PR, unsafe rewrite or unapproved force push.
 
-## Verification evidence
-- [ ] Commands/checks actually run are listed below.
-- [ ] Failures were fixed and affected checks rerun, or remaining failures are explained.
-- [ ] Checks not run are explicitly identified as unverified.
-- [ ] Final diff was reviewed for regressions, unrelated changes, and secrets.
+## Exact-SHA verification
+- **Approved provider:** CircleCI only
+- **CI freeze state / source checked:**
+- **CircleCI workflow URL for exact head:**
+- **Exact SHA tested:**
+- **Substantive jobs and outcomes:**
+- **Aggregate result:**
+- **Checks actually run (commands / environment / timestamps):**
+- **Checks NOT RUN / BLOCKED and exact reason:**
+- **GitGuardian / other supplementary evidence (not a CircleCI substitute):**
 
-Checks run and observed results:
-<!-- Include command, result, and relevant workflow URL or commit SHA. -->
+- [ ] All required CircleCI substantive jobs and aggregate passed on exact current head.
+- [ ] Failures were investigated and affected checks rerun only after the condition changed.
+- [ ] No alternate/retired CI provider was treated as a replacement.
+- [ ] Final cumulative diff was reviewed for regressions, secrets, unsafe changes and unrelated paths.
+
+## Maintainer review and merge readiness
+- **Maintainer full-diff review evidence / exact SHA:**
+- **Provider-enforced review requirements readback:**
+- **Blocking review threads:**
+- **Base/divergence/conflict readback:**
+- **Owner merge authorization evidence:**
+- [ ] PR is READY / non-Draft.
+- [ ] Full maintainer diff review is complete on current head.
+- [ ] Required provider-enforced reviews/checks are satisfied.
+- [ ] Blocking threads are resolved.
+- [ ] Explicit Owner merge authorization exists.
+- [ ] No branch-protection or policy gate was bypassed.
 
 ## Release safety (if applicable)
-- [ ] Required CI checks passed on the exact candidate commit.
-- [ ] Database migration/data-loss risks were reviewed.
-- [ ] Required approvals were obtained before high-impact production changes.
-- [ ] Deployment commit/version and smoke-test results are recorded, or deployment is explicitly out of scope.
+- **Affected Vercel projects:**
+- **Intentionally unaffected projects:**
+- **Merge auto-deploy coupling / Ignore Build Step evidence:**
+- **Release markers and target versions:**
+- **Owner production-deployment authorization (separate from merge):**
+- **Migration / production-data / rollback impact:**
+- [ ] Deployment coupling was disclosed before merge.
+- [ ] Separate production authorization was obtained when needed.
+- [ ] Exact deployed SHA/version, alias, health and safe smoke evidence recorded after deployment — or deployment explicitly out of scope.
 
 ## Remaining work / blockers
-<!-- List concrete blockers and the exact next action. Do not claim completion without evidence. -->
+<!-- Exact criterion, root cause, alternatives tried, unblock condition, owner and next action. -->
+
+## Current handoff
+- **Status:** VERIFIED COMPLETE / PARTIALLY COMPLETE / IN PROGRESS / BLOCKED / NOT RUN
+- **Next action + owner:**
+- **Latest evidence pointer:**

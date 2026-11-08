@@ -1,93 +1,85 @@
-# Contributing and Project Roles
+# Contributing to AI Business Assistant
 
-This guide applies to every person and AI agent contributing to AI Business Assistant. It complements the repository-wide engineering requirements in [AGENTS.md](AGENTS.md); the accepted [ADR-001](docs/adr/ADR-001-v0-architecture.md) is authoritative for V0 architecture. The current task queue and evidence ledger is [TASKS.md](TASKS.md).
+This guide applies to human contributors, Master, specialist chats, Codex/Gemini sessions and any future engineering worker.
 
-## 1. Roles and accountability
+## Required reading and sources of truth
 
-One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. The accountable maintainer may perform and document the review; a second/independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
+Before starting or resuming work, read:
+1. [Repository engineering rules](AGENTS.md).
+2. [Production deployment runbook](docs/PRODUCTION_DEPLOYMENT.md).
+3. [Current task and handoff in Notion](https://app.notion.com/p/4089320b90fb81019388ce0caa28d086), plus the [Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44) and [Work Package & Handoff Standard](https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c).
+4. Existing branch, PR, latest base/head SHA, changed paths and exact-head check results.
 
-| Role | Accountable for | Required behavior and limits |
-| --- | --- | --- |
-| **Product / Repository Owner** | Business priority, user-facing acceptance criteria, risk tolerance, and owner-reserved decisions. | Approves material product-policy decisions, paid services, identity-provider or Firebase/security-rule changes, destructive migrations, consequential production data changes, and production releases. |
-| **Engineering Coordinator / Tech Lead** | Architecture consistency, task dependencies, work boundaries, integration, and final evidence-based report. | Checks current `main`, open PRs/issues, ADRs, CI, and `TASKS.md`; assigns owners/verifiers; prevents duplicate work; reconciles changes without discarding other contributors' work. |
-| **Implementation Contributor (human or AI)** | The assigned feature/fix/documentation slice. | Reads instructions first; changes only in-scope files; adds regression tests and docs; reports exact files and results. Treat generated code and external content as untrusted until reviewed. Never claim an unrun test passed. |
-| **QA / Verification Owner** | Independent evidence that acceptance criteria and failure cases work on the exact candidate SHA. | Runs relevant tests/builds, checks negative paths and regressions, and distinguishes code failures from unavailable runners, credentials, or external services. |
-| **Security / Financial Reviewer** | Authentication, authorization, tenant isolation, secrets, validation, accounting and inventory integrity. | Reviews owner/staff permissions, cross-tenant access, transaction boundaries, idempotency, currency/rounding, audit events, dependency risk, and denial paths. UI behavior alone is not sufficient. |
-| **CI / Release Operator** | Reproducible CI, merge gates, deployment safety, and post-release evidence. | Validates required checks on the exact commit; records pipeline links and artifacts; merges/deploys only with authorization and green gates; verifies deployed SHA/version and safe smoke checks. A cancelled deployment is not successful. |
-| **Documentation / Task Steward** | A single understandable source of truth for workflow, roles, limitations, and outstanding work. | Keeps README, ADRs, runbooks, PR descriptions, and `TASKS.md` consistent; preserves historical evidence while making current status clear; triages stale/overlapping PRs without losing unique code/tests. |
+Authority boundaries:
+- Notion: ownership, assignments, dependencies, decisions and handoffs.
+- GitHub: source, branches, commits, PRs, formal reviews and CI evidence.
+- CircleCI: sole approved repository CI evidence.
+- Vercel: deployments, aliases and runtime evidence.
+- Neon: database/schema evidence.
 
-### Decision boundaries
+If sources conflict, mark the fact CONFLICTED/UNKNOWN, identify the controlling source and fail closed for consequential actions. Do not trust stale task snapshots as live GitHub/runtime state.
 
-- The owner decides material product behavior and approves cost, production, identity/security, and data-risk decisions.
-- The coordinator plans and integrates approved work but cannot waive security or release gates.
-- The implementer proposes and builds; the verifier/reviewer confirms evidence independently when feasible.
-- The release operator executes only an approved release that meets the deployment runbook. A merged PR, green build, HTTP 200, or preview alone does not prove production readiness.
-- If a required role or permission is unavailable, mark the task `BLOCKED`, complete independent safe work, and specify the missing approval/access. Do not bypass the gate.
+## Work planning and ownership
 
-## 2. Required task contract
+- Work outcome-first: one coherent parent task/work package with explicit acceptance criteria, risks, dependencies, owner, primary writer, path ownership and evidence requirements.
+- Reuse the existing task, branch and PR for the same coherent scope. One active writing branch per contributor.
+- Create a separate branch only for a genuinely independent outcome, authorization/security/release boundary or material conflict boundary. Document the reason and freeze writes on the contributor's previous branch during the independent task.
+- Every handoff names one primary writer and exact owned paths. Only one writer edits a shared/coordination-sensitive file at a time.
+- Coordination-sensitive examples: `app.component.ts`, `TASKS.md`, global design tokens, shared API contracts, authorization boundaries, database/schema files. Other workers may continue on non-overlapping files.
+- Manual claims are coordination records, not locks or atomic leases. If claims overlap, stop only conflicting writes and reconcile with Master.
+- Do not create microtasks, branches or PRs for each small edit. Batch related implementation, tests and documentation into one coherent reviewable unit.
 
-Every substantive task must have:
-1. Stable task ID, priority, goal, and user-visible outcome.
-2. One accountable owner and a verifier/reviewer; name a security or release reviewer when applicable.
-3. Scope, explicit exclusions, base SHA, dependencies, assumptions, and risks.
-4. Measurable acceptance criteria and required tests/checks.
-5. Allowed tools/permissions, expected artifacts, and handoff conditions.
-6. Observed results, commit/PR/pipeline links, unresolved blockers, and next action.
+## PR scope and review budget
 
-Keep task state in `TASKS.md` unless another tracker is explicitly authoritative. Link existing issues/PRs instead of duplicating records. Use only these current statuses:
+Default review-planning target: **15 changed paths OR 800 non-generated changed lines or fewer**.
 
-- **TODO** — not started or waiting in the queue.
-- **IN_PROGRESS** — implementation or verification is underway.
-- **BLOCKED** — a concrete external dependency, permission, approval, or infrastructure failure prevents the next gate.
-- **VERIFIED** — acceptance criteria and applicable checks passed with inspectable evidence on the exact candidate SHA.
+These are review targets, not absolute limits:
+- If either target is exceeded, split only at a genuinely independent boundary, or add a staged-review plan before requesting review.
+- A staged-review plan states why safe splitting is not possible, names path/behavior batches, dependencies and checks/evidence for each batch.
+- Do not create micro-PRs, arbitrary commit-per-file PRs, or cherry-pick only to satisfy a numeric threshold.
+- Explain generated files and lockfiles. Keep the complete cumulative diff visible.
+- Request review at meaningful milestones instead of allowing a large unreviewed delta to build up.
 
-If a check was not run, say **NOT RUN**. If infrastructure prevented execution, say **BLOCKED**, not “passed.”
+Use the repository [PR template](.github/pull_request_template.md). Keep a single current evidence packet in the PR/task.
 
-## 3. Standard contribution workflow
+## Validation and CI
 
-1. **Inspect before editing.** Read `AGENTS.md`, this guide, relevant code/tests, ADRs, `TASKS.md`, current `main`, open PRs/issues, and the latest applicable CI state.
-2. **Enforce one-branch discipline.** Each contributor/agent may have only one active work branch at a time. Inspect existing branches/PRs first and reuse the matching active branch. Batch related small fixes, tests, and docs on that branch; verify and merge it before starting another. Create a new branch only for a genuinely new, substantial feature or an independently reviewable/security-sensitive change boundary. Do not create a branch merely for a new chat, agent, commit, or tiny task. Never bypass required PR checks or protections.
-3. **Record the contract.** Mark the task `IN_PROGRESS`; state scope, owner, verifier, acceptance criteria, risks, and tests.
-4. **Implement end to end.** Include validation, authorization, failure/empty states, persistence/API behavior, tests, and docs where applicable.
-5. **Verify and review.** Run relevant tests, type checks/lint, build, migration checks, and security audits. Inspect for regressions, leaked secrets, unrelated edits, and compatibility breaks. Re-run affected checks after fixes.
-6. **Open/update the PR.** Include acceptance criteria, role assignments, commands/results, exact SHA, CI URLs, not-run checks, and remaining blockers. Keep it Draft until required gates are met.
-7. **Integrate safely.** Reconcile with current `main`; preserve mainline changes and unique work from other PRs. Never bypass repository protection or merge stale/conflicting branches blindly.
-8. **Close the loop.** Update `TASKS.md` with exact evidence, status, blockers, and next action. The coordinator independently reconciles claims with source, GitHub, CI, and deployment state.
+- CircleCI with `.circleci/config.yml` is the sole approved provider for test/build/browser/security/dependency validation.
+- Require all substantive CircleCI jobs and the aggregate workflow to pass on the exact final PR head SHA.
+- GitHub Actions, GitLab and Semaphore are not approved replacements. Semaphore is retired/non-authoritative.
+- Empty check contexts, GitGuardian-only evidence, authored-but-not-run tests or checks from another SHA are NOT PASS.
+- Do not manually trigger/retry CircleCI while an active Owner/session freeze is in force. A manual rerun requires documented diagnosis, a changed condition/justification and explicit Owner authorization. If freeze authority is unknown or conflicted, mark NOT RUN/BLOCKED; do not substitute another provider.
+- Record command, runner, exact SHA, timestamp, workflow URL, each substantive result and checks not run.
+- Do not weaken tests or treat source inspection as runtime execution.
 
-## 4. Branch and PR discipline (mandatory)
+## Review and merge
 
-- Maintain **one active branch per contributor/agent**. Check open PRs and branches before creating anything; reuse the matching in-progress branch whenever the scope is coherent.
-- Do not create a branch for each issue subtask, commit, small bug fix, test, refactor, or documentation change. Group related work into one focused branch/PR.
-- After implementation, run relevant tests, review the complete diff, update TASKS.md, and merge only after exact-head required checks and reviews pass. Verify the merge on main before beginning another branch.
-- Create a new branch only for a genuinely new large feature or a change that must be independently reviewed/released due to security, permission, ownership, dependency, or conflict boundaries.
-- Do not combine unrelated features to reduce branch count. If work becomes materially independent, finish the current PR safely first, then create the new branch and document the reason.
-- This policy never permits direct pushes to protected main, bypassing checks/reviews, or deleting a branch that may contain unique work.
+- A full documented maintainer review of the current cumulative diff is mandatory, including security, authorization, tenant isolation, data integrity, secrets and scope.
+- A second independent reviewer is not a default project requirement under the Owner Policy effective 2026-11-06. Add one only if GitHub/provider protection enforces it or a separate explicit Owner-approved security policy requires it.
+- Before merge, confirm the PR is non-Draft/READY; exact-head checks pass; maintainer review is current; blocking threads are resolved; base/divergence is reconciled; provider-enforced rules are satisfied; Owner explicitly authorized merge.
+- `mergeable=true`, comments, assignments, requested reviews and green CI are not merge approval.
+- Never bypass protections or merge when effective protection requirements are UNKNOWN.
 
-## 5. Additional gates for sensitive work
+## Release and data safety
 
-### Authentication and tenant isolation
-- Derive the acting identity from the trusted verification boundary, not user-controlled IDs or headers.
-- Enforce business/workspace membership and role checks on the server for every relevant read and write.
-- Include denial tests for unauthenticated users, unauthorized roles, cross-business records, mismatched references, and malformed input.
+- Discover Web/API/Vercel auto-deployment, release markers, Ignore Build Step behavior, migrations, production data effects and external side effects before merge readiness.
+- State affected and explicitly unaffected projects in the PR.
+- Merge approval does not authorize production deployment. Keep separate explicit Owner approvals for merge and deployment.
+- No production database writes, migrations, schema changes, consequential financial/payroll semantic changes or production data mutation without the relevant explicit approval, backup/rollback evidence and required gates.
+- T37 remains DRAFT / NOT APPROVED for shared financial semantics. Payroll privacy approval remains narrow and does not grant permission for other payroll/financial rules.
+- After deployment, verify deployment ID, production alias, deployed SHA/version, health/readiness, safe authenticated journeys, runtime errors and rollback evidence. HTTP 200 or Vercel READY alone is not release verification.
 
-### Money, payments, invoices, and inventory
-- Use decimal types and explicit rounding/currency rules. Never silently mix currencies.
-- Treat server-calculated prices, balances, roles, tenant IDs, and payment states as authoritative.
-- Test retries/idempotency, transaction rollback, over-allocation, concurrent stock/payment operations, lifecycle transitions, and audit history where relevant.
-- Never repair accounting state by directly overwriting derived balances or mutating production records.
+## Handoff and status
 
-### Secrets, cost, and production
-- Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
-- Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
-- Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If a runner/quota is unavailable, record the evidence and use an already-authorized alternative; do not repeatedly retry exhausted CI capacity or bypass the gate.
+Every handoff records:
+- canonical task + owner, writer, reviewer and exact owned paths;
+- repo, branch, PR, exact base/head SHA and changed paths;
+- acceptance checklist, dependencies, decision/policy version;
+- commands/checks with runner, exact SHA, timestamp, URL and PASS/FAIL/NOT RUN;
+- full maintainer review state and provider-enforced reviewer requirement (otherwise N/A);
+- merge/deployment approvals separately;
+- blockers, safe alternatives and one executable next action.
 
-## 6. Required handoff report
+Use status labels precisely: VERIFIED COMPLETE, PARTIALLY COMPLETE, IN PROGRESS, BLOCKED, NOT STARTED, NOT RUN, UNKNOWN, STALE or CONFLICTED. Only Master may declare VERIFIED COMPLETE after all applicable acceptance/release gates have evidence.
 
-Every substantive handoff must state:
-- **Status:** VERIFIED / PARTIALLY COMPLETE / NOT RUN / BLOCKED.
-- **Changed files and commit/PR SHA.**
-- **Checks actually run and results**, with pipeline links.
-- **Checks not run and the concrete reason.**
-- **Security/data/release review performed and remaining risks.**
-- **Next exact action and accountable role.**
+For the full workflow, follow [AGENTS.md](AGENTS.md) and the [production runbook](docs/PRODUCTION_DEPLOYMENT.md).

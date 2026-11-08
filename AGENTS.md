@@ -190,3 +190,35 @@ Use the **Release Preflight → Candidate Ready → Owner Decision → Merge →
 - This fast path removes duplicate investigation and late surprises; it does **not** waive owner authorization, provider-enforced protections, required exact-head checks/reviews, CircleCI policy, security/data-integrity controls, or separate production authorization.
 
 - Batch related implementation, tests and documentation into one coherent commit/candidate before requesting CI or opening the PR. Do not create one commit per file or micro-edit when a single safe commit is possible: each pushed head can trigger another full CircleCI run. Once the candidate CI starts, avoid changing its head unless a real fix is required; if it changes, validate the new exact SHA and do not reuse stale results.
+
+## Integration and review policy addendum — Owner-authorized 2026-11-08
+
+This section clarifies the operational detail for every human, specialist chat and AI contributor. It is consistent with the branch, CI, security and release gates above; it does not waive any approval.
+
+### PR size and staged review
+- Target **15 changed paths OR 800 non-generated changed lines or fewer** for a routine review candidate. These are review-planning thresholds, not hard caps.
+- If either target is exceeded, before requesting review either split at a genuinely independent outcome/security/release boundary or add a staged-review plan to the PR: why safe splitting is not possible, named path/behavior batches, dependencies and tests/evidence for each batch.
+- Never create micro-PRs, arbitrary commit-per-file PRs, or cherry-pick merely to satisfy a number. Explain generated/lockfile paths and keep the full cumulative diff visible.
+- Review incrementally at meaningful milestones. Avoid accumulating a large unreviewed delta. Any new commit changes the candidate SHA and invalidates review/CI evidence tied to the prior head.
+
+### Shared-path ownership
+- Every work package declares one primary writer and exact owned paths. Only one active writer edits a coordination-sensitive path at a time; other workers continue on non-overlapping paths.
+- Treat `app.component.ts`, `TASKS.md`, global design tokens, shared API contracts, authorization boundaries and database/schema files as coordination-sensitive. Name the integration window and handoff before another writer edits the same path.
+- Manual single-writer claims are coordination records, not mutexes or atomic leases. On overlap, stop only conflicting writes and reconcile the claim; do not freeze independent work.
+- One active writing branch per contributor. A separate branch is justified only by a genuinely independent authorization/release boundary or independently reviewable outcome; record the reason and freeze writes on that contributor's previous branch during the independent work.
+
+### CI and merge gate clarification
+- CircleCI and `.circleci/config.yml` remain the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
+- GitHub Actions, GitLab and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative; its status failure does not negate valid CircleCI evidence.
+- Empty status contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
+- Do not manually trigger/retry CI while an active Owner/session freeze applies. A manual rerun requires a documented diagnosis, changed condition/justification and explicit Owner authorization. If freeze authority is unknown/conflicted, fail closed: record NOT RUN/BLOCKED and do not substitute another provider.
+- A documented full maintainer diff review is mandatory. Under the Owner Policy effective 2026-11-06, a second independent reviewer is not a default project gate; require one only when provider-enforced protection or a separate explicit Owner-approved security policy requires it.
+- Merge only from a non-Draft READY PR after exact-head checks, maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus explicit Owner merge authorization. `mergeable=true` is not approval.
+- Merge authorization and production deployment authorization remain separate. Disclose auto-deployment coupling before merge; get the required deployment authorization before any merge that automatically deploys.
+
+### Canonical records
+- Notion owns task ownership, assignment, dependency, decisions and handoffs. GitHub owns code, branches, PRs, formal reviews and exact-SHA CI. Vercel/Neon own deployment/runtime and database schema evidence.
+- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and path ownership, base/head SHA, changed files, acceptance criteria, commands/results, reviewer, PR state, CI links, release impact and NOT RUN/BLOCKED items.
+- Update `TASKS.md` at meaningful checkpoints. Treat appended old snapshots as HISTORICAL unless refreshed from live GitHub/provider evidence; do not add a second task tracker.
+- If branch protection/ruleset cannot be read, record UNKNOWN and resolve through Owner/Admin GitHub UI readback. Never claim protection is enabled from a written policy alone.
+- A Notion/GitHub change does not update ChatGPT Project Instructions or uploaded Project Sources. Report those surfaces as unsynchronized until separately saved and read back.
