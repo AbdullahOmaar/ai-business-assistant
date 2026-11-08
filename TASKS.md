@@ -3112,3 +3112,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Additional source accessibility findings: mobile header context label and Platform Admin small-text selectors have source-calculated contrast below 4.5:1 on their actual page/info surfaces; see UX-03 in AUDIT_MASTER_PLAN.md and PR review comment.
 - Vercel build warning: Node 22.23.4 while @firebase/auth@1.13.8 declares Node >=24.12.0 (EBADENGINE); npm install printed 16 moderate findings. CircleCI dependency audit passed; review engine/audit details before release.
 - Validation: source readback and CircleCI to follow on this exact commit. No production deployment, alias, database, Firebase config, API runtime config, or persistent Vercel settings changed.
+
+
+## T18 — Fail-closed Preview runtime and Angular output path — 2026-11-08
+
+- Candidate parent: `684eb0cb37a01217c9775712d954f25048e1a5d4` on `master/t18-uiux-hardening-20261107`; PR #348 remains Draft / unmerged.
+- Fixes: Angular Vercel output directory now targets `dist/ai-business-assistant/browser`; Preview builds replace the checked-in Production runtime config with an empty setup-required config unless all five isolated synthetic API/Firebase variables are present. Partial configuration and known Production API/Firebase identifiers fail the build. Production/local config remains unchanged.
+- Added five Node regression tests for non-Preview behavior, missing/partial Preview values, rejection of known Production identifiers, and complete synthetic configuration.
+- No Vercel project settings, Firebase projects, production API, production data, DB, schema or migrations changed. Preview authentication remains disabled until an isolated synthetic runtime is configured.
+- Validation: CircleCI exact-head to follow automatically after this commit; no local runner available. Vercel Preview redeployment and output-path/build-stamp verification remain pending.

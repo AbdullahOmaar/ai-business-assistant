@@ -18,7 +18,7 @@ const serviceWorker = readFileSync(resolve(frontendRoot, 'public/sw.js'), 'utf8'
 test('Vercel Web build stamps commit metadata before Angular compilation', () => {
   const vercelConfig = JSON.parse(readFileSync(resolve(frontendRoot, 'vercel.json'), 'utf8'));
   assert.equal(vercelConfig.buildCommand, 'node scripts/write-build-info.mjs && ng build');
-  assert.equal(vercelConfig.outputDirectory, 'dist/ai-business-assistant');
+  assert.equal(vercelConfig.outputDirectory, 'dist/ai-business-assistant/browser');
 });
 
 test('feature catalogue has unique sections and bilingual user-facing content', () => {

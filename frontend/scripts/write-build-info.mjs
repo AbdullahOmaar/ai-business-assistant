@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createPreviewRuntimeConfig } from './preview-runtime-config.mjs';
 
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const packageInfo = JSON.parse(readFileSync(resolve(frontendRoot, 'package.json'), 'utf8'));
@@ -37,3 +38,18 @@ writeFileSync(
 );
 console.log(`UI build metadata: v${buildInfo.version} (${buildInfo.commit})`);
 console.log(`Service worker cache: ${cacheName}`);
+
+const previewRuntimeConfig = createPreviewRuntimeConfig(process.env);
+if (previewRuntimeConfig) {
+  writeFileSync(
+    resolve(frontendRoot, 'public/runtime-config.json'),
+    `${JSON.stringify(previewRuntimeConfig, null, 2)}\\n`,
+    'utf8',
+  );
+  console.log(
+    previewRuntimeConfig.apiBaseUrl
+      ? 'Preview runtime config: isolated synthetic API/Firebase configured'
+      : 'Preview runtime config: disabled until isolated synthetic API/Firebase is configured',
+  );
+}
+
