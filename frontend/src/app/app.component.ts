@@ -593,8 +593,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
                 <div class="invoice-toolbar"><details class="invoice-create-disclosure" [open]="invoiceCreateOpen" (toggle)="onInvoiceCreateToggle($event)"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
                 <div class="inline-form invoice-form">
-                  <label>{{ t('الخصم (%)', 'Discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" [(ngModel)]="invoiceDiscountRate" [disabled]="invoiceDraftSaving || !!invoiceDraftSummary"></label>
-                  <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" [(ngModel)]="invoiceTaxRate" [disabled]="invoiceDraftSaving || !!invoiceDraftSummary"></label>
+                  <label>{{ t('الخصم الحالي (%)', 'Current discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" [value]="invoiceDiscountRate" readonly aria-readonly="true"></label>
+                  <label>{{ t('الضريبة الحالية (%)', 'Current tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" [value]="invoiceTaxRate" readonly aria-readonly="true"></label>
+                  <p class="footnote">{{ t('الخصم والضريبة للقراءة فقط حتى اعتماد العقد المالي المشترك؛ عند تعديل مسودة نحافظ على القيم المحفوظة دون تغييرها.', 'Discount and tax are read-only until the shared financial contract is approved; editing a draft preserves its saved values without changing them.') }}</p>
                   <aba-invoice-draft-editor
                     [language]="language"
                     [products]="products"
