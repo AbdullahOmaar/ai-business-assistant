@@ -57,3 +57,22 @@ test('invoice outcome recovery is restored only for the same authenticated user 
   const pay = methodBetween('payInvoice(invoice: Invoice)', 'async createExpense()');
   assert.match(pay, /this\.paymentRetryPending/);
 });
+
+
+test('issued invoice printing is read-only, status-checked and auth/workspace fenced', () => {
+  const print = methodBetween('async printInvoice(invoice: Invoice)', 'async editInvoice(invoice: Invoice)');
+  assert.match(print, /this\.signedIn/);
+  assert.match(print, /this\.currentAuthUid/);
+  assert.match(print, /this\.isCurrentTenantOperation\(this\.printRequestGuard/);
+  assert.match(print, /detail\.status !== 'issued'/);
+  assert.match(print, /printWindow\.close\(\)/);
+});
+
+test('issue and void mutations are Owner-only and auth/workspace fenced', () => {
+  const issue = methodBetween('async issueInvoice(invoice: Invoice)', 'requestInvoiceVoid(');
+  const voidFlow = methodBetween('async confirmInvoiceVoid()', 'hasOutstandingBalance(');
+  assert.match(issue, /this\.business\.role !== 'owner'/);
+  assert.match(issue, /this\.isCurrentTenantOperation\(this\.invoiceMutationGuard/);
+  assert.match(voidFlow, /this\.business\.role !== 'owner'/);
+  assert.match(voidFlow, /this\.isCurrentTenantOperation\(this\.invoiceMutationGuard/);
+});

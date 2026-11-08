@@ -1923,6 +1923,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private clearWorkspaceData(): void {
     this.invoiceSaveGuard.invalidate();
     this.invoiceEditRequestGuard.invalidate();
+    this.invoiceMutationGuard.invalidate();
+    this.printRequestGuard.invalidate();
     this.paymentMutationGuard.invalidate();
     this.paymentLoading = false;
     this.paymentRetryPending = false;
@@ -2131,6 +2133,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
   private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
+  private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
+  private readonly printRequestGuard = new WorkspaceLoadGuard();
   private readonly paymentMutationGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
@@ -3329,10 +3333,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async printInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || invoice.status !== 'issued') return;
-    const businessId = this.business.id;
-    const businessName = this.business.name;
-    const businessCurrency = this.business.currency_code;
+    const businessSnapshot = this.business;
+    if (!businessSnapshot || !this.signedIn || !this.currentAuthUid || invoice.status !== 'issued') return;
+    const businessId = businessSnapshot.id;
+    const requestVersion = this.printRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.printRequestGuard, requestVersion, requestContext);
+    const businessName = businessSnapshot.name;
+    const businessCurrency = businessSnapshot.currency_code;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       this.error = this.t('اسمح بفتح نافذة الطباعة من المتصفح ثم حاول مرة أخرى.', 'Allow pop-ups for printing, then try again.');
@@ -3342,9 +3350,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
-      if (this.business?.id !== businessId) {
+      if (!isCurrent()) {
         printWindow.close();
         return;
+      }
+      if (detail.status !== 'issued') {
+        throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
       }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
@@ -3384,11 +3395,12 @@ export class AppComponent implements OnInit, OnDestroy {
       printWindow.focus();
     } catch (error) {
       printWindow.close();
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
+
   async editInvoice(invoice: Invoice): Promise<void> {
     if (!this.business || !this.signedIn || !this.currentAuthUid || invoice.status !== 'draft' || this.invoiceDraftSaving) return;
     const businessId = this.business.id;
@@ -3443,15 +3455,18 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid || this.loading) return;
     const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
     this.invoiceMessageKind = 'success';
     try {
       await this.api.issueInvoice(businessId, invoice.id);
-      if (this.business?.id !== businessId) return;
+      if (!isCurrent()) return;
       this.invoiceMessage = this.t('تم إصدار الفاتورة بنجاح.', 'Invoice issued successfully.');
       try {
         const [invoices, dashboard, products] = await Promise.all([
@@ -3459,12 +3474,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.products(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
+        if (!isCurrent()) return;
         this.invoices = invoices;
         this.dashboard = dashboard;
         this.products = products;
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
           this.invoiceMessage = this.t(
             'تم إصدار الفاتورة، لكن تعذر تحديث العرض. لا تعاود إصدارها؛ حدّث البيانات أولًا.',
@@ -3473,14 +3488,14 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
   requestInvoiceVoid(invoice: Invoice, event: MouseEvent): void {
-    if (!this.business || this.business.role !== 'owner' || !['draft', 'issued'].includes(invoice.status)) return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid || !['draft', 'issued'].includes(invoice.status)) return;
     this.pendingPurchaseReceipt = null;
     this.purchaseReceiptError = '';
     this.pendingInvoiceVoid = invoice;
@@ -3496,8 +3511,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async confirmInvoiceVoid(): Promise<void> {
     const invoice = this.pendingInvoiceVoid;
-    if (!invoice || !this.business || this.business.role !== 'owner' || this.loading) return;
+    if (!invoice || !this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid || this.loading) return;
     const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
@@ -3505,7 +3523,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceVoidError = '';
     try {
       await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
-      if (this.business?.id !== businessId) return;
+      if (!isCurrent()) return;
       this.pendingInvoiceVoid = null;
       this.confirmationReturnFocus = null;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
@@ -3516,12 +3534,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.products(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
+        if (!isCurrent()) return;
         this.invoices = invoices;
         this.dashboard = dashboard;
         this.products = products;
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
           this.invoiceMessage = this.t(
             'تم إلغاء الفاتورة، لكن تعذر تحديث العرض. لا تعاود الإلغاء؛ حدّث البيانات أولًا.',
@@ -3530,7 +3548,7 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) {
+      if (isCurrent()) {
         this.invoiceVoidError = this.message(error);
         this.invoiceMessageKind = 'warning';
         this.invoiceMessage = this.t(
@@ -3539,7 +3557,7 @@ export class AppComponent implements OnInit, OnDestroy {
         );
       }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
