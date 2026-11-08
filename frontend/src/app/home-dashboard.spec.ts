@@ -147,7 +147,7 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
   assert.match(appSource, /\.home-shortcut-link:focus-visible/);
   assert.match(appSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(appSource, /@media\(max-width:360px\)\{\.home-shortcut-list\{grid-template-columns:minmax\(0,1fr\)\)/);
+  assert.ok(appSource.includes('@media(max-width:360px){.home-shortcut-list{grid-template-columns:minmax(0,1fr)}}'));
   assert.match(home, /dashboard-trust-note" role="note"/);
   assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
 });
