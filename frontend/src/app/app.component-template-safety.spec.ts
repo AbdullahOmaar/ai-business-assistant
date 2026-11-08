@@ -1436,3 +1436,22 @@ test('AI assistant conversation history is a named keyboard-scrollable log regio
   assert.match(log, /tabindex="0"/);
   assert.match(log, /\[attr\.aria-label\]=/);
 });
+
+test('unapproved discount and tax rates remain read-only and existing values are preserved', () => {
+  assert.match(source, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(source, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
+  assert.doesNotMatch(source, /name="invoiceDiscountRate"[^>]*\[\(ngModel\)\]/);
+  assert.doesNotMatch(source, /name="invoiceTaxRate"[^>]*\[\(ngModel\)\]/);
+  assert.match(source, /editing a draft preserves its saved values without changing them/);
+
+  const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
+  const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
+  const save = source.slice(saveStart, saveEnd);
+  assert.match(save, /discount_rate: String\(discountRate\), tax_rate: String\(taxRate\)/);
+
+  const editStart = source.indexOf('async editInvoice(invoice: Invoice)');
+  const editEnd = source.indexOf('cancelInvoiceEdit(): void', editStart);
+  const edit = source.slice(editStart, editEnd);
+  assert.match(edit, /this\.invoiceDiscountRate = this\.deriveRate\(detail\.discount_total, detail\.subtotal\)/);
+  assert.match(edit, /this\.invoiceTaxRate = this\.deriveRate\(detail\.tax_total, taxableBase\.toFixed\(2\)\)/);
+});
