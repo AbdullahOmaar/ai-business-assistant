@@ -22,7 +22,7 @@ const PRODUCTION_API_HOSTS = new Set([
 ]);
 // Block this product's generated Vercel deployment URLs too. A deployment URL
 // remains a route to its Production deployment even when the custom alias differs.
-const PRODUCTION_VERCEL_PRODUCT_HOST = /^ai-business-assistant-(?:api|[a-z0-9]{9})-thepresidentabdo-9110s-projects\\.vercel\\.app$/;
+const PRODUCTION_VERCEL_PRODUCT_HOST = /^ai-business-assistant-(?:api|[a-z0-9]{9})-thepresidentabdo-9110s-projects\.vercel\.app$/;
 const PRODUCTION_FIREBASE_PROJECT = 'ai-business-assistant-97f37';
 const PRODUCTION_FIREBASE_AUTH_DOMAIN = 'ai-business-assistant-97f37.firebaseapp.com';
 
