@@ -147,6 +147,21 @@ export interface Dashboard {
 // `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
 export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
 
+export function isDefinitiveNoWriteHttpStatus(status: number): boolean {
+  return [400, 401, 403, 404, 422].includes(status);
+}
+
+export class ApiRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+
+  get definitiveNoWrite(): boolean {
+    return isDefinitiveNoWriteHttpStatus(this.status);
+  }
+}
+
 export type InvoiceLineInput =
   | { product_id: string; quantity: string; description?: string }
   | { description: string; quantity: string; unit_price: string };
@@ -199,7 +214,7 @@ export class ApiService {
           const payload = await response.json();
           if (typeof payload.detail === 'string') message = payload.detail;
         } catch { /* response body may be empty or unavailable */ }
-        throw new Error(message);
+        throw new ApiRequestError(message, response.status);
       }
       if (response.status === 204) return undefined as T;
       try {

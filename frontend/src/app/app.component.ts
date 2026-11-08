@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
@@ -23,6 +23,8 @@ import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.c
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
 import { invoiceDraftLinesFromExisting } from './invoice-draft';
 import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
+import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
+import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
@@ -624,15 +626,16 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
                   <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 </aba-section-header>
-                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="paymentForm.valid && createPayment()">
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
-                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
-                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
-                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount"> }
-                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
-                  <button class="primary" type="submit" [disabled]="loading">{{ t('تسجيل دفعة', 'Record payment') }}</button>
+                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
+                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
+                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
+                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
+                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
+                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
+                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('جارٍ التسجيل…', 'Recording…') : paymentRetryPending ? t('إعادة المحاولة بنفس الدفعة', 'Retry same payment') : t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
+                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('هناك محاولة دفع نتيجتها غير مؤكدة. لا تغيّر البيانات؛ استخدم زر إعادة المحاولة بنفس الطلب.', 'A previous payment attempt has an uncertain outcome. Do not change its details; use Retry same payment.') }}</p> }
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list-tools operations-search"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
@@ -1283,6 +1286,10 @@ export class AppComponent implements OnInit, OnDestroy {
   paymentMethod = 'cash';
   paymentReference = '';
   paymentIdempotencyKey = '';
+  paymentLoading = false;
+  paymentRetryPending = false;
+  private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
+  private readonly paymentRetryVault = new PaymentRetryVault();
   chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
   chatSending = false;
@@ -1910,6 +1917,10 @@ export class AppComponent implements OnInit, OnDestroy {
   private clearWorkspaceData(): void {
     this.invoiceSaveGuard.invalidate();
     this.invoiceEditRequestGuard.invalidate();
+    this.paymentMutationGuard.invalidate();
+    this.paymentLoading = false;
+    this.paymentRetryPending = false;
+    this.pendingPaymentRetrySnapshot = null;
     this.invoiceDraftSaving = false;
     this.invoiceDraftSummary = null;
     this.invoiceDraftInitialLines = null;
@@ -2085,8 +2096,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async switchBusiness(id: string): Promise<void> {
-    if (this.invoiceDraftSaving) {
-      this.error = this.t('انتظر حتى يكتمل حفظ مسودة الفاتورة قبل تغيير مساحة العمل.', 'Wait for the invoice draft save to finish before switching workspaces.');
+    if (this.invoiceDraftSaving || this.paymentLoading || this.paymentRetryPending) {
+      this.error = this.t('أكمل حفظ مسودة الفاتورة أو أعد محاولة الدفعة الحالية قبل تغيير مساحة العمل.', 'Finish saving the invoice draft or retry the pending payment before switching workspaces.');
       return;
     }
     this.statementVisible = false;
@@ -2112,6 +2123,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
   private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
+  private readonly paymentMutationGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
     const loadVersion = this.workspaceLoadGuard.begin();
@@ -2120,6 +2132,12 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     const id = this.business.id;
+    const savedPaymentRetry = this.currentAuthUid ? this.paymentRetryVault.get(this.currentAuthUid, id) : null;
+    if (savedPaymentRetry) {
+      this.pendingPaymentRetrySnapshot = savedPaymentRetry;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = savedPaymentRetry.payload.idempotency_key;
+    }
     this.loading = true;
     this.error = '';
     try {
@@ -3542,42 +3560,64 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createPayment(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
-      this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
-      return;
-    }
-    const businessId = this.business.id;
-    const amount = this.paymentAmount.trim();
-    const allocation = this.paymentAllocationAmount.trim();
-    if (this.paymentInvoiceId && !allocation) {
-      this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
-      return;
-    }
-    const currencyCode = this.business.currency_code;
-    this.loading = true;
-    this.error = '';
-    this.paymentMessage = '';
-    this.paymentMessageKind = 'info';
-    if (!this.paymentIdempotencyKey) {
-      this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
-    }
-    try {
-      await this.api.createPayment(businessId, {
-        amount,
-        currency_code: currencyCode,
+    const businessSnapshot = this.business;
+    if (!businessSnapshot || businessSnapshot.role !== 'owner' || !this.signedIn || !this.currentAuthUid || this.paymentLoading) return;
+    const businessId = businessSnapshot.id;
+    const authUid = this.currentAuthUid;
+    const requestVersion = this.paymentMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.paymentMutationGuard, requestVersion, requestContext);
+
+    let retrySnapshot = this.pendingPaymentRetrySnapshot ?? this.paymentRetryVault.get(authUid, businessId);
+    if (retrySnapshot) {
+      if (retrySnapshot.businessId !== businessId) {
+        this.pendingPaymentRetrySnapshot = null;
+        this.paymentRetryPending = false;
+        this.paymentIdempotencyKey = '';
+        return;
+      }
+      this.pendingPaymentRetrySnapshot = retrySnapshot;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = retrySnapshot.payload.idempotency_key;
+    } else {
+      if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
+        this.error = this.t('اختَر العميل وأدخل مبلغ الدفعة.', 'Choose a customer and enter the payment amount.');
+        return;
+      }
+      const allocation = this.paymentAllocationAmount.trim();
+      if (this.paymentInvoiceId && !allocation) {
+        this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
+        return;
+      }
+      if (!this.paymentIdempotencyKey) {
+        this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      }
+      retrySnapshot = createPaymentRetrySnapshot(businessId, {
+        amount: this.paymentAmount.trim(),
+        currency_code: businessSnapshot.currency_code,
         idempotency_key: this.paymentIdempotencyKey,
         customer_id: this.paymentCustomerId,
         method: this.paymentMethod,
         reference: this.paymentReference.trim() || undefined,
-        allocations: this.paymentInvoiceId ? [{
-          invoice_id: this.paymentInvoiceId,
-          amount: allocation
-        }] : []
+        allocations: this.paymentInvoiceId ? [{ invoice_id: this.paymentInvoiceId, amount: allocation }] : [],
       });
+      this.pendingPaymentRetrySnapshot = retrySnapshot;
+      this.paymentRetryVault.save(authUid, retrySnapshot);
+      this.paymentRetryPending = true;
+    }
 
-      // Do not treat a post-save refresh failure as a failed payment mutation.
-      if (this.business?.id !== businessId) return;
+    const requestPayload = paymentRequestFromRetrySnapshot(retrySnapshot);
+    this.paymentLoading = true;
+    this.error = '';
+    this.paymentMessage = '';
+    this.paymentMessageKind = 'info';
+    try {
+      await this.api.createPayment(businessId, requestPayload);
+      if (!isCurrent()) return;
+
+      this.paymentRetryVault.delete(authUid, businessId);
+      this.pendingPaymentRetrySnapshot = null;
+      this.paymentRetryPending = false;
       this.paymentAmount = '';
       this.paymentCustomerId = '';
       this.paymentInvoiceId = '';
@@ -3593,12 +3633,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.invoices(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
+        if (!isCurrent()) return;
         this.payments = payments;
         this.dashboard = dashboard;
         this.invoices = invoices;
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.paymentMessage = this.t(
             'تم تسجيل الدفعة، لكن تعذر تحديث العرض. لا تعاود تسجيل الدفعة؛ حدّث البيانات أولًا.',
             'Payment was recorded, but the view could not refresh. Do not record it again; refresh the data first.'
@@ -3607,13 +3647,25 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      // Preserve entered values and the idempotency key if the save failed or its outcome is uncertain.
-      if (this.business?.id === businessId) {
-        this.paymentMessage = this.message(error) || this.t('تعذر تسجيل الدفعة. لم يتم تأكيد النتيجة؛ لا تغيّر البيانات وأعد المحاولة بنفس الطلب بعد التحقق من سجل المدفوعات.', 'Could not confirm the payment. Keep the entered values and verify the payment list before retrying.');
+      if (!isCurrent()) return;
+      if (error instanceof ApiRequestError && error.definitiveNoWrite) {
+        this.paymentRetryVault.delete(authUid, businessId);
+        this.pendingPaymentRetrySnapshot = null;
+        this.paymentRetryPending = false;
+        this.paymentIdempotencyKey = '';
+        this.paymentMessage = this.message(error);
         this.paymentMessageKind = 'error';
+      } else {
+        this.pendingPaymentRetrySnapshot = retrySnapshot;
+        this.paymentRetryPending = true;
+        this.paymentMessage = this.t(
+          'لم نتمكن من تأكيد نتيجة الدفعة. أعد المحاولة بنفس البيانات دون تغييرها؛ تم الاحتفاظ بنفس الطلب ومفتاح التكرار.',
+          'The payment outcome is uncertain. Retry the exact same details; the original payload and idempotency key were preserved.'
+        );
+        this.paymentMessageKind = 'warning';
       }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.paymentLoading = false;
     }
   }
 
