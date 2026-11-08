@@ -22,8 +22,8 @@
 
 ## History currently represented in the app
 
-- **1.4.1 (release candidate; deployment pending)** — frontend-only mobile App Bar refinement: compact page-first actions, separate workspace context, sticky safe-area-aware header, and preserved four-slot mobile navigation. API remains 1.3.5. Do not call it deployed until Vercel is READY on the merged main SHA and the alias/version/smoke checks pass.
-- **1.4.0 (current main release)** — workspace and mobile experience improvements. Current production Web deployment is READY on main SHA `570dbcbb59ec887bea86125ff4b8933ec821f3af` (deployment `dpl_99L4ro2Uta4MCbBGHLcXDJypDTnB`); API remains 1.3.5.
+- **1.4.1 (deployed)** — frontend-only mobile App Bar refinement: compact page-first actions, separate workspace context, sticky safe-area-aware header, and preserved four-slot mobile navigation. API remains 1.3.5. Deployed to Web Production on main SHA `1f72f45a0830462afb1f25e37a962cb9e30646e8` (Vercel deployment `dpl_AnGL6WvHZgy75zE9qkdrSfYHVq1n`, READY); alias [ai-business-assistant-web.vercel.app](https://ai-business-assistant-web.vercel.app). `/`, `/sw.js`, `/manifest.webmanifest` and `/runtime-config.json` returned HTTP 200; PWA cache key `aba-shell-v1.4.1-1f72f45a0830` matches the deployed version and SHA.
+- **1.4.0 (previous release)** — workspace and mobile experience improvements. Previously deployed to Web Production on main SHA `570dbcbb59ec887bea86125ff4b8933ec821f3af` (deployment `dpl_99L4ro2Uta4MCbBGHLcXDJypDTnB`); superseded by Web 1.4.1. API remains 1.3.5.
 - **1.3.9 (release candidate; deployment pending)** — frontend-only removal of the standalone fictional-data preview route/assets from production; API remains 1.3.5. Do not describe as live until Vercel reports READY on the merged main SHA.
 - **1.3.8 (deployed)** — frontend-only demo preview improvements: complete reset, safer invoice print preview, and explicit T37 tax-policy guard; API remains 1.3.5. Deployed to production Web at main SHA `65e431d8fa7e77aa136fca91f8cfba234c03ec08` (Vercel deployment `dpl_8QKr85KdFWMUj6tV3tbF7piF2aPK`, READY). `/demo/` verified HTTP 200.
 
