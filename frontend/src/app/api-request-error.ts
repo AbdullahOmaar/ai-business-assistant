@@ -1,4 +1,4 @@
-/** HTTP statuses for which transactional API handlers guarantee no persisted write. */
+/** HTTP statuses that unambiguously reject before a write; conflicts can reflect a prior successful attempt. */
 export function isDefinitiveNoWriteHttpStatus(status: number): boolean {
-  return [400, 401, 403, 404, 409, 422].includes(status);
+  return [400, 401, 403, 404, 422].includes(status);
 }
