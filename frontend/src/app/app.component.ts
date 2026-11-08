@@ -7,7 +7,7 @@ import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, 
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
-import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, mergeRecordPage } from './record-filters';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
@@ -29,6 +29,8 @@ import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
+
+const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 @Component({
   selector: 'aba-root',
@@ -606,6 +608,12 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     [initialLines]="invoiceDraftInitialLines"
                     [draftRevision]="invoiceDraftRevision"
                     [editing]="!!editingInvoiceId"
+                    [hasMoreCustomers]="customersHasMore"
+                    [hasMoreProducts]="productsHasMore"
+                    [loadingMoreCustomers]="customersLoadingMore"
+                    [loadingMoreProducts]="productsLoadingMore"
+                    (loadMoreCustomers)="loadMoreInvoiceCustomers()"
+                    (loadMoreProducts)="loadMoreInvoiceProducts()"
                     (saveDraft)="saveInvoiceDraft($event)"
                     (newDraft)="startNewInvoiceDraft()"
                     (refreshStatus)="refreshInvoiceDraftStatus()"
@@ -618,6 +626,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
                   @if (!filteredInvoices.length) { <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.'))" /> }
                 </div>
+                @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
             }
@@ -634,6 +643,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
                   <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
                   <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
                   @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
                   <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
                   <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('جارٍ التسجيل…', 'Recording…') : paymentRetryPending ? t('إعادة المحاولة بنفس الدفعة', 'Retry same payment') : t('تسجيل دفعة', 'Record payment') }}</button>
@@ -646,6 +656,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method ? paymentMethodLabel(payment.method) : t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
                   @if (!filteredPayments.length) { <aba-state-message kind="empty" [description]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.', 'No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
                 </div>
+                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل دفعات إضافية', 'Load more payments') }}</button> }
               </section>
             }
 
@@ -1178,6 +1189,18 @@ export class AppComponent implements OnInit, OnDestroy {
   statementToDate = '';
   private readonly auditLoadGuard = new WorkspaceLoadGuard();
   private readonly statementLoadGuard = new WorkspaceLoadGuard();
+  customersHasMore = false;
+  productsHasMore = false;
+  invoicesHasMore = false;
+  paymentsHasMore = false;
+  customersLoadingMore = false;
+  productsLoadingMore = false;
+  invoicesLoadingMore = false;
+  paymentsLoadingMore = false;
+  private customerOffset = 0;
+  private productOffset = 0;
+  private invoiceOffset = 0;
+  private paymentOffset = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1998,6 +2021,22 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoices = [];
     this.payments = [];
     this.expenses = [];
+    this.customerPickerLoadGuard.invalidate();
+    this.productPickerLoadGuard.invalidate();
+    this.invoiceListLoadGuard.invalidate();
+    this.paymentListLoadGuard.invalidate();
+    this.customersHasMore = false;
+    this.productsHasMore = false;
+    this.invoicesHasMore = false;
+    this.paymentsHasMore = false;
+    this.customersLoadingMore = false;
+    this.productsLoadingMore = false;
+    this.invoicesLoadingMore = false;
+    this.paymentsLoadingMore = false;
+    this.customerOffset = 0;
+    this.productOffset = 0;
+    this.invoiceOffset = 0;
+    this.paymentOffset = 0;
     this.suppliers = [];
     this.purchaseOrders = [];
     this.recurringSchedules = [];
@@ -2124,6 +2163,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
+  private readonly customerPickerLoadGuard = new WorkspaceLoadGuard();
+  private readonly productPickerLoadGuard = new WorkspaceLoadGuard();
+  private readonly invoiceListLoadGuard = new WorkspaceLoadGuard();
+  private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
@@ -2139,6 +2182,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async loadWorkspaceData(): Promise<void> {
     const loadVersion = this.workspaceLoadGuard.begin();
+    this.customerPickerLoadGuard.invalidate();
+    this.productPickerLoadGuard.invalidate();
+    this.invoiceListLoadGuard.invalidate();
+    this.paymentListLoadGuard.invalidate();
+    this.customersLoadingMore = false;
+    this.productsLoadingMore = false;
+    this.invoicesLoadingMore = false;
+    this.paymentsLoadingMore = false;
     if (!this.business) {
       this.loading = false;
       return;
@@ -2173,10 +2224,18 @@ export class AppComponent implements OnInit, OnDestroy {
       this.homeDashboardError = '';
       this.profitLoss = null;
       this.customers = عميل;
+      this.customerOffset = عميل.length;
+      this.customersHasMore = عميل.length === WORKSPACE_RECORD_PAGE_SIZE;
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
       this.products = منتج;
+      this.productOffset = منتج.length;
+      this.productsHasMore = منتج.length === WORKSPACE_RECORD_PAGE_SIZE;
       this.invoices = فاتورة;
+      this.invoiceOffset = فاتورة.length;
+      this.invoicesHasMore = فاتورة.length === WORKSPACE_RECORD_PAGE_SIZE;
       this.payments = دفعة;
+      this.paymentOffset = دفعة.length;
+      this.paymentsHasMore = this.business?.role === 'owner' && دفعة.length === WORKSPACE_RECORD_PAGE_SIZE;
       this.expenses = مصروفات;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
@@ -2191,6 +2250,110 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
     }
+  }
+
+
+  private async loadMoreRecords<T extends { id: string }>(options: {
+    guard: WorkspaceLoadGuard;
+    offset: number;
+    hasMore: boolean;
+    loading: boolean;
+    fetchPage: (businessId: string, offset: number) => Promise<T[]>;
+    getCurrentRecords: () => readonly T[];
+    setRecords: (records: T[]) => void;
+    setOffset: (offset: number) => void;
+    setHasMore: (hasMore: boolean) => void;
+    setLoading: (loading: boolean) => void;
+  }): Promise<void> {
+    const business = this.business;
+    if (!business || !options.hasMore || options.loading || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = options.guard.begin();
+    const requestContext = this.captureTenantRequest(business.id);
+    const isCurrent = (): boolean =>
+      this.isCurrentTenantOperation(options.guard, requestVersion, requestContext);
+    options.setLoading(true);
+    try {
+      const page = await options.fetchPage(business.id, options.offset);
+      if (!isCurrent()) return;
+      const merged = mergeRecordPage(
+        options.getCurrentRecords(),
+        page,
+        options.offset,
+        WORKSPACE_RECORD_PAGE_SIZE,
+      );
+      options.setRecords(merged.records);
+      options.setOffset(merged.nextOffset);
+      options.setHasMore(merged.hasMore);
+    } catch (error) {
+      if (isCurrent()) this.error = this.message(error);
+    } finally {
+      if (isCurrent()) options.setLoading(false);
+    }
+  }
+
+  loadMoreInvoiceCustomers(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.customerPickerLoadGuard,
+      offset: this.customerOffset,
+      hasMore: this.customersHasMore,
+      loading: this.customersLoadingMore,
+      fetchPage: (id, offset) => this.api.customers(id, offset),
+      getCurrentRecords: () => this.customers,
+      setRecords: records => this.customers = records,
+      setOffset: offset => this.customerOffset = offset,
+      setHasMore: value => this.customersHasMore = value,
+      setLoading: value => this.customersLoadingMore = value,
+    });
+  }
+
+  loadMoreInvoiceProducts(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.productPickerLoadGuard,
+      offset: this.productOffset,
+      hasMore: this.productsHasMore,
+      loading: this.productsLoadingMore,
+      fetchPage: (id, offset) => this.api.products(id, offset),
+      getCurrentRecords: () => this.products,
+      setRecords: records => this.products = records,
+      setOffset: offset => this.productOffset = offset,
+      setHasMore: value => this.productsHasMore = value,
+      setLoading: value => this.productsLoadingMore = value,
+    });
+  }
+
+  loadMoreInvoices(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.invoiceListLoadGuard,
+      offset: this.invoiceOffset,
+      hasMore: this.invoicesHasMore,
+      loading: this.invoicesLoadingMore,
+      fetchPage: (id, offset) => this.api.invoices(id, offset),
+      getCurrentRecords: () => this.invoices,
+      setRecords: records => {
+        this.invoices = records;
+        if (!this.paymentInvoiceId) {
+          this.paymentInvoiceId = records.find(invoice => invoice.status === 'issued')?.id || '';
+        }
+      },
+      setOffset: offset => this.invoiceOffset = offset,
+      setHasMore: value => this.invoicesHasMore = value,
+      setLoading: value => this.invoicesLoadingMore = value,
+    });
+  }
+
+  loadMorePayments(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.paymentListLoadGuard,
+      offset: this.paymentOffset,
+      hasMore: this.paymentsHasMore,
+      loading: this.paymentsLoadingMore,
+      fetchPage: (id, offset) => this.api.payments(id, offset),
+      getCurrentRecords: () => this.payments,
+      setRecords: records => this.payments = records,
+      setOffset: offset => this.paymentOffset = offset,
+      setHasMore: value => this.paymentsHasMore = value,
+      setLoading: value => this.paymentsLoadingMore = value,
+    });
   }
 
   async refreshAfterPayrollPayment(): Promise<void> {
