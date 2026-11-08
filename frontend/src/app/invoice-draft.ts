@@ -208,7 +208,7 @@ export class InvoiceDraftOutcomeVault {
 export function findInvoiceDraftRecoveryMatch<T extends {
   id: string;
   invoice_number: string;
-  customer_id: string | null;
+  customer_id?: string | null;
 }>(
   invoices: readonly T[],
   pending: Pick<InvoiceDraftOutcomeSnapshot, 'editingInvoiceId' | 'invoiceNumber' | 'customerId'>,
