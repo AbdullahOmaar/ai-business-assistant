@@ -311,7 +311,7 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await page.setViewportSize({ width: 360, height: 800 });
-  await moreTrigger.click();
+  await expect(page.locator('#mobile-more-menu')).toBeVisible();
   await page.locator('#mobile-more-menu').getByRole('button', { name: /المساعد الذكي|AI assistant/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
   await expect(moreTrigger).toHaveClass(/active/);
