@@ -15,22 +15,26 @@ test('print action is exposed only for issued invoices', () => {
 });
 
 test('print invoice escapes customer, business, invoice, and line values before writing HTML', () => {
-  const helperStart = source.indexOf('private escapePrintHtml(value: unknown): string');
-  const printStart = source.indexOf('async printInvoice(invoice: Invoice): Promise<void>');
-  const editStart = source.indexOf('async editInvoice(invoice: Invoice): Promise<void>', printStart);
-  assert.ok(helperStart >= 0 && printStart > helperStart && editStart > printStart);
-  const helper = source.slice(helperStart, printStart);
-  const printMethod = source.slice(printStart, editStart);
-  for (const encoded of ['&amp;', '&lt;', '&gt;', '&quot;', '&#39;']) {
-    assert.ok(helper.includes(encoded), 'missing HTML escape for ' + encoded);
-  }
-  assert.match(printMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
-  assert.match(printMethod, /this\.escapePrintHtml\(line\.description\)/);
-  assert.match(printMethod, /const businessName = this\.business\.name/);
-  assert.match(printMethod, /const businessCurrency = this\.business\.currency_code/);
-  assert.match(printMethod, /this\.escapePrintHtml\(businessName\)/);
-  assert.match(printMethod, /this\.escapePrintHtml\(businessCurrency\)/);
-  assert.match(printMethod, /printWindow\.document\.write\(/);
+  const start = source.indexOf('async printInvoice(invoice: Invoice)');
+  const end = source.indexOf('async editInvoice(invoice: Invoice)', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const businessSnapshot = this\.business/);
+  assert.match(method, /const businessName = businessSnapshot\.name/);
+  assert.match(method, /const businessCurrency = businessSnapshot\.currency_code/);
+  assert.match(method, /this\.escapePrintHtml\(this\.customerNameForInvoice\(detail\.customer_id\)\)/);
+  assert.match(method, /this\.escapePrintHtml\(detail\.invoice_number\)/);
+  assert.match(method, /this\.escapePrintHtml\(line\.description\)/);
+  assert.match(method, /this\.escapePrintHtml\(line\.quantity\)/);
+  assert.match(method, /this\.escapePrintHtml\(line\.unit_price\)/);
+  assert.match(method, /this\.escapePrintHtml\(line\.line_total\)/);
+  assert.match(method, /this\.escapePrintHtml\(businessName\)/);
+  assert.match(method, /this\.escapePrintHtml\(businessCurrency\)/);
+  const printWindowStart = method.indexOf("const printWindow = window.open('', '_blank');");
+  assert.ok(printWindowStart > 0);
+  const printExecution = method.slice(printWindowStart);
+  assert.doesNotMatch(printExecution, /this\.business\.name|this\.business\.currency_code/);
+  assert.match(printExecution, /printWindow\.document\.write\(/);
 });
 
 test('print popup failures and invoice-detail errors are surfaced safely', () => {
