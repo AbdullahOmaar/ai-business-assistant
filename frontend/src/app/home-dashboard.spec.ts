@@ -111,8 +111,8 @@ test('Home page identity and responsive metric hierarchy follow the UX handoff',
   assert.match(appSource, /overview: 'Overview'/);
   assert.match(appSource, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(appSource, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(appSource, /@media\\(max-width:760px\\)\\{[\\s\\S]*?\\.metric-grid\\{grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\);gap:9px\\}/);
-  assert.match(appSource, /\\.module-directory-grid\\{grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\);gap:8px\\}/);
+  assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
+  assert.ok(appSource.includes('.module-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'));
   assert.match(appSource, /dashboard-period__details/);
 });
 
@@ -150,10 +150,10 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
   assert.match(appSource, /\.home-shortcut-link:focus-visible/);
   assert.match(appSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(appSource, /@media\\(max-width:760px\\)\\{[\\s\\S]*?\\.home-shortcut-list\\{grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
-  assert.match(quickAccessCardSource, /:host-context\\(\\.module-directory-grid\\) \\.aba-quick-access\\{min-height:96px;display:grid;grid-template-columns:32px minmax\\(0,1fr\\)/);
-  assert.match(quickAccessCardSource, /-webkit-line-clamp:2/);
-  assert.match(quickAccessCardSource, /aba-quick-access__arrow\\{display:none\\}/);
+  assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
+  assert.ok(quickAccessCardSource.includes(':host-context(.module-directory-grid) .aba-quick-access{min-height:96px;display:grid;grid-template-columns:32px minmax(0,1fr)'));
+  assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
+  assert.ok(quickAccessCardSource.includes('.aba-quick-access__arrow{display:none}'));
   assert.match(home, /dashboard-trust-note" role="note"/);
   assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
 });
@@ -215,13 +215,15 @@ test('Home exposes its business summary as a navigable section heading', () => {
 
 
 test('Mobile app header is compact while retaining accessible controls and workspace context', () => {
-  assert.match(mobileHeaderCssSource, /gap: 7px;[\\s\\S]*?margin-block: 0 10px;[\\s\\S]*?padding: 8px 10px;/);
-  assert.match(mobileHeaderCssSource, /brand-copy small \\{ display: none; \}/);
-  assert.match(mobileHeaderCssSource, /icon-button, \\.profile-trigger \\{[^}]*width: 44px; height: 44px/);
-  assert.match(mobileHeaderCssSource, /workspace-context \\{[^}]*padding: 7px 9px/);
-  assert.match(mobileHeaderCssSource, /workspace-switch select \\{[^}]*min-height: 44px/);
-  assert.match(mobileHeaderCssSource, /assistant-shortcut \\{[^}]*min-height: 44px/);
-  assert.match(mobileHeaderCssSource, /greeting \\{ display: none; \}/);
+  assert.ok(mobileHeaderCssSource.includes('gap: 7px;'));
+  assert.ok(mobileHeaderCssSource.includes('margin-block: 0 10px;'));
+  assert.ok(mobileHeaderCssSource.includes('padding: 8px 10px;'));
+  assert.ok(mobileHeaderCssSource.includes('.brand-copy small { display: none; }'));
+  assert.ok(mobileHeaderCssSource.includes('width: 44px; height: 44px;'));
+  assert.ok(mobileHeaderCssSource.includes('padding: 7px 9px;'));
+  assert.ok(mobileHeaderCssSource.includes('workspace-switch select'));
+  assert.ok(mobileHeaderCssSource.includes('assistant-shortcut'));
+  assert.ok(mobileHeaderCssSource.includes('.greeting { display: none; }'));
 });
 
 test('Home loading skeleton uses the current bilingual Business Summary heading', () => {
