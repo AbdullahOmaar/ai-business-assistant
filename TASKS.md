@@ -3250,3 +3250,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Assistant E2E navigation correction:** the mobile chat regression now opens the assistant through the Home header's real `Open AI assistant` shortcut. More-menu navigation remains covered independently; the test no longer relies on menu visibility after language switching.
 
 - **Browser-smoke navigation assertion correction:** CircleCI confirmed the header shortcut correctly closes the More popup while the More dock button remains `active` as the group indicator for the assistant destination. The E2E now asserts the popup is closed and the More group remains active; no application behavior change was required.
+
+
+## Mobile App Bar refinement — 2026-11-08
+
+- **Task / owner:** T50 — External Assistant: Demo Readiness, Product Acceptance & UX Quality. Project Master is the explicitly activated primary writer for this bounded UI refinement.
+- **Branch / base:** `master/mobile-appbar-refinement-20261108` based on `main@570dbcbb59ec887bea86125ff4b8933ec821f3af`. Implementation commit: `86c2652d998d2a16ec4e22803b229e6834e65b24`.
+- **Owned paths:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.ts`; `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`; `frontend/src/app/home-dashboard.spec.ts`; `frontend/e2e/mobile-chat.spec.ts`; this task ledger.
+- **UX change:** replace the stacked brand/version + workspace + page-title arrangement with a compact page-first action row and a separate neutral workspace-context row. Keep clean-light surfaces, responsive two-line titles/workspace names, and an icon-only AI shortcut at <=380px.
+- **Preserved behavior:** Home shortcut, workspace switching, AI assistant, notifications, profile/account actions, language/sign-out, Escape and outside-focus/pointer dismissal, 44px interactive targets, RTL/LTR, and the existing four-slot bottom navigation. No desktop sidebar, API/backend, database/schema, authorization, financial or payroll semantics changed.
+- **Regression coverage:** source assertions now cover row hierarchy, clean surface, 44px controls, workspace selector, long-text wrapping and preserved events/account-menu behavior. Browser smoke measures all four header controls and confirms both header rows render at 320/360/390/412px in its existing RTL/LTR no-overflow journey.
+- **Validation:** implementation source committed; exact-head CircleCI checks and aggregate must be inspected after PR creation. Rendered SSO-protected Preview and physical Android/PWA acceptance are separate gates and must remain NOT RUN unless an authorized browser/device path is available.
+- **Release safety:** Draft PR only; no merge, production deployment/promotion, production data access/write, migration or paid provisioning.
+- **Status:** IN PROGRESS — source implementation and regression updates are committed; exact-head CI, full diff review and rendered/device acceptance remain pending.
