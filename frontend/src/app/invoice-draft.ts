@@ -167,3 +167,38 @@ export function invoiceDraftLinesFromExisting(lines: readonly {
     unit_price: line.product_id ? '' : line.unit_price,
   }));
 }
+
+
+export interface InvoiceDraftOutcomeSnapshot {
+  readonly businessId: string;
+  readonly invoiceNumber: string;
+  readonly customerId: string;
+  readonly discountRate: string;
+  readonly taxRate: string;
+  readonly editingInvoiceId: string | null;
+}
+
+/** Identity-scoped, memory-only recovery marker for an uncertain invoice mutation. */
+export class InvoiceDraftOutcomeVault {
+  private readonly records = new Map<string, InvoiceDraftOutcomeSnapshot>();
+
+  private key(authUid: string, businessId: string): string {
+    const uid = authUid.trim();
+    const business = businessId.trim();
+    if (!uid || !business) throw new RangeError('An authenticated user and business are required for an invoice draft outcome.');
+    return JSON.stringify([uid, business]);
+  }
+
+  save(authUid: string, snapshot: InvoiceDraftOutcomeSnapshot): void {
+    const copy = Object.freeze({ ...snapshot, businessId: snapshot.businessId.trim() });
+    this.records.set(this.key(authUid, copy.businessId), copy);
+  }
+
+  get(authUid: string, businessId: string): InvoiceDraftOutcomeSnapshot | null {
+    return this.records.get(this.key(authUid, businessId)) ?? null;
+  }
+
+  delete(authUid: string, businessId: string): void {
+    this.records.delete(this.key(authUid, businessId));
+  }
+}

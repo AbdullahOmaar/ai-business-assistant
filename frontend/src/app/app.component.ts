@@ -22,7 +22,8 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
 import { invoiceDraftLinesFromExisting } from './invoice-draft';
-import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary } from './invoice-draft';
+import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
+import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
@@ -600,12 +601,14 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     [invoiceNumber]="invoiceNumber"
                     [customerId]="invoiceCustomerId"
                     [saving]="invoiceDraftSaving"
+                    [blocked]="invoiceDraftUncertain"
                     [serverSummary]="invoiceDraftSummary"
                     [initialLines]="invoiceDraftInitialLines"
                     [draftRevision]="invoiceDraftRevision"
                     [editing]="!!editingInvoiceId"
                     (saveDraft)="saveInvoiceDraft($event)"
                     (newDraft)="startNewInvoiceDraft()"
+                    (refreshStatus)="refreshInvoiceDraftStatus()"
                   />
                 </div>
                 </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
@@ -1277,6 +1280,9 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceDraftSummary: InvoiceDraftServerSummary | null = null;
   invoiceDraftInitialLines: InvoiceDraftLine[] | null = null;
   invoiceDraftRevision = 0;
+  invoiceDraftUncertain = false;
+  private pendingInvoiceDraftOutcome: InvoiceDraftOutcomeSnapshot | null = null;
+  private readonly invoiceDraftOutcomeVault = new InvoiceDraftOutcomeVault();
   paymentCustomerId = '';
   paymentAmount = '';
   paymentAllocationAmount = '';
@@ -1924,6 +1930,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceDraftSaving = false;
     this.invoiceDraftSummary = null;
     this.invoiceDraftInitialLines = null;
+    this.invoiceDraftUncertain = false;
+    this.pendingInvoiceDraftOutcome = null;
     this.invoiceDraftRevision += 1;
     this.invoiceCreateOpen = false;
     this.pendingInvoiceVoid = null;
@@ -2132,6 +2140,17 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     const id = this.business.id;
+    const pendingInvoiceOutcome = this.currentAuthUid ? this.invoiceDraftOutcomeVault.get(this.currentAuthUid, id) : null;
+    if (pendingInvoiceOutcome) {
+      this.pendingInvoiceDraftOutcome = pendingInvoiceOutcome;
+      this.invoiceDraftUncertain = true;
+      this.invoiceNumber = pendingInvoiceOutcome.invoiceNumber;
+      this.invoiceCustomerId = pendingInvoiceOutcome.customerId;
+      this.invoiceDiscountRate = pendingInvoiceOutcome.discountRate;
+      this.invoiceTaxRate = pendingInvoiceOutcome.taxRate;
+      this.editingInvoiceId = pendingInvoiceOutcome.editingInvoiceId;
+      this.invoiceCreateOpen = true;
+    }
     const savedPaymentRetry = this.currentAuthUid ? this.paymentRetryVault.get(this.currentAuthUid, id) : null;
     if (savedPaymentRetry) {
       this.pendingPaymentRetrySnapshot = savedPaymentRetry;
@@ -3121,7 +3140,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   startNewInvoiceDraft(): void {
-    if (this.invoiceDraftSaving) return;
+    if (this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     this.editingInvoiceId = null;
     this.invoiceDraftInitialLines = null;
     this.invoiceDraftSummary = null;
@@ -3132,12 +3151,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceDiscountRate = '0';
     this.invoiceTaxRate = '0';
     this.invoiceMessage = '';
-    this.invoiceMessageKind = 'success';
-    this.error = '';
-  }
-
-  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
-    if (!this.business || !this.signedIn || !this.currentAuthUid || this.invoiceDraftSaving) return;
+    this.invoiceMessageKind = 'succes  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
+    if (!this.business || !this.signedIn || !this.currentAuthUid || this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     const discountRate = Number(this.invoiceDiscountRate);
     const taxRate = Number(this.invoiceTaxRate);
     if (!Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
@@ -3146,21 +3161,36 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     const businessId = this.business.id;
+    const authUid = this.currentAuthUid;
     const requestVersion = this.invoiceSaveGuard.begin();
     const requestContext = this.captureTenantRequest(businessId);
     const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceSaveGuard, requestVersion, requestContext);
     const editingInvoiceId = this.editingInvoiceId;
+    const outcomeSnapshot: InvoiceDraftOutcomeSnapshot = {
+      businessId,
+      invoiceNumber: payload.invoice_number,
+      customerId: payload.customer_id,
+      discountRate: String(discountRate),
+      taxRate: String(taxRate),
+      editingInvoiceId,
+    };
+    this.invoiceDraftOutcomeVault.save(authUid, outcomeSnapshot);
+    this.pendingInvoiceDraftOutcome = outcomeSnapshot;
     this.invoiceDraftSaving = true;
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
     this.invoiceDraftSummary = null;
+
     try {
       const request = { ...payload, discount_rate: String(discountRate), tax_rate: String(taxRate) };
       const saved = editingInvoiceId
         ? await this.api.updateDraftInvoice(businessId, editingInvoiceId, request)
         : await this.api.createInvoice(businessId, request);
+      this.invoiceDraftOutcomeVault.delete(authUid, businessId);
       if (!isCurrent()) return;
+      this.pendingInvoiceDraftOutcome = null;
+      this.invoiceDraftUncertain = false;
       this.invoiceNumber = payload.invoice_number;
       this.invoiceCustomerId = payload.customer_id;
       this.invoiceDraftSummary = {
@@ -3175,6 +3205,7 @@ export class AppComponent implements OnInit, OnDestroy {
         : this.t('تم حفظ مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft saved. Displayed totals came from the server.');
       this.invoiceMessageKind = 'success';
       this.invoiceCreateOpen = true;
+
       try {
         const [invoices, dashboard] = await Promise.all([
           this.api.invoices(businessId),
@@ -3193,12 +3224,26 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (isCurrent()) {
+      if (error instanceof ApiRequestError && error.definitiveNoWrite) {
+        this.invoiceDraftOutcomeVault.delete(authUid, businessId);
+        if (!isCurrent()) return;
+        this.pendingInvoiceDraftOutcome = null;
+        this.invoiceDraftUncertain = false;
+        this.error = this.message(error);
+        this.invoiceMessageKind = 'error';
+        this.invoiceMessage = this.t(
+          'رفض الخادم حفظ المسودة قبل الكتابة. صحّح البيانات ثم حاول مرة أخرى.',
+          'The server rejected the draft before persistence. Correct the details and try again.'
+        );
+      } else {
+        if (!isCurrent()) return;
+        this.pendingInvoiceDraftOutcome = outcomeSnapshot;
+        this.invoiceDraftUncertain = true;
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
         this.invoiceMessage = this.t(
-          'تعذر تأكيد حفظ المسودة. راجع حالة الفاتورة قبل إعادة المحاولة.',
-          'Could not confirm the draft save. Check the invoice status before retrying.'
+          'نتيجة حفظ المسودة غير مؤكدة. تم قفل النموذج لمنع إنشاء فاتورة مكررة؛ تحقّق من حالة الفاتورة.',
+          'The draft save outcome is uncertain. The editor is locked to prevent a duplicate invoice; verify its status.'
         );
       }
     } finally {
@@ -3206,6 +3251,74 @@ export class AppComponent implements OnInit, OnDestroy {
         this.invoiceDraftSaving = false;
         this.loading = false;
       }
+    }
+  }
+
+  async refreshInvoiceDraftStatus(): Promise<void> {
+    const business = this.business;
+    const authUid = this.currentAuthUid;
+    const pending = this.pendingInvoiceDraftOutcome ??
+      (business && authUid ? this.invoiceDraftOutcomeVault.get(authUid, business.id) : null);
+    if (!business || !authUid || !this.signedIn || !pending || this.loading) return;
+    const businessId = business.id;
+    const requestVersion = this.invoiceSaveGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceSaveGuard, requestVersion, requestContext);
+    this.loading = true;
+    this.error = '';
+    try {
+      const invoices = await this.api.invoices(businessId);
+      if (!isCurrent()) return;
+      this.invoices = invoices;
+      const match = invoices.find(invoice =>
+        invoice.invoice_number === pending.invoiceNumber &&
+        invoice.customer_id === pending.customerId
+      );
+      if (!match) {
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'لم تظهر فاتورة بنفس الرقم في أحدث قائمة. لم نُعد إرسال الطلب؛ استمر في التحقق من سجل الفواتير قبل إنشاء فاتورة أخرى.',
+          'No invoice with that number appeared in the latest list. The request was not resubmitted; keep verifying the invoice register before creating another invoice.'
+        );
+        return;
+      }
+
+      const detail = await this.api.invoiceDetail(businessId, match.id);
+      if (!isCurrent()) return;
+      this.editingInvoiceId = detail.id;
+      this.invoiceNumber = detail.invoice_number;
+      this.invoiceCustomerId = detail.customer_id || pending.customerId;
+      this.invoiceDiscountRate = pending.discountRate;
+      this.invoiceTaxRate = pending.taxRate;
+      this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
+      this.invoiceDraftSummary = {
+        currency_code: detail.currency_code,
+        subtotal: detail.subtotal ?? null,
+        discount_total: detail.discount_total ?? null,
+        tax_total: detail.tax_total ?? null,
+        total: detail.total,
+      };
+      this.invoiceDraftRevision += 1;
+      this.invoiceDraftUncertain = false;
+      this.pendingInvoiceDraftOutcome = null;
+      this.invoiceDraftOutcomeVault.delete(authUid, businessId);
+      this.invoiceCreateOpen = true;
+      this.invoiceMessageKind = 'warning';
+      this.invoiceMessage = this.t(
+        'وجدنا مسودة بنفس الرقم. راجع البنود والإجماليات المعروضة؛ لم نُعد إرسال طلب الحفظ ولم نفترض أن كل التعديلات السابقة تم حفظها.',
+        'A draft with that number was found. Review the displayed lines and totals; no save was resubmitted and we have not assumed every attempted edit was persisted.'
+      );
+    } catch (error) {
+      if (isCurrent()) {
+        this.error = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'تعذر التحقق من حالة الفاتورة. سيظل النموذج مقفولًا لمنع التكرار.',
+          'Could not verify the invoice status. The editor remains locked to prevent a duplicate.'
+        );
+      }
+    } finally {
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -3315,7 +3428,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   cancelInvoiceEdit(): void {
-    if (this.invoiceDraftSaving) return;
+    if (this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     this.editingInvoiceId = null;
     this.invoiceDraftInitialLines = null;
     this.invoiceDraftSummary = null;
@@ -3436,6 +3549,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   payInvoice(invoice: Invoice): void {
+    if (this.paymentLoading || this.paymentRetryPending) {
+      this.error = this.t('هناك محاولة دفع نتيجتها غير مؤكدة. أعد المحاولة بنفس الطلب قبل اختيار فاتورة أخرى.', 'A payment attempt has an uncertain outcome. Retry the same request before selecting another invoice.');
+      return;
+    }
     if (!this.business || this.business.role !== 'owner' || invoice.status !== 'issued') return;
     if (!invoice.customer_id || invoice.outstanding_amount === undefined) {
       this.error = this.t('تعذر تحديد العميل أو الرصيد المستحق. حدّث البيانات وحاول مرة أخرى.', 'Could not determine the customer or outstanding balance. Refresh data and try again.');

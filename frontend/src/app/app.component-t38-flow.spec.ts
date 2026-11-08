@@ -35,3 +35,25 @@ test('invoice draft mutations are fenced by workspace, user, role and auth gener
   assert.match(edit, /this\.isCurrentTenantOperation\(this\.invoiceEditRequestGuard/);
   assert.match(source, /authTransitionVersion: this\.authTransitionVersion/);
 });
+
+
+test('uncertain invoice writes are stored before mutation and verified without resubmission', () => {
+  const save = methodBetween('async saveInvoiceDraft(payload: InvoiceDraftPayload)', 'async refreshInvoiceDraftStatus()');
+  const store = save.indexOf('this.invoiceDraftOutcomeVault.save(authUid, outcomeSnapshot)');
+  const write = save.indexOf('await this.api.createInvoice(businessId, request)');
+  assert.ok(store >= 0 && write > store);
+  assert.match(save, /this\.invoiceDraftUncertain = true/);
+  assert.match(save, /error\.definitiveNoWrite/);
+  const verify = methodBetween('async refreshInvoiceDraftStatus()', 'private escapePrintHtml');
+  assert.match(verify, /this\.api\.invoices\(businessId\)/);
+  assert.doesNotMatch(verify, /this\.api\.createInvoice/);
+  assert.match(source, /\[blocked\]="invoiceDraftUncertain"/);
+  assert.match(source, /\(refreshStatus\)="refreshInvoiceDraftStatus\(\)"/);
+});
+
+test('invoice outcome recovery is restored only for the same authenticated user and workspace', () => {
+  assert.match(source, /this\.invoiceDraftOutcomeVault\.get\(this\.currentAuthUid, id\)/);
+  assert.match(source, /this\.invoiceDraftUncertain = true/);
+  const pay = methodBetween('payInvoice(invoice: Invoice)', 'async createExpense()');
+  assert.match(pay, /this\.paymentRetryPending/);
+});

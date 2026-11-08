@@ -125,3 +125,22 @@ test('hydrates persisted product and manual service lines without losing editabl
     { kind: 'manual', product_id: '', description: 'Delivery service', quantity: '1', unit_price: '25.50' },
   ]);
 });
+
+
+test('invoice outcome vault isolates uncertain writes by authenticated user and workspace', () => {
+  const vault = new InvoiceDraftOutcomeVault();
+  const snapshot = {
+    businessId: 'business-a',
+    invoiceNumber: 'INV-100',
+    customerId: 'customer-a',
+    discountRate: '0',
+    taxRate: '0',
+    editingInvoiceId: null,
+  };
+  vault.save('owner-a', snapshot);
+  assert.equal(vault.get('owner-a', 'business-a')?.invoiceNumber, 'INV-100');
+  assert.equal(vault.get('owner-b', 'business-a'), null);
+  assert.equal(vault.get('owner-a', 'business-b'), null);
+  vault.delete('owner-a', 'business-a');
+  assert.equal(vault.get('owner-a', 'business-a'), null);
+});

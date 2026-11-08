@@ -124,6 +124,13 @@ import type {
         <p class="error" role="alert">{{ localize(error) }}</p>
       }
 
+      @if (blocked) {
+        <div class="error" role="alert">
+          <p>{{ t('نتيجة حفظ المسودة غير مؤكدة. لا تعاود الإرسال؛ تحقّق من حالة الفاتورة أولًا.', 'The draft save outcome is uncertain. Do not submit again; check the invoice status first.') }}</p>
+          <button type="button" class="secondary" (click)="refreshStatus.emit()" [disabled]="saving">{{ t('التحقق من حالة الفاتورة', 'Check invoice status') }}</button>
+        </div>
+      }
+
       @if (serverSummary) {
         <section class="server-summary" aria-live="polite">
           <h4>{{ t('الإجماليات المحسوبة على الخادم', 'Server-calculated totals') }}</h4>
@@ -181,6 +188,7 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   @Input() invoiceNumber = '';
   @Input() customerId = '';
   @Input() saving = false;
+  @Input() blocked = false;
   @Input() serverSummary: InvoiceDraftServerSummary | null = null;
   @Input() initialLines: readonly InvoiceDraftLine[] | null = null;
   @Input() draftRevision = 0;
@@ -191,6 +199,7 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   @Input() loadingMoreProducts = false;
   @Output() saveDraft = new EventEmitter<InvoiceDraftPayload>();
   @Output() newDraft = new EventEmitter<void>();
+  @Output() refreshStatus = new EventEmitter<void>();
   @Output() loadMoreCustomers = new EventEmitter<void>();
   @Output() loadMoreProducts = new EventEmitter<void>();
 
@@ -209,11 +218,11 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   }
 
   get locked(): boolean {
-    return this.saving || !!this.serverSummary;
+    return this.saving || this.blocked || !!this.serverSummary;
   }
 
   startNewDraft(): void {
-    if (this.saving) return;
+    if (this.saving || this.blocked) return;
     this.invoiceNumber = '';
     this.customerId = '';
     this.lines = [this.newLine('product')];
@@ -263,7 +272,7 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   }
 
   submit(): void {
-    if (this.saving) return;
+    if (this.saving || this.blocked) return;
     try {
       const invoiceNumber = this.invoiceNumber.trim() || 'INV-' + Date.now();
       this.invoiceNumber = invoiceNumber;
