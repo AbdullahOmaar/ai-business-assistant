@@ -3431,7 +3431,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.pendingInvoiceDraftOutcome = null;
         this.invoiceDraftUncertain = false;
         this.error = this.message(error);
-        this.invoiceMessageKind = 'error';
+        this.invoiceMessageKind = 'warning';
         this.invoiceMessage = this.t(
           'رفض الخادم حفظ المسودة قبل الكتابة. صحّح البيانات ثم حاول مرة أخرى.',
           'The server rejected the draft before persistence. Correct the details and try again.'
