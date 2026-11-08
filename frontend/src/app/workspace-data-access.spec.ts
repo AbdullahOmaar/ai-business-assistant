@@ -46,6 +46,21 @@ test('payroll post-payment refresh discards responses after owner role, identity
     'workspace/role changes must invalidate pending payroll refresh responses');
 });
 
+test('owner-only tax summary discards stale responses and invalidates pending ranges', () => {
+  const start = source.indexOf('async loadTaxSummary(): Promise<void>');
+  const end = source.indexOf('\n  async loadDataIntegrity()', start);
+  assert.ok(start >= 0 && end > start);
+  const method = source.slice(start, end);
+  assert.match(method, /requestContext\.role !== 'owner'/);
+  assert.match(method, /runTenantScopedRequest\(\s*this\.taxSummaryLoadGuard/);
+  assert.match(method, /this\.taxSummaryLoadGuard\.invalidate\(\)/,
+    'invalid date ranges must invalidate older pending report responses');
+
+  const clearStart = source.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = source.indexOf('\n  }', clearStart);
+  assert.ok(source.slice(clearStart, clearEnd).includes('this.taxSummaryLoadGuard.invalidate()'));
+});
+
 test('owner-only integrity and health loads discard late responses after role or identity changes', () => {
   const integrityStart = source.indexOf('async loadDataIntegrity(offset = 0): Promise<void>');
   const integrityEnd = source.indexOf('\n  async loadOperationalHealth()', integrityStart);

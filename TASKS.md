@@ -3082,3 +3082,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** `workspace-data-access.spec.ts` asserts both loaders use their dedicated tenant guards and workspace reset invalidates them. Existing `workspace-load-guard.spec.ts` tests OWNER→STAFF and same-workspace UID changes.
 - **Scope:** Master-owned shell, source regression and TASKS only. No Chat 4 payroll component, API/backend authorization, schema/migration, financial semantics or production data changes.
 - **Validation:** source readback to follow. Commit uses `[skip ci]` under the current CI trigger/retry freeze; exact-head CI/tests/build/browser remain NOT RUN. Parent CircleCI evidence does not validate the new SHA.
+
+
+## T18 — Fence tax summary refresh across role/range changes — 2026-11-08
+
+- Finding: the OWNER-only tax summary checked role on success but did not invalidate a pending request when workspace identity/role changed or when a later invalid date range was submitted. A prior request could overwrite the newer validation state.
+- Fix: tax summary now uses a dedicated tenant-scoped request generation (workspace, UID, role, signed-in state); workspace clearing invalidates it, and an invalid date range invalidates older pending work before showing validation feedback.
+- Regression: workspace-data-access.spec.ts asserts tenant-role fencing, invalid-range invalidation and workspace-reset invalidation. Existing workspace-load-guard.spec.ts covers role and identity rejection.
+- Scope: Master-owned shell, regression and TASKS only. No API/backend, tax calculation/rules, schema/migration, financial semantics or production data changed.
+- Validation: source readback to follow. Commit uses [skip ci] under the current CI trigger/retry freeze; exact-head CI/tests/build/browser remain NOT RUN.

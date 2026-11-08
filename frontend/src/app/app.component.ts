@@ -1888,6 +1888,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.payrollRefreshGuard.invalidate();
     this.dataIntegrityLoadGuard.invalidate();
     this.operationalHealthLoadGuard.invalidate();
+    this.taxSummaryLoadGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2066,6 +2067,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
   private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
+  private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
 
@@ -2244,25 +2246,33 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async loadTaxSummary(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
     if (this.taxStartDate && this.taxEndDate && this.taxStartDate > this.taxEndDate) {
+      this.taxSummaryLoadGuard.invalidate();
       this.taxSummaryReport = null;
+      this.taxLoading = false;
       this.taxError = this.t('تاريخ البداية يجب ألا يتجاوز تاريخ النهاية.', 'Start date must not be after end date.');
       return;
     }
-    const businessId = this.business.id;
     this.taxLoading = true;
     this.taxError = '';
-    try {
-      const report = await this.api.taxSummary(businessId, this.taxStartDate || undefined, this.taxEndDate || undefined);
-      if (this.business?.id === businessId && this.business.role === 'owner') this.taxSummaryReport = report;
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        this.taxSummaryReport = null;
-        this.taxError = this.message(error);
-      }
-    } finally {
-      if (this.business?.id === businessId) this.taxLoading = false;
-    }
+    await runTenantScopedRequest(
+      this.taxSummaryLoadGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.taxSummary(requestContext.workspaceId, this.taxStartDate || undefined, this.taxEndDate || undefined),
+      {
+        onSuccess: report => { this.taxSummaryReport = report; },
+        onError: error => {
+          this.taxSummaryReport = null;
+          this.taxError = this.message(error);
+        },
+        onFinally: () => { this.taxLoading = false; },
+        onStale: () => { this.taxLoading = false; },
+      },
+    );
   }
 
   async loadDataIntegrity(offset = 0): Promise<void> {
