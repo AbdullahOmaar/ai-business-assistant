@@ -145,3 +145,26 @@ test('invoice outcome vault isolates uncertain writes by authenticated user and 
   vault.delete('owner-a', 'business-a');
   assert.equal(vault.get('owner-a', 'business-a'), null);
 });
+
+
+test('keeps invoice line descriptions within the persisted 300-character column limit', () => {
+  const description300 = 'x'.repeat(300);
+  const description301 = 'x'.repeat(301);
+
+  assert.equal(
+    validateInvoiceDraft(validInput([{ ...productLine, description: description300 }]), products, customers),
+    null,
+  );
+  assert.match(
+    validateInvoiceDraft(validInput([{ ...productLine, description: description301 }]), products, customers) ?? '',
+    /300 characters/i,
+  );
+  assert.equal(
+    validateInvoiceDraft(validInput([{ ...manualLine, description: description300 }]), products, customers),
+    null,
+  );
+  assert.match(
+    validateInvoiceDraft(validInput([{ ...manualLine, description: description301 }]), products, customers) ?? '',
+    /300 characters/i,
+  );
+});

@@ -1507,3 +1507,50 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_invoice_line_description_limit_matches_persisted_column_without_rejected_writes():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/invoices"
+    try:
+        accepted = client.post(
+            base,
+            json={
+                "invoice_number": "DESC-300-OK",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "x" * 300, "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert accepted.status_code == 201, accepted.text
+
+        with Session(engine) as session:
+            invoice_count = session.scalar(select(func.count()).select_from(Invoice))
+            line_count = session.scalar(select(func.count()).select_from(InvoiceLine))
+            audit_count = session.scalar(select(func.count()).select_from(AuditEvent))
+
+        rejected = client.post(
+            base,
+            json={
+                "invoice_number": "DESC-301-REJECT",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "x" * 301, "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected.status_code == 422
+
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Invoice)) == invoice_count
+            assert session.scalar(select(func.count()).select_from(InvoiceLine)) == line_count
+            assert session.scalar(select(func.count()).select_from(AuditEvent)) == audit_count
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()

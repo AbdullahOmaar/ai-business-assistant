@@ -100,12 +100,12 @@ import type {
               </label>
               <label>
                 {{ t('وصف إضافي (اختياري)', 'Description (optional)') }}
-                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="500" [disabled]="locked" />
+                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
               </label>
             } @else {
               <label>
                 {{ t('وصف الخدمة', 'Service description') }}
-                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="500" [disabled]="locked" />
+                <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
               </label>
               <label>
                 {{ t('سعر الوحدة', 'Unit price') }} ({{ currencyCode }})

@@ -80,11 +80,11 @@ export function validateInvoiceDraft(
       if (!line.product_id || !products.some(product => product.id === line.product_id)) {
         return 'Choose a valid catalog product for every product line.';
       }
-      if (line.description.trim().length > 500) return 'A line description cannot exceed 500 characters.';
+      if (line.description.trim().length > 300) return 'A line description cannot exceed 300 characters.';
       continue;
     }
-    if (!line.description.trim() || line.description.trim().length > 500) {
-      return 'Every manual line needs a description of 1 to 500 characters.';
+    if (!line.description.trim() || line.description.trim().length > 300) {
+      return 'Every manual line needs a description of 1 to 300 characters.';
     }
     const price = line.unit_price.trim();
     if (!DECIMAL_PRICE.test(price) || !Number.isFinite(Number(price)) || Number(price) < 0 ||
@@ -131,8 +131,8 @@ export function localizeInvoiceDraftValidationMessage(message: string, language:
     'An invoice cannot contain more than 500 lines.': 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.',
     'Every line needs a positive quantity with at most three decimal places.': 'يجب أن تكون كمية كل بند أكبر من صفر وبحد أقصى 3 خانات عشرية.',
     'Choose a valid catalog product for every product line.': 'اختَر منتجًا صحيحًا من قائمة المنتجات لكل بند.',
-    'A line description cannot exceed 500 characters.': 'لا يمكن أن يتجاوز وصف البند 500 حرف.',
-    'Every manual line needs a description of 1 to 500 characters.': 'يجب أن يحتوي كل بند يدوي على وصف من حرف إلى 500 حرف.',
+    'A line description cannot exceed 300 characters.': 'لا يمكن أن يتجاوز وصف البند 300 حرف.',
+    'Every manual line needs a description of 1 to 300 characters.': 'يجب أن يحتوي كل بند يدوي على وصف من حرف إلى 300 حرف.',
     'Every manual line needs a non-negative unit price with at most two decimal places.': 'يجب أن يكون سعر الوحدة للبند اليدوي صفرًا أو أكثر وبحد أقصى خانتين عشريتين.',
   };
   return arabic[message] ?? message;
