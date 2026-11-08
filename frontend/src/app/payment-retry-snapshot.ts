@@ -1,5 +1,3 @@
-import { isDefinitiveNoWriteHttpStatus } from './api-request-error.ts';
-
 export interface PaymentAllocationPayload {
   invoice_id: string;
   amount: string;
@@ -115,5 +113,5 @@ export class PaymentRetryVault {
 
 /** HTTP statuses for which the payment endpoint contract guarantees rejection before persistence. */
 export function isDefinitiveNoWritePaymentStatus(status: number): boolean {
-  return isDefinitiveNoWriteHttpStatus(status);
+  return [400, 401, 403, 404, 409, 422].includes(status);
 }
