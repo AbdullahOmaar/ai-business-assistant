@@ -1229,9 +1229,9 @@ test('invoice customer and dynamic line fields expose accessible localized valid
   assert.match(invoiceEditorSource, /name="invoiceNumber"/);
   assert.match(invoiceEditorSource, /name="customerId"/);
   assert.match(invoiceEditorSource, /@for \(line of lines; track line\.id\)/);
-  assert.match(invoiceEditorSource, /name="quantity-' \+ line\.id/);
-  assert.match(invoiceEditorSource, /name="description-' \+ line\.id/);
-  assert.match(invoiceEditorSource, /name="price-' \+ line\.id/);
+  assert.ok(invoiceEditorSource.includes("[name]=\"'quantity-' + line.id\""));
+  assert.ok(invoiceEditorSource.includes("[name]=\"'description-' + line.id\""));
+  assert.ok(invoiceEditorSource.includes("[name]=\"'price-' + line.id\""));
   assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
   assert.match(invoiceEditorSource, /role="alert"/);
   assert.match(invoiceDraftSource, /Choose a valid customer\./);
@@ -1273,9 +1273,9 @@ test('AI chat composer placeholder follows selected language', () => {
 
 
 test('CSV import regions and invoice preview have localized accessible names', () => {
-  assert.ok(source.includes("[attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')""));
-  assert.ok(source.includes("[attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')""));
-  assert.ok(invoiceEditorSource.includes("[attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')""));
+  assert.ok(source.includes(`[attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')"`));
+  assert.ok(source.includes(`[attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')"`));
+  assert.ok(invoiceEditorSource.includes(`[attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')"`));
   assert.doesNotMatch(source + invoiceEditorSource, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
 });
 
