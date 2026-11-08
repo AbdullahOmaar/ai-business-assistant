@@ -280,13 +280,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     expect(overflow, label).toBe(false);
   };
   const assertHomeMobileGrid = async (width: number) => {
+    // Angular may briefly re-evaluate the dashboard branch after a viewport resize.
+    await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 10_000 });
     const layout = await page.evaluate(() => {
       const columns = (selector: string) => {
         const grid = document.querySelector(selector);
         return grid ? getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length : 0;
       };
       return {
-        metricCount: document.querySelectorAll('.metric-grid aba-metric-card').length,
         metricColumns: columns('.metric-grid'),
         quickAccessColumns: columns('.home-shortcut-list'),
         moduleColumns: columns('.module-directory-grid'),
@@ -295,7 +296,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         )).map(control => control.getBoundingClientRect().height),
       };
     });
-    expect(layout.metricCount, `Home must render four KPI cards at ${width}px`).toBe(4);
     expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
     expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
