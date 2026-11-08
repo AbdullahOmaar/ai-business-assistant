@@ -3142,3 +3142,15 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Validation:** Source edit/readback to follow; exact-head Node tests, CircleCI, preview build/browser and authenticated OWNER/STAFF/two-tenant privacy checks NOT RUN on the new head. Prior CI/Preview evidence on `780999c` does not validate these changes.
 - **Safety:** No employee/payroll data or salary records changed. No API/backend/schema/migration, calculation, approval, payout, expense posting or permission changes. No merge or production deployment.
 - **Next:** run focused Node regression + full frontend tests/build; run CircleCI on exact new PR head; create/verify canonical Web Preview on same SHA; finish safe preview/privacy acceptance and full review before any merge/deploy gate.
+
+## UX-HR-01 exact-head validation and T18 release checkpoint — 2026-11-08
+
+- Current PR #348 head: `77f3e306a87392cd470cfdbb67c2926c480dcd2c` on `master/t18-uiux-hardening-20261107`; PR remains OPEN / DRAFT / UNMERGED.
+- UX-HR-01 presentation fix is source-verified: directory name only; payroll selector name + code / localized No code; salary remains in the existing OWNER-only compensation form. No payroll/data/API/permission/schema semantics changed.
+- CircleCI pipeline #2624 / workflow `30c7839e-9464-4461-bbdf-89763074c8da`: 7/7 SUCCESS on exact head (frontend-unit-tests #14209, production-build #14212, dependency-audit #14210, backend-container #14211, backend-accounting #14213, browser-smoke #14214, aggregate #14215).
+- Canonical Web Preview `dpl_8UqkyiMKv2Qs4Lpw6dAN2D1uRWgX` READY on exact head; root, JS, runtime config, service worker and manifest HTTP 200; Arabic RTL shell; UI 1.4.0; PWA cache `aba-shell-v1.4.0-77f3e306a873`. Preview API/Firebase runtime config is deliberately empty/fail-closed.
+- Browser-smoke report: 17/17 successful tests across startup/setup, mobile chat and platform-admin flows. This does not constitute authenticated OWNER/STAFF/two-tenant payroll or all-destination UX acceptance.
+- Master maintainer re-review COMMENT submitted on exact head (review ID `5818408378`); salary finding resolved. PR remains Draft / not approved for merge because T18 acceptance remains incomplete.
+- Remaining release acceptance NOT RUN: authenticated synthetic OWNER/STAFF/two-tenant journeys and write-path checks; complete rendered RTL/LTR review across the 19-destination UX surface; keyboard/screen-reader/200% zoom; physical Android Chrome installed-PWA keyboard/safe-area/screen-reader. Figma visual review remains BLOCKED by View-only access.
+- No merge, Production alias change, API deployment, production DB/schema/migration or production data write. Existing production remains unchanged.
+- Next: obtain isolated synthetic API/Firebase preview configuration and run authenticated role/tenant smoke; close remaining browser/accessibility/device acceptance. Do not bypass these gates to force Production.
