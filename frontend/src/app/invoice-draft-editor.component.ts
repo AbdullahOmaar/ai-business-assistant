@@ -132,7 +132,7 @@ import type {
       }
 
       @if (serverSummary) {
-        <section class="server-summary" aria-live="polite">
+        <section class="server-summary" aria-live="polite" [attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')">
           <h4>{{ t('الإجماليات المحسوبة على الخادم', 'Server-calculated totals') }}</h4>
           @if (serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
             <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal }} {{ serverSummary.currency_code }}</strong></div>
