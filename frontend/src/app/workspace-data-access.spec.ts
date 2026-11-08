@@ -30,6 +30,22 @@ test('denied direct tab navigation returns before changing the selected tab or l
   }
 });
 
+test('payroll post-payment refresh discards responses after owner role, identity, or workspace changes', () => {
+  const start = source.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
+  const end = source.indexOf('\n  exportReceivablesAgingCsv()', start);
+  assert.ok(start >= 0 && end > start, 'payroll refresh method must exist');
+  const method = source.slice(start, end);
+  assert.match(method, /const requestContext = this\.currentChatRequestContext\(\)/);
+  assert.match(method, /requestContext\.role !== 'owner'/);
+  assert.match(method, /runTenantScopedRequest\(\s*this\.payrollRefreshGuard,\s*requestContext,\s*\(\) => this\.currentChatRequestContext\(\)/);
+
+  const clearStart = source.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = source.indexOf('\n  }', clearStart);
+  const reset = source.slice(clearStart, clearEnd);
+  assert.ok(reset.includes('this.payrollRefreshGuard.invalidate()'),
+    'workspace/role changes must invalidate pending payroll refresh responses');
+});
+
 test('workspace changes clear local operation-list searches with the previous workspace data', () => {
   const start = source.indexOf('private clearWorkspaceData(): void');
   const end = source.indexOf('\n  }', start);

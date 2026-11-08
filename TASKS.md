@@ -3064,3 +3064,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - The finding remains open and is handed to Chat 4: employee directory row renders `monthly_salary`; payroll employee selector uses `monthly_salary` as a fallback label when employee code is absent. Required presentation: name/code only in directory/selector; compensation remains in its restricted OWNER-only form. No salary-history, statutory, payout, API, backend, schema or financial semantics are requested.
 - UX inventory corrected to reflect the finding as pending. Prior implementation/test evidence is retained as historical checkpoint but is superseded by this ownership correction.
 - No production data, backend/API/database/schema/migration or deployment changes. The current branch still requires exact-head CircleCI, review and runtime UX acceptance.
+
+
+## T18 — Fence post-payroll refresh across identity/role changes — 2026-11-08
+
+- **Finding:** `refreshAfterPayrollPayment()` checked only the business ID after awaiting expense/dashboard requests. A late OWNER response could repopulate workspace state after the same business membership had changed to STAFF, because the workspace ID remained unchanged.
+- **Fix:** the Master-owned shell now runs this refresh through the existing `runTenantScopedRequest` guard with workspace ID, authenticated UID, role and signed-in state; `clearWorkspaceData()` invalidates pending payroll refresh generations. The callback can update state only while the original OWNER context is still current.
+- **Regression:** `workspace-data-access.spec.ts` asserts the refresh uses the tenant/role guard and workspace reset invalidates its generation. The existing `workspace-load-guard.spec.ts` already exercises OWNER→STAFF response rejection and same-workspace identity changes.
+- **Scope:** Master-owned `app.component.ts`, source regression and TASKS only. No Chat 4 payroll component files, API/backend/schema/migration, payroll calculation, approval/payout semantics or production data changed.
+- **Validation:** source readback to follow. This commit uses `[skip ci]` under the current CI trigger/retry freeze; exact-head CircleCI and runtime/browser acceptance remain NOT RUN until the freeze is explicitly lifted. Parent `6a308cc` CircleCI success does not validate this new head.

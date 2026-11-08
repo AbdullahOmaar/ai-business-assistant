@@ -1885,6 +1885,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.purchaseReceiptError = '';
     this.confirmationReturnFocus = null;
     this.chatRequestGuard.invalidate();
+    this.payrollRefreshGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2060,6 +2061,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
+  private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
 
@@ -2104,26 +2106,39 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async refreshAfterPayrollPayment(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const businessId = this.business.id;
-    try {
-      const [expenses, dashboard] = await Promise.all([
-        this.api.expenses(businessId),
-        this.api.dashboard(businessId),
-      ]);
-      if (this.business?.id !== businessId) return;
-      this.expenses = expenses;
-      this.dashboard = dashboard;
-      if (this.error === this.homeDashboardError) this.error = '';
-      this.homeDashboardError = '';
-      this.profitLoss = null;
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        // A failed refresh must not leave pre-payment dashboard metrics visible as current.
-        this.dashboard = null;
-        this.homeDashboardError = this.message(error);
-        this.error = this.homeDashboardError;
-      }
-    }
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
+
+    // Payroll refresh data is sensitive: discard late owner responses after a role,
+    // identity, or workspace transition, even when the business ID stays the same.
+    await runTenantScopedRequest(
+      this.payrollRefreshGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      async () => {
+        const [expenses, dashboard] = await Promise.all([
+          this.api.expenses(requestContext.workspaceId),
+          this.api.dashboard(requestContext.workspaceId),
+        ]);
+        return { expenses, dashboard };
+      },
+      {
+        onSuccess: ({ expenses, dashboard }) => {
+          this.expenses = expenses;
+          this.dashboard = dashboard;
+          if (this.error === this.homeDashboardError) this.error = '';
+          this.homeDashboardError = '';
+          this.profitLoss = null;
+        },
+        onError: error => {
+          // A failed current refresh must not leave pre-payment dashboard metrics visible.
+          this.dashboard = null;
+          this.homeDashboardError = this.message(error);
+          this.error = this.homeDashboardError;
+        },
+      },
+    );
   }
 
   exportReceivablesAgingCsv(): void {
