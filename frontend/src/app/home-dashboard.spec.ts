@@ -150,7 +150,7 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
   assert.match(appSource, /\.home-shortcut-link:focus-visible/);
   assert.match(appSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
+  assert.ok(appSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
   assert.ok(quickAccessCardSource.includes(':host-context(.module-directory-grid) .aba-quick-access{min-height:96px;display:grid;grid-template-columns:32px minmax(0,1fr)'));
   assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
   assert.ok(quickAccessCardSource.includes('.aba-quick-access__arrow{display:none}'));
