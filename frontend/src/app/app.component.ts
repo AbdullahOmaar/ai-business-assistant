@@ -900,11 +900,11 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
       .nav-item>span:not(.nav-icon){display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
       .nav-item .nav-icon{display:grid;flex:0 0 27px;width:27px;height:27px;font-size:17px;border-radius:9px}
       .nav-item.active{background:var(--aba-color-nav-surface-raised,#1e293b);box-shadow:inset 0 -2px #5eead4;color:var(--aba-color-text-inverse,#fff)}
-      .mobile-version-strip{display:flex;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap;gap:4px 8px;margin:0 2px 10px}.mobile-version-strip .version-pill{font-size:10px;padding:5px 7px}.mobile-deploy-time{font-size:10px;line-height:1.4;color:var(--aba-color-text-secondary,#64748b);max-width:100%;overflow-wrap:anywhere}
+      .mobile-version-strip{display:flex;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap;gap:4px 8px;margin:0 2px 10px}.mobile-version-strip .version-pill{font-size:10px;padding:5px 7px}.mobile-deploy-time{font-size:10px;line-height:1.4;color:var(--aba-color-text-secondary,#5d6878);max-width:100%;overflow-wrap:anywhere}
       .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}
       .topbar{display:none!important}
       .mobile-page-heading{display:block;margin:0 0 16px;padding:0 2px}
-      .mobile-page-heading .eyebrow{margin:0 0 5px;color:var(--aba-color-text-secondary,#64748b);font-size:var(--aba-font-size-2xs,10px);font-weight:var(--aba-font-weight-semibold,600)}
+      .mobile-page-heading .eyebrow{margin:0 0 5px;color:var(--aba-color-text-secondary,#5d6878);font-size:var(--aba-font-size-2xs,10px);font-weight:var(--aba-font-weight-semibold,600)}
       .mobile-page-heading h1{margin:0;color:var(--aba-color-text-primary,#172033);font-size:clamp(20px,5.5vw,25px);line-height:var(--aba-line-height-tight,1.3);font-weight:var(--aba-font-weight-bold,700);letter-spacing:var(--aba-letter-spacing-tight,-.02em);overflow-wrap:anywhere}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
       .user-area{gap:6px}.user-area>span:not(.version-pill){display:none}.user-area .version-pill{display:inline-flex;flex-shrink:0;padding:5px 7px;font-size:10px}.user-area .secondary{padding:9px 10px;min-height:40px}

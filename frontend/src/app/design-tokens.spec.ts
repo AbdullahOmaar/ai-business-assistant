@@ -14,6 +14,8 @@ const componentSources = componentPaths.map(path =>
   readFileSync(new URL(path, import.meta.url), 'utf8'),
 );
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
+const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const appStylesStart = appSource.lastIndexOf('styles: [`');
 const appStyles = appSource.slice(appStylesStart, appSource.indexOf('`]', appStylesStart));
 
@@ -225,6 +227,8 @@ test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-te
     ['--aba-color-text-primary', '--aba-color-page'],
     ['--aba-color-text-muted', '--aba-color-surface'],
     ['--aba-color-text-secondary', '--aba-color-surface'],
+    ['--aba-color-text-secondary', '--aba-color-page'],
+    ['--aba-color-text-secondary', '--aba-color-info-soft'],
     ['--aba-color-text-tertiary', '--aba-color-surface'],
     ['--aba-color-nav-text', '--aba-color-nav-surface'],
     ['--aba-color-nav-muted', '--aba-color-nav-surface'],
@@ -247,6 +251,25 @@ test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-te
   }
 });
 
+
+test('small labels on page, info and Platform Admin surfaces use WCAG AA secondary text', () => {
+  const adminRules = [
+    /\.admin-shell\{[^}]*--muted:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.metric-card small\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.amount span\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.empty-state\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.business-link small\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.muted-role\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.loading-block\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.admin-footer\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.filters input::placeholder,\.status-form textarea::placeholder\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\);opacity:1/,
+    /\.data-note small\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+  ];
+  for (const rule of adminRules) assert.match(platformAdminSource, rule);
+  assert.match(mobileHeaderSource, /\.context-label\s*\{[^}]*color:\s*var\(--aba-color-text-secondary,\s*#5d6878\)/);
+  assert.match(appSource, /\.mobile-page-heading \.eyebrow\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/);
+  assert.match(appSource, /mobile-deploy-time\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/);
+});
 
 test('Phase 2 interaction foundation centralizes touch targets, form controls, and shared surfaces', () => {
   for (const token of ['--aba-control-height', '--aba-control-radius', '--aba-control-padding-inline']) {
