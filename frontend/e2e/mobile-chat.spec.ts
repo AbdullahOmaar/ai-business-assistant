@@ -292,14 +292,18 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         quickAccessColumns: columns('.home-shortcut-list'),
         moduleColumns: columns('.module-directory-grid'),
         headerControlHeights: Array.from(document.querySelectorAll(
-          '.mobile-app-header .icon-button, .mobile-app-header .profile-trigger, .mobile-app-header .assistant-shortcut'
+          '.mobile-app-header .brand-button, .mobile-app-header .assistant-shortcut, .mobile-app-header .icon-button, .mobile-app-header .profile-trigger'
         )).map(control => control.getBoundingClientRect().height),
+        headerPageRowHeight: document.querySelector('.mobile-app-header .page-context')?.getBoundingClientRect().height ?? 0,
+        headerWorkspaceRowHeight: document.querySelector('.mobile-app-header .workspace-context')?.getBoundingClientRect().height ?? 0,
       };
     });
     expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
     expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
-    expect(layout.headerControlHeights).toHaveLength(3);
+    expect(layout.headerControlHeights).toHaveLength(4);
+    expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
+    expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
       expect(height, `Mobile header controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }

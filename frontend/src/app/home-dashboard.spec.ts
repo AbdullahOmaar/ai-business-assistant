@@ -7,6 +7,7 @@ const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'ut
 const backendSource = readFileSync(new URL('../../../backend/app/core_features_api.py', import.meta.url), 'utf8');
 const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
 const mobileHeaderCssSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
 const quickAccessCardSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const moduleCatalogSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
@@ -214,17 +215,45 @@ test('Home exposes its business summary as a navigable section heading', () => {
 });
 
 
-test('Mobile app header is compact while retaining accessible controls and workspace context', () => {
-  assert.ok(mobileHeaderCssSource.includes('gap: 7px;'));
-  assert.ok(mobileHeaderCssSource.includes('margin-block: 0 10px;'));
-  assert.ok(mobileHeaderCssSource.includes('padding: 8px 10px;'));
-  assert.ok(mobileHeaderCssSource.includes('.brand-copy small { display: none; }'));
-  assert.ok(mobileHeaderCssSource.includes('width: 44px; height: 44px;'));
-  assert.ok(mobileHeaderCssSource.includes('padding: 7px 9px;'));
-  assert.ok(mobileHeaderCssSource.includes('workspace-switch select'));
+test('Mobile app header uses a compact page-first row and a separate workspace row', () => {
+  const pageRow = mobileHeaderSource.indexOf('<div class="page-context">');
+  const workspaceRow = mobileHeaderSource.indexOf('<div class="workspace-context">');
+  assert.ok(pageRow >= 0 && workspaceRow > pageRow,
+    'page title/actions must appear before the workspace context');
+  assert.ok(mobileHeaderSource.includes('{{ pageTitle }}'));
+  assert.ok(mobileHeaderSource.includes('{{ workspaceName }}'));
+  assert.doesNotMatch(mobileHeaderSource, /brand-copy|version-pill/,
+    'the mobile header must not spend vertical space on duplicate brand/version chrome');
+  assert.ok(mobileHeaderCssSource.includes('background: var(--aba-color-surface, #ffffff);'),
+    'the header uses a clean, solid surface rather than decorative gradients');
+  assert.ok(mobileHeaderCssSource.includes('flex: 0 0 44px;'));
+  assert.ok(mobileHeaderCssSource.includes('width: 44px;'));
+  assert.ok(mobileHeaderCssSource.includes('height: 44px;'));
   assert.ok(mobileHeaderCssSource.includes('min-height: 44px;'));
-  assert.ok(mobileHeaderCssSource.includes('assistant-shortcut'));
-  assert.ok(mobileHeaderCssSource.includes('.greeting { display: none; }'));
+  assert.ok(mobileHeaderCssSource.includes('workspace-switch select'));
+  assert.ok(mobileHeaderCssSource.includes('@media (max-width: 380px)'));
+  assert.ok(mobileHeaderCssSource.includes('overflow-wrap: anywhere;'));
+  assert.ok(mobileHeaderCssSource.includes('-webkit-line-clamp: 2;'));
+});
+
+test('Mobile app header preserves all navigation, account, workspace and keyboard behaviors', () => {
+  for (const contract of [
+    'homeRequested.emit()',
+    'notificationsRequested.emit()',
+    'assistantRequested.emit()',
+    'businessChange.emit($event)',
+    'aria-expanded',
+    'aria-controls',
+    'requestLanguageToggle()',
+    'requestSignOut()',
+    'closeProfileMenuOnEscape()',
+    'closeProfileMenuOnOutsideFocus(',
+    'closeProfileMenuOnOutsidePointer(',
+  ]) {
+    assert.ok(mobileHeaderSource.includes(contract), 'mobile header must preserve ' + contract);
+  }
+  assert.ok(mobileHeaderCssSource.includes('.account-action'));
+  assert.ok(mobileHeaderCssSource.includes('min-height: 44px;'));
 });
  
 test('Mobile Home KPI and module surfaces stay in compact two-column grids at narrow widths', () => {
