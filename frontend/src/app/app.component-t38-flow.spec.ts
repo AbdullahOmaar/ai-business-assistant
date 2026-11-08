@@ -220,10 +220,10 @@ test('refreshed invoice pages reset their offset and pagination state', () => {
 });
 
 test('invoice editor, invoice list and payment history expose load-more controls', () => {
-  assert.match(source, /\\[hasMoreCustomers\\]=\"customersHasMore\"/);
-  assert.match(source, /\\(loadMoreCustomers\\)=\"loadMoreInvoiceCustomers\\(\\)\"/);
-  assert.match(source, /\\[hasMoreProducts\\]=\"productsHasMore\"/);
-  assert.match(source, /\\(loadMoreProducts\\)=\"loadMoreInvoiceProducts\\(\\)\"/);
-  assert.match(source, /click\\)=\"loadMoreInvoices\\(\\)\"/);
-  assert.match(source, /click\\)=\"loadMorePayments\\(\\)\"/);
+  assert.ok(source.includes('[hasMoreCustomers]="customersHasMore"'));
+  assert.ok(source.includes('(loadMoreCustomers)="loadMoreInvoiceCustomers()"'));
+  assert.ok(source.includes('[hasMoreProducts]="productsHasMore"'));
+  assert.ok(source.includes('(loadMoreProducts)="loadMoreInvoiceProducts()"'));
+  assert.ok(source.includes('(click)="loadMoreInvoices()"'));
+  assert.ok(source.includes('(click)="loadMorePayments()"'));
 });
