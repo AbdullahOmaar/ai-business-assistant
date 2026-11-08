@@ -6,9 +6,9 @@ const ui = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('data integrity review is owner-gated and read-only', () => {
-  assert.match(ui, /tab === 'integrity' && business\?\.role === 'owner'/);
+  assert.match(ui, /@if \(tab === 'integrity' && business\.role === 'owner'\)/);
   assert.match(ui, /loadDataIntegrity\(0\)/);
-  assert.match(ui, /Manual review only/);
+  assert.match(ui, /Human review required/);
   assert.match(api, /reports\/data-integrity/);
   assert.match(ui, /Dashboard, DataIntegrityReport,/);
   assert.match(api, /dataIntegrity\(businessId: string/);

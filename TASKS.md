@@ -2338,3 +2338,863 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Maintainer source review was recorded as PR COMMENT review 5807689593 on an earlier candidate; refresh the review on the final post-ledger SHA before merge. Physical Android keyboard/screen-reader testing remains **NOT RUN**; Pixel 7 is browser emulation only. Figma visual review remains blocked by View-only access.
 - No backend/API/schema/migration, financial posting semantics, payroll, or production data changes. Production deployment remains separately unauthorized.
 - This ledger-only commit changes the PR head; all required CircleCI jobs must be revalidated on the new exact SHA before merge.
+
+
+## T18 — UI/UX hardening continuation — 2026-11-07
+
+**Status: IN_PROGRESS / parent T18 remains PARTIALLY COMPLETE. Owner: Project Master. Single active branch: `master/t18-uiux-hardening-20261107`. Base: `8f2e326fce39fe45f4aebe0f1820576e45b75483`.**
+
+### Current-main reconciliation
+- The prior T18 branch `master/t18-chat-mobile-ux-20261106` was integrated by PR #346 (merge commit `c5fe115daa72e92b4f814ee502405225e1b3dc79`). It is not an active branch; GitHub branch inventory currently contains only `main`, and open PR inventory is empty.
+- Current main is `8f2e326fce39fe45f4aebe0f1820576e45b75483` after PR #347. PR #346's shared UI foundations, 19-destination role-filtered catalogue, five Home shortcuts, shared state components, mobile More navigation, localized form validation and Pixel 7 emulated chat smoke are already integrated; do not recreate them.
+- Latest exact-main CircleCI status on `8f2e326...`: frontend-unit-tests, frontend-dependency-audit, frontend-production-build, frontend-browser-smoke, backend-accounting, backend-container and aggregate all-checks-passed are SUCCESS. Semaphore failure is retired/non-authoritative. Vercel deployments created for the docs-only PR #347 were canceled by Ignore Build Step; no new production deployment or live UI acceptance is claimed.
+- Last observed T18 frontend build warning (PR #346 candidate): initial bundle 807.63 kB against 700 kB warning budget; Angular NG8107 optional-chain warnings. Do not raise the budget. Confirm diagnostics on the current candidate before changing code.
+- Remaining external acceptance: physical Android keyboard/screen-reader testing NOT RUN; Figma visual review BLOCKED by View-only access. Pixel 7 Playwright emulation is not physical-device evidence.
+
+### Single-branch execution checklist
+1. **P0 — Reduce initial bundle safely:** inspect current lazy boundaries and build diagnostics; defer heavy role-gated UI that is only needed after navigation; preserve OWNER-only payroll and platform-admin access; add regression coverage; measure actual initial bundle after build.
+2. **P0 — Resolve Angular NG8107:** capture exact current compiler diagnostics; correct only template optional-chains proven unnecessary by strict template types; preserve null-safe behavior where values are genuinely nullable; add focused source/template regression coverage.
+3. **P1 — 19-route UX audit:** reconcile current route catalogue with rendered shell and page templates; review navigation, hierarchy, forms, filters, tables, action feedback, empty/error/retry and permission-denied states. No new routes or unsupported capabilities.
+4. **P1 — Responsive and bilingual acceptance:** cover 360/390/412px, tablet and desktop; Arabic RTL and English LTR; focus restoration, keyboard navigation, touch targets, safe areas and text scaling. Add automated browser coverage where feasible.
+5. **P1 — Critical journeys:** verify current documented journeys for OWNER, STAFF, denied access and workspace switching in a synthetic/non-production context. No production test writes.
+6. **Gates — Physical device and Figma:** keep Android physical keyboard/screen-reader and Figma visual review explicitly NOT RUN/BLOCKED until device access and appropriate Figma permissions are available. Continue all independent source/test work meanwhile.
+7. **Final verification:** run frontend unit tests, production build, dependency audit and browser smoke through approved CircleCI on the exact candidate SHA; review full diff; update this ledger and T18 Notion evidence. No merge or production deployment without separate authorization.
+
+### Initial implementation target
+- Current `app.component.ts` eagerly imports `EmployeePayrollComponent` and renders it only when the OWNER selects Employees. Evaluate Angular `@defer` for this isolated view to move it out of the initial bundle; preserve the existing role guard and provide an accessible localized loading placeholder.
+- Existing Platform Admin is already in an `@defer` block. Do not regress its lazy boundary.
+- No backend/API/database/schema/migration, financial semantics, payroll rules, authorization policy, production data or deployment changes are in scope.
+- Initial branch creation and task registration are not implementation completion. Keep T18 PARTIALLY COMPLETE until every applicable criterion has evidence.
+
+## T18 UI/UX engineering checkpoint — 2026-11-07
+
+- Active branch: `master/t18-uiux-hardening-20261107`; draft PR #348; base main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; checkpoint head `7f347ee0991ec2af15ba6e7211fb20bb412e8ada` (43 ahead / 0 behind at readback).
+- Implemented on this single branch: role-filtered full Home module directory plus five shortcuts; dashboard loading/error/empty states; accessible shared confirmation dialog for invoice void and PO receipt; explicit preliminary-report, incurred-expense and in-app payroll-payout wording; local search across payments, expenses, suppliers, purchase orders, recurring schedules and notifications; Arabic/English filter labels; workspace-switch search reset; prior mobile navigation/access and lazy-loading fixes retained.
+- Source/test inventory: `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- Exact-head CI at checkpoint: CircleCI frontend unit tests, production build, dependency audit, backend container and backend accounting SUCCESS; frontend browser smoke PENDING. GitHub Actions backend/frontend and dependency security scan SUCCESS. Semaphore remains retired/non-authoritative.
+- No merge, production deployment, API/backend/schema/migration or financial-rule change.
+- Remaining gates: finish CircleCI browser smoke; authenticated synthetic OWNER/STAFF/second-tenant/non-member journeys; Android Chrome/PWA keyboard/safe-area/RTL/LTR and screen-reader acceptance; Figma visual review remains BLOCKED by View-only access. UX-06 duplicate version metadata awaits rendered evidence. Phase 2/3 design work remains gated.
+- Next action: obtain/inspect the exact CircleCI browser-smoke failure and fix it on this branch; meanwhile continue route-by-route nested-surface source audit and prepare the authorized authenticated/device test plan. Do not merge or deploy without separate authorization.
+
+
+## T18 continuation — OWNER-only opening-stock UX alignment — 2026-11-07
+
+- **Work package:** T18 — MVP Frontend, Mobile & Arabic RTL UX. Existing branch only: `master/t18-uiux-hardening-20261107`; existing PR #348 remains OPEN / DRAFT / UNMERGED.
+- **Source implementation commit:** `31d49daf7ff382a8cf065a9c11ed6eeebab83f54` (parent `1ad820d9fcd1d306772fd99f34c6be2a67020d1a`).
+- **Implemented:** positive opening-stock input is shown only to OWNER; STAFF can create a stock-tracked product with zero opening stock; product payload forces zero for non-owners even if stale component state exists; the OWNER-only quantity resets on workspace/role context change. No API permission or stock rule was changed.
+- **Files in implementation commit:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- **Regression coverage:** test authored for OWNER-only input, STAFF fallback payload and workspace reset. The test file was read back from GitHub and its reset-method boundary assertion was corrected in this continuation.
+- **Exact-head quality:** all frontend Node tests, Angular template/production build, browser smoke and dependency audit are **NOT RUN** on the new candidate. The previous head `1ad820d9...` had five CircleCI checks SUCCESS and `frontend-browser-smoke` FAILURE; none of those statuses transfer to a new SHA. The source commit used `[skip ci]`; no CircleCI trigger/retry or replacement CI was used. The browser-smoke job output remains inaccessible; root cause UNKNOWN.
+- **Review/delivery:** source/test/docs readback only; PR remains draft. No merge, deployment, API/backend/database/schema/migration, stock ledger, financial/payroll semantics or production data changes.
+- **Next action:** retrieve the existing CircleCI browser-smoke failure details through authorized CircleCI access, then run the approved exact-head validation when the no-trigger freeze is explicitly lifted; continue the remaining responsive/RTL/LTR and role/tenant UX source review meanwhile.
+
+
+## T18 — STAFF stock-tracked product browser regression authored — 2026-11-07
+
+- On the same active branch and PR #348, extended `frontend/e2e/mobile-chat.spec.ts` to assert STAFF can open Products, enable stock tracking, cannot see a positive opening-stock input, and submits a zero opening-stock payload when creating a product.
+- The Playwright scenario mocks Firebase and the business API; no production or real workspace writes are possible from this test path.
+- Updated `docs/UX_NESTED_SURFACE_INVENTORY.md` with the authored browser coverage.
+- **NOT RUN:** Playwright/CircleCI on the candidate; browser regression must not be described as passing. The exact-head status read on parent `4d308bab3a64dcb9e8e8de19d952d40aa5c0dc15` returned zero status contexts. No CI was triggered/retried.
+
+
+## T18 — Purchase-order receipt affordance aligned with current backend lifecycle — 2026-11-07
+
+- **Finding:** the Angular template exposed OWNER "Receive remaining" for any order with remaining quantity, including drafts. Current main backend `backend/app/operations.py` rejects receipt unless status is `approved` or `partially_received`.
+- **UI change:** the button is now visible only for OWNER + approved/partially-received + remaining quantities. Draft orders with remaining quantity show a localized explanation that receiving is unavailable until approval.
+- **Safety:** dialog-opening and confirmation handlers re-check the same eligibility predicate. No approval UI was invented; no API/backend, stock or business lifecycle rule changed.
+- **Regression coverage authored:** source test asserts both allowed statuses, remaining quantity, draft explanatory copy, template eligibility and handler guards.
+- **Validation:** source read/write assertions only; repository tests and build **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`. Current candidate remains draft PR #348, unmerged and undeployed.
+
+
+## UX inventory structure tidy-up — 2026-11-07
+
+- Consolidated the purchase-order receipt state acceptance into the existing `Purchase receipt confirmation` row in `docs/UX_NESTED_SURFACE_INVENTORY.md`; removed the temporary standalone table row appended during the fix.
+- No application behavior changed in this documentation checkpoint.
+- Repository tests/build remain NOT RUN; no CI trigger/retry. PR #348 remains OPEN / DRAFT / UNMERGED.
+
+
+## T18 exact branch evidence refresh — 2026-11-07
+
+- **Source baseline refreshed:** `17594661bb6214db81b5fb696e6245d1f0d1aac1` on `master/t18-uiux-hardening-20261107`; PR #348 is OPEN / DRAFT / UNMERGED, with 20 changed files and 53 commits at this readback. Branch inventory contains only `main` and this active work branch.
+- **UI outcomes in this branch:** OWNER-only positive opening-stock input with STAFF zero-quantity fallback; Receive remaining is limited to OWNER orders in `approved` / `partially_received` states with remaining quantities, while drafts show localized explanation. Neither change alters backend authorization or domain rules.
+- **Authored regression coverage:** `app.component-template-safety.spec.ts` includes source-level checks for both UI contracts; `mobile-chat.spec.ts` includes a mocked STAFF create-product Playwright scenario asserting `opening_quantity: "0"`.
+- **Exact-head quality:** current combined status returned zero contexts (NOT PASS). Frontend Node tests, Angular production build, dependency audit and Playwright are **NOT RUN** on this source baseline. No CircleCI trigger/retry or replacement CI was used; documentation/source commits use `[skip ci]`.
+- **Historical failure:** CircleCI `frontend-browser-smoke` failed on previous head `1ad820d9fcd1d306772fd99f34c6be2a67020d1a`; five other CircleCI jobs were SUCCESS on that old SHA. Failing output is inaccessible, so root cause remains UNKNOWN. Do not transfer old results to current head.
+- **Delivery:** maintainer review submissions are empty; no merge, deployment, production data or database operations performed. T18 remains IN_PROGRESS / PARTIALLY COMPLETE.
+- **Remaining:** responsive rendered checks, RTL/LTR visual acceptance, authenticated OWNER/STAFF/two-tenant journeys, keyboard/screen-reader and physical Android/PWA remain NOT RUN/BLOCKED; Figma visual review remains blocked by View-only access.
+
+
+## T18 — membership-role reset assertion added — 2026-11-07
+
+- Expanded the product opening-stock regression to assert `loadBusinesses()` detects `business.role` changes and clears workspace-local form state, in addition to checking the reset itself and the non-owner zero payload.
+- This is test/documentation coverage for existing behavior; no additional app behavior changed.
+- Test remains **NOT RUN**; commit uses `[skip ci]`, and no CI trigger/retry was issued.
+
+
+## T18 — mobile keyboard visibility assertion corrected — 2026-11-07
+
+- Source review found the mobile chat Playwright scenario compared the send button against `window.innerHeight`, which includes the simulated keyboard-covered region. That could pass even if the composer was hidden behind the Android keyboard.
+- Updated the same scenario to assert both send button and textarea remain above the actual `visualViewport` bottom. The application already positions the sticky composer using the measured keyboard inset; no runtime behavior changed.
+- **Validation:** test source updated and readback pending; Playwright and CI **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`.
+
+
+## T18 — bilingual invoice / purchase-order status UX — 2026-11-07
+
+- Route-level source audit found invoice search did not include the localized invoice status already shown in the list; purchase-order list rendered raw status codes (`partially_received`, etc.) and search could not match Arabic labels.
+- Added optional status-label search callbacks to `filterInvoices()` and `filterPurchaseOrders()`; wired the current localized invoice/PO label into search. Added Arabic/English labels for the five statuses constrained by the current backend PurchaseOrder model and used the label in the purchase-order row.
+- Added Arabic filter regression assertions and a source/template assertion for the localized PO label.
+- **Validation:** source changes/tests readback only; frontend Node tests, Angular build and Playwright **NOT RUN**. No CI trigger/retry; commit uses `[skip ci]`.
+- No domain behavior or backend/API/database/schema/migration/financial/payroll behavior changed.
+
+
+## T18 — notification status localization — 2026-11-07
+
+- Extended the bilingual status UX audit to Notifications: the row now displays localized labels for the four backend-constrained statuses (`pending`, `sent`, `failed`, `cancelled`), and local search includes the localized status label.
+- Added Arabic search and template/source regression assertions.
+- **Validation:** tests authored / NOT RUN; no CircleCI trigger/retry. No delivery semantics, API, backend, DB or schema changes.
+
+
+## T18 — operational health status localization — 2026-11-07
+
+- Source audit found the owner-only read-only Operational Health page displayed raw API status values `ok` and `degraded`. Added localized display labels (Healthy / سليم; Degraded / يحتاج مراجعة) while preserving the not-checked state.
+- Added a source/template regression assertion. No API authorization or operational-health behavior changed.
+- Test authored / **NOT RUN**; no CI trigger/retry; frontend-only.
+
+
+## T18 — payment method label localization — 2026-11-07
+
+- Source audit found the payment form already translated controlled method options, but saved payment rows displayed raw method codes and search only matched the API value.
+- Added Arabic/English display labels for `cash`, `bank_transfer`, `card`, `wallet`, `other`; local search now also matches the localized label.
+- Added Arabic search and template/source regression assertions. API payload values remain unchanged.
+- Tests authored / **NOT RUN**; no CI trigger/retry; no financial/payment semantics changed.
+
+
+## T18 — expense category localization — 2026-11-07
+
+- Source audit found fixed expense category codes (General, Supplies, Rent, Utilities, Transport, Marketing, Payroll, Maintenance, Other) were displayed raw in saved rows despite bilingual create-form options.
+- Added a localized category label for each current UI option; saved rows and local search now use the label while preserving the stored API category value.
+- Added Arabic search and template/source regression assertions. No expense or cash-settlement semantics changed.
+- Tests authored / **NOT RUN**; no CI trigger/retry.
+
+## T18 — inventory row reconciliation — 2026-11-07
+
+- Updated the existing nested-surface inventory rows for Payments/Expenses, Purchasing/Notifications and Reports/Operational Health to reflect the new localized display/search behavior.
+- No application code changed in this documentation checkpoint; tests remain NOT RUN.
+
+
+## T18 — preserve unknown status values in localized labels — 2026-11-07
+
+- Hardened the localized PO, notification and operational-health status helpers: known backend values use bilingual labels, while unknown non-empty values remain visible as raw text for diagnosis instead of being hidden behind a generic label.
+- Added source assertions for fallback behavior. No API/domain semantics changed.
+- Tests authored / **NOT RUN**; no CI trigger/retry.
+
+
+## T18 — assistant citation bilingual display — 2026-11-07
+
+- Localized the assistant source-list heading and invoice/expense source-type labels for Arabic and English; expense citation category uses the same localized category helper as the Expenses list.
+- Preserved unknown source types and source IDs. No assistant response or citation authorization semantics changed.
+- Added source/template regression assertions; tests **NOT RUN**; no CI trigger/retry.
+
+
+## T18 — AI assistant surface added to nested inventory — 2026-11-07
+
+- Added the previously unlisted AI assistant route as a distinct row in the existing UX nested-surface inventory, documenting its empty/loading/error/retry behavior and bilingual source citation labels.
+- No application behavior changed in this documentation checkpoint.
+
+
+## T18 — inventory formatting correction — 2026-11-07
+
+- Corrected the assistant surface row separator in `docs/UX_NESTED_SURFACE_INVENTORY.md` so it is a distinct Markdown table row.
+- No application code changed. Tests NOT RUN.
+
+
+## T18 — Home error recovery and notification kind parity — 2026-11-07
+
+- Removed the duplicate Home-local error alert; the shared page-level error banner remains the single error/recovery announcement. Home empty state appears only when there is no error.
+- Added the actual notification form kind `business` to the bilingual label map and retained `businesses` for legacy values.
+- Updated the in-app feature catalogue to describe the current bilingual list/search labels; no release version or deployed release note was added.
+- Added source and feature-guide regression assertions. Tests **NOT RUN**; no CI trigger/retry; commit uses `[skip ci]`. No backend/API/financial/payroll semantics changed.
+
+
+## T18 — Customer Statement and Platform Admin audit labels — 2026-11-07
+
+- Localized the three Customer Statement event types returned by the backend while preserving unknown future values.
+- Extracted the existing workspace audit action/target map into a shared pure helper and reused it in Platform Admin activity audit; raw unknown action/target values remain visible unchanged.
+- Updated the in-app feature guide and nested-surface inventory. No audit, balance, permission, API, backend or financial behavior changed.
+- Tests authored / **NOT RUN**; no CI trigger/retry; commit uses `[skip ci]`.
+
+
+## T18 — Customer Statement feature-guide parity — 2026-11-07
+
+- Updated the existing Customers feature-guide detail to describe bilingual statement event labels, matching the current frontend implementation.
+- Added a feature-guide source regression. **NOT RUN**; no CI trigger/retry; no release version bump.
+
+
+## T18 — notification audit event localization — 2026-11-07
+
+- Cross-checked backend AuditEvent writer literals and added bilingual labels for the existing `notification.queued` action and `notification` target in the shared audit label map.
+- No event creation, queue delivery, API or backend behavior changed. Tests authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 — complete current backend AuditEvent label coverage — 2026-11-07
+
+- Cross-checked backend AuditEvent writer literals and added bilingual labels for membership role changes/removal, employee create/update, payroll create/update/approve/pay, and platform workspace activate/deactivate.
+- Added matching target labels for membership, employee and payroll. Existing unknown-value fallback remains.
+- No backend, payroll, membership, permission or financial semantics changed. Tests authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 — shared Platform Admin role audit labels and exhaustive vocabulary test — 2026-11-07
+
+- Replaced the role-audit action ternary with the shared bilingual audit helper and added explicit `platform.user_role.granted` / `platform.user_role.revoked` labels.
+- Added exhaustive source-level unit coverage for all current backend audit action and target values (including membership, employee/payroll, notification and platform-admin events), while preserving unknown-value fallback.
+- No audit storage, role-grant/revocation, authorization or backend behavior changed. Tests **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 exact-head evidence checkpoint — affa12e44737bf7cc51f28696350e3106a4469f6 — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base main `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Source candidate:** `affa12e44737bf7cc51f28696350e3106a4469f6`; 72 commits ahead / 0 behind; 24 changed paths (frontend, tests and UX documentation only).
+- **Latest UX coverage:** 19-destination role-filtered module catalogue; mobile More and chat keyboard viewport handling; OWNER-only opening stock and PO receipt; localized invoice, PO, notification, payment, expense and operational-health values/search; bilingual assistant citations; Customer Statement event types; shared audit labels covering all current backend AuditEvent and PlatformAdminAuditEvent action/target values; Home duplicate error announcement removed.
+- **Static source review:** 16 forms; required controls carry accessible descriptions; form buttons have explicit types; no duplicate static IDs. These are source inspections, not rendered acceptance.
+- **Authored tests:** source/component and filter tests for the listed behaviors, including exhaustive audit vocabulary and feature guide. **NOT RUN**.
+- **Exact-head quality:** GitGuardian SUCCESS only; combined status zero contexts. Frontend Node tests, Angular build, dependency audit and Playwright **NOT RUN**. CI triggers/retries prohibited by current session instruction; no CI triggered.
+- **Delivery:** all changed paths remain frontend/docs/TASKS. No backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview for the branch.
+- **Remaining:** rendered responsive and RTL/LTR checks; authenticated OWNER/STAFF/two-tenant journeys; keyboard/screen-reader and physical Android/PWA; exact-head test/build/browser/dependency evidence; review of any future backend event values. Keep PR Draft.
+
+
+## T18 — exact workspace membership audit target — 2026-11-07
+
+- Matched the membership audit target label to the backend's actual `business_membership` target type for role changes and removals.
+- Added the emitted value to exhaustive bilingual target tests; generic membership alias retained for legacy values. Tests **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 exact source checkpoint — 39a24862637968145d7e93503db474771162c864 — 2026-11-07
+
+- **Delivery:** existing branch `master/t18-uiux-hardening-20261107`, PR #348 OPEN / DRAFT / UNMERGED. No duplicate branch or PR.
+- **Audit vocabulary cross-check:** compared all current backend AuditEvent and PlatformAdminAuditEvent action literals across operations, extended/core features, services, employee/payroll and platform-admin APIs. All 34 current action values and 17 emitted AuditEvent target types have bilingual mappings; unknown values retain raw fallback. Dedicated platform role history uses the same helper.
+- **Customer Statement:** all three current backend event types have bilingual labels; balances and event values are unchanged.
+- **Home:** shared page-level error/retry is the only dashboard failure alert; true-empty state is hidden while error exists.
+- **Static source review:** 16 forms, required controls accessible, form buttons have explicit types, no duplicate static IDs. Not rendered/browser acceptance.
+- **Tests:** source/filter/helper/feature-guide regression tests authored, including exhaustive audit action/target coverage. **NOT RUN**.
+- **Exact-head quality:** GitGuardian Security Checks only; combined status zero contexts. Frontend tests, Angular build, dependency audit, Playwright **NOT RUN**. CI trigger/retry prohibited by current session instructions.
+- **Scope:** frontend/docs/TASKS only; no backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview.
+- **Remaining:** run exact-head tests/build/browser/dependency validation when an authorized runner is available; responsive RTL/LTR, OWNER/STAFF/two-tenant, keyboard/screen-reader and physical Android/PWA acceptance. Keep PR Draft.
+
+
+## T18 P0 — defer Firebase runtime SDK from initial bundle — 2026-11-07
+
+- Replaced eager runtime imports of `@firebase/app` and `@firebase/auth` in `AuthService` with a cached dynamic-import promise invoked only after `runtime-config.json` validates.
+- Firebase app/auth functions remain the same; sign-in, sign-up, observer, token and sign-out behavior is unchanged. Failed SDK chunk loading clears the promise so a later retry can re-attempt the import.
+- Added source regression coverage for type-only imports, dynamic import boundaries, runtime-config ordering and retry reset.
+- **Bundle impact is UNVERIFIED until Angular build runs.** No bundle budget was raised. Tests/build NOT RUN; no CI trigger/retry; `[skip ci]`.
+
+
+## T18 P0 initial-bundle source checkpoint — 51542d513c97ff93c12dd5fa05183b9346c9a0c1 — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; 76 commits ahead / 0 behind; 26 changed paths.
+- **Source change:** `AuthService` no longer has runtime static imports from `@firebase/app` or `@firebase/auth`. It uses a cached dynamic-import promise only after `runtime-config.json` validates; the promise resets on import failure. Auth observer, sign-in, sign-up, token and sign-out APIs are unchanged.
+- **Regression:** added `auth-lazy-loading.spec.ts` to assert type-only imports, dynamic imports, config-before-SDK ordering and retry reset.
+- **Bundle result:** NOT MEASURED. Initial bundle reduction and Angular budget compliance are **UNVERIFIED** until an Angular production build and bundle analysis run. Budget was not raised.
+- **Exact-head checks:** GitGuardian SUCCESS only; combined status zero contexts. Node tests, Angular build, dependency audit and Playwright **NOT RUN**. CI triggers/retries remain prohibited by current session instruction.
+- **Scope:** 26 changed paths, frontend/tests/docs/TASKS only. No backend/API/database/schema/migration, financial/payroll semantics, production data, merge or deployment. No Vercel preview.
+- **Remaining:** run exact-head tests/build/bundle analysis/browser/tenant/device acceptance when an authorized runner is available; keep PR Draft.
+
+
+## T18 — fail-closed active tab after membership/platform-role refresh — 2026-11-07
+
+- **Finding:** the interactive workspace-switch path already revalidated the active destination after a role change, but the asynchronous `loadBusinesses()` membership/auth refresh path did not.
+- **Implementation:** commit `510c38d68e6190d377ef922bd8b92eef66885c75` updates the selected workspace/role, then applies the existing `canAccessTab()` policy via `setTab('overview')` before clearing/reloading workspace data. This also closes More through the existing `setTab()` behavior.
+- **Regression:** extended `app.component-template-safety.spec.ts` to assert role assignment → access revalidation → workspace reset ordering and the existing setTab guard.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- **Validation:** readback/static source review only; regression authored / **NOT RUN**. Full frontend tests, Angular build, browser role-transition, keyboard/screen-reader and authenticated OWNER/STAFF acceptance remain **NOT RUN**.
+- **Delivery boundary:** no API/backend/database/schema, new permission policy, financial/payroll semantics, production data, CI trigger/retry, merge or deployment. Commit uses `[skip ci]`.
+
+## T18 — Phase 2 code-level interaction foundation — 2026-11-07
+
+- **Existing work item:** continue master/t18-uiux-hardening-20261107 / PR #348 (OPEN / DRAFT / UNMERGED); no duplicate branch or PR.
+- **Source implementation checkpoint:** 44e913fd4dee773fda5b7d53b2ed83aa0968be3e (source commits 6cf233187d2f389ba637bfe500965ce6f8bc7325 and 44e913fd4dee773fda5b7d53b2ed83aa0968be3e).
+- **Files:** frontend/src/styles.css, frontend/src/app/design-tokens.spec.ts.
+- **Implemented:** added semantic control tokens for 44px minimum control height, 10px control radius and 12px inline padding; standardized shell buttons, primary/secondary states, text/select/textarea controls, shared card surfaces and table headers/hover; added Windows forced-colors focus fallback. Existing mobile 16px input rule is preserved to avoid browser auto-zoom.
+- **Regression:** added a design-token source test covering unique token definitions, control/surface selectors, forced-colors fallback and mobile input sizing.
+- **Static readback:** unique token names, required new token definitions, balanced CSS braces, expected style selectors and test presence all PASS. These are source checks only; Node tests, Angular build, dependency audit, Playwright and rendered acceptance are NOT RUN.
+- **Exact-head provider observation on source SHA 44e913f:** GitGuardian SUCCESS; CircleCI frontend-unit-tests, production-build, dependency-audit, browser-smoke and backend-accounting statuses PENDING at the observed read. GitHub Actions dependency/backend/frontend workflows were IN_PROGRESS and are non-authoritative for this repository. No manual CI trigger/retry was issued; the two source commits were not marked [skip ci], so provider automation started from the push. Do not use these runs as evidence until their exact-SHA outcomes are read and the approved CircleCI gate is confirmed. Subsequent documentation commits use [skip ci].
+- **Deployment:** Vercel returned zero preview deployments for this branch at the read time. No merge or production deployment.
+- **Design gate:** code-level interaction foundation work has started under the user-authorized T18 UI implementation. Figma Variables/component-library delivery and visual verification remain NOT RUN/BLOCKED by View-only access; this code work does not claim Figma Phase 2 acceptance.
+- **Boundaries:** no backend/API/database/schema/migration, product scope, financial/payroll/stock semantics or production data changes.
+- **Next:** continue the route-level visual consistency pass on existing frontend presentation files; keep PR Draft and preserve separate exact-head, rendered, authenticated, Android/PWA and screen-reader acceptance gates.
+
+## T18 — no-membership Platform Admin navigation revocation guard — 2026-11-07
+
+- **Finding:** when `loadBusinesses()` returned no workspace memberships, it selected Platform Admin if authorized but did not change the active tab when `platformAdminAvailable` was false. The admin component was still capability-gated, but the navigation state could retain a revoked destination.
+- **Fix:** the no-membership branch now preserves the Platform Admin destination only while the explicit capability is true; otherwise it routes to Overview through the existing `setTab()` path.
+- **Regression:** added source assertion for both the capability-present and capability-absent branches.
+- **Validation:** source/readback only; test authored / **NOT RUN**. Full Node tests, Angular build, authenticated Platform Admin revocation and browser/device acceptance remain NOT RUN. No CI trigger/retry; `[skip ci]`.
+- **Scope:** frontend navigation only; no authorization policy, API/backend, database/schema, business/financial/payroll behavior, production data, merge or deployment changes.
+
+## T18 — Phase 2 UX implementation follow-up — 2026-11-07
+
+- **Latest source/branch checkpoint:** 295ea51d9355e9fb5399398af04eb924dc1fb564 on master/t18-uiux-hardening-20261107; PR #348 OPEN / DRAFT / UNMERGED; 88 commits ahead / 0 behind main.
+- **Design-system implementation in this branch:** shared 44px control target, 10px control radius and semantic field spacing; primary/secondary controls; destructive secondary actions retain danger colors; semantic card/table surfaces; consistent page/section heading scale, filters, notices, chat messages and assistant suggestion surfaces; forced-colors focus fallback. Existing mobile 16px field sizing remains.
+- **Source regression:** design-tokens.spec.ts now covers the new interaction and route-level selectors. Thirteen test declarations are present; Node tests and Angular build remain NOT RUN.
+- **Static source review:** 96 unique --aba-* tokens; balanced CSS braces/parentheses; 13 color contrast pairs >= 4.5:1 (minimum 4.76:1) and focus contrast >= 4.82:1. These are static calculations, not rendered accessibility evidence.
+- **Latest exact-head quality:** combined GitHub status has zero contexts; GitGuardian SUCCESS only. No CircleCI result is attached to 295ea51. Current exact-head tests/build/dependency audit/Playwright are NOT RUN.
+- **Historical CircleCI candidate 44e913f:** frontend-production-build, dependency-audit, backend-container and backend-accounting SUCCESS; frontend-unit-tests and frontend-browser-smoke FAILURE. Failure output was inaccessible; failing test/root cause UNKNOWN. These checks predate subsequent source changes and do not validate current head. Semaphore failure is retired/non-authoritative.
+- **Automation boundary:** initial style/test commits lacked [skip ci] and automatically started CircleCI/GitHub Actions; no manual trigger or retry was issued. Subsequent source/docs commits use [skip ci]. GitHub Actions is non-authoritative and is not substituted for CircleCI.
+- **Delivery:** no Vercel preview deployment for this branch, no merge, no production deployment, and no backend/API/database/schema/migration, financial/payroll/stock semantic or production-data changes.
+- **Remaining:** run exact-head frontend tests/build/audit/Playwright only when an approved runner/policy permits; diagnose old CircleCI failures if logs become accessible; complete rendered RTL/LTR, authenticated role/tenant, physical Android/PWA, keyboard and screen-reader acceptance. Figma Variables/component-library review remains NOT RUN/BLOCKED by View-only access.
+
+## T18 — shared navigation handler for no-membership destinations — 2026-11-07
+
+- Refined the no-membership `loadBusinesses()` path so both the authorized Platform Admin destination and the revoked-capability Overview fallback call `setTab()` instead of assigning `tab` directly.
+- This preserves the existing destination/capability behavior while also applying the shared operations-message cleanup and mobile More dismissal.
+- Regression coverage now asserts both branches use the shared handler and that the handler closes More. Test authored / **NOT RUN**; no CI trigger/retry; `[skip ci]`.
+- No new authorization policy, backend/API/DB/schema, financial/payroll semantics, production writes, merge or deployment.
+
+## T18 — shared UI presentation continuation and phase-gate reconciliation — 2026-11-07
+
+- **Current exact source head:** 136b65a09b84bc3176a80a1f18bffffa8e22b94f on master/t18-uiux-hardening-20261107; PR #348 OPEN / DRAFT / UNMERGED; 97 commits ahead / 0 behind main; 28 changed paths.
+- **Presentation coverage added:** auth/setup cards, invoice disclosure/line rows, aging buckets, CSV import panel/errors, warning notices, helper/footnote contrast, install actions/shadows and reduced-motion behavior now use existing semantic tokens. Destructive secondary controls preserve danger treatment. Existing 16px mobile field font and 44px minimum control target remain.
+- **Regression coverage:** 16 test declarations in design-tokens.spec.ts, including control dimensions, route surfaces, destructive action semantics, authentication/forms, warning/import/install surfaces and reduced motion. Tests are authored / NOT RUN.
+- **Static source checks:** 96 unique semantic tokens; balanced CSS braces/parentheses; selector/token presence checks pass. Selected text contrast pairs meet >=4.5:1 and focus pairs >=4.82:1. These are source calculations, not rendered accessibility verification.
+- **Exact-head validation:** combined status has zero contexts; GitGuardian Security Checks SUCCESS only. CircleCI, frontend Node tests, Angular build, dependency audit and Playwright are NOT RUN on 136b65a. No preview deployment, merge or production deployment.
+- **Historical CI caveat:** CircleCI on older SHA 44e913f had frontend unit-test and browser-smoke failures; other substantive jobs passed. Logs/root cause UNKNOWN and this historical run does not validate current head. No manual CI trigger/retry; follow-up commits use [skip ci].
+- **Formal UX phase boundary:** the user explicitly authorized this bounded code-level T18 UI implementation on the existing branch. This is not formal Phase 1 acceptance, not completion of the UX workstream's Figma Variables/component library, and not Phase 3 high-fidelity screen/prototype/usability acceptance. Formal Phase 2/3 gate status remains NOT STARTED; Figma authoring and rendered/authenticated acceptance remain NOT RUN/BLOCKED.
+- **Scope boundary:** frontend presentation/styles/tests and T18 ledger only; no new routes/features, API/backend/database/schema/migration, financial/payroll/stock semantics, production data, merge or deployment.
+- **Next:** continue safe source-level UX/accessibility review; obtain authorized runner and explicit CI-freeze resolution before exact-head tests/build/browser validation; complete RTL/LTR, OWNER/STAFF/two-tenant, responsive, Android/PWA, keyboard and screen-reader acceptance.
+## T18 — notice semantics and forced-colors disclosure focus — 2026-11-07
+
+- **Current source head before this ledger update:** `d92e08d2c2bc1b23156835efec2479db4910c9b7`; existing branch `master/t18-uiux-hardening-20261107`, PR #348 OPEN / DRAFT / UNMERGED.
+- **Notice hierarchy:** generic `.notice` surfaces and install-help guidance use informational tokens, `.notice.warning-notice` retains warning tokens, and the install CTA remains success-accented. This removes a misleading success-green treatment from report limitations and data-integrity explanatory copy.
+- **Keyboard/high-contrast:** Windows forced-colors focus fallback now includes native `summary:focus-visible`, so the invoice disclosure trigger retains a visible system-color outline.
+- **Regression coverage:** two new source tests cover generic/info vs warning semantic separation and disclosure focus in forced-colors mode. `design-tokens.spec.ts` now contains 19 test declarations; `confirmation-dialog.spec.ts` contains 3.
+- **Static readback:** 97 unique `--aba-*` tokens; all CSS variable references resolve; CSS braces balanced; selectors and test declarations present. Static checks only; Node tests, Angular build, dependency audit, Playwright and rendered screenshots are NOT RUN.
+- **Delivery:** commits use `[skip ci]`; no CI trigger/retry, preview, merge or production deployment. No API/backend/DB/schema/migration, permission, financial/payroll/stock semantics or production data changes.
+- **Next:** continue route-level presentation and accessibility review; exact-head automated and rendered acceptance remain gated by the active CI trigger freeze and unavailable interactive device/browser runner.
+
+
+## T18 — confirmation and install-help semantic refinement — 2026-11-07
+
+- Generic explanatory notices and install-help guidance now use informational blue tokens; warning notices remain amber, install CTA remains success-accented, and destructive controls retain danger treatment.
+- Shared confirmation dialog now references defined warning/danger semantic tokens rather than undefined token names with fallback-only colors. Warning and error copy use their corresponding semantic text colors.
+- Added a forced-colors focus fallback for the dialog container when focus trapping has no enabled action button.
+- Regression: existing design-token notice test updated to assert informational install-help; confirmation-dialog.spec.ts adds a semantic-token/forced-colors source test. All are authored / NOT RUN.
+- Source checks passed before write: no remaining undefined warning/danger token names in the dialog, semantic selectors present, balanced component CSS.
+- No backend/API/domain/financial/payroll/stock semantics changed; no CI trigger/retry, merge, preview or production deployment.
+
+
+## T18 — preserve quick-access card sizing under global control normalization — 2026-11-07
+
+- Source review found the global 44px button / 10px radius normalization also matched the shared quick-access card button, overriding its intended 104px card height and card-radius styling.
+- Excluded `.aba-quick-access` from the global control normalization so the shared navigation card retains its own 104px minimum height and card radius while normal action buttons keep the 44px target.
+- Added a source regression asserting both the exclusion and the component-specific dimensions.
+- Test authored / NOT RUN; no CI trigger/retry, merge or deployment. No behavior, route, role, API or domain semantics changed.
+
+
+## T18 — responsive shared section-header hierarchy — 2026-11-07
+
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `290c3d56fc285719b3ae4a4ef4bf47c35a8b2e86`; existing PR #348 remains OPEN / DRAFT / UNMERGED. No new branch or PR created.
+- **Finding:** the shared section heading and projected count/action controls shared a single horizontal flex row at narrow widths. Long localized or dynamic titles could compete with controls for available width; this was a source-level layout risk, not a rendered defect claim.
+- **Implementation:** long h2/h3 titles now use safe wrapping; at 600px and below the shared header uses a single-column layout with controls on a full-width row aligned to the logical start. RTL/LTR uses logical alignment; tablet/desktop layout is unchanged.
+- **Files:** `frontend/src/app/shared/ui/aba-section-header.component.ts`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Regression:** one focused source test declaration added; authored / **NOT RUN**. Frontend Node tests, Angular build, dependency audit, Playwright, rendered responsive/RTL/LTR and assistive-technology checks remain **NOT RUN**.
+- **CI/release:** commit message uses `[skip ci]`; no CircleCI trigger/retry, replacement CI, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
+- **Next:** continue source audit of shared component and nested-page responsive constraints; run exact-head validation only after the CI trigger/retry freeze is explicitly lifted and an approved runner/browser is available.
+
+
+## T18 — keyboard-accessible horizontally scrollable tables — 2026-11-07
+
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `8df911cfbd477261167d3bde28b4f8bd5f0ba8b5`; PR #348 remains OPEN / DRAFT / UNMERGED.
+- **Finding:** wide data tables use horizontal overflow on narrow screens, but their scroll containers were not focusable or exposed as named regions. Keyboard users could not reliably reach the horizontal scroll surface.
+- **Implementation:** the two workspace table wrappers and six Platform Admin table wrappers now use `role="region"`, `tabindex="0"` and localized accessible names. Shared focus styling includes the table region and Windows forced-colors fallback.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/platform-admin.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/styles.css`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Regression:** source assertions cover all table wrappers in both templates and shared focus/forced-colors styling; authored / **NOT RUN**. Frontend Node tests, Angular build, dependency audit, Playwright, keyboard browser and screen-reader checks remain **NOT RUN**.
+- **CI/release:** commit uses `[skip ci]`; no CI trigger/retry, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
+- **Next:** continue shared accessibility/responsive source review; obtain authorized runner and CI-freeze resolution for exact-head automated and rendered acceptance.
+
+
+## T18 — keyboard access for AI conversation history — 2026-11-07
+
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `657cce352b25f168ae4d0747674296144f107b74`; PR #348 remains OPEN / DRAFT / UNMERGED.
+- **Finding:** the assistant conversation history is a bounded `overflow:auto` region. It had a polite live announcement but no log role, accessible name or keyboard focus target.
+- **Implementation:** the history now exposes `role="log"`, `tabindex="0"` and a localized Arabic/English name. Shared focus indicators cover chat history and wide tables, including forced-colors mode.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/styles.css`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Regression:** source assertions added / **NOT RUN**. Full Node tests, Angular build, Playwright, keyboard-only browser and screen-reader acceptance remain **NOT RUN**.
+- **CI/release:** `[skip ci]`; no CI trigger/retry, merge, preview/production deployment, backend/API/database/schema/migration, financial/payroll/stock semantics or production data change.
+
+
+## T18 — shared app-shell semantic color token consolidation — 2026-11-07
+
+- Replaced 64 repeated hard-coded color declarations across the App Shell with existing semantic tokens for inverse/tertiary/muted/secondary/navigation text, primary and raised navigation surfaces, subtle/white surfaces, and subtle borders. Existing fallback colors are retained; rendered colors are unchanged.
+- Added a source regression to verify the shell uses the shared tokens and no longer repeats the targeted raw color values.
+- Static source checks: 97 unique design tokens; all shell token references resolve except the intentionally runtime-set `--aba-keyboard-inset`; CSS braces remain balanced. `design-tokens.spec.ts` now has 22 test declarations.
+- Tests/build/dependency audit/Playwright/rendered RTL/LTR and assistive-technology checks remain NOT RUN. Commit uses `[skip ci]`; no CI trigger/retry, preview, merge or deployment.
+- Source commit: `dba869fb6970ecf85839081f11ff86dbe507adf3`; existing PR #348 remains OPEN / DRAFT / UNMERGED.
+
+
+## T18 — mobile navigation dock token alignment — 2026-11-07
+
+- Replaced seven repeated mobile dock color declarations with existing semantic navigation tokens for dock border/glass surface, navigation text and active icon accent. Fallback values preserve the existing visual palette.
+- Added a source regression for the mobile dock's shared navigation token usage.
+- `design-tokens.spec.ts` now has 23 test declarations. Tests/build/Playwright/rendered responsive and RTL/LTR acceptance remain NOT RUN.
+- Source commit: `001c5607ebde9ddb55a0699fef222c692729e2b8`; existing PR #348 remains OPEN / DRAFT / UNMERGED. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — feature-surface design token alignment — 2026-11-07
+
+- Platform Admin now maps its local ink/muted/line/panel/teal/background variables onto the shared semantic tokens, defines its previously missing surface-soft variable, and uses the shared focus ring. Existing permission boundaries and behavior are unchanged. Two source regression declarations cover the token contract.
+- Employee & Payroll component-local styles now consume shared tokens for surfaces, controls, typography, primary actions, success/warning/error/info states and 44px action targets. The change is presentation-only; payroll privacy, approval, payout and accounting behavior are untouched.
+- Readback: no unresolved shared token references in Platform Admin or Employee & Payroll; Payroll component CSS braces balanced; warning and success surfaces use their distinct semantic tokens. Source test declarations: Platform Admin 2, Employee/Payroll 10, App Shell design tokens 23. All authored / NOT RUN.
+- Implementation commits: Platform Admin `0a595a3e4336dcc4501495a2ace59cc755beae3d` (test correction `c8fcbe774fe1710c21cf7eb80a664a1113cb425c`); Payroll `5843b4e6ccceea2d941e47f21ef8c4c8dc7663de` and corrective semantic-surface commit `70876d61f2624d67b7fa1ce395d4429f45f1fe01`.
+- No CI trigger/retry, merge, preview or deployment. Node tests, Angular build, dependency audit, Playwright, RTL/LTR browser rendering and screen-reader acceptance remain NOT RUN.
+
+
+## T18 — feature status semantics and mobile section hierarchy — 2026-11-07
+
+- Global notice surfaces now distinguish informational default, success, danger/error, and warning variants. Platform Admin's existing `notice success/error/warn` states are preserved by higher-specificity shared token rules; Payroll success messages now declare `success-notice`, while its warning remains warning-colored.
+- Employee & Payroll section headings stack into one column at 600px and below; count badges align to the logical start. Platform Admin section headings/actions also stack at 600px and below.
+- Source regressions: App Shell design-token suite 23 declarations, Platform Admin design-token suite 4, Employee/Payroll UI suite 11. Authored / NOT RUN.
+- Static readback: notice variant selectors present, Payroll success/warning token declarations correct, mobile heading rules present, component CSS braces balanced. No rendered browser/device claim.
+- Source commit: `27a0ced47d44bccbcb0cc6bef0347a64804db917`; existing PR #348 OPEN / DRAFT / UNMERGED. CI trigger/retry, preview, merge and deployment remain NOT RUN.
+
+
+## T18 — Platform Admin status palette consolidation — 2026-11-07
+
+- Platform Admin status chips, runtime health indicators, notices, caution blocks, data notes, read-only badges and empty-state accents now use shared success/danger/warning/info/primary semantic tokens with preserved fallback colors.
+- Added a source regression covering the shared status palette. Platform Admin design-token suite now contains 5 test declarations.
+- Global notice variants continue to distinguish generic info, success, error/danger and warning states across App Shell, Platform Admin and Payroll.
+- Tests/build/browser/device/screen-reader acceptance remain NOT RUN. No role or permission behavior changed; no CI trigger/retry, merge, preview or deployment.
+- Source commit: `8b5e1929d09dcb74fdcb8b3ca899104ec0d012bd`; existing PR #348 OPEN / DRAFT / UNMERGED.
+
+
+## T18 — empty and filtered states for admin directories — 2026-11-07
+
+- Platform Admin user directory now distinguishes an empty account directory from an exact-email/UID search miss.
+- Platform Admin workspace directory now distinguishes filtered no-match results, an out-of-range page, and a genuinely empty directory; copy is bilingual.
+- Payroll employee search now distinguishes an empty employee directory from no matching search results.
+- Source regressions: Platform Admin user-management suite 8 declarations; Employee/Payroll suite 12; App Shell design-token suite 23. All authored / NOT RUN.
+- No API, pagination, search, role or data semantics changed; only empty-state messaging. No CI trigger/retry, preview, merge or deployment.
+- Source commit: `1597288d1f21622341aa232bf5298f366adb275f`; existing PR #348 OPEN / DRAFT / UNMERGED.
+
+
+## T18 — Mobile Hybrid Modern app header extraction and implementation — 2026-11-07
+
+- **Notion source:** accepted design direction in Master Task Plan, “Mobile dashboard top-section redesign — Hybrid Modern handoff (2026-11-07)”; detailed structure and acceptance in UX/UI Redesign Workstream, “Mobile Dashboard Top Section — Hybrid Modern Direction (2026-11-07)”. The architecture note recommends a small reusable boundary, not a broad AppShell refactor.
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `34a7662da8a1d0b3a55cee0168c645c4ac18ee2f`; existing PR #348 remains OPEN / DRAFT / UNMERGED, base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Implementation commits:** `34a7662da8a1d0b3a55cee0168c645c4ac18ee2f` — initial mobile header; `276cde861f5283a94aaec1fd6633bebfd8e865e3` — safe-area and polite workspace announcement; `4bd5585df6d7ddbfdf543d677122ec4dd48823ab` — root-shell conditional install CTA spacing and safe-area handling, removing duplicate component-local top gap.
+- **Files:** `frontend/src/app/app.component.ts`; new `frontend/src/app/shared/ui/aba-mobile-app-header.component.ts`; new `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`; new `frontend/src/app/mobile-app-header.spec.ts`.
+- **Implementation:** extracted a mobile-only standalone header with brand/app name, build-generated UI version, workspace context and existing selector for multiple workspaces, current page title, Home-only concise greeting, notification/assistant shortcuts and an account menu that reuses language/sign-out actions. The old mobile page-heading markup and duplicate workspace bar are replaced on mobile only; desktop shell remains unchanged. The root shell, not the child header, manages the existing install CTA: top spacing is conditional on browser install state and install-help visibility, and safe-area insets are applied once to avoid double gaps.
+- **Contract decision:** current API `NotificationRecord` exposes queue `status` but no read/unread state. The design handoff requested an unread indicator, but adding a badge from queue status would be misleading; therefore the notification shortcut is present without an unread count until a truthful API field exists.
+- **Regression:** five source-level test declarations authored in `mobile-app-header.spec.ts`, discovered by the existing top-level `src/app/*.spec.ts` script glob. Static source readback assertions 12/12 PASS on implementation commit `4bd5585df6d7ddbfdf543d677122ec4dd48823ab` for component import/rendering, legacy heading removal, mobile-only workspace-bar hiding, dynamic version, workspace selector/event mapping, keyboard account-menu handling, RTL/overflow, shell-managed safe-area/install spacing, polite workspace announcement and notification-contract honesty. Node test suite / **NOT RUN**.
+- **Validation:** GitGuardian Security Checks SUCCESS on implementation commit `4bd5585df6d7ddbfdf543d677122ec4dd48823ab`; documentation-only branch head `432c85765f95f696bd9d15fca587a94050b8e99b` currently has no check runs and combined status PENDING with zero contexts. Angular build, dependency audit, Playwright, rendered 360/390/412px RTL/LTR, install prompt/help overlap, real workspace switching, screen-reader and screenshot comparison **NOT RUN**. No preview deployment.
+- **CI policy conflict:** repository `TASKS.md` contains a 2026-11-06 “CircleCI freeze lifted” note, while the active project-session instruction for this execution still forbids CI triggers/retries. The stricter active instruction was followed; no CI was triggered.
+- **Scope:** this header slice changes frontend presentation and source tests only. No route, permission, API, backend, database/schema/migration, financial/payroll/stock semantics or production data change. The separate Home / Overview dashboard implementation is recorded in the following T18 section. No merge or deployment.
+- **Next:** continue the Home / Overview dashboard source-level responsive/accessibility review and complete rendered acceptance when an approved runner/browser is available.
+
+
+## T18 — Home / Overview Dashboard source-backed hierarchy refinement — 2026-11-07 — source evidence through `9e41a9468721fca0f34614a62ab6ffb80704c209`
+
+- **Design source:** accepted P1 Home / Dashboard UX direction and canonical `UX-SPEC-01`; current-main API-to-UI contract reconciliation confirms four cards, superseding the earlier three-card exploratory concept.
+- **Starting branch/head:** `master/t18-uiux-hardening-20261107` / `1fd14f0a82571f5fdc43abe4472e2664e9cd5626`; existing PR #348 remains OPEN / DRAFT / UNMERGED, base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Implementation commits:** `b5f6f59b9a65d1a7b5fa0efa52d0bb51b4bb4d82` — Home period/source-basis hierarchy, four cards, skeletons, shared metric-card projected styles and seven source regression declarations; `1fd14f0a82571f5fdc43abe4472e2664e9cd5626` — removed technical “no outstanding count” copy; `8c3acefc15bb02f1421e5552ddc63b8dde7214c8` — compacted quick access and collapsed the module directory; `5d033a678e7f00e4c287330a6716e41426ec49c5` — preserved semantic heading structure; `0b98a5f6d42114b02dac340fb5639436dbefc887` — isolated amounts/currency codes/counts for RTL; `5cf297b666eb28434c1f49e6e2be05c2e9eae8f3` — added named metric groups; `58e19236c11a4cb7bfcad936158f5217c5c2980e` — replaced currency-less empty-state zeroes with a neutral dash; `386825f57713c54921c32cef601e8059d6bfc61d` — added visible Arabic/English metric labels and separated the label projection from values; `5fede078d598444067f1f2213162dfade0cbfed7` — strengthened source assertions for label/value projection and empty-state currency semantics; `9e41a9468721fca0f34614a62ab6ffb80704c209` — explicitly isolated business-local start/end dates LTR inside the RTL period strip.
+- **Files:** `frontend/src/app/app.component.ts`; `frontend/src/app/shared/ui/aba-metric-card.component.ts`; `frontend/src/app/home-dashboard.spec.ts`; shared metric-card component contract remains unchanged.
+- **Source evidence:** current backend dashboard endpoint defaults to the last 30 business-local calendar days, returns start/end dates and timezone, and returns four arrays: `invoiced_sales`, `collected_payments`, `expenses`, `outstanding_balances`. Invoiced sales use invoice issue date; collected payments use payment received time; expenses use incurred time; outstanding balances are issued-invoice totals less recorded allocations, grouped by currency and clamped at zero. Outstanding balances have no count field. The frontend does not send date query parameters.
+- **Implementation:** removed the large decorative Home hero; added a compact period/date/timezone strip; preserved the four separate currency-safe metric groups; added source timestamp basis notes; wrapped amounts/currency codes/counts and the period's start/end dates in explicit LTR bidi isolation; gave each card a visible localized Arabic/English label in the dedicated label projection, separate from the amount/count/source-basis value projection; changed empty currency groups from an unqualified `0` to a neutral dash because no currency is available to qualify that amount; strengthened the caveat to distinguish invoice value from collections and avoid net-profit claims; added accessible non-data loading skeletons; changed the page title to “الرئيسية” / “Overview”. The five role-filtered quick-access destinations remain; the complete role-filtered module directory is now a native keyboard-accessible disclosure collapsed by default. Quick access is two columns at 390/412px and one column at 360px; the trust note uses a neutral surface.
+- **Deliberate omissions:** no attention/pending-work panel, trend chart, receivables aging or recent activity because the current Dashboard API response does not provide those fields/series. No invented outstanding count or mixed-currency totals.
+- **Regression:** 11 source-level declarations authored in `home-dashboard.spec.ts`; static source readback assertions 27/27 PASS on source head `9e41a9468721fca0f34614a62ab6ffb80704c209`, including four visible localized labels, four named groups, four LTR-isolated amount/currency pairs, three isolated counts, and neutral empty-state placeholders. These are readback assertions, not Node test execution. Node test suite / **NOT RUN**.
+- **Validation:** Angular build, dependency audit, Playwright, rendered desktop/tablet/360/390/412 RTL/LTR, multi-currency overflow, OWNER/STAFF/second-tenant, keyboard/screen-reader, 200% zoom and physical Android/PWA acceptance **NOT RUN**. No Vercel preview deployment.
+- **CI policy conflict:** repository `TASKS.md` contains a 2026-11-06 note that CircleCI freeze was lifted, but the active project-session instruction for this execution forbids CI triggers/retries. The stricter active instruction was followed; no CI was triggered.
+- **Scope:** frontend presentation/tests/docs only. No API/backend/database/schema/migration, financial/tax/FX/GL/COGS/AP/settlement/payroll/stock semantics, permission or production-data changes. No merge/deployment.
+- **Next:** continue source-level review of Home plus the mobile Hybrid Modern header; then request the approved exact-head test/build/browser validation only after the runner and CI/session restrictions are resolved.
+
+- **Ownership:** user explicitly confirmed on 2026-11-07 that no other writer is active. This conversation is the sole active writer for branch `master/t18-uiux-hardening-20261107` / PR #348. Earlier manual-claim/released notes about an unknown concurrent writer are historical and superseded; no atomic lease is claimed.
+- **Merge/deployment coupling:** Vercel Git integration created production-target hooks on main SHA `8f2e326fce39fe45f4aebe0f1820576e45b75483` for both Web and API; both were CANCELED by Ignore Build Step. On frontend-only main SHA `c5fe115daa72e92b4f814ee502405225e1b3dc79`, Web was READY while API was CANCELED. This branch changes frontend paths only; merging to main is expected to trigger a Web production deployment, while API is expected to be ignored based on the prior frontend-only evidence. This is not merge/deploy authorization; exact project ignore settings remain not directly exposed.
+- **CI policy reconciliation:** repository `TASKS.md` records a 2026-11-06 CircleCI freeze-lift note, but the active project-session instruction for this execution forbids CI triggers/retries. The stricter active instruction was followed; no CI was triggered.
+
+## T18 — Mobile Hybrid Modern header semantic-token alignment — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `ddd2895939e3afe4f2b559970c9ad029c4c7e925` (semantic-token CSS) and `7d5015943549d895763e0540a8fd5ab04a57f544` (regression assertion correction); changed `frontend/src/app/shared/ui/aba-mobile-app-header.component.css` and `frontend/src/app/mobile-app-header.spec.ts`.
+- **Implementation:** mobile header brand, workspace context, version pill, greeting and assistant shortcut now consume the shared semantic primary/info/surface tokens; account popover uses shared shadow and dropdown-layer tokens. This removes the header's duplicate hard-coded blue palette without changing its layout, navigation, workspace data, permissions, or interactions.
+- **Regression authored:** `mobile-app-header.spec.ts` now asserts semantic token usage and rejects hard-coded blue declarations while allowing semantic-token fallback values. This test is authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated to reflect token usage and test coverage; source evidence baseline refreshed through `7d5015943549d895763e0540a8fd5ab04a57f544`.
+- **Notion review:** the UX Workstream and T18 records confirm the mobile-only Hybrid Modern top-section direction and its current implementation. No distinct pending suggestion text was exposed in page comments; the connected Notion suggested-edit status is `upgrade_required`, so no unseen suggestion is treated as reviewed or approved.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered 360/390/412 RTL/LTR, safe-area/install prompt, keyboard, screen-reader and physical Android/PWA checks **NOT RUN**. No CI trigger/retry; code commits carry `[skip ci]`. No preview, merge or deployment.
+- **Next:** continue Home / Overview source-level responsive/accessibility review as the next priority. Keep the four API-backed currency-separated metrics and do not invent trends, pending-work, aging or recent-activity data. Rendered acceptance remains blocked by the unavailable approved runner/browser.
+
+
+## T18 — Home reporting-period loading hierarchy — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; main base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `d30ade7a03870dcb19e6d7cf459b28f4286bf5c0` added a compact non-data reporting-period skeleton to the Home loading branch; `bbd738e33a16610584b2313ce35e28df772a7dc3` localized its visible labels in Arabic/English; `d8633aecf7ab6ea0c82e6eedc84bcac9575a3f00` added the Home regression declaration.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** the Home period/date/timezone hierarchy now retains its shape while the Dashboard response is loading, reducing top-of-page layout shift. Skeleton is `aria-hidden`; the existing localized loading state remains the screen-reader announcement. No dates, timezone, metrics or business data are fabricated.
+- **Regression:** Home spec now has 12 source-test declarations. Static source readback on the code head verified the bilingual skeleton, loading-branch placement, CSS sizing, four named KPI cards and omission of unsupported data panels (9 focused assertions). This is not Node test execution.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `eab53aa19d822769de26c223f49d977db363fb0a`.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered responsive/RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry; commits use `[skip ci]`. No preview, merge or deployment.
+- **Next:** continue Home / Overview source review; rendered acceptance requires an approved online runner/browser. Keep the four API-backed currency-separated metrics and avoid unsupported trends, pending-work, aging or recent-activity data.
+
+
+## T18 — Home workspace-switch metric isolation regression — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; main base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commit:** `f6f621188796ca7dca517d50694b5ca849767ab0`; added a Home regression declaration in `frontend/src/app/home-dashboard.spec.ts`.
+- **Coverage:** asserts workspace switching calls the shared reset, the reset clears `dashboard` and invalidates the workspace-load generation, and `loadWorkspaceData()` fences stale responses against the current workspace ID before writing Home metrics. This protects the four tenant-scoped KPI groups from stale cross-workspace display.
+- **Existing implementation verified:** `switchBusiness()` resolves the destination workspace/role, clears workspace-scoped state, then reloads. The load path rejects responses whose request generation or current workspace no longer matches.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` refreshed through `9d7e927147a30c960fb98dd6b649d2a81762b403`; Home spec now has 13 source-test declarations.
+- **Validation:** source-level implementation review only; the new Node regression is authored / **NOT RUN**. Angular build, dependency audit, Playwright, rendered RTL/LTR, role/tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue the Home / Overview source-level responsive and accessibility audit. Exact-head executable/rendered acceptance remains blocked by the offline approved runner and no-CI-trigger restriction.
+
+
+## T18 — Home metric detail readability — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `37d6bb4a32d176e33f0527a433a418f5e5d650d3` adjusts Home reporting-period metadata, KPI count/source-basis copy and the data-integrity note to 12px with readable line-height; `f4b95fa773ec99f962877ff7e161c3e1267471f1` adds a source regression declaration.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** improves legibility of secondary but decision-relevant Home context without changing the compact hierarchy, KPI values, API contract, currency treatment or financial meaning. The Home-only selector overrides the global 10px metric-small default for count/basis content; the reporting period and trust caveat also use 12px.
+- **Regression:** Home spec now has 14 source-test declarations and asserts the three 12px readability rules. Authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `5ed677e1094952c9639f0f84b2dd443597c758c1`.
+- **Static source readback:** 16 focused assertions PASS on exact code head `f4b95fa773ec99f962877ff7e161c3e1267471f1`, covering 4 source-backed KPI cards, currency isolation, 4/2/1 responsive hierarchy, readable detail copy, loading skeleton, no unsupported panels, tenant reset/stale-response fence and mobile-header semantic tokens. This is not Node test execution.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry; commits use `[skip ci]`. No preview, merge or deployment.
+- **Next:** continue the Home / Overview source review and verify the latest exact-head status/provider access. Figma visual authoring remains blocked by Starter + View seat; suggested-edit discovery on the UX Workstream returns `upgrade_required`, so no unseen suggestion is treated as reviewed.
+
+
+## T18 — Home semantic section heading — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `ec3e806cd15d99372831963e3357aa5169ba27f6` replaces the visual-only Home Business Summary eyebrow with a real level-two heading in both ready and loading layouts; `f5ff4eccb77438e94349f1f8f6476c85832671f8` adds heading-hierarchy coverage; `12a106d5ab40df7b02fba72112cf0966b9fb437c` corrects the regression to assert both ready and skeleton headings.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** adds a navigable H2 under the page H1, making the Home reporting/metric section discoverable through heading navigation while keeping the compact period strip and its loading skeleton structurally consistent.
+- **Regression:** Home spec now has 15 source-test declarations; new declaration asserts both ready and loading headings and the 14px semantic heading style. Authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `580704a107b10a451d2b0cded20d76f0f1079cc7` (evidence-baseline normalization after the semantic-heading row update).
+- **Validation:** source readback only; no Node test/build/browser execution. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, 360/390/tablet/desktop, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue Home source/accessibility audit and re-read exact-head status; do not add charts/alerts/activity/aging without a verified API source and approved metric definition.
+
+
+## T18 — Home loading-heading regression alignment — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Pre-edit head:** `5493306d5859a6614ec4c51891c75dde682a5efd`.
+- **Code commit:** `bb7f079e84b30e9a1ad2eb2b2ee2464ab386b2ef` updates the Home loading-skeleton source regression to expect the current bilingual heading label `Business summary` (matching the ready state) and adds an explicit stale-copy guard.
+- **Files:** `frontend/src/app/home-dashboard.spec.ts`.
+- **Finding:** the implementation had correctly changed the old visual eyebrow to a semantic H2, but the pre-existing loading-branch assertion still expected the old uppercase English label. The assertion was stale and would fail if executed. This fix aligns the test with the actual localized UI contract; it does not change runtime behavior.
+- **Source readback:** 16 focused assertions PASS on code head `bb7f079e84b30e9a1ad2eb2b2ee2464ab386b2ef`: four KPI groups, distinct localized labels, currency-isolated amounts, no invented outstanding count, ready/loading bilingual heading, no stale heading copy, semantic heading tests, mobile two-column / narrow one-column quick access, and tenant stale-response fence. This is static source inspection only.
+- **Regression suite:** `home-dashboard.spec.ts` now contains 16 authored test declarations. Node execution **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `cb16f98992cec846e9c03842a86e8ad16545a982`.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, OWNER/STAFF/two-tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. Desktop Commander remains Offline; no CI trigger/retry. No preview, merge or deployment.
+- **Next:** continue Home source review; preserve only the four source-backed currency-separated KPI groups and keep unsupported charts/alerts/activity/aging out. Rendered acceptance remains blocked by the approved runner/browser availability.
+
+
+## T18 — Home loading announcement deduplication — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `283d19b4ba5f05e396f3ee32c328310df18deff0` removes the Home-specific loading live-status component while preserving the visual period/KPI skeleton; `c1bd1c62a25123d6eb5b008ea6d9d5b4a35a5cde` updates the Home loading-state regression to assert the single shared workspace-level loading announcement and adds a dedicated duplicate-announcement guard.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX/accessibility rationale:** the app shell already announces workspace loading once. The Home branch previously emitted a second live loading status at the same time. The Home skeleton remains visible but aria-hidden, while the shared status component is the sole announcement; error/retry remains handled by the existing shell-level state.
+- **Regression:** Home spec now has 17 source-test declarations; authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `30b410a9909afb0eef5f9c8383b54d5d6b229bda`.
+- **Static source readback:** 12 focused assertions PASS on code head `c1bd1c62a25123d6eb5b008ea6d9d5b4a35a5cde`: exactly one shared loading status, no Home duplicate, period/KPI skeleton retained, 4 named KPI groups, localized semantic heading, quick access + role-filtered module directory, 12px detail copy, tenant stale-response fence, and 17 Home test declarations. Static inspection only; not test execution.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, OWNER/STAFF/two-tenant browser journeys, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. Desktop Commander remains Offline; current session instruction prohibits CI triggers/retries. No preview, merge or deployment.
+- **Next:** continue the Home responsive/accessibility source audit; preserve the current API-only metric contract and do not invent attention, trends, aging or recent activity. Keep PR Draft and do not merge/deploy without separate authorization.
+
+
+## T18 — Mobile header 44px touch-target alignment — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `edd4442eb4266ecccc3be3836c694c4f3e52be4c` sets the mobile brand action, workspace selector and assistant shortcut to a 44px minimum height; `1bf7413c015e05f2e59873ce048bf9ff6b40af66` adds source regressions for all interactive header target sizes.
+- **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/app/mobile-app-header.spec.ts`.
+- **UX rationale:** notification/profile controls and account-menu actions were already 44px, while the brand button inherited 38px and workspace/assistant controls were 40px. Aligning the remaining controls removes inconsistent touch-target sizing without changing behavior or navigation.
+- **Regression:** mobile header spec now has 7 source-test declarations; authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` row and evidence baseline normalized through `01f201eed15852a6b159bbf1181656b02845f1a5`.
+- **Static readback:** 5 focused source assertions PASS for brand, workspace selector, assistant shortcut, notification/profile and account-menu targets. This is not browser/device testing.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR at 360/390/412/tablet/desktop, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue the Home / header source audit and preserve the accepted Hybrid Modern layout; verify rendered touch targets and safe-area behavior on a real mobile browser when an authorized runner/device is available.
+
+
+## T18 — Home module disclosure touch target — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Code commits:** `70109da62ee05b7484075e06c4c650d290dcdf41` gives the native Home All Modules disclosure summary a 44px minimum touch target; `3d8c84ec6609f48aa2041cb22e13335196bc98ff` guards that minimum in the Home regression spec.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/app/home-dashboard.spec.ts`.
+- **UX rationale:** the collapsed module-directory summary is the primary tap/click target for revealing the full role-filtered module list. It previously relied on text + a 32px decorative toggle for its height; the new 44px minimum aligns it with the header's touch-target baseline without changing native `details/summary` keyboard behavior.
+- **Regression:** Home spec now has 17 source-test declarations; authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `6f1600f01f7d824140cc3ea613ca95600543c903`.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR and 360/390/tablet/desktop touch verification remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete source-only Home review and exact-head reconciliation; physical/browser acceptance remains dependent on an authorized online runner/device.
+
+
+## T18 — Release impact preflight — 2026-11-07
+
+- **Candidate:** `fe1cbbb9669b0052fc06f179184717c9e893f684`; branch `master/t18-uiux-hardening-20261107`; PR #348 OPEN / DRAFT / UNMERGED; base/main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; 202 commits ahead / 0 behind; 35 changed paths.
+- **Scope:** all PR paths are frontend source/tests plus `TASKS.md` and UX inventory. No backend/API/database/schema/migration, financial/payroll/stock semantics or production data changes.
+- **Vercel impact:** both Web and API projects are Git-linked. Current latest main SHA `8f2e326fce39fe45f4aebe0f1820576e45b75483` generated production-target Git hooks for both; both were CANCELED by Ignore Build Step. Historical frontend-only main SHA `c5fe115daa72e92b4f814ee502405225e1b3dc79` recorded Web READY and API CANCELED. A merge of this frontend-only PR may auto-trigger Web production deployment; API is expected to be ignored based on historical evidence, but current exact ignore settings are not exposed. This is a release-impact warning, not authorization.
+- **Preview:** branch-filtered Vercel Web/API deployment lists both return zero; no branch preview exists.
+- **Exact-head checks:** combined GitHub status zero contexts; no workflow runs or PR reviews. NOT PASS. Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain NOT RUN. Desktop Commander is Offline.
+- **Gates:** active session instruction prohibits CI trigger/retry. No merge or production deployment authorization. Keep PR Draft. If merge is later authorized, disclose possible automatic Web production deployment and obtain the separate deployment decision before merge.
+
+
+## T18 — Mobile page-title live announcement regression — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** the old mobile page heading had a polite live announcement; after the page heading moved into `AbaMobileAppHeaderComponent`, the extracted `h1` no longer announced destination changes. This was a source-level accessibility regression, not a reproduced screen-reader incident.
+- **Fix:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.ts` now marks the dynamic page-title `h1` as `aria-live="polite" aria-atomic="true"`; no focus movement or navigation behavior changed.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` adds the explicit page-title announcement guard. Header spec now has 8 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the behavior and source/test baseline through `f5e6ba6feb8684effa93e6ece73c07707b7bbe85`.
+- **Static readback:** 4 focused source assertions PASS (dynamic h1 live attributes, exact regression assertion, header test count, inventory evidence/count). This is static inspection, not execution.
+- **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader, responsive 360/390/412px and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue Home source review; then exact-head Candidate Ready packet refresh without promoting NOT RUN checks.
+
+
+## T18 — Mobile account-menu sibling-action dismissal — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** the account-menu outside-pointer handler treated the entire header host as an inside click. Pressing another header action (assistant, notifications, brand or workspace selector) therefore left the account popover open because those sibling controls are inside the same host.
+- **Fix:** `AbaMobileAppHeaderComponent.closeProfileMenuOnOutsidePointer()` now preserves the menu only for pointer targets inside the profile trigger or account menu itself. A sibling header action closes the popover on pointerdown before its normal click/change handler runs; menu actions and Escape behavior remain unchanged.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` adds a source guard for the trigger/menu-only containment check and rejects the old broad host containment. Header spec now has 9 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records this behavior together with the page-title live-announcement fix through source/test commit `f90cd95ccf4979c81d4157aa38d9f0bce0fca720`.
+- **Static readback:** 5 focused source assertions PASS for trigger/menu containment, removal of host-wide containment, live page-title attributes, regression declarations and inventory evidence. This is static inspection, not executable test evidence.
+- **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, real pointer/keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** resume the Home / Overview source review; preserve the approved four-metric/API-only data contract and keep rendered acceptance separate.
+
+
+## T18 — Home stale-metric refresh recovery — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** `refreshAfterPayrollPayment()` updated Home dashboard metrics and Expenses together, but on any failed request it left the previous `dashboard` object in place. The shared error/retry banner appeared while old KPI values remained visible without a source freshness timestamp.
+- **Fix:** `frontend/src/app/app.component.ts` commit `33fd232335a3adee09962c4b11a396851862bc17` clears the current workspace's dashboard metrics before setting the retryable error. The existing OWNER-only and same-workspace guards remain unchanged. No API, backend, database, financial calculation, payroll state, or recorded expense changed.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `dc0b9b50176340c237ffb6930344c9666078ef28` verifies the refresh catch is tenant-guarded and clears dashboard data before exposing the error/retry action. Home spec now has 19 authored declarations, including the quick-access order guard; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `74f720bb22ac12dd4c857f607e7ba193cf7e8dc4`.
+- **Static readback:** 8/8 focused assertions PASS across owner guard, tenant guard, dashboard clear ordering, retryable error and regression declaration. This is source inspection, not executed test evidence.
+- **Validation:** Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, authenticated OWNER/STAFF/two-tenant, screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** continue Home source audit; keep all NOT RUN acceptance open and retain PR Draft.
+
+
+## T18 — Home quick-access UX contract regression — 2026-11-07
+
+- **Design source:** existing Notion UX-SPEC-01 specifies five compact high-frequency Home shortcuts: Invoices, Customers, Products, Expenses, Reports. No new route or capability is introduced.
+- **Current implementation readback:** `HOME_QUICK_ACCESS_TABS` matches the exact order; `selectHomeQuickAccessModules()` selects only those destinations from `homeModuleCards`, which is already filtered through `canAccessTab()`.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` adds a guard for the five exact destinations, stable order and existing role filter. Home spec now has 19 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` refreshed through `6bfa983884a78ce33b07bf5ca31eac2413e935e7`.
+- **Static readback:** 11/11 focused assertions PASS across Home KPI contract, unsupported-panel exclusions, tenant/role guards, stale-refresh recovery and quick-access mapping. This is not execution of Node tests or rendered UI.
+- **Validation:** Node tests, Angular build, dependency audit, Playwright and rendered RTL/LTR/mobile viewport acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Home action-source disposition and payroll lazy-boundary guard — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Home contract readback:** the current `GET /businesses/{id}/dashboard` response contains only period/timezone, invoiced sales, collected payments, expenses, outstanding balances and limitations. It has no pending-action or operational-alert aggregate.
+- **Fail-closed UX decision:** keep pending-action/alert UI omitted until a versioned source contract and actionable-state semantics are approved. Draft invoices, PO draft/approval states, pending notification metadata, recurring schedules, payroll states, data-integrity exceptions and readiness snapshots are not interchangeable alerts; no count, due date, urgency or delivery claim is fabricated.
+- **Quick access:** the five UX-SPEC-01 shortcuts (Invoices, Customers, Products, Expenses, Reports) are a curated navigation subset of the 19 unique module destinations, filtered through the existing role policy. They do not create duplicate workflows.
+- **Home regressions:** `home-dashboard.spec.ts` now has 20 authored declarations, including exact quick-access order, stale-metric clearing after failed payroll refresh, and a source guard against unsupported pending/alert aggregates. **NOT RUN**.
+- **Payroll lazy boundary:** `EmployeePayrollComponent` is standalone, directly imported from its own file, and has one template reference inside the OWNER-only `@defer` block with placeholder/loading states. `employee-payroll-ui.spec.ts` now has 12 authored declarations, including the deferred-boundary and stale-refresh guard. **NOT RUN**.
+- **P0 measurement:** source-level lazy-loading intent is present, but emitted chunk separation, initial bundle size/budget and Angular NG8107 diagnostics remain **NOT VERIFIED / NOT RUN** because no authorized build execution is available in this session. Do not remove nullable guards without exact compiler diagnostics.
+- **Validation:** source inspection only; Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, OWNER/STAFF/two-tenant, screen-reader and Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete remaining Home source audit, then exact-head release preflight; obtain authorized build/browser/device evidence before any VERIFIED COMPLETE claim.
+
+
+## T18 — Home quick access compact-link refinement — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base `main` at `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Finding:** the Home page showed the same five high-frequency destinations as full `aba-quick-access-card` cards and repeated them in the full All Modules card grid. UX-SPEC-01 calls for concise shortcut links, not a second competing module-card grid.
+- **Fix:** `frontend/src/app/app.component.ts` commit `f46602fbc19494bf03d263323b9a3e6d61445e3b` changes Quick Access into a named navigation region with five compact native buttons; desktop uses a wrapping link row, mobile uses two columns and a single column at 360px, all links have 44px minimum targets and visible focus. The full role-filtered All Modules disclosure retains every authorized destination.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `22f533acd88db0ffb04fb9402453cab06188e888` guards the compact-link structure, non-duplication, 44px target, focus styling and responsive layout. Home spec remains 20 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `4bfd384de092b5745fb66a9083d18dd7a3af38fb`.
+- **Scope:** no route, module, API, backend, authorization, business data or financial semantics changed.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete remaining Home source review, reconcile latest exact head, then candidate-ready preflight without promoting NOT RUN checks.
+
+
+## T18 — Home metric-caveat copy and persistent refresh recovery — 2026-11-07
+
+- **Finding:** the Home note was labelled “Data integrity” / `سلامة البيانات`, although its content explains KPI interpretation and limitations rather than reporting an integrity-check result.
+- **Copy refinement:** `frontend/src/app/app.component.ts` commit `ed3aa93f13f1910a4e7985ef12ee12ba5c66048b` now labels it “Metric notes” / `ملاحظات على المؤشرات`. The financial caveat text and all metric calculations remain unchanged.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `56e6aa19ec40653def60a028864ff2c63b5f7a46` guards the accurate bilingual label. Home spec now has 21 authored declarations; **NOT RUN**.
+- **Refresh recovery:** Home now retains a failed post-payroll dashboard-refresh error when the user navigates away and back, and clears it after a successful dashboard load or workspace reset. The existing same-workspace guard remains in place; no payroll or financial records are changed.
+- **Evidence:** source-only inspection. No Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader or physical Android/PWA execution. No CI trigger/retry, preview, merge or deployment.
+- **Next:** complete the remaining Home source audit, then reconcile the exact PR head and release impact before any promotion.
+
+
+## T18 — Home refresh banner success recovery — 2026-11-07
+
+- **Finding:** after a payroll-triggered Home dashboard refresh failed, the retryable Home error was correctly retained across navigation. On a later successful refresh, the stored `homeDashboardError` was cleared but the shared `error` banner could remain visible on the current page.
+- **Fix:** `frontend/src/app/app.component.ts` commit `f4df92f3cacf94f374163162dee08d5299344593` now clears the shared banner only when it still equals the stored Home refresh error, then clears `homeDashboardError`. An unrelated page-level error is preserved.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `8143c218c3f266f1331fb7703d70440d7df6b6ed` extends the refresh recovery test to guard success ordering and ensure unrelated errors are not cleared. Home spec remains 21 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `1453840d7ce22ca5781d3c6a3074642dbb84677a`.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, authenticated OWNER/STAFF/two-tenant, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Mobile account-menu focus and surface refinement — 2026-11-07
+
+- **Finding:** the account menu's language action removed the focused menu button while leaving focus restoration implicit; the popover also used a raw white background instead of the shared surface token.
+- **Fix:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.ts` commit `f6fa4f599f4584d6224f54bf53743f74f474b4e6` restores focus to the profile trigger in a microtask after emitting the language change. `aba-mobile-app-header.component.css` commit `ed1cbec70f69843b7351a2f52fdc7131d51b76be` uses `--aba-color-surface` for the account popover.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` commit `c79e9bffa84e8d3950773d4f0d802044061acb25` guards focus return after language change and semantic surface-token use. Header spec remains 9 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated through `c389aa959516e52796ade234f4e4f9735df7ce5d`.
+- **Validation:** static source readback only; Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Mobile account-menu keyboard dismissal — 2026-11-07
+
+- **Finding:** the mobile account popover closed on Escape and outside pointer input, but stayed open when a keyboard user tabbed from its last action to a control outside the popover.
+- **Fix:** the existing mobile header listens for document-level focus changes and closes the popover only when focus leaves both the profile trigger and popover content. Tab-out does not restore focus to the trigger; Escape retains its existing focus-return behavior.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` adds a source guard for focus-out dismissal, internal-focus preservation and no focus stealing. Header spec now has 10 authored declarations; **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the keyboard dismissal behavior.
+- **Scope:** presentation and regression only; no routes, API, authorization, workspace, financial, payroll or business behavior changed.
+- **Validation:** source readback only. Full Node tests, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA remain **NOT RUN**. No CI trigger/retry, merge or deployment.
+
+
+## T18 — Mobile account-menu keyboard dismissal and exact-head checkpoint — 2026-11-07
+
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED; base main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; implementation head before this documentation update `f785eaadf364dd6843ad511638aca96d60f88c02`; 247 commits / 35 changed paths.
+- **UI fix:** mobile account popover now dismisses when keyboard focus leaves both its trigger and content; Tab-out preserves the next focused control, while Escape keeps focus restoration to the trigger.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` has 10 authored declarations. Corrected the new source matcher to use the actual newline boundary and a literal `$event` decorator check. Focused static source readback: 6/6 checks PASS. This is not Node test execution.
+- **Validation:** exact candidate check-runs currently expose GitGuardian Security Checks SUCCESS only; combined GitHub status has zero contexts. Frontend Node suite, Angular production build, dependency audit and Playwright are **NOT RUN**. Rendered RTL/LTR, OWNER/STAFF/two-tenant, keyboard/screen-reader, zoom and physical Android/PWA remain **NOT RUN**.
+- **CI authority conflict:** current Project Instructions prohibit CircleCI triggers/retries. This conflicts with the historical TASKS.md entry recording an Owner lift of the CircleCI freeze on 2026-11-06. No CI trigger/retry or replacement provider was used; keep exact-head CI **BLOCKED / NOT RUN** until the controlling instruction is reconciled.
+- **Runner:** Desktop Commander is Offline. No new Vercel sandbox was provisioned or resumed; no local build/test result is claimed.
+- **Release impact:** PR is frontend-only. Vercel Web and API are both Git-linked; current production Web alias resolves to READY SHA `c5fe115daa72e92b4f814ee502405225e1b3dc79`, API alias to READY SHA `3692d26ae358a6f5e6836ca646ddfdd41a449066`. Latest main SHA `8f2e326fce39fe45f4aebe0f1820576e45b75483` created CANCELED production-target records for both projects. No preview exists for this branch. Exact project Ignore Build Step behavior is not exposed by current Vercel read access; do not assume API is unaffected without rechecking release configuration.
+- **Scope:** no backend/API/database/schema/migration, financial/payroll semantics or production data changes. No merge, release marker, deployment or alias change.
+- **Next:** complete exact diff/source review, reconcile CI authorization/runner, then run required exact-head checks and rendered acceptance before release prep. Merge and production deployment remain separate authorized steps.
+
+
+## T18 — Final diff hygiene correction — 2026-11-07
+
+- Exact PR head before cleanup: `1b6926014f00c542398dba5193fe70d09a970b8c`.
+- Full PR patch scan found two whitespace-only added lines with trailing spaces in `frontend/src/app/app.component-template-safety.spec.ts` and `frontend/src/app/record-filters.ts`.
+- Removed trailing whitespace only; no runtime behavior or business semantics changed.
+- Static PR-patch whitespace scan before this correction found exactly 2 instances. Re-run `git diff --check` / exact-head tests remain **NOT RUN** because the authorized runner/CI conflict remains unresolved.
+
+
+## T18 — Home All Modules disclosure semantics — 2026-11-07
+
+- **Finding:** the Home All Modules native `<summary>` contained an `<h2>`. The summary content model is phrasing content; a nested heading element is invalid even though the section was labelled and the control remained keyboard-operable.
+- **Fix:** `frontend/src/app/app.component.ts` commit `af778107784bf910e478b3421f3b6da2908ab126` replaces the nested heading with a `span[role="heading"][aria-level="2"]` and a dedicated title class. The visible title, section `aria-labelledby`, native disclosure behavior and 44px touch target are preserved.
+- **Regression:** `frontend/src/app/home-dashboard.spec.ts` commit `32e8d80f877328563f8c6ec9f7f67b8b05e665d7` guards the ARIA level-two heading, phrasing-only summary content and title styling. Existing Home spec count remains 21 declarations; assertion is added to the existing disclosure test. Authored / **NOT RUN**.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated in `d98165db12218d5ff9734dcef41e613372d3befa`.
+- **Branch / PR:** `master/t18-uiux-hardening-20261107` / PR #348 OPEN / DRAFT / UNMERGED. Base `8f2e326fce39fe45f4aebe0f1820576e45b75483`.
+- **Scope:** Home template/CSS, source regression and UX inventory only. No route, API/backend, authorization, schema, financial/payroll, production-data or release behavior changed.
+- **Validation:** source readback only. Node suite, Angular build, dependency audit, Playwright, rendered RTL/LTR, keyboard/screen-reader and physical device acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Mobile header Home-only greeting regression — 2026-11-07
+
+- **Review:** the accepted Hybrid Modern top section includes a concise greeting only where appropriate. The component already gates the greeting with `showGreeting`, and the app passes `tab === 'overview'`; the regression previously guarded the input contract but not the app binding.
+- **Regression:** `frontend/src/app/mobile-app-header.spec.ts` commit `8b7b167a4e274c76d2e1f78330f5d96e25debeca` now asserts the greeting renders only when the Home flag is true and retains its bilingual copy. The suite remains 10 authored declarations; **NOT RUN**.
+- **Workspace context:** the same existing regression now also guards that the workspace selector is rendered only when more than one business is available; the current workspace name remains visible for single-workspace accounts.
+- **Follow-up regression commit:** `b3f45ffa8a9949ac616ef074a1ed543d732c71a5` guards multi-workspace selector visibility and its labelled native select; the suite remains 10 authored declarations.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` commit `b68bd8d550c498c470ca12471cb19781db7f0d5c` corrects the header spec count to 10 and records the Home-only greeting guard.
+- **Scope:** source regression and UX inventory only; no runtime behavior, route, API, authorization, financial/payroll or release semantics changed.
+- **Validation:** static source readback only; full Node tests/build/audit/Playwright and rendered RTL/LTR/device/screen-reader acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Employee salary exposure removed from directory surfaces — 2026-11-08
+
+- **Finding:** the employee directory row displayed `monthly_salary` beside the employee name. The payroll employee selector also used `monthly_salary` as a fallback label when no employee code existed. UX-HR-01 explicitly prohibits salary in the employee directory/table/card.
+- **Fix:** directory rows now show the employee name only; the payroll employee selector shows the name and employee code only when a code exists. The salary input remains in the existing OWNER-only compensation form. No API, model, payroll calculation, approval, payout, or financial semantics changed.
+- **Regression:** `employee-payroll-ui.spec.ts` asserts that the directory surface and payroll employee selector do not reference `monthly_salary`, while the compensation input remains present. Authored on this commit; exact-head CircleCI will validate it.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the no-salary directory/selector contract.
+- **Scope:** frontend presentation, regression and UX inventory only; no backend/API/database/schema/migration or production-data changes.
+
+
+## T18 — Salary privacy regression test correction and diff hygiene — 2026-11-08
+
+- Corrected the newly added salary-privacy regression to use a direct selector-string assertion and a broad `monthly_salary` absence check; this avoids over-escaped regex literals that would not match the actual template.
+- Removed the single whitespace-only added line in the Home template diff.
+- No runtime behavior or business semantics changed in this follow-up.
+- The previous CircleCI run on parent `ddeb61c` is superseded; exact-head validation must complete on this new commit before merge.
+
+
+## T18 — Ownership correction / T41 payroll UI finding handoff — 2026-11-08
+
+- The previous Master checkpoint recorded a salary-label privacy fix in `employee-payroll.component.ts` and `employee-payroll-ui.spec.ts`. Reconciliation against the canonical T41 task confirms those feature-local paths are Chat 4 single-writer owned.
+- To preserve the T41 ownership boundary, the Master-owned T18 branch restores those two files to their exact pre-change contents from parent candidate `aefe9097af02b52a45e0a124c77c254e01cef931`. No Chat 4 feature files remain modified by this Master follow-up.
+- The finding remains open and is handed to Chat 4: employee directory row renders `monthly_salary`; payroll employee selector uses `monthly_salary` as a fallback label when employee code is absent. Required presentation: name/code only in directory/selector; compensation remains in its restricted OWNER-only form. No salary-history, statutory, payout, API, backend, schema or financial semantics are requested.
+- UX inventory corrected to reflect the finding as pending. Prior implementation/test evidence is retained as historical checkpoint but is superseded by this ownership correction.
+- No production data, backend/API/database/schema/migration or deployment changes. The current branch still requires exact-head CircleCI, review and runtime UX acceptance.
+
+
+## T18 — Fence post-payroll refresh across identity/role changes — 2026-11-08
+
+- **Finding:** `refreshAfterPayrollPayment()` checked only the business ID after awaiting expense/dashboard requests. A late OWNER response could repopulate workspace state after the same business membership had changed to STAFF, because the workspace ID remained unchanged.
+- **Fix:** the Master-owned shell now runs this refresh through the existing `runTenantScopedRequest` guard with workspace ID, authenticated UID, role and signed-in state; `clearWorkspaceData()` invalidates pending payroll refresh generations. The callback can update state only while the original OWNER context is still current.
+- **Regression:** `workspace-data-access.spec.ts` asserts the refresh uses the tenant/role guard and workspace reset invalidates its generation. The existing `workspace-load-guard.spec.ts` already exercises OWNER→STAFF response rejection and same-workspace identity changes.
+- **Scope:** Master-owned `app.component.ts`, source regression and TASKS only. No Chat 4 payroll component files, API/backend/schema/migration, payroll calculation, approval/payout semantics or production data changed.
+- **Validation:** source readback to follow. This commit uses `[skip ci]` under the current CI trigger/retry freeze; exact-head CircleCI and runtime/browser acceptance remain NOT RUN until the freeze is explicitly lifted. Parent `6a308cc` CircleCI success does not validate this new head.
+
+
+## T18 — Fence OWNER-only integrity and health responses across role changes — 2026-11-08
+
+- **Finding:** the Data Integrity and Operational Health loaders checked only workspace ID after awaiting OWNER-only endpoints. A late response could repopulate their sensitive/restricted view after the same business membership changed to STAFF.
+- **Fix:** both loaders now use separate `runTenantScopedRequest` generations with workspace, authenticated UID, role and signed-in context. `clearWorkspaceData()` invalidates both guards; stale callbacks cannot restore restricted report/health state.
+- **Regression:** `workspace-data-access.spec.ts` asserts both loaders use their dedicated tenant guards and workspace reset invalidates them. Existing `workspace-load-guard.spec.ts` tests OWNER→STAFF and same-workspace UID changes.
+- **Scope:** Master-owned shell, source regression and TASKS only. No Chat 4 payroll component, API/backend authorization, schema/migration, financial semantics or production data changes.
+- **Validation:** source readback to follow. Commit uses `[skip ci]` under the current CI trigger/retry freeze; exact-head CI/tests/build/browser remain NOT RUN. Parent CircleCI evidence does not validate the new SHA.
+
+
+## T18 — Fence tax summary refresh across role/range changes — 2026-11-08
+
+- Finding: the OWNER-only tax summary checked role on success but did not invalidate a pending request when workspace identity/role changed or when a later invalid date range was submitted. A prior request could overwrite the newer validation state.
+- Fix: tax summary now uses a dedicated tenant-scoped request generation (workspace, UID, role, signed-in state); workspace clearing invalidates it, and an invalid date range invalidates older pending work before showing validation feedback.
+- Regression: workspace-data-access.spec.ts asserts tenant-role fencing, invalid-range invalidation and workspace-reset invalidation. Existing workspace-load-guard.spec.ts covers role and identity rejection.
+- Scope: Master-owned shell, regression and TASKS only. No API/backend, tax calculation/rules, schema/migration, financial semantics or production data changed.
+- Validation: source readback to follow. Commit uses [skip ci] under the current CI trigger/retry freeze; exact-head CI/tests/build/browser remain NOT RUN.
+
+
+## T18 Master continuation — current candidate and CircleCI freeze reconciliation — 2026-11-08
+
+- **Owner decision:** the 2026-11-06 entry on main explicitly lifted the CircleCI trigger/retry freeze completely. Older freeze notes are historical and superseded. This commit intentionally does not use [skip ci] and is the approved normal CircleCI candidate trigger.
+- **Candidate parent:** c47bc2f6fb373722e1720d83258a5694cc6e52ec on master/t18-uiux-hardening-20261107; PR #348 remains OPEN / DRAFT / UNMERGED, base 8f2e326fce39fe45f4aebe0f1820576e45b75483.
+- **Master-owned fixes in candidate source:** late OWNER responses are now fenced for post-payroll expense/dashboard refresh, Data Integrity, Operational Health and Tax Summary using separate WorkspaceLoadGuard generations plus runTenantScopedRequest (workspace, UID, role, signed-in). Workspace reset invalidates all guards; invalid Tax Summary date range invalidates older pending requests.
+- **Regression/docs:** workspace-data-access.spec.ts adds source assertions for these guards; workspace-load-guard.spec.ts already exercises OWNER→STAFF and same-workspace UID rejection. AUDIT_MASTER_PLAN.md now records SEC-03 and UX-02.
+- **Ownership:** UX-HR-01 salary label finding remains OPEN and is handed to Chat 4/T41; Master does not modify those feature-local files. Historical payroll fix attempt was reverted.
+- **Validation:** previous exact-head CircleCI 7/7 on 6a308cc is stale for this candidate. This documentation commit triggers the normal approved CircleCI pipeline on its exact new SHA; record substantive job and aggregate results before merge. Local Node/build/browser tests NOT RUN because Desktop Commander is offline.
+- **Delivery:** no merge, production deployment, backend/API/schema/migration or production data changes. Vercel Preview attempt remains ERROR at ignoreStep due empty VERCEL_GIT_PREVIOUS_SHA; no persistent project settings changed. Physical Android/PWA, screen-reader/zoom, rendered RTL/LTR and authenticated two-tenant acceptance remain NOT RUN/BLOCKED.
+
+
+## T18 — Vercel build metadata and Preview safety — 2026-11-08
+
+- Finding: READY Web Preview dpl_4Y2CrZ3dbAEEp4NFhScFRHSgkHgH serves main bundle build info with commit "unknown" and sw.js cache name aba-shell-v1.3.9-unknown. Vercel's Angular preset invoked Angular Building directly and did not run npm prebuild, so write-build-info.mjs was bypassed.
+- Fix: added frontend/vercel.json with buildCommand "node scripts/write-build-info.mjs && ng build" and outputDirectory "dist/ai-business-assistant"; added release-guide.spec.ts regression and updated the production deployment runbook. This is repo-scoped configuration; no persistent Vercel project setting was changed.
+- Preview safety: the same Preview's runtime-config.json points to production API https://ai-business-assistant-api.vercel.app and Firebase project ai-business-assistant-97f37. Only static assets/config were fetched; no login, API request, write, or business data access was performed. Do not run authenticated Preview tests until isolated synthetic API/Firebase config exists.
+- Additional source accessibility findings: mobile header context label and Platform Admin small-text selectors have source-calculated contrast below 4.5:1 on their actual page/info surfaces; see UX-03 in AUDIT_MASTER_PLAN.md and PR review comment.
+- Vercel build warning: Node 22.23.4 while @firebase/auth@1.13.8 declares Node >=24.12.0 (EBADENGINE); npm install printed 16 moderate findings. CircleCI dependency audit passed; review engine/audit details before release.
+- Validation: source readback and CircleCI to follow on this exact commit. No production deployment, alias, database, Firebase config, API runtime config, or persistent Vercel settings changed.
+
+
+## T18 — Fail-closed Preview runtime and Angular output path — 2026-11-08
+
+- Candidate parent: `684eb0cb37a01217c9775712d954f25048e1a5d4` on `master/t18-uiux-hardening-20261107`; PR #348 remains Draft / unmerged.
+- Fixes: Angular Vercel output directory now targets `dist/ai-business-assistant/browser`; Preview builds replace the checked-in Production runtime config with an empty setup-required config unless all five isolated synthetic API/Firebase variables are present. Partial configuration and known Production API/Firebase identifiers fail the build. Production/local config remains unchanged.
+- Added five Node regression tests for non-Preview behavior, missing/partial Preview values, rejection of known Production identifiers, and complete synthetic configuration.
+- No Vercel project settings, Firebase projects, production API, production data, DB, schema or migrations changed. Preview authentication remains disabled until an isolated synthetic runtime is configured.
+- Validation: CircleCI exact-head to follow automatically after this commit; no local runner available. Vercel Preview redeployment and output-path/build-stamp verification remain pending.
+
+
+## T18 — Source-level contrast remediation verified — 2026-11-08
+
+- Exact code head: `be5878a17e39b89ec8f5f826c32d54f8a8f1a5bd` (PR #348).
+- Changed global `--aba-color-text-secondary` to `#5d6878`; mobile header, mobile page labels and Platform Admin secondary/small labels now use the stronger semantic token.
+- WCAG contrast: `#5d6878` on page `#f5f7fb` = 5.27:1; on info-soft `#eff6ff` = 5.19:1; on white = 5.65:1. The added design-token regression covers secondary text on page/info-soft and Platform Admin/mobile selector use.
+- CircleCI exact-head: 7/7 SUCCESS (frontend-unit-tests #14093, dependency-audit #14092, production-build #14094, backend-container #14091, backend-accounting #14095, browser-smoke #14090, aggregate verify-all-changes workflow 24e6cef8-a123-4efe-8851-fa45f8cf900a).
+- Vercel Web Preview `dpl_8KjMbtfwNiMFPyV2yiUiuQzwRPPn` READY on exact SHA. Static root/index, CSS, JS, manifest, icons, runtime config and service worker all return HTTP 200. Main bundle commit stamp `be5878a17e39`; PWA cache `aba-shell-v1.3.9-be5878a17e39`. Preview runtime config is intentionally empty (fail-closed); no auth/API/business data request was made.
+- Source-level contrast issue is remediated and regression-tested. Rendered color/opacity screenshot audit, screen-reader, keyboard and physical Android/PWA acceptance remain NOT RUN because Desktop Commander is offline and Preview auth is disabled pending synthetic API/Firebase environment.
+
+## UX-HR-01 — Master-authorized bounded ownership transfer — 2026-11-08
+
+- **Owner authorization:** The repository owner explicitly approved transferring the narrow salary-presentation finding from the Chat 4 single-writer boundary to Project Master. This does not transfer ownership of the wider T41 Employees & Payroll lifecycle, payroll calculations, backend/API, schema/migrations, payout/posting, salary history or statutory policy.
+- **Implementation:** On the existing T18 PR #348 branch, `frontend/src/app/employee-payroll.component.ts` now renders employee name only in the directory and employee name + employee code (or localized “No code”) in the payroll selector. `monthly_salary` remains in the existing OWNER-only compensation form; no calculations, request payloads, data records, permissions or financial semantics changed.
+- **Regression:** `frontend/src/app/employee-payroll-ui.spec.ts` adds a focused test asserting that directory and selector markup cannot expose `monthly_salary` or `currencyCode`, while the existing compensation input remains.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` updated to record implementation and pending runtime acceptance.
+- **Commits:** component `d640d51520f0d84e785d7631dea83e88ddf4efa3`; test `37bd51b39dc81c69806d3fa4cb4d4e040d3268cf`; inventory `6321acfab5677b6c5650f076b8da865dd8c662ab`.
+- **Validation:** Source edit/readback to follow; exact-head Node tests, CircleCI, preview build/browser and authenticated OWNER/STAFF/two-tenant privacy checks NOT RUN on the new head. Prior CI/Preview evidence on `780999c` does not validate these changes.
+- **Safety:** No employee/payroll data or salary records changed. No API/backend/schema/migration, calculation, approval, payout, expense posting or permission changes. No merge or production deployment.
+- **Next:** run focused Node regression + full frontend tests/build; run CircleCI on exact new PR head; create/verify canonical Web Preview on same SHA; finish safe preview/privacy acceptance and full review before any merge/deploy gate.
+
+## UX-HR-01 exact-head validation and T18 release checkpoint — 2026-11-08
+
+- Current PR #348 head: `77f3e306a87392cd470cfdbb67c2926c480dcd2c` on `master/t18-uiux-hardening-20261107`; PR remains OPEN / DRAFT / UNMERGED.
+- UX-HR-01 presentation fix is source-verified: directory name only; payroll selector name + code / localized No code; salary remains in the existing OWNER-only compensation form. No payroll/data/API/permission/schema semantics changed.
+- CircleCI pipeline #2624 / workflow `30c7839e-9464-4461-bbdf-89763074c8da`: 7/7 SUCCESS on exact head (frontend-unit-tests #14209, production-build #14212, dependency-audit #14210, backend-container #14211, backend-accounting #14213, browser-smoke #14214, aggregate #14215).
+- Canonical Web Preview `dpl_8UqkyiMKv2Qs4Lpw6dAN2D1uRWgX` READY on exact head; root, JS, runtime config, service worker and manifest HTTP 200; Arabic RTL shell; UI 1.4.0; PWA cache `aba-shell-v1.4.0-77f3e306a873`. Preview API/Firebase runtime config is deliberately empty/fail-closed.
+- Browser-smoke report: 17/17 successful tests across startup/setup, mobile chat and platform-admin flows. This does not constitute authenticated OWNER/STAFF/two-tenant payroll or all-destination UX acceptance.
+- Master maintainer re-review COMMENT submitted on exact head (review ID `5818408378`); salary finding resolved. PR remains Draft / not approved for merge because T18 acceptance remains incomplete.
+- Remaining release acceptance NOT RUN: authenticated synthetic OWNER/STAFF/two-tenant journeys and write-path checks; complete rendered RTL/LTR review across the 19-destination UX surface; keyboard/screen-reader/200% zoom; physical Android Chrome installed-PWA keyboard/safe-area/screen-reader. Figma visual review remains BLOCKED by View-only access.
+- No merge, Production alias change, API deployment, production DB/schema/migration or production data write. Existing production remains unchanged.
+- Next: obtain isolated synthetic API/Firebase preview configuration and run authenticated role/tenant smoke; close remaining browser/accessibility/device acceptance. Do not bypass these gates to force Production.

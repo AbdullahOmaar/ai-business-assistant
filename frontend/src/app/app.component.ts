@@ -6,17 +6,20 @@ import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
-import { filterCustomers, filterInvoices, filterProducts } from './record-filters';
-import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
+import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
+import { ReleaseGuideComponent } from './release-guide.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
+import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
 import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
@@ -24,9 +27,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
-    <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
+    <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [class.install-cta-visible]="!isInstalled && !installHelp" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
       @if (installHelp && !isInstalled) { <div class="install-help install-help-floating" role="status">{{ t('لو لم تظهر نافذة التثبيت: افتح قائمة المتصفح ⋮ ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».', 'If no install prompt appears, open the browser menu and choose “Install app” or “Add to Home screen”.') }}<button type="button" class="secondary" (click)="installHelp = false">{{ t('حسنًا', 'Got it') }}</button></div> }
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
@@ -88,7 +91,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
           <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
           <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('الأرباح والخسائر', 'Profit & loss')" [attr.title]="t('الأرباح والخسائر', 'Profit & loss')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('الأرباح والخسائر', 'Profit & loss') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('نتيجة التشغيل الأولية', 'Preliminary operating result')" [attr.title]="t('نتيجة التشغيل الأولية', 'Preliminary operating result')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('نتيجة التشغيل الأولية', 'Preliminary operating result') }}</span></button>
           @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('الضرائب', 'Tax summary')" [attr.title]="t('الضرائب', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
           <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
@@ -141,11 +144,6 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             <div class="topbar-heading"><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
             <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
           </header>
-          <header class="mobile-page-heading" aria-live="polite" aria-atomic="true">
-            <p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p>
-            <h1>{{ pageTitle }}</h1>
-          </header>
-
           @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t('تسجيل الدخول مجددًا', 'Sign in again') : accessDenied ? t('العودة للرئيسية', 'Go to Home') : t('إعادة المحاولة', 'Retry')" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
           @if (loading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل بيانات مساحة العمل…', 'Loading workspace data…')" /> }
 
@@ -174,39 +172,103 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 <small>{{ t('وقت بناء النسخة:', 'Build time:') }} {{ buildTimeLabel }}</small>
               </div>
             </section>
+            <aba-mobile-app-header
+              [language]="language"
+              [appVersion]="appVersion"
+              [workspaceName]="business.name"
+              [businesses]="businesses"
+              [selectedBusinessId]="selectedBusinessId"
+              [pageTitle]="pageTitle"
+              [userEmail]="userEmail"
+              [showGreeting]="tab === 'overview'"
+              (homeRequested)="setTab('overview')"
+              (businessChange)="switchBusiness($event)"
+              (notificationsRequested)="setTab('notifications')"
+              (assistantRequested)="setTab('assistant')"
+              (languageToggleRequested)="toggleLanguage()"
+              (signOutRequested)="logout()" />
 
             @if (tab === 'overview') {
-              <section class="hero">
-                <div><p class="eyebrow light">{{ t('ملخص النشاط', 'BUSINESS SUMMARY') }}</p><h2>{{ t('القرارات الأفضل تبدأ', 'Better decisions start') }}<br>{{ t('بأرقام موثوقة.', 'with reliable numbers.') }}</h2><p>{{ t('يعرض النشاط المسجّل خلال آخر 30 يومًا. يتم فصل الإجماليات حسب العملة.', 'Shows recorded activity for the last 30 days. Totals are separated by currency.') }}</p></div>
-                <div class="hero-mark" aria-hidden="true">AI</div>
-              </section>
               @if (dashboard) {
-                <section class="metric-grid">
-                  <aba-metric-card><span metricLabel>{{ t('المبيعات بالفواتير', 'Invoiced sales') }}</span>@for (item of dashboard.invoiced_sales; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>0</strong><small>{{ t('لا توجد مبيعات بفواتير صادرة خلال الفترة', 'No invoiced sales in this period') }}</small> }</aba-metric-card>
-                  <aba-metric-card><span metricLabel>{{ t('المدفوعات المحصّلة', 'Payments collected') }}</span>@for (item of dashboard.collected_payments; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('دفعة مسجلة', 'recorded payments') }}</small> } @if (!dashboard.collected_payments.length) { <strong>0</strong><small>{{ t('لا توجد مدفوعات مسجلة خلال الفترة', 'No payments recorded in this period') }}</small> }</aba-metric-card>
-                  <aba-metric-card><span metricLabel>{{ t('المصروفات', 'Expenses') }}</span>@for (item of dashboard.expenses; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ item.count }} {{ t('مصروف مسجل', 'recorded expenses') }}</small> } @if (!dashboard.expenses.length) { <strong>0</strong><small>{{ t('لا توجد مصروفات مسجلة خلال الفترة', 'No expenses recorded in this period') }}</small> }</aba-metric-card>
-                  <aba-metric-card><span metricLabel>{{ t('الأرصدة المستحقة', 'Outstanding balances') }}</span>@for (item of dashboard.outstanding_balances; track item.currency_code) { <strong>{{ item.total }} {{ item.currency_code }}</strong><small>{{ t('الفواتير الصادرة بعد خصم المبالغ المخصصة', 'Issued invoices after allocated payments') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>0</strong><small>{{ t('لا توجد فواتير مستحقة خلال الفترة', 'No outstanding invoices in this period') }}</small> }</aba-metric-card>
+                <section class="dashboard-period" [attr.aria-label]="t('فترة مؤشرات النشاط', 'Business metrics reporting period')">
+                  <div class="dashboard-period__heading">
+                    <h2 class="dashboard-period__title">{{ t('ملخص النشاط', 'Business summary') }}</h2>
+                    <strong>{{ t('آخر 30 يومًا', 'Last 30 days') }}</strong>
+                  </div>
+                  <div class="dashboard-period__details">
+                    <span>{{ t('من', 'From') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('إلى', 'to') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
+                    <span>{{ t('التوقيت المحلي للنشاط', 'Business timezone') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
+                  </div>
                 </section>
+                <section class="metric-grid" [attr.aria-label]="t('مؤشرات النشاط حسب العملة', 'Currency-separated business metrics')">
+                  <aba-metric-card role="group" aria-labelledby="metric-invoiced-sales-label"><span id="metric-invoiced-sales-label" metricLabel>{{ t('المبيعات بالفواتير', 'Invoiced sales') }}</span>
+                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('فاتورة صادرة', 'issued invoices') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t('لا توجد مبيعات بفواتير صادرة خلال الفترة', 'No invoiced sales in this period') }}</small> }<small class="metric-basis">{{ t('حسب تاريخ إصدار الفاتورة', 'By invoice issue date') }}</small></aba-metric-card>
+                  <aba-metric-card role="group" aria-labelledby="metric-collected-payments-label"><span id="metric-collected-payments-label" metricLabel>{{ t('التحصيلات', 'Collected payments') }}</span>
+                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('دفعة مسجلة', 'recorded payments') }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t('لا توجد مدفوعات مسجلة خلال الفترة', 'No payments recorded in this period') }}</small> }<small class="metric-basis">{{ t('حسب وقت استلام الدفعة', 'By payment received time') }}</small></aba-metric-card>
+                  <aba-metric-card role="group" aria-labelledby="metric-expenses-label"><span id="metric-expenses-label" metricLabel>{{ t('المصروفات', 'Expenses') }}</span>
+                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('مصروف مسجل', 'recorded expenses') }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t('لا توجد مصروفات مسجلة خلال الفترة', 'No expenses recorded in this period') }}</small> }<small class="metric-basis">{{ t('حسب تاريخ تكبد المصروف', 'By expense incurred date') }}</small></aba-metric-card>
+                  <aba-metric-card role="group" aria-labelledby="metric-outstanding-balances-label"><span id="metric-outstanding-balances-label" metricLabel>{{ t('المبالغ المستحقة', 'Outstanding balances') }}</span>
+                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('الفواتير الصادرة بعد خصم المبالغ المخصصة', 'Issued invoices after allocated payments') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('لا توجد فواتير مستحقة خلال الفترة', 'No outstanding invoices in this period') }}</small> }</aba-metric-card>
+                </section>
+                <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ملاحظات على المؤشرات', 'Metric notes') }}</strong><span>{{ t('قيمة الفواتير الصادرة لا تعني أن المبلغ تم تحصيله. لكل مؤشر أساس زمني مستقل، والعملات لا تُجمع. لا تمثل هذه المؤشرات صافي الربح لأن تكلفة المنتجات وتكاليف أخرى قد تكون غير مكتملة.', 'Issued invoice value is not the same as collected payments. Each metric uses its own source timestamp, currencies are never combined, and these figures are not net profit because product cost and other costs may be incomplete.') }}</span></section>
+              } @else if (loading) {
+                <section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">
+                  <div class="dashboard-period__heading">
+                    <h2 class="dashboard-period__title">{{ t('ملخص النشاط', 'Business summary') }}</h2>
+                    <strong>{{ t('آخر 30 يومًا', 'Last 30 days') }}</strong>
+                  </div>
+                  <div class="dashboard-period-skeleton__details">
+                    <span></span><span></span>
+                  </div>
+                </section>
+                <section class="metric-grid metric-grid--skeleton" aria-hidden="true">
+                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
+                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
+                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
+                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
+                </section>
+
+              } @else if (!error) {
+                <aba-state-message kind="empty" [description]="t('لا توجد مؤشرات نشاط متاحة حاليًا.', 'No business metrics are available yet.')" />
               }
-              <section class="notice"><strong>{{ t('سلامة البيانات', 'Data integrity') }}</strong><span>{{ t('الإجماليات مأخوذة من سجلات النشاط المحفوظة. لا تمثل حسابًا للأرباح ولا يتم دمج العملات المختلفة.', 'Totals come from saved business records. They are not a profit calculation, and different currencies are never combined.') }}</span></section>
               <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
                 <aba-section-header [titleId]="'module-launcher-title'" [title]="t('الوصول السريع', 'Quick access')" [description]="t('اختصارات للأقسام الأساسية في مساحة العمل.', 'Shortcuts to key workspace areas.')" [count]="homeQuickAccessCards.length" />
-                <div class="quick-grid">
+                <nav class="home-shortcut-list" [attr.aria-label]="t('اختصارات للأقسام الأساسية', 'Shortcuts to key sections')">
                   @for (module of homeQuickAccessCards; track module.tab) {
-                    <aba-quick-access-card
-                      [icon]="module.icon"
-                      [title]="t(module.titleAr, module.titleEn)"
-                      [description]="t(module.descriptionAr, module.descriptionEn)"
-                      (activated)="setTab(module.tab)" />
+                    <button class="home-shortcut-link" type="button" (click)="setTab(module.tab)">
+                      <span class="home-shortcut-link__icon" aria-hidden="true">{{ module.icon }}</span>
+                      <span class="home-shortcut-link__label">{{ t(module.titleAr, module.titleEn) }}</span>
+                    </button>
                   }
-                </div>
+                </nav>
+              </section>
+              <section abaCard class="panel module-directory" aria-labelledby="module-directory-title">
+                <details class="module-directory-disclosure">
+                  <summary class="module-directory-summary">
+                    <span class="module-directory-summary__copy">
+                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t('كل أقسام مساحة العمل', 'All workspace modules') }}</span>
+                      <small>{{ t('افتح لعرض الأقسام المتاحة حسب صلاحياتك الحالية.', 'Expand to browse modules available under your current permissions.') }}</small>
+                    </span>
+                    <span class="count">{{ homeModuleCards.length }}</span>
+                    <span class="module-directory-toggle" aria-hidden="true">＋</span>
+                  </summary>
+                  <div class="module-directory-grid">
+                    @for (module of homeModuleCards; track module.tab) {
+                      <aba-quick-access-card
+                        [icon]="module.icon"
+                        [title]="t(module.titleAr, module.titleEn)"
+                        [description]="t(module.descriptionAr, module.descriptionEn)"
+                        (activated)="setTab(module.tab)" />
+                    }
+                  </div>
+                </details>
               </section>
               
             }
 
             @if (tab === 'notifications') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('قائمة الإشعارات', 'Notification queue') " [description]=" t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') "><span class="count">{{ notifications.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('قائمة الإشعارات', 'Notification queue') " [description]=" t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
                 <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
                   <label>{{ t('نوع الإشعار', 'Notification type') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
@@ -240,14 +302,15 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (notificationsLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" /> }
-                <div class="list">@for (item of notifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ item.status }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!notifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
+                <div class="list-tools operations-search"><input name="notificationSearch" type="search" [attr.aria-label]="t('البحث في الإشعارات', 'Search notifications')" [placeholder]="t('ابحث بالعنوان أو المحتوى أو النوع أو الحالة…', 'Search by title, message, type or status…')" [(ngModel)]="notificationSearch"></div>
+                <div class="list">@for (item of filteredNotifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ notificationStatusLabel(item.status) }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!filteredNotifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.', 'No notifications match this search.') : t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'suppliers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('دليل الموردين', 'Supplier directory') " [description]=" t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') "><span class="count">{{ suppliers.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('دليل الموردين', 'Supplier directory') " [description]=" t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
                 <form #supplierForm="ngForm" class="inline-form" (ngSubmit)="supplierForm.valid && createSupplier()">
                   <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
                   <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
@@ -265,14 +328,15 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (suppliersLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" /> }
-                <div class="list">@for (supplier of suppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!suppliers.length && !suppliersLoading) { <aba-state-message kind="empty" [description]="t('لا يوجد موردون بعد.', 'No suppliers yet.')" /> }</div>
+                <div class="list-tools operations-search"><input name="supplierSearch" type="search" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف أو العنوان…', 'Search by name, email, phone or address…')" [(ngModel)]="supplierSearch"></div>
+                <div class="list">@for (supplier of filteredSuppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!filteredSuppliers.length && !suppliersLoading) { <aba-state-message kind="empty" [description]="supplierSearch.trim() ? t('لا توجد موردون مطابقون للبحث.', 'No suppliers match this search.') : t('لا يوجد موردون بعد.', 'No suppliers yet.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'purchases') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ purchaseOrders.length }}</span></aba-section-header>
+                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
                 <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -293,14 +357,15 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
-                <div class="list">@for (order of purchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ order.status }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.lines.some(hasRemainingQuantity)) { <button class="secondary" type="button" (click)="receivePurchaseOrder(order)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!purchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
+                <div class="list-tools operations-search"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
+                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ purchaseOrderStatusLabel(order.status) }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.status === 'draft' && order.lines.some(hasRemainingQuantity)) { <small class="muted">{{ t('أمر الشراء مسودة؛ لا يمكن تسجيل الاستلام قبل الاعتماد.', 'This order is a draft; receiving is unavailable until it is approved.') }}</small> } @if (business?.role === 'owner' && canReceivePurchaseOrder(order)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'recurring') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('جدولة الفواتير الدورية', 'Recurring invoice schedules') " [description]=" t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') "><span class="count">{{ recurringSchedules.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('جدولة الفواتير الدورية', 'Recurring invoice schedules') " [description]=" t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
                 <form #recurringForm="ngForm" class="stack" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
                   <label>{{ t('العميل (اختياري)', 'Customer (optional)') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('بدون عميل محدد', 'No specific customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
@@ -320,14 +385,15 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (recurringLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الجداول…', 'Loading schedules…')" /> }
-                <div class="list">@for (schedule of recurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!recurringSchedules.length && !recurringLoading) { <aba-state-message kind="empty" [description]="t('لا توجد جداول بعد.', 'No schedules yet.')" /> }</div>
+                <div class="list-tools operations-search"><input name="recurringSearch" type="search" [attr.aria-label]="t('البحث في الجداول الدورية', 'Search recurring schedules')" [placeholder]="t('ابحث بالعميل أو الفاصل أو المنطقة الزمنية أو الحالة…', 'Search by customer, interval, timezone or state…')" [(ngModel)]="recurringSearch"></div>
+                <div class="list">@for (schedule of filteredRecurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!filteredRecurringSchedules.length && !recurringLoading) { <aba-state-message kind="empty" [description]="recurringSearch.trim() ? t('لا توجد جداول مطابقة للبحث.', 'No schedules match this search.') : t('لا توجد جداول بعد.', 'No schedules yet.')" /> }</div>
               </section>
             }
 
 
 @if (tab === 'health' && business?.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('الحالة التشغيلية', 'Operational health') " [description]=" t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') "><span class="count">{{ operationalHealth?.status || t('غير مفحوص', 'Not checked') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('الحالة التشغيلية', 'Operational health') " [description]=" t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t('غير مفحوص', 'Not checked') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('جارٍ الفحص…', 'Checking…') : t('تحديث الفحص', 'Refresh check') }}</button>
                 @if (healthError) { <aba-state-message kind="error" [description]="healthError" /> }
                 @if (operationalHealth) {
@@ -345,7 +411,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
 @if (tab === 'reports') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('الأرباح والخسائر', 'Profit & loss') " [description]=" t('تابع الإيرادات والمصروفات حسب الفترة، مع إبقاء كل عملة منفصلة.', 'Review revenue and expenses by period, keeping each currency separate.') "><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('نتيجة التشغيل الأولية', 'Preliminary operating result') " [description]=" t('نتيجة أولية مبنية على إيرادات الفواتير الصادرة والمصروفات المسجلة، ولا تخصم تكلفة البضاعة المباعة.', 'Preliminary result based on issued-invoice revenue and recorded expenses; cost of goods sold is not deducted.') "><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></aba-section-header>
                 <form #profitLossForm="ngForm" class="inline-form" (ngSubmit)="profitLossForm.valid && loadProfitLoss()">
                   <select name="profitLossPeriod" [attr.aria-label]="t('الفترة المالية', 'Reporting period')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('آخر 30 يومًا', 'Last 30 days') }}</option><option value="month">{{ t('الشهر الحالي', 'Current month') }}</option><option value="all">{{ t('كل الوقت', 'All time') }}</option><option value="custom">{{ t('فترة مخصصة', 'Custom period') }}</option></select>
                   @if (profitLossPeriod === 'custom') {
@@ -449,15 +515,15 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
                     @if (customerStatement) {
                       <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
-                      <div class="table-wrap audit-table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
-                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ event.event_type }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
+                      <div class="table-wrap audit-table-wrap" role="region" tabindex="0" [attr.aria-label]="t('كشف حساب العميل، جدول قابل للتمرير أفقيًا', 'Customer statement table, horizontally scrollable')"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
+                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ customerStatementEventLabel(event.event_type) }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
                       </tbody></table></div>
                       <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
                     }
                   </section>
                 }
-          </section>ion>
+          </section>
             }
 
             @if (tab === 'products') {
@@ -475,7 +541,13 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     }
                   </label>
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
-                  @if (stockTracked) { <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label> }
+                  @if (stockTracked) {
+                    @if (business?.role === 'owner') {
+                      <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label>
+                    } @else {
+                      <small class="muted">{{ t('يمكنك متابعة المخزون برصيد افتتاحي صفر. تسجيل كمية افتتاحية أكبر من صفر متاح لمالك مساحة العمل فقط.', 'You can track stock with zero opening stock. Only workspace owners can set a positive opening stock quantity.') }}</small>
+                    }
+                  }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
@@ -510,7 +582,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
 
             @if (tab === 'invoices') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
+                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
                 <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
                 <form #invoiceForm="ngForm" class="inline-form invoice-form" (ngSubmit)="invoiceForm.valid && createInvoice()">
                   <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
@@ -538,7 +610,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <div class="list">
-                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="voidInvoice(invoice)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
+                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
                   @if (!filteredInvoices.length) { <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.'))" /> }
                 </div>
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
@@ -548,9 +620,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'payments' && business?.role !== 'owner') {
               <section abaCard class="panel"><aba-state-message kind="error" [description]="t('تسجيل المدفوعات متاح لمالك مساحة العمل فقط. اطلب من المالك منحك الصلاحية المناسبة.', 'Recording payments is restricted to workspace owners. Ask the owner to grant the appropriate access.')" /></section>
             }
-            @if (tab === 'payments' && business?.role === 'owner') {
+            @if (tab === 'payments' && business.role === 'owner') {
               <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
-                  <div class="section-actions"><span class="count">{{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
+                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 </aba-section-header>
                 <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="paymentForm.valid && createPayment()">
                   <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
@@ -563,14 +635,15 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 </form>
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
+                <div class="list-tools operations-search"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
                 <div class="list">
-                  @for (payment of payments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method || t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
-                  @if (!payments.length) { <aba-state-message kind="empty" [description]="t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
+                  @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method ? paymentMethodLabel(payment.method) : t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
+                  @if (!filteredPayments.length) { <aba-state-message kind="empty" [description]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.', 'No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
                 </div>
               </section>
             }
 
-            @if (tab === 'taxes' && business?.role === 'owner') {
+            @if (tab === 'taxes' && business.role === 'owner') {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ملخص الضرائب', 'Tax summary')" [description]="t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.')" />
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
@@ -638,7 +711,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                 @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
                 @if (auditLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل السجل…', 'Loading activity…')" /> }
                 @if (!auditLoading && !auditEvents.length && !auditError) { <aba-state-message kind="empty" [description]="t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.')" /> }
-                <div class="table-wrap"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
+                <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('سجل النشاط، جدول قابل للتمرير أفقيًا', 'Activity log table, horizontally scrollable')"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
                   @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ auditActionLabel(event.action) }}</td><td>{{ auditTargetLabel(event.target_type) }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
                 </tbody></table></div>
                 <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
@@ -646,76 +719,28 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             }
 
             @if (tab === 'release-guide') {
-              <section abaCard class="panel release-guide-panel">
-                <div class="section-head">
-                  <div>
-                    <p class="eyebrow">{{ t('دليل مبسط', 'QUICK GUIDE') }}</p>
-                    <h2>{{ t('مميزات التطبيق والإصدارات', 'App features & versions') }}</h2>
-                    <p>{{ t('اعرف الموجود في التطبيق، ثم افتح الإصدار لمعرفة ما أُضيف مقارنة بالإصدارات السابقة.', 'Browse what the app offers, then open a version to see what changed from earlier releases.') }}</p>
-                  </div>
-                  <span class="version-pill">{{ t('إصدار الواجهة', 'UI version') }} · v{{ appVersion }}</span>
-                </div>
-
-                <h3 class="release-guide-heading">{{ t('المميزات المتاحة', 'Available features') }}</h3>
-                <p class="footnote">{{ t('افتح القسم الذي تحتاجه فقط. بعض الأدوات تعتمد على صلاحية الحساب أو إعداد الخدمة.', 'Open only the section you need. Some tools depend on your account permissions or service setup.') }}</p>
-                <div class="release-guide-groups">
-                  @for (group of featureCatalog; track group.id) {
-                    <details class="release-feature-group">
-                      <summary>
-                        <strong>{{ t(group.titleAr, group.titleEn) }}</strong>
-                        <small>{{ t(group.noteAr, group.noteEn) }}</small>
-                      </summary>
-                      <ul>
-                        @for (feature of group.features; track feature.titleEn) {
-                          <li>
-                            <strong>{{ t(feature.titleAr, feature.titleEn) }}</strong>
-                            <span>{{ t(feature.detailAr, feature.detailEn) }}</span>
-                          </li>
-                        }
-                      </ul>
-                    </details>
-                  }
-                </div>
-
-                <div class="section-head release-history-title">
-                  <div>
-                    <h2>{{ t('سجل الإصدارات', 'Version history') }}</h2>
-                    <p>{{ t('كل إصدار يعرض الإضافات والتحسينات الجديدة فقط.', 'Each version lists only its new additions and improvements.') }}</p>
-                  </div>
-                </div>
-                <div class="release-history">
-                  @for (release of releaseHistory; track release.version) {
-                    <details class="release-version" [open]="release.version === appVersion">
-                      <summary>
-                        <span class="version-pill">v{{ release.version }}</span>
-                        <strong>{{ t(release.titleAr, release.titleEn) }}</strong>
-                        @if (release.version === appVersion) {
-                          <span class="count">{{ t('الإصدار الحالي', 'Current version') }}</span>
-                        }
-                      </summary>
-                      @if (language === 'ar') {
-                        <ul>
-                          @for (change of release.changesAr; track change) { <li>{{ change }}</li> }
-                        </ul>
-                      } @else {
-                        <ul>
-                          @for (change of release.changesEn; track change) { <li>{{ change }}</li> }
-                        </ul>
-                      }
-                    </details>
-                  }
-                </div>
-                <p class="footnote">{{ t('يتم تحديث هذا الدليل عند تجهيز إصدار جديد. الميزات التي تتطلب صلاحية أو إعدادًا تظهر ملاحظتها داخل قسمها.', 'This guide is updated for each new version. Features requiring permissions or setup are identified in their section.') }}</p>
-              </section>
+              @defer (when tab === 'release-guide') {
+                <aba-release-guide [language]="language" [appVersion]="appVersion" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('جارٍ تحميل دليل التطبيق…', 'Loading the app guide…')" />
+                </section>
+              }
             }
 
-            @if (tab === 'employees' && business?.role === 'owner' && business) {
-              <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
+            @if (tab === 'employees' && business.role === 'owner') {
+              @defer (when tab === 'employees' && business.role === 'owner') {
+                <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموظفين والمرتبات…', 'Loading employees & payroll…')" />
+                </section>
+              }
             }
 
             @if (tab === 'expenses') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="expenses.length + ' ' + t('مصروفات', 'expenses')" />
+                <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('مصروفات', 'expenses')" />
                 <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
                   <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
                     <option value="General">{{ t('عام', 'General') }}</option>
@@ -743,28 +768,30 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                     @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('اختر تاريخ ووقت المصروف.', 'Choose the expense date and time.') }}</small> }
                   </div>
                 }
-                <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business?.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
+                <p class="expense-cash-semantics">{{ t('تسجيل المصروف يوثق وقت تحمّله، ولا يعني أنه تم دفعه أو تسويته نقديًا.', 'Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled.') }}</p>
+                <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
                 @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
                 @if (expenseSubmissionUncertain) {
                   <aba-state-message kind="error" [description]="t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.')" [actionLabel]="t('فحص قائمة المصروفات', 'Check expense list')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
+                <div class="list-tools operations-search"><input name="expenseSearch" type="search" [attr.aria-label]="t('البحث في المصروفات', 'Search expenses')" [placeholder]="t('ابحث بالتصنيف أو الوصف أو المورد أو المرجع…', 'Search by category, description, vendor or reference…')" [(ngModel)]="expenseSearch"></div>
                 <div class="list">
-                  @for (expense of expenses; track expense.id) {
+                  @for (expense of filteredExpenses; track expense.id) {
                     <article class="list-row">
                       <div class="expense-mark" aria-hidden="true">−</div>
                       <div class="grow">
-                        <strong>{{ expense.category }} · {{ expense.amount }} {{ expense.currency_code }}</strong>
+                        <strong>{{ expenseCategoryLabel(expense.category) }} · {{ expense.amount }} {{ expense.currency_code }}</strong>
                         <small>{{ expense.description }} · {{ expense.incurred_at | date:'medium' }}</small>
                         <small>{{ expense.vendor_name || t('بدون مورد', 'No vendor') }}{{ expense.reference ? ' · ' + expense.reference : '' }}</small>
                       </div>
                     </article>
                   }
-                  @if (!expenses.length) { <aba-state-message kind="empty" [description]="t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.')" /> }
+                  @if (!filteredExpenses.length) { <aba-state-message kind="empty" [description]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.', 'No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.')" /> }
                 </div>
               </section>
             }
 
-            @if (tab === 'integrity' && business?.role === 'owner') {
+            @if (tab === 'integrity' && business.role === 'owner') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('مراجعة سلامة البيانات', 'Data integrity review') " [description]=" t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') "><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
@@ -789,9 +816,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               <div class="assistant-workspace">
               <section abaCard class="panel chat-panel">
                 <aba-section-header [title]=" t('مساعد الأعمال الذكي', 'AI Business Assistant') " [description]=" t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') "><span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span></aba-section-header>
-                <div class="chat-log" aria-live="polite">
+                <div class="chat-log" role="log" tabindex="0" aria-live="polite" [attr.aria-label]="t('سجل محادثة المساعد، قابل للتمرير', 'Assistant conversation history, scrollable')">
                   @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ابدأ بسؤال سريع عن نشاطك أو اختَر اقتراحًا بالأسفل.', 'Start with a quick business question or choose a suggestion below.')" /> }
-                  @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span>@if (message.mode === 'local-fallback') { <small class="source-list">{{ t('وضع مجاني محدود · إجابة من سجلات النشاط', 'Free limited mode · grounded in business records') }}</small> }<p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">المصادر: @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? 'فاتورة' : (source.type === 'expense' ? 'مصروف' : source.type) }} · {{ source.invoice_number || source.category || source.id }}</span> }</small> }</article> }
+                  @for (message of chatMessages; track $index) { <article class="chat-message" [class.user-message]="message.role === 'user'"><span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span>@if (message.mode === 'local-fallback') { <small class="source-list">{{ t('وضع مجاني محدود · إجابة من سجلات النشاط', 'Free limited mode · grounded in business records') }}</small> }<p>{{ message.content }}</p>@if (message.sources?.length) { <small class="source-list">{{ t('المصادر:', 'Sources:') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('فاتورة', 'Invoice') : (source.type === 'expense' ? t('مصروف', 'Expense') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }</article> }
                 </div>
                 
                 @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('إعادة المحاولة', 'Retry')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
@@ -808,30 +835,56 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
           }
         </main>
       }
+      @if (pendingInvoiceVoid) {
+        <aba-confirm-dialog
+          [title]="t('تأكيد إلغاء الفاتورة', 'Confirm invoice void') + ' · ' + pendingInvoiceVoid.invoice_number"
+          [message]="t('سيتم تغيير حالة الفاتورة إلى ملغاة.', 'This will mark the invoice as void.')"
+          [warning]="t('إذا كانت هناك دفعات مخصصة، توقف وراجع مالك مساحة العمل. هذه الشاشة لا تنفذ رد مبالغ أو إشعارات دائنة.', 'If payments are allocated, stop and review with the workspace owner. This screen does not process refunds or credit notes.')"
+          [confirmLabel]="t('إلغاء الفاتورة', 'Void invoice')"
+          [cancelLabel]="t('الاحتفاظ بالفاتورة', 'Keep invoice')"
+          [busyLabel]="t('جارٍ الإلغاء...', 'Voiding...')"
+          [busy]="loading"
+          [confirmDisabled]="!!invoiceVoidError"
+          [error]="invoiceVoidError"
+          [tone]="'danger'"
+          [returnFocusTo]="confirmationReturnFocus"
+          [focusFallbackId]="'invoices-section-heading'"
+          (confirmed)="confirmInvoiceVoid()"
+          (cancelled)="cancelInvoiceVoid()" />
+      }
+      @if (pendingPurchaseReceipt) {
+        <aba-confirm-dialog
+          [title]="t('تأكيد استلام أمر الشراء', 'Confirm purchase receipt') + ' · ' + pendingPurchaseReceipt.order_number"
+          [message]="t('سيتم تسجيل الكميات المتبقية أدناه وتحديث المخزون عبر عملية الاستلام الحالية.', 'This will record the remaining quantities below and update stock through the existing receiving workflow.')"
+          [warning]="t('راجع كل كمية قبل التأكيد. إذا لم تتأكد من النتيجة، حدّث حالة الأمر قبل أي محاولة أخرى.', 'Review every quantity before confirming. If the result is uncertain, refresh the order status before any retry.')"
+          [detailsTitle]="t('الكميات المتبقية التي سيتم استلامها', 'Remaining quantities to receive')"
+          [details]="pendingPurchaseReceiptDetails"
+          [confirmLabel]="t('تسجيل الاستلام', 'Record receipt')"
+          [cancelLabel]="t('مراجعة لاحقًا', 'Review later')"
+          [busyLabel]="t('جارٍ التسجيل...', 'Recording...')"
+          [busy]="purchasesLoading"
+          [confirmDisabled]="!!purchaseReceiptError"
+          [error]="purchaseReceiptError"
+          [tone]="'warning'"
+          [returnFocusTo]="confirmationReturnFocus"
+          [focusFallbackId]="'purchases-section-heading'"
+          (confirmed)="confirmPurchaseOrderReceipt()"
+          (cancelled)="cancelPurchaseOrderReceipt()" />
+      }
+
     </div>
   `,
   styles: [`
     :host{display:block;min-height:100vh;background:#f6f8fb;color:#111827;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     *{box-sizing:border-box}button,input,select,textarea{font:inherit}
-    .release-guide-heading{margin:18px 0 4px;font-size:16px}.release-history-title{margin-top:26px}
-    .release-guide-groups,.release-history{display:grid;gap:10px;margin:12px 0 22px;min-width:0}
-    .release-feature-group,.release-version{border:1px solid #dbe4ea;border-radius:13px;background:#fff;min-width:0;overflow:hidden}
-    .release-feature-group>summary,.release-version>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;list-style:none;cursor:pointer;padding:13px 14px}
-    .release-feature-group>summary::-webkit-details-marker,.release-version>summary::-webkit-details-marker{display:none}
-    .release-feature-group>summary:after,.release-version>summary:after{content:'＋';margin-inline-start:auto;display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:8px;background:#f1f5f9;color:#334155}
-    .release-feature-group[open]>summary:after,.release-version[open]>summary:after{content:'−'}
-    .release-feature-group>summary strong{font-size:14px;flex:1 1 160px}.release-feature-group>summary small{flex:1 1 100%;font-size:12px;color:#64748b;line-height:1.5;overflow-wrap:anywhere}
-    .release-feature-group ul,.release-version ul{margin:0;padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0;display:grid;gap:10px;font-size:13px;line-height:1.55}
     
-    .release-feature-group li strong{display:block;font-size:13px}.release-feature-group li span{display:block;margin-top:2px;color:#475569;font-size:12px;overflow-wrap:anywhere}
-    .release-version>summary strong{font-size:14px;flex:1 1 160px}.release-version ul{padding-top:2px}.release-version .count{font-size:11px}
-    .csv-import-panel{display:grid;gap:10px;margin:18px 0;padding:14px;border:1px solid #d1d5db;border-radius:12px;background:#f8fafc}.csv-import-panel h3,.csv-import-panel p{margin:0}.csv-import-panel h3{font-size:15px}.csv-import-panel p,.csv-import-panel small{font-size:12px;line-height:1.5;color:#4b5563}.csv-import-actions{display:flex;flex-wrap:wrap;gap:8px}.csv-import-errors{margin:0;padding-inline-start:22px;font-size:12px;color:#991b1b;display:grid;gap:5px;overflow-wrap:anywhere}.invoice-lines{display:grid;gap:10px;flex-basis:100%;width:100%}.invoice-lines-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.invoice-line-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc}.invoice-line-row label{display:grid;gap:5px;min-width:0}.invoice-line-row select,.invoice-line-row input{width:100%;min-width:0}@media(max-width:600px){.invoice-line-row{grid-template-columns:minmax(0,1fr) minmax(88px,.65fr)}.invoice-line-row button{grid-column:1/-1;justify-self:start}}.topbar-heading{display:grid;gap:5px;min-width:0}.invoice-create-disclosure{margin:14px 0 18px;border:1px solid #cbd5e1;border-radius:16px;background:#f8fafc;overflow:hidden}.invoice-create-disclosure>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;background:#fff;font-weight:800;color:#0f172a}.invoice-create-disclosure>summary::-webkit-details-marker{display:none}.invoice-create-disclosure>summary:after{content:'＋';display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:#ccfbf1;color:#115e59;font-size:19px}.invoice-create-disclosure[open]>summary:after{content:'−'}.invoice-create-disclosure>summary small{font-weight:500;color:#64748b;font-size:11px}.invoice-create-disclosure>.invoice-form{padding:14px;border-top:1px solid #e2e8f0}.customer-invoice-filter{padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.customer-invoice-filter label{width:100%;min-width:0}.customer-invoice-filter select{width:100%;min-width:0}.list-row{min-width:0;flex-wrap:wrap;gap:12px}.list-row .grow{min-width:120px;overflow-wrap:anywhere}.list-row>strong{overflow-wrap:anywhere;max-width:100%}.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:12px}.table-wrap table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0}.table-wrap th,.table-wrap td{padding:11px 12px;text-align:start;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}.table-wrap th{position:sticky;top:0;background:#f1f5f9;color:#334155;font-size:12px;white-space:nowrap}.table-wrap tbody tr:nth-child(even){background:#f8fafc}.table-wrap tbody tr:last-child td{border-bottom:0}@media(max-width:600px){.topbar-heading{width:100%}.invoice-create-disclosure>summary{align-items:flex-start;flex-wrap:wrap}.invoice-create-disclosure>summary small{flex:1 1 100%;order:2}.invoice-create-disclosure>.invoice-form{display:grid;grid-template-columns:minmax(0,1fr)}.list-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start}.list-row .grow{min-width:0}.list-row>button,.list-row>strong{grid-column:2;justify-self:start}.table-wrap table{min-width:760px}}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}
-    .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:#f8fafc}.warning-notice{border-color:#f59e0b;background:#fffbeb}.divider{height:1px;background:#e5e7eb;margin:22px 0}
+    .csv-import-panel{display:grid;gap:10px;margin:18px 0;padding:14px;border:1px solid #d1d5db;border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}.csv-import-panel h3,.csv-import-panel p{margin:0}.csv-import-panel h3{font-size:15px}.csv-import-panel p,.csv-import-panel small{font-size:12px;line-height:1.5;color:var(--aba-color-text-muted,#4b5563)}.csv-import-actions{display:flex;flex-wrap:wrap;gap:8px}.csv-import-errors{margin:0;padding-inline-start:22px;font-size:12px;color:#991b1b;display:grid;gap:5px;overflow-wrap:anywhere}.invoice-lines{display:grid;gap:10px;flex-basis:100%;width:100%}.invoice-lines-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.invoice-line-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto;gap:10px;align-items:end;padding:12px;border:1px solid #e5e7eb;border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}.invoice-line-row label{display:grid;gap:5px;min-width:0}.invoice-line-row select,.invoice-line-row input{width:100%;min-width:0}@media(max-width:600px){.invoice-line-row{grid-template-columns:minmax(0,1fr) minmax(88px,.65fr)}.invoice-line-row button{grid-column:1/-1;justify-self:start}}.topbar-heading{display:grid;gap:5px;min-width:0}.invoice-create-disclosure{margin:14px 0 18px;border:1px solid #cbd5e1;border-radius:16px;background:var(--aba-color-surface-subtle,#f8fafc);overflow:hidden}.invoice-create-disclosure>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;background:var(--aba-color-surface,#fff);font-weight:800;color:#0f172a}.invoice-create-disclosure>summary::-webkit-details-marker{display:none}.invoice-create-disclosure>summary:after{content:'＋';display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:#ccfbf1;color:#115e59;font-size:19px}.invoice-create-disclosure[open]>summary:after{content:'−'}.invoice-create-disclosure>summary small{font-weight:500;color:var(--aba-color-text-secondary,#64748b);font-size:11px}.invoice-create-disclosure>.invoice-form{padding:14px;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0)}.customer-invoice-filter{padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}.customer-invoice-filter label{width:100%;min-width:0}.customer-invoice-filter select{width:100%;min-width:0}.list-row{min-width:0;flex-wrap:wrap;gap:12px}.list-row .grow{min-width:120px;overflow-wrap:anywhere}.list-row>strong{overflow-wrap:anywhere;max-width:100%}.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}.table-wrap table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0}.table-wrap th,.table-wrap td{padding:11px 12px;text-align:start;vertical-align:top;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}.table-wrap th{position:sticky;top:0;background:#f1f5f9;color:var(--aba-color-text-muted,#334155);font-size:12px;white-space:nowrap}.table-wrap tbody tr:nth-child(even){background:var(--aba-color-surface-subtle,#f8fafc)}.table-wrap tbody tr:last-child td{border-bottom:0}@media(max-width:600px){.topbar-heading{width:100%}.invoice-create-disclosure>summary{align-items:flex-start;flex-wrap:wrap}.invoice-create-disclosure>summary small{flex:1 1 100%;order:2}.invoice-create-disclosure>.invoice-form{display:grid;grid-template-columns:minmax(0,1fr)}.list-row{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start}.list-row .grow{min-width:0}.list-row>button,.list-row>strong{grid-column:2;justify-self:start}.table-wrap table{min-width:760px}}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}
+    .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:var(--aba-color-surface-subtle,#f8fafc)}.warning-notice{border-color:#f59e0b;background:#fffbeb}.divider{height:1px;background:#e5e7eb;margin:22px 0}
     .shell{min-height:100vh}.install-button{display:none}.install-floating{display:none}.install-help-floating{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.sidebar{position:fixed;inset-block:0;inset-inline-end:0;width:var(--aba-layout-sidebar,245px);background:var(--aba-color-nav-surface,#111827);color:var(--aba-color-text-inverse,#e5e7eb);padding:26px 17px;display:flex;flex-direction:column;z-index:2}
-    .brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:#9ca3af;margin-inline-start:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#6b7280;margin:0 0 8px}.nav-label{font-size:10px;color:#9ca3af;letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:#9ca3af;line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--aba-color-nav-text,#cbd5e1);text-align:start;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-text-inverse,#fff)}.nav-item.active{background:linear-gradient(100deg,var(--aba-color-nav-active-start,#164e63),var(--aba-color-nav-active-end,#1d4ed8));color:var(--aba-color-text-inverse,#fff);border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4)}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:var(--aba-color-nav-surface-raised,#1e293b)}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:#fff}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:#9ca3af;margin-block-start:8px;margin-inline-start:15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-inline-end:8px}
-    .main{margin-inline-end:var(--aba-layout-sidebar,245px);padding:30px clamp(18px,4vw,54px) 20px;max-width:var(--aba-layout-content-max,1550px)}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.mobile-page-heading{display:none}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:#4b5563}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151}.primary{background:#0f766e;border-color:#0f766e;color:#fff}.primary:hover{background:#115e59}.workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(180px,260px);justify-content:stretch;align-items:center;gap:14px;padding:14px 17px;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5e7eb);border-radius:var(--aba-radius-card,13px);margin-bottom:18px;min-width:0}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 34px;border-radius:var(--aba-radius-panel,19px);background:linear-gradient(115deg,var(--aba-color-hero-start,#14243a),var(--aba-color-hero-mid,#1e3a5f) 60%,var(--aba-color-hero-end,#155e75));color:var(--aba-color-hero-text,#fff)}.hero .eyebrow{color:#a7f3d0}.hero h2{font-size:clamp(25px,3vw,36px);line-height:1.12;letter-spacing:-1px;margin:10px 0}.hero p:last-child{max-width:460px;font-size:12px;line-height:1.6;color:var(--aba-color-hero-muted,#cbd5e1)}.hero-mark{width:84px;height:84px;display:grid;place-items:center;border-radius:26px;background:linear-gradient(135deg,#a7f3d0,#60a5fa);color:#0f2942;font-weight:900;font-size:24px;margin-inline-start:4%;box-shadow:0 15px 45px #02061755}
-    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.metric{padding:17px;min-height:125px;background:#fff;border:1px solid #e5eaf1;border-radius:14px}.metric>span{display:block;color:#6b7280;font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:#9ca3af;margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,165px),1fr));gap:12px;margin-top:15px}.module-launcher{margin-top:18px}
-    .panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:#6b7280;line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:#6b7280;margin:0}.count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}.footnote{font-size:10px;line-height:1.6;color:#9ca3af;margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:#334155;margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid #e2e8f0;border-radius:11px;background:#f8fafc;color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover{background:#eff6ff;border-color:#2563eb}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:#64748b;line-height:1.35}.chat-panel{min-width:0}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-card{flex:0 0 175px}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;padding:8px}.chat-log{min-height:220px;max-height:48vh}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-inline-end:auto;margin-inline-start:0;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:#0f766e;font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-inline-end:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:#6b7280;line-height:1.7}.setup-steps{background:#f8fafc;border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:#0f766e;font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:10px}footer span{color:#9ca3af}
+    .brand{display:flex;align-items:center;gap:10px;color:var(--aba-color-text-inverse,#fff);text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:var(--aba-color-nav-muted,#9ca3af);margin-inline-start:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:var(--aba-color-text-tertiary,#6b7280);margin:0 0 8px}.nav-label{font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--aba-color-nav-text,#cbd5e1);text-align:start;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-text-inverse,#fff)}.nav-item.active{background:linear-gradient(100deg,var(--aba-color-nav-active-start,#164e63),var(--aba-color-nav-active-end,#1d4ed8));color:var(--aba-color-text-inverse,#fff);border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4)}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:var(--aba-color-nav-surface-raised,#1e293b)}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:var(--aba-color-text-inverse,#fff)}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:var(--aba-color-nav-muted,#9ca3af);margin-block-start:8px;margin-inline-start:15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-inline-end:8px}
+    .main{margin-inline-end:var(--aba-layout-sidebar,245px);padding:30px clamp(18px,4vw,54px) 20px;max-width:var(--aba-layout-content-max,1550px)}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.mobile-page-heading{display:none}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--aba-color-text-muted,#4b5563)}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:var(--aba-color-surface,#fff);color:#374151}.primary{background:var(--aba-color-primary,#0f766e);border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-text-inverse,#fff)}.primary:hover{background:#115e59}.workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(180px,260px);justify-content:stretch;align-items:center;gap:14px;padding:14px 17px;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5e7eb);border-radius:var(--aba-radius-card,13px);margin-bottom:18px;min-width:0}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.dashboard-period{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 18px;margin:0 0 14px;padding:13px 16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-card,14px);background:var(--aba-color-surface-subtle,#f8fafc)}.dashboard-period__heading{display:grid;gap:3px;min-width:0}.dashboard-period__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.4;font-weight:var(--aba-font-weight-bold,700);overflow-wrap:anywhere}.dashboard-period__heading strong{font-size:13px;line-height:1.4;color:var(--aba-color-text-primary,#172033)}.dashboard-period__details{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;min-width:0;color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.5}.dashboard-period__details span{overflow-wrap:anywhere}.dashboard-period__details bdi{font-variant-numeric:tabular-nums;color:var(--aba-color-text-primary,#172033)}.dashboard-period--skeleton{min-height:66px}.dashboard-period-skeleton__details{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;min-width:0}.dashboard-period-skeleton__details span{display:block;width:clamp(110px,24vw,190px);height:9px;border-radius:999px;background:var(--aba-color-border-subtle,#eef2f7)}.dashboard-period-skeleton__details span:last-child{width:clamp(90px,18vw,145px)}.metric-skeleton{display:grid;align-content:start;gap:12px;min-width:0;min-height:145px;padding:16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-card,14px);background:var(--aba-color-surface,#fff)}.metric-skeleton span{display:block;height:10px;max-width:100%;border-radius:999px;background:var(--aba-color-border-subtle,#e2e8f0)}.metric-skeleton span:first-child{width:44%}.metric-skeleton span:nth-child(2){width:72%;height:24px;border-radius:8px;background:var(--aba-color-surface-muted,#eef2f7)}.metric-skeleton span:last-child{width:58%}
+    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:0}.metric-grid aba-metric-card small{font-size:12px;line-height:1.55}.metric{padding:17px;min-height:125px;background:var(--aba-color-surface,#fff);border:1px solid #e5eaf1;border-radius:14px}.metric>span{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin-top:15px}.home-shortcut-link{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-control,10px);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:var(--aba-font-size-base,14px);line-height:var(--aba-line-height-normal,1.5);font-weight:700;text-align:start;cursor:pointer;transition:border-color var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease),background var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.home-shortcut-link:hover:not(:disabled){border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-surface-hover,#f1f5f9)}.home-shortcut-link:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}.home-shortcut-link__icon{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary,#0f766e);font-size:14px}.home-shortcut-link__label{min-width:0;overflow-wrap:anywhere}.module-launcher{margin-top:18px}.module-directory{margin-top:18px}.dashboard-trust-note{background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-border,#e5eaf1);color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.65}.dashboard-trust-note strong{color:var(--aba-color-text-primary,#172033)}.module-directory-disclosure{display:grid;gap:12px}.module-directory-summary{display:flex;align-items:center;gap:12px;min-width:0;min-height:44px;cursor:pointer;list-style:none}.module-directory-summary::-webkit-details-marker{display:none}.module-directory-summary__copy{display:grid;flex:1;gap:3px;min-width:0}.module-directory-summary__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.45;overflow-wrap:anywhere}.module-directory-summary__copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.5;overflow-wrap:anywhere}.module-directory-toggle{display:grid;flex:0 0 32px;width:32px;height:32px;place-items:center;border-radius:9px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#64748b);font-size:18px;transition:transform var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.module-directory-disclosure[open] .module-directory-toggle{transform:rotate(45deg)}.module-directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;margin-top:0}
+    .panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:var(--aba-color-text-tertiary,#6b7280);margin:0}.count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid #edf0f5;border-radius:11px}.invoice-form{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 100px auto auto}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:anywhere}.footnote{font-size:10px;line-height:1.6;color:var(--aba-color-nav-muted,#9ca3af);margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:16px;background:var(--aba-color-surface,#fff);box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:var(--aba-color-text-muted,#334155);margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc);color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover{background:#eff6ff;border-color:#2563eb}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);line-height:1.35}.chat-panel{min-width:0}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-card{flex:0 0 175px}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;padding:8px}.chat-log{min-height:220px;max-height:48vh}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-inline-end:auto;margin-inline-start:0;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--aba-color-text-tertiary,#6b7280);font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:var(--aba-color-primary,#0f766e);font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-inline-end:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:var(--aba-color-surface,#fff);border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.setup-steps{background:var(--aba-color-surface-subtle,#f8fafc);border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:var(--aba-color-primary,#0f766e);font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px}footer span{color:var(--aba-color-nav-muted,#9ca3af)}
     .mobile-version-strip{display:none}
     .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .list-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.list-tools input{flex:1;min-width:150px}.list-tools select{min-width:130px}
@@ -839,24 +892,23 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
       .mobile-version-row .version-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:5px 8px}
 
-      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:#99f6e4;color:#065f46;background:#ecfdf5;font-weight:800}.install-floating{display:block;position:fixed;top:12px;right:12px;z-index:50;box-shadow:0 6px 20px #0f172a22}.install-help-floating{display:flex;position:fixed;top:62px;right:12px;z-index:50;width:min(360px,calc(100vw - 24px));box-shadow:0 8px 28px #0f172a22}.main,.shell.english .main{padding-top:76px}.shell.install-help-open .main{padding-top:164px}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;inset-inline-end:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:var(--aba-color-nav-surface-deep,#0f172a);border:1px solid var(--aba-color-nav-border,#334155);border-radius:var(--aba-radius-panel,16px);box-shadow:var(--aba-shadow-nav-menu,0 18px 50px #02061755);gap:8px}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:var(--aba-color-nav-muted,#94a3b8);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4);box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
-      .global-loading{position:fixed;inset:0 0 auto;z-index:1000;height:3px;background:#ccfbf1;overflow:hidden}.global-loading>span:first-child{position:absolute;inset:0 auto 0 0;width:35%;background:#0f766e;animation:loading-sweep 1.15s ease-in-out infinite}.loading-label{position:absolute;top:10px;right:12px;background:#0f766e;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 14px #0f172a22}@keyframes loading-sweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@media(prefers-reduced-motion:reduce){.global-loading>span:first-child{animation:none;width:100%}}
+      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:var(--aba-color-primary-border,#99f6e4);color:#065f46;background:#ecfdf5;font-weight:800}.install-floating{display:block;position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:50;box-shadow:0 6px 20px #0f172a22}.install-help-floating{display:flex;position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:12px;z-index:50;width:min(360px,calc(100vw - 24px));box-shadow:0 8px 28px #0f172a22}.main,.shell.english .main{padding-top:calc(20px + env(safe-area-inset-top,0px))}.shell.install-cta-visible .main,.shell.english.install-cta-visible .main{padding-top:calc(76px + env(safe-area-inset-top,0px))}.shell.install-help-open .main{padding-top:calc(164px + env(safe-area-inset-top,0px))}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;inset-inline-end:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:var(--aba-color-nav-surface-deep,#0f172a);border:1px solid var(--aba-color-nav-border,#334155);border-radius:var(--aba-radius-panel,16px);box-shadow:var(--aba-shadow-nav-menu,0 18px 50px #02061755);gap:8px}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:var(--aba-color-nav-muted,#94a3b8);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4);box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
+      .global-loading{position:fixed;inset:0 0 auto;z-index:1000;height:3px;background:#ccfbf1;overflow:hidden}.global-loading>span:first-child{position:absolute;inset:0 auto 0 0;width:35%;background:var(--aba-color-primary,#0f766e);animation:loading-sweep 1.15s ease-in-out infinite}.loading-label{position:absolute;top:10px;right:12px;background:var(--aba-color-primary,#0f766e);color:var(--aba-color-text-inverse,#fff);padding:7px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 14px #0f172a22}@keyframes loading-sweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@media(prefers-reduced-motion:reduce){.global-loading>span:first-child{animation:none;width:100%}}
     .sidebar{position:fixed;inset:auto 0 0;width:100%;min-height:0;height:auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;background:var(--aba-color-nav-surface-glass,rgba(15,23,42,.97));border-top:1px solid var(--aba-color-nav-border,#334155);box-shadow:var(--aba-shadow-nav-dock,0 -8px 28px #0f172a20);backdrop-filter:blur(16px);z-index:20}
       .brand,.brand>span:last-child,.nav-label,.workspace-release-meta,.sidebar-bottom{display:none}.sidebar>.mobile-extra,.sidebar>.platform-admin-nav{display:none}
-      .nav-item{min-width:0;min-height:58px;margin:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;font-size:10px;line-height:1.1;text-align:center;white-space:normal;color:#cbd5e1}
+      .nav-item{min-width:0;min-height:58px;margin:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;font-size:10px;line-height:1.1;text-align:center;white-space:normal;color:var(--aba-color-nav-text,#cbd5e1)}
       .nav-item>span:not(.nav-icon){display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
       .nav-item .nav-icon{display:grid;flex:0 0 27px;width:27px;height:27px;font-size:17px;border-radius:9px}
-      .nav-item.active{background:#1e293b;box-shadow:inset 0 -2px #5eead4;color:#fff}
-      .mobile-version-strip{display:flex;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap;gap:4px 8px;margin:0 2px 10px}.mobile-version-strip .version-pill{font-size:10px;padding:5px 7px}.mobile-deploy-time{font-size:10px;line-height:1.4;color:#64748b;max-width:100%;overflow-wrap:anywhere}
+      .nav-item.active{background:var(--aba-color-nav-surface-raised,#1e293b);box-shadow:inset 0 -2px #5eead4;color:var(--aba-color-text-inverse,#fff)}
+      .mobile-version-strip{display:flex;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap;gap:4px 8px;margin:0 2px 10px}.mobile-version-strip .version-pill{font-size:10px;padding:5px 7px}.mobile-deploy-time{font-size:10px;line-height:1.4;color:var(--aba-color-text-secondary,#5d6878);max-width:100%;overflow-wrap:anywhere}
       .main,.shell.english .main{margin:0;padding:20px 14px calc(100px + env(safe-area-inset-bottom));max-width:none}
       .topbar{display:none!important}
       .mobile-page-heading{display:block;margin:0 0 16px;padding:0 2px}
-      .mobile-page-heading .eyebrow{margin:0 0 5px;color:var(--aba-color-text-secondary,#64748b);font-size:var(--aba-font-size-2xs,10px);font-weight:var(--aba-font-weight-semibold,600)}
+      .mobile-page-heading .eyebrow{margin:0 0 5px;color:var(--aba-color-text-secondary,#5d6878);font-size:var(--aba-font-size-2xs,10px);font-weight:var(--aba-font-weight-semibold,600)}
       .mobile-page-heading h1{margin:0;color:var(--aba-color-text-primary,#172033);font-size:clamp(20px,5.5vw,25px);line-height:var(--aba-line-height-tight,1.3);font-weight:var(--aba-font-weight-bold,700);letter-spacing:var(--aba-letter-spacing-tight,-.02em);overflow-wrap:anywhere}
       .topbar h1{font-size:clamp(20px,5.5vw,25px);line-height:1.2}
       .user-area{gap:6px}.user-area>span:not(.version-pill){display:none}.user-area .version-pill{display:inline-flex;flex-shrink:0;padding:5px 7px;font-size:10px}.user-area .secondary{padding:9px 10px;min-height:40px}
-      .hero{padding:22px 20px;border-radius:16px}.hero h2{font-size:27px}.hero-mark{display:none}
-      .quick-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}.workspace-bar{align-items:stretch;flex-direction:column}.workspace-bar select{max-width:none;width:100%}
+      .home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.home-shortcut-link{width:100%}.workspace-bar{align-items:stretch;flex-direction:column}.workspace-bar select{max-width:none;width:100%}
       .list-tools{display:grid;grid-template-columns:1fr}.list-tools input,.list-tools select,.list-tools button{width:100%}
       .section-head{align-items:flex-start;gap:10px}.list-row{flex-wrap:wrap}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:13px;min-height:110px}.metric strong{font-size:clamp(15px,4vw,18px);overflow-wrap:anywhere}
       
@@ -867,8 +919,8 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
       button,.secondary,.primary{min-height:42px}
     }
     .mobile-version-row{display:none}
-    .invoice-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}.invoice-preview>div{display:flex;flex-direction:column;gap:4px;min-width:0}.invoice-preview span{font-size:12px;color:#64748b}.invoice-preview strong{font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.invoice-preview .total{grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:10px}
-    .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;color:#334155;font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.statement-panel{min-width:0;max-width:100%;overflow:hidden}.statement-panel .section-head>div{min-width:0;overflow-wrap:anywhere}.statement-panel .table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}.statement-panel .table-wrap table{width:100%;min-width:680px;border-collapse:collapse;table-layout:auto}.statement-panel .table-wrap th,.statement-panel .table-wrap td{padding:10px 12px;text-align:start;white-space:nowrap;border-bottom:1px solid #edf0f5;font-size:12px}.statement-panel .table-wrap td:nth-child(3){max-width:220px;overflow-wrap:anywhere;white-space:normal}
+    .invoice-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}.invoice-preview>div{display:flex;flex-direction:column;gap:4px;min-width:0}.invoice-preview span{font-size:12px;color:var(--aba-color-text-secondary,#64748b)}.invoice-preview strong{font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.invoice-preview .total{grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:10px}
+    .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-muted,#334155);font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.statement-panel{min-width:0;max-width:100%;overflow:hidden}.statement-panel .section-head>div{min-width:0;overflow-wrap:anywhere}.statement-panel .table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}.statement-panel .table-wrap table{width:100%;min-width:680px;border-collapse:collapse;table-layout:auto}.statement-panel .table-wrap th,.statement-panel .table-wrap td{padding:10px 12px;text-align:start;white-space:nowrap;border-bottom:1px solid #edf0f5;font-size:12px}.statement-panel .table-wrap td:nth-child(3){max-width:220px;overflow-wrap:anywhere;white-space:normal}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
     @media(max-width:760px){
@@ -878,9 +930,9 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
         padding:7px;
         grid-template-columns:repeat(4,minmax(0,1fr));
         gap:5px;
-        border:1px solid #334155;
+        border:1px solid var(--aba-color-nav-border,#334155);
         border-radius:22px;
-        background:rgba(15,23,42,.96);
+        background:var(--aba-color-nav-surface-glass,rgb(15 23 42 / 96%));
         box-shadow:0 12px 38px #02061745,0 1px 0 #ffffff0a inset;
         overflow:visible;
       }
@@ -892,23 +944,23 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
         font-size:10px;
         font-weight:700;
         letter-spacing:0;
-        color:#cbd5e1;
+        color:var(--aba-color-nav-text,#cbd5e1);
         transition:background .18s ease,transform .18s ease,color .18s ease;
       }
       .nav-item .nav-icon{
         width:29px;height:29px;flex-basis:29px;
         border-radius:11px;
         background:#273449;
-        color:#cbd5e1;
+        color:var(--aba-color-nav-text,#cbd5e1);
         font-size:18px;
       }
       .sidebar .nav-item.active{
-        color:#fff;
+        color:var(--aba-color-text-inverse,#fff);
         background:linear-gradient(145deg,#134e4a,#115e59);
         border-inline-start:0;
         box-shadow:0 4px 14px #0f766e30,inset 0 0 0 1px #5eead455;
       }
-      .nav-item.active .nav-icon{background:#5eead926;color:#99f6e4}
+      .nav-item.active .nav-icon{background:#5eead926;color:var(--aba-color-primary-border,#99f6e4)}
       .nav-item:active{transform:scale(.97)}
       .mobile-more-menu{
         inset-inline-end:12px;
@@ -942,7 +994,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     .workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,260px);align-items:center;gap:12px}
     .workspace-current{min-width:0}.workspace-current strong{overflow-wrap:anywhere}
     .workspace-release-meta-inline{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid #e5eaf1}
-    .workspace-release-meta-inline small{color:#64748b;font-size:11px;overflow-wrap:anywhere;text-align:center}
+    .workspace-release-meta-inline small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;overflow-wrap:anywhere;text-align:center}
     .invoice-toolbar{display:flex;flex-direction:column;gap:12px;margin-top:12px}
     .invoice-create-disclosure{width:100%;order:0}
     .customer-invoice-filter{order:1;width:100%;margin:0}
@@ -958,8 +1010,6 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     .shell input[type="number"]{font-variant-numeric:tabular-nums}
     .shell label{min-width:0;gap:6px}
     .list-row{min-width:0;overflow-wrap:anywhere}
-    .release-guide-panel .release-guide-groups,.release-guide-panel .release-history{gap:12px}
-    .release-guide-panel .release-feature-group>summary,.release-guide-panel .release-version>summary{min-height:48px}
     .assistant-suggestions{padding:12px;border:1px solid #dbeafe;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#eff6ff)}
     .assistant-suggestions .suggestion-card{min-height:68px}
     .auth-retry{margin-top:12px}
@@ -979,10 +1029,11 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
       .invoice-form label:has(input[type="number"]) input{width:100%}
       .expense-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
       .expense-form input[name="expenseDescription"],.expense-form input[name="expenseDate"]{grid-column:1/-1}
+      .expense-cash-semantics{margin:10px 0 0;padding:9px 11px;border-inline-start:3px solid var(--aba-color-info,#3b82f6);border-radius:8px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:12px;line-height:1.55}
       .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
       .metric{padding:12px;min-height:105px}
       .metric strong{font-size:17px}
-      .list-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+      .list-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface,#fff)}
       .list-row .grow{min-width:0;width:100%}
       .list-row>button,.list-row>strong{justify-self:start;max-width:100%}
       .suggestion-grid{grid-template-columns:minmax(0,1fr)}
@@ -1022,12 +1073,14 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     }
     /* P1 Home hierarchy: keep the four KPI cards readable as a single column on phones. */
     @media(max-width:760px){.metric-grid{grid-template-columns:minmax(0,1fr)}}
+    /* Keep two-column Home shortcuts at 390/412px; use a single column at very narrow widths. */
+    @media(max-width:360px){.home-shortcut-list{grid-template-columns:minmax(0,1fr)}}
+    /* The extracted Hybrid Modern header replaces the old mobile workspace/page header only. */
+    @media(max-width:760px){.workspace-bar{display:none!important}.mobile-page-heading{display:none!important}}
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
-  readonly featureCatalog = FEATURE_CATALOG;
-  readonly releaseHistory = RELEASE_HISTORY;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   readonly buildTimeLabel = APP_BUILD_INFO.builtAt ? new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' }).format(new Date(APP_BUILD_INFO.builtAt)) : 'وقت البناء غير متاح';
   apiVersionLabel = 'غير متاح';
@@ -1041,6 +1094,7 @@ export class AppComponent implements OnInit, OnDestroy {
   signingUp = false;
   loading = false;
   error = '';
+  homeDashboardError = '';
   email = '';
   password = '';
   userEmail = '';
@@ -1099,6 +1153,12 @@ export class AppComponent implements OnInit, OnDestroy {
   customerSearch = '';
   productSearch = '';
   invoiceSearch = '';
+  paymentSearch = '';
+  expenseSearch = '';
+  supplierSearch = '';
+  purchaseSearch = '';
+  recurringSearch = '';
+  notificationSearch = '';
   invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'paid' | 'overdue' | 'void' = 'all';
   payments: Payment[] = [];
   expenses: Expense[] = [];
@@ -1177,6 +1237,11 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceTaxRate = '0';
   invoiceMessage = '';
   invoiceMessageKind: 'success' | 'warning' = 'success';
+  pendingInvoiceVoid: Invoice | null = null;
+  invoiceVoidError = '';
+  pendingPurchaseReceipt: PurchaseOrder | null = null;
+  purchaseReceiptError = '';
+  confirmationReturnFocus: HTMLElement | null = null;
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
@@ -1256,7 +1321,41 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId);
+    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status));
+  }
+
+  get filteredSuppliers(): Supplier[] {
+    return filterSuppliers(this.suppliers, this.supplierSearch);
+  }
+
+  get filteredPurchaseOrders(): PurchaseOrder[] {
+    return filterPurchaseOrders(
+      this.purchaseOrders,
+      this.purchaseSearch,
+      id => this.supplierNameFor(id),
+      id => this.productNameFor(id),
+      status => this.purchaseOrderStatusLabel(status),
+    );
+  }
+
+  get filteredRecurringSchedules(): RecurringInvoiceSchedule[] {
+    return filterRecurringSchedules(
+      this.recurringSchedules,
+      this.recurringSearch,
+      id => this.customerNameForInvoice(id),
+    );
+  }
+
+  get filteredNotifications(): NotificationRecord[] {
+    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status));
+  }
+
+  get filteredExpenses(): Expense[] {
+    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category));
+  }
+
+  get filteredPayments(): Payment[] {
+    return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id), method => this.paymentMethodLabel(method));
   }
 
   exportCurrentList(): void {
@@ -1470,8 +1569,69 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  expenseCategoryLabel(category: string): string {
+    const labelsAr: Record<string, string> = {
+      General: 'عام',
+      Supplies: 'مستلزمات',
+      Rent: 'إيجار',
+      Utilities: 'مرافق وفواتير',
+      Transport: 'نقل ومواصلات',
+      Marketing: 'تسويق',
+      Payroll: 'رواتب',
+      Maintenance: 'صيانة',
+      Other: 'أخرى',
+    };
+    const labelsEn: Record<string, string> = {
+      General: 'General',
+      Supplies: 'Supplies',
+      Rent: 'Rent',
+      Utilities: 'Utilities',
+      Transport: 'Transport',
+      Marketing: 'Marketing',
+      Payroll: 'Payroll',
+      Maintenance: 'Maintenance',
+      Other: 'Other',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[category] || category;
+  }
+
+  paymentMethodLabel(method: string): string {
+    const labelsAr: Record<string, string> = {
+      cash: 'نقدًا',
+      bank_transfer: 'تحويل بنكي',
+      card: 'بطاقة',
+      wallet: 'محفظة إلكترونية',
+      other: 'أخرى',
+    };
+    const labelsEn: Record<string, string> = {
+      cash: 'Cash',
+      bank_transfer: 'Bank transfer',
+      card: 'Card',
+      wallet: 'E-wallet',
+      other: 'Other',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[method] || method;
+  }
+
+  notificationStatusLabel(status: string): string {
+    const labelsAr: Record<string, string> = {
+      pending: 'قيد الانتظار',
+      sent: 'تم الإرسال',
+      failed: 'فشل الإرسال',
+      cancelled: 'ملغي',
+    };
+    const labelsEn: Record<string, string> = {
+      pending: 'Pending',
+      sent: 'Sent',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t('حالة غير محددة', 'Unknown status');
+  }
+
   notificationKindLabel(kind: string): string {
     const labels: Record<string, { ar: string; en: string }> = {
+      business: { ar: 'مساحات العمل', en: 'Businesses' },
       businesses: { ar: 'مساحات العمل', en: 'Businesses' },
       invoices: { ar: 'الفواتير', en: 'Invoices' },
       payments: { ar: 'المدفوعات', en: 'Payments' },
@@ -1488,51 +1648,21 @@ export class AppComponent implements OnInit, OnDestroy {
     return labels[kind]?.[this.language] || kind;
   }
 
-  auditActionLabel(action: string): string {
+  customerStatementEventLabel(eventType: string): string {
     const labels: Record<string, { ar: string; en: string }> = {
-      'invoice.issued': { ar: 'إصدار فاتورة', en: 'Invoice issued' },
-      'invoice.created': { ar: 'إنشاء فاتورة', en: 'Invoice created' },
-      'invoice.draft_updated': { ar: 'تعديل مسودة فاتورة', en: 'Invoice draft updated' },
-      'invoice.voided': { ar: 'إلغاء فاتورة', en: 'Invoice voided' },
-      'payment.recorded': { ar: 'تسجيل دفعة', en: 'Payment recorded' },
-      'expense.created': { ar: 'تسجيل مصروف', en: 'Expense recorded' },
-      'customer.created': { ar: 'إضافة عميل', en: 'Customer created' },
-      'product.created': { ar: 'إضافة منتج', en: 'Product created' },
-      'stock.movement_recorded': { ar: 'تسجيل حركة مخزون', en: 'Stock movement recorded' },
-      'supplier.created': { ar: 'إضافة مورد', en: 'Supplier created' },
-      'customer.updated': { ar: 'تعديل بيانات عميل', en: 'Customer updated' },
-      'customer.deactivated': { ar: 'تعطيل عميل', en: 'Customer deactivated' },
-      'product.updated': { ar: 'تعديل منتج', en: 'Product updated' },
-      'product.deactivated': { ar: 'تعطيل منتج', en: 'Product deactivated' },
-      'purchase_order.created': { ar: 'إنشاء أمر شراء', en: 'Purchase order created' },
-      'purchase_order.approved': { ar: 'اعتماد أمر شراء', en: 'Purchase order approved' },
-      'purchase_order.received': { ar: 'استلام أمر شراء', en: 'Purchase order received' },
-      'sales_return.created': { ar: 'تسجيل مرتجع بيع', en: 'Sales return created' },
-      'sales_return.approved': { ar: 'اعتماد مرتجع بيع', en: 'Sales return approved' },
-      'recurring_invoice_schedule.created': { ar: 'إنشاء جدول فاتورة دورية', en: 'Recurring invoice schedule created' },
-      'data_import.completed': { ar: 'اكتمال استيراد البيانات', en: 'Data import completed' },
-      'pricing_rule.created': { ar: 'إنشاء قاعدة تسعير', en: 'Pricing rule created' }
+      invoice_issued: { ar: 'إصدار فاتورة', en: 'Invoice issued' },
+      payment_allocation: { ar: 'تخصيص دفعة', en: 'Payment allocation' },
+      currency_mismatch_allocation: { ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' },
     };
-    return labels[action]?.[this.language] || action;
+    return labels[eventType]?.[this.language] || eventType;
+  }
+
+  auditActionLabel(action: string): string {
+    return formatAuditActionLabel(action, this.language);
   }
 
   auditTargetLabel(target: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      invoice: { ar: 'فاتورة', en: 'Invoice' },
-      payment: { ar: 'دفعة', en: 'Payment' },
-      expense: { ar: 'مصروف', en: 'Expense' },
-      customer: { ar: 'عميل', en: 'Customer' },
-      product: { ar: 'منتج', en: 'Product' },
-      supplier: { ar: 'مورد', en: 'Supplier' },
-      stock_movement: { ar: 'حركة مخزون', en: 'Stock movement' },
-      purchase_order: { ar: 'أمر شراء', en: 'Purchase order' },
-      sales_return: { ar: 'مرتجع بيع', en: 'Sales return' },
-      recurring_invoice_schedule: { ar: 'جدول فاتورة دورية', en: 'Recurring invoice schedule' },
-      import_job: { ar: 'عملية استيراد', en: 'Import job' },
-      pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
-      business: { ar: 'نشاط تجاري', en: 'Business' }
-    };
-    return labels[target]?.[this.language] || target;
+    return formatAuditTargetLabel(target, this.language);
   }
 
   revenueBasisLabel(value: string): string {
@@ -1585,19 +1715,43 @@ export class AppComponent implements OnInit, OnDestroy {
     return known[normalized]?.[this.language] || value;
   }
 
+  operationalHealthStatusLabel(status: string): string {
+    if (status === 'ok') return this.t('سليم', 'Healthy');
+    if (status === 'degraded') return this.t('يحتاج مراجعة', 'Degraded');
+    return status || this.t('حالة غير محددة', 'Unknown status');
+  }
+
   invoiceStatusLabel(status: string): string {
     const labelsAr: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
     const labelsEn: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided', paid: 'Paid', overdue: 'Overdue' };
     return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('غير محددة', 'Unknown');
   }
 
+  purchaseOrderStatusLabel(status: string): string {
+    const labelsAr: Record<string, string> = {
+      draft: 'مسودة',
+      approved: 'معتمد',
+      partially_received: 'مستلم جزئيًا',
+      received: 'مستلم بالكامل',
+      cancelled: 'ملغي',
+    };
+    const labelsEn: Record<string, string> = {
+      draft: 'Draft',
+      approved: 'Approved',
+      partially_received: 'Partially received',
+      received: 'Received',
+      cancelled: 'Cancelled',
+    };
+    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t('حالة غير محددة', 'Unknown status');
+  }
+
   get pageTitle(): string {
     const titles: Record<Tab, string> = {
-      overview: 'نظرة عامة على النشاط', customers: 'العملاء',
+      overview: 'الرئيسية', customers: 'العملاء',
       products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', expenses: 'المصروفات', employees: 'الموظفون والمرتبات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'الأرباح والخسائر', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
+      payments: 'المدفوعات', expenses: 'المصروفات', employees: 'الموظفون والمرتبات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'نتيجة التشغيل الأولية', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Business overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', employees: 'Employees & payroll', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Profit & loss', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', employees: 'Employees & payroll', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Preliminary operating result', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
@@ -1698,13 +1852,18 @@ export class AppComponent implements OnInit, OnDestroy {
         this.selectedBusinessId = '';
         this.clearWorkspaceData();
         // Keep the global control plane accessible to admins without workspace memberships.
-        if (this.platformAdminAvailable) this.tab = 'platform-admin';
+        // If the platform capability was revoked, do not retain its previously selected tab.
+        if (this.platformAdminAvailable) this.setTab('platform-admin');
+        else this.setTab('overview');
         return;
       }
       const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
       const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
+      // A membership or platform-role refresh can invalidate the currently selected tab.
+      // Reuse the same navigation guard as interactive tab changes before reloading data.
+      if (!this.canAccessTab(this.tab)) this.setTab('overview');
       if (workspaceAccessChanged) this.clearWorkspaceData();
       await this.loadWorkspaceData();
     } catch (error) {
@@ -1720,7 +1879,16 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.confirmationReturnFocus = null;
     this.chatRequestGuard.invalidate();
+    this.payrollRefreshGuard.invalidate();
+    this.dataIntegrityLoadGuard.invalidate();
+    this.operationalHealthLoadGuard.invalidate();
+    this.taxSummaryLoadGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -1743,6 +1911,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementOffset = 0;
     this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
+    this.homeDashboardError = '';
     this.profitLoss = null;
     this.taxSummaryReport = null;
     this.dataIntegrityReport = null;
@@ -1752,6 +1921,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.taxError = '';
     this.taxLoading = false;
     this.agingReport = null;
+    // Never carry an OWNER-only opening-stock value into another workspace or role.
+    this.productOpeningQuantity = '0';
     // Import previews are workspace-scoped; never carry a pending CSV into another business.
     this.importCsvText = '';
     this.importFileName = '';
@@ -1774,6 +1945,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.purchaseOrders = [];
     this.recurringSchedules = [];
     this.notifications = [];
+    this.supplierSearch = '';
+    this.paymentSearch = '';
+    this.expenseSearch = '';
+    this.purchaseSearch = '';
+    this.recurringSearch = '';
+    this.notificationSearch = '';
     this.operationalHealth = null;
     this.operationsError = '';
     this.operationsErrorTab = null;
@@ -1887,6 +2064,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
+  private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
+  private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
+  private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
+  private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
 
@@ -1900,11 +2081,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = '';
     try {
+      const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
       const [dashboard, عميل, منتج, فاتورة, دفعة, مصروفات] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), this.api.payments(id), this.api.expenses(id)
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
+      this.homeDashboardError = '';
       this.profitLoss = null;
       this.customers = عميل;
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
@@ -1929,19 +2112,40 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async refreshAfterPayrollPayment(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const businessId = this.business.id;
-    try {
-      const [expenses, dashboard] = await Promise.all([
-        this.api.expenses(businessId),
-        this.api.dashboard(businessId),
-      ]);
-      if (this.business?.id !== businessId) return;
-      this.expenses = expenses;
-      this.dashboard = dashboard;
-      this.profitLoss = null;
-    } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
-    }
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
+
+    // Payroll refresh data is sensitive: discard late owner responses after a role,
+    // identity, or workspace transition, even when the business ID stays the same.
+    await runTenantScopedRequest(
+      this.payrollRefreshGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      async () => {
+        const [expenses, dashboard] = await Promise.all([
+          this.api.expenses(requestContext.workspaceId),
+          this.api.dashboard(requestContext.workspaceId),
+        ]);
+        return { expenses, dashboard };
+      },
+      {
+        onSuccess: ({ expenses, dashboard }) => {
+          this.expenses = expenses;
+          this.dashboard = dashboard;
+          if (this.error === this.homeDashboardError) this.error = '';
+          this.homeDashboardError = '';
+          this.profitLoss = null;
+        },
+        onError: error => {
+          // A failed current refresh must not leave pre-payment dashboard metrics visible.
+          this.dashboard = null;
+          this.homeDashboardError = this.message(error);
+          this.error = this.homeDashboardError;
+        },
+        onFinally: () => undefined,
+      },
+    );
   }
 
   exportReceivablesAgingCsv(): void {
@@ -2043,52 +2247,82 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async loadTaxSummary(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
     if (this.taxStartDate && this.taxEndDate && this.taxStartDate > this.taxEndDate) {
+      this.taxSummaryLoadGuard.invalidate();
       this.taxSummaryReport = null;
+      this.taxLoading = false;
       this.taxError = this.t('تاريخ البداية يجب ألا يتجاوز تاريخ النهاية.', 'Start date must not be after end date.');
       return;
     }
-    const businessId = this.business.id;
     this.taxLoading = true;
     this.taxError = '';
-    try {
-      const report = await this.api.taxSummary(businessId, this.taxStartDate || undefined, this.taxEndDate || undefined);
-      if (this.business?.id === businessId && this.business.role === 'owner') this.taxSummaryReport = report;
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        this.taxSummaryReport = null;
-        this.taxError = this.message(error);
-      }
-    } finally {
-      if (this.business?.id === businessId) this.taxLoading = false;
-    }
+    await runTenantScopedRequest(
+      this.taxSummaryLoadGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.taxSummary(requestContext.workspaceId, this.taxStartDate || undefined, this.taxEndDate || undefined),
+      {
+        onSuccess: report => { this.taxSummaryReport = report; },
+        onError: error => {
+          this.taxSummaryReport = null;
+          this.taxError = this.message(error);
+        },
+        onFinally: () => { this.taxLoading = false; },
+        onStale: () => { this.taxLoading = false; },
+      },
+    );
   }
 
   async loadDataIntegrity(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const businessId = this.business.id;
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
     this.integrityLoading = true;
     this.integrityError = '';
     this.integrityOffset = offset;
-    try {
-      const result = await this.api.dataIntegrity(businessId, offset);
-      if (this.business?.id !== businessId) return;
-      this.dataIntegrityReport = result;
-    } catch (error) {
-      if (this.business?.id !== businessId) return;
-      this.dataIntegrityReport = null;
-      this.integrityError = this.message(error);
-    } finally {
-      if (this.business?.id === businessId) this.integrityLoading = false;
-    }
+    await runTenantScopedRequest(
+      this.dataIntegrityLoadGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.dataIntegrity(requestContext.workspaceId, offset),
+      {
+        onSuccess: result => { this.dataIntegrityReport = result; },
+        onError: error => {
+          this.dataIntegrityReport = null;
+          this.integrityError = this.message(error);
+        },
+        onFinally: () => { this.integrityLoading = false; },
+        onStale: () => { this.integrityLoading = false; },
+      },
+    );
   }
 
   async loadOperationalHealth(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
-    const businessId=this.business.id;this.healthLoading=true;this.healthError='';
-    try { const result=await this.api.operationsHealth(businessId);if(this.business?.id===businessId)this.operationalHealth=result; }
-    catch(error){if(this.business?.id===businessId){this.operationalHealth=null;this.healthError=this.message(error)}}
-    finally{if(this.business?.id===businessId)this.healthLoading=false}
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
+    this.healthLoading = true;
+    this.healthError = '';
+    await runTenantScopedRequest(
+      this.operationalHealthLoadGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      () => this.api.operationsHealth(requestContext.workspaceId),
+      {
+        onSuccess: result => { this.operationalHealth = result; },
+        onError: error => {
+          this.operationalHealth = null;
+          this.healthError = this.message(error);
+        },
+        onFinally: () => { this.healthLoading = false; },
+        onStale: () => { this.healthLoading = false; },
+      },
+    );
   }
 
   private beginOperationsAction(): void {
@@ -2252,33 +2486,72 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
+  canReceivePurchaseOrder(order: PurchaseOrder): boolean {
+    return (order.status === 'approved' || order.status === 'partially_received') &&
+      order.lines.some(line => this.hasRemainingQuantity(line));
+  }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
-  async receivePurchaseOrder(order: PurchaseOrder): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+  requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent): void {
+    if (!this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order)) return;
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.pendingPurchaseReceipt = order;
+    this.purchaseReceiptError = '';
+    this.confirmationReturnFocus = event.currentTarget as HTMLElement;
+  }
+
+  cancelPurchaseOrderReceipt(): void {
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.confirmationReturnFocus = null;
+  }
+
+  get pendingPurchaseReceiptDetails(): string[] {
+    return (this.pendingPurchaseReceipt?.lines || [])
+      .filter(line => this.hasRemainingQuantity(line))
+      .map(line => `${this.productNameFor(line.product_id)} · ${line.remaining_quantity} ${this.t('وحدة', 'units')}`);
+  }
+
+  async confirmPurchaseOrderReceipt(): Promise<void> {
+    const order = this.pendingPurchaseReceipt;
+    if (!order || !this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order) || this.purchasesLoading) return;
     const lines = order.lines
       .filter(line => this.hasRemainingQuantity(line))
       .map(line => ({ line_id: line.id, quantity: line.remaining_quantity }));
-    if (!lines.length) return;
+    if (!lines.length) {
+      this.cancelPurchaseOrderReceipt();
+      return;
+    }
     const businessId = this.business.id;
     this.beginOperationsAction();
     this.purchasesLoading = true;
+    this.purchaseReceiptError = '';
     try {
       await this.api.receivePurchaseOrder(businessId, order.id, lines);
       if (this.business?.id !== businessId) return;
+      this.pendingPurchaseReceipt = null;
+      this.confirmationReturnFocus = null;
       this.setOperationsSuccess('purchases', this.t('تم تسجيل الاستلام.', 'Receiving was recorded.'));
-      const [orders, products, dashboard] = await Promise.all([
-        this.api.purchaseOrders(businessId),
-        this.api.products(businessId),
-        this.api.dashboard(businessId),
-      ]);
-      if (this.business?.id === businessId) {
-        this.purchaseOrders = orders;
-        this.products = products;
-        this.dashboard = dashboard;
+      try {
+        const [orders, products, dashboard] = await Promise.all([
+          this.api.purchaseOrders(businessId),
+          this.api.products(businessId),
+          this.api.dashboard(businessId),
+        ]);
+        if (this.business?.id === businessId) {
+          this.purchaseOrders = orders;
+          this.products = products;
+          this.dashboard = dashboard;
+        }
+      } catch (error) {
+        if (this.business?.id === businessId) this.setOperationsFailure('purchases', error);
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.setOperationsFailure('purchases', error);
+      if (this.business?.id === businessId) {
+        this.setOperationsFailure('purchases', error);
+        this.purchaseReceiptError = this.operationsError || this.message(error);
+      }
     } finally {
       if (this.business?.id === businessId) this.purchasesLoading = false;
     }
@@ -2405,7 +2678,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.operationsWarning = '';
     }
     this.tab = tab;
-    this.error = '';
+    this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();
     if (tab === 'taxes' && this.business?.role === 'owner') void this.loadTaxSummary();
@@ -2741,8 +3014,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.productMessageKind = 'success';
     try {
       await this.api.createProduct(businessId, {
-        name: this.productName, unit_price: this.productPrice, is_stock_tracked: this.stockTracked,
-        opening_quantity: this.stockTracked ? this.productOpeningQuantity : '0'
+        name: this.productName, unit_price: Number(this.productPrice).toFixed(2), is_stock_tracked: this.stockTracked,
+        opening_quantity: this.stockTracked && this.business.role === 'owner' ? this.productOpeningQuantity : '0'
       });
       if (this.business?.id !== businessId) return;
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
@@ -3043,19 +3316,35 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  async voidInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || this.business.role !== 'owner' || !window.confirm(this.t(
-      `تأكيد إلغاء الفاتورة ${invoice.invoice_number}؟ إذا كانت عليها دفعات مخصصة، لا تكمل الإلغاء وراجع مالك مساحة العمل قبل أي تصحيح. الشاشة دي لا تنفذ رد مبالغ أو إشعارات دائنة.`,
-      `Confirm voiding invoice ${invoice.invoice_number}? If payments are allocated, stop and ask the workspace owner before making any correction. This screen does not process refunds or credit notes.`
-    ))) return;
+  requestInvoiceVoid(invoice: Invoice, event: MouseEvent): void {
+    if (!this.business || this.business.role !== 'owner' || !['draft', 'issued'].includes(invoice.status)) return;
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.pendingInvoiceVoid = invoice;
+    this.invoiceVoidError = '';
+    this.confirmationReturnFocus = event.currentTarget as HTMLElement;
+  }
+
+  cancelInvoiceVoid(): void {
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.confirmationReturnFocus = null;
+  }
+
+  async confirmInvoiceVoid(): Promise<void> {
+    const invoice = this.pendingInvoiceVoid;
+    if (!invoice || !this.business || this.business.role !== 'owner' || this.loading) return;
     const businessId = this.business.id;
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
     this.invoiceMessageKind = 'success';
+    this.invoiceVoidError = '';
     try {
       await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
       if (this.business?.id !== businessId) return;
+      this.pendingInvoiceVoid = null;
+      this.confirmationReturnFocus = null;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
       this.invoiceMessage = this.t('تم إلغاء الفاتورة بنجاح.', 'Invoice voided successfully.');
       try {
@@ -3078,7 +3367,14 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (this.business?.id === businessId) {
+        this.invoiceVoidError = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'تعذر تأكيد نتيجة الإلغاء. لا تعاود المحاولة قبل تحديث حالة الفاتورة.',
+          'Could not confirm the void result. Do not retry until the invoice status is refreshed.'
+        );
+      }
     } finally {
       if (this.business?.id === businessId) this.loading = false;
     }

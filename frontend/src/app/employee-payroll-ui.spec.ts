@@ -36,7 +36,7 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
 });
 
 test('employee/payroll styles are component-local and responsive instead of relying on parent encapsulated CSS', () => {
-  assert.match(component, /\.employee-panel\{min-width:0;background:#fff;border:1px solid/);
+  assert.match(component, /\.employee-panel\{min-width:0;background:var\(--aba-color-surface,#fff\);border:1px solid var\(--aba-color-border/);
   assert.match(component, /\.primary,\.secondary\{/);
   assert.match(component, /\.section-head\{/);
   assert.match(component, /\.list-row\{/);
@@ -74,17 +74,102 @@ test('in-app feature catalogue documents employee/payroll permissions and one-ti
 });
 
 
-test('a successful payroll payment refreshes the workspace expense list and dashboard', () => {
+test('a successful payroll payment refreshes workspace data only for the same authenticated OWNER context', () => {
   assert.match(component, /@Output\(\) payrollPaid = new EventEmitter<void>\(\)/);
   const payStart = component.indexOf('async payPayroll(');
   assert.ok(payStart >= 0);
   assert.match(component.slice(payStart), /this\.payrollPaid\.emit\(\)/);
   assert.match(app, /\(payrollPaid\)="refreshAfterPayrollPayment\(\)"/);
+
   const refreshStart = app.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  assert.ok(refreshStart >= 0);
-  const refresh = app.slice(refreshStart, refreshStart + 1200);
-  assert.match(refresh, /this\.api\.expenses\(businessId\)/);
-  assert.match(refresh, /this\.api\.dashboard\(businessId\)/);
-  assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
-  assert.match(refresh, /if \(this\.business\?\.id === businessId\) this\.error = this\.message\(error\)/);
+  const refreshEnd = app.indexOf('\n  exportReceivablesAgingCsv()', refreshStart);
+  assert.ok(refreshStart >= 0 && refreshEnd > refreshStart);
+  const refresh = app.slice(refreshStart, refreshEnd);
+  assert.match(refresh, /requestContext\.role !== 'owner'/);
+  assert.match(refresh, /runTenantScopedRequest\(\s*this\.payrollRefreshGuard/);
+  assert.match(refresh, /this\.api\.expenses\(requestContext\.workspaceId\)/);
+  assert.match(refresh, /this\.api\.dashboard\(requestContext\.workspaceId\)/);
+  assert.match(refresh, /this\.expenses = expenses;/);
+  assert.match(refresh, /this\.dashboard = dashboard;/);
+  assert.match(refresh, /onError: error =>/);
+  assert.match(refresh, /this\.dashboard = null;/);
+  assert.match(refresh, /this\.homeDashboardError = this\.message\(error\);/);
+  assert.match(refresh, /this\.error = this\.homeDashboardError;/);
+  assert.match(refresh, /onFinally: \(\) => undefined/);
+});
+
+
+test('payroll payout wording describes an in-app record and never implies a bank transfer', () => {
+  assert.match(component, /Record payout in app/);
+  assert.match(component, /Payout recorded in the app/);
+  assert.match(component, /No bank transfer is sent/);
+  assert.match(component, /Payout recorded/);
+  assert.doesNotMatch(component, /Mark paid/);
+  assert.match(component, /تسجيل الصرف داخل النظام/);
+});
+
+
+test('employee and payroll surfaces consume shared semantic status and control tokens', () => {
+  for (const token of [
+    '--aba-color-text-primary', '--aba-color-border', '--aba-color-text-tertiary',
+    '--aba-color-primary', '--aba-color-on-primary', '--aba-color-primary-strong',
+    '--aba-color-danger-text', '--aba-color-danger-soft', '--aba-color-success-text', '--aba-color-success-soft',
+    '--aba-color-warning-text', '--aba-color-warning-soft', '--aba-color-info-text', '--aba-control-height',
+  ]) assert.ok(component.includes(token), `missing shared payroll token: ${token}`);
+  assert.match(component, /\.employee-panel\{min-width:0;background:var\(--aba-color-surface/);
+  assert.match(component, /class="notice success-notice"/);
+  assert.ok(component.includes('background:var(--aba-color-success-soft,#ecfdf5)'));
+  assert.ok(component.includes('background:var(--aba-color-warning-soft,#fffbeb)'));
+  assert.equal(component.includes(')beb'), false);
+});
+
+
+test('payroll section headings stack cleanly on narrow screens', () => {
+  assert.match(component, /@media\(max-width:600px\)\{\.section-head\{display:grid;grid-template-columns:minmax\(0,1fr\);gap:8px\}/);
+  assert.match(component, /\.section-head \.count\{justify-self:start\}/);
+});
+
+
+test('employee search distinguishes an empty directory from no matching results', () => {
+  assert.match(component, /employeeSearch\.trim\(\) \? t\('لا يوجد موظفون مطابقون للبحث\.'/);
+  assert.match(component, /No matching employees found/);
+  assert.match(component, /No employees have been added yet/);
+});
+
+
+test('owner-only payroll view stays behind its deferred loading boundary', () => {
+  const start = app.indexOf("@if (tab === 'employees' && business.role === 'owner') {");
+  const end = app.indexOf("@if (tab === 'expenses')", start);
+  assert.ok(start >= 0 && end > start);
+  const block = app.slice(start, end);
+  assert.match(block, /@defer \(when tab === 'employees' && business\.role === 'owner'\)/);
+  assert.match(block, /@placeholder/);
+  assert.match(block, /<aba-state-message kind="loading"/);
+  assert.equal((app.match(/<aba-employee-payroll\b/g) || []).length, 1);
+  assert.match(app, /import \{ EmployeePayrollComponent \} from '\.\/employee-payroll\.component';/);
+  assert.match(component, /standalone: true/);
+});
+
+
+test('employee directory and payroll selector never expose base salary values', () => {
+  const directoryStart = component.indexOf('<div class="list">');
+  const directoryEnd = component.indexOf('<section class="payroll-section">', directoryStart);
+  assert.ok(directoryStart >= 0 && directoryEnd > directoryStart);
+  const directory = component.slice(directoryStart, directoryEnd);
+  assert.doesNotMatch(directory, /monthly_salary|currencyCode/);
+  assert.match(directory, /<strong>\{\{ employee\.name \}\}<\/strong>/);
+  assert.match(directory, /employee\.employee_code \|\| t\('بدون كود', 'No code'\)/);
+
+  const selectorStart = component.indexOf('<select name="payrollEmployeeId"');
+  const selectorEnd = component.indexOf('</select>', selectorStart);
+  assert.ok(selectorStart >= 0 && selectorEnd > selectorStart);
+  const selector = component.slice(selectorStart, selectorEnd);
+  assert.doesNotMatch(selector, /monthly_salary|currencyCode/);
+  assert.match(selector, /employee\.name/);
+  assert.match(selector, /employee\.employee_code \|\| t\('بدون كود', 'No code'\)/);
+
+  // Compensation remains editable only inside the existing OWNER-only employee form.
+  assert.match(component, /الراتب الشهري الأساسي/);
+  assert.match(component, /name="employeeMonthlySalary"/);
+  assert.match(component, /\[\(ngModel\)\]="employeeMonthlySalary"/);
 });

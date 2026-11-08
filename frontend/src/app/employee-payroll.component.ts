@@ -12,13 +12,13 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       <div class="section-head">
         <div>
           <h2>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</h2>
-          <p>{{ t('إدارة ملفات الموظفين وتجهيز المرتبات واعتمادها وصرفها. بيانات الرواتب متاحة لمالك مساحة العمل فقط.', 'Manage employee profiles, prepare payroll, approve it and mark it paid. Salary data is restricted to workspace owners.') }}</p>
+          <p>{{ t('إدارة ملفات الموظفين وتجهيز المرتبات واعتمادها وتسجيل الصرف داخل النظام. هذا الإجراء لا ينفذ تحويلًا بنكيًا، وبيانات الرواتب متاحة لمالك مساحة العمل فقط.', 'Manage employee profiles, prepare payroll, approve it and record the payout in this app. This does not initiate a bank transfer. Salary data is restricted to workspace owners.') }}</p>
         </div>
         <span class="count">{{ employees.length }} {{ t('موظف', 'employees') }}</span>
       </div>
 
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
-      @if (message) { <p class="notice" role="status">{{ message }}</p> }
+      @if (message) { <p class="notice success-notice" role="status">{{ message }}</p> }
 
       <form class="employee-form" (ngSubmit)="saveEmployee()">
         <label>{{ t('اسم الموظف', 'Employee name') }}
@@ -68,7 +68,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           <article class="list-row employee-row">
             <div class="employee-mark" aria-hidden="true">♙</div>
             <div class="grow">
-              <strong>{{ employee.name }} · {{ employee.monthly_salary }} {{ currencyCode }}</strong>
+              <strong>{{ employee.name }}</strong>
               <small>{{ employee.employee_code || t('بدون كود', 'No code') }}{{ employee.department ? ' · ' + employee.department : '' }}{{ employee.job_title ? ' · ' + employee.job_title : '' }}</small>
               <small>{{ employee.email || t('بدون بريد', 'No email') }}{{ employee.phone ? ' · ' + employee.phone : '' }}</small>
               <span class="status" [class.inactive]="!employee.is_active">{{ employee.is_active ? t('نشط', 'Active') : t('غير نشط', 'Inactive') }}</span>
@@ -81,7 +81,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </article>
         }
         @if (!filteredEmployees.length && !busy && !error) {
-          <p class="empty">{{ t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') }}</p>
+          <p class="empty">{{ employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') : t('لم تتم إضافة موظفين بعد.', 'No employees have been added yet.') }}</p>
         }
       </div>
 
@@ -97,7 +97,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
             <select name="payrollEmployeeId" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollEmployeeId">
               <option value="">{{ t('اختر موظفًا', 'Select an employee') }}</option>
               @for (employee of employees; track employee.id) {
-                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }} · {{ employee.employee_code || employee.monthly_salary }}</option>
+                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }} · {{ employee.employee_code || t('بدون كود', 'No code') }}</option>
               }
             </select>
           </label>
@@ -143,7 +143,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
                 <strong>{{ payroll.employee_name }} · {{ payroll.period }} · {{ payroll.net_pay }} {{ currencyCode }}</strong>
                 <small>{{ t('أساسي', 'Base') }} {{ payroll.base_salary }} + {{ t('بدلات', 'allowances') }} {{ payroll.allowances }} + {{ t('مكافآت', 'bonuses') }} {{ payroll.bonuses }} − {{ t('خصومات', 'deductions') }} {{ payroll.deductions }}</small>
                 <span class="status" [class.inactive]="payroll.status !== 'paid'">{{ payrollStatusLabel(payroll.status) }}</span>
-                @if (payroll.status === 'paid' && payroll.paid_at) { <small>{{ t('تاريخ الصرف', 'Paid at') }} · {{ payroll.paid_at | date:'mediumDate' }}</small> }
+                @if (payroll.status === 'paid' && payroll.paid_at) { <small>{{ t('وقت تسجيل الصرف', 'Payout recorded at') }} · {{ payroll.paid_at | date:'mediumDate' }}</small> }
               </div>
               <div class="actions">
                 @if (payroll.status === 'draft') {
@@ -151,7 +151,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
                   <button class="secondary" type="button" (click)="approvePayroll(payroll)" [disabled]="busy || !!operationId">{{ t('اعتماد', 'Approve') }}</button>
                 }
                 @if (payroll.status === 'approved') {
-                  <button class="primary" type="button" (click)="payPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تأكيد الصرف', 'Mark paid') }}</button>
+                  <button class="primary" type="button" (click)="payPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تسجيل الصرف داخل النظام', 'Record payout in app') }}</button>
                 }
               </div>
             </article>
@@ -164,44 +164,45 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     </section>
   `,
   styles: [`
-    :host{display:block;min-width:0;color:#172033}
-    .employee-panel{min-width:0;background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:22px;margin-top:4px}
+    :host{display:block;min-width:0;color:var(--aba-color-text-primary,#172033)}
+    .employee-panel{min-width:0;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;padding:22px;margin-top:4px}
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;min-width:0}
     .section-head>div{min-width:0}
     .section-head h2{font-size:18px;margin:0 0 6px}
     .section-head h3{font-size:15px;margin:0 0 6px}
-    .section-head p{font-size:11px;line-height:1.6;color:#6b7280;margin:0}
-    .count{font-size:10px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}
-    .primary,.secondary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:#fff;color:#374151;cursor:pointer}
-    .primary{background:#0f766e;border-color:#0f766e;color:#fff}
-    .primary:hover:not(:disabled){background:#115e59}
+    .section-head p{font-size:11px;line-height:1.6;color:var(--aba-color-text-tertiary,#6b7280);margin:0}
+    .count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:var(--aba-color-primary-soft,#ecfdf5);padding:7px 9px;border-radius:999px;white-space:nowrap}
+    .primary,.secondary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid var(--aba-color-border-strong,#d1d5db);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-muted,#374151);cursor:pointer}
+    .primary{background:var(--aba-color-primary,#0f766e);border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-on-primary,#fff)}
+    .primary:hover:not(:disabled){background:var(--aba-color-primary-strong,#115e59)}
     button:disabled{opacity:.55;cursor:not-allowed}
-    input,select{width:100%;max-width:100%;min-width:0;border:1px solid #d1d5db;border-radius:9px;background:#fff;padding:11px 12px;font-size:12px;color:#111827}
-    .error{color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:12px;line-height:1.6}
-    .notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}
-    .warning-notice{background:#fffbeb;border-color:#fde68a;color:#92400e}
-    .muted{font-size:12px;color:#6b7280;line-height:1.7}
+    input,select{width:100%;max-width:100%;min-width:0;border:1px solid var(--aba-color-border-strong,#d1d5db);border-radius:9px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:var(--aba-color-text-primary,#111827)}
+    .error{color:var(--aba-color-danger-text,#991b1b);background:var(--aba-color-danger-soft,#fef2f2);border:1px solid var(--aba-color-danger-border,#fecaca);border-radius:10px;padding:12px;font-size:12px;line-height:1.6}
+    .notice{display:flex;gap:12px;background:var(--aba-color-success-soft,#ecfdf5);border:1px solid var(--aba-color-success-border,#bbf7d0);border-radius:12px;padding:14px;margin-top:15px;color:var(--aba-color-success-text,#065f46);font-size:11px;line-height:1.6}
+    .warning-notice{background:var(--aba-color-warning-soft,#fffbeb);border-color:var(--aba-color-warning-border,#fde68a);color:var(--aba-color-warning-text,#92400e)}
+    .muted{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}
     .list{margin-top:14px;min-width:0}
-    .list-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5;min-width:0}
+    .list-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid var(--aba-color-border-subtle,#edf0f5);min-width:0}
     .list-row:last-child{border-bottom:0}
     .grow{min-width:0;overflow-wrap:anywhere}
     .list-row strong{display:block;font-size:12px;overflow-wrap:anywhere}
-    .list-row small{display:block;color:#6b7280;font-size:10px;margin-top:5px;overflow-wrap:anywhere}
-    .empty{padding:20px;text-align:center;color:#9ca3af;font-size:12px}
+    .list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:anywhere}
+    .empty{padding:20px;text-align:center;color:var(--aba-color-text-tertiary,#9ca3af);font-size:12px}
     .employee-form,.payroll-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;min-width:0;margin:14px 0}
-    .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:#334155}
+    .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
     .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
     .employee-tools .count{justify-self:end}
-    .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid #e5e7eb;min-width:0}
+    .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--aba-color-border-subtle,#e5e7eb);min-width:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
-    .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:#e0f2fe;color:#075985;border-radius:11px;font-weight:800}
-    .money-mark{background:#dcfce7;color:#166534}
+    .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--aba-color-info-soft,#e0f2fe);color:var(--aba-color-info-text,#075985);border-radius:11px;font-weight:800}
+    .money-mark{background:var(--aba-color-success-soft,#dcfce7);color:var(--aba-color-success-text,#166534)}
     .actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;min-width:0}
-    .actions button{min-height:36px;padding:7px 10px;font-size:12px}
-    .status{display:inline-flex;margin-top:5px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700}
-    .status.inactive{background:#f1f5f9;color:#475569}
+    .actions button{min-height:var(--aba-control-height,44px);padding:7px 10px;font-size:12px}
+    .status{display:inline-flex;margin-top:5px;padding:4px 8px;border-radius:999px;background:var(--aba-color-success-soft,#dcfce7);color:var(--aba-color-success-text,#166534);font-size:11px;font-weight:700}
+    .status.inactive{background:var(--aba-color-surface-hover,#f1f5f9);color:var(--aba-color-text-muted,#475569)}
+    @media(max-width:600px){.section-head{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.section-head .count{justify-self:start}}
     @media(max-width:760px){
       .employee-panel{padding:15px;border-radius:13px}
       .section-head{align-items:flex-start}
@@ -295,7 +296,7 @@ export class EmployeePayrollComponent implements OnChanges {
     const labels: Record<EmployeePayrollRecord['status'], { ar: string; en: string }> = {
       draft: { ar: 'مسودة', en: 'Draft' },
       approved: { ar: 'معتمد', en: 'Approved' },
-      paid: { ar: 'تم الصرف', en: 'Paid' }
+      paid: { ar: 'تم تسجيل الصرف', en: 'Payout recorded' }
     };
     return labels[status][this.language];
   }
@@ -524,7 +525,7 @@ export class EmployeePayrollComponent implements OnChanges {
     try {
       await this.api.payPayroll(businessId, record.id);
       if (this.businessId !== businessId) return;
-      this.message = this.t('تم تسجيل الصرف وربطه بمصروف رواتب واحد.', 'Payment recorded and linked to one Payroll expense.');
+      this.message = this.t('تم تسجيل الصرف داخل النظام وربطه بمصروف رواتب واحد؛ لم يتم إرسال تحويل بنكي.', 'Payout recorded in the app and one linked Payroll expense was created. No bank transfer is sent.');
       this.payrollPaid.emit();
       await this.loadEmployeesAndPayroll();
     } catch (error) {

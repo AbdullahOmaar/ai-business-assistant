@@ -43,8 +43,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'كشف حساب العميل',
         titleEn: 'Customer statement',
-        detailAr: 'راجع الحركات والأرصدة حسب العملة والفترة.',
-        detailEn: 'Review transactions and balances by currency and period.',
+        detailAr: 'راجع الحركات والأرصدة حسب العملة والفترة، مع عرض أنواع الحركات باللغة المختارة.',
+        detailEn: 'Review transactions and balances by currency and period, with event types shown in the selected language.',
       },
     ],
   },
@@ -103,8 +103,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'إصدار وإلغاء الفاتورة',
         titleEn: 'Issue and void',
-        detailAr: 'تُطبّق قواعد حالة الفاتورة والصلاحيات قبل تنفيذ العملية.',
-        detailEn: 'Invoice state and permissions are checked before the action is applied.',
+        detailAr: 'تظهر حالة الفاتورة باللغة المختارة، وتُطبّق قواعد الحالة والصلاحيات قبل التنفيذ.',
+        detailEn: 'Invoice statuses use the selected language; state and permissions are checked before actions are applied.',
       },
     ],
   },
@@ -120,6 +120,12 @@ export const FEATURE_CATALOG = [
         titleEn: 'Record a payment',
         detailAr: 'سجّل المبلغ والعميل وطريقة الدفع والمرجع الاختياري.',
         detailEn: 'Record amount, customer, payment method, and optional reference.',
+      },
+      {
+        titleAr: 'طرق الدفع',
+        titleEn: 'Payment method labels',
+        detailAr: 'تظهر طرق الدفع باللغة المختارة ويمكن البحث باسم الطريقة المعروض.',
+        detailEn: 'Payment methods use the selected language and can be searched by their displayed labels.',
       },
       {
         titleAr: 'سداد الفاتورة',
@@ -139,26 +145,167 @@ export const FEATURE_CATALOG = [
     id: 'finance',
     titleAr: 'المصروفات والتقارير',
     titleEn: 'Expenses & reports',
-    noteAr: 'نتيجة الأرباح والخسائر المعروضة مبدئية ما دامت تكلفة البضاعة غير مرتبطة بالكامل بالمبيعات.',
-    noteEn: 'Profit/loss is preliminary while cost of goods sold is not fully linked to sales.',
+    noteAr: 'نتيجة التشغيل المعروضة مبدئية: تعتمد على إيرادات الفواتير الصادرة والمصروفات المسجلة، ولا تخصم تكلفة البضاعة المباعة ولا تمثل النقد المحصل.',
+    noteEn: 'The operating result is preliminary: it uses issued-invoice revenue and recorded expenses; it does not deduct cost of goods sold or represent cash collected.',
     features: [
       {
         titleAr: 'تسجيل المصروفات',
         titleEn: 'Record expenses',
-        detailAr: 'سجّل التصنيف والوصف والمبلغ والعملة والتاريخ.',
-        detailEn: 'Record category, description, amount, currency, and date.',
+        detailAr: 'سجّل التصنيف والوصف والمبلغ والعملة والتاريخ؛ تظهر أسماء التصنيفات باللغة المختارة، وتسجيل المصروف لا يعني أنه تم دفعه.',
+        detailEn: 'Record category, description, amount, currency, and date; category names use the selected language, and this does not mark the expense as paid.',
       },
       {
-        titleAr: 'الأرباح والخسائر',
-        titleEn: 'Profit & loss',
-        detailAr: 'راجع الإيرادات والمصروفات حسب الفترة والعملة، مع توضيح حدود التقرير.',
-        detailEn: 'Review revenue and expenses by period and currency, with report limitations shown.',
+        titleAr: 'نتيجة التشغيل الأولية',
+        titleEn: 'Preliminary operating result',
+        detailAr: 'راجع إيرادات الفواتير الصادرة والمصروفات المسجلة حسب الفترة والعملة؛ التقرير لا يمثل صافي الربح أو النقد المحصل.',
+        detailEn: 'Review issued-invoice revenue and recorded expenses by period and currency; this is not a net-profit or cash-collection report.',
       },
       {
         titleAr: 'الأرصدة المستحقة',
         titleEn: 'Receivables aging',
         detailAr: 'تابع الفواتير المستحقة حسب مدة التأخير، ويمكن تصدير التقرير إلى CSV.',
         detailEn: 'Review outstanding invoices by age and export the report to CSV.',
+      },
+    ],
+  },
+  {
+    id: 'suppliers',
+    titleAr: 'الموردون',
+    titleEn: 'Suppliers',
+    noteAr: 'دليل الموردين مرتبط بمساحة العمل الحالية ويُستخدم لاختيار المورد في أوامر الشراء. لا يتضمن هذا القسم فواتير موردين أو تسجيل مدفوعات لهم.',
+    noteEn: 'The supplier directory belongs to the current workspace and supplies vendor choices for purchase orders. It does not include supplier bills or supplier payments.',
+    features: [
+      {
+        titleAr: 'دليل الموردين',
+        titleEn: 'Supplier directory',
+        detailAr: 'أضف اسم المورد وبيانات التواصل الاختيارية، وراجع السجلات المرتبطة بمساحة العمل.',
+        detailEn: 'Add a supplier name and optional contact details, then review records for the current workspace.',
+      },
+    ],
+  },
+  {
+    id: 'purchasing',
+    titleAr: 'أوامر الشراء',
+    titleEn: 'Purchase orders',
+    noteAr: 'تُسجل أوامر الشراء المورد والمنتجات والكميات والتكلفة. استلام الكميات المتبقية يسجل حركة مخزون ومتاح للمالك فقط؛ لا يعرض هذا القسم فواتير موردين أو مدفوعات لهم.',
+    noteEn: 'Purchase orders record suppliers, products, quantities, and unit cost. Receiving remaining quantities records stock movements and is owner-only; this section does not provide supplier bills or supplier payments.',
+    features: [
+      {
+        titleAr: 'إنشاء ومراجعة أمر شراء',
+        titleEn: 'Create and review purchase orders',
+        detailAr: 'اربط الأمر بمورد ومنتج، وراجع الكمية والتكلفة والإجمالي والكميات المستلمة والمتبقية.',
+        detailEn: 'Link an order to a supplier and product, then review quantity, unit cost, total, received quantity, and remaining quantity.',
+      },
+      {
+        titleAr: 'حالات أوامر الشراء',
+        titleEn: 'Purchase-order status labels',
+        detailAr: 'تظهر الحالات المعروفة باللغة المختارة، وتظل القيم غير المعروفة ظاهرة للمراجعة.',
+        detailEn: 'Known statuses use the selected language; unknown values remain visible for diagnosis.',
+      },
+      {
+        titleAr: 'استلام الكميات المتبقية',
+        titleEn: 'Receive remaining quantities',
+        detailAr: 'تسجيل الاستلام ينشئ حركة مخزون، ويظل الإجراء متاحًا للمالك فقط.',
+        detailEn: 'Recording receipt creates a stock movement; this action is restricted to workspace owners.',
+      },
+    ],
+  },
+  {
+    id: 'notifications',
+    titleAr: 'قائمة الإشعارات',
+    titleEn: 'Notification queue',
+    noteAr: 'القائمة تحفظ بيانات الإشعار وحالته فقط. إضافة إشعار متاحة للمالك، أما التسليم الفعلي فيحتاج مزود إرسال وعامل تسليم منشورًا.',
+    noteEn: 'The queue stores notification metadata and status only. Owners can queue notifications; actual delivery requires a configured provider and deployed delivery worker.',
+    features: [
+      {
+        titleAr: 'إضافة إشعار إلى القائمة',
+        titleEn: 'Queue a notification',
+        detailAr: 'حدد النوع والعنوان والمحتوى، ويمكنك إضافة موعد اختياري.',
+        detailEn: 'Choose a type, title, and message, with an optional scheduled time.',
+      },
+      {
+        titleAr: 'متابعة الحالة المحفوظة',
+        titleEn: 'Review stored status',
+        detailAr: 'راجع الإشعارات وحالتها وموعدها باللغة المختارة دون اعتبار ذلك تأكيدًا على وصولها للمستلم.',
+        detailEn: 'Review notification types and statuses in the selected language; this does not confirm delivery to a recipient.',
+      },
+    ],
+  },
+  {
+    id: 'recurring',
+    titleAr: 'الفواتير الدورية',
+    titleEn: 'Recurring invoices',
+    noteAr: 'هذا القسم يحفظ إعدادات الجدولة فقط. إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا، لذلك حفظ الجدول لا يعني تنفيذ فاتورة.',
+    noteEn: 'This section stores schedule settings only. Automatic invoice generation requires a deployed scheduler worker, so saving a schedule does not mean an invoice was generated.',
+    features: [
+      {
+        titleAr: 'إعداد الجدولة',
+        titleEn: 'Configure a schedule',
+        detailAr: 'حدد الفاصل بالأيام وموعد التشغيل التالي والمنطقة الزمنية، ويمكن ربط الجدول بعميل اختياري.',
+        detailEn: 'Set the interval in days, next run time, and timezone, with an optional customer.',
+      },
+      {
+        titleAr: 'صلاحية إنشاء الجداول',
+        titleEn: 'Schedule permissions',
+        detailAr: 'إنشاء جداول الفواتير الدورية متاح لمالك مساحة العمل فقط.',
+        detailEn: 'Only workspace owners can create recurring invoice schedules.',
+      },
+    ],
+  },
+  {
+    id: 'taxes',
+    titleAr: 'ملخص الضرائب',
+    titleEn: 'Tax summary',
+    noteAr: 'يعرض إجماليات الضرائب المحفوظة على الفواتير الصادرة مع فصل العملات. لا يعيد حساب الضرائب التاريخية ولا يمثل إقرارًا ضريبيًا.',
+    noteEn: 'Shows saved tax totals on issued invoices with currencies kept separate. It does not recalculate historical taxes or provide a tax filing.',
+    features: [
+      {
+        titleAr: 'تقرير حسب الفترة',
+        titleEn: 'Period summary',
+        detailAr: 'حدد فترة التقرير وراجع إجمالي الضريبة وعدد الفواتير الصادرة لكل عملة.',
+        detailEn: 'Choose a reporting period and review saved tax totals and issued-invoice counts for each currency.',
+      },
+      {
+        titleAr: 'صلاحية الوصول',
+        titleEn: 'Access permissions',
+        detailAr: 'ملخص الضرائب متاح لمالك مساحة العمل فقط.',
+        detailEn: 'The tax summary is available to workspace owners only.',
+      },
+    ],
+  },
+  {
+    id: 'integrity',
+    titleAr: 'مراجعة سلامة البيانات',
+    titleEn: 'Data integrity review',
+    noteAr: 'تقرير قراءة فقط يحدد سجلات تحتاج مراجعة بشرية. لا يصحح البيانات أو يغير السجلات تلقائيًا، وهو متاح للمالك فقط.',
+    noteEn: 'A read-only report identifies records that need human review. It does not correct or mutate records automatically and is available to owners only.',
+    features: [
+      {
+        titleAr: 'فحص السجلات',
+        titleEn: 'Record checks',
+        detailAr: 'اعرض الفواتير الصادرة غير المرتبطة بعميل والتخصيصات التي تختلف فيها العملة أو هوية العميل.',
+        detailEn: 'Review issued invoices without a customer and payment allocations with currency or customer mismatches.',
+      },
+      {
+        titleAr: 'مراجعة النتائج',
+        titleEn: 'Review findings',
+        detailAr: 'تنقل بين صفحات النتائج وتعامل معها كمؤشرات للمراجعة، وليس كإصلاح تلقائي.',
+        detailEn: 'Navigate result pages and treat findings as review indicators, not automatic repairs.',
+      },
+    ],
+  },
+  {
+    id: 'health',
+    titleAr: 'الحالة التشغيلية',
+    titleEn: 'Operational health',
+    noteAr: 'فحص قراءة فقط لحالة الاتصال وإعدادات الخدمات الأساسية. لا يكشف الأسرار ولا يغير بيانات النشاط، وهو متاح للمالك فقط.',
+    noteEn: 'A read-only check of connectivity and core service configuration. It reveals no secrets and changes no business data; access is owner-only.',
+    features: [
+      {
+        titleAr: 'فحص الخدمات الأساسية',
+        titleEn: 'Core service checks',
+        detailAr: 'راجع اتصال قاعدة البيانات وإعدادات الخدمات، مع عرض الحالة التشغيلية باللغة المختارة.',
+        detailEn: 'Review database connectivity and service settings, with operational status shown in the selected language.',
       },
     ],
   },
@@ -214,8 +361,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'سجل العمليات',
         titleEn: 'Activity log',
-        detailAr: 'راجع سجل النشاط المتاح لصلاحية مالك مساحة العمل.',
-        detailEn: 'Review activity entries available to workspace owners.',
+        detailAr: 'راجع سجل النشاط المتاح لمالك مساحة العمل؛ تظهر أسماء العمليات والكيانات باللغة المختارة.',
+        detailEn: 'Review activity entries available to workspace owners; action and target labels use the selected language.',
       },
       {
         titleAr: 'إدارة المنصة',
@@ -228,6 +375,24 @@ export const FEATURE_CATALOG = [
 ] as const;
 
 export const RELEASE_HISTORY = [
+  {
+    version: '1.4.0',
+    apiVersion: '1.3.5',
+    titleAr: 'تحسين تجربة مساحة العمل والموبايل',
+    titleEn: 'Workspace and mobile experience improvements',
+    changesAr: [
+      'تحسين التنقل على الموبايل، واختيار مساحة العمل، وإمكانية الوصول بلوحة المفاتيح.',
+      'توحيد تسميات سجل العمليات والحالات باللغة العربية والإنجليزية، وتحسين عرض الجداول والعناوين على الشاشات الصغيرة.',
+      'تحسين التباين وأحجام مناطق اللمس وحالات التحميل والفراغ؛ تظل واجهة API على 1.3.5.',
+      'تحديث إصدار الواجهة إلى 1.4.0 مع إصدار معرّف جديد لذاكرة PWA عند البناء.',
+    ],
+    changesEn: [
+      'Improves mobile navigation, workspace switching, and keyboard accessibility.',
+      'Localizes activity and status labels in Arabic and English, and improves table and heading layouts on narrow screens.',
+      'Improves contrast, touch-target sizing, loading and empty states; the API remains at 1.3.5.',
+      'Updates the web UI to version 1.4.0 and generates a new versioned PWA cache identifier at build time.',
+    ],
+  },
   {
     version: '1.3.9',
     apiVersion: '1.3.5',

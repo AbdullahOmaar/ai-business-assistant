@@ -8,7 +8,7 @@
 
   --aba-color-text-primary: #172033;
   --aba-color-text-muted: #475569;
-  --aba-color-text-secondary: #64748b;
+  --aba-color-text-secondary: #5d6878;
   --aba-color-text-tertiary: #6b7280;
   --aba-color-text-inverse: #ffffff;
 
@@ -48,6 +48,7 @@
   --aba-color-success-soft: #ecfdf5;
   --aba-color-success-border: #bbf7d0;
   --aba-color-success-text: #065f46;
+  --aba-color-info: #3b82f6;
   --aba-color-info-soft: #eff6ff;
   --aba-color-info-border: #bfdbfe;
   --aba-color-info-text: #1e40af;
@@ -95,6 +96,9 @@
   --aba-easing-standard: cubic-bezier(0.2, 0, 0, 1);
   --aba-focus-ring-width: 3px;
   --aba-focus-ring-offset: 2px;
+  --aba-control-height: 44px;
+  --aba-control-radius: 10px;
+  --aba-control-padding-inline: 12px;
 
   /* Layout and layering. Breakpoint values remain explicit in media queries. */
   --aba-layout-sidebar: 245px;
@@ -232,3 +236,342 @@ aba-metric-card small {
   background: var(--aba-color-danger-soft);
 }
 .form-validation .field-error { margin: 0; }
+
+
+/* Phase 2 interaction foundation: consistent controls and surfaces across modules. */
+:root body .shell button:not(.nav-item):not(.mobile-more):not(.aba-quick-access) {
+  min-height: var(--aba-control-height);
+  border-radius: var(--aba-control-radius);
+}
+
+:root body .shell .primary {
+  min-height: var(--aba-control-height);
+  border-color: var(--aba-color-primary);
+  border-radius: var(--aba-control-radius);
+  background: var(--aba-color-primary);
+  color: var(--aba-color-on-primary);
+}
+
+:root body .shell .primary:hover:not(:disabled) {
+  border-color: var(--aba-color-primary-strong);
+  background: var(--aba-color-primary-strong);
+}
+
+:root body .shell .secondary {
+  min-height: var(--aba-control-height);
+  border-color: var(--aba-color-border-strong);
+  border-radius: var(--aba-control-radius);
+  background: var(--aba-color-surface);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .secondary:hover:not(:disabled) {
+  border-color: var(--aba-color-border-strong);
+  background: var(--aba-color-surface-hover);
+}
+
+/* Destructive secondary actions keep their semantic warning treatment. */
+:root body .shell .secondary.danger {
+  border-color: var(--aba-color-danger-border);
+  background: var(--aba-color-danger-soft);
+  color: var(--aba-color-danger-text);
+}
+
+:root body .shell .secondary.danger:hover:not(:disabled) {
+  border-color: var(--aba-color-danger-text);
+  background: var(--aba-color-danger-soft);
+}
+
+:root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell select,
+:root body .shell textarea {
+  min-height: var(--aba-control-height);
+  padding-inline: var(--aba-control-padding-inline);
+  border: 1px solid var(--aba-color-border-strong);
+  border-radius: var(--aba-control-radius);
+  background: var(--aba-color-surface);
+  color: var(--aba-color-text-primary);
+  font-size: var(--aba-font-size-base);
+  line-height: var(--aba-line-height-normal);
+}
+
+:root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus-visible,
+:root body .shell select:focus-visible,
+:root body .shell textarea:focus-visible {
+  border-color: var(--aba-color-focus-ring);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 16%);
+}
+
+:root body .shell .panel,
+:root body .shell .metric,
+:root body .shell .workspace-bar,
+:root body .shell .assistant-suggestions,
+:root body .shell .invoice-preview {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  box-shadow: var(--aba-shadow-card);
+}
+
+:root body .shell .table-wrap {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+}
+
+:root body .shell .table-wrap:focus-visible,
+:root body .shell .chat-log:focus-visible {
+  outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
+  outline-offset: var(--aba-focus-ring-offset);
+}
+
+:root body .shell .table-wrap th {
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-muted);
+}
+
+:root body .shell .table-wrap tbody tr:hover {
+  background: var(--aba-color-surface-hover);
+}
+
+@media (forced-colors: active) {
+  :root body .shell button:focus-visible,
+  :root body .shell a:focus-visible,
+  :root body .shell input:focus-visible,
+  :root body .shell select:focus-visible,
+  :root body .shell textarea:focus-visible,
+  :root body .shell summary:focus-visible,
+  :root body .shell .table-wrap:focus-visible,
+  :root body .shell .chat-log:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
+
+
+/* Route-level visual consistency: headings, nested surfaces and assistant messages. */
+:root body .shell .topbar h1,
+:root body .shell .mobile-page-heading h1 {
+  color: var(--aba-color-text-primary);
+  font-size: clamp(var(--aba-font-size-2xl), 2.2vw, var(--aba-font-size-3xl));
+  line-height: var(--aba-line-height-tight);
+  letter-spacing: var(--aba-letter-spacing-tight);
+}
+
+:root body .shell .section-head h2,
+:root body .shell .panel h2 {
+  color: var(--aba-color-text-primary);
+  line-height: var(--aba-line-height-tight);
+}
+
+:root body .shell .section-head p,
+:root body .shell .muted {
+  color: var(--aba-color-text-secondary);
+  line-height: var(--aba-line-height-relaxed);
+}
+
+:root body .shell .count {
+  background: var(--aba-color-primary-soft);
+  color: var(--aba-color-primary-strong);
+}
+
+:root body .shell .inline-form,
+:root body .shell .customer-invoice-filter,
+:root body .shell .invoice-preview,
+:root body .shell .setup-steps {
+  border-color: var(--aba-color-border-subtle);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .notice {
+  border-color: var(--aba-color-info-border);
+  background: var(--aba-color-info-soft);
+  color: var(--aba-color-info-text);
+}
+
+:root body .shell .install-help {
+  border-color: var(--aba-color-info-border);
+  background: var(--aba-color-info-soft);
+  color: var(--aba-color-info-text);
+}
+
+:root body .shell .notice.success,
+:root body .shell .notice.success-notice {
+  border-color: var(--aba-color-success-border);
+  background: var(--aba-color-success-soft);
+  color: var(--aba-color-success-text);
+}
+
+:root body .shell .notice.error {
+  border-color: var(--aba-color-danger-border);
+  background: var(--aba-color-danger-soft);
+  color: var(--aba-color-danger-text);
+}
+
+:root body .shell .notice.warn,
+:root body .shell .notice.warning-notice {
+  border-color: var(--aba-color-warning-border);
+  background: var(--aba-color-warning-soft);
+  color: var(--aba-color-warning-text);
+}
+
+
+:root body .shell .chat-log {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface);
+}
+
+:root body .shell .chat-message {
+  border: 1px solid var(--aba-color-border-subtle);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .chat-message.user-message {
+  border-color: var(--aba-color-primary-border);
+  background: var(--aba-color-primary-soft);
+}
+
+:root body .shell .suggestion-card {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .suggestion-card:hover {
+  border-color: var(--aba-color-primary);
+  background: var(--aba-color-surface-hover);
+}
+
+@media (max-width: 760px) {
+  :root body .shell .topbar h1,
+  :root body .shell .mobile-page-heading h1 {
+    font-size: clamp(20px, 5.5vw, 25px);
+  }
+}
+
+
+/* Authentication and nested form surfaces share the same semantic foundation. */
+:root body .shell .auth-card,
+:root body .shell .setup-card {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-panel);
+  background: var(--aba-color-surface);
+  box-shadow: var(--aba-shadow-popover);
+}
+
+:root body .shell .auth-card h1,
+:root body .shell .setup-card h1 {
+  color: var(--aba-color-text-primary);
+  line-height: var(--aba-line-height-tight);
+}
+
+:root body .shell .auth-card > p:not(.eyebrow),
+:root body .shell .setup-card > p:not(.eyebrow) {
+  color: var(--aba-color-text-secondary);
+}
+
+:root body .shell .invoice-create-disclosure {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .invoice-create-disclosure > summary {
+  background: var(--aba-color-surface);
+  color: var(--aba-color-text-primary);
+}
+
+:root body .shell .invoice-create-disclosure > summary:after {
+  background: var(--aba-color-primary-soft);
+  color: var(--aba-color-primary-strong);
+}
+
+:root body .shell .invoice-create-disclosure > .invoice-form {
+  border-top-color: var(--aba-color-border-subtle);
+}
+
+:root body .shell .invoice-line-row,
+:root body .shell .aging-buckets > div {
+  border-color: var(--aba-color-border-subtle);
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .version-pill {
+  border-color: var(--aba-color-border-strong);
+  background: var(--aba-color-surface-subtle);
+  color: var(--aba-color-text-muted);
+}
+
+
+/* Helper, warning and import surfaces retain readable semantic contrast. */
+:root body .shell .csv-import-panel {
+  border-color: var(--aba-color-border);
+  border-radius: var(--aba-radius-card);
+  background: var(--aba-color-surface-subtle);
+}
+
+:root body .shell .csv-import-panel p,
+:root body .shell .csv-import-panel small,
+:root body .shell .user-area,
+:root body .shell .stack label {
+  color: var(--aba-color-text-secondary);
+}
+
+:root body .shell .csv-import-errors {
+  color: var(--aba-color-danger-text);
+}
+
+:root body .shell .warning-notice {
+  border-color: var(--aba-color-warning-border);
+  background: var(--aba-color-warning-soft);
+  color: var(--aba-color-warning-text);
+}
+
+:root body .shell .divider {
+  background: var(--aba-color-border-subtle);
+}
+
+:root body .shell .footnote,
+:root body .shell .metric small,
+:root body .shell footer span {
+  color: var(--aba-color-text-tertiary);
+}
+
+:root body .shell .workspace-release-meta-inline {
+  border-top-color: var(--aba-color-border-subtle);
+}
+
+:root body .shell .install-button {
+  border-color: var(--aba-color-success-border);
+  background: var(--aba-color-success-soft);
+  color: var(--aba-color-success-text);
+}
+
+:root body .shell .install-floating,
+:root body .shell .install-help-floating {
+  box-shadow: var(--aba-shadow-popover);
+}
+
+
+/* Shared interactive controls honor reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  :root body .shell button,
+  :root body .shell input,
+  :root body .shell select,
+  :root body .shell textarea,
+  :root body .shell .suggestion-card,
+  :root body .shell .nav-item {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  :root body .shell .global-loading > span:first-child {
+    animation: none !important;
+    width: 100%;
+  }
+}

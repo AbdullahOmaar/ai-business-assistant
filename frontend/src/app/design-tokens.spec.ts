@@ -14,6 +14,10 @@ const componentSources = componentPaths.map(path =>
   readFileSync(new URL(path, import.meta.url), 'utf8'),
 );
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
+const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const appStylesStart = appSource.lastIndexOf('styles: [`');
+const appStyles = appSource.slice(appStylesStart, appSource.indexOf('`]', appStylesStart));
 
 test('semantic design tokens are defined once and cover the shared UI foundation', () => {
   const definitions = [...styles.matchAll(/^\s*(--aba-[\w-]+)\s*:/gm)].map(match => match[1]);
@@ -45,6 +49,7 @@ test('semantic design tokens are defined once and cover the shared UI foundation
     '--aba-color-success-soft',
     '--aba-color-success-border',
     '--aba-color-success-text',
+    '--aba-color-info',
     '--aba-color-info-soft',
     '--aba-color-info-border',
     '--aba-color-info-text',
@@ -99,6 +104,9 @@ test('semantic design tokens are defined once and cover the shared UI foundation
     '--aba-easing-standard',
     '--aba-focus-ring-width',
     '--aba-focus-ring-offset',
+    '--aba-control-height',
+    '--aba-control-radius',
+    '--aba-control-padding-inline',
     '--aba-layout-sidebar',
     '--aba-layout-content-max',
     '--aba-layout-mobile-nav',
@@ -129,7 +137,7 @@ test('global foundation preserves focus visibility, reduced motion, and local Ar
 });
 
 
-test('the workspace shell consumes semantic navigation and hero palette tokens', () => {
+test('the workspace shell consumes semantic navigation and layout tokens', () => {
   const requiredShellTokens = [
     '--aba-color-nav-surface',
     '--aba-color-nav-text',
@@ -137,9 +145,6 @@ test('the workspace shell consumes semantic navigation and hero palette tokens',
     '--aba-color-nav-active-start',
     '--aba-color-nav-active-end',
     '--aba-color-nav-accent',
-    '--aba-color-hero-start',
-    '--aba-color-hero-mid',
-    '--aba-color-hero-end',
     '--aba-layout-sidebar',
     '--aba-layout-content-max',
     '--aba-layout-mobile-nav',
@@ -162,6 +167,13 @@ test('shared section headers preserve h2/h3 hierarchy for nested workspace secti
   assert.match(sectionHeaderSource, /<h3 \[id\]="titleId\(\) \|\| null">/);
   assert.equal([...appSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 2,
     'nested receivables and customer statement sections must use h3');
+});
+
+test('shared section headers stack heading copy and actions on narrow screens without clipping long localized titles', () => {
+  const sectionHeaderSource = componentSources[3];
+  assert.match(sectionHeaderSource, /\.aba-section-header h2,\.aba-section-header h3\{overflow-wrap:anywhere\}/);
+  assert.match(sectionHeaderSource, /@media\(max-width:600px\)\{[\s\S]*\.aba-section-header\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(sectionHeaderSource, /\.aba-section-header__actions\{width:100%;min-width:0;justify-content:flex-start\}/);
 });
 
 
@@ -215,6 +227,8 @@ test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-te
     ['--aba-color-text-primary', '--aba-color-page'],
     ['--aba-color-text-muted', '--aba-color-surface'],
     ['--aba-color-text-secondary', '--aba-color-surface'],
+    ['--aba-color-text-secondary', '--aba-color-page'],
+    ['--aba-color-text-secondary', '--aba-color-info-soft'],
     ['--aba-color-text-tertiary', '--aba-color-surface'],
     ['--aba-color-nav-text', '--aba-color-nav-surface'],
     ['--aba-color-nav-muted', '--aba-color-nav-surface'],
@@ -235,4 +249,189 @@ test('semantic text colors meet WCAG AA and the focus indicator meets 3:1 non-te
     const ratio = contrastRatio(focus, colorToken(surface));
     assert.ok(ratio >= 3, `focus indicator on ${surface} must be >= 3:1 (got ${ratio.toFixed(2)}:1)`);
   }
+});
+
+
+test('small labels on page, info and Platform Admin surfaces use WCAG AA secondary text', () => {
+  const adminRules = [
+    /\.admin-shell\{[^}]*--muted:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.metric-card small\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.amount span\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.empty-state\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.business-link small\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.muted-role\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.loading-block\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.admin-footer\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+    /\.filters input::placeholder,\.status-form textarea::placeholder\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\);opacity:1/,
+    /\.data-note small\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/,
+  ];
+  for (const rule of adminRules) assert.match(platformAdminSource, rule);
+  assert.match(mobileHeaderSource, /\.context-label\s*\{[^}]*color:\s*var\(--aba-color-text-secondary,\s*#5d6878\)/);
+  assert.match(appSource, /\.mobile-page-heading \.eyebrow\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/);
+  assert.match(appSource, /mobile-deploy-time\{[^}]*color:var\(--aba-color-text-secondary,#5d6878\)/);
+});
+
+test('Phase 2 interaction foundation centralizes touch targets, form controls, and shared surfaces', () => {
+  for (const token of ['--aba-control-height', '--aba-control-radius', '--aba-control-padding-inline']) {
+    assert.equal(styles.split('\n').filter(line => line.trimStart().startsWith(token + ':')).length, 1,
+      `${token} must be defined exactly once`);
+  }
+
+  assert.ok(styles.includes(':root body .shell button:not(.nav-item):not(.mobile-more):not(.aba-quick-access)'));
+  assert.match(componentSources[2], /min-height:104px/);
+  assert.ok(componentSources[2].includes('border-radius:var(--aba-radius-card'));
+  assert.ok(styles.includes('min-height: var(--aba-control-height)'));
+  assert.ok(styles.includes(':root body .shell input:not([type="checkbox"])'));
+  assert.ok(styles.includes(':root body .shell select'));
+  assert.ok(styles.includes('border-radius: var(--aba-control-radius)'));
+  assert.ok(styles.includes(':root body .shell .primary:hover:not(:disabled)'));
+  assert.ok(styles.includes(':root body .shell .secondary:hover:not(:disabled)'));
+  assert.ok(styles.includes(':root body .shell .table-wrap tbody tr:hover'));
+  assert.ok(styles.includes('@media (forced-colors: active)'));
+  assert.ok(appSource.includes('input,select,textarea{font-size:16px!important;min-height:44px}'));
+});
+
+
+test('destructive secondary actions retain semantic danger styling', () => {
+  assert.ok(styles.includes(':root body .shell .secondary.danger'));
+  assert.ok(styles.includes(':root body .shell .secondary.danger:hover:not(:disabled)'));
+  assert.ok(styles.includes('color: var(--aba-color-danger-text)'));
+  assert.ok(styles.includes('background: var(--aba-color-danger-soft)'));
+});
+
+
+test('route-level headings, filters, notices, and assistant messages share semantic surfaces', () => {
+  for (const selector of [
+    ':root body .shell .topbar h1',
+    ':root body .shell .section-head h2',
+    ':root body .shell .count',
+    ':root body .shell .inline-form',
+    ':root body .shell .notice',
+    ':root body .shell .chat-message.user-message',
+    ':root body .shell .suggestion-card:hover',
+  ]) assert.ok(styles.includes(selector), `missing shared UX selector: ${selector}`);
+
+  assert.ok(styles.includes('font-size: clamp(var(--aba-font-size-2xl)'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+  assert.ok(styles.includes('background: var(--aba-color-primary-soft)'));
+});
+
+
+test('authentication and nested form surfaces use semantic tokens', () => {
+  for (const selector of [
+    ':root body .shell .auth-card',
+    ':root body .shell .setup-card',
+    ':root body .shell .invoice-create-disclosure',
+    ':root body .shell .invoice-create-disclosure > summary:after',
+    ':root body .shell .invoice-line-row',
+    ':root body .shell .aging-buckets > div',
+    ':root body .shell .version-pill',
+  ]) assert.ok(styles.includes(selector), `missing semantic surface selector: ${selector}`);
+
+  assert.ok(styles.includes('box-shadow: var(--aba-shadow-popover)'));
+  assert.ok(styles.includes('background: var(--aba-color-surface-subtle)'));
+  assert.ok(styles.includes('color: var(--aba-color-primary-strong)'));
+  assert.ok(styles.includes(':root body .shell .auth-card > p:not(.eyebrow)'));
+  assert.ok(styles.includes(':root body .shell .setup-card > p:not(.eyebrow)'));
+});
+
+
+test('helper, warning, import and install surfaces use semantic contrast tokens', () => {
+  for (const selector of [
+    ':root body .shell .csv-import-panel',
+    ':root body .shell .csv-import-errors',
+    ':root body .shell .warning-notice',
+    ':root body .shell .divider',
+    ':root body .shell .footnote',
+    ':root body .shell .metric small',
+    ':root body .shell footer span',
+    ':root body .shell .install-button',
+  ]) assert.ok(styles.includes(selector), `missing semantic helper selector: ${selector}`);
+
+  assert.ok(styles.includes('color: var(--aba-color-danger-text)'));
+  assert.ok(styles.includes('color: var(--aba-color-warning-text)'));
+  assert.ok(styles.includes('color: var(--aba-color-text-tertiary)'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+});
+
+
+test('reduced-motion preference disables nonessential interaction motion', () => {
+  assert.ok(styles.includes('/* Shared interactive controls honor reduced-motion preferences. */'));
+  assert.ok(styles.includes(':root body .shell button'));
+  assert.ok(styles.includes(':root body .shell .suggestion-card'));
+  assert.ok(styles.includes('transition: none !important'));
+  assert.ok(styles.includes('animation: none !important'));
+  assert.ok(styles.includes(':root body .shell .global-loading > span:first-child'));
+});
+
+
+test('generic notices use neutral informational semantics while warnings stay distinct', () => {
+  assert.ok(styles.includes(':root body .shell .notice {'));
+  assert.ok(styles.includes('border-color: var(--aba-color-info-border)'));
+  assert.ok(styles.includes('background: var(--aba-color-info-soft)'));
+  assert.ok(styles.includes('color: var(--aba-color-info-text)'));
+  assert.ok(styles.includes(':root body .shell .warning-notice'));
+  assert.ok(styles.includes('background: var(--aba-color-warning-soft)'));
+  assert.ok(styles.includes('color: var(--aba-color-warning-text)'));
+  assert.ok(styles.includes(':root body .shell .install-help'));
+  assert.ok(styles.includes('background: var(--aba-color-info-soft)'));
+  assert.ok(styles.includes(':root body .shell .notice.success'));
+  assert.ok(styles.includes('background: var(--aba-color-success-soft)'));
+  assert.ok(styles.includes(':root body .shell .notice.error'));
+  assert.ok(styles.includes('background: var(--aba-color-danger-soft)'));
+  assert.ok(styles.includes(':root body .shell .notice.warn'));
+  assert.ok(styles.includes('background: var(--aba-color-warning-soft)'));
+});
+
+
+test('forced-colors focus fallback includes the native disclosure control', () => {
+  const forcedColors = styles.slice(styles.indexOf('@media (forced-colors: active)'));
+  assert.ok(forcedColors.includes(':root body .shell summary:focus-visible'));
+  assert.ok(forcedColors.includes('outline: 2px solid Highlight'));
+  assert.ok(forcedColors.includes('box-shadow: none'));
+});
+
+
+test('shared quick-access cards keep their card-specific dimensions', () => {
+  assert.ok(styles.includes('button:not(.nav-item):not(.mobile-more):not(.aba-quick-access)'));
+  assert.match(componentSources[2], /min-height:104px/);
+  assert.match(componentSources[2], /border-radius:var\(--aba-radius-card/);
+});
+
+
+test('keyboard-scrollable table regions receive the shared visible focus treatment', () => {
+  assert.match(styles, /:root body \.shell \.table-wrap:focus-visible,\s*:root body \.shell \.chat-log:focus-visible\s*\{[^}]*outline:/);
+  const forcedColors = styles.slice(styles.indexOf('@media (forced-colors: active)'));
+  assert.ok(forcedColors.includes(':root body .shell .table-wrap:focus-visible'));
+  assert.ok(forcedColors.includes(':root body .shell .chat-log:focus-visible'));
+  assert.ok(forcedColors.includes('outline: 2px solid Highlight'));
+});
+
+
+test('shared shell surfaces reuse semantic color tokens', () => {
+  for (const declaration of [
+    'color:var(--aba-color-text-inverse,#fff)',
+    'color:var(--aba-color-text-tertiary,#6b7280)',
+    'color:var(--aba-color-text-muted,#334155)',
+    'color:var(--aba-color-text-secondary,#64748b)',
+    'color:var(--aba-color-nav-muted,#9ca3af)',
+    'background:var(--aba-color-surface-subtle,#f8fafc)',
+    'background:var(--aba-color-surface,#fff)',
+    'background:var(--aba-color-primary,#0f766e)',
+    'background:var(--aba-color-nav-surface-raised,#1e293b)',
+    'border:1px solid var(--aba-color-border-subtle,#e2e8f0)',
+  ]) assert.ok(appStyles.includes(declaration), `missing semantic shell declaration: ${declaration}`);
+  for (const raw of ['color:#6b7280', 'color:#334155', 'color:#64748b', 'color:#4b5563', 'color:#9ca3af', 'background:#f8fafc', 'background:#0f766e', 'background:#1e293b']) {
+    assert.equal(appStyles.includes(raw), false, `raw shell color should use a semantic token: ${raw}`);
+  }
+});
+
+
+test('mobile navigation dock reuses the shared navigation palette', () => {
+  for (const declaration of [
+    'border:1px solid var(--aba-color-nav-border,#334155)',
+    'background:var(--aba-color-nav-surface-glass,rgb(15 23 42 / 96%))',
+    'color:var(--aba-color-nav-text,#cbd5e1)',
+    'color:var(--aba-color-primary-border,#99f6e4)',
+  ]) assert.ok(appStyles.includes(declaration));
 });

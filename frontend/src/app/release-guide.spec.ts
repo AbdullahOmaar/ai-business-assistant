@@ -15,6 +15,12 @@ const frontendPackage = JSON.parse(readFileSync(resolve(frontendRoot, 'package.j
 const buildInfo = readFileSync(resolve(frontendRoot, 'src/app/build-info.ts'), 'utf8');
 const serviceWorker = readFileSync(resolve(frontendRoot, 'public/sw.js'), 'utf8');
 
+test('Vercel Web build stamps commit metadata before Angular compilation', () => {
+  const vercelConfig = JSON.parse(readFileSync(resolve(frontendRoot, 'vercel.json'), 'utf8'));
+  assert.equal(vercelConfig.buildCommand, 'node scripts/write-build-info.mjs && ng build');
+  assert.equal(vercelConfig.outputDirectory, 'dist/ai-business-assistant/browser');
+});
+
 test('feature catalogue has unique sections and bilingual user-facing content', () => {
   const ids = FEATURE_CATALOG.map((section) => section.id);
 
@@ -113,3 +119,87 @@ if (hasBackendPackage) {
     assert.match(backendApp, new RegExp('version="' + expectedApiVersion + '"'));
   });
 }
+
+
+test('feature catalogue covers every current user-facing destination group', () => {
+  const ids = new Set(FEATURE_CATALOG.map(section => section.id));
+  for (const id of [
+    'workspace', 'customers', 'products', 'invoices', 'payments', 'finance',
+    'employees-payroll', 'assistant', 'admin', 'suppliers', 'purchasing',
+    'notifications', 'recurring', 'taxes', 'integrity', 'health',
+  ]) {
+    assert.ok(ids.has(id), `Current destination is missing from the feature guide: ${id}`);
+  }
+  assert.equal(ids.size, 16);
+});
+
+test('feature guide preserves operational and financial limitations', () => {
+  const sections = new Map(FEATURE_CATALOG.map(section => [section.id, section] as const));
+  const purchasing = sections.get('purchasing')!;
+  assert.match(purchasing.noteEn, /receiving.*stock movements/i);
+  assert.match(purchasing.noteEn, /does not provide supplier bills or supplier payments/i);
+
+  const notifications = sections.get('notifications')!;
+  assert.match(notifications.noteEn, /metadata and status only/i);
+  assert.match(notifications.noteEn, /requires a configured provider and deployed delivery worker/i);
+  assert.match(notifications.features.map(feature => feature.detailEn).join(' '), /does not confirm delivery/i);
+
+  const recurring = sections.get('recurring')!;
+  assert.match(recurring.noteEn, /schedule settings only/i);
+  assert.match(recurring.noteEn, /does not mean an invoice was generated/i);
+
+  const taxes = sections.get('taxes')!;
+  assert.match(taxes.noteEn, /saved tax totals/i);
+  assert.match(taxes.noteEn, /does not recalculate historical taxes/i);
+
+  const integrity = sections.get('integrity')!;
+  assert.match(integrity.noteEn, /read-only/i);
+  assert.match(integrity.noteEn, /does not correct or mutate records automatically/i);
+
+  const health = sections.get('health')!;
+  assert.match(health.noteEn, /reveals no secrets and changes no business data/i);
+});
+
+
+test('finance guide distinguishes preliminary operating result and incurred expenses from cash and net profit', () => {
+  const finance = FEATURE_CATALOG.find(section => section.id === 'finance');
+  assert.ok(finance);
+  assert.match(finance.noteEn, /issued-invoice revenue and recorded expenses/i);
+  assert.match(finance.noteEn, /does not deduct cost of goods sold or represent cash collected/i);
+  assert.match(finance.features.map(feature => feature.detailEn).join(' '), /does not mark the expense as paid/i);
+  assert.match(finance.features.map(feature => feature.titleEn).join(' '), /Preliminary operating result/);
+});
+
+
+test('feature catalogue describes bilingual transaction and operational status labels', () => {
+  const sections = new Map(FEATURE_CATALOG.map(section => [section.id, section] as const));
+  const payments = sections.get('payments')!;
+  assert.match(payments.features.map(feature => feature.titleEn).join(' '), /Payment method labels/);
+  assert.match(payments.features.map(feature => feature.detailEn).join(' '), /selected language/i);
+
+  const finance = sections.get('finance')!;
+  assert.match(finance.features.map(feature => feature.detailEn).join(' '), /category names use the selected language/i);
+
+  const purchasing = sections.get('purchasing')!;
+  assert.match(purchasing.features.map(feature => feature.titleEn).join(' '), /Purchase-order status labels/);
+
+  const notifications = sections.get('notifications')!;
+  assert.match(notifications.features.map(feature => feature.detailEn).join(' '), /types and statuses in the selected language/i);
+
+  const health = sections.get('health')!;
+  assert.match(health.features.map(feature => feature.detailEn).join(' '), /operational status shown in the selected language/i);
+});
+
+
+test('admin guide documents bilingual audit action and target labels', () => {
+  const admin = FEATURE_CATALOG.find(section => section.id === 'admin');
+  assert.ok(admin);
+  assert.match(admin.features.map(feature => feature.detailEn).join(' '), /action and target labels use the selected language/i);
+});
+
+
+test('customer guide documents bilingual statement event labels', () => {
+  const customers = FEATURE_CATALOG.find(section => section.id === 'customers');
+  assert.ok(customers);
+  assert.match(customers.features.map(feature => feature.detailEn).join(' '), /event types shown in the selected language/i);
+});

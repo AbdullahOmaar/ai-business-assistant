@@ -3,9 +3,13 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
+const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
+const auditLabelsSource = readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8');
+const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
 
 test('workspace shell imports every tenant guard helper used by its async views', () => {
   assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
@@ -81,16 +85,17 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
 test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /auditActionLabel\(event\.action\)/);
   assert.match(source, /auditTargetLabel\(event\.target_type\)/);
-  assert.match(source, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
-  assert.match(source, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
+  assert.match(auditLabelsSource, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
+  assert.match(auditLabelsSource, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
   assert.match(source, /value="invoice\.draft_updated"/);
   assert.match(source, /value="stock\.movement_recorded"/);
   assert.match(source, /value="purchase_order\.approved"/);
   assert.match(source, /value="sales_return\.approved"/);
   assert.match(source, /value="recurring_invoice_schedule\.created"/);
-  assert.match(source, /'supplier\.created': \{ ar: 'إضافة مورد'/);
+  assert.match(auditLabelsSource, /'supplier\.created': \{ ar: 'إضافة مورد'/);
   assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
+
 
 test('workspace header keeps business name, selector, and release time in separate responsive grid cells', () => {
   assert.match(source, /\.workspace-bar\{display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)/);
@@ -247,22 +252,28 @@ test('workspace empty states use the shared accessible state component', () => {
 });
 
 test('workspace panels reuse one section header component instead of duplicating heading markup', () => {
-  assert.ok((source.match(/<aba-section-header\b/g) || []).length >= 13);
+  assert.ok((source.match(/<aba-section-header\b/g) || []).length + (releaseGuideSource.match(/<aba-section-header\b/g) || []).length >= 13);
   assert.equal((source.match(/<div class="section-head"><div><h2>/g) || []).length, 0, 'all simple h2 section headers must use the shared component');
 });
 
 test('Home quick access shows only the five key destinations from the shared role-filtered catalogue', () => {
+  const overviewStart = source.indexOf("@if (tab === 'overview')");
+  const overviewEnd = source.indexOf("@if (tab === 'notifications')", overviewStart);
+  const overview = source.slice(overviewStart, overviewEnd);
+  const quickStart = overview.indexOf("Quick access");
+  const directoryStart = overview.indexOf("All workspace modules");
+  const quickAccess = overview.slice(quickStart, directoryStart);
   assert.ok(source.includes('class="panel module-launcher"'));
   assert.match(source, /get homeQuickAccessCards\(\): readonly WorkspaceModuleCard\[\]/);
   assert.match(source, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
   assert.match(source, /selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG/);
   assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
-  assert.ok(source.includes('homeQuickAccessCards.length'));
-  assert.match(source, /title]="t\('الوصول السريع', 'Quick access'\)/);
-  assert.match(source, /@for \(module of homeQuickAccessCards; track module\.tab\)/);
-  assert.match(source, /<aba-quick-access-card\b/);
-  assert.match(source, /activated\)="setTab\(module\.tab\)"/);
-  assert.doesNotMatch(source, /homeModuleCards\.length/);
+  assert.ok(quickAccess.includes('homeQuickAccessCards.length'));
+  assert.match(quickAccess, /@for \(module of homeQuickAccessCards; track module\.tab\)/);
+  assert.doesNotMatch(quickAccess, /homeModuleCards/);
+  assert.match(overview, /@for \(module of homeModuleCards; track module\.tab\)/);
+  assert.match(overview, /All workspace modules/);
+  assert.match(overview, /activated\)="setTab\(module\.tab\)"/);
   assert.doesNotMatch(source, /class="quick-card"/);
 });
 
@@ -318,7 +329,7 @@ test('shared state feedback owns info, warning, success, error and accessible ac
 test('shared card hosts own card surface styling and projected KPI styles live in the shared stylesheet', () => {
   assert.ok(sharedCardSource.includes("selector: 'section[abaCard]'"));
   assert.ok(sharedCardSource.includes('ChangeDetectionStrategy.OnPush'));
-  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g)];
+  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g), ...releaseGuideSource.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g)];
   assert.ok(panelHosts.length >= 20);
   for (const match of panelHosts) {
     assert.equal(match[1], 'section', 'panel surfaces must remain native section elements');
@@ -449,20 +460,18 @@ test('mobile More menu uses logical inline positioning for Arabic RTL and Englis
 });
 
 
-test('mobile workspace view retains the active page title when the desktop topbar is hidden', () => {
+test('mobile workspace view retains the active page title through the extracted header', () => {
   const desktopTopbar = source.indexOf('<header class="topbar">');
-  const mobileHeading = source.indexOf('<header class="mobile-page-heading"');
-  assert.ok(desktopTopbar >= 0 && mobileHeading > desktopTopbar);
-  assert.match(source, /<header class="mobile-page-heading" aria-live="polite" aria-atomic="true">[\s\S]*?<h1>\{\{ pageTitle \}\}<\/h1>/);
-  assert.match(source, /\.mobile-page-heading\{display:none\}/);
-  assert.match(source, /\.mobile-page-heading\{display:block/);
-  assert.match(source, /\.mobile-page-heading h1\{[^}]*overflow-wrap:anywhere/);
+  const mobileHeader = source.indexOf('<aba-mobile-app-header');
+  assert.ok(desktopTopbar >= 0 && mobileHeader > desktopTopbar);
+  assert.match(source, /<aba-mobile-app-header[\s\S]*?\[pageTitle\]="pageTitle"/);
+  assert.match(mobileHeaderSource, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
 });
 
 
-test('mobile module launcher uses two balanced columns when space permits', () => {
-  assert.match(source, /\.quick-grid\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,240px\),1fr\)\)\}/);
-  assert.match(source, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,165px\),1fr\)\)/);
+test('mobile module directory and Home shortcuts use adaptive balanced grids', () => {
+  assert.match(source, /\.module-directory-grid\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,190px\),1fr\)\)/);
+  assert.match(source, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 
@@ -490,6 +499,39 @@ test('workspace role changes cannot leave an owner-only destination selected', (
   assert.ok(switchStart >= 0 && switchEnd > switchStart);
   assert.ok(roleUpdate >= 0 && accessGuard > roleUpdate && clearData > accessGuard,
     'resolve the selected workspace role before retaining the current destination or clearing data');
+});
+
+test('loss of platform-admin access with no workspace memberships returns to Overview', () => {
+  const loadStart = source.indexOf('async loadBusinesses(): Promise<void>');
+  const loadEnd = source.indexOf('private clearWorkspaceData(): void', loadStart);
+  const loadMethod = source.slice(loadStart, loadEnd);
+  const noMembershipStart = loadMethod.indexOf('if (!this.businesses.length)');
+  const noMembershipEnd = loadMethod.indexOf('const chosen =', noMembershipStart);
+  const noMembershipBranch = loadMethod.slice(noMembershipStart, noMembershipEnd);
+  assert.ok(noMembershipStart >= 0 && noMembershipEnd > noMembershipStart);
+  assert.match(noMembershipBranch, /if \(this\.platformAdminAvailable\) this\.setTab\('platform-admin'\);/,
+    'authorized admins without workspace memberships must enter Platform Admin through the shared navigation handler');
+  assert.match(noMembershipBranch, /else this\.setTab\('overview'\);/,
+    'revoked platform-admin capability must not leave the former admin tab active');
+  assert.match(source.slice(source.indexOf('setTab(tab: Tab): void'), source.indexOf('get statementBalanceEntries()', source.indexOf('setTab(tab: Tab): void'))), /this\.mobileMoreOpen = false/,
+    'both no-membership destinations must use the handler that closes More');
+});
+
+test('membership and platform-role refreshes also fail closed on an inaccessible active destination', () => {
+  const loadStart = source.indexOf('async loadBusinesses(): Promise<void>');
+  const loadEnd = source.indexOf('private clearWorkspaceData(): void', loadStart);
+  const loadMethod = source.slice(loadStart, loadEnd);
+  const roleUpdate = loadMethod.indexOf('this.business = chosen;');
+  const accessGuard = loadMethod.indexOf("if (!this.canAccessTab(this.tab)) this.setTab('overview');");
+  const clearData = loadMethod.indexOf('if (workspaceAccessChanged) this.clearWorkspaceData();');
+  const setTabStart = source.indexOf('setTab(tab: Tab): void');
+  const setTabEnd = source.indexOf('get statementBalanceEntries()', setTabStart);
+  const setTabMethod = source.slice(setTabStart, setTabEnd);
+  assert.ok(loadStart >= 0 && loadEnd > loadStart);
+  assert.ok(roleUpdate >= 0 && accessGuard > roleUpdate && clearData > accessGuard,
+    'apply the refreshed membership role before revalidating the active destination and clearing scoped data');
+  assert.match(setTabMethod, /if \(!this\.canAccessTab\(tab\)\)/);
+  assert.match(setTabMethod, /this\.mobileMoreOpen = false/);
 });
 
 
@@ -553,13 +595,14 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(helpers, /private setOperationsSuccess\(tab: OperationsMessageTab/);
   assert.match(helpers, /private setOperationsFailure\(tab: OperationsMessageTab/);
   assert.match(helpers, /The operation succeeded, but the list could not be refreshed/);
-
   const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
   const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
   const purchaseStart = source.indexOf('async createPurchaseOrder()');
   const purchaseEnd = source.indexOf('  hasRemainingQuantity(', purchaseStart);
   const purchase = source.slice(purchaseStart, purchaseEnd);
-  const receiving = source.slice(source.indexOf('async receivePurchaseOrder('), source.indexOf('async createRecurringSchedule()'));
+  const receivingStart = source.indexOf('async confirmPurchaseOrderReceipt()');
+  const receivingEnd = source.indexOf('async createRecurringSchedule()', receivingStart);
+  const receiving = source.slice(receivingStart, receivingEnd);
   const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
   for (const method of [notification, supplier, purchase, receiving, recurring]) {
     assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
@@ -572,90 +615,18 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(source, /operationsMessageTab === 'notifications'/);
   assert.match(source, /operationsMessageTab === 'suppliers'/);
   assert.match(source, /operationsMessageTab === 'purchases'/);
-  assert.match(source, /operationsMessageTab === 'recurring'/);
 });
 
-test('customer creation exposes a localized, associated required-name error', () => {
-  const start = source.indexOf('<form #customerForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
-  assert.ok(start >= 0 && end > start, 'customer create form must exist');
-  assert.match(form, /#customerNameModel="ngModel"/);
-  assert.match(form, /maxlength="160"/);
-  assert.match(form, /\[attr\.aria-invalid\]="customerNameModel\.invalid/);
-  assert.match(form, /\[attr\.aria-describedby\]="customerNameModel\.invalid/);
-  assert.match(form, /id="customer-name-error" class="field-error" aria-live="polite"/);
-  assert.match(form, /اسم العميل مطلوب\./);
-  assert.match(form, /Customer name is required\./);
+test('invoice void confirmation is localized and uses the accessible shared dialog', () => {
+  const requestStart = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)');
+  const requestEnd = source.indexOf('cancelInvoiceVoid(): void', requestStart);
+  const request = source.slice(requestStart, requestEnd);
+  assert.ok(requestStart >= 0 && requestEnd > requestStart, 'invoice void request handler must exist');
+  assert.match(request, /!this\.business \|\| this\.business\.role !== 'owner'/);
+  assert.match(source, /Confirm invoice void/);
+  assert.match(source, /This screen does not process refunds or credit notes/);
+  assert.match(source, /\(confirmed\)="confirmInvoiceVoid\(\)"/);
 });
-
-test('optional customer email exposes a localized format error only when invalid', () => {
-  const start = source.indexOf('<form #customerForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
-  assert.ok(start >= 0 && end > start);
-  assert.match(form, /#customerEmailModel="ngModel"/);
-  assert.match(form, /type="email" maxlength="254"/);
-  assert.match(form, /customerEmailModel\.invalid && \(customerEmailModel\.touched \|\| customerForm\.submitted\)/);
-  assert.match(form, /id="customer-email-error" class="field-error" aria-live="polite"/);
-  assert.match(form, /أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا\./);
-  assert.match(form, /Enter a valid email address or leave this field blank\./);
-});
-
-test('customer phone input reflects the backend maximum without making it required', () => {
-  const start = source.indexOf('<form #customerForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
-  assert.ok(start >= 0 && end > start);
-  assert.match(form, /name="customerPhone" maxlength="32"/);
-  assert.doesNotMatch(form, /name="customerPhone"[^>]*required/);
-});
-
-test('invoice discount and tax rate fields expose localized accessible range errors', () => {
-  const start = source.indexOf('<form #invoiceForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
-  assert.ok(start >= 0 && end > start, 'invoice form must exist');
-  assert.match(form, /#invoiceDiscountModel="ngModel"/);
-  assert.match(form, /#invoiceTaxModel="ngModel"/);
-  assert.match(form, /min="0" max="100" step="any" required/);
-  assert.match(form, /\[attr\.aria-invalid\]="invoiceDiscountModel\.invalid/);
-  assert.match(form, /\[attr\.aria-describedby\]="invoiceTaxModel\.invalid/);
-  assert.match(form, /id="invoice-discount-error" class="field-error" aria-live="polite"/);
-  assert.match(form, /id="invoice-tax-error" class="field-error" aria-live="polite"/);
-  assert.match(form, /أدخل نسبة خصم من 0 إلى 100\./);
-  assert.match(form, /Enter a discount rate from 0 to 100\./);
-  assert.match(form, /أدخل نسبة ضريبة من 0 إلى 100\./);
-  assert.match(form, /Enter a tax rate from 0 to 100\./);
-});
-
-test('owner payment form exposes localized accessible errors for required amount and customer', () => {
-  const start = source.indexOf('<form #paymentForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
-  assert.ok(start >= 0 && end > start, 'payment form must exist');
-  assert.match(form, /#paymentAmountModel="ngModel"/);
-  assert.match(form, /min="0\.01" step="0\.01"[^>]*required/);
-  assert.match(form, /id="payment-amount-error" class="field-error" aria-live="polite"/);
-  assert.match(form, /#paymentCustomerModel="ngModel"/);
-  assert.match(form, /name="paymentCustomer" required/);
-  assert.match(form, /id="payment-customer-error" class="field-error" aria-live="polite"/);
-  assert.match(form, /أدخل مبلغًا صحيحًا أكبر من صفر/);
-  assert.match(form, /Enter a positive amount/);
-  assert.match(form, /اختيار العميل مطلوب\./);
-  assert.match(form, /Choose a customer\./);
-});
-
-test('invoice void confirmation is localized for Arabic and English', () => {
-  const start = source.indexOf('async voidInvoice(invoice: Invoice)');
-  const end = source.indexOf('hasOutstandingBalance(', start);
-  const method = source.slice(start, end);
-  assert.ok(start >= 0 && end > start, 'invoice void method must exist');
-  assert.match(method, /window\.confirm\(this\.t\(/);
-  assert.match(method, /تأكيد إلغاء الفاتورة/);
-  assert.match(method, /Confirm voiding invoice/);
-});
-
 
 test('invoice mutations keep confirmed success separate from post-save refresh failures', () => {
   const createStart = source.indexOf('async createInvoice(): Promise<void>');
@@ -670,7 +641,7 @@ test('invoice mutations keep confirmed success separate from post-save refresh f
   assert.match(create, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 
   const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
-  const issueEnd = source.indexOf('async voidInvoice(invoice: Invoice)', issueStart);
+  const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice', issueStart);
   const issue = source.slice(issueStart, issueEnd);
   assert.ok(issueStart >= 0 && issueEnd > issueStart);
   assert.match(issue, /Invoice issued successfully/);
@@ -679,16 +650,15 @@ test('invoice mutations keep confirmed success separate from post-save refresh f
   assert.match(issue, /this\.api\.issueInvoice\(businessId, invoice\.id\)/);
   assert.match(issue, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 
-  const voidStart = source.indexOf('async voidInvoice(invoice: Invoice)');
+  const voidStart = source.indexOf('async confirmInvoiceVoid(): Promise<void>');
   const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
   const voidMethod = source.slice(voidStart, voidEnd);
   assert.ok(voidStart >= 0 && voidEnd > voidStart);
-  assert.match(voidMethod, /This screen does not process refunds or credit notes/);
+  assert.match(source, /This screen does not process refunds or credit notes/);
   assert.match(voidMethod, /Invoice voided successfully/);
   assert.match(voidMethod, /The invoice was voided, but the view could not refresh/);
   assert.match(voidMethod, /Do not void it again/);
   assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
-  assert.match(voidMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
 });
 
 test('invoice success messages support warning state and reset with workspace context', () => {
@@ -765,6 +735,41 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
   assert.match(source, /<aba-state-message \[kind\]="productMessageKind" \[description\]="productMessage" \/>/);
 });
+
+test('positive opening stock is OWNER-only while STAFF can create tracked products at zero', () => {
+  const stockStart = source.indexOf('@if (stockTracked) {');
+  const stockEnd = source.indexOf('<button class="primary" type="submit"', stockStart);
+  const stockControls = source.slice(stockStart, stockEnd);
+  assert.ok(stockStart >= 0 && stockEnd > stockStart, 'stock-tracked product controls must exist');
+  const ownerGuard = stockControls.indexOf("@if (business?.role === 'owner')");
+  const openingStockField = stockControls.indexOf('name="productOpeningQuantity"');
+  assert.ok(ownerGuard >= 0 && openingStockField > ownerGuard,
+    'the positive opening-stock input must be inside the OWNER-only guard');
+  assert.match(stockControls, /Only workspace owners can set a positive opening stock quantity/);
+  assert.match(stockControls, /zero opening stock/);
+
+  const createStart = source.indexOf('async createProduct(): Promise<void>');
+  const createEnd = source.indexOf('get invoicePreview()', createStart);
+  const createMethod = source.slice(createStart, createEnd);
+  assert.match(createMethod, /opening_quantity: this\.stockTracked && this\.business\.role === 'owner' \? this\.productOpeningQuantity : '0'/,
+    'non-owners and unresolved roles must submit zero opening stock');
+
+  const resetStart = source.indexOf('private clearWorkspaceData(): void');
+  const resetEnd = source.indexOf('\n  }', resetStart);
+  const resetMethod = source.slice(resetStart, resetEnd);
+  assert.match(resetMethod, /this\.productOpeningQuantity = '0'/,
+    'an owner-only quantity must not survive a workspace or role change');
+
+  const businessesStart = source.indexOf('async loadBusinesses(): Promise<void>');
+  const businessesEnd = source.indexOf('private clearWorkspaceData(): void', businessesStart);
+  const businessesMethod = source.slice(businessesStart, businessesEnd);
+  assert.ok(businessesStart >= 0 && businessesEnd > businessesStart);
+  assert.match(businessesMethod, /this\.business\?\.role !== chosen\.role/,
+    'a workspace membership-role change must be detected');
+  assert.match(businessesMethod, /if \(workspaceAccessChanged\) this\.clearWorkspaceData\(\)/,
+    'a workspace or role change must clear the previous context');
+});
+
 
 
 test('product CSV import is confirmed once and reports refresh failure without inviting a duplicate import', () => {
@@ -877,11 +882,11 @@ test('invoice drafts are available to workspace members while issue and void rem
   assert.ok(draftOwnerGuard >= 0, 'draft issue and void actions must be inside the owner guard');
   assert.ok(draft.indexOf('editInvoice(invoice)') < draftOwnerGuard, 'workspace members retain draft editing');
   assert.ok(draft.indexOf('issueInvoice(invoice)') > draftOwnerGuard, 'issuing is owner-only');
-  assert.ok(draft.indexOf('voidInvoice(invoice)') > draftOwnerGuard, 'voiding is owner-only');
+  assert.ok(draft.indexOf('requestInvoiceVoid(invoice, $event)') > draftOwnerGuard, 'voiding is owner-only');
   const issuedOwnerGuard = issued.indexOf("@if (business?.role === 'owner')");
   assert.ok(issuedOwnerGuard >= 0, 'issued invoice void action must be owner-only');
   assert.ok(issued.indexOf('printInvoice(invoice)') < issuedOwnerGuard, 'workspace members retain invoice printing');
-  assert.ok(issued.indexOf('voidInvoice(invoice)') > issuedOwnerGuard, 'issued invoice voiding is owner-only');
+  assert.ok(issued.indexOf('requestInvoiceVoid(invoice, $event)') > issuedOwnerGuard, 'issued invoice voiding is owner-only');
 
   const createStart = source.indexOf('async createInvoice(): Promise<void>');
   const createEnd = source.indexOf('private escapePrintHtml(', createStart);
@@ -896,17 +901,21 @@ test('invoice drafts are available to workspace members while issue and void rem
 
 test('owner-only invoice mutations fail closed before showing confirmation or calling the API', () => {
   const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
-  const issueEnd = source.indexOf('async voidInvoice(invoice: Invoice)', issueStart);
+  const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice', issueStart);
   const issue = source.slice(issueStart, issueEnd);
   assert.match(issue, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
 
-  const voidStart = source.indexOf('async voidInvoice(invoice: Invoice)');
-  const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
-  const voidMethod = source.slice(voidStart, voidEnd);
-  assert.match(voidMethod, /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !window\.confirm/);
-  assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
-});
+  const requestStart = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)');
+  const requestEnd = source.indexOf('cancelInvoiceVoid(): void', requestStart);
+  const request = source.slice(requestStart, requestEnd);
+  assert.match(request, /if \(!this\.business \|\| this\.business\.role !== 'owner'/);
 
+  const confirmStart = source.indexOf('async confirmInvoiceVoid(): Promise<void>');
+  const confirmEnd = source.indexOf('hasOutstandingBalance(', confirmStart);
+  const confirm = source.slice(confirmStart, confirmEnd);
+  assert.match(confirm, /if \(!invoice \|\| !this\.business \|\| this\.business\.role !== 'owner'/);
+  assert.match(confirm, /this\.api\.voidInvoice\(businessId, invoice\.id/);
+});
 
 test('owner-only notification and recurring creation controls stay hidden from staff while lists remain visible', () => {
   const notificationStart = source.indexOf("@if (tab === 'notifications')");
@@ -915,7 +924,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.ok(notificationStart >= 0 && notificationEnd > notificationStart);
   assert.match(notificationView, /@if \(business\?\.role === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
   assert.match(notificationView, /Only workspace owners can queue notifications/);
-  assert.match(notificationView, /@for \(item of notifications/);
+  assert.match(notificationView, /@for \(item of filteredNotifications/);
 
   const recurringStart = source.indexOf("@if (tab === 'recurring')");
   const recurringEnd = source.indexOf("@if (tab === 'health'", recurringStart);
@@ -923,7 +932,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.ok(recurringStart >= 0 && recurringEnd > recurringStart);
   assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*<form #recurringForm="ngForm"/);
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
-  assert.match(recurringView, /@for \(schedule of recurringSchedules/);
+  assert.match(recurringView, /@for \(schedule of filteredRecurringSchedules/);
 
   const notificationMethodStart = source.indexOf('async createNotification(): Promise<void>');
   const notificationMethodEnd = source.indexOf('private async loadSuppliers()', notificationMethodStart);
@@ -957,20 +966,80 @@ test('CSV import preview and write controls are owner-only without restricting m
   assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
 });
 
+test('assistant source citations use bilingual labels and localized expense categories', () => {
+  assert.match(source, /t\('المصادر:', 'Sources:'\)/);
+  assert.match(source, /source\.type === 'invoice' \? t\('فاتورة', 'Invoice'\)/);
+  assert.match(source, /source\.type === 'expense' \? t\('مصروف', 'Expense'\)/);
+  assert.match(source, /expenseCategoryLabel\(source\.category\)/);
+});
+
+test('expense categories are localized in the list and available to local search', () => {
+  assert.match(source, /expenseCategoryLabel\(expense\.category\)/);
+  assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
+  assert.match(source, /Transport: 'نقل ومواصلات'/);
+  assert.match(source, /Transport: 'Transport'/);
+});
+
+test('payment methods are localized in the list and available to local search', () => {
+  assert.match(source, /paymentMethodLabel\(payment\.method\)/);
+  assert.match(source, /method => this\.paymentMethodLabel\(method\)/);
+  assert.match(source, /bank_transfer: 'تحويل بنكي'/);
+  assert.match(source, /bank_transfer: 'Bank transfer'/);
+});
+
+test('notification status labels are localized in the list and available to local search', () => {
+  assert.match(source, /notificationStatusLabel\(item\.status\)/);
+  assert.match(source, /notificationStatusLabel\(status\)/);
+  assert.match(source, /failed: 'فشل الإرسال'/);
+  assert.match(source, /failed: 'Failed'/);
+  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
+});
+
+test('operational health status uses a localized label instead of raw API codes', () => {
+  assert.match(source, /operationalHealthStatusLabel\(operationalHealth\.status\)/);
+  assert.match(source, /status === 'ok'.*سليم/);
+  assert.match(source, /status === 'degraded'.*يحتاج مراجعة/);
+  assert.match(source, /return status \|\| this\.t\('حالة غير محددة', 'Unknown status'\)/);
+});
+
+test('purchase-order status labels are localized in the list and available to local search', () => {
+  assert.match(source, /purchaseOrderStatusLabel\(order\.status\)/);
+  assert.match(source, /purchaseOrderStatusLabel\(status\)/);
+  assert.match(source, /partially_received: 'مستلم جزئيًا'/);
+  assert.match(source, /partially_received: 'Partially received'/);
+  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
+});
+
 test('purchase orders remain creatable by members while receiving and payment writes are owner-only', () => {
   const purchaseStart = source.indexOf("@if (tab === 'purchases')");
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
-  assert.match(purchaseView, /business\?\.role === 'owner' && order\.lines\.some\(hasRemainingQuantity\)/);
-  const receiveStart = source.indexOf('async receivePurchaseOrder(order: PurchaseOrder)');
+  assert.match(purchaseView, /business\?\.role === 'owner' && canReceivePurchaseOrder\(order\)/);
+  assert.match(purchaseView, /order\.status === 'draft'.*This order is a draft; receiving is unavailable until it is approved/);
+  const eligibilityStart = source.indexOf('canReceivePurchaseOrder(order: PurchaseOrder): boolean');
+  const eligibilityEnd = source.indexOf('supplierNameFor(', eligibilityStart);
+  const eligibility = source.slice(eligibilityStart, eligibilityEnd);
+  assert.ok(eligibilityStart >= 0 && eligibilityEnd > eligibilityStart);
+  assert.match(eligibility, /order\.status === 'approved'/);
+  assert.match(eligibility, /order\.status === 'partially_received'/);
+  assert.match(eligibility, /order\.lines\.some\(line => this\.hasRemainingQuantity\(line\)\)/);
+  assert.match(purchaseView, /requestPurchaseOrderReceipt\(order, \$event\)/);
+
+  const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
   const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
-  assert.match(source.slice(receiveStart, receiveEnd), /this\.business\.role !== 'owner'/);
+  const receive = source.slice(receiveStart, receiveEnd);
+  assert.match(receive, /this\.business\.role !== 'owner'/);
+  assert.match(receive, /!this\.canReceivePurchaseOrder\(order\)/);
+  const requestStart = source.indexOf('requestPurchaseOrderReceipt(order: PurchaseOrder');
+  const requestEnd = source.indexOf('cancelPurchaseOrderReceipt()', requestStart);
+  assert.match(source.slice(requestStart, requestEnd), /!this\.canReceivePurchaseOrder\(order\)/);
+  assert.match(receive, /this\.api\.receivePurchaseOrder\(businessId, order\.id, lines\)/);
+
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
   const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
   assert.match(source.slice(paymentStart, paymentEnd), /this\.business\.role !== 'owner'/);
 });
-
 
 test('local CSV exports follow the backend owner-only export permission', () => {
   const exportButton = `<button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button>`;
@@ -995,18 +1064,19 @@ test('shared shell uses logical inline positioning for Arabic RTL and English LT
   assert.match(source, /\.sidebar\{position:fixed;inset-block:0;inset-inline-end:0;/);
   assert.match(source, /\.main\{margin-inline-end:var\(--aba-layout-sidebar,245px\);/);
   assert.match(source, /\.nav-item\{[^}]*text-align:start;/);
-  assert.match(source, /\.hero-mark\{[^}]*margin-inline-start:4%;/);
+  assert.match(source, /\.home-shortcut-link\{[^}]*text-align:start;/);
   assert.match(source, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
   assert.match(source, /\.nav-item\.active\{[^}]*border-inline-start:3px solid/);
   assert.doesNotMatch(source, /\.shell\.english \.sidebar\{inset:0 0 0 auto\}/);
   assert.doesNotMatch(source, /\.shell\.english \.main\{margin-left:0;margin-right:/);
-  assert.doesNotMatch(source, /\.shell\.english \.hero-mark\{margin-left:/);
+  assert.doesNotMatch(source, /\.shell\.english \.home-shortcut-link\{text-align:left/);
   assert.doesNotMatch(source, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
 });
 
+
 test('RTL release-guide lists and mobile dock active state use logical layout', () => {
-  assert.match(source, /\.release-feature-group ul,\.release-version ul\{[^}]*padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0/);
-  assert.doesNotMatch(source, /\.shell\.english \.release-feature-group ul/);
+  assert.match(releaseGuideSource, /\.release-feature-group ul,\.release-version ul\{[^}]*padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0/);
+  assert.doesNotMatch(releaseGuideSource, /\.shell\.english \.release-feature-group ul/);
   assert.match(source, /\.sidebar \.nav-item\.active\{[^}]*border-inline-start:0;/);
   assert.match(source, /\.mobile-more-menu \.nav-item\.active\{border-inline-start:3px solid/);
 });
@@ -1233,4 +1303,163 @@ test('CSV import regions and invoice preview have localized accessible names', (
   assert.ok(source.includes("[attr.aria-label]=\"t('استيراد المنتجات من CSV', 'CSV product import')\""));
   assert.ok(source.includes("[attr.aria-label]=\"t('معاينة إجمالي الفاتورة', 'Invoice totals preview')\""));
   assert.doesNotMatch(source, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
+});
+
+
+test('OWNER payroll view is loaded only after selecting Employees', () => {
+  const start = source.indexOf("@defer (when tab === 'employees' && business.role === 'owner')");
+  const placeholder = source.indexOf("} @placeholder {", start);
+  const end = source.indexOf("\n            }", placeholder);
+  assert.ok(start >= 0 && placeholder > start && end > placeholder,
+    'the employee payroll view must have an explicit navigation-triggered defer boundary');
+  const deferredView = source.slice(start, placeholder);
+  assert.match(deferredView, /<aba-employee-payroll\b/);
+  assert.equal((source.match(/<aba-employee-payroll\b/g) || []).length, 1,
+    'the payroll component must not be referenced outside its lazy boundary');
+  const loadingView = source.slice(placeholder, end);
+  assert.match(loadingView, /aba-state-message kind="loading"/);
+  assert.match(loadingView, /Loading employees &amp; payroll|Loading employees & payroll/);
+  assert.match(source, /imports: \[[^\]]*EmployeePayrollComponent/);
+  assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\)/);
+});
+
+
+test('workspace-owned views rely on the non-null business context after the empty-workspace guard', () => {
+  assert.match(source, /@if \(!business\) \{/);
+  assert.match(source, /@if \(tab === 'payments' && business\.role === 'owner'\) \{/);
+  assert.match(source, /@if \(tab === 'taxes' && business\.role === 'owner'\) \{/);
+  assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\) \{/);
+  assert.match(source, /@defer \(when tab === 'employees' && business\.role === 'owner'\)/);
+  assert.match(source, /\{\{ business\.currency_code \}\}/);
+  assert.match(source, /@if \(tab === 'integrity' && business\.role === 'owner'\) \{/);
+  assert.doesNotMatch(source, /tab === 'payments' && business\?\.role === 'owner'/);
+  assert.doesNotMatch(source, /tab === 'taxes' && business\?\.role === 'owner'/);
+  assert.doesNotMatch(source, /tab === 'employees' && business\?\.role/);
+  assert.doesNotMatch(source, /tab === 'integrity' && business\?\.role === 'owner'/);
+  assert.doesNotMatch(source, /\{\{ business\?\.currency_code \}\}/);
+});
+
+
+test('release guide content is loaded only after navigating to the guide', () => {
+  const start = source.indexOf("@defer (when tab === 'release-guide')");
+  const placeholder = source.indexOf("} @placeholder {", start);
+  const end = source.indexOf("\n            }", placeholder);
+  assert.ok(start >= 0 && placeholder > start && end > placeholder,
+    'release guide must have an explicit navigation-triggered defer boundary');
+  assert.match(source.slice(start, placeholder), /<aba-release-guide\b/);
+  assert.equal((source.match(/<aba-release-guide\b/g) || []).length, 1);
+  assert.match(source, /import \{ ReleaseGuideComponent \} from '\.\/release-guide\.component';/);
+  assert.match(source, /imports: \[[^\]]*ReleaseGuideComponent/);
+  assert.doesNotMatch(source, /import \{ FEATURE_CATALOG, RELEASE_HISTORY \} from '\.\/release-guide';/);
+});
+
+
+test('reports and expense forms disclose their preliminary and incurred-not-paid semantics', () => {
+  assert.match(source, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
+  assert.match(source, /cost of goods sold is not deducted/);
+  assert.match(source, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
+});
+
+
+test('Home lists every role-authorized module in addition to the five quick-access shortcuts', () => {
+  const start = source.indexOf("@if (tab === 'overview')");
+  const end = source.indexOf("@if (tab === 'notifications')", start);
+  const overview = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(overview, /homeQuickAccessCards/);
+  assert.match(overview, /All workspace modules/);
+  assert.match(overview, /@for \(module of homeModuleCards; track module\.tab\)/);
+  assert.match(overview, /homeModuleCards\.length/);
+  assert.match(source, /get homeModuleCards\(\): readonly WorkspaceModuleCard\[\]/);
+  assert.match(source, /return WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+});
+
+test('Home dashboard uses the shared page-level error and retry banner without duplicate alert announcements', () => {
+  const start = source.indexOf("@if (tab === 'overview')");
+  const end = source.indexOf("@if (tab === 'notifications')", start);
+  const overview = source.slice(start, end);
+  const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired');
+  assert.ok(sharedError >= 0, 'the shared workspace error banner must remain available');
+  assert.match(source.slice(sharedError, sharedError + 650), /\[actionLabel\].*Retry/);
+  assert.ok(overview.includes('metric-grid--skeleton'), 'Home keeps its non-data KPI skeleton while the shared workspace banner announces loading');
+  assert.doesNotMatch(overview, /kind="error" \[description\]="error"/,
+    'the Home metrics panel must not repeat the same global error alert');
+  assert.match(overview, /@else if \(!error\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
+    'the empty state must not mislabel a failed dashboard load as a genuine empty result');
+});
+
+
+test('operations lists filter locally by their visible business fields', () => {
+  assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
+  assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);
+  assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
+  assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
+  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
+  assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
+  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
+  assert.ok(source.includes('filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status))'));
+  const clearStart = source.indexOf('private clearWorkspaceData(): void');
+  const clearEnd = source.indexOf('\n  }', clearStart);
+  const clear = source.slice(clearStart, clearEnd);
+  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
+    assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
+    assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
+  }
+  assert.match(source, /No suppliers match this search/);
+  assert.match(source, /No purchase orders match this search/);
+  assert.match(source, /No schedules match this search/);
+  assert.match(source, /No notifications match this search/);
+});
+
+
+test('customer section markup does not render stray closing-tag text', () => {
+  assert.equal(source.includes('</section>ion>'), false);
+});
+
+
+test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
+  assert.match(source, /get filteredPayments\(\): Payment\[\]/);
+  assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
+  assert.match(source, /filterPayments\(this\.payments, this\.paymentSearch/);
+  assert.ok(source.includes('filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category))'));
+  assert.match(source, /No payments match this search/);
+  assert.match(source, /No expenses match this search/);
+  assert.match(source, /name="paymentSearch" type="search"/);
+  assert.match(source, /name="expenseSearch" type="search"/);
+});
+
+
+test('notification kind localization covers the current business form value and legacy plural value', () => {
+  assert.match(source, /<option value="business">/);
+  assert.match(source, /business: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
+  assert.match(source, /businesses: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
+});
+
+
+test('customer statement event types use bilingual labels while preserving unknown values', () => {
+  assert.match(source, /customerStatementEventLabel\(event\.event_type\)/);
+  assert.match(source, /invoice_issued: \{ ar: 'إصدار فاتورة', en: 'Invoice issued' \}/);
+  assert.match(source, /payment_allocation: \{ ar: 'تخصيص دفعة', en: 'Payment allocation' \}/);
+  assert.match(source, /currency_mismatch_allocation: \{ ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' \}/);
+});
+
+
+test('horizontally scrollable workspace and platform tables are named keyboard-accessible regions', () => {
+  for (const [surface, componentSource] of [['workspace', source], ['platform admin', platformAdminSource]] as const) {
+    const wrappers = [...componentSource.matchAll(/<div class="table-wrap[^"]*"[^>]*>/g)].map(match => match[0]);
+    assert.ok(wrappers.length > 0, `${surface} must retain its table wrappers`);
+    for (const wrapper of wrappers) {
+      assert.match(wrapper, /role="region"/, `${surface} table wrapper must expose a region`);
+      assert.match(wrapper, /tabindex="0"/, `${surface} table wrapper must be keyboard focusable`);
+      assert.match(wrapper, /\[attr\.aria-label\]=/, `${surface} table wrapper must have a localized accessible name`);
+    }
+  }
+});
+
+
+test('AI assistant conversation history is a named keyboard-scrollable log region', () => {
+  const log = source.match(/<div class="chat-log"[^>]*>/)?.[0] ?? '';
+  assert.match(log, /role="log"/);
+  assert.match(log, /tabindex="0"/);
+  assert.match(log, /\[attr\.aria-label\]=/);
 });

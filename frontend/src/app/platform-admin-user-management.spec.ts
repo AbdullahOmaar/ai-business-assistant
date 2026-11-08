@@ -38,3 +38,32 @@ test('the user directory supports narrow-screen scrolling and mobile navigation'
   assert.match(source, /user-directory-table\{min-width:850px\}/);
   assert.match(source, /@media\(max-width:760px\)/);
 });
+
+
+test('platform activity audit uses the shared bilingual action and target labels', () => {
+  assert.match(source, /auditActionLabel\(event\.action\)/);
+  assert.match(source, /auditTargetLabel\(event\.target_type\)/);
+});
+
+
+test('platform role audit uses the shared bilingual action vocabulary', () => {
+  assert.match(source, /auditActionLabel\(event\.action\)/);
+  assert.doesNotMatch(source, /event\.action === 'platform\.user_role\.granted'/);
+});
+
+
+test('user directory distinguishes an empty directory from an exact-search miss', () => {
+  assert.match(source, /userQuery\.trim\(\) \? t\('لا توجد حسابات مطابقة'/);
+  assert.match(source, /No matching accounts/);
+  assert.match(source, /No user accounts are registered yet/);
+  assert.match(source, /Registered Firebase accounts will appear here when available/);
+});
+
+
+test('workspace directory distinguishes no matches from an empty or out-of-range page', () => {
+  assert.match(source, /businessQuery\.trim\(\) \|\| businessStatus !== 'all'/);
+  assert.match(source, /businessOffset > 0/);
+  assert.match(source, /No matching workspaces/);
+  assert.match(source, /No workspaces on this page/);
+  assert.match(source, /No workspaces are registered yet/);
+});
