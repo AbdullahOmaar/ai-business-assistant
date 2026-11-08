@@ -19,6 +19,20 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     .aba-metric-card__values strong{display:block;min-width:0;overflow-wrap:anywhere;color:var(--aba-color-text-primary,#172033);font-size:19px;line-height:1.35;font-variant-numeric:tabular-nums}
     .aba-metric-card__values small{display:block;min-width:0;overflow-wrap:anywhere;color:var(--aba-color-text-secondary,#64748b);font-size:10px;line-height:1.5}
     .aba-metric-card__values .metric-basis{margin-top:3px;padding-top:8px;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);color:var(--aba-color-text-muted,#475569)}
+    @media(max-width:760px){
+      .aba-metric-card{min-height:112px;padding:12px}
+      .aba-metric-card__label{margin-bottom:8px}
+      .aba-metric-card__values{gap:6px}
+      .aba-metric-card__values strong{font-size:17px;line-height:1.3}
+      .aba-metric-card__values small{font-size:10px;line-height:1.45}
+      .aba-metric-card__values .metric-basis{margin-top:2px;padding-top:6px}
+    }
+    @media(max-width:380px){
+      .aba-metric-card{min-height:104px;padding:10px}
+      .aba-metric-card__label{font-size:10px}
+      .aba-metric-card__values strong{font-size:15px}
+      .aba-metric-card__values small{font-size:9px}
+    }
   `],
 })
 export class AbaMetricCardComponent {}
