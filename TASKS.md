@@ -3121,3 +3121,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Added five Node regression tests for non-Preview behavior, missing/partial Preview values, rejection of known Production identifiers, and complete synthetic configuration.
 - No Vercel project settings, Firebase projects, production API, production data, DB, schema or migrations changed. Preview authentication remains disabled until an isolated synthetic runtime is configured.
 - Validation: CircleCI exact-head to follow automatically after this commit; no local runner available. Vercel Preview redeployment and output-path/build-stamp verification remain pending.
+
+
+## T18 — Source-level contrast remediation verified — 2026-11-08
+
+- Exact code head: `be5878a17e39b89ec8f5f826c32d54f8a8f1a5bd` (PR #348).
+- Changed global `--aba-color-text-secondary` to `#5d6878`; mobile header, mobile page labels and Platform Admin secondary/small labels now use the stronger semantic token.
+- WCAG contrast: `#5d6878` on page `#f5f7fb` = 5.27:1; on info-soft `#eff6ff` = 5.19:1; on white = 5.65:1. The added design-token regression covers secondary text on page/info-soft and Platform Admin/mobile selector use.
+- CircleCI exact-head: 7/7 SUCCESS (frontend-unit-tests #14093, dependency-audit #14092, production-build #14094, backend-container #14091, backend-accounting #14095, browser-smoke #14090, aggregate verify-all-changes workflow 24e6cef8-a123-4efe-8851-fa45f8cf900a).
+- Vercel Web Preview `dpl_8KjMbtfwNiMFPyV2yiUiuQzwRPPn` READY on exact SHA. Static root/index, CSS, JS, manifest, icons, runtime config and service worker all return HTTP 200. Main bundle commit stamp `be5878a17e39`; PWA cache `aba-shell-v1.3.9-be5878a17e39`. Preview runtime config is intentionally empty (fail-closed); no auth/API/business data request was made.
+- Source-level contrast issue is remediated and regression-tested. Rendered color/opacity screenshot audit, screen-reader, keyboard and physical Android/PWA acceptance remain NOT RUN because Desktop Commander is offline and Preview auth is disabled pending synthetic API/Firebase environment.
