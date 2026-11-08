@@ -3242,3 +3242,5 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **LTR browser-test correction:** CircleCI #14350 proved the responsive Home assertion was still running on the App Guide page after language toggle, so no Home KPI hosts existed. The test now returns to Home using the mobile header's explicit Go to Home action and waits for four KPIs before measuring LTR grids. This fixes test navigation, not application data behavior.
 
 - **Browser-smoke menu-state correction:** after changing the language back to Arabic, the mobile More menu is closed by design. The test now explicitly reopens it before asserting visibility and selecting AI Assistant; the previous timeout was a missing test interaction, not an application failure.
+
+- **Mobile menu regression-test correction:** after returning from App Guide to Home, the test explicitly reopens More before switching back to Arabic. This prevents a stale assumption that the menu stays open after Home navigation.

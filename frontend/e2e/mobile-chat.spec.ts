@@ -338,6 +338,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
+  await moreTrigger.click();
+  await expect(page.locator('#mobile-more-menu')).toBeVisible();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
