@@ -41,7 +41,10 @@ export function createPreviewRuntimeConfig(env) {
   } catch {
     throw new Error('Preview API base URL must be a valid HTTPS URL.');
   }
-  if (apiUrl.protocol !== 'https:' || apiUrl.hostname === PRODUCTION_API_HOST) {
+  // DNS treats a trailing dot as the absolute form of the same hostname.
+  // Normalize it before comparing so Production cannot bypass the Preview guard.
+  const normalizedApiHostname = apiUrl.hostname.toLowerCase().replace(/\.$/, '');
+  if (apiUrl.protocol !== 'https:' || normalizedApiHostname === PRODUCTION_API_HOST) {
     throw new Error('Preview API base URL must target an isolated non-Production HTTPS service.');
   }
   if (values.ABA_PREVIEW_FIREBASE_PROJECT_ID === PRODUCTION_FIREBASE_PROJECT ||
