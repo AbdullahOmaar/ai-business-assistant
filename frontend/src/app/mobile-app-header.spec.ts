@@ -25,8 +25,8 @@ test('mobile app header is an isolated standalone presentation component with ex
   assert.match(source, /styleUrl: '\.\/aba-mobile-app-header\.component\.css'/);
 });
 
-test('mobile header uses the dynamic build version and existing workspace records only', () => {
-  assert.match(source, /v\{\{ appVersion \}\}/);
+test('mobile header removes duplicate version chrome and uses existing workspace records only', () => {
+  assert.doesNotMatch(source, /v\{\{ appVersion \}\}/, 'the compact mobile header must not repeat the app version');
   assert.match(source, /@if \(businesses\.length > 1\) \{/);
   assert.match(source, /<label class="workspace-switch">[\s\S]*?<select/);
   assert.match(source, /\[ngModel\]="selectedBusinessId"/);
@@ -88,9 +88,7 @@ test('mobile header consumes shared semantic tokens rather than a one-off palett
     '--aba-color-info-border',
     '--aba-color-info-text',
     '--aba-color-primary-soft',
-    '--aba-color-primary-border',
     '--aba-color-primary-strong',
-    '--aba-color-primary',
     '--aba-shadow-popover',
     '--aba-z-index-dropdown',
   ]) {
@@ -104,10 +102,10 @@ test('mobile header consumes shared semantic tokens rather than a one-off palett
 
 
 test('mobile header interactive controls meet the 44px touch-target baseline', () => {
-  assert.match(styles, /\.brand-button \{ min-height: 44px;/);
+  assert.match(styles, /\.brand-button \{[^}]*width: 44px;[^}]*height: 44px;/);
   assert.match(styles, /\.workspace-switch select \{[^}]*min-height: 44px;/);
   assert.match(styles, /\.assistant-shortcut \{[^}]*min-height: 44px;/);
-  assert.match(styles, /\.icon-button, \.profile-trigger \{[^}]*height: 44px/);
+  assert.match(styles, /\.icon-button,\s*\.profile-trigger \{[^}]*width: 44px;[^}]*height: 44px/);
   assert.match(styles, /\.account-action \{[^}]*min-height: 44px/);
 });
 
