@@ -22,7 +22,7 @@ test('print invoice escapes customer, business, invoice, and line values before 
   assert.match(method, /const businessSnapshot = this\.business/);
   assert.match(method, /const businessName = businessSnapshot\.name/);
   assert.match(method, /const businessCurrency = businessSnapshot\.currency_code/);
-  assert.match(method, /this\.escapePrintHtml\(this\.customerNameForInvoice\(detail\.customer_id\)\)/);
+  assert.match(method, /this\.escapePrintHtml\(detail\.customer_name \|\| this\.customerNameForInvoice\(detail\.customer_id\)\)/);
   assert.match(method, /this\.escapePrintHtml\(detail\.invoice_number\)/);
   assert.match(method, /this\.escapePrintHtml\(line\.description\)/);
   assert.match(method, /this\.escapePrintHtml\(line\.quantity\)/);
