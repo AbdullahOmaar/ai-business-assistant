@@ -1066,6 +1066,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     }
     @media(max-width:760px){
       .chat-form{position:sticky;bottom:calc(var(--aba-keyboard-inset,0px) + 8px);z-index:25;align-items:end;padding:8px 0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 18%)}
+      .shell.keyboard-open .chat-form{position:fixed;inset-inline:12px;bottom:calc(var(--aba-keyboard-inset,0px) + 8px);margin-top:0;padding:8px 10px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;background:var(--aba-color-surface,#fff);box-shadow:0 8px 24px #0f172a1a}
       .chat-form textarea{min-height:48px;max-height:25dvh;resize:none}
       .shell.keyboard-open .sidebar,.shell:has(.chat-form textarea:focus) .sidebar{transform:translateY(110%);pointer-events:none}
       .shell.keyboard-open .main,.shell:has(.chat-form textarea:focus) .main{padding-bottom:12px}
@@ -1077,6 +1078,29 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
     @media(max-width:360px){.home-shortcut-list{grid-template-columns:minmax(0,1fr)}}
     /* The extracted Hybrid Modern header replaces the old mobile workspace/page header only. */
     @media(max-width:760px){.workspace-bar{display:none!important}.mobile-page-heading{display:none!important}}
+
+/* Mobile Home cockpit: compact hierarchy and intentional two-column surfaces. */
+@media(max-width:760px){
+  .dashboard-period{gap:7px;margin-block-end:10px;padding:10px 12px;border-radius:12px}
+  .dashboard-period__heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .dashboard-period__title{font-size:13px}
+  .dashboard-period__heading strong{font-size:11px}
+  .dashboard-period__details{gap:5px 9px;font-size:11px;line-height:1.45}
+  .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}
+  .home-shortcut-link{min-height:44px;gap:7px;padding:8px 9px;font-size:12px}
+  .home-shortcut-link__icon{flex-basis:28px;width:28px;height:28px;font-size:13px}
+  .module-launcher,.module-directory{margin-block-start:12px}
+  .module-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .dashboard-trust-note{display:grid;gap:6px;margin-block-start:10px;padding:10px 12px;font-size:11px;line-height:1.55}
+  .dashboard-trust-note strong{white-space:normal}
+}
+@media(max-width:380px){
+  .metric-grid{gap:7px}
+  .home-shortcut-link{gap:6px;padding-inline:7px}
+  .home-shortcut-link__icon{flex-basis:24px;width:24px;height:24px}
+  .module-directory-grid{gap:7px}
+}
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {

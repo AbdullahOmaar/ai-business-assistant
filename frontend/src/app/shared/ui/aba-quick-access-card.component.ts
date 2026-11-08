@@ -28,6 +28,19 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     .aba-quick-access__arrow{align-self:center;color:var(--aba-color-text-secondary, #64748b);font-size:var(--aba-font-size-sm, 12px)}
     :host-context([dir="rtl"]) .aba-quick-access__arrow{transform:scaleX(-1)}
     @media(prefers-reduced-motion:reduce){.aba-quick-access{transition:none}.aba-quick-access:hover:not(:disabled){transform:none}}
+    @media(max-width:760px){
+      :host-context(.module-directory-grid) .aba-quick-access{min-height:96px;display:grid;grid-template-columns:32px minmax(0,1fr);align-content:start;align-items:start;gap:8px;padding:10px}
+      :host-context(.module-directory-grid) .aba-quick-access__icon{flex:0 0 32px;width:32px;height:32px;font-size:15px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy{gap:3px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+      :host-context(.module-directory-grid) .aba-quick-access__arrow{display:none}
+    }
+    @media(max-width:380px){
+      :host-context(.module-directory-grid) .aba-quick-access{min-height:92px;gap:6px;padding:8px}
+      :host-context(.module-directory-grid) .aba-quick-access__icon{flex-basis:28px;width:28px;height:28px;font-size:14px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy strong{font-size:11px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy>span{font-size:10px}
+    }
   `],
 })
 export class AbaQuickAccessCardComponent {

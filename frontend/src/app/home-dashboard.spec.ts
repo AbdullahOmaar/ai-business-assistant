@@ -6,6 +6,8 @@ const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), '
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const backendSource = readFileSync(new URL('../../../backend/app/core_features_api.py', import.meta.url), 'utf8');
 const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
+const mobileHeaderCssSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const quickAccessCardSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const moduleCatalogSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
 const homeStart = appSource.indexOf("@if (tab === 'overview') {");
@@ -109,7 +111,8 @@ test('Home page identity and responsive metric hierarchy follow the UX handoff',
   assert.match(appSource, /overview: 'Overview'/);
   assert.match(appSource, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(appSource, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.ok(appSource.includes('@media(max-width:760px){.metric-grid{grid-template-columns:minmax(0,1fr)}}'));
+  assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
+  assert.ok(appSource.includes('.module-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'));
   assert.match(appSource, /dashboard-period__details/);
 });
 
@@ -147,7 +150,10 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
   assert.match(appSource, /\.home-shortcut-link:focus-visible/);
   assert.match(appSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.ok(appSource.includes('@media(max-width:360px){.home-shortcut-list{grid-template-columns:minmax(0,1fr)}}'));
+  assert.ok(appSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
+  assert.ok(quickAccessCardSource.includes(':host-context(.module-directory-grid) .aba-quick-access{min-height:96px;display:grid;grid-template-columns:32px minmax(0,1fr)'));
+  assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
+  assert.ok(quickAccessCardSource.includes('.aba-quick-access__arrow{display:none}'));
   assert.match(home, /dashboard-trust-note" role="note"/);
   assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
 });
@@ -205,6 +211,31 @@ test('Home exposes its business summary as a navigable section heading', () => {
   assert.match(home, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
   assert.match(home, /<section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">[\s\S]*?<h2 class="dashboard-period__title">/);
   assert.match(appSource, /\.dashboard-period__title\{[^}]*font-size:14px/);
+});
+
+
+test('Mobile app header is compact while retaining accessible controls and workspace context', () => {
+  assert.ok(mobileHeaderCssSource.includes('gap: 7px;'));
+  assert.ok(mobileHeaderCssSource.includes('margin-block: 0 10px;'));
+  assert.ok(mobileHeaderCssSource.includes('padding: 8px 10px;'));
+  assert.ok(mobileHeaderCssSource.includes('.brand-copy small { display: none; }'));
+  assert.ok(mobileHeaderCssSource.includes('width: 44px; height: 44px;'));
+  assert.ok(mobileHeaderCssSource.includes('padding: 7px 9px;'));
+  assert.ok(mobileHeaderCssSource.includes('workspace-switch select'));
+  assert.ok(mobileHeaderCssSource.includes('min-height: 44px;'));
+  assert.ok(mobileHeaderCssSource.includes('assistant-shortcut'));
+  assert.ok(mobileHeaderCssSource.includes('.greeting { display: none; }'));
+});
+ 
+test('Mobile Home KPI and module surfaces stay in compact two-column grids at narrow widths', () => {
+  assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
+  assert.ok(appSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
+  assert.ok(appSource.includes('@media(max-width:380px)'));
+  assert.ok(metricCardSource.includes('.aba-metric-card{min-height:112px;padding:12px}'));
+  assert.ok(metricCardSource.includes('.aba-metric-card{min-height:104px;padding:10px}'));
+  assert.ok(quickAccessCardSource.includes('grid-template-columns:32px minmax(0,1fr)'));
+  assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
+  assert.ok(home.includes('homeModuleCards'));
 });
 
 

@@ -296,6 +296,7 @@ test('mobile chat adapts to the visual viewport and keeps the composer above the
   assert.match(source, /--aba-keyboard-inset/);
   assert.match(source, /\[class\.keyboard-open\]="keyboardOpen"/);
   assert.match(source, /\.chat-form\{position:sticky;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
+  assert.match(source, /\.shell\.keyboard-open \.chat-form\{position:fixed;inset-inline:12px;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
   assert.match(source, /\.shell\.keyboard-open \.sidebar/);
   assert.match(source, /\.shell:has\(\.chat-form textarea:focus\) \.sidebar/);
   assert.match(source, /max-height:25dvh/);
