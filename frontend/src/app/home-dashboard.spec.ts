@@ -222,9 +222,22 @@ test('Mobile app header is compact while retaining accessible controls and works
   assert.ok(mobileHeaderCssSource.includes('width: 44px; height: 44px;'));
   assert.ok(mobileHeaderCssSource.includes('padding: 7px 9px;'));
   assert.ok(mobileHeaderCssSource.includes('workspace-switch select'));
+  assert.ok(mobileHeaderCssSource.includes('min-height: 44px;'));
   assert.ok(mobileHeaderCssSource.includes('assistant-shortcut'));
   assert.ok(mobileHeaderCssSource.includes('.greeting { display: none; }'));
 });
+ 
+test('Mobile Home KPI and module surfaces stay in compact two-column grids at narrow widths', () => {
+  assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
+  assert.ok(appSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
+  assert.ok(appSource.includes('@media(max-width:380px)'));
+  assert.ok(metricCardSource.includes('.aba-metric-card{min-height:112px;padding:12px}'));
+  assert.ok(metricCardSource.includes('.aba-metric-card{min-height:104px;padding:10px}'));
+  assert.ok(quickAccessCardSource.includes('grid-template-columns:32px minmax(0,1fr)'));
+  assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
+  assert.ok(home.includes('homeModuleCards'));
+});
+
 
 test('Home loading skeleton uses the current bilingual Business Summary heading', () => {
   const loadingStart = home.indexOf('} @else if (loading) {');
