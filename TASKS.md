@@ -3038,3 +3038,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` commit `b68bd8d550c498c470ca12471cb19781db7f0d5c` corrects the header spec count to 10 and records the Home-only greeting guard.
 - **Scope:** source regression and UX inventory only; no runtime behavior, route, API, authorization, financial/payroll or release semantics changed.
 - **Validation:** static source readback only; full Node tests/build/audit/Playwright and rendered RTL/LTR/device/screen-reader acceptance remain **NOT RUN**. No CI trigger/retry, preview, merge or deployment.
+
+
+## T18 — Employee salary exposure removed from directory surfaces — 2026-11-08
+
+- **Finding:** the employee directory row displayed `monthly_salary` beside the employee name. The payroll employee selector also used `monthly_salary` as a fallback label when no employee code existed. UX-HR-01 explicitly prohibits salary in the employee directory/table/card.
+- **Fix:** directory rows now show the employee name only; the payroll employee selector shows the name and employee code only when a code exists. The salary input remains in the existing OWNER-only compensation form. No API, model, payroll calculation, approval, payout, or financial semantics changed.
+- **Regression:** `employee-payroll-ui.spec.ts` asserts that the directory surface and payroll employee selector do not reference `monthly_salary`, while the compensation input remains present. Authored on this commit; exact-head CircleCI will validate it.
+- **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the no-salary directory/selector contract.
+- **Scope:** frontend presentation, regression and UX inventory only; no backend/API/database/schema/migration or production-data changes.
