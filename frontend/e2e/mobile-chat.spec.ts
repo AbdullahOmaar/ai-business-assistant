@@ -5,7 +5,7 @@ const projectId = 'mock-project';
 const ownerUid = 'workspace-owner-uid';
 const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoid29ya3NwYWNlLW93bmVyLXVpZCIsInVpZCI6IndvcmtzcGFjZS1vd25lci11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
 
-test('mobile chat exposes empty, loading, retry and response states and keeps its composer above the dock', async ({ page }) => {
+test('mobile Home layout and chat remain usable across viewport and keyboard changes', async ({ page }) => {
   const uncaughtErrors: string[] = [];
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
   const paymentRequests: string[] = [];
@@ -278,9 +278,35 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow, label).toBe(false);
   };
-  for (const width of [360, 390, 412, 768, 1280]) {
+  const assertHomeMobileGrid = async (width: number) => {
+    const layout = await page.evaluate(() => {
+      const columns = (selector: string) => {
+        const grid = document.querySelector(selector);
+        return grid ? getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).filter(Boolean).length : 0;
+      };
+      return {
+        metricCount: document.querySelectorAll('.metric-grid aba-metric-card').length,
+        metricColumns: columns('.metric-grid'),
+        quickAccessColumns: columns('.home-shortcut-list'),
+        moduleColumns: columns('.module-directory-grid'),
+        headerControlHeights: Array.from(document.querySelectorAll(
+          '.mobile-app-header .icon-button, .mobile-app-header .profile-trigger, .mobile-app-header .assistant-shortcut'
+        )).map(control => control.getBoundingClientRect().height),
+      };
+    });
+    expect(layout.metricCount, `Home must render four KPI cards at ${width}px`).toBe(4);
+    expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
+    expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
+    expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
+    expect(layout.headerControlHeights).toHaveLength(3);
+    for (const height of layout.headerControlHeights) {
+      expect(height, `Mobile header controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
+    }
+  };
+  for (const width of [320, 360, 390, 412, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
+    if (width <= 412) await assertHomeMobileGrid(width);
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
