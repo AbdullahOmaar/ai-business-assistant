@@ -101,8 +101,8 @@ function extractPaginationMethods(methodNames: string[]): Record<string, any> {
     assert.ok(method, 'AppComponent.' + name + ' must exist');
     return method.getText(componentSourceFile);
   });
-  const wrapper = 'class ExtractedPaginationComponent {\\n' + methods.join('\\n') +
-    '\\n}\\nthis.ExtractedPaginationComponent = ExtractedPaginationComponent;';
+  const wrapper = 'class ExtractedPaginationComponent {\n' + methods.join('\n') +
+    '\n}\nthis.ExtractedPaginationComponent = ExtractedPaginationComponent;';
   const context: Record<string, unknown> = {
     firstRecordPage,
     mergeRecordPage,
