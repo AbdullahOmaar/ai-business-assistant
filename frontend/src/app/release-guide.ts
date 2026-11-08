@@ -376,6 +376,24 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.4.0',
+    apiVersion: '1.3.5',
+    titleAr: 'تحسين تجربة مساحة العمل والموبايل',
+    titleEn: 'Workspace and mobile experience improvements',
+    changesAr: [
+      'تحسين التنقل على الموبايل، واختيار مساحة العمل، وإمكانية الوصول بلوحة المفاتيح.',
+      'توحيد تسميات سجل العمليات والحالات باللغة العربية والإنجليزية، وتحسين عرض الجداول والعناوين على الشاشات الصغيرة.',
+      'تحسين التباين وأحجام مناطق اللمس وحالات التحميل والفراغ؛ تظل واجهة API على 1.3.5.',
+      'تحديث إصدار الواجهة إلى 1.4.0 مع إصدار معرّف جديد لذاكرة PWA عند البناء.',
+    ],
+    changesEn: [
+      'Improves mobile navigation, workspace switching, and keyboard accessibility.',
+      'Localizes activity and status labels in Arabic and English, and improves table and heading layouts on narrow screens.',
+      'Improves contrast, touch-target sizing, loading and empty states; the API remains at 1.3.5.',
+      'Updates the web UI to version 1.4.0 and generates a new versioned PWA cache identifier at build time.',
+    ],
+  },
+  {
     version: '1.3.9',
     apiVersion: '1.3.5',
     titleAr: 'إزالة المعاينة التجريبية المستقلة',
