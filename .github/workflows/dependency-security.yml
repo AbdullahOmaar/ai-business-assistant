@@ -1,0 +1,64 @@
+name: Dependency security scan
+
+on:
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/**"
+  push:
+    branches: ["main", "feat/**", "fix/**", "chore/**"]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/**"
+  schedule:
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-dependencies:
+    name: Audit Python dependencies
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+      - name: Install audit tool
+        run: python -m pip install --upgrade pip pip-audit
+      - name: Scan declared dependencies
+        run: pip-audit -r requirements.txt
+
+  frontend-dependencies:
+    name: Audit JavaScript dependencies
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install
+      - name: Scan npm dependency tree
+        run: npm audit --audit-level=high

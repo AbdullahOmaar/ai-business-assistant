@@ -1,0 +1,540 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from fastapi.testclient import TestClient
+import pytest
+
+from app.main import app
+from app.models import Base
+from app.security import AuthenticatedPrincipal
+
+
+@pytest.fixture()
+def configured_client():
+    engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    try:
+        yield TestClient(app)
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()
+
+
+def test_create_workspace_assigns_creator_as_owner(configured_client):
+    response = configured_client.post("/api/v1/businesses", json={
+        "name": "  Test Shop  ", "currency_code": "egp"
+    })
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["name"] == "Test Shop"
+    assert payload["currency_code"] == "EGP"
+    assert payload["id"]
+    profile = configured_client.get(f"/api/v1/businesses/{payload['id']}")
+    assert profile.status_code == 200
+    assert profile.json()["name"] == "Test Shop"
+
+
+def test_workspace_profile_can_be_updated_by_owner(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Old Name", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    updated = configured_client.patch(f"/api/v1/businesses/{business_id}", json={
+        "name": "New Name", "phone": "+201000000000"
+    })
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "New Name"
+    assert updated.json()["phone"] == "+201000000000"
+
+
+def test_dashboard_empty_state_is_real_and_currency_safe(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Empty Shop", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    response = configured_client.get(
+        f"/api/v1/businesses/{business_id}/dashboard",
+        params={"start_date": "2026-10-01", "end_date": "2026-10-21"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["period"]["timezone"] == "UTC"
+    assert payload["invoiced_sales"] == []
+    assert payload["collected_payments"] == []
+    assert payload["expenses"] == []
+    assert payload["outstanding_balances"] == []
+
+
+def test_dashboard_rejects_inverted_date_range(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Date Shop", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    response = configured_client.get(
+        f"/api/v1/businesses/{business_id}/dashboard",
+        params={"start_date": "2026-10-22", "end_date": "2026-10-01"},
+    )
+    assert response.status_code == 422
+
+
+def test_customer_search_update_and_soft_deactivation(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Customer Shop", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={
+        "name": "Ali Hassan", "email": "ali@example.com"
+    })
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
+    found = configured_client.get(
+        f"/api/v1/businesses/{business_id}/customers", params={"q": "Ali"}
+    )
+    assert found.status_code == 200
+    assert len(found.json()) == 1
+    updated = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/customers/{customer_id}",
+        json={"phone": "+201234567890"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["phone"] == "+201234567890"
+    removed = configured_client.delete(
+        f"/api/v1/businesses/{business_id}/customers/{customer_id}"
+    )
+    assert removed.status_code == 204
+    assert configured_client.get(
+        f"/api/v1/businesses/{business_id}/customers"
+    ).json() == []
+
+
+def test_product_update_and_soft_deactivation(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Catalog Shop", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Tea", "unit_price": "25.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+    product_id = product.json()["id"]
+    updated = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/products/{product_id}",
+        json={"unit_price": "27.50"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["unit_price"] == "27.50"
+    removed = configured_client.delete(
+        f"/api/v1/businesses/{business_id}/products/{product_id}"
+    )
+    assert removed.status_code == 204
+    assert configured_client.get(
+        f"/api/v1/businesses/{business_id}/products"
+    ).json() == []
+
+
+def test_business_list_is_scoped_to_verified_membership(configured_client):
+    from app import main as main_module
+
+    created_owner = configured_client.post("/api/v1/businesses", json={
+        "name": "Owner Workspace", "currency_code": "EGP"
+    })
+    assert created_owner.status_code == 201
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
+    created_other = configured_client.post("/api/v1/businesses", json={
+        "name": "Other Workspace", "currency_code": "USD"
+    })
+    assert created_other.status_code == 201
+    other_id = created_other.json()["id"]
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    response = configured_client.get("/api/v1/businesses")
+    assert response.status_code == 200
+    ids = {item["id"] for item in response.json()}
+    assert created_owner.json()["id"] in ids
+    assert other_id not in ids
+
+
+def test_assistant_uses_free_local_fallback_without_provider_key(configured_client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "AI Test Workspace", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    response = configured_client.post(
+        f"/api/v1/businesses/{business_id}/assistant/chat",
+        json={"message": "Summarize my recent sales"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["model"] == "local-fallback"
+    assert payload["mode"] == "local-fallback"
+    assert payload["grounding"] == "business-records"
+    assert "أحدث الفواتير الصادرة" in payload["answer"]
+    assert "لا توجد سجلات" in payload["answer"]
+    assert isinstance(payload["sources"], list)
+
+
+def test_assistant_local_fallback_only_reads_authorized_workspace(configured_client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    first = configured_client.post("/api/v1/businesses", json={
+        "name": "First Workspace", "currency_code": "EGP"
+    }).json()
+
+    from app import main as main_module
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
+    second = configured_client.post("/api/v1/businesses", json={
+        "name": "Second Workspace", "currency_code": "USD"
+    }).json()
+
+    denied = configured_client.post(
+        f"/api/v1/businesses/{first['id']}/assistant/chat",
+        json={"message": "Summarize my recent sales"},
+    )
+    assert denied.status_code == 403
+
+    allowed = configured_client.post(
+        f"/api/v1/businesses/{second['id']}/assistant/chat",
+        json={"message": "How many customers and products?"},
+    )
+    assert allowed.status_code == 200
+    assert "Second Workspace" in allowed.json()["answer"]
+    assert "First Workspace" not in allowed.json()["answer"]
+
+
+def test_invoice_api_supports_draft_edit_issue_and_void(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Invoice Lifecycle", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Customer test_invoice_api_supports_draft_edit_issue_and_void"})
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+    product_id = product.json()["id"]
+
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-API-LIFE", "currency_code": "EGP",
+        "customer_id": customer_id,
+        "lines": [{"product_id": product_id, "quantity": "1"}]
+    })
+    assert draft.status_code == 201
+    invoice_id = draft.json()["id"]
+    edited = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}",
+        json={
+            "invoice_number": "INV-API-LIFE-EDITED", "currency_code": "EGP",
+        "customer_id": customer_id,
+            "lines": [{"product_id": product_id, "quantity": "2"}],
+        },
+    )
+    assert edited.status_code == 200
+    assert edited.json()["invoice_number"] == "INV-API-LIFE-EDITED"
+    assert edited.json()["total"] == "200.00"
+
+    issued = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={}
+    )
+    assert issued.status_code == 200
+    assert issued.json()["status"] == "issued"
+    voided = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/void",
+        json={"reason": "API lifecycle test"},
+    )
+    assert voided.status_code == 200
+    assert voided.json()["status"] == "void"
+
+    immutable = configured_client.patch(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}",
+        json={
+            "invoice_number": "INV-TOO-LATE", "currency_code": "EGP",
+        "customer_id": customer_id,
+            "lines": [{"product_id": product_id, "quantity": "1"}],
+        },
+    )
+    assert immutable.status_code == 422
+
+
+def test_payment_recording_is_idempotent_and_allocates_to_issued_invoice(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Payment Workflow", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Customer test_payment_recording_is_idempotent_and_allocates_to_issued_invoice"})
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Service", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-PAYMENT-1", "currency_code": "EGP",
+        "customer_id": customer_id,
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    assert draft.status_code == 201
+    invoice_id = draft.json()["id"]
+    issued = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={}
+    )
+    assert issued.status_code == 200
+
+    payload = {
+        "amount": "60.00",
+        "currency_code": "EGP",
+        "idempotency_key": "payment-test-once",
+        "customer_id": customer_id,
+        "method": "cash",
+        "allocations": [{"invoice_id": invoice_id, "amount": "60.00"}],
+    }
+    first = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json=payload)
+    assert first.status_code == 201
+    assert first.json()["amount"] == "60.00"
+
+    replay = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json=payload)
+    assert replay.status_code == 201
+    assert replay.json()["id"] == first.json()["id"]
+    listed = configured_client.get(f"/api/v1/businesses/{business_id}/payments")
+    assert listed.status_code == 200
+    assert len(listed.json()) == 1
+    assert listed.json()[0]["allocations"] == [{"invoice_id": invoice_id, "amount": "60.00"}]
+
+    dashboard = configured_client.get(f"/api/v1/businesses/{business_id}/dashboard")
+    assert dashboard.status_code == 200
+    assert dashboard.json()["collected_payments"][0]["total"] == "60.00"
+    assert dashboard.json()["outstanding_balances"][0]["total"] == "40.00"
+
+
+def test_payment_recording_rejects_allocation_above_invoice_balance(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Payment Validation", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Customer test_payment_recording_rejects_allocation_above_invoice_balance"})
+    assert customer.status_code == 201
+    customer_id = customer.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Service", "unit_price": "25.00", "is_stock_tracked": False
+    })
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-PAYMENT-OVER", "currency_code": "EGP",
+        "customer_id": customer_id,
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    invoice_id = draft.json()["id"]
+    configured_client.post(f"/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", json={})
+    response = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json={
+        "amount": "30.00",
+        "currency_code": "EGP",
+        "idempotency_key": "payment-too-large",
+        "customer_id": customer_id,
+        "allocations": [{"invoice_id": invoice_id, "amount": "30.00"}],
+    })
+    assert response.status_code == 422
+
+
+def test_invoice_can_be_created_issued_and_linked_to_customer(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Invoice Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={
+        "name": "Invoice Customer", "email": "customer@example.test"
+    })
+    assert customer.status_code == 201
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Service", "unit_price": "120.00", "is_stock_tracked": False
+    })
+    assert product.status_code == 201
+
+    response = configured_client.post(f"/api/v1/businesses/{business_id}/invoices/issue", json={
+        "invoice_number": "INV-IMMEDIATE-001",
+        "currency_code": "EGP",
+        "customer_id": customer.json()["id"],
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}],
+    })
+    assert response.status_code == 201, response.text
+    assert response.json()["status"] == "issued"
+    assert response.json()["customer_id"] == customer.json()["id"]
+
+
+def test_profit_loss_supports_all_time_and_requires_custom_dates(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "Report Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    all_time = configured_client.get(
+        f"/api/v1/businesses/{business_id}/profit-loss", params={"period": "all"}
+    )
+    assert all_time.status_code == 200
+    assert all_time.json()["period"]["type"] == "all"
+    assert all_time.json()["currencies"] == []
+    missing_dates = configured_client.get(
+        f"/api/v1/businesses/{business_id}/profit-loss", params={"period": "custom"}
+    )
+    assert missing_dates.status_code == 422
+
+
+def test_invoice_issue_rejects_missing_customer(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Missing Customer Invoice", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-NO-CUSTOMER", "currency_code": "EGP",
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    response = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{draft.json()['id']}/issue",
+        json={}
+    )
+    assert response.status_code == 422
+    assert "customer" in response.json()["detail"].lower()
+
+
+def test_payment_allocation_rejects_different_customer(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Payment Customer Integrity", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    first = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Invoice Customer"})
+    second = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={"name": "Other Customer"})
+    product = configured_client.post(f"/api/v1/businesses/{business_id}/products", json={
+        "name": "Consulting", "unit_price": "100.00", "is_stock_tracked": False
+    })
+    draft = configured_client.post(f"/api/v1/businesses/{business_id}/invoices", json={
+        "invoice_number": "INV-CUSTOMER-MATCH", "currency_code": "EGP",
+        "customer_id": first.json()["id"],
+        "lines": [{"product_id": product.json()["id"], "quantity": "1"}]
+    })
+    issued = configured_client.post(
+        f"/api/v1/businesses/{business_id}/invoices/{draft.json()['id']}/issue", json={}
+    )
+    assert issued.status_code == 200
+    response = configured_client.post(f"/api/v1/businesses/{business_id}/payments", json={
+        "amount": "100.00", "currency_code": "EGP",
+        "idempotency_key": "wrong-customer-payment",
+        "customer_id": second.json()["id"],
+        "allocations": [{"invoice_id": draft.json()["id"], "amount": "100.00"}]
+    })
+    assert response.status_code == 422
+    assert "customer" in response.json()["detail"].lower()
+
+
+def test_product_csv_preview_is_read_only_and_reports_duplicate_skus(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "CSV Preview Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    endpoint = f"/api/v1/businesses/{business_id}/imports/products.csv/preview"
+    valid_csv = "sku,name,unit_price\nSKU-1,Arabic coffee,45.50\nSKU-2,Tea,30.00\n"
+
+    preview = configured_client.post(
+        endpoint, content=valid_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert preview.status_code == 200
+    assert preview.json()["valid"] is True
+    assert preview.json()["write_performed"] is False
+    assert preview.json()["row_count"] == 2
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
+
+    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nsku-1,Second,2.00\n"
+    duplicate = configured_client.post(
+        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["valid"] is False
+    assert any(error["code"] == "duplicate_in_file" for error in duplicate.json()["errors"])
+
+
+def test_product_csv_import_rejects_duplicate_sku_batch_before_writing(configured_client):
+    business = configured_client.post("/api/v1/businesses", json={
+        "name": "CSV Import Shop", "currency_code": "EGP"
+    }).json()
+    business_id = business["id"]
+    endpoint = f"/api/v1/businesses/{business_id}/imports/products.csv"
+    duplicate_csv = "sku,name,unit_price\nSKU-1,First,1.00\nSKU-1,Second,2.00\n"
+
+    response = configured_client.post(
+        endpoint, content=duplicate_csv, headers={"Content-Type": "text/csv"}
+    )
+    assert response.status_code == 422
+
+    products = configured_client.get(
+        f"/api/v1/businesses/{business_id}/products", params={"limit": 100}
+    )
+    assert products.status_code == 200
+    assert products.json() == []
+
+
+def test_foreign_business_profile_dashboard_and_mutation_are_denied(configured_client):
+    from app import main as main_module
+
+    owner_workspace = configured_client.post("/api/v1/businesses", json={
+        "name": "Private Owner Workspace", "currency_code": "EGP"
+    })
+    assert owner_workspace.status_code == 201
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("different-user")
+    foreign_workspace = configured_client.post("/api/v1/businesses", json={
+        "name": "Private Foreign Workspace", "currency_code": "USD"
+    })
+    assert foreign_workspace.status_code == 201
+    foreign_id = foreign_workspace.json()["id"]
+
+    main_module.app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    profile = configured_client.get(f"/api/v1/businesses/{foreign_id}")
+    dashboard = configured_client.get(f"/api/v1/businesses/{foreign_id}/dashboard")
+    mutation = configured_client.patch(
+        f"/api/v1/businesses/{foreign_id}",
+        json={"name": "Attempted Cross-Tenant Update"},
+    )
+
+    assert profile.status_code == 403
+    assert dashboard.status_code == 403
+    assert mutation.status_code == 403
+
+
+def test_customer_search_matches_name_email_and_phone(configured_client):
+    created = configured_client.post("/api/v1/businesses", json={
+        "name": "Search Contact Fields", "currency_code": "EGP"
+    })
+    business_id = created.json()["id"]
+    customer = configured_client.post(f"/api/v1/businesses/{business_id}/customers", json={
+        "name": "Example Contact",
+        "email": "contact-search@example.com",
+        "phone": "+201155512345",
+    })
+    assert customer.status_code == 201
+
+    for term in ("Example Contact", "contact-search@example.com", "1155512345"):
+        response = configured_client.get(
+            f"/api/v1/businesses/{business_id}/customers",
+            params={"q": term},
+        )
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()] == [customer.json()["id"]]
