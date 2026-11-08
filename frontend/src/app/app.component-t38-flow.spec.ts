@@ -93,6 +93,15 @@ const componentClass = componentSourceFile.statements.find(
 );
 assert.ok(componentClass, 'AppComponent class must exist');
 
+test('AppComponent source parses without TypeScript syntax errors', () => {
+  const diagnostics = componentSourceFile.parseDiagnostics.map(diagnostic =>
+    ts.flattenDiagnosticMessageText(diagnostic.messageText, '\\n')
+  );
+  assert.deepEqual(diagnostics, []);
+});
+
+
+
 function extractPaginationMethods(methodNames: string[]): Record<string, any> {
   const methods = methodNames.map(name => {
     const method = componentClass.members.find(
