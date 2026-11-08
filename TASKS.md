@@ -3246,3 +3246,5 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Mobile menu regression-test correction:** after returning from App Guide to Home, the test explicitly reopens More before switching back to Arabic. This prevents a stale assumption that the menu stays open after Home navigation.
 
 - **Browser-smoke menu-state follow-up:** the latest run confirmed that changing back to Arabic can leave the More menu mounted; blindly clicking the trigger then closes it. The E2E now checks whether the menu is already present and reopens only when absent, then selects AI Assistant. This aligns the test with the actual toggle state instead of assuming a close/open behavior.
+
+- **Assistant E2E navigation correction:** the mobile chat regression now opens the assistant through the Home header's real `Open AI assistant` shortcut. More-menu navigation remains covered independently; the test no longer relies on menu visibility after language switching.

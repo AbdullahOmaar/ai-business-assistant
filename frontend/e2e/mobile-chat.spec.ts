@@ -344,14 +344,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await page.setViewportSize({ width: 360, height: 800 });
-  // Language switching may preserve or close the menu depending on the active tab;
-  // only reopen it when Angular has removed the menu from the DOM.
-  const mobileMoreMenu = page.locator('#mobile-more-menu');
-  if (await mobileMoreMenu.count() === 0) await moreTrigger.click();
-  await expect(mobileMoreMenu).toBeVisible();
-  await mobileMoreMenu.getByRole('button', { name: /المساعد الذكي|AI assistant/ }).click();
+  // Exercise the real Home app-header shortcut; the More menu remains covered
+  // by its dedicated navigation assertions above.
+  await page.getByRole('button', { name: /افتح المساعد الذكي|Open AI assistant/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
-  await expect(moreTrigger).toHaveClass(/active/);
+  await expect(moreTrigger).not.toHaveClass(/active/);
 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/)).toBeVisible();
