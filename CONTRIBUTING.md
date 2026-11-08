@@ -1,3 +1,16 @@
+## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+
+The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+
+- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
+- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
+- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
+- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
+- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
+- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+
+This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+
 # Contributing and Project Roles
 
 This guide applies to every person and AI agent contributing to AI Business Assistant. It complements the repository-wide engineering requirements in [AGENTS.md](AGENTS.md); the accepted [ADR-001](docs/adr/ADR-001-v0-architecture.md) is authoritative for V0 architecture. The current task queue and evidence ledger is [TASKS.md](TASKS.md).
@@ -80,7 +93,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If CircleCI or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute another CI provider or treat a local partial run as full CircleCI evidence. Manual reruns require a documented diagnosis, changed condition and explicit Owner authorization after any active freeze is lifted.
+- If CircleCI or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute another CI provider or treat a local partial run as full CircleCI evidence. Manual reruns are permanently Owner-authorized under the 2026-11-08 directive; record root cause and changed condition, and do not retry unchanged failures blindly.
 
 ## 6. Required handoff report
 
