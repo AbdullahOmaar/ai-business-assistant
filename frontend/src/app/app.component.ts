@@ -227,7 +227,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   <div class="metric-skeleton"><span></span><span></span><span></span></div>
                   <div class="metric-skeleton"><span></span><span></span><span></span></div>
                 </section>
-                
+
               } @else if (!error) {
                 <aba-state-message kind="empty" [description]="t('لا توجد مؤشرات نشاط متاحة حاليًا.', 'No business metrics are available yet.')" />
               }

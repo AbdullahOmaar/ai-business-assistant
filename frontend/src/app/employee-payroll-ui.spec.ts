@@ -133,13 +133,13 @@ test('employee directory and payroll employee selector never expose base salary'
   assert.ok(directoryStart >= 0 && payrollStart > directoryStart);
   const directory = component.slice(directoryStart, payrollStart);
   assert.ok(directory.includes('<strong>{{ employee.name }}</strong>'));
-  assert.doesNotMatch(directory, /employee\\.monthly_salary/);
+  assert.doesNotMatch(directory, /monthly_salary/);
 
   const selectorStart = component.indexOf('name="payrollEmployeeId"');
   const selectorEnd = component.indexOf('</select>', selectorStart);
   assert.ok(selectorStart >= 0 && selectorEnd > selectorStart);
   const selector = component.slice(selectorStart, selectorEnd);
-  assert.match(selector, /employee\\.employee_code \\? ' · ' \\+ employee\\.employee_code : ''/);
+  assert.ok(selector.includes("employee.employee_code ? ' · ' + employee.employee_code : ''"));
   assert.doesNotMatch(selector, /monthly_salary/);
   assert.match(component, /name="employeeMonthlySalary"/,
     'base salary remains editable in the owner-only compensation form');

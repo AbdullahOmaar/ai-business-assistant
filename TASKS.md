@@ -3047,3 +3047,11 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Regression:** `employee-payroll-ui.spec.ts` asserts that the directory surface and payroll employee selector do not reference `monthly_salary`, while the compensation input remains present. Authored on this commit; exact-head CircleCI will validate it.
 - **Documentation:** `docs/UX_NESTED_SURFACE_INVENTORY.md` records the no-salary directory/selector contract.
 - **Scope:** frontend presentation, regression and UX inventory only; no backend/API/database/schema/migration or production-data changes.
+
+
+## T18 — Salary privacy regression test correction and diff hygiene — 2026-11-08
+
+- Corrected the newly added salary-privacy regression to use a direct selector-string assertion and a broad `monthly_salary` absence check; this avoids over-escaped regex literals that would not match the actual template.
+- Removed the single whitespace-only added line in the Home template diff.
+- No runtime behavior or business semantics changed in this follow-up.
+- The previous CircleCI run on parent `ddeb61c` is superseded; exact-head validation must complete on this new commit before merge.
