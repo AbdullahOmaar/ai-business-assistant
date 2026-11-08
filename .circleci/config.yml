@@ -95,13 +95,18 @@ jobs:
           path: /tmp/alembic-upgrade.sql
           destination: alembic-upgrade.sql
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          ignore_errors: true
+      - when:
+          condition:
+            not:
+              equal: [main, << pipeline.git.branch >>]
+          steps:
+            - slack/notify:
+                channel: C0CFWGM87HC
+                event: fail
+                template: basic_fail_1
+                branch_pattern: main
+                invert_match: true
+                ignore_errors: true
   frontend-unit-tests:
     docker:
       - image: cimg/node:22.12
@@ -124,13 +129,18 @@ jobs:
             cd frontend
             npm test
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          ignore_errors: true
+      - when:
+          condition:
+            not:
+              equal: [main, << pipeline.git.branch >>]
+          steps:
+            - slack/notify:
+                channel: C0CFWGM87HC
+                event: fail
+                template: basic_fail_1
+                branch_pattern: main
+                invert_match: true
+                ignore_errors: true
   frontend-production-build:
     docker:
       - image: cimg/node:22.12
@@ -159,13 +169,18 @@ jobs:
             cd frontend
             npx ng build
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          ignore_errors: true
+      - when:
+          condition:
+            not:
+              equal: [main, << pipeline.git.branch >>]
+          steps:
+            - slack/notify:
+                channel: C0CFWGM87HC
+                event: fail
+                template: basic_fail_1
+                branch_pattern: main
+                invert_match: true
+                ignore_errors: true
   frontend-dependency-audit:
     docker:
       - image: cimg/node:22.12
@@ -191,13 +206,18 @@ jobs:
           path: /tmp/npm-audit.txt
           destination: npm-audit.txt
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          ignore_errors: true
+      - when:
+          condition:
+            not:
+              equal: [main, << pipeline.git.branch >>]
+          steps:
+            - slack/notify:
+                channel: C0CFWGM87HC
+                event: fail
+                template: basic_fail_1
+                branch_pattern: main
+                invert_match: true
+                ignore_errors: true
   backend-container:
     docker:
       - image: cimg/base:stable
@@ -220,13 +240,18 @@ jobs:
             docker build --pull --tag ai-business-assistant-backend:ci ./backend
             docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          ignore_errors: true
+      - when:
+          condition:
+            not:
+              equal: [main, << pipeline.git.branch >>]
+          steps:
+            - slack/notify:
+                channel: C0CFWGM87HC
+                event: fail
+                template: basic_fail_1
+                branch_pattern: main
+                invert_match: true
+                ignore_errors: true
   dependency-audit-python:
     docker:
       - image: cimg/python:3.12
@@ -278,31 +303,48 @@ jobs:
           path: frontend/test-results/e2e-junit.xml
           destination: frontend-e2e-junit.xml
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          ignore_errors: true
+      - when:
+          condition:
+            not:
+              equal: [main, << pipeline.git.branch >>]
+          steps:
+            - slack/notify:
+                channel: C0CFWGM87HC
+                event: fail
+                template: basic_fail_1
+                branch_pattern: main
+                invert_match: true
+                ignore_errors: true
   all-checks-passed:
     type: no-op
 
 workflows:
-  verify-all-changes:
+  verify-main:
     jobs:
       - backend-accounting:
-          context: slack-secrets
+          filters:
+            branches:
+              only: main
       - frontend-unit-tests:
-          context: slack-secrets
+          filters:
+            branches:
+              only: main
       - frontend-production-build:
-          context: slack-secrets
+          filters:
+            branches:
+              only: main
       - frontend-dependency-audit:
-          context: slack-secrets
+          filters:
+            branches:
+              only: main
       - frontend-browser-smoke:
-          context: slack-secrets
+          filters:
+            branches:
+              only: main
       - backend-container:
-          context: slack-secrets
+          filters:
+            branches:
+              only: main
       - all-checks-passed:
           requires:
             - backend-accounting
@@ -311,6 +353,53 @@ workflows:
             - frontend-dependency-audit
             - frontend-browser-smoke
             - backend-container
+          filters:
+            branches:
+              only: main
+
+  verify-non-main:
+    jobs:
+      - backend-accounting:
+          context: slack-secrets
+          filters:
+            branches:
+              ignore: main
+      - frontend-unit-tests:
+          context: slack-secrets
+          filters:
+            branches:
+              ignore: main
+      - frontend-production-build:
+          context: slack-secrets
+          filters:
+            branches:
+              ignore: main
+      - frontend-dependency-audit:
+          context: slack-secrets
+          filters:
+            branches:
+              ignore: main
+      - frontend-browser-smoke:
+          context: slack-secrets
+          filters:
+            branches:
+              ignore: main
+      - backend-container:
+          context: slack-secrets
+          filters:
+            branches:
+              ignore: main
+      - all-checks-passed:
+          requires:
+            - backend-accounting
+            - frontend-unit-tests
+            - frontend-production-build
+            - frontend-dependency-audit
+            - frontend-browser-smoke
+            - backend-container
+          filters:
+            branches:
+              ignore: main
 
   scheduled-dependency-audit:
     triggers:
