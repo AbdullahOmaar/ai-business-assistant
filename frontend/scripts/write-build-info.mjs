@@ -43,7 +43,7 @@ const previewRuntimeConfig = createPreviewRuntimeConfig(process.env);
 if (previewRuntimeConfig) {
   writeFileSync(
     resolve(frontendRoot, 'public/runtime-config.json'),
-    `${JSON.stringify(previewRuntimeConfig, null, 2)}\\n`,
+    `${JSON.stringify(previewRuntimeConfig, null, 2)}\n`,
     'utf8',
   );
   console.log(

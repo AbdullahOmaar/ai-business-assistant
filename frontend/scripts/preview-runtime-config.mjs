@@ -50,7 +50,7 @@ export function createPreviewRuntimeConfig(env) {
   }
 
   return {
-    apiBaseUrl: values.ABA_PREVIEW_API_BASE_URL.replace(/\\/+$/, ''),
+    apiBaseUrl: values.ABA_PREVIEW_API_BASE_URL.replace(/\/+$/, ''),
     firebase: {
       apiKey: values.ABA_PREVIEW_FIREBASE_API_KEY,
       authDomain: values.ABA_PREVIEW_FIREBASE_AUTH_DOMAIN,
