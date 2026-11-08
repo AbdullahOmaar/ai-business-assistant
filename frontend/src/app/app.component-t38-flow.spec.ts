@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
+import { firstRecordPage, mergeRecordPage } from './record-filters.ts';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
@@ -81,4 +84,146 @@ test('issue and void mutations are Owner-only and auth/workspace fenced', () => 
 test('uncertain invoice edits recover by immutable invoice ID instead of the edited invoice number', () => {
   const verify = methodBetween('async refreshInvoiceDraftStatus()', 'private escapePrintHtml');
   assert.match(verify, /findInvoiceDraftRecoveryMatch\(invoices, pending\)/);
+});
+
+const componentSourceFile = ts.createSourceFile('app.component.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+const componentClass = componentSourceFile.statements.find(
+  (statement): statement is ts.ClassDeclaration =>
+    ts.isClassDeclaration(statement) && statement.name?.text === 'AppComponent'
+);
+assert.ok(componentClass, 'AppComponent class must exist');
+
+function extractPaginationMethods(methodNames: string[]): Record<string, any> {
+  const methods = methodNames.map(name => {
+    const method = componentClass.members.find(
+      member => ts.isMethodDeclaration(member) && ts.isIdentifier(member.name) && member.name.text === name
+    );
+    assert.ok(method, 'AppComponent.' + name + ' must exist');
+    return method.getText(componentSourceFile);
+  });
+  const wrapper = 'class ExtractedPaginationComponent {\\n' + methods.join('\\n') +
+    '\\n}\\nthis.ExtractedPaginationComponent = ExtractedPaginationComponent;';
+  const context: Record<string, unknown> = {
+    firstRecordPage,
+    mergeRecordPage,
+    WORKSPACE_RECORD_PAGE_SIZE: 100,
+  };
+  runInNewContext(ts.transpile(wrapper, { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None }), context);
+  const Extracted = context.ExtractedPaginationComponent as new () => Record<string, any>;
+  return new Extracted();
+}
+
+test('workspace pagination appends a page and advances by the server offset', async () => {
+  const component = extractPaginationMethods(['loadMoreRecords']);
+  component.business = { id: 'business-1' };
+  component.signedIn = true;
+  component.currentAuthUid = 'user-1';
+  component.captureTenantRequest = (businessId: string) => ({ businessId });
+  component.isCurrentTenantOperation = (guard: any, version: number) => guard.isCurrent(version);
+  component.message = (error: unknown) => String(error);
+  component.error = '';
+
+  const guard = {
+    version: 0,
+    begin() { return ++this.version; },
+    isCurrent(version: number) { return version === this.version; },
+    invalidate() { this.version += 1; },
+  };
+  let records = [{ id: 'existing' }];
+  let offset = 100;
+  let hasMore = true;
+  let loading = false;
+  await component.loadMoreRecords({
+    guard,
+    offset,
+    hasMore,
+    loading,
+    fetchPage: async (businessId: string, requestedOffset: number) => {
+      assert.equal(businessId, 'business-1');
+      assert.equal(requestedOffset, 100);
+      return [{ id: 'next' }];
+    },
+    getCurrentRecords: () => records,
+    setRecords: (value: any[]) => { records = value; },
+    setOffset: (value: number) => { offset = value; },
+    setHasMore: (value: boolean) => { hasMore = value; },
+    setLoading: (value: boolean) => { loading = value; },
+  });
+
+  assert.deepEqual(records, [{ id: 'existing' }, { id: 'next' }]);
+  assert.equal(offset, 101);
+  assert.equal(hasMore, false);
+  assert.equal(loading, false);
+});
+
+test('workspace pagination ignores a late page after the workspace request is invalidated', async () => {
+  const component = extractPaginationMethods(['loadMoreRecords']);
+  component.business = { id: 'business-1' };
+  component.signedIn = true;
+  component.currentAuthUid = 'user-1';
+  component.captureTenantRequest = (businessId: string) => ({ businessId });
+  component.isCurrentTenantOperation = (guard: any, version: number) => guard.isCurrent(version);
+  component.message = (error: unknown) => String(error);
+  component.error = '';
+
+  let resolvePage!: (records: Array<{ id: string }>) => void;
+  const guard = {
+    version: 0,
+    begin() { return ++this.version; },
+    isCurrent(version: number) { return version === this.version; },
+    invalidate() { this.version += 1; },
+  };
+  let records = [{ id: 'existing' }];
+  let offset = 100;
+  let hasMore = true;
+  let loading = false;
+  const request = component.loadMoreRecords({
+    guard,
+    offset,
+    hasMore,
+    loading,
+    fetchPage: () => new Promise(resolve => { resolvePage = resolve; }),
+    getCurrentRecords: () => records,
+    setRecords: (value: any[]) => { records = value; },
+    setOffset: (value: number) => { offset = value; },
+    setHasMore: (value: boolean) => { hasMore = value; },
+    setLoading: (value: boolean) => { loading = value; },
+  });
+
+  guard.invalidate();
+  loading = false;
+  resolvePage([{ id: 'stale' }]);
+  await request;
+  assert.deepEqual(records, [{ id: 'existing' }]);
+  assert.equal(offset, 100);
+  assert.equal(hasMore, true);
+  assert.equal(loading, false);
+});
+
+test('refreshed invoice pages reset their offset and pagination state', () => {
+  const component = extractPaginationMethods(['setInvoicePage']);
+  let invalidations = 0;
+  component.invoiceListLoadGuard = { invalidate() { invalidations += 1; } };
+  component.paymentInvoiceId = '';
+  component.invoicesLoadingMore = true;
+  const records = Array.from({ length: 100 }, (_, index) => ({
+    id: 'invoice-' + index,
+    status: index === 0 ? 'issued' : 'draft',
+  }));
+  component.setInvoicePage(records);
+  assert.equal(component.invoices.length, 100);
+  assert.equal(component.invoiceOffset, 100);
+  assert.equal(component.invoicesHasMore, true);
+  assert.equal(component.invoicesLoadingMore, false);
+  assert.equal(component.paymentInvoiceId, 'invoice-0');
+  assert.equal(invalidations, 1);
+});
+
+test('invoice editor, invoice list and payment history expose load-more controls', () => {
+  assert.match(source, /\\[hasMoreCustomers\\]=\"customersHasMore\"/);
+  assert.match(source, /\\(loadMoreCustomers\\)=\"loadMoreInvoiceCustomers\\(\\)\"/);
+  assert.match(source, /\\[hasMoreProducts\\]=\"productsHasMore\"/);
+  assert.match(source, /\\(loadMoreProducts\\)=\"loadMoreInvoiceProducts\\(\\)\"/);
+  assert.match(source, /click\\)=\"loadMoreInvoices\\(\\)\"/);
+  assert.match(source, /click\\)=\"loadMorePayments\\(\\)\"/);
 });
