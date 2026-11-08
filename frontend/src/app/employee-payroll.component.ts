@@ -68,7 +68,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           <article class="list-row employee-row">
             <div class="employee-mark" aria-hidden="true">♙</div>
             <div class="grow">
-              <strong>{{ employee.name }}</strong>
+              <strong>{{ employee.name }} · {{ employee.monthly_salary }} {{ currencyCode }}</strong>
               <small>{{ employee.employee_code || t('بدون كود', 'No code') }}{{ employee.department ? ' · ' + employee.department : '' }}{{ employee.job_title ? ' · ' + employee.job_title : '' }}</small>
               <small>{{ employee.email || t('بدون بريد', 'No email') }}{{ employee.phone ? ' · ' + employee.phone : '' }}</small>
               <span class="status" [class.inactive]="!employee.is_active">{{ employee.is_active ? t('نشط', 'Active') : t('غير نشط', 'Inactive') }}</span>
@@ -97,7 +97,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
             <select name="payrollEmployeeId" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollEmployeeId">
               <option value="">{{ t('اختر موظفًا', 'Select an employee') }}</option>
               @for (employee of employees; track employee.id) {
-                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }}{{ employee.employee_code ? ' · ' + employee.employee_code : '' }}</option>
+                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }} · {{ employee.employee_code || employee.monthly_salary }}</option>
               }
             </select>
           </label>

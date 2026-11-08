@@ -127,24 +127,6 @@ test('payroll section headings stack cleanly on narrow screens', () => {
 });
 
 
-test('employee directory and payroll employee selector never expose base salary', () => {
-  const directoryStart = component.indexOf('<div class="list">');
-  const payrollStart = component.indexOf('<section class="payroll-section">', directoryStart);
-  assert.ok(directoryStart >= 0 && payrollStart > directoryStart);
-  const directory = component.slice(directoryStart, payrollStart);
-  assert.ok(directory.includes('<strong>{{ employee.name }}</strong>'));
-  assert.doesNotMatch(directory, /monthly_salary/);
-
-  const selectorStart = component.indexOf('name="payrollEmployeeId"');
-  const selectorEnd = component.indexOf('</select>', selectorStart);
-  assert.ok(selectorStart >= 0 && selectorEnd > selectorStart);
-  const selector = component.slice(selectorStart, selectorEnd);
-  assert.ok(selector.includes("employee.employee_code ? ' · ' + employee.employee_code : ''"));
-  assert.doesNotMatch(selector, /monthly_salary/);
-  assert.match(component, /name="employeeMonthlySalary"/,
-    'base salary remains editable in the owner-only compensation form');
-});
-
 test('employee search distinguishes an empty directory from no matching results', () => {
   assert.match(component, /employeeSearch\.trim\(\) \? t\('لا يوجد موظفون مطابقون للبحث\.'/);
   assert.match(component, /No matching employees found/);

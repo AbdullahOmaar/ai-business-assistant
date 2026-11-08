@@ -3055,3 +3055,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Removed the single whitespace-only added line in the Home template diff.
 - No runtime behavior or business semantics changed in this follow-up.
 - The previous CircleCI run on parent `ddeb61c` is superseded; exact-head validation must complete on this new commit before merge.
+
+
+## T18 — Ownership correction / T41 payroll UI finding handoff — 2026-11-08
+
+- The previous Master checkpoint recorded a salary-label privacy fix in `employee-payroll.component.ts` and `employee-payroll-ui.spec.ts`. Reconciliation against the canonical T41 task confirms those feature-local paths are Chat 4 single-writer owned.
+- To preserve the T41 ownership boundary, the Master-owned T18 branch restores those two files to their exact pre-change contents from parent candidate `aefe9097af02b52a45e0a124c77c254e01cef931`. No Chat 4 feature files remain modified by this Master follow-up.
+- The finding remains open and is handed to Chat 4: employee directory row renders `monthly_salary`; payroll employee selector uses `monthly_salary` as a fallback label when employee code is absent. Required presentation: name/code only in directory/selector; compensation remains in its restricted OWNER-only form. No salary-history, statutory, payout, API, backend, schema or financial semantics are requested.
+- UX inventory corrected to reflect the finding as pending. Prior implementation/test evidence is retained as historical checkpoint but is superseded by this ownership correction.
+- No production data, backend/API/database/schema/migration or deployment changes. The current branch still requires exact-head CircleCI, review and runtime UX acceptance.
