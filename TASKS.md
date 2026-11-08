@@ -3091,3 +3091,14 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - Regression: workspace-data-access.spec.ts asserts tenant-role fencing, invalid-range invalidation and workspace-reset invalidation. Existing workspace-load-guard.spec.ts covers role and identity rejection.
 - Scope: Master-owned shell, regression and TASKS only. No API/backend, tax calculation/rules, schema/migration, financial semantics or production data changed.
 - Validation: source readback to follow. Commit uses [skip ci] under the current CI trigger/retry freeze; exact-head CI/tests/build/browser remain NOT RUN.
+
+
+## T18 Master continuation — current candidate and CircleCI freeze reconciliation — 2026-11-08
+
+- **Owner decision:** the 2026-11-06 entry on main explicitly lifted the CircleCI trigger/retry freeze completely. Older freeze notes are historical and superseded. This commit intentionally does not use [skip ci] and is the approved normal CircleCI candidate trigger.
+- **Candidate parent:** c47bc2f6fb373722e1720d83258a5694cc6e52ec on master/t18-uiux-hardening-20261107; PR #348 remains OPEN / DRAFT / UNMERGED, base 8f2e326fce39fe45f4aebe0f1820576e45b75483.
+- **Master-owned fixes in candidate source:** late OWNER responses are now fenced for post-payroll expense/dashboard refresh, Data Integrity, Operational Health and Tax Summary using separate WorkspaceLoadGuard generations plus runTenantScopedRequest (workspace, UID, role, signed-in). Workspace reset invalidates all guards; invalid Tax Summary date range invalidates older pending requests.
+- **Regression/docs:** workspace-data-access.spec.ts adds source assertions for these guards; workspace-load-guard.spec.ts already exercises OWNER→STAFF and same-workspace UID rejection. AUDIT_MASTER_PLAN.md now records SEC-03 and UX-02.
+- **Ownership:** UX-HR-01 salary label finding remains OPEN and is handed to Chat 4/T41; Master does not modify those feature-local files. Historical payroll fix attempt was reverted.
+- **Validation:** previous exact-head CircleCI 7/7 on 6a308cc is stale for this candidate. This documentation commit triggers the normal approved CircleCI pipeline on its exact new SHA; record substantive job and aggregate results before merge. Local Node/build/browser tests NOT RUN because Desktop Commander is offline.
+- **Delivery:** no merge, production deployment, backend/API/schema/migration or production data changes. Vercel Preview attempt remains ERROR at ignoreStep due empty VERCEL_GIT_PREVIOUS_SHA; no persistent project settings changed. Physical Android/PWA, screen-reader/zoom, rendered RTL/LTR and authenticated two-tenant acceptance remain NOT RUN/BLOCKED.
