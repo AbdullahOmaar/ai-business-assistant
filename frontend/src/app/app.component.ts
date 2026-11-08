@@ -3349,7 +3349,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceDiscountRate = '0';
     this.invoiceTaxRate = '0';
     this.invoiceMessage = '';
-    this.invoiceMessageKind = 'succes  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
+    this.invoiceMessageKind = 'success';
+  }
+
+  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
     if (!this.business || !this.signedIn || !this.currentAuthUid || this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     const discountRate = Number(this.invoiceDiscountRate);
     const taxRate = Number(this.invoiceTaxRate);
