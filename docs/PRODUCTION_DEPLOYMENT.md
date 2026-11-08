@@ -1,3 +1,16 @@
+## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+
+The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+
+- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
+- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
+- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
+- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
+- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
+- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+
+This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+
 # Production deployment runbook
 
 This application uses Angular + FastAPI + PostgreSQL. Firebase Authentication verifies identity; it is not a host for this Python API.
@@ -43,7 +56,11 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 - **One coherent branch per meaningful work item:** Do not create a branch for every small task or individual edit. Group related implementation, tests, and documentation into one focused branch and PR. Continue on that branch while the scope and review boundary remain coherent. Split only for independently releasable features, different authorization/review requirements, or genuine conflict/safety boundaries.
 - **Reuse before creating:** Check the current branch and open PRs first. Update an existing in-progress branch/PR when appropriate; avoid duplicate work and unnecessary branch churn.
-- **Production deploys are release events, not per-task events:** Do not deploy after each commit or minor fix. Build and test the full coherent change set, merge the approved candidate, and deploy only when a new important feature/feature bundle or critical fix is ready for release. Normally trigger one production deployment for each affected project per release; do not deploy an unchanged project.
+- **Review budget:** target no more than 15 changed paths OR 800 non-generated changed lines. These are planning thresholds, not hard caps. Above either target, split only at a genuinely independent boundary or attach a staged-review plan naming path/behavior batches, dependencies, and checks. Never create micro-PRs or hide generated/lockfile changes.
+- **Shared-file ownership:** name one primary writer and exact owned paths per work package. One writer at a time edits coordination-sensitive paths such as `app.component.ts`, `TASKS.md`, global tokens, shared contracts, authorization boundaries and DB/schema files. Manual claims coordinate but are not atomic locks.
+- **CI evidence:** CircleCI is the sole approved provider. Require substantive jobs and aggregate on the exact candidate SHA. Do not substitute Actions, GitLab or Semaphore. The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- **Review and merge:** a full maintainer diff review is mandatory. A second reviewer is required only by provider-enforced protection or a separate explicit Owner-approved security policy. Before merge require READY/non-Draft, exact-head checks, current maintainer review, blocking threads resolved, base/divergence reconciled, provider protections satisfied and explicit Owner merge authorization.
+- **Production deploys are release events, not per-task events:** Do not deploy after each commit or minor fix. Build and test the full coherent change set, merge the approved candidate, and deploy only when a new important feature/feature bundle or critical fix is ready for release. Normally trigger one production deployment for each affected project per release; do not deploy an unchanged project. Merge and deployment authorization remain separate.
 - **Release gate before trigger:** Confirm exact merged main SHA, required CI/security/build checks, release markers ([release-web] and/or [release-api] for affected projects), and Ignore Build Step behavior. If a gate or quota blocks deployment, stop repeated retries, record the exact error, continue independent work, and retry only after the cause is resolved or the quota window resets.
 - **Post-deploy proof:** Confirm deployment is READY on the intended SHA and production alias, then check /health, /readyz, /version for API releases and run safe, relevant frontend/API smoke checks. Mark a release VERIFIED only with observed evidence. Critical security or production incidents can be expedited but must still be validated and documented.
 
@@ -152,7 +169,7 @@ At task start, record a compact release profile on the existing Notion task / Gi
 - Likely affected applications/projects (Web/API/etc.) and explicitly unaffected projects.
 - Whether GitHub merge to main automatically triggers production deployment for each affected Vercel project; confirm Git integration, production branch, release markers, Ignore Build Step and project root/dependency boundaries.
 - Whether schema/migration, secrets/configuration, paid resources, production data, or external side effects are involved.
-- Applicable CircleCI workflow, required exact-head jobs and any active execution freeze/authorization.
+- Applicable CircleCI workflow, required exact-head jobs and the permanent Owner CI authorization and current provider/quota availability.
 - Required owner decisions: merge authorization, production deployment authorization, and any separate production data/migration approval.
 
 Do this once before coding. Recheck only when a relevant configuration, scope, branch/base or release target changes. Never defer deployment-coupling discovery until after the owner says “merge”.
@@ -202,6 +219,6 @@ After authorization and all gates:
 
 ### 6. Role contract
 
-This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the reviewer/QA validates the evidence; Master coordinates cross-project release; only the authorized owner grants reserved approvals. A maintainer self-review is the default; request another reviewer only if repository/provider protection or a separate explicit owner-approved security policy requires it.
+This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the reviewer/QA validates the evidence; Master coordinates cross-project release; only the authorized owner grants reserved approvals. A documented maintainer full-diff review is mandatory. A second reviewer is not a default ordinary-merge requirement unless provider protection or separate explicit Owner-approved security policy requires it. This does not waive the separate independent non-author review required before canonical controlled Project Knowledge publication/update.
 
-**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, CircleCI restrictions, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.
+**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, the permanent CircleCI execution authorization and exact-SHA requirements, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.

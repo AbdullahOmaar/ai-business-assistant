@@ -1,3 +1,16 @@
+## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+
+The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+
+- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
+- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
+- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
+- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
+- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
+- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+
+This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+
 # Autonomous Engineering Rules
 
 These rules apply to every coding agent and every task in this repository. Read this file before making changes.
@@ -57,7 +70,7 @@ Stop and ask for human input only when necessary for a material product decision
 - **Create a new branch only for a genuinely new, substantial feature or a clearly independent change boundary**—for example, independently releasable work, a different security/review/permission boundary, or a change that would create material conflicts if combined. A new chat, agent, tiny fix, test, refactor, or documentation edit is not by itself a reason to create a branch.
 - If a contributor's branch already has an open PR, continue on that branch while its scope remains coherent. Do not create duplicate branches/PRs or stack feature branches unless a real dependency requires it and the coordinator records why.
 - Keep PRs focused on one coherent outcome; do not bundle unrelated features merely to avoid a branch. If the scope materially changes, finish/merge or safely close the current work before starting a separate branch.
-- Merge only after required checks pass on the exact PR head, any review/approval explicitly required by GitHub branch protection or repository rules is satisfied, the accountable maintainer has reviewed the diff, and the owner has authorized merge. There is no additional project-level independent-reviewer requirement. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
+- Merge only after required checks pass on the exact PR head, any review/approval explicitly required by GitHub branch protection or repository rules is satisfied, the accountable maintainer has reviewed the diff, and the owner has authorized merge. There is no additional project-level independent-reviewer requirement for ordinary PR merge by default; this does not waive the separate non-author independent-review gate for canonical controlled Project Knowledge publication/update, as specified in the governance section below. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
 - Branch discipline does not authorize direct pushes to protected main, unsafe merges, deleting branches with unique work, or bypassing release/security approvals.
 - Do not deploy after every commit, fix, or small task. Validate locally/CI and use previews when useful; deploy to production only for a meaningful, approved release—normally a new important feature, a deliberate feature bundle, or a critical production fix.
 - Batch related changes and tests, merge the approved release candidate, then trigger at most one production deployment per affected Vercel project for that release. Do not trigger the unaffected project. Do not retry deployment attempts repeatedly when quota, configuration, or build gates block them; diagnose first and wait for the platform limit to reset if needed.
@@ -190,3 +203,35 @@ Use the **Release Preflight → Candidate Ready → Owner Decision → Merge →
 - This fast path removes duplicate investigation and late surprises; it does **not** waive owner authorization, provider-enforced protections, required exact-head checks/reviews, CircleCI policy, security/data-integrity controls, or separate production authorization.
 
 - Batch related implementation, tests and documentation into one coherent commit/candidate before requesting CI or opening the PR. Do not create one commit per file or micro-edit when a single safe commit is possible: each pushed head can trigger another full CircleCI run. Once the candidate CI starts, avoid changing its head unless a real fix is required; if it changes, validate the new exact SHA and do not reuse stale results.
+
+## Integration and review policy addendum — Owner-authorized 2026-11-08
+
+This section clarifies the operational detail for every human, specialist chat and AI contributor. It is consistent with the branch, CI, security and release gates above; it does not waive any approval.
+
+### PR size and staged review
+- Target **15 changed paths OR 800 non-generated changed lines or fewer** for a routine review candidate. These are review-planning thresholds, not hard caps.
+- If either target is exceeded, before requesting review either split at a genuinely independent outcome/security/release boundary or add a staged-review plan to the PR: why safe splitting is not possible, named path/behavior batches, dependencies and tests/evidence for each batch.
+- Never create micro-PRs, arbitrary commit-per-file PRs, or cherry-pick merely to satisfy a number. Explain generated/lockfile paths and keep the full cumulative diff visible.
+- Review incrementally at meaningful milestones. Avoid accumulating a large unreviewed delta. Any new commit changes the candidate SHA and invalidates review/CI evidence tied to the prior head.
+
+### Shared-path ownership
+- Every work package declares one primary writer and exact owned paths. Only one active writer edits a coordination-sensitive path at a time; other workers continue on non-overlapping paths.
+- Treat `app.component.ts`, `TASKS.md`, global design tokens, shared API contracts, authorization boundaries and database/schema files as coordination-sensitive. Name the integration window and handoff before another writer edits the same path.
+- Manual single-writer claims are coordination records, not mutexes or atomic leases. On overlap, stop only conflicting writes and reconcile the claim; do not freeze independent work.
+- One active writing branch per contributor. A separate branch is justified only by a genuinely independent authorization/release boundary or independently reviewable outcome; record the reason and freeze writes on that contributor's previous branch during the independent work.
+
+### CI and merge gate clarification
+- CircleCI and `.circleci/config.yml` remain the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
+- GitHub Actions, GitLab and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative; its status failure does not negate valid CircleCI evidence.
+- Empty status contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
+- The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- A documented full maintainer diff review is mandatory. Under the Owner Policy effective 2026-11-06, a second independent reviewer is not a default project gate; require one only when provider-enforced protection or a separate explicit Owner-approved security policy requires it. This ordinary merge default does NOT waive independent review before canonical controlled Project Knowledge is published or updated: that publication gate is separate, and the reviewer must not be the content author, per `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`.
+- Merge only from a non-Draft READY PR after exact-head checks, maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus explicit Owner merge authorization. `mergeable=true` is not approval.
+- Merge authorization and production deployment authorization remain separate. Disclose auto-deployment coupling before merge; get the required deployment authorization before any merge that automatically deploys.
+
+### Canonical records
+- Notion owns task ownership, assignment, dependency, decisions and handoffs. GitHub owns code, branches, PRs, formal reviews and exact-SHA CI. Vercel/Neon own deployment/runtime and database schema evidence.
+- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and path ownership, base/head SHA, changed files, acceptance criteria, commands/results, reviewer, PR state, CI links, release impact and NOT RUN/BLOCKED items.
+- Update `TASKS.md` at meaningful checkpoints. Treat appended old snapshots as HISTORICAL unless refreshed from live GitHub/provider evidence; do not add a second task tracker.
+- If branch protection/ruleset cannot be read, record UNKNOWN and resolve through Owner/Admin GitHub UI readback. Never claim protection is enabled from a written policy alone.
+- A Notion/GitHub change does not update ChatGPT Project Instructions or uploaded Project Sources. Report those surfaces as unsynchronized until separately saved and read back.

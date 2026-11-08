@@ -1,10 +1,23 @@
+## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+
+The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+
+- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
+- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
+- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
+- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
+- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
+- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+
+This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+
 # Contributing and Project Roles
 
 This guide applies to every person and AI agent contributing to AI Business Assistant. It complements the repository-wide engineering requirements in [AGENTS.md](AGENTS.md); the accepted [ADR-001](docs/adr/ADR-001-v0-architecture.md) is authoritative for V0 architecture. The current task queue and evidence ledger is [TASKS.md](TASKS.md).
 
 ## 1. Roles and accountability
 
-One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. The accountable maintainer may perform and document the review; a second/independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
+One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. For ordinary PR merge, the accountable maintainer may perform and document the full review; a second/independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one. **Exception:** independent review by someone who did not author the content remains mandatory before canonical controlled Project Knowledge is published/updated; this is a separate knowledge-publication gate, not a default merge gate.
 
 | Role | Accountable for | Required behavior and limits |
 | --- | --- | --- |
@@ -80,7 +93,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If a runner/quota is unavailable, record the evidence and use an already-authorized alternative; do not repeatedly retry exhausted CI capacity or bypass the gate.
+- If CircleCI or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute another CI provider or treat a local partial run as full CircleCI evidence. Manual reruns are permanently Owner-authorized under the 2026-11-08 directive; record root cause and changed condition, and do not retry unchanged failures blindly.
 
 ## 6. Required handoff report
 
@@ -91,3 +104,31 @@ Every substantive handoff must state:
 - **Checks not run and the concrete reason.**
 - **Security/data/release review performed and remaining risks.**
 - **Next exact action and accountable role.**
+
+## 7. Integration, review budget and shared-file ownership — Owner-authorized 2026-11-08
+
+- Use a default review-planning target of **15 changed paths OR 800 non-generated changed lines or fewer**. These are planning thresholds, not hard caps.
+- If either threshold is exceeded, either split at a genuinely independent outcome/security/release boundary or attach a staged-review plan before requesting review. The plan names why safe splitting is not possible, path/behavior batches, dependencies and tests/evidence per batch.
+- Do not create micro-PRs, arbitrary commit-per-file PRs or cherry-pick merely to hit a number. Explain generated and lockfile changes, and retain the full cumulative diff.
+- Review at meaningful milestones instead of accumulating a large unreviewed delta. Any new commit changes the exact head and invalidates review/check evidence tied to the old SHA.
+- Every work package names one primary writer and exact owned paths. A shared/coordination-sensitive path has only one active writer at a time. Examples: `app.component.ts`, `TASKS.md`, global design tokens, shared API contracts, authorization boundaries and DB/schema files.
+- Manual single-writer claims are coordination records, not locks or atomic leases. On overlap, stop only conflicting writes; independent feature-local work may continue.
+- One active writing branch per contributor. A separate branch is allowed only for a genuinely independent outcome or authorization/security/release boundary; document the reason and freeze writes on the contributor's previous branch during that independent work.
+
+## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
+
+- CircleCI with `.circleci/config.yml` is the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
+- GitHub Actions, GitLab and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
+- Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
+- The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- A full documented maintainer review of the current cumulative diff is mandatory. A second independent reviewer is not a default project gate under the Owner Policy effective 2026-11-06; require one only where provider-enforced protection or a separate explicit Owner-approved security policy requires it.
+- Before merge, require a non-Draft READY PR, exact-head checks, current maintainer review, resolved blocking review threads, reconciled base/divergence, provider protections satisfied and explicit Owner merge authorization. `mergeable=true` is not approval.
+- Merge authorization and production deployment authorization are separate. Disclose auto-deployment coupling and obtain the required production authorization before a merge that automatically deploys.
+
+## 9. Canonical evidence and handoff — Owner-authorized 2026-11-08
+
+- Notion owns task ownership, assignment, dependencies, decisions and handoffs. GitHub owns code, branches, PRs, formal reviews and exact-SHA CI. Vercel and Neon own deployment/runtime and schema evidence.
+- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and owned paths, exact base/head SHA, changed paths, acceptance criteria, command/results, review state, CI links, release impact and NOT RUN/BLOCKED items.
+- Treat historical TASKS snapshots as historical until refreshed from current providers. Update the ledger at meaningful checkpoints; do not create duplicate trackers.
+- If branch protection/ruleset cannot be read, mark effective enforcement UNKNOWN and request Owner/Admin UI readback. A written policy alone does not prove provider enforcement.
+- GitHub/Notion updates do not automatically update ChatGPT Project Instructions or uploaded Project Sources. Claim synchronization only after their separate UI update and readback.

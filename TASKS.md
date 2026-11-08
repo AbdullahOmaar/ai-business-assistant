@@ -1,3 +1,47 @@
+## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+
+The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+
+- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
+- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
+- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
+- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
+- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
+- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+
+This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+
+# Policy conflict sweep — 2026-11-08
+
+- Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
+- Effective rule: CircleCI remains the sole approved CI provider; unavailable/frozen CircleCI means NOT RUN/BLOCKED, not provider substitution. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
+- This is a consistency correction to governance candidate [PR #349](https://github.com/AbdullahOmaar/ai-business-assistant/pull/349). Refresh exact head before consuming check evidence. No CI trigger/retry, tests, merge or deployment was performed.
+
+---
+
+# Canonical knowledge review gate clarification — 2026-11-08
+
+- Clarified that the 2026-11-06 no-default-independent-review Owner Policy applies to **ordinary PR merge**. It does not remove the separate requirement for a reviewer who did not author the content before canonical controlled Project Knowledge is published/updated.
+- Mirrored the exception into `AGENTS.md`, the original `CONTRIBUTING.md` role boundary and `.github/pull_request_template.md`.
+- This checkpoint is part of governance candidate [PR #349](https://github.com/AbdullahOmaar/ai-business-assistant/pull/349), branch `master/integration-operating-rules-20261108`. Base `8f2e326fce39fe45f4aebe0f1820576e45b75483`. Opening candidate head before this clarification: `ab88cc515f796a677d5c6d29c2dd3140a4b77b33`; refresh the live PR for the exact new head before using check evidence.
+- Existing PR #348 remains untouched, OPEN / DRAFT / UNMERGED. No merge/deployment or CI trigger/retry. Independent knowledge review remains PENDING.
+
+---
+
+# Owner-authorized integration operating rules — 2026-11-08
+
+- **Decision:** the Owner authorized Master to apply the process corrections from the integration-delay audit. Canonical operational rules are recorded in Notion Universal Work Execution Standard and Work Package & Handoff Standard; this commit mirrors them to repository guidance.
+- **Governance branch:** `master/integration-operating-rules-20261108`, based on main `8f2e326fce39fe45f4aebe0f1820576e45b75483`; this is a separate documentation/policy review boundary. Existing PR #348 is intentionally untouched and frozen from additional writes while this policy branch is active.
+- **PR #348 live baseline at audit:** OPEN / DRAFT / UNMERGED, branch `master/t18-uiux-hardening-20261107`, head `3ed5f7a35b771253fb94f95a46ce4c7c827ab5e5`, 277 commits, 44 paths, +5,091 / -504. Exact-head CircleCI 7/7 SUCCESS. Semaphore is retired/non-authoritative.
+- **Disposition:** keep #348 DRAFT. Its review surface exceeds the new review-planning targets; full maintainer review plus rendered RTL/LTR/responsive, accessibility and Android/PWA acceptance remain outstanding/NOT RUN. Current comparison had 0 commits behind and mergeable=true; no active merge conflict was evidenced.
+- **New policy:** PR review target 15 changed paths OR 800 non-generated lines (planning thresholds, not hard caps); larger candidates need genuine splitting or a staged-review plan. Shared files require a named primary writer/path boundary. CircleCI exact-SHA only, full maintainer review, no default second reviewer except provider/explicit security policy, and separate Owner merge/deployment approvals.
+- **Safety:** no CI trigger/retry, merge, deployment, branch rewrite, production DB action, migration or business-rule change was made in this governance change.
+- **Known enforcement gap:** last recorded `main.protected=false`; ruleset API readback 403. Effective protection remains UNKNOWN until Owner/Admin UI readback.
+- **Project Sources / Instructions:** uploaded Project Sources are still v1.0.0 DRAFT and were not replaced by GitHub/Notion writes. ChatGPT Project Instructions also require separate UI update/readback; no sync claim is made.
+- **Next:** verify the policy documentation PR and exact-head evidence without touching #348; request independent knowledge review before any canonical publish/merge. Owner/Admin to verify GitHub branch protection via UI.
+
+---
+
 # Release preflight fast-path — operating improvement — 2026-11-07
 
 - **Purpose:** remove late discovery of production deployment coupling, repeated read-only verification and fragmented release handoffs across Master, Chat 1–5, QA and external agents.
