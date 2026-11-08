@@ -15,6 +15,12 @@ const frontendPackage = JSON.parse(readFileSync(resolve(frontendRoot, 'package.j
 const buildInfo = readFileSync(resolve(frontendRoot, 'src/app/build-info.ts'), 'utf8');
 const serviceWorker = readFileSync(resolve(frontendRoot, 'public/sw.js'), 'utf8');
 
+test('Vercel Web build stamps commit metadata before Angular compilation', () => {
+  const vercelConfig = JSON.parse(readFileSync(resolve(frontendRoot, 'vercel.json'), 'utf8'));
+  assert.equal(vercelConfig.buildCommand, 'node scripts/write-build-info.mjs && ng build');
+  assert.equal(vercelConfig.outputDirectory, 'dist/ai-business-assistant');
+});
+
 test('feature catalogue has unique sections and bilingual user-facing content', () => {
   const ids = FEATURE_CATALOG.map((section) => section.id);
 

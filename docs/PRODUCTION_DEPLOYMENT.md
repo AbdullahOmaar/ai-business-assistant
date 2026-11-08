@@ -30,6 +30,14 @@ Health checks:
 - `/health` is process liveness only.
 - `/readyz` returns ready only when PostgreSQL connectivity and trusted Firebase token verification are configured.
 
+## Vercel Web build and preview safety
+
+The Web Vercel project root is `frontend`. The repository-owned `frontend/vercel.json` explicitly runs `node scripts/write-build-info.mjs && ng build` and publishes `dist/ai-business-assistant`. This is required because the Angular framework auto-detected build can invoke `ng build` directly and bypass npm's `prebuild` lifecycle, leaving the UI commit label and service-worker cache name as `unknown`.
+
+CircleCI remains the sole approved test/build validation provider and runs the full frontend unit suite, production build, and Playwright checks. The Vercel build command stamps the per-commit UI/service-worker metadata and compiles the frontend; it is not a replacement test gate.
+
+Preview deployments must use an isolated synthetic API and Firebase project before any authenticated OWNER/STAFF, tenant-isolation, or write-path testing. The checked-in public runtime config currently targets production API/Firebase; do not sign in or mutate data from a Preview until a separate Preview runtime config is configured and verified.
+
 ## Frontend runtime configuration
 
 The public runtime config contains only public Firebase web-app identifiers and the API base URL; never place service-account JSON or an OpenAI key in frontend assets. Configure:

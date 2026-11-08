@@ -1,0 +1,4 @@
+{
+  "buildCommand": "node scripts/write-build-info.mjs && ng build",
+  "outputDirectory": "dist/ai-business-assistant"
+}

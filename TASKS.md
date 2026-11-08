@@ -3102,3 +3102,13 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Ownership:** UX-HR-01 salary label finding remains OPEN and is handed to Chat 4/T41; Master does not modify those feature-local files. Historical payroll fix attempt was reverted.
 - **Validation:** previous exact-head CircleCI 7/7 on 6a308cc is stale for this candidate. This documentation commit triggers the normal approved CircleCI pipeline on its exact new SHA; record substantive job and aggregate results before merge. Local Node/build/browser tests NOT RUN because Desktop Commander is offline.
 - **Delivery:** no merge, production deployment, backend/API/schema/migration or production data changes. Vercel Preview attempt remains ERROR at ignoreStep due empty VERCEL_GIT_PREVIOUS_SHA; no persistent project settings changed. Physical Android/PWA, screen-reader/zoom, rendered RTL/LTR and authenticated two-tenant acceptance remain NOT RUN/BLOCKED.
+
+
+## T18 — Vercel build metadata and Preview safety — 2026-11-08
+
+- Finding: READY Web Preview dpl_4Y2CrZ3dbAEEp4NFhScFRHSgkHgH serves main bundle build info with commit "unknown" and sw.js cache name aba-shell-v1.3.9-unknown. Vercel's Angular preset invoked Angular Building directly and did not run npm prebuild, so write-build-info.mjs was bypassed.
+- Fix: added frontend/vercel.json with buildCommand "node scripts/write-build-info.mjs && ng build" and outputDirectory "dist/ai-business-assistant"; added release-guide.spec.ts regression and updated the production deployment runbook. This is repo-scoped configuration; no persistent Vercel project setting was changed.
+- Preview safety: the same Preview's runtime-config.json points to production API https://ai-business-assistant-api.vercel.app and Firebase project ai-business-assistant-97f37. Only static assets/config were fetched; no login, API request, write, or business data access was performed. Do not run authenticated Preview tests until isolated synthetic API/Firebase config exists.
+- Additional source accessibility findings: mobile header context label and Platform Admin small-text selectors have source-calculated contrast below 4.5:1 on their actual page/info surfaces; see UX-03 in AUDIT_MASTER_PLAN.md and PR review comment.
+- Vercel build warning: Node 22.23.4 while @firebase/auth@1.13.8 declares Node >=24.12.0 (EBADENGINE); npm install printed 16 moderate findings. CircleCI dependency audit passed; review engine/audit details before release.
+- Validation: source readback and CircleCI to follow on this exact commit. No production deployment, alias, database, Firebase config, API runtime config, or persistent Vercel settings changed.
