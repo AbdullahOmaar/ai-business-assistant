@@ -348,7 +348,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   // by its dedicated navigation assertions above.
   await page.getByRole('button', { name: /افتح المساعد الذكي|Open AI assistant/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
-  await expect(moreTrigger).not.toHaveClass(/active/);
+  await expect(moreTrigger).toHaveClass(/active/);
 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/)).toBeVisible();

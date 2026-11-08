@@ -3248,3 +3248,5 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Browser-smoke menu-state follow-up:** the latest run confirmed that changing back to Arabic can leave the More menu mounted; blindly clicking the trigger then closes it. The E2E now checks whether the menu is already present and reopens only when absent, then selects AI Assistant. This aligns the test with the actual toggle state instead of assuming a close/open behavior.
 
 - **Assistant E2E navigation correction:** the mobile chat regression now opens the assistant through the Home header's real `Open AI assistant` shortcut. More-menu navigation remains covered independently; the test no longer relies on menu visibility after language switching.
+
+- **Browser-smoke navigation assertion correction:** CircleCI confirmed the header shortcut correctly closes the More popup while the More dock button remains `active` as the group indicator for the assistant destination. The E2E now asserts the popup is closed and the More group remains active; no application behavior change was required.
