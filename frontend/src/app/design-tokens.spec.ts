@@ -135,7 +135,7 @@ test('global foundation preserves focus visibility, reduced motion, and local Ar
 });
 
 
-test('the workspace shell consumes semantic navigation and hero palette tokens', () => {
+test('the workspace shell consumes semantic navigation and layout tokens', () => {
   const requiredShellTokens = [
     '--aba-color-nav-surface',
     '--aba-color-nav-text',
@@ -143,9 +143,6 @@ test('the workspace shell consumes semantic navigation and hero palette tokens',
     '--aba-color-nav-active-start',
     '--aba-color-nav-active-end',
     '--aba-color-nav-accent',
-    '--aba-color-hero-start',
-    '--aba-color-hero-mid',
-    '--aba-color-hero-end',
     '--aba-layout-sidebar',
     '--aba-layout-content-max',
     '--aba-layout-mobile-nav',

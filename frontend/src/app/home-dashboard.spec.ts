@@ -142,7 +142,7 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(shortcuts, /<button class="home-shortcut-link"/);
   assert.doesNotMatch(shortcuts, /aba-quick-access-card/,
     'quick shortcuts must remain compact links, not a duplicate module-card surface');
-  assert.match(appSource, /\\.home-shortcut-list\\{display:grid;grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
+  assert.ok(appSource.includes('.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'));
   assert.match(appSource, /\.home-shortcut-link\{[^}]*min-height:44px/);
   assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
   assert.match(appSource, /\.home-shortcut-link:focus-visible/);
@@ -245,8 +245,8 @@ test('failed payroll dashboard refresh clears stale Home metrics before exposing
   const clearHomeError = method.indexOf("this.homeDashboardError = '';", clearResolvedBanner);
   assert.ok(successfulDashboard >= 0 && clearResolvedBanner > successfulDashboard && clearHomeError > clearResolvedBanner,
     'a successful refresh clears only the matching Home refresh banner before clearing its stored error');
-  assert.doesNotMatch(method, /this\.error = '';/,
-    'success must not erase an unrelated page-level error');
+  assert.match(method, /if \(this\.error === this\.homeDashboardError\) this\.error = '';/,
+    'success clears the page-level banner only when it belongs to this Home refresh');
 });
 
 

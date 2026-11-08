@@ -1381,7 +1381,7 @@ test('Home dashboard uses the shared page-level error and retry banner without d
   const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired');
   assert.ok(sharedError >= 0, 'the shared workspace error banner must remain available');
   assert.match(source.slice(sharedError, sharedError + 650), /\[actionLabel\].*Retry/);
-  assert.match(overview, /kind="loading"[^>]*Loading business metrics/);
+  assert.ok(overview.includes('metric-grid--skeleton'), 'Home keeps its non-data KPI skeleton while the shared workspace banner announces loading');
   assert.doesNotMatch(overview, /kind="error" \[description\]="error"/,
     'the Home metrics panel must not repeat the same global error alert');
   assert.match(overview, /@else if \(!error\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
@@ -1397,7 +1397,7 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
   assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.match(source, /filterNotifications\\(this\\.notifications, this\\.notificationSearch, kind => this\\.notificationKindLabel\\(kind\\), status => this\\.notificationStatusLabel\\(status\\)\\)/);
+  assert.ok(source.includes('filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status))'));
   const clearStart = source.indexOf('private clearWorkspaceData(): void');
   const clearEnd = source.indexOf('\n  }', clearStart);
   const clear = source.slice(clearStart, clearEnd);
@@ -1421,7 +1421,7 @@ test('payment and expense lists expose local search and distinguish no-match fro
   assert.match(source, /get filteredPayments\(\): Payment\[\]/);
   assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
   assert.match(source, /filterPayments\(this\.payments, this\.paymentSearch/);
-  assert.match(source, /filterExpenses\\(this\\.expenses, this\\.expenseSearch, category => this\\.expenseCategoryLabel\\(category\\)\\)/);
+  assert.ok(source.includes('filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category))'));
   assert.match(source, /No payments match this search/);
   assert.match(source, /No expenses match this search/);
   assert.match(source, /name="paymentSearch" type="search"/);

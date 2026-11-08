@@ -70,7 +70,7 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.match(styles, /overflow-wrap: anywhere/);
   assert.ok(appSource.includes('env(safe-area-inset-top'));
   assert.match(appSource, /install-cta-visible/);
-  assert.match(appSource, /shell\\.install-help-open \\.main/);
+  assert.ok(appSource.includes('.shell.install-help-open .main'));
   assert.match(source, /aria-live="polite" aria-atomic="true"/);
   assert.doesNotMatch(styles, /install-cta-visible|safe-area-inset-top/);
   assert.match(styles, /inset-inline-end/);
