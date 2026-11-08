@@ -226,19 +226,20 @@ test('Home uses one workspace-level loading announcement and a visual KPI skelet
     'the Home KPI hierarchy remains visible as a non-data skeleton');
 });
 
-test('failed payroll dashboard refresh clears stale Home metrics before exposing retry', () => {
+test('failed payroll dashboard refresh clears stale Home metrics through the current OWNER-scoped error callback', () => {
   const start = appSource.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
   const end = appSource.indexOf('exportReceivablesAgingCsv(): void', start);
   const method = appSource.slice(start, end);
-  const catchStart = method.indexOf('} catch (error) {');
-  const staleClear = method.indexOf('this.dashboard = null;', catchStart);
-  const storedRetryError = method.indexOf('this.homeDashboardError = this.message(error);', catchStart);
-  const retryError = method.indexOf('this.error = this.homeDashboardError;', catchStart);
+  const errorCallback = method.indexOf('onError: error =>');
+  const staleClear = method.indexOf('this.dashboard = null;', errorCallback);
+  const storedRetryError = method.indexOf('this.homeDashboardError = this.message(error);', errorCallback);
+  const retryError = method.indexOf('this.error = this.homeDashboardError;', errorCallback);
 
   assert.ok(start >= 0 && end > start, 'post-payroll refresh method must exist');
-  assert.ok(catchStart >= 0 && staleClear > catchStart && storedRetryError > staleClear && retryError > storedRetryError,
-    'failed refresh must clear old dashboard metrics, store the Home error, then expose the retryable banner');
-  assert.match(method, /if \(this\.business\?\.id === businessId\) \{/);
+  assert.match(method, /requestContext\.role !== 'owner'/);
+  assert.match(method, /runTenantScopedRequest\(\s*this\.payrollRefreshGuard/);
+  assert.ok(errorCallback >= 0 && staleClear > errorCallback && storedRetryError > staleClear && retryError > storedRetryError,
+    'a failed current OWNER refresh must clear old dashboard metrics, store the Home error, then expose the retryable banner');
 
   const successfulDashboard = method.indexOf('this.dashboard = dashboard;');
   const clearResolvedBanner = method.indexOf("if (this.error === this.homeDashboardError) this.error = '';");
