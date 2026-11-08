@@ -217,3 +217,15 @@ export function mergeRecordPage<T extends { id: string }>(
     hasMore: page.length === pageSize,
   };
 }
+
+/** Describe the initial offset page returned by a workspace list endpoint. */
+export function firstRecordPage<T>(
+  page: readonly T[],
+  pageSize: number,
+): { records: T[]; nextOffset: number; hasMore: boolean } {
+  return {
+    records: [...page],
+    nextOffset: page.length,
+    hasMore: page.length === pageSize,
+  };
+}
