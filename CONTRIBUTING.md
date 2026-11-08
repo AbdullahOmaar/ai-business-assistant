@@ -4,7 +4,7 @@ This guide applies to every person and AI agent contributing to AI Business Assi
 
 ## 1. Roles and accountability
 
-One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. The accountable maintainer may perform and document the review; a second/independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
+One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. For ordinary PR merge, the accountable maintainer may perform and document the full review; a second/independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one. **Exception:** independent review by someone who did not author the content remains mandatory before canonical controlled Project Knowledge is published/updated; this is a separate knowledge-publication gate, not a default merge gate.
 
 | Role | Accountable for | Required behavior and limits |
 | --- | --- | --- |

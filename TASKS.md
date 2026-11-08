@@ -1,3 +1,12 @@
+# Canonical knowledge review gate clarification — 2026-11-08
+
+- Clarified that the 2026-11-06 no-default-independent-review Owner Policy applies to **ordinary PR merge**. It does not remove the separate requirement for a reviewer who did not author the content before canonical controlled Project Knowledge is published/updated.
+- Mirrored the exception into `AGENTS.md`, the original `CONTRIBUTING.md` role boundary and `.github/pull_request_template.md`.
+- This checkpoint is part of governance candidate [PR #349](https://github.com/AbdullahOmaar/ai-business-assistant/pull/349), branch `master/integration-operating-rules-20261108`. Base `8f2e326fce39fe45f4aebe0f1820576e45b75483`. Opening candidate head before this clarification: `ab88cc515f796a677d5c6d29c2dd3140a4b77b33`; refresh the live PR for the exact new head before using check evidence.
+- Existing PR #348 remains untouched, OPEN / DRAFT / UNMERGED. No merge/deployment or CI trigger/retry. Independent knowledge review remains PENDING.
+
+---
+
 # Owner-authorized integration operating rules — 2026-11-08
 
 - **Decision:** the Owner authorized Master to apply the process corrections from the integration-delay audit. Canonical operational rules are recorded in Notion Universal Work Execution Standard and Work Package & Handoff Standard; this commit mirrors them to repository guidance.

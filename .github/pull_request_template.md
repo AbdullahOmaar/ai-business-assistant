@@ -73,6 +73,20 @@
 - [ ] Separate production authorization was obtained when needed.
 - [ ] Exact deployed SHA/version, alias, health and safe smoke evidence recorded after deployment — or deployment explicitly out of scope.
 
+## Canonical knowledge publication (only when applicable)
+- **Document/package being published:**
+- **Candidate version and DRAFT/APPROVED state:**
+- **Author / maintainer self-review:**
+- **Independent reviewer (must not be the author):**
+- **Independent findings and disposition:**
+- **Owner approval / decision record:**
+- **Canonical source SHA / PR:**
+- **Project Sources filenames, upload and readback evidence:**
+- [ ] Independent knowledge review is complete and recorded.
+- [ ] Authorized publication decision exists.
+- [ ] All five files are one consistent approved version set.
+- [ ] Project Sources UI upload and readback are verified, or publication is explicitly NOT DONE.
+
 ## Remaining work / blockers
 <!-- Exact criterion, root cause, alternatives tried, unblock condition, owner and next action. -->
 
