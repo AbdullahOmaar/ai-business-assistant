@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { mergeRecordPage, filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
+import { firstRecordPage, mergeRecordPage, filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
 
 test('filters customers by name, email, and phone case-insensitively', () => {
   const customers = [
@@ -138,4 +138,11 @@ test('record pagination stops after a short or empty page', () => {
   const empty = mergeRecordPage(short.records, [], short.nextOffset, 2);
   assert.equal(empty.nextOffset, 2);
   assert.equal(empty.hasMore, false);
+});
+
+test('first record page sets the next offset and only exposes more for a full page', () => {
+  const full = firstRecordPage([{ id: 'a' }, { id: 'b' }], 2);
+  assert.deepEqual(full, { records: [{ id: 'a' }, { id: 'b' }], nextOffset: 2, hasMore: true });
+  const short = firstRecordPage([{ id: 'a' }], 2);
+  assert.deepEqual(short, { records: [{ id: 'a' }], nextOffset: 1, hasMore: false });
 });
