@@ -383,12 +383,12 @@ export const RELEASE_HISTORY = [
     changesAr: [
       'إعادة ترتيب شريط التطبيق ليعرض عنوان الصفحة والإجراءات الأساسية في صف مضغوط.',
       'فصل مساحة العمل واختيارها في صف مستقل مع دعم التفاف الأسماء الطويلة.',
-      'الحفاظ على التنقل والإجراءات الحالية مع دعم العربية والإنجليزية وأهداف لمس لا تقل عن 44px.',
+      'الحفاظ على التنقل والإجراءات الحالية مع دعم العربية والإنجليزية وأهداف لمس لا تقل عن 44px. الإصدار 1.4.1.',
     ],
     changesEn: [
       'Reorganizes the mobile App Bar into a compact page-first row with primary actions.',
       'Moves workspace identity and switching into a separate row with long-name wrapping.',
-      'Preserves existing navigation and account actions with RTL/LTR support and 44px touch targets.',
+      'Preserves existing navigation and account actions with RTL/LTR support and 44px touch targets. This is version 1.4.1.',
     ],
   },
   {
