@@ -11,17 +11,24 @@ import type { Business } from '../../api.service';
     <section class="mobile-app-header"
       [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
       [attr.aria-label]="t('رأس التطبيق ومساحة العمل', 'App and workspace header')">
-      <div class="brand-row">
+      <div class="page-context">
         <button class="brand-button" type="button" (click)="homeRequested.emit()"
           [attr.aria-label]="t('العودة إلى الرئيسية', 'Go to Home')">
           <span class="brand-mark" aria-hidden="true">A</span>
-          <span class="brand-copy">
-            <strong>{{ t('مساعد الأعمال', 'Business Assistant') }}</strong>
-            <small>AI Business Assistant</small>
-          </span>
         </button>
-        <span class="version-pill" [attr.aria-label]="t('إصدار الواجهة', 'App version')">v{{ appVersion }}</span>
+        <div class="page-copy">
+          @if (showGreeting) {
+            <p class="greeting">{{ t('أهلاً بعودتك', 'Welcome back') }}</p>
+          }
+          <h1 aria-live="polite" aria-atomic="true">{{ pageTitle }}</h1>
+        </div>
         <div class="header-actions">
+          <button class="assistant-shortcut" type="button"
+            [attr.aria-label]="t('افتح المساعد الذكي', 'Open AI assistant')"
+            (click)="assistantRequested.emit()">
+            <span aria-hidden="true">✦</span>
+            <span>{{ t('اسأل المساعد', 'Ask assistant') }}</span>
+          </button>
           <button class="icon-button notification-button" type="button"
             [attr.aria-label]="t('الإشعارات', 'Notifications')"
             [attr.title]="t('الإشعارات', 'Notifications')"
@@ -53,20 +60,6 @@ import type { Business } from '../../api.service';
             </select>
           </label>
         }
-      </div>
-      <div class="page-context">
-        <div class="page-copy">
-          @if (showGreeting) {
-            <p class="greeting">{{ t('أهلاً بعودتك', 'Welcome back') }}</p>
-          }
-          <h1 aria-live="polite" aria-atomic="true">{{ pageTitle }}</h1>
-        </div>
-        <button class="assistant-shortcut" type="button"
-          [attr.aria-label]="t('افتح المساعد الذكي', 'Open AI assistant')"
-          (click)="assistantRequested.emit()">
-          <span aria-hidden="true">✦</span>
-          <span>{{ t('اسأل المساعد', 'Ask assistant') }}</span>
-        </button>
       </div>
       @if (profileMenuOpen) {
         <div id="mobile-account-menu" class="account-menu" role="group"
