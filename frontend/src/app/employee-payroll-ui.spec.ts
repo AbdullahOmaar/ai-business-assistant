@@ -149,3 +149,27 @@ test('owner-only payroll view stays behind its deferred loading boundary', () =>
   assert.match(app, /import \{ EmployeePayrollComponent \} from '\.\/employee-payroll\.component';/);
   assert.match(component, /standalone: true/);
 });
+
+
+test('employee directory and payroll selector never expose base salary values', () => {
+  const directoryStart = component.indexOf('<div class="list">');
+  const directoryEnd = component.indexOf('<section class="payroll-section">', directoryStart);
+  assert.ok(directoryStart >= 0 && directoryEnd > directoryStart);
+  const directory = component.slice(directoryStart, directoryEnd);
+  assert.doesNotMatch(directory, /monthly_salary|currencyCode/);
+  assert.match(directory, /<strong>\{\{ employee\.name \}\}<\/strong>/);
+  assert.match(directory, /employee\.employee_code \|\| t\('بدون كود', 'No code'\)/);
+
+  const selectorStart = component.indexOf('<select name="payrollEmployeeId"');
+  const selectorEnd = component.indexOf('</select>', selectorStart);
+  assert.ok(selectorStart >= 0 && selectorEnd > selectorStart);
+  const selector = component.slice(selectorStart, selectorEnd);
+  assert.doesNotMatch(selector, /monthly_salary|currencyCode/);
+  assert.match(selector, /employee\.name/);
+  assert.match(selector, /employee\.employee_code \|\| t\('بدون كود', 'No code'\)/);
+
+  // Compensation remains editable only inside the existing OWNER-only employee form.
+  assert.match(component, /الراتب الشهري الأساسي/);
+  assert.match(component, /name="employeeMonthlySalary"/);
+  assert.match(component, /\[\(ngModel\)\]="employeeMonthlySalary"/);
+});
