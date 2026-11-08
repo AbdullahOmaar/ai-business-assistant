@@ -114,7 +114,6 @@ test('localizes known validation feedback and preserves unknown fallback', () =>
   assert.equal(localizeInvoiceDraftValidationMessage('Enter an invoice number of 1 to 64 characters.', 'ar'), 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.');
   assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'ar'), 'اختَر عميلًا صحيحًا.');
   assert.equal(localizeInvoiceDraftValidationMessage('An invoice cannot contain more than 500 lines.', 'ar'), 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.');
-  assert.equal(localizeInvoiceDraftValidationMessage('Enter an invoice number of 1 to 64 characters.', 'ar'), 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.');
   assert.equal(localizeInvoiceDraftValidationMessage('unknown', 'ar'), 'unknown');
   assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'en'), 'Choose a valid customer.');
 });
