@@ -58,8 +58,8 @@ export function validateInvoiceDraft(
   products: readonly InvoiceDraftProduct[],
   customers: readonly InvoiceDraftCustomer[],
 ): string | null {
-  if (!input.invoice_number.trim() || input.invoice_number.trim().length > 80) {
-    return 'Enter an invoice number of 1 to 80 characters.';
+  if (!input.invoice_number.trim() || input.invoice_number.trim().length > 64) {
+    return 'Enter an invoice number of 1 to 64 characters.';
   }
   if (!input.customer_id || !customers.some(customer => customer.id === input.customer_id)) {
     return 'Choose a valid customer.';
@@ -124,7 +124,7 @@ export function toInvoiceDraftPayload(
 export function localizeInvoiceDraftValidationMessage(message: string, language: 'ar' | 'en'): string {
   if (language !== 'ar') return message;
   const arabic: Record<string, string> = {
-    'Enter an invoice number of 1 to 80 characters.': 'أدخل رقم فاتورة من حرف إلى 80 حرفًا.',
+    'Enter an invoice number of 1 to 80 characters.': 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.',
     'Choose a valid customer.': 'اختَر عميلًا صحيحًا.',
     'Enter a valid three-letter currency code.': 'أدخل رمز عملة صحيحًا من ثلاثة أحرف.',
     'Add at least one invoice line.': 'أضف بندًا واحدًا على الأقل للفاتورة.',

@@ -38,7 +38,7 @@ import type {
       <div class="invoice-fields">
         <label>
           {{ t('رقم الفاتورة', 'Invoice number') }}
-          <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="80" [disabled]="locked" />
+          <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="64" [disabled]="locked" />
         </label>
         <label>
           {{ t('العميل', 'Customer') }}

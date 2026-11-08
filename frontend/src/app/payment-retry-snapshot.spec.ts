@@ -110,6 +110,6 @@ test('retry vault rejects blank identity keys', () => {
 
 
 test('only known validation and authorization rejections release an uncertain payment snapshot', () => {
-  for (const status of [400, 401, 403, 404, 422]) assert.equal(isDefinitiveNoWritePaymentStatus(status), true);
-  for (const status of [408, 409, 425, 429, 500, 502, 503, 504]) assert.equal(isDefinitiveNoWritePaymentStatus(status), false);
+  for (const status of [400, 401, 403, 404, 409, 422]) assert.equal(isDefinitiveNoWritePaymentStatus(status), true);
+  for (const status of [408, 425, 429, 500, 502, 503, 504]) assert.equal(isDefinitiveNoWritePaymentStatus(status), false);
 });

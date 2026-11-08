@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
+import { isDefinitiveNoWriteHttpStatus } from './api-request-error';
 
 export interface ReleaseInfo { version: string; commit: string; environment: string; }
 
@@ -146,10 +147,6 @@ export interface Dashboard {
 }
 // `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
 export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
-
-export function isDefinitiveNoWriteHttpStatus(status: number): boolean {
-  return [400, 401, 403, 404, 422].includes(status);
-}
 
 export class ApiRequestError extends Error {
   constructor(message: string, readonly status: number) {

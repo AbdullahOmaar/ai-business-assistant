@@ -1509,7 +1509,7 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
         engine.dispose()
 
 
-def test_invoice_line_description_limit_matches_persisted_column_without_rejected_writes():
+def test_invoice_number_and_line_description_limits_match_persisted_columns_without_rejected_writes():
     engine, business_id, invoice_id, _ = _sales_return_fixture()
     with Session(engine) as session:
         invoice = session.get(Invoice, invoice_id)
@@ -1523,7 +1523,7 @@ def test_invoice_line_description_limit_matches_persisted_column_without_rejecte
         accepted = client.post(
             base,
             json={
-                "invoice_number": "DESC-300-OK",
+                "invoice_number": "N" * 64,
                 "currency_code": "EGP",
                 "customer_id": str(customer_id),
                 "lines": [{"description": "x" * 300, "quantity": "1.000", "unit_price": "1.00"}],
@@ -1536,7 +1536,18 @@ def test_invoice_line_description_limit_matches_persisted_column_without_rejecte
             line_count = session.scalar(select(func.count()).select_from(InvoiceLine))
             audit_count = session.scalar(select(func.count()).select_from(AuditEvent))
 
-        rejected = client.post(
+        rejected_number = client.post(
+            base,
+            json={
+                "invoice_number": "N" * 65,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "Valid line", "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_number.status_code == 422
+
+        rejected_description = client.post(
             base,
             json={
                 "invoice_number": "DESC-301-REJECT",
@@ -1545,7 +1556,7 @@ def test_invoice_line_description_limit_matches_persisted_column_without_rejecte
                 "lines": [{"description": "x" * 301, "quantity": "1.000", "unit_price": "1.00"}],
             },
         )
-        assert rejected.status_code == 422
+        assert rejected_description.status_code == 422
 
         with Session(engine) as session:
             assert session.scalar(select(func.count()).select_from(Invoice)) == invoice_count

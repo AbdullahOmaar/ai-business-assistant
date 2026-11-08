@@ -45,9 +45,10 @@ test('builds a mixed product/service request without client-calculated totals or
   assert.equal('tax_rate' in payload, false);
 });
 
-test('rejects a missing or overlong invoice number', () => {
+test('accepts the 64-character persisted invoice number limit and rejects longer values', () => {
   assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: ' ' }, products, customers) ?? '', /invoice number/i);
-  assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: 'x'.repeat(81) }, products, customers) ?? '', /invoice number/i);
+  assert.equal(validateInvoiceDraft({ ...validInput(), invoice_number: 'x'.repeat(64) }, products, customers), null);
+  assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: 'x'.repeat(65) }, products, customers) ?? '', /invoice number/i);
 });
 
 test('rejects missing or foreign customer references', () => {
@@ -110,6 +111,7 @@ test('rejects whole-number precision beyond the API decimal limits', () => {
 });
 
 test('localizes known validation feedback and preserves unknown fallback', () => {
+  assert.equal(localizeInvoiceDraftValidationMessage('Enter an invoice number of 1 to 64 characters.', 'ar'), 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.');
   assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'ar'), 'اختَر عميلًا صحيحًا.');
   assert.equal(localizeInvoiceDraftValidationMessage('An invoice cannot contain more than 500 lines.', 'ar'), 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.');
   assert.equal(localizeInvoiceDraftValidationMessage('unknown', 'ar'), 'unknown');

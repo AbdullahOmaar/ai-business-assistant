@@ -62,7 +62,7 @@ class InvoiceLineInput(BaseModel):
 
 
 class InvoiceCreate(BaseModel):
-    invoice_number: str = Field(min_length=1, max_length=80)
+    invoice_number: str = Field(min_length=1, max_length=64)
     currency_code: str = Field(min_length=3, max_length=3)
     customer_id: UUID | None = None
     lines: list[InvoiceLineInput] = Field(min_length=1, max_length=500)
