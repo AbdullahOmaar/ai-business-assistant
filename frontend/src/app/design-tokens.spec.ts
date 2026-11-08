@@ -259,7 +259,7 @@ test('Phase 2 interaction foundation centralizes touch targets, form controls, a
 
   assert.ok(styles.includes(':root body .shell button:not(.nav-item):not(.mobile-more):not(.aba-quick-access)'));
   assert.match(componentSources[2], /min-height:104px/);
-  assert.match(componentSources[2], /border-radius:var\\(--aba-radius-card/);
+  assert.ok(componentSources[2].includes('border-radius:var(--aba-radius-card'));
   assert.ok(styles.includes('min-height: var(--aba-control-height)'));
   assert.ok(styles.includes(':root body .shell input:not([type="checkbox"])'));
   assert.ok(styles.includes(':root body .shell select'));

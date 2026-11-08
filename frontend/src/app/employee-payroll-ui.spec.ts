@@ -88,10 +88,11 @@ test('a successful payroll payment refreshes the workspace expense list and dash
   assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
   const catchStart = refresh.indexOf('} catch (error) {');
   const staleMetricsClear = refresh.indexOf('this.dashboard = null;', catchStart);
-  const refreshError = refresh.indexOf('this.error = this.message(error);', catchStart);
+  const storedHomeError = refresh.indexOf('this.homeDashboardError = this.message(error);', catchStart);
+  const refreshError = refresh.indexOf('this.error = this.homeDashboardError;', catchStart);
   assert.match(refresh, /if \(this\.business\?\.id === businessId\) \{/);
-  assert.ok(catchStart >= 0 && staleMetricsClear > catchStart && refreshError > staleMetricsClear,
-    'failed refresh must clear old Home metrics before showing the error');
+  assert.ok(catchStart >= 0 && staleMetricsClear > catchStart && storedHomeError > staleMetricsClear && refreshError > storedHomeError,
+    'failed refresh must clear old Home metrics, store the scoped error, then show the retry banner');
 });
 
 

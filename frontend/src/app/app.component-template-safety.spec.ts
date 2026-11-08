@@ -8,6 +8,8 @@ const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts'
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
+const auditLabelsSource = readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8');
+const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
 
 test('workspace shell imports every tenant guard helper used by its async views', () => {
   assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
@@ -83,16 +85,17 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
 test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /auditActionLabel\(event\.action\)/);
   assert.match(source, /auditTargetLabel\(event\.target_type\)/);
-  assert.match(source, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
-  assert.match(source, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
+  assert.match(auditLabelsSource, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
+  assert.match(auditLabelsSource, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
   assert.match(source, /value="invoice\.draft_updated"/);
   assert.match(source, /value="stock\.movement_recorded"/);
   assert.match(source, /value="purchase_order\.approved"/);
   assert.match(source, /value="sales_return\.approved"/);
   assert.match(source, /value="recurring_invoice_schedule\.created"/);
-  assert.match(source, /'supplier\.created': \{ ar: 'إضافة مورد'/);
+  assert.match(auditLabelsSource, /'supplier\.created': \{ ar: 'إضافة مورد'/);
   assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
+
 
 test('workspace header keeps business name, selector, and release time in separate responsive grid cells', () => {
   assert.match(source, /\.workspace-bar\{display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)/);
@@ -457,20 +460,18 @@ test('mobile More menu uses logical inline positioning for Arabic RTL and Englis
 });
 
 
-test('mobile workspace view retains the active page title when the desktop topbar is hidden', () => {
+test('mobile workspace view retains the active page title through the extracted header', () => {
   const desktopTopbar = source.indexOf('<header class="topbar">');
-  const mobileHeading = source.indexOf('<header class="mobile-page-heading"');
-  assert.ok(desktopTopbar >= 0 && mobileHeading > desktopTopbar);
-  assert.match(source, /<header class="mobile-page-heading" aria-live="polite" aria-atomic="true">[\s\S]*?<h1>\{\{ pageTitle \}\}<\/h1>/);
-  assert.match(source, /\.mobile-page-heading\{display:none\}/);
-  assert.match(source, /\.mobile-page-heading\{display:block/);
-  assert.match(source, /\.mobile-page-heading h1\{[^}]*overflow-wrap:anywhere/);
+  const mobileHeader = source.indexOf('<aba-mobile-app-header');
+  assert.ok(desktopTopbar >= 0 && mobileHeader > desktopTopbar);
+  assert.match(source, /<aba-mobile-app-header[\s\S]*?\[pageTitle\]="pageTitle"/);
+  assert.match(mobileHeaderSource, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
 });
 
 
-test('mobile module launcher uses two balanced columns when space permits', () => {
-  assert.match(source, /\.quick-grid\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,240px\),1fr\)\)\}/);
-  assert.match(source, /grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,165px\),1fr\)\)/);
+test('mobile module directory and Home shortcuts use adaptive balanced grids', () => {
+  assert.match(source, /\.module-directory-grid\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,190px\),1fr\)\)/);
+  assert.match(source, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 
@@ -1063,14 +1064,15 @@ test('shared shell uses logical inline positioning for Arabic RTL and English LT
   assert.match(source, /\.sidebar\{position:fixed;inset-block:0;inset-inline-end:0;/);
   assert.match(source, /\.main\{margin-inline-end:var\(--aba-layout-sidebar,245px\);/);
   assert.match(source, /\.nav-item\{[^}]*text-align:start;/);
-  assert.match(source, /\.hero-mark\{[^}]*margin-inline-start:4%;/);
+  assert.match(source, /\.home-shortcut-link\{[^}]*text-align:start;/);
   assert.match(source, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
   assert.match(source, /\.nav-item\.active\{[^}]*border-inline-start:3px solid/);
   assert.doesNotMatch(source, /\.shell\.english \.sidebar\{inset:0 0 0 auto\}/);
   assert.doesNotMatch(source, /\.shell\.english \.main\{margin-left:0;margin-right:/);
-  assert.doesNotMatch(source, /\.shell\.english \.hero-mark\{margin-left:/);
+  assert.doesNotMatch(source, /\.shell\.english \.home-shortcut-link\{text-align:left/);
   assert.doesNotMatch(source, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
 });
+
 
 test('RTL release-guide lists and mobile dock active state use logical layout', () => {
   assert.match(releaseGuideSource, /\.release-feature-group ul,\.release-version ul\{[^}]*padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0/);
@@ -1376,7 +1378,7 @@ test('Home dashboard uses the shared page-level error and retry banner without d
   const start = source.indexOf("@if (tab === 'overview')");
   const end = source.indexOf("@if (tab === 'notifications')", start);
   const overview = source.slice(start, end);
-  const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error"');
+  const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired');
   assert.ok(sharedError >= 0, 'the shared workspace error banner must remain available');
   assert.match(source.slice(sharedError, sharedError + 650), /\[actionLabel\].*Retry/);
   assert.match(overview, /kind="loading"[^>]*Loading business metrics/);
@@ -1395,7 +1397,7 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
   assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch, kind => this\.notificationKindLabel\(kind\)\)/);
+  assert.match(source, /filterNotifications\\(this\\.notifications, this\\.notificationSearch, kind => this\\.notificationKindLabel\\(kind\\), status => this\\.notificationStatusLabel\\(status\\)\\)/);
   const clearStart = source.indexOf('private clearWorkspaceData(): void');
   const clearEnd = source.indexOf('\n  }', clearStart);
   const clear = source.slice(clearStart, clearEnd);
@@ -1419,7 +1421,7 @@ test('payment and expense lists expose local search and distinguish no-match fro
   assert.match(source, /get filteredPayments\(\): Payment\[\]/);
   assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
   assert.match(source, /filterPayments\(this\.payments, this\.paymentSearch/);
-  assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch\)/);
+  assert.match(source, /filterExpenses\\(this\\.expenses, this\\.expenseSearch, category => this\\.expenseCategoryLabel\\(category\\)\\)/);
   assert.match(source, /No payments match this search/);
   assert.match(source, /No expenses match this search/);
   assert.match(source, /name="paymentSearch" type="search"/);

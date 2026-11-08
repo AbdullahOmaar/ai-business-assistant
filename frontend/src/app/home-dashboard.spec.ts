@@ -109,7 +109,7 @@ test('Home page identity and responsive metric hierarchy follow the UX handoff',
   assert.match(appSource, /overview: 'Overview'/);
   assert.match(appSource, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(appSource, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(appSource, /@media\(max-width:760px\)\{\.metric-grid\{grid-template-columns:minmax\(0,1fr\)\)/);
+  assert.ok(appSource.includes('@media(max-width:760px){.metric-grid{grid-template-columns:minmax(0,1fr)}}'));
   assert.match(appSource, /dashboard-period__details/);
 });
 
@@ -142,7 +142,7 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(shortcuts, /<button class="home-shortcut-link"/);
   assert.doesNotMatch(shortcuts, /aba-quick-access-card/,
     'quick shortcuts must remain compact links, not a duplicate module-card surface');
-  assert.match(appSource, /\.home-shortcut-list\{display:flex;flex-wrap:wrap/);
+  assert.match(appSource, /\\.home-shortcut-list\\{display:grid;grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
   assert.match(appSource, /\.home-shortcut-link\{[^}]*min-height:44px/);
   assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
   assert.match(appSource, /\.home-shortcut-link:focus-visible/);
@@ -232,11 +232,12 @@ test('failed payroll dashboard refresh clears stale Home metrics before exposing
   const method = appSource.slice(start, end);
   const catchStart = method.indexOf('} catch (error) {');
   const staleClear = method.indexOf('this.dashboard = null;', catchStart);
-  const retryError = method.indexOf('this.error = this.message(error);', catchStart);
+  const storedRetryError = method.indexOf('this.homeDashboardError = this.message(error);', catchStart);
+  const retryError = method.indexOf('this.error = this.homeDashboardError;', catchStart);
 
   assert.ok(start >= 0 && end > start, 'post-payroll refresh method must exist');
-  assert.ok(catchStart >= 0 && staleClear > catchStart && retryError > staleClear,
-    'failed refresh must clear old dashboard metrics before publishing the retryable error');
+  assert.ok(catchStart >= 0 && staleClear > catchStart && storedRetryError > staleClear && retryError > storedRetryError,
+    'failed refresh must clear old dashboard metrics, store the Home error, then expose the retryable banner');
   assert.match(method, /if \(this\.business\?\.id === businessId\) \{/);
 
   const successfulDashboard = method.indexOf('this.dashboard = dashboard;');

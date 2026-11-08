@@ -266,7 +266,7 @@ test('mobile chat exposes empty, loading, retry and response states and keeps it
   await page.getByRole('button', { name: /تسجيل الدخول|Sign in/ }).click();
 
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
-  await expect(page.locator('.quick-grid > aba-quick-access-card')).toHaveCount(5);
+  await expect(page.locator('.home-shortcut-list > .home-shortcut-link')).toHaveCount(5);
 
   const ownerModuleDirectory = page.locator('.module-directory-grid');
   const ownerModuleCount = await ownerModuleDirectory.locator('aba-quick-access-card').count();
