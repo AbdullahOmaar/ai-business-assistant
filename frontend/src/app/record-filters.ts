@@ -196,3 +196,24 @@ export function filterPayments<T extends PaymentSearchItem>(
       || allocationLabels.some(value => normalized(value) === q);
   });
 }
+
+/** Merge an offset-paginated record page without duplicating IDs across overlapping pages. */
+export function mergeRecordPage<T extends { id: string }>(
+  current: readonly T[],
+  page: readonly T[],
+  offset: number,
+  pageSize: number,
+): { records: T[]; nextOffset: number; hasMore: boolean } {
+  const seen = new Set(current.map(record => record.id));
+  const records = [...current];
+  for (const record of page) {
+    if (seen.has(record.id)) continue;
+    seen.add(record.id);
+    records.push(record);
+  }
+  return {
+    records,
+    nextOffset: offset + page.length,
+    hasMore: page.length === pageSize,
+  };
+}
