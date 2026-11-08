@@ -111,9 +111,9 @@ test('mobile header interactive controls meet the 44px touch-target baseline', (
 
 
 test('mobile app header stays sticky without covering install controls', () => {
-  assert.match(styles, /:host\\s*\\{[^}]*position:\\s*sticky/s);
-  assert.match(styles, /:host-context\\(\\.shell\\.install-cta-visible\\)\\s*\\{[^}]*top:\\s*calc\\(76px/);
-  assert.match(styles, /:host-context\\(\\.shell\\.install-help-open\\)\\s*\\{[^}]*top:\\s*calc\\(164px/);
+  assert.match(styles, /:host\s*\{[^}]*position:\s*sticky/s);
+  assert.match(styles, /:host-context\(\.shell\.install-cta-visible\)\s*\{[^}]*top:\s*calc\(76px/);
+  assert.match(styles, /:host-context\(\.shell\.install-help-open\)\s*\{[^}]*top:\s*calc\(164px/);
 });
 
 test('mobile page title changes are announced politely without moving focus', () => {
