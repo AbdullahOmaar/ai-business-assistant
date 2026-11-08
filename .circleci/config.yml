@@ -101,7 +101,6 @@ jobs:
           template: basic_fail_1
           branch_pattern: main
           invert_match: true
-          thread_id: << pipeline.id >>
           ignore_errors: true
   frontend-unit-tests:
     docker:
@@ -131,7 +130,6 @@ jobs:
           template: basic_fail_1
           branch_pattern: main
           invert_match: true
-          thread_id: << pipeline.id >>
           ignore_errors: true
   frontend-production-build:
     docker:
@@ -167,7 +165,6 @@ jobs:
           template: basic_fail_1
           branch_pattern: main
           invert_match: true
-          thread_id: << pipeline.id >>
           ignore_errors: true
   frontend-dependency-audit:
     docker:
@@ -200,7 +197,6 @@ jobs:
           template: basic_fail_1
           branch_pattern: main
           invert_match: true
-          thread_id: << pipeline.id >>
           ignore_errors: true
   backend-container:
     docker:
@@ -230,7 +226,6 @@ jobs:
           template: basic_fail_1
           branch_pattern: main
           invert_match: true
-          thread_id: << pipeline.id >>
           ignore_errors: true
   dependency-audit-python:
     docker:
@@ -245,14 +240,6 @@ jobs:
             python -m pip install --upgrade pip pip-audit
             pip-audit -r backend/requirements.txt
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          thread_id: << pipeline.id >>
-          ignore_errors: true
   dependency-audit-frontend:
     docker:
       - image: cimg/node:22.12
@@ -269,14 +256,6 @@ jobs:
             npm audit --audit-level=high
 
 
-      - slack/notify:
-          channel: C0CFWGM87HC
-          event: fail
-          template: basic_fail_1
-          branch_pattern: main
-          invert_match: true
-          thread_id: << pipeline.id >>
-          ignore_errors: true
   frontend-browser-smoke:
     docker:
       - image: mcr.microsoft.com/playwright:v1.55.0-noble
@@ -305,7 +284,6 @@ jobs:
           template: basic_fail_1
           branch_pattern: main
           invert_match: true
-          thread_id: << pipeline.id >>
           ignore_errors: true
   all-checks-passed:
     type: no-op
@@ -343,7 +321,5 @@ workflows:
               only:
                 - main
     jobs:
-      - dependency-audit-python:
-          context: slack-secrets
-      - dependency-audit-frontend:
-          context: slack-secrets
+      - dependency-audit-python
+      - dependency-audit-frontend
