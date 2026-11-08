@@ -376,6 +376,22 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.4.1',
+    apiVersion: '1.3.5',
+    titleAr: 'تحسين شريط التطبيق على الموبايل',
+    titleEn: 'Mobile App Bar refinement',
+    changesAr: [
+      'إعادة ترتيب شريط التطبيق ليعرض عنوان الصفحة والإجراءات الأساسية في صف مضغوط.',
+      'فصل مساحة العمل واختيارها في صف مستقل مع دعم التفاف الأسماء الطويلة.',
+      'الحفاظ على التنقل والإجراءات الحالية مع دعم العربية والإنجليزية وأهداف لمس لا تقل عن 44px.',
+    ],
+    changesEn: [
+      'Reorganizes the mobile App Bar into a compact page-first row with primary actions.',
+      'Moves workspace identity and switching into a separate row with long-name wrapping.',
+      'Preserves existing navigation and account actions with RTL/LTR support and 44px touch targets.',
+    ],
+  },
+  {
     version: '1.4.0',
     apiVersion: '1.3.5',
     titleAr: 'تحسين تجربة مساحة العمل والموبايل',
