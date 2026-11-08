@@ -32,7 +32,9 @@ test('payment retries preserve the idempotency key after an uncertain result', (
   assert.match(handler, /if \(error instanceof ApiRequestError && error\.definitiveNoWrite\)/);
   assert.match(handler, /this\.paymentRetryVault\.delete\(authUid, businessId\)/);
   assert.match(handler, /finally \{\s*if \(isCurrent\(\)\) this\.paymentLoading = false;/);
-  assert.match(source, /\[disabled\]="paymentRetryPending \|\| paymentLoading"/);
+  assert.match(source, /name="paymentAmount"[^>]*\[disabled\]="paymentRetryPending"/);
+  assert.match(source, /name="paymentCustomer"[^>]*\[disabled\]="paymentRetryPending"/);
+  assert.match(source, /<button class="primary" type="submit" \[disabled\]="paymentLoading"/);
 });
 
 test('payment API failures render a visible accessible alert in the payment panel', () => {
