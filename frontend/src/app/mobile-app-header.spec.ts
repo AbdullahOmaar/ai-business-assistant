@@ -72,7 +72,7 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.match(appSource, /install-cta-visible/);
   assert.ok(appSource.includes('.shell.install-help-open .main'));
   assert.match(source, /aria-live="polite" aria-atomic="true"/);
-  assert.match(styles, /:host-context\\(\\.shell\\.install-cta-visible\\)\\s*\\{[^}]*top:\\s*calc\\(76px \\+ env\\(safe-area-inset-top/);
+  assert.match(styles, /:host-context\(\.shell\.install-cta-visible\)\s*\{[^}]*top:\s*calc\(76px \+ env\(safe-area-inset-top/);
   assert.match(styles, /inset-inline-end/);
   assert.match(styles, /min-height: 44px/);
   assert.match(appSource, /\.workspace-bar\{display:none!important\}/);
