@@ -21,7 +21,7 @@ import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.compon
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
-import { invoiceDraftLinesFromExisting } from './invoice-draft';
+import { findInvoiceDraftRecoveryMatch, invoiceDraftLinesFromExisting } from './invoice-draft';
 import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
 import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
@@ -3274,10 +3274,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const invoices = await this.api.invoices(businessId);
       if (!isCurrent()) return;
       this.invoices = invoices;
-      const match = invoices.find(invoice =>
-        invoice.invoice_number === pending.invoiceNumber &&
-        invoice.customer_id === pending.customerId
-      );
+      const match = findInvoiceDraftRecoveryMatch(invoices, pending);
       if (!match) {
         this.invoiceMessageKind = 'warning';
         this.invoiceMessage = this.t(

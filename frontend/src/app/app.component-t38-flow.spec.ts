@@ -76,3 +76,9 @@ test('issue and void mutations are Owner-only and auth/workspace fenced', () => 
   assert.match(voidFlow, /this\.business\.role !== 'owner'/);
   assert.match(voidFlow, /this\.isCurrentTenantOperation\(this\.invoiceMutationGuard/);
 });
+
+
+test('uncertain invoice edits recover by immutable invoice ID instead of the edited invoice number', () => {
+  const verify = methodBetween('async refreshInvoiceDraftStatus()', 'private escapePrintHtml');
+  assert.match(verify, /findInvoiceDraftRecoveryMatch\(invoices, pending\)/);
+});

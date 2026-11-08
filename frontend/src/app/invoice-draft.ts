@@ -202,3 +202,23 @@ export class InvoiceDraftOutcomeVault {
     this.records.delete(this.key(authUid, businessId));
   }
 }
+
+
+/** Resolve an uncertain invoice write without relying on a mutable invoice number for edits. */
+export function findInvoiceDraftRecoveryMatch<T extends {
+  id: string;
+  invoice_number: string;
+  customer_id: string | null;
+}>(
+  invoices: readonly T[],
+  pending: Pick<InvoiceDraftOutcomeSnapshot, 'editingInvoiceId' | 'invoiceNumber' | 'customerId'>,
+): T | null {
+  if (pending.editingInvoiceId) {
+    return invoices.find(invoice =>
+      invoice.id === pending.editingInvoiceId && invoice.customer_id === pending.customerId
+    ) ?? null;
+  }
+  return invoices.find(invoice =>
+    invoice.invoice_number === pending.invoiceNumber && invoice.customer_id === pending.customerId
+  ) ?? null;
+}

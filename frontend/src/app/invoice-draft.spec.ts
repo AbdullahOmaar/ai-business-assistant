@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   InvoiceDraftOutcomeVault,
+  findInvoiceDraftRecoveryMatch,
   invoiceDraftLinesFromExisting,
   localizeInvoiceDraftValidationMessage,
   moveInvoiceDraftLine,
@@ -166,5 +167,30 @@ test('keeps invoice line descriptions within the persisted 300-character column 
   assert.match(
     validateInvoiceDraft(validInput([{ ...manualLine, description: description301 }]), products, customers) ?? '',
     /300 characters/i,
+  );
+});
+
+
+test('recovers an uncertain draft edit by stable invoice ID even when its number changed', () => {
+  const invoices = [
+    { id: 'invoice-a', invoice_number: 'INV-OLD', customer_id: 'c1' },
+    { id: 'invoice-b', invoice_number: 'INV-NEW', customer_id: 'c1' },
+  ];
+  const pending = { editingInvoiceId: 'invoice-a', invoiceNumber: 'INV-NEW', customerId: 'c1' };
+  assert.equal(findInvoiceDraftRecoveryMatch(invoices, pending)?.id, 'invoice-a');
+  assert.equal(
+    findInvoiceDraftRecoveryMatch(invoices, { ...pending, customerId: 'foreign-customer' }),
+    null,
+  );
+});
+
+test('recovers an uncertain new draft by invoice number and customer', () => {
+  const invoices = [
+    { id: 'invoice-a', invoice_number: 'INV-100', customer_id: 'c1' },
+    { id: 'invoice-b', invoice_number: 'INV-100', customer_id: 'c2' },
+  ];
+  assert.equal(
+    findInvoiceDraftRecoveryMatch(invoices, { editingInvoiceId: null, invoiceNumber: 'INV-100', customerId: 'c1' })?.id,
+    'invoice-a',
   );
 });
