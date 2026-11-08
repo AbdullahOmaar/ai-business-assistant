@@ -267,6 +267,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
   await expect(page.locator('.home-shortcut-list > .home-shortcut-link')).toHaveCount(5);
+  await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
 
   const ownerModuleDirectory = page.locator('.module-directory-grid');
   const ownerModuleCount = await ownerModuleDirectory.locator('aba-quick-access-card').count();

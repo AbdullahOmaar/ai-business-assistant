@@ -3234,3 +3234,5 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Scope:** frontend shell + browser/source regression tests + this task ledger only. No API/backend, database/schema/migration, financial semantics, permissions, production data, or Vercel settings changed.
 - **Validation:** exact-head CircleCI and Preview verification will run on the resulting commit; prior checks are stale for the new SHA. Production merge/deploy not performed.
 - **Provider policy:** CircleCI is the sole required CI provider. SemaphoreCI's historical failure is non-authoritative and is not a release gate.
+
+- **Browser-smoke timing follow-up:** exact-head job #14336 showed the new responsive Home assertion ran before the asynchronous dashboard payload had rendered its four KPI cards. The E2E now waits for all four cards before measuring the 320/360/390/412px grids; this is test synchronization, not a data or financial-behavior change.
