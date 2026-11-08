@@ -16,7 +16,13 @@ const PREVIEW_ENV_KEYS = [
   'ABA_PREVIEW_FIREBASE_APP_ID',
 ];
 
-const PRODUCTION_API_HOST = 'ai-business-assistant-api.vercel.app';
+const PRODUCTION_API_HOSTS = new Set([
+  'ai-business-assistant-api.vercel.app',
+  'ai-business-assistant-api-thepresidentabdo-9110s-projects.vercel.app',
+]);
+// Block this product's generated Vercel deployment URLs too. A deployment URL
+// remains a route to its Production deployment even when the custom alias differs.
+const PRODUCTION_VERCEL_PRODUCT_HOST = /^ai-business-assistant-(?:api|[a-z0-9]{9})-thepresidentabdo-9110s-projects\\.vercel\\.app$/;
 const PRODUCTION_FIREBASE_PROJECT = 'ai-business-assistant-97f37';
 const PRODUCTION_FIREBASE_AUTH_DOMAIN = 'ai-business-assistant-97f37.firebaseapp.com';
 
@@ -44,7 +50,8 @@ export function createPreviewRuntimeConfig(env) {
   // DNS treats a trailing dot as the absolute form of the same hostname.
   // Normalize it before comparing so Production cannot bypass the Preview guard.
   const normalizedApiHostname = apiUrl.hostname.toLowerCase().replace(/\.$/, '');
-  if (apiUrl.protocol !== 'https:' || normalizedApiHostname === PRODUCTION_API_HOST) {
+  if (apiUrl.protocol !== 'https:' || PRODUCTION_API_HOSTS.has(normalizedApiHostname) ||
+      PRODUCTION_VERCEL_PRODUCT_HOST.test(normalizedApiHostname)) {
     throw new Error('Preview API base URL must target an isolated non-Production HTTPS service.');
   }
   if (values.ABA_PREVIEW_FIREBASE_PROJECT_ID === PRODUCTION_FIREBASE_PROJECT ||
