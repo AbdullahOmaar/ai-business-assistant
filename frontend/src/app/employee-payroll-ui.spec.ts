@@ -74,25 +74,28 @@ test('in-app feature catalogue documents employee/payroll permissions and one-ti
 });
 
 
-test('a successful payroll payment refreshes the workspace expense list and dashboard', () => {
+test('a successful payroll payment refreshes workspace data only for the same authenticated OWNER context', () => {
   assert.match(component, /@Output\(\) payrollPaid = new EventEmitter<void>\(\)/);
   const payStart = component.indexOf('async payPayroll(');
   assert.ok(payStart >= 0);
   assert.match(component.slice(payStart), /this\.payrollPaid\.emit\(\)/);
   assert.match(app, /\(payrollPaid\)="refreshAfterPayrollPayment\(\)"/);
+
   const refreshStart = app.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  assert.ok(refreshStart >= 0);
-  const refresh = app.slice(refreshStart, refreshStart + 1200);
-  assert.match(refresh, /this\.api\.expenses\(businessId\)/);
-  assert.match(refresh, /this\.api\.dashboard\(businessId\)/);
-  assert.match(refresh, /if \(this\.business\?\.id !== businessId\) return/);
-  const catchStart = refresh.indexOf('} catch (error) {');
-  const staleMetricsClear = refresh.indexOf('this.dashboard = null;', catchStart);
-  const storedHomeError = refresh.indexOf('this.homeDashboardError = this.message(error);', catchStart);
-  const refreshError = refresh.indexOf('this.error = this.homeDashboardError;', catchStart);
-  assert.match(refresh, /if \(this\.business\?\.id === businessId\) \{/);
-  assert.ok(catchStart >= 0 && staleMetricsClear > catchStart && storedHomeError > staleMetricsClear && refreshError > storedHomeError,
-    'failed refresh must clear old Home metrics, store the scoped error, then show the retry banner');
+  const refreshEnd = app.indexOf('\n  exportReceivablesAgingCsv()', refreshStart);
+  assert.ok(refreshStart >= 0 && refreshEnd > refreshStart);
+  const refresh = app.slice(refreshStart, refreshEnd);
+  assert.match(refresh, /requestContext\.role !== 'owner'/);
+  assert.match(refresh, /runTenantScopedRequest\(\s*this\.payrollRefreshGuard/);
+  assert.match(refresh, /this\.api\.expenses\(requestContext\.workspaceId\)/);
+  assert.match(refresh, /this\.api\.dashboard\(requestContext\.workspaceId\)/);
+  assert.match(refresh, /this\.expenses = expenses;/);
+  assert.match(refresh, /this\.dashboard = dashboard;/);
+  assert.match(refresh, /onError: error =>/);
+  assert.match(refresh, /this\.dashboard = null;/);
+  assert.match(refresh, /this\.homeDashboardError = this\.message\(error\);/);
+  assert.match(refresh, /this\.error = this\.homeDashboardError;/);
+  assert.match(refresh, /onFinally: \(\) => undefined/);
 });
 
 
