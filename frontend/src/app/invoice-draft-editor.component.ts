@@ -216,8 +216,8 @@ import type {
     .line-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
     .line-number { color: var(--aba-color-text-primary, #172033); font-size: 12px; font-weight: 600; }
     .line-kind-picker { display: grid; gap: 4px; justify-self: start; width: min(100%, 210px); font-weight: 400; }
-    .line-kind-select { min-height: 36px !important; height: 36px; max-width: 210px; padding: 7px 10px !important; border-radius: 9px !important; background: var(--aba-color-surface, #fff) !important; color: var(--aba-color-text-secondary, #475569) !important; font-size: 12px !important; font-weight: 400 !important; }
-    .field-hint { color: var(--aba-color-text-tertiary, #64748b); font-size: 10px; font-weight: 500; line-height: 1.2; }
+    .line-kind-select { min-height: 34px !important; height: 34px; max-width: 210px; padding: 7px 10px !important; border-radius: 9px !important; background: var(--aba-color-surface, #fff) !important; color: var(--aba-color-text-secondary, #475569) !important; font-size: 12px !important; font-weight: 400 !important; }
+    .field-hint { color: var(--aba-color-text-tertiary, #64748b); font-size: 11px; font-weight: 500; line-height: 1.2; }
     .line-fields { display: grid; gap: 10px; min-width: 0; }
     .line-fields.product-line, .line-fields.service-line { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1.15fr) minmax(90px, .55fr); align-items: end; }
     .product-picker, .service-description-field { gap: 5px; }
