@@ -1572,11 +1572,12 @@ export class AppComponent implements OnInit, OnDestroy {
       rows = this.filteredProducts.map(item => [item.name, item.sku || '', item.unit_price, this.business?.currency_code || '', item.is_stock_tracked ? 'yes' : 'no']);
     } else if (this.tab === 'invoices') {
       filename = 'invoices.csv';
-      headers = ['customer_name', 'invoice_number', 'issue_date', 'status', 'total', 'currency', 'remaining_balance'];
+      headers = ['customer_name', 'invoice_number', 'issue_date', 'created_at', 'status', 'total', 'currency', 'remaining_balance'];
       rows = this.filteredInvoices.map(item => [
         this.customerNameForInvoice(item.customer_id),
         item.invoice_number,
-        item.issue_date || item.created_at || '',
+        item.issue_date || '',
+        item.created_at || '',
         item.status,
         item.total,
         item.currency_code,
