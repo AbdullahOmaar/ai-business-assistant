@@ -642,7 +642,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else if (!filteredInvoices.length) {
                   <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('لا توجد فواتير مطابقة للبحث والفلاتر.', 'No invoices match your search and filters.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.')" />
                 } @else {
-                  <div class="invoice-table-wrap">
+                  <div class="invoice-table-wrap" tabindex="0" [attr.aria-label]="t('جدول الفواتير، استخدم الأسهم أو التمرير الأفقي عند الحاجة', 'Invoice table; use arrow keys or horizontal scrolling when needed')">
                     <table class="invoice-table">
                       <thead><tr>
                         <th scope="col">{{ t('العميل', 'Customer') }}</th><th scope="col">{{ t('الفاتورة / التاريخ', 'Invoice / date') }}</th>
@@ -655,7 +655,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             <td class="invoice-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong></td>
                             <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ (invoice.issue_date || invoice.created_at) ? ((invoice.issue_date || invoice.created_at) | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable') }}</small></td>
                             <td class="invoice-money"><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></td>
-                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.status === 'issued' ? (invoice.outstanding_amount ?? '—') + ' ' + invoice.currency_code : '—' }}</bdi></td>
+                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.status === 'issued' && invoice.outstanding_amount !== undefined ? invoice.outstanding_amount + ' ' + invoice.currency_code : '—' }}</bdi></td>
                             <td><span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span></td>
                             <td><div class="invoice-actions">
                               @if (invoice.status === 'draft') {
@@ -686,7 +686,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         </header>
                         <div class="invoice-card-financials">
                           <div><small>{{ t('قيمة الفاتورة', 'Invoice amount') }}</small><strong><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></strong></div>
-                          <div><small>{{ t('المتبقي', 'Remaining balance') }}</small><strong><bdi dir="ltr">{{ invoice.status === 'issued' ? (invoice.outstanding_amount ?? '—') + ' ' + invoice.currency_code : '—' }}</bdi></strong></div>
+                          <div><small>{{ t('المتبقي', 'Remaining balance') }}</small><strong><bdi dir="ltr">{{ invoice.status === 'issued' && invoice.outstanding_amount !== undefined ? invoice.outstanding_amount + ' ' + invoice.currency_code : '—' }}</bdi></strong></div>
                         </div>
                         <div class="invoice-actions">
                           @if (invoice.status === 'draft') {
@@ -1211,6 +1211,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .invoice-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:auto}
     .invoice-table th,.invoice-table td{padding:12px 13px;text-align:start;vertical-align:middle;border-bottom:1px solid var(--aba-color-border-subtle,#e2e8f0);overflow-wrap:anywhere}
     .invoice-table th{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
+    .invoice-table th:nth-child(3),.invoice-table th:nth-child(4){text-align:end}
+    .invoice-table-wrap:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
     .invoice-table tbody tr:last-child td{border-bottom:0}
     .invoice-table tbody tr:hover{background:var(--aba-color-surface-subtle,#f8fafc)}
     .invoice-customer{min-width:170px}
