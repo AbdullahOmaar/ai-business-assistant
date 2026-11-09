@@ -38,9 +38,10 @@ json_credentials=$(redact_text '{"password":"generated-password-value","access_t
 [[ "$json_credentials" != *'generated-password-value'* ]]
 [[ "$json_credentials" != *'generated-access-value'* ]]
 [[ "$json_credentials" != *'value with spaces'* ]]
-yaml_credentials=$(redact_text $"'password': 'quoted secret value'\npassword=\"quoted value with spaces\"")
+yaml_credentials=$(redact_text "'password': 'quoted secret value'")
 [[ "$yaml_credentials" != *'quoted secret value'* ]]
-[[ "$yaml_credentials" != *'quoted value with spaces'* ]]
+quoted_value=$(redact_text 'password="quoted value with spaces"')
+[[ "$quoted_value" != *'quoted value with spaces'* ]]
 jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
 jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
 jwt_signature='SyntheticSignatureForTestsValue'
