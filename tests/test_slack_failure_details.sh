@@ -20,11 +20,12 @@ export SLACK_ACCESS_TOKEN='xoxb-fake-slack-token-1234567890'
 export CIRCLE_API_TOKEN='circleci-fake-api-token-1234567890'
 export DATABASE_URL='postgresql://ci_user:ci_password@localhost/test_db'
 export SHORT_TOKEN='abc'
-redacted=$(redact_text 'Authorization: Bearer abcdef123456\nAuthorization: Basic dXNlcjpwYXNz password=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db postgresql+psycopg://dbuser:dbpass@localhost/db xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abc')
+redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basic dXNlcjpwYXNz\npassword=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db postgresql+psycopg://dbuser:dbpass@localhost/db AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abc')
 [[ "$redacted" != *'abcdef123456'* ]]
 [[ "$redacted" != *'hunter2'* ]]
 [[ "$redacted" != *'dbpass'* ]]
 [[ "$redacted" != *'dXNlcjpwYXNz'* ]]
+[[ "$redacted" != *'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'* ]]
 [[ "$redacted" != *'Authorization: Basic'* ]]
 [[ "$redacted" != *'ci_password'* ]]
 [[ "$redacted" != *'xoxb-fake-slack-token-1234567890'* ]]
