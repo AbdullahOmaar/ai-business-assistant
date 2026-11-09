@@ -633,6 +633,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
                     </select>
                   </label>
+                  @if (customersHasMore) {
+                    <button class="secondary invoice-load-more-customers" type="button" (click)="loadMoreInvoiceCustomers()" [disabled]="customersLoadingMore">
+                      {{ customersLoadingMore ? t('جارٍ تحميل العملاء…', 'Loading customers…') : t('تحميل 100 عميل إضافي للبحث', 'Load 100 more customers to search') }}
+                    </button>
+                  }
                   @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button> }
                 </div>
                 @if (loading && !invoices.length) {
@@ -1205,13 +1210,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   .module-directory-grid{gap:7px}
 }
     /* Sales invoice list: dense desktop table, purpose-built mobile cards, and consistent actions. */
-    .invoice-controls{display:grid;grid-template-columns:minmax(240px,1fr) minmax(130px,170px) minmax(170px,230px) auto;align-items:end;gap:9px;margin:12px 0}
+    .invoice-controls{display:grid;grid-template-columns:minmax(240px,1fr) minmax(130px,170px) minmax(170px,230px) auto auto;align-items:end;gap:9px;margin:12px 0}
     .invoice-search{position:relative;display:block;min-width:0}
     .invoice-search input{width:100%;min-height:42px;padding-inline-start:40px}
     .invoice-search-icon{position:absolute;inset-inline-start:12px;top:50%;width:18px;height:18px;transform:translateY(-50%);color:var(--aba-color-text-secondary,#64748b);pointer-events:none}
     .invoice-filter{display:grid;gap:5px;min-width:0;color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:700}
     .invoice-filter select{width:100%;min-width:0}
-    .invoice-export{min-height:40px;white-space:nowrap;padding:8px 11px}
+    .invoice-export,.invoice-load-more-customers{min-height:40px;white-space:nowrap;padding:8px 11px}
     .invoice-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}
     .invoice-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:auto}
     .invoice-table caption{padding:10px 13px;text-align:start;color:var(--aba-color-text-secondary,#64748b);font-size:11px;font-weight:700}
@@ -1238,11 +1243,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .invoice-list-state{padding:18px;border:1px dashed var(--aba-color-border,#d0d5dd);border-radius:12px;color:var(--aba-color-text-secondary,#64748b);text-align:center}
     .invoice-discount-field{color:#b42318!important}
     .invoice-discount-field input{border-color:#fda29b;color:#b42318}
-    @media(max-width:1050px){.invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}.invoice-export{grid-column:1/-1;justify-self:end}}
+    @media(max-width:1050px){.invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}.invoice-export,.invoice-load-more-customers{grid-column:1/-1;justify-self:end}}
     @media(max-width:760px){
       .invoice-controls{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:8px}
-      .invoice-controls label,.invoice-controls select,.invoice-search input,.invoice-export{width:100%;max-width:none}
-      .invoice-export{grid-column:auto;justify-self:stretch}
+      .invoice-controls label,.invoice-controls select,.invoice-search input,.invoice-export,.invoice-load-more-customers{width:100%;max-width:none}
+      .invoice-export,.invoice-load-more-customers{grid-column:auto;justify-self:stretch}
       .invoice-table-wrap{display:none}
       .invoice-cards{display:grid;gap:10px;margin-top:12px}
       .invoice-card{display:grid;gap:12px;min-width:0;padding:13px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:13px;background:var(--aba-color-surface,#fff)}

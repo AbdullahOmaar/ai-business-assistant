@@ -108,6 +108,14 @@ test('workspace header keeps business name, selector, and release time in separa
   assert.match(source, /\.workspace-release-meta-inline \.version-pill\{max-width:100%;white-space:normal;overflow-wrap:anywhere\}/);
 });
 
+test('invoice customer filter can load additional customer pages for name search', () => {
+  assert.match(source, /@if \(customersHasMore\) \{\s*<button class="secondary invoice-load-more-customers" type="button" \(click\)="loadMoreInvoiceCustomers\(\)" \[disabled\]="customersLoadingMore"/);
+  assert.match(source, /Load 100 more customers to search/);
+  assert.match(source, /Loading customers/);
+  assert.match(source, /\.invoice-export,\.invoice-load-more-customers\{grid-column:1\/-1;justify-self:end\}/);
+  assert.match(source, /\.invoice-export,\.invoice-load-more-customers\{grid-column:auto;justify-self:stretch\}/);
+});
+
 test('invoice amounts use consistent grouped decimal formatting in the list and server summary', () => {
   assert.match(source, /invoice\.total \| number:'1\.2-2'/);
   assert.match(source, /invoice\.outstanding_amount \| number:'1\.2-2'/);
