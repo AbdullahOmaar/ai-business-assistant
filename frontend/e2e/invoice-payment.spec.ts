@@ -626,7 +626,13 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   const editor = page.locator('aba-invoice-draft-editor');
   await editor.locator('input[name="invoiceNumber"]').fill('T38-E2E-001');
   await editor.locator('select[name="customerId"]').selectOption('customer-a');
-  await editor.locator('select[name^="product-"]').first().selectOption('product-a');
+  let productSelect = editor.locator('select[name^="product-"]');
+  if (await productSelect.count() === 0) {
+    await editor.getByRole('button', { name: '+ Product', exact: true }).click();
+    productSelect = editor.locator('select[name^="product-"]');
+  }
+  await expect(productSelect.first()).toBeVisible();
+  await productSelect.first().selectOption('product-a');
   await editor.locator('input[name^="quantity-"]').first().fill('2');
   await expect(editor.locator('.server-summary')).toHaveCount(0);
 
@@ -702,6 +708,9 @@ test('late invoice detail is discarded and its print window closes after a works
 
   await page.locator('.workspace-bar select').selectOption('business-b');
   await expect(page.locator('#workspace-current-name')).toHaveText('Beta Retail');
+  await expect(
+    page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-B' })
+  ).toBeVisible({ timeout: 20_000 });
   const customerFilter = page.locator('select[name="invoiceFilterCustomer"]');
   await expect(customerFilter).toBeVisible();
   await expect(customerFilter.locator('option[value="customer-b"]')).toHaveCount(1);
@@ -718,14 +727,31 @@ test('late invoice detail is discarded and its print window closes after a works
 test('payment controls stay locked while pending and retry preserves the exact payload and idempotency key', async ({ page }) => {
   const harness = await setupOwner(page, { deferFirstPayment: true });
   await page.getByRole('button', { name: 'Payments', exact: true }).click();
-  await expect(page.locator('form.payment-form')).toBeVisible();
+  const paymentForm = page.locator('form.payment-form');
+  await expect(paymentForm).toBeVisible();
 
   await page.getByLabel('Payment amount').fill('100.00');
   await page.getByLabel('Payment customer').selectOption('customer-a');
   await page.getByLabel('Payment method').selectOption('cash');
   await page.getByLabel('Invoice to allocate payment to').selectOption('invoice-issued-a');
   await page.getByLabel('Amount to allocate').fill('100.00');
-  await page.getByRole('button', { name: 'Record payment' }).click();
+  const invalidControls = await paymentForm.locator('input, select').evaluateAll(elements =>
+    elements
+      .filter(element => !(element as HTMLInputElement | HTMLSelectElement).checkValidity())
+      .map(element => {
+        const control = element as HTMLInputElement | HTMLSelectElement;
+        return {
+          name: control.name,
+          value: control.value,
+          validationMessage: control.validationMessage,
+        };
+      })
+  );
+  expect(invalidControls, 'Payment form controls must be valid before submission').toEqual([]);
+  await page.getByRole('button', { name: 'Record payment', exact: true }).click();
+  await expect.poll(
+    () => harness.apiRequests.filter(item => item.method === 'POST').map(item => item.path)
+  ).toEqual(['/api/v1/businesses/business-a/payments']);
   await harness.paymentStarted;
 
   await expect(page.getByLabel('Payment amount')).toBeDisabled();
