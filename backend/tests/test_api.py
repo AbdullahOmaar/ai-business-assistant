@@ -1788,13 +1788,17 @@ def test_invoice_number_uniqueness_is_business_scoped_and_conflicts_roll_back():
                 session.scalar(select(func.count()).select_from(Invoice).where(
                     Invoice.business_id == business_id
                 )),
-                session.scalar(select(func.count()).select_from(InvoiceLine).where(
-                    Invoice.business_id == business_id
-                )),
                 session.scalar(select(func.count()).select_from(AuditEvent).where(
                     AuditEvent.business_id == business_id
                 )),
             )
+            draft_lines_before = [
+                (line.description, line.quantity, line.unit_price, line.line_total)
+                for line in session.scalars(select(InvoiceLine).where(
+                    InvoiceLine.invoice_id == draft_id,
+                    InvoiceLine.business_id == business_id,
+                ).order_by(InvoiceLine.id)).all()
+            ]
 
         conflicting_edit = client.patch(
             f"{base}/{draft_id}",
@@ -1810,25 +1814,26 @@ def test_invoice_number_uniqueness_is_business_scoped_and_conflicts_roll_back():
                 session.scalar(select(func.count()).select_from(Invoice).where(
                     Invoice.business_id == business_id
                 )),
-                session.scalar(select(func.count()).select_from(InvoiceLine).where(
-                    InvoiceLine.business_id == business_id
-                )),
                 session.scalar(select(func.count()).select_from(AuditEvent).where(
                     AuditEvent.business_id == business_id
                 )),
             )
             saved_draft = session.get(Invoice, draft_id)
-            saved_line = session.scalar(select(InvoiceLine).where(
-                InvoiceLine.invoice_id == draft_id,
-                InvoiceLine.business_id == business_id,
-            ))
+            draft_lines_after = [
+                (line.description, line.quantity, line.unit_price, line.line_total)
+                for line in session.scalars(select(InvoiceLine).where(
+                    InvoiceLine.invoice_id == draft_id,
+                    InvoiceLine.business_id == business_id,
+                ).order_by(InvoiceLine.id)).all()
+            ]
             assert after_conflicting_edit == before_conflicting_edit
             assert saved_draft is not None
             assert saved_draft.invoice_number == "RET-INV-2"
             assert saved_draft.total == Decimal("14.00")
-            assert saved_line is not None
-            assert saved_line.description == "Original draft line"
-            assert saved_line.quantity == Decimal("2.000")
+            assert draft_lines_after == draft_lines_before
+            assert draft_lines_after == [
+                ("Original draft line", Decimal("2.000"), Decimal("7.00"), Decimal("14.00"))
+            ]
 
         with Session(engine) as session:
             other_business = Business(name="Other invoice numbering tenant", currency_code="EGP")
