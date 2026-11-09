@@ -74,23 +74,21 @@ import type {
           <article class="line-card">
             <div class="line-top">
               <strong>{{ t('بند', 'Line') }} {{ index + 1 }}</strong>
+              <label class="line-kind-picker">
+                <select class="line-kind-select" style="min-height:34px;width:auto;padding-inline:8px;font-size:11px;" [name]="'kind-' + line.id" [(ngModel)]="line.kind" (ngModelChange)="changeKind(line, $event)" [disabled]="locked" [attr.aria-label]="t('نوع البند', 'Line type')">
+                  <option value="product">{{ t('منتج من الكتالوج', 'Catalog product') }}</option>
+                  <option value="manual">{{ t('خدمة / بند يدوي', 'Service / manual line') }}</option>
+                </select>
+              </label>
               <div class="line-actions">
                 <button type="button" class="icon-button" (click)="moveLine(index, -1)" [disabled]="locked || index === 0" [attr.aria-label]="t('تحريك لأعلى', 'Move up')">↑</button>
                 <button type="button" class="icon-button" (click)="moveLine(index, 1)" [disabled]="locked || index === lines.length - 1" [attr.aria-label]="t('تحريك لأسفل', 'Move down')">↓</button>
                 <button type="button" class="icon-button danger" (click)="removeLine(index)" [disabled]="locked || lines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">×</button>
               </div>
             </div>
-            <label>
-              {{ t('نوع البند', 'Line type') }}
-              <select [name]="'kind-' + line.id" [(ngModel)]="line.kind" (ngModelChange)="changeKind(line, $event)" [disabled]="locked">
-                <option value="product">{{ t('منتج من الكتالوج', 'Catalog product') }}</option>
-                <option value="manual">{{ t('خدمة / بند يدوي', 'Service / manual line') }}</option>
-              </select>
-            </label>
-
             @if (line.kind === 'product') {
-              <label>
-                {{ t('المنتج', 'Product') }}
+              <label class="product-picker">
+                <span class="field-hint">Product / Service</span>
                 <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" (ngModelChange)="markDirty()" [disabled]="locked">
                   <option value="">{{ t('اختَر المنتج', 'Choose product') }}</option>
                   @for (product of products; track product.id) {
@@ -103,7 +101,7 @@ import type {
                 <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
               </label>
             } @else {
-              <label>
+              <label class="service-description-field">
                 {{ t('وصف الخدمة', 'Service description') }}
                 <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
               </label>
@@ -169,6 +167,12 @@ import type {
     .line-list { display: grid; gap: 10px; }
     .line-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 12px; border: 1px solid var(--border, #d0d5dd); border-radius: 12px; min-width: 0; }
     .line-top { grid-column: 1 / -1; }
+    .line-kind-picker { display: flex; align-items: center; width: auto; min-width: 0; }
+    .line-kind-select { min-height: 34px !important; height: 34px; max-width: 132px; padding-inline: 8px !important; border-radius: 8px !important; background: var(--aba-color-surface-subtle, #f8fafc) !important; color: var(--aba-color-text-secondary, #64748b) !important; font-size: 11px !important; }
+    .field-hint { color: var(--aba-color-text-tertiary, #64748b); font-size: 11px; font-weight: 500; line-height: 1.2; }
+    .product-picker, .service-description-field { gap: 5px; }
+    .line-actions { margin-inline-start: auto; }
+
     .line-actions, .add-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .icon-button { min-width: 34px; min-height: 34px; }
     .danger, .error { color: var(--danger, #b42318); }
