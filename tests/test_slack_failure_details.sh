@@ -19,16 +19,24 @@ extracted=$(extract_output_text "$sample_output")
 export SLACK_ACCESS_TOKEN='xoxb-fake-slack-token-1234567890'
 export CIRCLE_API_TOKEN='circleci-fake-api-token-1234567890'
 export DATABASE_URL='postgresql://ci_user:ci_password@localhost/test_db'
-export SHORT_TOKEN='abcd'
-redacted=$(redact_text 'Authorization: Bearer abcdef123456 password=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abcd')
+export SHORT_TOKEN='abc'
+redacted=$(redact_text 'Authorization: Bearer abcdef123456\nAuthorization: Basic dXNlcjpwYXNz password=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db postgresql+psycopg://dbuser:dbpass@localhost/db xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abc')
 [[ "$redacted" != *'abcdef123456'* ]]
 [[ "$redacted" != *'hunter2'* ]]
 [[ "$redacted" != *'dbpass'* ]]
+[[ "$redacted" != *'dXNlcjpwYXNz'* ]]
+[[ "$redacted" != *'Authorization: Basic'* ]]
 [[ "$redacted" != *'ci_password'* ]]
 [[ "$redacted" != *'xoxb-fake-slack-token-1234567890'* ]]
 [[ "$redacted" != *'circleci-fake-api-token-1234567890'* ]]
-[[ "$redacted" != *'abcd'* ]]
+[[ "$redacted" != *'abc'* ]]
+[[ "$redacted" != *'postgresql+psycopg://dbuser'* ]]
 [[ "$redacted" == *'[REDACTED]'* ]]
+jwt_redacted=$(redact_text 'token=none eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturepayloadlong')
+[[ "$jwt_redacted" != *'eyJhbGciOiJIUzI1NiJ9'* ]]
+[[ "$jwt_redacted" == *'[REDACTED JWT]'* ]]
+config_quoted=$(curl_config_quote 'line "quoted" \\ value')
+[[ "$(jq -r . <<< "$config_quoted")" == 'line "quoted" \\ value' ]]
 [[ "$redacted" != '"'* ]]
 
 multiline_redacted=$(redact_text $'line one\npassword=hunter2\nline three')
