@@ -20,12 +20,13 @@ export SLACK_ACCESS_TOKEN='xoxb-fake-slack-token-1234567890'
 export CIRCLE_API_TOKEN='circleci-fake-api-token-1234567890'
 export DATABASE_URL='postgresql://ci_user:ci_password@localhost/test_db'
 export SHORT_TOKEN='abc'
-redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basic dXNlcjpwYXNz\npassword=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db postgresql+psycopg://dbuser:dbpass@localhost/db AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abc')
+aws_secret='SyntheticAWSSecretForTestsValue'
+redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basic dXNlcjpwYXNz\npassword=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db postgresql+psycopg://dbuser:dbpass@localhost/db AWS_SECRET_ACCESS_KEY='"$aws_secret"' xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abc')
 [[ "$redacted" != *'abcdef123456'* ]]
 [[ "$redacted" != *'hunter2'* ]]
 [[ "$redacted" != *'dbpass'* ]]
 [[ "$redacted" != *'dXNlcjpwYXNz'* ]]
-[[ "$redacted" != *'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'* ]]
+[[ "$redacted" != *"$aws_secret"* ]]
 [[ "$redacted" != *'Authorization: Basic'* ]]
 [[ "$redacted" != *'ci_password'* ]]
 [[ "$redacted" != *'xoxb-fake-slack-token-1234567890'* ]]
@@ -33,8 +34,12 @@ redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basi
 [[ "$redacted" != *'abc'* ]]
 [[ "$redacted" != *'postgresql+psycopg://dbuser'* ]]
 [[ "$redacted" == *'[REDACTED]'* ]]
-jwt_redacted=$(redact_text 'token=none eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturepayloadlong')
-[[ "$jwt_redacted" != *'eyJhbGciOiJIUzI1NiJ9'* ]]
+jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
+jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
+jwt_signature='SyntheticSignatureForTestsValue'
+jwt_value="${jwt_header}.${jwt_payload}.${jwt_signature}"
+jwt_redacted=$(redact_text "token=none ${jwt_value}")
+[[ "$jwt_redacted" != *"$jwt_header"* ]]
 [[ "$jwt_redacted" == *'[REDACTED JWT]'* ]]
 config_quoted=$(curl_config_quote 'line "quoted" \\ value')
 [[ "$(jq -r . <<< "$config_quoted")" == 'line "quoted" \\ value' ]]
