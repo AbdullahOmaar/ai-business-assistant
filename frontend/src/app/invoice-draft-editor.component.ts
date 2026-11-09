@@ -41,7 +41,6 @@ import type {
             <h4 id="invoice-details-heading">{{ t('بيانات الفاتورة', 'Invoice details') }}</h4>
             <p>{{ t('أدخل رقم الفاتورة وحدد العميل المرتبط بها.', 'Set the invoice number and select its customer.') }}</p>
           </div>
-          <span class="currency">{{ currencyCode }}</span>
         </div>
         <div class="invoice-fields">
           <label class="invoice-number-field">
@@ -153,28 +152,26 @@ import type {
               <h4>{{ t('ملخص الفاتورة', 'Invoice summary') }}</h4>
               <p>{{ t('الإجماليات المعروضة محسوبة من الخادم.', 'These totals are calculated by the server.') }}</p>
             </div>
-            <span class="currency">{{ serverSummary.currency_code }}</span>
           </div>
           @if (serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
-            <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+            <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }}</strong></div>
           }
           @if (serverSummary.discount_total !== null && serverSummary.discount_total !== undefined) {
-            <div><span>{{ t('الخصم', 'Discount') }}</span><strong>{{ serverSummary.discount_total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+            <div><span>{{ t('الخصم', 'Discount') }}</span><strong>{{ serverSummary.discount_total | number:'1.2-2' }}</strong></div>
           }
           @if (serverSummary.tax_total !== null && serverSummary.tax_total !== undefined) {
-            <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ serverSummary.tax_total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+            <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ serverSummary.tax_total | number:'1.2-2' }}</strong></div>
           }
-          <div class="total"><span>{{ t('الإجمالي النهائي', 'Grand total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+          <div class="total"><span>{{ t('الإجمالي النهائي', 'Grand total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }}</strong></div>
           <button type="button" class="secondary" (click)="startNewDraft()" [disabled]="saving">{{ t('إنشاء فاتورة أخرى', 'Start another invoice') }}</button>
         </section>
       } @else {
-        <section class="server-summary invoice-summary invoice-summary-pending" aria-label="Invoice totals pending">
+        <section class="server-summary invoice-summary invoice-summary-pending" [attr.aria-label]="t('إجماليات الفاتورة بعد الحفظ', 'Invoice totals after save')">
           <div class="summary-heading">
             <div>
               <h4>{{ t('ملخص الفاتورة', 'Invoice summary') }}</h4>
               <p>{{ t('سيظهر الإجمالي بعد حفظ المسودة واستلام رد الخادم.', 'The total appears after saving the draft and receiving the server response.') }}</p>
             </div>
-            <span class="currency">{{ currencyCode }}</span>
           </div>
           <p class="summary-pending-note">{{ t('لا يتم تقدير الإجماليات محليًا؛ مصدرها رد الخادم.', 'Totals are not estimated locally; the server response is the source of truth.') }}</p>
         </section>
@@ -227,7 +224,7 @@ import type {
     .danger, .error { color: var(--aba-color-danger-text, #b42318); }
     .server-summary { display: grid; gap: 9px; min-width: 0; padding: 14px; border: 1px solid var(--aba-color-border, #d0d5dd); border-radius: 14px; background: var(--aba-color-surface, #fff); }
     .server-summary h4 { margin: 0; color: var(--aba-color-text-primary, #172033); font-size: 14px; }
-    .server-summary div:not(.summary-heading) { display: flex; justify-content: space-between; gap: 12px; color: var(--aba-color-text-secondary, #64748b); font-size: 12px; }
+    .server-summary > div:not(.summary-heading) { display: flex; justify-content: space-between; gap: 12px; color: var(--aba-color-text-secondary, #64748b); font-size: 12px; }
     .server-summary div strong { color: var(--aba-color-text-primary, #172033); font-weight: 600; text-align: end; font-variant-numeric: tabular-nums; }
     .server-summary .total { margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--aba-color-border-subtle, #e2e8f0); font-size: 14px; font-weight: 700; }
     .server-summary .total strong { color: var(--aba-color-primary-strong, #115e59); font-size: 17px; font-weight: 700; }
