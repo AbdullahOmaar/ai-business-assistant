@@ -702,7 +702,9 @@ test('late invoice detail is discarded and its print window closes after a works
 
   await page.locator('.workspace-bar select').selectOption('business-b');
   await expect(page.locator('#workspace-current-name')).toHaveText('Beta Retail');
-  await expect(page.getByText('Beta Customer')).toBeVisible();
+  const customerFilter = page.locator('select[name="invoiceFilterCustomer"]');
+  await expect(customerFilter).toBeVisible();
+  await expect(customerFilter.locator('option[value="customer-b"]')).toHaveCount(1);
 
   harness.releaseInvoiceDetail();
   await expect.poll(() => popup.isClosed()).toBe(true);
