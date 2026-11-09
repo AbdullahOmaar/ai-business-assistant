@@ -321,8 +321,8 @@ test('authentication and nested form surfaces use semantic tokens', () => {
   for (const selector of [
     ':root body .shell .auth-card',
     ':root body .shell .setup-card',
-    ':root body .shell .invoice-create-disclosure',
-    ':root body .shell .invoice-create-disclosure > summary:after',
+    ':root body .shell .invoice-create-panel',
+    ':root body .shell .invoice-create-button',
     ':root body .shell .invoice-line-row',
     ':root body .shell .aging-buckets > div',
     ':root body .shell .version-pill',
