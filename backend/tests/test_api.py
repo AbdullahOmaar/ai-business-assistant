@@ -1860,3 +1860,121 @@ def test_invoice_number_uniqueness_is_business_scoped_and_conflicts_roll_back():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+def test_invoice_api_create_and_edit_multi_line_draft_uses_catalog_price_and_persists_lines():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        source_invoice = session.get(Invoice, invoice_id)
+        assert source_invoice is not None and source_invoice.customer_id is not None
+        customer_id = source_invoice.customer_id
+        product = Product(
+            business_id=business_id,
+            name="Catalog service",
+            unit_price=Decimal("12.50"),
+            is_stock_tracked=False,
+        )
+        session.add(product)
+        session.commit()
+        product_id = product.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/invoices"
+    try:
+        created = client.post(
+            base,
+            json={
+                "invoice_number": "RET-MULTILINE-1",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [
+                    {
+                        "product_id": str(product_id),
+                        "description": "Catalog service",
+                        "quantity": "2.000",
+                        "unit_price": "0.01",
+                    },
+                    {
+                        "description": "Manual consultation",
+                        "quantity": "2.000",
+                        "unit_price": "7.25",
+                    },
+                ],
+            },
+        )
+        assert created.status_code == 201, created.text
+        created_id = UUID(created.json()["id"])
+
+        with Session(engine) as session:
+            invoice = session.get(Invoice, created_id)
+            lines = session.scalars(
+                select(InvoiceLine).where(
+                    InvoiceLine.invoice_id == created_id,
+                    InvoiceLine.business_id == business_id,
+                ).order_by(InvoiceLine.id)
+            ).all()
+            audit_count = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            assert invoice is not None
+            assert invoice.status == "draft"
+            assert invoice.subtotal == Decimal("39.50")
+            assert invoice.total == Decimal("39.50")
+            assert [(line.description, line.quantity, line.unit_price, line.line_total) for line in lines] == [
+                ("Catalog service", Decimal("2.000"), Decimal("12.50"), Decimal("25.00")),
+                ("Manual consultation", Decimal("2.000"), Decimal("7.25"), Decimal("14.50")),
+            ]
+            assert audit_count == 1
+
+        edited = client.patch(
+            f"{base}/{created_id}",
+            json={
+                "invoice_number": "RET-MULTILINE-1-EDITED",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [
+                    {
+                        "product_id": str(product_id),
+                        "description": "Catalog service",
+                        "quantity": "3.000",
+                        "unit_price": "0.01",
+                    },
+                    {
+                        "description": "Manual consultation",
+                        "quantity": "1.000",
+                        "unit_price": "10.00",
+                    },
+                ],
+            },
+        )
+        assert edited.status_code == 200, edited.text
+
+        with Session(engine) as session:
+            invoice = session.get(Invoice, created_id)
+            lines = session.scalars(
+                select(InvoiceLine).where(
+                    InvoiceLine.invoice_id == created_id,
+                    InvoiceLine.business_id == business_id,
+                ).order_by(InvoiceLine.id)
+            ).all()
+            audit_count = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            assert invoice is not None
+            assert invoice.invoice_number == "RET-MULTILINE-1-EDITED"
+            assert invoice.status == "draft"
+            assert invoice.subtotal == Decimal("47.50")
+            assert invoice.total == Decimal("47.50")
+            assert [(line.description, line.quantity, line.unit_price, line.line_total) for line in lines] == [
+                ("Catalog service", Decimal("3.000"), Decimal("12.50"), Decimal("37.50")),
+                ("Manual consultation", Decimal("1.000"), Decimal("10.00"), Decimal("10.00")),
+            ]
+            assert audit_count == 2
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
