@@ -39,7 +39,7 @@ redact_text() {
     fi
   done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
 
-  printf '%s' "$raw" | jq -Rs --argjson secrets "$secrets" '
+  printf '%s' "$raw" | jq -Rsr --argjson secrets "$secrets" '
     reduce $secrets[] as $secret (. ; split($secret) | join("[REDACTED]"))
     | gsub("(?i)authorization[[:space:]]*:[[:space:]]*bearer[[:space:]]+[^[:space:]]+"; "Authorization: Bearer [REDACTED]")
     | gsub("(?i)bearer[[:space:]]+[A-Za-z0-9._~+/-]+=*"; "Bearer [REDACTED]")
@@ -48,6 +48,7 @@ redact_text() {
     | gsub("AKIA[0-9A-Z]{16}"; "[REDACTED]")
     | gsub("(?i)(password|passwd|token|secret|api[_-]?key)[[:space:]]*[:=][[:space:]]*[^[:space:],;]+"; "[REDACTED]")
     | gsub("(?i)(postgres(ql)?|mysql)://[^:/@[:space:]]+:[^@[:space:]]+@"; "database://[REDACTED]@")
+    | gsub("(?i)https?://[^[:space:]]*[?&](token|access_token|signature|sig|x-amz-signature|x-amz-security-token|awsaccesskeyid|x-goog-signature)=[^[:space:]]+"; "[REDACTED SIGNED URL]")
     | gsub("-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"; "[REDACTED PRIVATE KEY]")
   ' 2>/dev/null || printf '%s' '[Failure output redaction unavailable; open the CircleCI job logs directly.]'
 }
