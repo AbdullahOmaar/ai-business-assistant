@@ -633,8 +633,9 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await expect(lineCards).toHaveCount(1);
   const firstLine = lineCards.first();
   await firstLine.getByLabel('Line type').selectOption('product');
-  await expect(firstLine.getByLabel('Product')).toBeVisible();
-  await firstLine.getByLabel('Product').selectOption('product-a');
+  const productSelect = firstLine.locator('select[name^="product-"]');
+  await expect(productSelect).toBeVisible();
+  await productSelect.selectOption('product-a');
   await editor.locator('input[name^="quantity-"]').first().fill('2');
   await expect(editor.locator('.server-summary')).toHaveCount(0);
 
