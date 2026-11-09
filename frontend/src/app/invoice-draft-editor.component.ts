@@ -135,15 +135,15 @@ import type {
         <section class="server-summary" aria-live="polite" [attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')">
           <h4>{{ t('الإجماليات المحسوبة على الخادم', 'Server-calculated totals') }}</h4>
           @if (serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
-            <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal }} {{ serverSummary.currency_code }}</strong></div>
+            <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
           }
           @if (serverSummary.discount_total !== null && serverSummary.discount_total !== undefined) {
-            <div><span>{{ t('الخصم', 'Discount') }}</span><strong>{{ serverSummary.discount_total }} {{ serverSummary.currency_code }}</strong></div>
+            <div><span>{{ t('الخصم', 'Discount') }}</span><strong>{{ serverSummary.discount_total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
           }
           @if (serverSummary.tax_total !== null && serverSummary.tax_total !== undefined) {
-            <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ serverSummary.tax_total }} {{ serverSummary.currency_code }}</strong></div>
+            <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ serverSummary.tax_total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
           }
-          <div class="total"><span>{{ t('الإجمالي', 'Total') }}</span><strong>{{ serverSummary.total }} {{ serverSummary.currency_code }}</strong></div>
+          <div class="total"><span>{{ t('الإجمالي', 'Total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
           <button type="button" class="secondary" (click)="startNewDraft()" [disabled]="saving">{{ t('إنشاء فاتورة أخرى', 'Start another invoice') }}</button>
         </section>
       } @else {

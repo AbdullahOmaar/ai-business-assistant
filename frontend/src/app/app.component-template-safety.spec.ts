@@ -108,10 +108,20 @@ test('workspace header keeps business name, selector, and release time in separa
   assert.match(source, /\.workspace-release-meta-inline \.version-pill\{max-width:100%;white-space:normal;overflow-wrap:anywhere\}/);
 });
 
+test('invoice amounts use consistent grouped decimal formatting in the list and server summary', () => {
+  assert.match(source, /invoice\.total \| number:'1\.2-2'/);
+  assert.match(source, /invoice\.outstanding_amount \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.subtotal \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.discount_total \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.tax_total \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
+});
+
 test('responsive invoice list uses a semantic desktop table and dedicated mobile cards', () => {
   assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
-  assert.match(source, /class="invoice-table-wrap"/);
+  assert.match(source, /class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption"/);
+  assert.match(source, /<caption id="invoice-table-caption">/);
   assert.match(source, /class="invoice-table"/);
   assert.match(source, /class="invoice-cards"/);
   assert.match(source, /class="invoice-card-financials"/);

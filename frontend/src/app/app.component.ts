@@ -642,9 +642,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else if (!filteredInvoices.length) {
                   <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('لا توجد فواتير مطابقة للبحث والفلاتر.', 'No invoices match your search and filters.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.')" />
                 } @else {
-                  <div class="invoice-table-wrap" tabindex="0" [attr.aria-label]="t('جدول الفواتير، استخدم الأسهم أو التمرير الأفقي عند الحاجة', 'Invoice table; use arrow keys or horizontal scrolling when needed')">
+                  <div class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption">
                     <table class="invoice-table">
-                      <caption>{{ t('قائمة الفواتير', 'Invoice list') }}</caption>
+                      <caption id="invoice-table-caption">{{ t('قائمة الفواتير', 'Invoice list') }}</caption>
                       <thead><tr>
                         <th scope="col">{{ t('العميل', 'Customer') }}</th><th scope="col">{{ t('الفاتورة / التاريخ', 'Invoice / date') }}</th>
                         <th scope="col">{{ t('القيمة', 'Amount') }}</th><th scope="col">{{ t('المتبقي', 'Remaining') }}</th>
@@ -655,8 +655,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                           <tr>
                             <td class="invoice-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong></td>
                             <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }}</small></td>
-                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></td>
-                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.status === 'issued' && invoice.outstanding_amount !== undefined ? invoice.outstanding_amount + ' ' + invoice.currency_code : '—' }}</bdi></td>
+                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }} {{ invoice.currency_code }}</bdi></td>
+                            <td class="invoice-money">@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
+                                  <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }} {{ invoice.currency_code }}</bdi>
+                                } @else { — }</td>
                             <td><span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span></td>
                             <td><div class="invoice-actions">
                               @if (invoice.status === 'draft') {
@@ -686,8 +688,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                           <span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span>
                         </header>
                         <div class="invoice-card-financials">
-                          <div><small>{{ t('قيمة الفاتورة', 'Invoice amount') }}</small><strong><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></strong></div>
-                          <div><small>{{ t('المتبقي', 'Remaining balance') }}</small><strong><bdi dir="ltr">{{ invoice.status === 'issued' && invoice.outstanding_amount !== undefined ? invoice.outstanding_amount + ' ' + invoice.currency_code : '—' }}</bdi></strong></div>
+                          <div><small>{{ t('قيمة الفاتورة', 'Invoice amount') }}</small><strong><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }} {{ invoice.currency_code }}</bdi></strong></div>
+                          <div><small>{{ t('المتبقي', 'Remaining balance') }}</small><strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
+                                  <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }} {{ invoice.currency_code }}</bdi>
+                                } @else { — }</strong></div>
                         </div>
                         <div class="invoice-actions">
                           @if (invoice.status === 'draft') {
