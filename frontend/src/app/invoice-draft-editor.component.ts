@@ -133,6 +133,9 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
           <h4 id="invoice-summary-heading">{{ t('ملخص الفاتورة', 'Invoice summary') }}</h4>
           <p>{{ t('الخصم والضريبة للعرض فقط؛ الحساب النهائي من الخادم.', 'Discount and tax are display-only; the server calculates final totals.') }}</p>
         </div></div>
+        @if (serverSummary && serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
+          <div class="summary-row"><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+        }
         <div class="readonly-rates">
           <label class="field rate-field">
             <span>{{ t('الخصم', 'Discount') }} %</span>
@@ -146,9 +149,6 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
           </label>
         </div>
         @if (serverSummary) {
-          @if (serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
-            <div class="summary-row"><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
-          }
           <div class="summary-total"><span>{{ t('الإجمالي النهائي', 'Grand total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
           <button type="button" class="subtle-action new-invoice-action" (click)="startNewDraft()" [disabled]="saving">{{ t('إنشاء فاتورة أخرى', 'Create another invoice') }}</button>
         } @else {
