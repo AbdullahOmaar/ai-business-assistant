@@ -19,13 +19,15 @@ extracted=$(extract_output_text "$sample_output")
 export SLACK_ACCESS_TOKEN='xoxb-fake-slack-token-1234567890'
 export CIRCLE_API_TOKEN='circleci-fake-api-token-1234567890'
 export DATABASE_URL='postgresql://ci_user:ci_password@localhost/test_db'
-redacted=$(redact_text 'Authorization: Bearer abcdef123456 password=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890')
+export SHORT_TOKEN='abcd'
+redacted=$(redact_text 'Authorization: Bearer abcdef123456 password=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abcd')
 [[ "$redacted" != *'abcdef123456'* ]]
 [[ "$redacted" != *'hunter2'* ]]
 [[ "$redacted" != *'dbpass'* ]]
 [[ "$redacted" != *'ci_password'* ]]
 [[ "$redacted" != *'xoxb-fake-slack-token-1234567890'* ]]
 [[ "$redacted" != *'circleci-fake-api-token-1234567890'* ]]
+[[ "$redacted" != *'abcd'* ]]
 [[ "$redacted" == *'[REDACTED]'* ]]
 private_key=$'-----BEGIN PRIVATE KEY-----\nprivate-key-body-must-not-leak\n-----END PRIVATE KEY-----'
 redacted_key=$(redact_text "$private_key")
