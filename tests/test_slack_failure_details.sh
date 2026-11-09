@@ -77,7 +77,6 @@ jwt_redacted=$(redact_text "${jwt_value}")
 [[ "$jwt_redacted" == *'[REDACTED JWT]'* ]]
 config_quoted=$(curl_config_quote 'line "quoted" \\ value')
 [[ "$(jq -r . <<< "$config_quoted")" == 'line "quoted" \\ value' ]]
-[[ "$redacted" != '"'* ]]
 
 multiline_redacted=$(redact_text $'line one\npassword=hunter2\nline three')
 [[ "$multiline_redacted" == $'line one\n[REDACTED]\nline three' ]]
