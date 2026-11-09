@@ -51,3 +51,41 @@ test('Product / Service remains a subtle hint and the existing line-kind selecto
   assert.match(editorSource, /\.field-hint \{[^}]*font-size: 11px/);
   assert.match(editorSource, /\.line-kind-select \{[^}]*min-height: 34px/);
 });
+
+
+test('startup screen shows the Cairo-localized build date and time beneath release versions', () => {
+  assert.match(appSource, /class="splash-build-time"/);
+  assert.match(appSource, /Build date & time/);
+  assert.match(appSource, /get buildTimeLabel\(\): string/);
+  assert.match(appSource, /timeZone: 'Africa\/Cairo'/);
+});
+
+test('invoice search icon stays clear of search text in RTL and LTR', () => {
+  assert.match(appSource, /\.invoice-search input\{[^}]*padding-inline:42px 38px;appearance:none;-webkit-appearance:none;direction:inherit/);
+  assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:14px/);
+  assert.match(appSource, /\.invoice-search input::-webkit-search-decoration/);
+});
+
+test('invoice filters and draft selectors use regular readable control text', () => {
+  assert.match(appSource, /\.invoice-filter select\{width:100%;min-width:0;font-weight:400\}/);
+  assert.match(editorSource, /class="invoice-customer-select"/);
+  assert.match(editorSource, /\.invoice-fields select, \.invoice-fields input, \.line-fields select, \.line-fields input \{ font-weight: 400; \}/);
+  assert.match(editorSource, /\.line-kind-select \{[^}]*font-weight: 400 !important/);
+});
+
+test('invoice editor groups details, line items and server-owned totals into responsive sections', () => {
+  assert.match(editorSource, /aria-labelledby="invoice-details-heading"/);
+  assert.match(editorSource, /aria-labelledby="invoice-lines-heading"/);
+  assert.match(editorSource, /class="line-fields" \[class\.product-line\]/);
+  assert.match(editorSource, /class="invoice-summary-pending"/);
+  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(editorSource, /Totals are not estimated locally/);
+});
+
+test('invoice summary shows currency once and keeps its pending state localized', () => {
+  assert.match(editorSource, /@if \(!serverSummary\) \{\s*<span class="currency">\{\{ currencyCode \}\}<\/span>/);
+  assert.match(editorSource, /class="invoice-summary-pending" \[attr\.aria-label\]="t\('إجماليات الفاتورة بعد الحفظ', 'Invoice totals after save'\)"/);
+  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code \}\}/);
+  assert.doesNotMatch(editorSource, /serverSummary\.(?:subtotal|discount_total|tax_total) \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code/);
+  assert.doesNotMatch(editorSource, /class="server-summary[^"]*invoice-summary-pending"/);
+});
