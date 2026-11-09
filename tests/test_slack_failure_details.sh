@@ -94,4 +94,12 @@ source "$tmp_env2"
 [[ "$ABA_FAILURE_EXCERPT" == $'first line\nsecond line' ]]
 rm -f "$tmp_env" "$tmp_env2"
 
+# Assert the actual CircleCI config covers every workflow and uses the Slack Orb-safe template.
+config_file="${CIRCLECI_CONFIG_FILE:-$SCRIPT_DIR/../.circleci/config.yml}"
+[[ "$(grep -c -- '- notify-on-failure' "$config_file")" -eq 8 ]]
+[[ "$(grep -c 'context: slack-secrets' "$config_file")" -eq 14 ]]
+grep -Fq 'event: fail' "$config_file"
+grep -Fq '"text": "*Failed step:*\n${ABA_FAILURE_STEP}"' "$config_file"
+grep -Fq '"text": "*Redacted error excerpt:*\n```\n${ABA_FAILURE_EXCERPT}\n```"' "$config_file"
+
 echo 'Slack failure diagnostic helper tests passed.'
