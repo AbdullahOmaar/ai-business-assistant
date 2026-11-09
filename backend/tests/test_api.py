@@ -1507,3 +1507,92 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_invoice_number_and_line_description_limits_match_persisted_columns_without_rejected_writes():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/invoices"
+    try:
+        accepted = client.post(
+            base,
+            json={
+                "invoice_number": "N" * 64,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "x" * 300, "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert accepted.status_code == 201, accepted.text
+        accepted_invoice_id = UUID(accepted.json()["id"])
+
+        with Session(engine) as session:
+            invoice_count = session.scalar(select(func.count()).select_from(Invoice))
+            line_count = session.scalar(select(func.count()).select_from(InvoiceLine))
+            audit_count = session.scalar(select(func.count()).select_from(AuditEvent))
+
+        rejected_number = client.post(
+            base,
+            json={
+                "invoice_number": "N" * 65,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "Valid line", "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_number.status_code == 422
+
+        rejected_description = client.post(
+            base,
+            json={
+                "invoice_number": "DESC-301-REJECT",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "x" * 301, "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_description.status_code == 422
+
+        update_url = f"{base}/{accepted_invoice_id}"
+        rejected_update_number = client.patch(
+            update_url,
+            json={
+                "invoice_number": "N" * 65,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "Valid line", "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_update_number.status_code == 422
+
+        rejected_update_description = client.patch(
+            update_url,
+            json={
+                "invoice_number": "N" * 64,
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [{"description": "x" * 301, "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert rejected_update_description.status_code == 422
+
+        with Session(engine) as session:
+            assert session.scalar(select(func.count()).select_from(Invoice)) == invoice_count
+            assert session.scalar(select(func.count()).select_from(InvoiceLine)) == line_count
+            assert session.scalar(select(func.count()).select_from(AuditEvent)) == audit_count
+            saved_invoice = session.get(Invoice, accepted_invoice_id)
+            saved_line = session.scalars(
+                select(InvoiceLine).where(InvoiceLine.invoice_id == accepted_invoice_id)
+            ).one()
+            assert saved_invoice is not None
+            assert saved_invoice.invoice_number == "N" * 64
+            assert saved_line.description == "x" * 300
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()

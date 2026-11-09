@@ -21,14 +21,21 @@ test('payment controls are only exposed to workspace owners', () => {
 
 test('payment retries preserve the idempotency key after an uncertain result', () => {
   const start = source.indexOf('async createPayment(): Promise<void>');
-  const end = source.indexOf('\n  useAssistantSuggestion(', start);
-  assert.ok(start >= 0 && end > start);
+  const end = source.indexOf('useAssistantSuggestion(', start);
   const handler = source.slice(start, end);
-  assert.match(handler, /if \(!this\.paymentIdempotencyKey\)/);
-  assert.match(handler, /Preserve entered values and the idempotency key if the save failed or its outcome is uncertain/);
-  assert.match(handler, /this\.paymentIdempotencyKey = ''/);
+  assert.ok(start >= 0 && end > start);
+  assert.match(handler, /this\.paymentRetryVault\.get\(authUid, businessId\)/);
+  assert.match(handler, /createPaymentRetrySnapshot\(businessId/);
+  assert.match(handler, /this\.paymentRetryVault\.save\(authUid, retrySnapshot\)/);
+  assert.match(handler, /paymentRequestFromRetrySnapshot\(retrySnapshot\)/);
+  assert.match(handler, /original payload and idempotency key were preserved/);
+  assert.match(handler, /if \(error instanceof ApiRequestError && error\.definitiveNoWrite\)/);
+  assert.match(handler, /this\.paymentRetryVault\.delete\(authUid, businessId\)/);
+  assert.match(handler, /finally \{\s*if \(isCurrent\(\)\) this\.paymentLoading = false;/);
+  assert.match(source, /name="paymentAmount"[^>]*\[disabled\]="paymentRetryPending"/);
+  assert.match(source, /name="paymentCustomer"[^>]*\[disabled\]="paymentRetryPending"/);
+  assert.match(source, /<button class="primary" type="submit" \[disabled\]="paymentLoading"/);
 });
-
 
 test('payment API failures render a visible accessible alert in the payment panel', () => {
   assert.match(source, /@if \(paymentMessage\) \{ <aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/> \}/);

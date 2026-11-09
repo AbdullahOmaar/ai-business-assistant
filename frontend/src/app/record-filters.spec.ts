@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
+import { firstRecordPage, mergeRecordPage, filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters.ts';
 
 test('filters customers by name, email, and phone case-insensitively', () => {
   const customers = [
@@ -115,4 +115,34 @@ test('filters payments by visible receipt details and allocation state without c
   assert.deepEqual(filterPayments(payments, 'allocated', customer).map(x => x.id), ['p1']);
   assert.deepEqual(filterPayments(payments, 'bank_transfer', customer).map(x => x.id), ['p2']);
   assert.deepEqual(filterPayments(payments, 'تحويل بنكي', customer, method => method === 'bank_transfer' ? 'تحويل بنكي' : method).map(x => x.id), ['p2']);
+});
+
+test('record pagination appends only unseen IDs and advances by raw page size', () => {
+  const first = [{ id: 'a', name: 'Alpha' }, { id: 'b', name: 'Beta' }];
+  const next = [{ id: 'b', name: 'Beta duplicate' }, { id: 'c', name: 'Gamma' }];
+  const result = mergeRecordPage(first, next, 2, 2);
+  assert.deepEqual(result.records, [
+    { id: 'a', name: 'Alpha' },
+    { id: 'b', name: 'Beta' },
+    { id: 'c', name: 'Gamma' },
+  ]);
+  assert.equal(result.nextOffset, 4);
+  assert.equal(result.hasMore, true);
+});
+
+test('record pagination stops after a short or empty page', () => {
+  const short = mergeRecordPage([{ id: 'a' }], [{ id: 'b' }], 1, 2);
+  assert.deepEqual(short.records, [{ id: 'a' }, { id: 'b' }]);
+  assert.equal(short.nextOffset, 2);
+  assert.equal(short.hasMore, false);
+  const empty = mergeRecordPage(short.records, [], short.nextOffset, 2);
+  assert.equal(empty.nextOffset, 2);
+  assert.equal(empty.hasMore, false);
+});
+
+test('first record page sets the next offset and only exposes more for a full page', () => {
+  const full = firstRecordPage([{ id: 'a' }, { id: 'b' }], 2);
+  assert.deepEqual(full, { records: [{ id: 'a' }, { id: 'b' }], nextOffset: 2, hasMore: true });
+  const short = firstRecordPage([{ id: 'a' }], 2);
+  assert.deepEqual(short, { records: [{ id: 'a' }], nextOffset: 1, hasMore: false });
 });

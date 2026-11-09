@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
-import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers } from './record-filters';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, firstRecordPage, mergeRecordPage } from './record-filters';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
@@ -20,14 +20,22 @@ import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.c
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
+import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
+import { findInvoiceDraftRecoveryMatch, invoiceDraftLinesFromExisting } from './invoice-draft';
+import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
+import { InvoiceDraftOutcomeVault } from './invoice-draft';
+import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
+import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
 
+const WORKSPACE_RECORD_PAGE_SIZE = 100;
+
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [class.install-help-open]="installHelp && !isInstalled" [class.install-cta-visible]="!isInstalled && !installHelp" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (!isInstalled) { <button class="secondary install-button install-floating" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }
@@ -583,29 +591,35 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
             @if (tab === 'invoices') {
               <section abaCard class="panel">
                 <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
-                <div class="invoice-toolbar"><details class="invoice-create-disclosure"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
-                <form #invoiceForm="ngForm" class="inline-form invoice-form" (ngSubmit)="invoiceForm.valid && createInvoice()">
-                  <input name="invoiceNumber" [attr.aria-label]="t('رقم الفاتورة', 'Invoice number')" [placeholder]="t('رقم الفاتورة (تلقائي إذا تُرك فارغًا)', 'Invoice number (auto if blank)')" maxlength="80" [(ngModel)]="invoiceNumber">
-                  <label class="invoice-customer-field">{{ t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice') }}<select #invoiceCustomerModel="ngModel" name="invoiceCustomer" [attr.aria-label]="t('العميل الذي تُصدر له الفاتورة', 'Customer receiving this invoice')" required [(ngModel)]="invoiceCustomerId" [attr.aria-invalid]="invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted) ? 'invoice-customer-error' : null"><option value="" disabled>{{ t('اختر عميل الفاتورة', 'Choose invoice customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}{{ customer.phone ? ' · ' + customer.phone : '' }}</option> }</select>@if (invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted)) { <small id="invoice-customer-error" class="field-error" role="alert">{{ t('اختيار العميل مطلوب لحفظ الفاتورة.', 'Choose a customer before saving the invoice.') }}</small> }</label>
-                  <label>{{ t('الخصم (%)', 'Discount (%)') }}<input #invoiceDiscountModel="ngModel" name="invoiceDiscountRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceDiscountRate" [attr.aria-invalid]="invoiceDiscountModel.invalid && (invoiceDiscountModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceDiscountModel.invalid && (invoiceDiscountModel.touched || invoiceForm.submitted) ? 'invoice-discount-error' : null">@if (invoiceDiscountModel.invalid && (invoiceDiscountModel.touched || invoiceForm.submitted)) { <small id="invoice-discount-error" class="field-error" aria-live="polite">{{ t('أدخل نسبة خصم من 0 إلى 100.', 'Enter a discount rate from 0 to 100.') }}</small> }</label>
-                  <label>{{ t('الضريبة (%)', 'Tax (%)') }}<input #invoiceTaxModel="ngModel" name="invoiceTaxRate" type="number" min="0" max="100" step="any" required [(ngModel)]="invoiceTaxRate" [attr.aria-invalid]="invoiceTaxModel.invalid && (invoiceTaxModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceTaxModel.invalid && (invoiceTaxModel.touched || invoiceForm.submitted) ? 'invoice-tax-error' : null">@if (invoiceTaxModel.invalid && (invoiceTaxModel.touched || invoiceForm.submitted)) { <small id="invoice-tax-error" class="field-error" aria-live="polite">{{ t('أدخل نسبة ضريبة من 0 إلى 100.', 'Enter a tax rate from 0 to 100.') }}</small> }</label>
-                  <div class="invoice-lines"><div class="invoice-lines-heading"><strong>{{ t('بنود الفاتورة', 'Invoice lines') }}</strong><button class="secondary" type="button" (click)="addInvoiceLine()" [disabled]="loading || !products.length">{{ t('إضافة بند', 'Add line') }} +</button></div>
-                    @for (line of invoiceLines; track $index; let i = $index) { <div class="invoice-line-row"><label>{{ t('المنتج', 'Product') }} {{ i + 1 }}<select #invoiceProductModel="ngModel" [name]="'invoiceProduct' + i" [attr.aria-label]="t('المنتج', 'Product') + ' ' + (i + 1)" required [(ngModel)]="line.productId" [attr.aria-invalid]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'invoice-product-error-' + i : null"><option value="" disabled>{{ t('اختر منتجًا', 'Choose a product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.unit_price }} {{ business.currency_code }}</option> }</select>@if (invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted)) { <small [id]="'invoice-product-error-' + i" class="field-error" role="alert">{{ t('اختر منتجًا لهذا البند.', 'Choose a product for this line.') }}</small> }</label><label>{{ t('الكمية', 'Quantity') }}<input #invoiceQuantityModel="ngModel" [name]="'invoiceQuantity' + i" [attr.aria-label]="t('الكمية', 'Quantity') + ' ' + (i + 1)" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity" [attr.aria-invalid]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'true' : null" [attr.aria-describedby]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'invoice-quantity-error-' + i : null">@if (invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted)) { <small [id]="'invoice-quantity-error-' + i" class="field-error" role="alert">{{ t('أدخل كمية لا تقل عن 0.001 وبخطوة 0.001.', 'Enter a quantity of at least 0.001 in 0.001 increments.') }}</small> }</label><button class="secondary danger" type="button" (click)="removeInvoiceLine(i)" [disabled]="loading || invoiceLines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line')">{{ t('حذف', 'Remove') }}</button></div> }
-                  </div>
-                  @if (invoicePreview; as preview) {
-                    <div class="invoice-preview" [attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')" aria-live="polite">
-                      <div><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ preview.subtotal }} {{ business.currency_code }}</strong></div>
-                      <div><span>{{ t('الخصم', 'Discount') }}</span><strong>−{{ preview.discount }} {{ business.currency_code }}</strong></div>
-                      <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ preview.tax }} {{ business.currency_code }}</strong></div>
-                      <div class="total"><span>{{ t('الإجمالي التقديري', 'Estimated total') }}</span><strong>{{ preview.total }} {{ business.currency_code }}</strong></div>
-                    </div>
-                  } @else {
-                    <p class="muted">{{ t('اختر منتجًا وأدخل كمية صحيحة لكل بند لعرض الإجمالي التقديري.', 'Choose a product and enter a valid quantity for each line to preview totals.') }}</p>
-                  }
-                  <p class="footnote">{{ t('هذه معاينة تقديرية فقط؛ الخادم يعيد حساب الإجماليات ويتحقق من الأسعار والكميات عند الحفظ والإصدار.', 'This is an estimate only; the server recalculates totals and validates prices and quantities when saving and issuing.') }}</p>
-                  <button class="primary" type="submit" [disabled]="loading || !products.length || !customers.length">{{ t('حفظ كمسودة', 'Save draft') }}</button>
-                  @if (editingInvoiceId) { <button class="secondary" type="button" (click)="cancelInvoiceEdit()">{{ t('إلغاء', 'Cancel') }}</button> }
-                </form>
+                <div class="invoice-toolbar"><details class="invoice-create-disclosure" [open]="invoiceCreateOpen" (toggle)="onInvoiceCreateToggle($event)"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
+                <div class="inline-form invoice-form">
+                  <label>{{ t('الخصم الحالي (%)', 'Current discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" [value]="invoiceDiscountRate" readonly aria-readonly="true"></label>
+                  <label>{{ t('الضريبة الحالية (%)', 'Current tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" [value]="invoiceTaxRate" readonly aria-readonly="true"></label>
+                  <p class="footnote">{{ t('الخصم والضريبة للقراءة فقط حتى اعتماد العقد المالي المشترك؛ عند تعديل مسودة نحافظ على القيم المحفوظة دون تغييرها.', 'Discount and tax are read-only until the shared financial contract is approved; editing a draft preserves its saved values without changing them.') }}</p>
+                  <aba-invoice-draft-editor
+                    [language]="language"
+                    [products]="products"
+                    [customers]="customers"
+                    [currencyCode]="business.currency_code"
+                    [invoiceNumber]="invoiceNumber"
+                    [customerId]="invoiceCustomerId"
+                    [saving]="invoiceDraftSaving"
+                    [blocked]="invoiceDraftUncertain"
+                    [serverSummary]="invoiceDraftSummary"
+                    [initialLines]="invoiceDraftInitialLines"
+                    [draftRevision]="invoiceDraftRevision"
+                    [editing]="!!editingInvoiceId"
+                    [hasMoreCustomers]="customersHasMore"
+                    [hasMoreProducts]="productsHasMore"
+                    [loadingMoreCustomers]="customersLoadingMore"
+                    [loadingMoreProducts]="productsLoadingMore"
+                    (loadMoreCustomers)="loadMoreInvoiceCustomers()"
+                    (loadMoreProducts)="loadMoreInvoiceProducts()"
+                    (saveDraft)="saveInvoiceDraft($event)"
+                    (newDraft)="startNewInvoiceDraft()"
+                    (refreshStatus)="refreshInvoiceDraftStatus()"
+                  />
+                </div>
                 </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
                 @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
                 <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
@@ -613,6 +627,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
                   @if (!filteredInvoices.length) { <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.'))" /> }
                 </div>
+                @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
             }
@@ -624,15 +639,17 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
               <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
                   <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
                 </aba-section-header>
-                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="paymentForm.valid && createPayment()">
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
-                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
-                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
-                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount"> }
-                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference">
-                  <button class="primary" type="submit" [disabled]="loading">{{ t('تسجيل دفعة', 'Record payment') }}</button>
+                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
+                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
+                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
+                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
+                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
+                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
+                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
+                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('جارٍ التسجيل…', 'Recording…') : paymentRetryPending ? t('إعادة المحاولة بنفس الدفعة', 'Retry same payment') : t('تسجيل دفعة', 'Record payment') }}</button>
                 </form>
+                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('هناك محاولة دفع نتيجتها غير مؤكدة. لا تغيّر البيانات؛ استخدم زر إعادة المحاولة بنفس الطلب.', 'A previous payment attempt has an uncertain outcome. Do not change its details; use Retry same payment.') }}</p> }
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list-tools operations-search"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
@@ -640,6 +657,7 @@ type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recur
                   @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method ? paymentMethodLabel(payment.method) : t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
                   @if (!filteredPayments.length) { <aba-state-message kind="empty" [description]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.', 'No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
                 </div>
+                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل دفعات إضافية', 'Load more payments') }}</button> }
               </section>
             }
 
@@ -1172,6 +1190,18 @@ export class AppComponent implements OnInit, OnDestroy {
   statementToDate = '';
   private readonly auditLoadGuard = new WorkspaceLoadGuard();
   private readonly statementLoadGuard = new WorkspaceLoadGuard();
+  customersHasMore = false;
+  productsHasMore = false;
+  invoicesHasMore = false;
+  paymentsHasMore = false;
+  customersLoadingMore = false;
+  productsLoadingMore = false;
+  invoicesLoadingMore = false;
+  paymentsLoadingMore = false;
+  private customerOffset = 0;
+  private productOffset = 0;
+  private invoiceOffset = 0;
+  private paymentOffset = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
   customerSearch = '';
@@ -1269,6 +1299,14 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
   editingInvoiceId: string | null = null;
+  invoiceCreateOpen = false;
+  invoiceDraftSaving = false;
+  invoiceDraftSummary: InvoiceDraftServerSummary | null = null;
+  invoiceDraftInitialLines: InvoiceDraftLine[] | null = null;
+  invoiceDraftRevision = 0;
+  invoiceDraftUncertain = false;
+  private pendingInvoiceDraftOutcome: InvoiceDraftOutcomeSnapshot | null = null;
+  private readonly invoiceDraftOutcomeVault = new InvoiceDraftOutcomeVault();
   paymentCustomerId = '';
   paymentAmount = '';
   paymentAllocationAmount = '';
@@ -1278,6 +1316,10 @@ export class AppComponent implements OnInit, OnDestroy {
   paymentMethod = 'cash';
   paymentReference = '';
   paymentIdempotencyKey = '';
+  paymentLoading = false;
+  paymentRetryPending = false;
+  private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
+  private readonly paymentRetryVault = new PaymentRetryVault();
   chatDraft = '';
   chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
   chatSending = false;
@@ -1903,6 +1945,21 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.invoiceSaveGuard.invalidate();
+    this.invoiceEditRequestGuard.invalidate();
+    this.invoiceMutationGuard.invalidate();
+    this.printRequestGuard.invalidate();
+    this.paymentMutationGuard.invalidate();
+    this.paymentLoading = false;
+    this.paymentRetryPending = false;
+    this.pendingPaymentRetrySnapshot = null;
+    this.invoiceDraftSaving = false;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftUncertain = false;
+    this.pendingInvoiceDraftOutcome = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = false;
     this.pendingInvoiceVoid = null;
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = null;
@@ -1965,6 +2022,22 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoices = [];
     this.payments = [];
     this.expenses = [];
+    this.customerPickerLoadGuard.invalidate();
+    this.productPickerLoadGuard.invalidate();
+    this.invoiceListLoadGuard.invalidate();
+    this.paymentListLoadGuard.invalidate();
+    this.customersHasMore = false;
+    this.productsHasMore = false;
+    this.invoicesHasMore = false;
+    this.paymentsHasMore = false;
+    this.customersLoadingMore = false;
+    this.productsLoadingMore = false;
+    this.invoicesLoadingMore = false;
+    this.paymentsLoadingMore = false;
+    this.customerOffset = 0;
+    this.productOffset = 0;
+    this.invoiceOffset = 0;
+    this.paymentOffset = 0;
     this.suppliers = [];
     this.purchaseOrders = [];
     this.recurringSchedules = [];
@@ -2073,6 +2146,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async switchBusiness(id: string): Promise<void> {
+    if (this.invoiceDraftSaving || this.paymentLoading || this.paymentRetryPending) {
+      this.error = this.t('أكمل حفظ مسودة الفاتورة أو أعد محاولة الدفعة الحالية قبل تغيير مساحة العمل.', 'Finish saving the invoice draft or retry the pending payment before switching workspaces.');
+      return;
+    }
     this.statementVisible = false;
     this.customerStatement = null;
     this.statementCustomerId = '';
@@ -2087,6 +2164,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
+  private readonly customerPickerLoadGuard = new WorkspaceLoadGuard();
+  private readonly productPickerLoadGuard = new WorkspaceLoadGuard();
+  private readonly invoiceListLoadGuard = new WorkspaceLoadGuard();
+  private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
@@ -2094,14 +2175,44 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
   private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
+  private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
+  private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
+  private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
+  private readonly printRequestGuard = new WorkspaceLoadGuard();
+  private readonly paymentMutationGuard = new WorkspaceLoadGuard();
 
   async loadWorkspaceData(): Promise<void> {
     const loadVersion = this.workspaceLoadGuard.begin();
+    this.customerPickerLoadGuard.invalidate();
+    this.productPickerLoadGuard.invalidate();
+    this.invoiceListLoadGuard.invalidate();
+    this.paymentListLoadGuard.invalidate();
+    this.customersLoadingMore = false;
+    this.productsLoadingMore = false;
+    this.invoicesLoadingMore = false;
+    this.paymentsLoadingMore = false;
     if (!this.business) {
       this.loading = false;
       return;
     }
     const id = this.business.id;
+    const pendingInvoiceOutcome = this.currentAuthUid ? this.invoiceDraftOutcomeVault.get(this.currentAuthUid, id) : null;
+    if (pendingInvoiceOutcome) {
+      this.pendingInvoiceDraftOutcome = pendingInvoiceOutcome;
+      this.invoiceDraftUncertain = true;
+      this.invoiceNumber = pendingInvoiceOutcome.invoiceNumber;
+      this.invoiceCustomerId = pendingInvoiceOutcome.customerId;
+      this.invoiceDiscountRate = pendingInvoiceOutcome.discountRate;
+      this.invoiceTaxRate = pendingInvoiceOutcome.taxRate;
+      this.editingInvoiceId = pendingInvoiceOutcome.editingInvoiceId;
+      this.invoiceCreateOpen = true;
+    }
+    const savedPaymentRetry = this.currentAuthUid ? this.paymentRetryVault.get(this.currentAuthUid, id) : null;
+    if (savedPaymentRetry) {
+      this.pendingPaymentRetrySnapshot = savedPaymentRetry;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = savedPaymentRetry.payload.idempotency_key;
+    }
     this.loading = true;
     this.error = '';
     try {
@@ -2113,11 +2224,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.dashboard = dashboard;
       this.homeDashboardError = '';
       this.profitLoss = null;
-      this.customers = عميل;
+      this.setCustomerPage(عميل);
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
-      this.products = منتج;
-      this.invoices = فاتورة;
-      this.payments = دفعة;
+      this.setProductPage(منتج);
+      this.setInvoicePage(فاتورة);
+      this.setPaymentPage(دفعة);
       this.expenses = مصروفات;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
@@ -2132,6 +2243,149 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
     }
+  }
+
+
+  private setCustomerPage(items: readonly Customer[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.customerPickerLoadGuard.invalidate();
+    this.customers = page.records;
+    this.customerOffset = page.nextOffset;
+    this.customersHasMore = page.hasMore;
+    this.customersLoadingMore = false;
+  }
+
+  private setProductPage(items: readonly Product[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.productPickerLoadGuard.invalidate();
+    this.products = page.records;
+    this.productOffset = page.nextOffset;
+    this.productsHasMore = page.hasMore;
+    this.productsLoadingMore = false;
+  }
+
+  private setInvoicePage(items: readonly Invoice[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.invoiceListLoadGuard.invalidate();
+    this.invoices = page.records;
+    this.invoiceOffset = page.nextOffset;
+    this.invoicesHasMore = page.hasMore;
+    this.invoicesLoadingMore = false;
+    if (!this.paymentInvoiceId) {
+      this.paymentInvoiceId = page.records.find(invoice => invoice.status === 'issued')?.id || '';
+    }
+  }
+
+  private setPaymentPage(items: readonly Payment[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.paymentListLoadGuard.invalidate();
+    this.payments = page.records;
+    this.paymentOffset = page.nextOffset;
+    this.paymentsHasMore = this.business?.role === 'owner' && page.hasMore;
+    this.paymentsLoadingMore = false;
+  }
+
+  private async loadMoreRecords<T extends { id: string }>(options: {
+    guard: WorkspaceLoadGuard;
+    offset: number;
+    hasMore: boolean;
+    loading: boolean;
+    fetchPage: (businessId: string, offset: number) => Promise<T[]>;
+    getCurrentRecords: () => readonly T[];
+    setRecords: (records: T[]) => void;
+    setOffset: (offset: number) => void;
+    setHasMore: (hasMore: boolean) => void;
+    setLoading: (loading: boolean) => void;
+  }): Promise<void> {
+    const business = this.business;
+    if (!business || !options.hasMore || options.loading || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = options.guard.begin();
+    const requestContext = this.captureTenantRequest(business.id);
+    const isCurrent = (): boolean =>
+      this.isCurrentTenantOperation(options.guard, requestVersion, requestContext);
+    options.setLoading(true);
+    try {
+      const page = await options.fetchPage(business.id, options.offset);
+      if (!isCurrent()) return;
+      const merged = mergeRecordPage(
+        options.getCurrentRecords(),
+        page,
+        options.offset,
+        WORKSPACE_RECORD_PAGE_SIZE,
+      );
+      options.setRecords(merged.records);
+      options.setOffset(merged.nextOffset);
+      options.setHasMore(merged.hasMore);
+    } catch (error) {
+      if (isCurrent()) this.error = this.message(error);
+    } finally {
+      if (isCurrent()) options.setLoading(false);
+    }
+  }
+
+  loadMoreInvoiceCustomers(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.customerPickerLoadGuard,
+      offset: this.customerOffset,
+      hasMore: this.customersHasMore,
+      loading: this.customersLoadingMore,
+      fetchPage: (id, offset) => this.api.customers(id, offset),
+      getCurrentRecords: () => this.customers,
+      setRecords: records => this.customers = records,
+      setOffset: offset => this.customerOffset = offset,
+      setHasMore: value => this.customersHasMore = value,
+      setLoading: value => this.customersLoadingMore = value,
+    });
+  }
+
+  loadMoreInvoiceProducts(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.productPickerLoadGuard,
+      offset: this.productOffset,
+      hasMore: this.productsHasMore,
+      loading: this.productsLoadingMore,
+      fetchPage: (id, offset) => this.api.products(id, offset),
+      getCurrentRecords: () => this.products,
+      setRecords: records => this.products = records,
+      setOffset: offset => this.productOffset = offset,
+      setHasMore: value => this.productsHasMore = value,
+      setLoading: value => this.productsLoadingMore = value,
+    });
+  }
+
+  loadMoreInvoices(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.invoiceListLoadGuard,
+      offset: this.invoiceOffset,
+      hasMore: this.invoicesHasMore,
+      loading: this.invoicesLoadingMore,
+      fetchPage: (id, offset) => this.api.invoices(id, offset),
+      getCurrentRecords: () => this.invoices,
+      setRecords: records => {
+        this.invoices = records;
+        if (!this.paymentInvoiceId) {
+          this.paymentInvoiceId = records.find(invoice => invoice.status === 'issued')?.id || '';
+        }
+      },
+      setOffset: offset => this.invoiceOffset = offset,
+      setHasMore: value => this.invoicesHasMore = value,
+      setLoading: value => this.invoicesLoadingMore = value,
+    });
+  }
+
+  loadMorePayments(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.paymentListLoadGuard,
+      offset: this.paymentOffset,
+      hasMore: this.paymentsHasMore,
+      loading: this.paymentsLoadingMore,
+      fetchPage: (id, offset) => this.api.payments(id, offset),
+      getCurrentRecords: () => this.payments,
+      setRecords: records => this.payments = records,
+      setOffset: offset => this.paymentOffset = offset,
+      setHasMore: value => this.paymentsHasMore = value,
+      setLoading: value => this.paymentsLoadingMore = value,
+    });
   }
 
   async refreshAfterPayrollPayment(): Promise<void> {
@@ -2565,7 +2819,7 @@ export class AppComponent implements OnInit, OnDestroy {
         ]);
         if (this.business?.id === businessId) {
           this.purchaseOrders = orders;
-          this.products = products;
+          this.setProductPage(products);
           this.dashboard = dashboard;
         }
       } catch (error) {
@@ -2808,7 +3062,7 @@ export class AppComponent implements OnInit, OnDestroy {
       try {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
-        this.customers = customers;
+        this.setCustomerPage(customers);
         if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -2899,7 +3153,7 @@ export class AppComponent implements OnInit, OnDestroy {
       try {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
-        this.products = products;
+        this.setProductPage(products);
         if (this.products.length) this.invoiceProductId = this.products[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -2991,7 +3245,7 @@ export class AppComponent implements OnInit, OnDestroy {
       try {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
-        this.customers = customers;
+        this.setCustomerPage(customers);
         if (!this.invoiceCustomerId && this.customers.length) {
           this.invoiceCustomerId = this.customers[0].id;
         }
@@ -3047,7 +3301,7 @@ export class AppComponent implements OnInit, OnDestroy {
       try {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
-        this.products = products;
+        this.setProductPage(products);
         if (this.products.length) this.invoiceProductId = this.products[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -3065,50 +3319,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  get invoicePreview(): { subtotal: string; discount: string; tax: string; total: string } | null {
-    if (!this.business || !this.invoiceLines.length) return null;
-    const parseScaled = (value: string | number, scale: number): bigint | null => {
-      const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
-      if (!match || match[1].length > 12 || (match[2]?.length ?? 0) > scale) return null;
-      const fraction = (match[2] || '').padEnd(scale, '0');
-      return BigInt(match[1]) * (10n ** BigInt(scale)) + BigInt(fraction || '0');
-    };
-    const roundHalfUp = (numerator: bigint, denominator: bigint): bigint =>
-      (numerator + denominator / 2n) / denominator;
-    const formatCents = (cents: bigint): string =>
-      `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
-
-    // Preserve precision when rates are reconstructed from saved totals.
-    const discountRate = parseScaled(this.invoiceDiscountRate, 12);
-    const taxRate = parseScaled(this.invoiceTaxRate, 12);
-    if (discountRate === null || taxRate === null ||
-        discountRate > 100n * 1_000_000_000_000n || taxRate > 100n * 1_000_000_000_000n) return null;
-
-    // Match the backend's per-line money() policy: round each quantity × price
-    // to cents with ROUND_HALF_UP, then sum the rounded line totals.
-    let subtotalCents = 0n;
-    for (const line of this.invoiceLines) {
-      const product = this.products.find(item => item.id === line.productId);
-      const quantityMilli = parseScaled(line.quantity, 3);
-      const unitPriceCents = parseScaled(product?.unit_price ?? '', 2);
-      if (!product || quantityMilli === null || quantityMilli <= 0n ||
-          unitPriceCents === null) return null;
-      const lineMilliCents = quantityMilli * unitPriceCents;
-      subtotalCents += roundHalfUp(lineMilliCents, 1000n);
-      if (subtotalCents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    }
-    const rateDenominator = 100n * 1_000_000_000_000n;
-    const discountCents = roundHalfUp(subtotalCents * discountRate, rateDenominator);
-    const taxableCents = subtotalCents - discountCents;
-    const taxCents = roundHalfUp(taxableCents * taxRate, rateDenominator);
-    return {
-      subtotal: formatCents(subtotalCents),
-      discount: formatCents(discountCents),
-      tax: formatCents(taxCents),
-      total: formatCents(taxableCents + taxCents),
-    };
-  }
-
   private deriveRate(amount: string | undefined, base: string | undefined): string {
     const cents = (raw: string | undefined): bigint | null => {
       const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(raw || '0').trim());
@@ -3124,78 +3334,192 @@ export class AppComponent implements OnInit, OnDestroy {
     return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
   }
 
-  addInvoiceLine(): void {
-    if (this.loading || !this.products.length) return;
-    this.invoiceLines = [...this.invoiceLines, { productId: '', quantity: '1' }];
+  onInvoiceCreateToggle(event: Event): void {
+    this.invoiceCreateOpen = (event.currentTarget as HTMLDetailsElement).open;
   }
 
-  removeInvoiceLine(index: number): void {
-    if (this.loading || this.invoiceLines.length <= 1) return;
-    this.invoiceLines = this.invoiceLines.filter((_, lineIndex) => lineIndex !== index);
+  startNewInvoiceDraft(): void {
+    if (this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
+    this.editingInvoiceId = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = true;
+    this.invoiceNumber = '';
+    this.invoiceCustomerId = '';
+    this.invoiceDiscountRate = '0';
+    this.invoiceTaxRate = '0';
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
   }
 
-  async createInvoice(): Promise<void> {
-    if (!this.business) return;
+  async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void> {
+    if (!this.business || !this.signedIn || !this.currentAuthUid || this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     const discountRate = Number(this.invoiceDiscountRate);
     const taxRate = Number(this.invoiceTaxRate);
-    if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length ||
-        this.invoiceLines.some(line => !line.productId || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) ||
-        !Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
+    if (!Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
         !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
-      this.error = this.t('اختَر العميل وأدخل بنودًا ونسب خصم وضريبة صحيحة من 0 إلى 100.', 'Choose a customer, valid lines, and discount/tax rates from 0 to 100.');
+      this.error = this.t('أدخل نسب خصم وضريبة صحيحة من 0 إلى 100.', 'Enter valid discount and tax rates from 0 to 100.');
       return;
     }
     const businessId = this.business.id;
-    const currencyCode = this.business.currency_code;
+    const authUid = this.currentAuthUid;
+    const requestVersion = this.invoiceSaveGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceSaveGuard, requestVersion, requestContext);
     const editingInvoiceId = this.editingInvoiceId;
+    const outcomeSnapshot: InvoiceDraftOutcomeSnapshot = {
+      businessId,
+      invoiceNumber: payload.invoice_number,
+      customerId: payload.customer_id,
+      discountRate: String(discountRate),
+      taxRate: String(taxRate),
+      editingInvoiceId,
+    };
+    this.invoiceDraftOutcomeVault.save(authUid, outcomeSnapshot);
+    this.pendingInvoiceDraftOutcome = outcomeSnapshot;
+    this.invoiceDraftSaving = true;
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
-    this.invoiceMessageKind = 'success';
-    try {
-      const invoiceNumber = this.invoiceNumber.trim() || 'INV-' + Date.now();
-      const payload = {
-        invoice_number: invoiceNumber,
-        currency_code: currencyCode,
-        customer_id: this.invoiceCustomerId,
-        lines: this.invoiceLines.map(line => ({ product_id: line.productId, quantity: String(line.quantity) })),
-        discount_rate: String(discountRate),
-        tax_rate: String(taxRate),
-      };
-      if (editingInvoiceId) {
-        await this.api.updateDraftInvoice(businessId, editingInvoiceId, payload);
-      } else {
-        await this.api.createInvoice(businessId, payload);
-      }
-      if (this.business?.id !== businessId) return;
+    this.invoiceDraftSummary = null;
 
-      this.cancelInvoiceEdit();
-      this.invoiceMessage = this.t('تم حفظ مسودة الفاتورة. راجعها ثم اضغط «إصدار» عند التأكد.', 'Invoice draft saved. Review it, then select “Issue” when ready.');
-      this.tab = 'invoices';
+    try {
+      const request = { ...payload, discount_rate: String(discountRate), tax_rate: String(taxRate) };
+      const saved = editingInvoiceId
+        ? await this.api.updateDraftInvoice(businessId, editingInvoiceId, request)
+        : await this.api.createInvoice(businessId, request);
+      this.invoiceDraftOutcomeVault.delete(authUid, businessId);
+      if (!isCurrent()) return;
+      this.pendingInvoiceDraftOutcome = null;
+      this.invoiceDraftUncertain = false;
+      this.invoiceNumber = payload.invoice_number;
+      this.invoiceCustomerId = payload.customer_id;
+      this.invoiceDraftSummary = {
+        currency_code: saved.currency_code,
+        subtotal: saved.subtotal ?? null,
+        discount_total: saved.discount_total ?? null,
+        tax_total: saved.tax_total ?? null,
+        total: saved.total,
+      };
+      this.invoiceMessage = editingInvoiceId
+        ? this.t('تم تحديث مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft updated. Displayed totals came from the server.')
+        : this.t('تم حفظ مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft saved. Displayed totals came from the server.');
+      this.invoiceMessageKind = 'success';
+      this.invoiceCreateOpen = true;
+
       try {
         const [invoices, dashboard] = await Promise.all([
           this.api.invoices(businessId),
           this.api.dashboard(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
-        this.invoices = invoices;
+        if (!isCurrent()) return;
+        this.setInvoicePage(invoices);
         this.dashboard = dashboard;
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
           this.invoiceMessage = this.t(
-            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تحفظها مرة أخرى؛ حدّث البيانات أولًا.',
-            'The draft was saved, but the list could not refresh. Do not save it again; refresh the data first.'
+            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تعاود الحفظ؛ حدّث البيانات أولًا.',
+            'Draft saved, but the list could not refresh. Do not save it again; refresh the data first.'
           );
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (error instanceof ApiRequestError && error.definitiveNoWrite) {
+        this.invoiceDraftOutcomeVault.delete(authUid, businessId);
+        if (!isCurrent()) return;
+        this.pendingInvoiceDraftOutcome = null;
+        this.invoiceDraftUncertain = false;
+        this.error = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'رفض الخادم حفظ المسودة قبل الكتابة. صحّح البيانات ثم حاول مرة أخرى.',
+          'The server rejected the draft before persistence. Correct the details and try again.'
+        );
+      } else {
+        if (!isCurrent()) return;
+        this.pendingInvoiceDraftOutcome = outcomeSnapshot;
+        this.invoiceDraftUncertain = true;
+        this.error = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'نتيجة حفظ المسودة غير مؤكدة. تم قفل النموذج لمنع إنشاء فاتورة مكررة؛ تحقّق من حالة الفاتورة.',
+          'The draft save outcome is uncertain. The editor is locked to prevent a duplicate invoice; verify its status.'
+        );
+      }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) {
+        this.invoiceDraftSaving = false;
+        this.loading = false;
+      }
     }
   }
 
+  async refreshInvoiceDraftStatus(): Promise<void> {
+    const business = this.business;
+    const authUid = this.currentAuthUid;
+    const pending = this.pendingInvoiceDraftOutcome ??
+      (business && authUid ? this.invoiceDraftOutcomeVault.get(authUid, business.id) : null);
+    if (!business || !authUid || !this.signedIn || !pending || this.loading) return;
+    const businessId = business.id;
+    const requestVersion = this.invoiceSaveGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceSaveGuard, requestVersion, requestContext);
+    this.loading = true;
+    this.error = '';
+    try {
+      const invoices = await this.api.invoices(businessId);
+      if (!isCurrent()) return;
+      this.setInvoicePage(invoices);
+      const match = findInvoiceDraftRecoveryMatch(invoices, pending);
+      if (!match) {
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'لم تظهر فاتورة بنفس الرقم في أحدث قائمة. لم نُعد إرسال الطلب؛ استمر في التحقق من سجل الفواتير قبل إنشاء فاتورة أخرى.',
+          'No invoice with that number appeared in the latest list. The request was not resubmitted; keep verifying the invoice register before creating another invoice.'
+        );
+        return;
+      }
+
+      const detail = await this.api.invoiceDetail(businessId, match.id);
+      if (!isCurrent()) return;
+      this.editingInvoiceId = detail.id;
+      this.invoiceNumber = detail.invoice_number;
+      this.invoiceCustomerId = detail.customer_id || pending.customerId;
+      this.invoiceDiscountRate = pending.discountRate;
+      this.invoiceTaxRate = pending.taxRate;
+      this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
+      this.invoiceDraftSummary = {
+        currency_code: detail.currency_code,
+        subtotal: detail.subtotal ?? null,
+        discount_total: detail.discount_total ?? null,
+        tax_total: detail.tax_total ?? null,
+        total: detail.total,
+      };
+      this.invoiceDraftRevision += 1;
+      this.invoiceDraftUncertain = false;
+      this.pendingInvoiceDraftOutcome = null;
+      this.invoiceDraftOutcomeVault.delete(authUid, businessId);
+      this.invoiceCreateOpen = true;
+      this.invoiceMessageKind = 'warning';
+      this.invoiceMessage = this.t(
+        'وجدنا مسودة بنفس الرقم. راجع البنود والإجماليات المعروضة؛ لم نُعد إرسال طلب الحفظ ولم نفترض أن كل التعديلات السابقة تم حفظها.',
+        'A draft with that number was found. Review the displayed lines and totals; no save was resubmitted and we have not assumed every attempted edit was persisted.'
+      );
+    } catch (error) {
+      if (isCurrent()) {
+        this.error = this.message(error);
+        this.invoiceMessageKind = 'warning';
+        this.invoiceMessage = this.t(
+          'تعذر التحقق من حالة الفاتورة. سيظل النموذج مقفولًا لمنع التكرار.',
+          'Could not verify the invoice status. The editor remains locked to prevent a duplicate.'
+        );
+      }
+    } finally {
+      if (isCurrent()) this.loading = false;
+    }
+  }
 
   private escapePrintHtml(value: unknown): string {
     return String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -3204,10 +3528,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async printInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || invoice.status !== 'issued') return;
-    const businessId = this.business.id;
-    const businessName = this.business.name;
-    const businessCurrency = this.business.currency_code;
+    const businessSnapshot = this.business;
+    if (!businessSnapshot || !this.signedIn || !this.currentAuthUid || invoice.status !== 'issued') return;
+    const businessId = businessSnapshot.id;
+    const requestVersion = this.printRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.printRequestGuard, requestVersion, requestContext);
+    const businessName = businessSnapshot.name;
+    const businessCurrency = businessSnapshot.currency_code;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       this.error = this.t('اسمح بفتح نافذة الطباعة من المتصفح ثم حاول مرة أخرى.', 'Allow pop-ups for printing, then try again.');
@@ -3217,9 +3545,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
-      if (this.business?.id !== businessId) {
+      if (!isCurrent()) {
         printWindow.close();
         return;
+      }
+      if (detail.status !== 'issued') {
+        throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
       }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
@@ -3259,21 +3590,26 @@ export class AppComponent implements OnInit, OnDestroy {
       printWindow.focus();
     } catch (error) {
       printWindow.close();
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
+
   async editInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || invoice.status !== 'draft') return;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || invoice.status !== 'draft' || this.invoiceDraftSaving) return;
     const businessId = this.business.id;
+    const requestVersion = this.invoiceEditRequestGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceEditRequestGuard, requestVersion, requestContext);
     this.loading = true;
+    this.invoiceDraftSaving = true;
     this.error = '';
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
-      if (this.business?.id !== businessId) return;
-      if (!detail.lines.length || detail.lines.some(line => !line.product_id)) {
-        throw new Error(this.t('تحتوي المسودة على بند غير مرتبط بمنتج؛ لم يتم تغيير الفاتورة.', 'This draft contains a line without a linked product; no changes were made.'));
+      if (!isCurrent()) return;
+      if (!detail.lines.length) {
+        throw new Error(this.t('لا تحتوي المسودة على بنود قابلة للتعديل.', 'This draft has no editable invoice lines.'));
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
@@ -3283,36 +3619,49 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
       this.invoiceMessage = '';
       this.invoiceMessageKind = 'success';
-      this.invoiceLines = detail.lines.map(line => ({ productId: line.product_id as string, quantity: line.quantity }));
+      this.invoiceDraftSummary = null;
+      this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
+      this.invoiceDraftRevision += 1;
+      this.invoiceCreateOpen = true;
+      this.tab = 'invoices';
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) {
+        this.loading = false;
+        this.invoiceDraftSaving = false;
+      }
     }
   }
 
   cancelInvoiceEdit(): void {
+    if (this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     this.editingInvoiceId = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = false;
     this.invoiceMessage = '';
     this.invoiceMessageKind = 'success';
     this.invoiceNumber = '';
     this.invoiceCustomerId = '';
     this.invoiceDiscountRate = '0';
     this.invoiceTaxRate = '0';
-    this.invoiceQuantity = '1';
-    this.invoiceLines = [{ productId: '', quantity: '1' }];
   }
 
   async issueInvoice(invoice: Invoice): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid || this.loading) return;
     const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
     this.invoiceMessageKind = 'success';
     try {
       await this.api.issueInvoice(businessId, invoice.id);
-      if (this.business?.id !== businessId) return;
+      if (!isCurrent()) return;
       this.invoiceMessage = this.t('تم إصدار الفاتورة بنجاح.', 'Invoice issued successfully.');
       try {
         const [invoices, dashboard, products] = await Promise.all([
@@ -3320,12 +3669,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.products(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
-        this.invoices = invoices;
+        if (!isCurrent()) return;
+        this.setInvoicePage(invoices);
         this.dashboard = dashboard;
-        this.products = products;
+        this.setProductPage(products);
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
           this.invoiceMessage = this.t(
             'تم إصدار الفاتورة، لكن تعذر تحديث العرض. لا تعاود إصدارها؛ حدّث البيانات أولًا.',
@@ -3334,14 +3683,14 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
   requestInvoiceVoid(invoice: Invoice, event: MouseEvent): void {
-    if (!this.business || this.business.role !== 'owner' || !['draft', 'issued'].includes(invoice.status)) return;
+    if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid || !['draft', 'issued'].includes(invoice.status)) return;
     this.pendingPurchaseReceipt = null;
     this.purchaseReceiptError = '';
     this.pendingInvoiceVoid = invoice;
@@ -3357,8 +3706,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async confirmInvoiceVoid(): Promise<void> {
     const invoice = this.pendingInvoiceVoid;
-    if (!invoice || !this.business || this.business.role !== 'owner' || this.loading) return;
+    if (!invoice || !this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid || this.loading) return;
     const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
     this.loading = true;
     this.error = '';
     this.invoiceMessage = '';
@@ -3366,7 +3718,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceVoidError = '';
     try {
       await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
-      if (this.business?.id !== businessId) return;
+      if (!isCurrent()) return;
       this.pendingInvoiceVoid = null;
       this.confirmationReturnFocus = null;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
@@ -3377,12 +3729,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.products(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
-        this.invoices = invoices;
+        if (!isCurrent()) return;
+        this.setInvoicePage(invoices);
         this.dashboard = dashboard;
-        this.products = products;
+        this.setProductPage(products);
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
           this.invoiceMessage = this.t(
             'تم إلغاء الفاتورة، لكن تعذر تحديث العرض. لا تعاود الإلغاء؛ حدّث البيانات أولًا.',
@@ -3391,7 +3743,7 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) {
+      if (isCurrent()) {
         this.invoiceVoidError = this.message(error);
         this.invoiceMessageKind = 'warning';
         this.invoiceMessage = this.t(
@@ -3400,7 +3752,7 @@ export class AppComponent implements OnInit, OnDestroy {
         );
       }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.loading = false;
     }
   }
 
@@ -3410,6 +3762,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   payInvoice(invoice: Invoice): void {
+    if (this.paymentLoading || this.paymentRetryPending) {
+      this.error = this.t('هناك محاولة دفع نتيجتها غير مؤكدة. أعد المحاولة بنفس الطلب قبل اختيار فاتورة أخرى.', 'A payment attempt has an uncertain outcome. Retry the same request before selecting another invoice.');
+      return;
+    }
     if (!this.business || this.business.role !== 'owner' || invoice.status !== 'issued') return;
     if (!invoice.customer_id || invoice.outstanding_amount === undefined) {
       this.error = this.t('تعذر تحديد العميل أو الرصيد المستحق. حدّث البيانات وحاول مرة أخرى.', 'Could not determine the customer or outstanding balance. Refresh data and try again.');
@@ -3534,42 +3890,64 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createPayment(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
-      this.error = this.t('اختَر العميل قبل تسجيل الدفعة.', 'Choose a customer before recording the payment.');
-      return;
-    }
-    const businessId = this.business.id;
-    const amount = this.paymentAmount.trim();
-    const allocation = this.paymentAllocationAmount.trim();
-    if (this.paymentInvoiceId && !allocation) {
-      this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
-      return;
-    }
-    const currencyCode = this.business.currency_code;
-    this.loading = true;
-    this.error = '';
-    this.paymentMessage = '';
-    this.paymentMessageKind = 'info';
-    if (!this.paymentIdempotencyKey) {
-      this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
-    }
-    try {
-      await this.api.createPayment(businessId, {
-        amount,
-        currency_code: currencyCode,
+    const businessSnapshot = this.business;
+    if (!businessSnapshot || businessSnapshot.role !== 'owner' || !this.signedIn || !this.currentAuthUid || this.paymentLoading) return;
+    const businessId = businessSnapshot.id;
+    const authUid = this.currentAuthUid;
+    const requestVersion = this.paymentMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.paymentMutationGuard, requestVersion, requestContext);
+
+    let retrySnapshot = this.pendingPaymentRetrySnapshot ?? this.paymentRetryVault.get(authUid, businessId);
+    if (retrySnapshot) {
+      if (retrySnapshot.businessId !== businessId) {
+        this.pendingPaymentRetrySnapshot = null;
+        this.paymentRetryPending = false;
+        this.paymentIdempotencyKey = '';
+        return;
+      }
+      this.pendingPaymentRetrySnapshot = retrySnapshot;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = retrySnapshot.payload.idempotency_key;
+    } else {
+      if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
+        this.error = this.t('اختَر العميل وأدخل مبلغ الدفعة.', 'Choose a customer and enter the payment amount.');
+        return;
+      }
+      const allocation = this.paymentAllocationAmount.trim();
+      if (this.paymentInvoiceId && !allocation) {
+        this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
+        return;
+      }
+      if (!this.paymentIdempotencyKey) {
+        this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      }
+      retrySnapshot = createPaymentRetrySnapshot(businessId, {
+        amount: this.paymentAmount.trim(),
+        currency_code: businessSnapshot.currency_code,
         idempotency_key: this.paymentIdempotencyKey,
         customer_id: this.paymentCustomerId,
         method: this.paymentMethod,
         reference: this.paymentReference.trim() || undefined,
-        allocations: this.paymentInvoiceId ? [{
-          invoice_id: this.paymentInvoiceId,
-          amount: allocation
-        }] : []
+        allocations: this.paymentInvoiceId ? [{ invoice_id: this.paymentInvoiceId, amount: allocation }] : [],
       });
+      this.pendingPaymentRetrySnapshot = retrySnapshot;
+      this.paymentRetryVault.save(authUid, retrySnapshot);
+      this.paymentRetryPending = true;
+    }
 
-      // Do not treat a post-save refresh failure as a failed payment mutation.
-      if (this.business?.id !== businessId) return;
+    const requestPayload = paymentRequestFromRetrySnapshot(retrySnapshot);
+    this.paymentLoading = true;
+    this.error = '';
+    this.paymentMessage = '';
+    this.paymentMessageKind = 'info';
+    try {
+      await this.api.createPayment(businessId, requestPayload);
+      if (!isCurrent()) return;
+
+      this.paymentRetryVault.delete(authUid, businessId);
+      this.pendingPaymentRetrySnapshot = null;
+      this.paymentRetryPending = false;
       this.paymentAmount = '';
       this.paymentCustomerId = '';
       this.paymentInvoiceId = '';
@@ -3585,12 +3963,12 @@ export class AppComponent implements OnInit, OnDestroy {
           this.api.dashboard(businessId),
           this.api.invoices(businessId),
         ]);
-        if (this.business?.id !== businessId) return;
-        this.payments = payments;
+        if (!isCurrent()) return;
+        this.setPaymentPage(payments);
         this.dashboard = dashboard;
-        this.invoices = invoices;
+        this.setInvoicePage(invoices);
       } catch {
-        if (this.business?.id === businessId) {
+        if (isCurrent()) {
           this.paymentMessage = this.t(
             'تم تسجيل الدفعة، لكن تعذر تحديث العرض. لا تعاود تسجيل الدفعة؛ حدّث البيانات أولًا.',
             'Payment was recorded, but the view could not refresh. Do not record it again; refresh the data first.'
@@ -3599,13 +3977,25 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      // Preserve entered values and the idempotency key if the save failed or its outcome is uncertain.
-      if (this.business?.id === businessId) {
-        this.paymentMessage = this.message(error) || this.t('تعذر تسجيل الدفعة. لم يتم تأكيد النتيجة؛ لا تغيّر البيانات وأعد المحاولة بنفس الطلب بعد التحقق من سجل المدفوعات.', 'Could not confirm the payment. Keep the entered values and verify the payment list before retrying.');
+      if (!isCurrent()) return;
+      if (error instanceof ApiRequestError && error.definitiveNoWrite) {
+        this.paymentRetryVault.delete(authUid, businessId);
+        this.pendingPaymentRetrySnapshot = null;
+        this.paymentRetryPending = false;
+        this.paymentIdempotencyKey = '';
+        this.paymentMessage = this.message(error);
         this.paymentMessageKind = 'error';
+      } else {
+        this.pendingPaymentRetrySnapshot = retrySnapshot;
+        this.paymentRetryPending = true;
+        this.paymentMessage = this.t(
+          'لم نتمكن من تأكيد نتيجة الدفعة. أعد المحاولة بنفس البيانات دون تغييرها؛ تم الاحتفاظ بنفس الطلب ومفتاح التكرار.',
+          'The payment outcome is uncertain. Retry the exact same details; the original payload and idempotency key were preserved.'
+        );
+        this.paymentMessageKind = 'warning';
       }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      if (isCurrent()) this.paymentLoading = false;
     }
   }
 
@@ -3613,6 +4003,30 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.chatSending || !question.trim()) return;
     this.chatDraft = question;
     void this.sendChat();
+  }
+
+  private captureTenantRequest(workspaceId: string): TenantRequestContext {
+    return {
+      workspaceId,
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+      authTransitionVersion: this.authTransitionVersion,
+    };
+  }
+
+  private isCurrentTenantOperation(
+    guard: WorkspaceLoadGuard,
+    requestVersion: number,
+    requested: TenantRequestContext,
+  ): boolean {
+    return isCurrentTenantRequest(guard, requestVersion, requested, {
+      workspaceId: this.business?.id ?? '',
+      userId: this.currentAuthUid,
+      role: this.business?.role ?? null,
+      signedIn: this.signedIn,
+      authTransitionVersion: this.authTransitionVersion,
+    });
   }
 
   private currentChatRequestContext(): TenantRequestContext {

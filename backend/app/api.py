@@ -55,14 +55,14 @@ class ProductCreate(BaseModel):
 
 
 class InvoiceLineInput(BaseModel):
-    description: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=300)
     quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
     unit_price: Decimal | None = Field(default=None, ge=0, max_digits=14, decimal_places=2)
     product_id: UUID | None = None
 
 
 class InvoiceCreate(BaseModel):
-    invoice_number: str = Field(min_length=1, max_length=80)
+    invoice_number: str = Field(min_length=1, max_length=64)
     currency_code: str = Field(min_length=3, max_length=3)
     customer_id: UUID | None = None
     lines: list[InvoiceLineInput] = Field(min_length=1, max_length=500)

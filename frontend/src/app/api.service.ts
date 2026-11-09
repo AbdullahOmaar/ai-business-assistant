@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
+import { isDefinitiveNoWriteHttpStatus } from './api-request-error';
 
 export interface ReleaseInfo { version: string; commit: string; environment: string; }
 
@@ -147,6 +148,21 @@ export interface Dashboard {
 // `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
 export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
 
+export class ApiRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+
+  get definitiveNoWrite(): boolean {
+    return isDefinitiveNoWriteHttpStatus(this.status);
+  }
+}
+
+export type InvoiceLineInput =
+  | { product_id: string; quantity: string; description?: string }
+  | { description: string; quantity: string; unit_price: string };
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   constructor(private readonly auth: AuthService) {}
@@ -195,7 +211,7 @@ export class ApiService {
           const payload = await response.json();
           if (typeof payload.detail === 'string') message = payload.detail;
         } catch { /* response body may be empty or unavailable */ }
-        throw new Error(message);
+        throw new ApiRequestError(message, response.status);
       }
       if (response.status === 204) return undefined as T;
       try {
@@ -423,14 +439,16 @@ export class ApiService {
     if (endDate) params.set('end_date', endDate);
     return this.request<ProfitLossReport>(`/api/v1/businesses/${encodeURIComponent(businessId)}/profit-loss?${params.toString()}`);
   }
-  customers(businessId: string): Promise<Customer[]> {
-    return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers?limit=100`);
+  customers(businessId: string, offset = 0, limit = 100): Promise<Customer[]> {
+    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
+    return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers${query}`);
   }
   createCustomer(businessId: string, body: { name: string; email?: string; phone?: string }): Promise<Customer> {
     return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers`, 'POST', body);
   }
-  products(businessId: string): Promise<Product[]> {
-    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products?limit=100`);
+  products(businessId: string, offset = 0, limit = 100): Promise<Product[]> {
+    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
+    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products${query}`);
   }
   createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
@@ -500,8 +518,9 @@ export class ApiService {
   }): Promise<Expense> {
     return this.request<Expense>(`/api/v1/businesses/${encodeURIComponent(businessId)}/expenses`, 'POST', body);
   }
-  payments(businessId: string): Promise<Payment[]> {
-    return this.request<Payment[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments?limit=100`);
+  payments(businessId: string, offset = 0, limit = 100): Promise<Payment[]> {
+    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
+    return this.request<Payment[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments${query}`);
   }
   createPayment(businessId: string, body: {
     amount: string; currency_code: string; idempotency_key: string; customer_id: string;
@@ -510,18 +529,19 @@ export class ApiService {
   }): Promise<Payment> {
     return this.request<Payment>(`/api/v1/businesses/${encodeURIComponent(businessId)}/payments`, 'POST', body);
   }
-  invoices(businessId: string): Promise<Invoice[]> {
-    return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices?limit=100`);
+  invoices(businessId: string, offset = 0, limit = 100): Promise<Invoice[]> {
+    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
+    return this.request<Invoice[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices${query}`);
   }
   createInvoice(businessId: string, body: {
-    invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string;
   }): Promise<Invoice> {
     return this.request<Invoice>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices`, 'POST', body);
   }
   createAndIssueInvoice(businessId: string, body: {
     invoice_number: string; currency_code: string; customer_id: string;
-    lines: Array<{ product_id: string; quantity: string }>;
+    lines: InvoiceLineInput[];
   }): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/issue`, 'POST', body
@@ -538,7 +558,7 @@ export class ApiService {
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
-    invoice_number: string; currency_code: string; customer_id?: string; lines: Array<{ product_id: string; quantity: string }>;
+    invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string;
   }): Promise<Invoice> {
     return this.request<Invoice>(

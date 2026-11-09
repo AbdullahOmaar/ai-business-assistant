@@ -32,6 +32,8 @@ export interface TenantRequestContext {
   role: string | null;
   signedIn: boolean;
   customerId?: string;
+  /** Auth observer generation captured when the request started. */
+  authTransitionVersion?: number;
 }
 
 /** Validates that a delayed tenant-scoped response still belongs to the active identity and view. */
@@ -48,6 +50,7 @@ export function isCurrentTenantRequest(
     && requested.userId === current.userId
     && requested.role !== null
     && requested.role === current.role
+    && (requested.authTransitionVersion === undefined || requested.authTransitionVersion === current.authTransitionVersion)
     && (requested.customerId === undefined || requested.customerId === current.customerId);
 }
 

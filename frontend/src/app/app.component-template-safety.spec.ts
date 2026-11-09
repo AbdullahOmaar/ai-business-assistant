@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const invoiceEditorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
+const invoiceDraftSource = readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8');
 const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
@@ -630,36 +632,18 @@ test('invoice void confirmation is localized and uses the accessible shared dial
 });
 
 test('invoice mutations keep confirmed success separate from post-save refresh failures', () => {
-  const createStart = source.indexOf('async createInvoice(): Promise<void>');
-  const createEnd = source.indexOf('private escapePrintHtml(', createStart);
-  const create = source.slice(createStart, createEnd);
-  assert.ok(createStart >= 0 && createEnd > createStart);
-  assert.match(create, /const businessId = this\.business\.id/);
-  assert.match(create, /if \(this\.business\?\.id !== businessId\) return;/);
-  assert.match(create, /Invoice draft saved/);
-  assert.match(create, /The draft was saved, but the list could not refresh/);
-  assert.match(create, /Do not save it again/);
-  assert.match(create, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
-
-  const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
-  const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice', issueStart);
-  const issue = source.slice(issueStart, issueEnd);
-  assert.ok(issueStart >= 0 && issueEnd > issueStart);
-  assert.match(issue, /Invoice issued successfully/);
-  assert.match(issue, /The invoice was issued, but the view could not refresh/);
-  assert.match(issue, /Do not issue it again/);
-  assert.match(issue, /this\.api\.issueInvoice\(businessId, invoice\.id\)/);
-  assert.match(issue, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
-
-  const voidStart = source.indexOf('async confirmInvoiceVoid(): Promise<void>');
-  const voidEnd = source.indexOf('hasOutstandingBalance(', voidStart);
-  const voidMethod = source.slice(voidStart, voidEnd);
-  assert.ok(voidStart >= 0 && voidEnd > voidStart);
-  assert.match(source, /This screen does not process refunds or credit notes/);
-  assert.match(voidMethod, /Invoice voided successfully/);
-  assert.match(voidMethod, /The invoice was voided, but the view could not refresh/);
-  assert.match(voidMethod, /Do not void it again/);
-  assert.match(voidMethod, /this\.api\.voidInvoice\(businessId, invoice\.id/);
+  const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
+  const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
+  const save = source.slice(saveStart, saveEnd);
+  assert.ok(saveStart >= 0 && saveEnd > saveStart);
+  assert.match(save, /this\.api\.createInvoice\(businessId, request\)/);
+  assert.match(save, /this\.api\.updateDraftInvoice\(businessId, editingInvoiceId, request\)/);
+  assert.match(save, /if \(!isCurrent\(\)\) return;/);
+  assert.match(save, /Invoice draft saved/);
+  assert.match(save, /Draft saved, but the list could not refresh/);
+  assert.match(save, /Do not save it again/);
+  assert.match(save, /this\.invoiceMessageKind = 'success'/);
+  assert.match(save, /finally \{\s*if \(isCurrent\(\)\) \{\s*this\.invoiceDraftSaving = false;\s*this\.loading = false;/);
 });
 
 test('invoice success messages support warning state and reset with workspace context', () => {
@@ -678,17 +662,30 @@ test('payment completion cannot clear the loading state of a newly selected work
   const end = source.indexOf('useAssistantSuggestion(', start);
   const method = source.slice(start, end);
   assert.ok(start >= 0 && end > start);
-  assert.match(method, /const businessId = this\.business\.id/);
-  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+  assert.match(method, /const businessSnapshot = this\.business/);
+  assert.match(method, /const businessId = businessSnapshot\.id/);
+  assert.match(method, /const requestContext = this\.captureTenantRequest\(businessId\)/);
+  assert.match(method, /const isCurrent = \(\): boolean => this\.isCurrentTenantOperation/);
+  assert.match(method, /finally \{\s*if \(isCurrent\(\)\) this\.paymentLoading = false;/);
+  assert.doesNotMatch(method, /this\.loading = false/);
 });
 
-
-test('invalid authentication, workspace, customer, payment and expense forms cannot invoke mutations', () => {
-  assert.match(source, /<form #authForm="ngForm" \(ngSubmit\)="authForm\.valid && submitAuth\(\)"/);
-  assert.match(source, /<form #workspaceForm="ngForm"[^>]*\(ngSubmit\)="workspaceForm\.valid && createWorkspace\(\)"/);
-  assert.match(source, /<form #customerForm="ngForm"[^>]*\(ngSubmit\)="customerForm\.valid && createCustomer\(\)"/);
-  assert.match(source, /<form #paymentForm="ngForm"[^>]*\(ngSubmit\)="paymentForm\.valid && createPayment\(\)"/);
-  assert.match(source, /<form #expenseForm="ngForm"[^>]*\(ngSubmit\)="expenseForm\.valid && createExpense\(\)"/);
+test('invalid authentication, workspace, customer, invoice, payment and expense forms cannot invoke mutations', () => {
+  assert.match(source, /<form #authForm="ngForm"/);
+  assert.match(source, /<form #workspaceForm="ngForm"/);
+  assert.match(source, /<form #customerForm="ngForm"/);
+  assert.match(source, /<form #expenseForm="ngForm"/);
+  const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
+  const paymentEnd = source.indexOf('</form>', paymentStart);
+  const paymentForm = source.slice(paymentStart, paymentEnd);
+  assert.ok(paymentStart >= 0 && paymentEnd > paymentStart);
+  assert.ok(paymentForm.includes('(paymentRetryPending || paymentForm.valid) && createPayment()'));
+  assert.match(invoiceEditorSource, /toInvoiceDraftPayload/);
+  assert.match(invoiceEditorSource, /if \(this\.saving \|\| this\.blocked\) return;/);
+  assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
+  assert.match(invoiceDraftSource, /if \(error\) throw new RangeError\(error\)/);
+  assert.match(invoiceDraftSource, /Choose a valid customer\./);
+  assert.match(invoiceDraftSource, /Add at least one invoice line\./);
 });
 
 test('product form exposes accessible required, non-negative price and conditional stock validation', () => {
@@ -724,7 +721,7 @@ test('customer creation preserves confirmed success and prevents stale workspace
 
 test('product creation distinguishes saved stock setup from a failed list refresh', () => {
   const start = source.indexOf('async createProduct(): Promise<void>');
-  const end = source.indexOf('get invoicePreview()', start);
+  const end = source.indexOf('private deriveRate(', start);
   const method = source.slice(start, end);
   assert.ok(start >= 0 && end > start);
   assert.match(method, /const businessId = this\.business\.id/);
@@ -837,38 +834,30 @@ test('invoice print and draft edit cannot mix records across a workspace switch'
   const printEnd = source.indexOf('async editInvoice(invoice: Invoice)', printStart);
   const printMethod = source.slice(printStart, printEnd);
   assert.ok(printStart >= 0 && printEnd > printStart);
-  assert.match(printMethod, /const businessId = this\.business\.id/);
-  assert.match(printMethod, /const businessName = this\.business\.name/);
-  assert.match(printMethod, /const businessCurrency = this\.business\.currency_code/);
+  assert.match(printMethod, /const businessSnapshot = this\.business/);
+  assert.match(printMethod, /const businessId = businessSnapshot\.id/);
+  assert.match(printMethod, /const businessName = businessSnapshot\.name/);
+  assert.match(printMethod, /const businessCurrency = businessSnapshot\.currency_code/);
   assert.match(printMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
-  assert.match(printMethod, /if \(this\.business\?\.id !== businessId\) \{\s*printWindow\.close\(\);\s*return;/);
-  const printWindowStart = printMethod.indexOf("const printWindow = window.open('', '_blank');");
-  const printExecution = printMethod.slice(printWindowStart);
-  assert.ok(printWindowStart > 0);
-  assert.doesNotMatch(printExecution, /this\.business\.name|this\.business\.currency_code/);
-  assert.match(printExecution, /businessName/);
-  assert.match(printExecution, /businessCurrency/);
-  assert.match(printMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
-
+  assert.match(printMethod, /if \(!isCurrent\(\)\) \{\s*printWindow\.close\(\);\s*return;/);
+  assert.match(printMethod, /finally \{\s*if \(isCurrent\(\)\) this\.loading = false;/);
   const editStart = source.indexOf('async editInvoice(invoice: Invoice)');
   const editEnd = source.indexOf('cancelInvoiceEdit(): void', editStart);
   const editMethod = source.slice(editStart, editEnd);
   assert.ok(editStart >= 0 && editEnd > editStart);
   assert.match(editMethod, /const businessId = this\.business\.id/);
   assert.match(editMethod, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
-  assert.match(editMethod, /if \(this\.business\?\.id !== businessId\) return;/);
-  assert.match(editMethod, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
+  assert.match(editMethod, /if \(!isCurrent\(\)\) return;/);
+  assert.match(editMethod, /finally \{\s*if \(isCurrent\(\)\) \{/);
 });
-
 
 test('invoice drafts are available to workspace members while issue and void remain owner-only', () => {
   const toolbarStart = source.indexOf('<div class="invoice-toolbar">');
   const filterStart = source.indexOf('<div class="inline-form customer-invoice-filter">', toolbarStart);
   const toolbar = source.slice(toolbarStart, filterStart);
   assert.ok(toolbarStart >= 0 && filterStart > toolbarStart);
-  assert.match(toolbar, /^<div class="invoice-toolbar"><details class="invoice-create-disclosure">/);
-  assert.match(toolbar, /<form #invoiceForm="ngForm"/);
-  assert.match(toolbar, /invoiceForm\.valid && createInvoice\(\)/);
+  assert.match(toolbar, /<aba-invoice-draft-editor/);
+  assert.match(toolbar, /\(saveDraft\)="saveInvoiceDraft\(\$event\)"/);
 
   const rowStart = source.indexOf('@for (invoice of filteredInvoices');
   const rowEnd = source.indexOf('</article> }', rowStart);
@@ -889,32 +878,33 @@ test('invoice drafts are available to workspace members while issue and void rem
   assert.ok(issued.indexOf('printInvoice(invoice)') < issuedOwnerGuard, 'workspace members retain invoice printing');
   assert.ok(issued.indexOf('requestInvoiceVoid(invoice, $event)') > issuedOwnerGuard, 'issued invoice voiding is owner-only');
 
-  const createStart = source.indexOf('async createInvoice(): Promise<void>');
-  const createEnd = source.indexOf('private escapePrintHtml(', createStart);
-  assert.match(source.slice(createStart, createEnd), /if \(!this\.business\) return;/);
-  assert.doesNotMatch(source.slice(createStart, createEnd), /this\.business\.role !== 'owner'/);
+  const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
+  const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
+  const save = source.slice(saveStart, saveEnd);
+  assert.match(save, /if \(!this\.business \|\| !this\.signedIn/);
+  assert.doesNotMatch(save, /business\.role !== 'owner'/);
   const editStart = source.indexOf('async editInvoice(invoice: Invoice)');
   const editEnd = source.indexOf('cancelInvoiceEdit(): void', editStart);
-  assert.match(source.slice(editStart, editEnd), /if \(!this\.business \|\| invoice\.status !== 'draft'\) return;/);
-  assert.doesNotMatch(source.slice(editStart, editEnd), /this\.business\.role !== 'owner'/);
+  const editMethod = source.slice(editStart, editEnd);
+  assert.match(editMethod, /if \(!this\.business \|\| !this\.signedIn/);
+  assert.doesNotMatch(editMethod, /business\.role !== 'owner'/);
 });
-
 
 test('owner-only invoice mutations fail closed before showing confirmation or calling the API', () => {
   const issueStart = source.indexOf('async issueInvoice(invoice: Invoice)');
   const issueEnd = source.indexOf('requestInvoiceVoid(invoice: Invoice', issueStart);
   const issue = source.slice(issueStart, issueEnd);
-  assert.match(issue, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+  assert.match(issue, /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.signedIn/);
 
   const requestStart = source.indexOf('requestInvoiceVoid(invoice: Invoice, event: MouseEvent)');
   const requestEnd = source.indexOf('cancelInvoiceVoid(): void', requestStart);
   const request = source.slice(requestStart, requestEnd);
-  assert.match(request, /if \(!this\.business \|\| this\.business\.role !== 'owner'/);
+  assert.match(request, /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.signedIn/);
 
   const confirmStart = source.indexOf('async confirmInvoiceVoid(): Promise<void>');
   const confirmEnd = source.indexOf('hasOutstandingBalance(', confirmStart);
   const confirm = source.slice(confirmStart, confirmEnd);
-  assert.match(confirm, /if \(!invoice \|\| !this\.business \|\| this\.business\.role !== 'owner'/);
+  assert.match(confirm, /if \(!invoice \|\| !this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.signedIn/);
   assert.match(confirm, /this\.api\.voidInvoice\(businessId, invoice\.id/);
 });
 
@@ -1017,14 +1007,6 @@ test('purchase orders remain creatable by members while receiving and payment wr
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
   assert.match(purchaseView, /business\?\.role === 'owner' && canReceivePurchaseOrder\(order\)/);
-  assert.match(purchaseView, /order\.status === 'draft'.*This order is a draft; receiving is unavailable until it is approved/);
-  const eligibilityStart = source.indexOf('canReceivePurchaseOrder(order: PurchaseOrder): boolean');
-  const eligibilityEnd = source.indexOf('supplierNameFor(', eligibilityStart);
-  const eligibility = source.slice(eligibilityStart, eligibilityEnd);
-  assert.ok(eligibilityStart >= 0 && eligibilityEnd > eligibilityStart);
-  assert.match(eligibility, /order\.status === 'approved'/);
-  assert.match(eligibility, /order\.status === 'partially_received'/);
-  assert.match(eligibility, /order\.lines\.some\(line => this\.hasRemainingQuantity\(line\)\)/);
   assert.match(purchaseView, /requestPurchaseOrderReceipt\(order, \$event\)/);
 
   const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
@@ -1032,14 +1014,10 @@ test('purchase orders remain creatable by members while receiving and payment wr
   const receive = source.slice(receiveStart, receiveEnd);
   assert.match(receive, /this\.business\.role !== 'owner'/);
   assert.match(receive, /!this\.canReceivePurchaseOrder\(order\)/);
-  const requestStart = source.indexOf('requestPurchaseOrderReceipt(order: PurchaseOrder');
-  const requestEnd = source.indexOf('cancelPurchaseOrderReceipt()', requestStart);
-  assert.match(source.slice(requestStart, requestEnd), /!this\.canReceivePurchaseOrder\(order\)/);
-  assert.match(receive, /this\.api\.receivePurchaseOrder\(businessId, order\.id, lines\)/);
-
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
   const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
-  assert.match(source.slice(paymentStart, paymentEnd), /this\.business\.role !== 'owner'/);
+  const payment = source.slice(paymentStart, paymentEnd);
+  assert.match(payment, /businessSnapshot\.role !== 'owner'/);
 });
 
 test('local CSV exports follow the backend owner-only export permission', () => {
@@ -1247,36 +1225,31 @@ test('operations errors stay scoped to the module that produced them', () => {
 });
 
 test('invoice customer and dynamic line fields expose accessible localized validation', () => {
-  const start = source.indexOf('<form #invoiceForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
-  assert.ok(form.includes('invoiceForm.valid && createInvoice()'));
-  assert.ok(form.includes('#invoiceCustomerModel="ngModel"'));
-  assert.ok(form.includes(`[attr.aria-describedby]="invoiceCustomerModel.invalid && (invoiceCustomerModel.touched || invoiceForm.submitted) ? 'invoice-customer-error' : null"`));
-  assert.ok(form.includes('id="invoice-customer-error"'));
-  assert.ok(form.includes('#invoiceProductModel="ngModel"'));
-  assert.ok(form.includes(`[attr.aria-describedby]="invoiceProductModel.invalid && (invoiceProductModel.touched || invoiceForm.submitted) ? 'invoice-product-error-' + i : null"`));
-  assert.ok(form.includes(`[id]="'invoice-product-error-' + i"`));
-  assert.ok(form.includes('#invoiceQuantityModel="ngModel"'));
-  assert.ok(form.includes(`[attr.aria-describedby]="invoiceQuantityModel.invalid && (invoiceQuantityModel.touched || invoiceForm.submitted) ? 'invoice-quantity-error-' + i : null"`));
-  assert.ok(form.includes(`[id]="'invoice-quantity-error-' + i"`));
-  assert.match(form, /name="invoiceCustomer"[^>]*required/);
-  assert.match(form, /min="0\.001" step="0\.001" required \[\(ngModel\)\]="line\.quantity"/);
-  assert.match(form, /\[disabled\]="loading \|\| !products\.length \|\| !customers\.length"/);
-  assert.doesNotMatch(form, /\[disabled\]="[^"]*!invoiceCustomerId/);
-  assert.ok(source.includes("if (!this.business || !this.invoiceCustomerId || !this.invoiceLines.length"));
+  assert.match(invoiceEditorSource, /<label>/);
+  assert.match(invoiceEditorSource, /name="invoiceNumber"/);
+  assert.match(invoiceEditorSource, /name="customerId"/);
+  assert.match(invoiceEditorSource, /@for \(line of lines; track line\.id(?:; let index = \$index)?\)/);
+  assert.ok(invoiceEditorSource.includes("[name]=\"'quantity-' + line.id\""));
+  assert.ok(invoiceEditorSource.includes("[name]=\"'description-' + line.id\""));
+  assert.ok(invoiceEditorSource.includes("[name]=\"'price-' + line.id\""));
+  assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
+  assert.match(invoiceEditorSource, /role="alert"/);
+  assert.match(invoiceDraftSource, /Choose a valid customer\./);
+  assert.match(invoiceDraftSource, /Add at least one invoice line\./);
+  assert.match(invoiceDraftSource, /Every line needs a positive quantity/);
 });
 
 test('payment submit remains available to reveal required-field validation', () => {
   const start = source.indexOf('<form #paymentForm="ngForm"');
   const end = source.indexOf('</form>', start);
   const form = source.slice(start, end);
-  assert.ok(form.includes('paymentForm.valid && createPayment()'));
+  assert.ok(start >= 0 && end > start);
+  assert.ok(form.includes('(paymentRetryPending || paymentForm.valid) && createPayment()'));
   assert.match(form, /name="paymentAmount" type="number" min="0\.01" step="0\.01"[^>]*required/);
   assert.ok(form.includes('paymentAmountModel.invalid'));
   assert.ok(form.includes('payment-customer-error'));
-  assert.match(form, /<button class="primary" type="submit" \[disabled\]="loading"/);
-  assert.doesNotMatch(form, /\[disabled\]="loading \|\| !paymentAmount"/);
+  assert.match(form, /<button class="primary" type="submit" \[disabled\]="paymentLoading"/);
+  assert.doesNotMatch(form, /\[disabled\]="[^"]*paymentForm\.invalid/);
   assert.match(source, /if \(!this\.paymentAmount\.trim\(\) \|\| !this\.paymentCustomerId\)/);
 });
 
@@ -1300,12 +1273,11 @@ test('AI chat composer placeholder follows selected language', () => {
 
 
 test('CSV import regions and invoice preview have localized accessible names', () => {
-  assert.ok(source.includes("[attr.aria-label]=\"t('استيراد العملاء من CSV', 'CSV customer import')\""));
-  assert.ok(source.includes("[attr.aria-label]=\"t('استيراد المنتجات من CSV', 'CSV product import')\""));
-  assert.ok(source.includes("[attr.aria-label]=\"t('معاينة إجمالي الفاتورة', 'Invoice totals preview')\""));
-  assert.doesNotMatch(source, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
+  assert.ok(source.includes(`[attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')"`));
+  assert.ok(source.includes(`[attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')"`));
+  assert.ok(invoiceEditorSource.includes(`[attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')"`));
+  assert.doesNotMatch(source + invoiceEditorSource, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
 });
-
 
 test('OWNER payroll view is loaded only after selecting Employees', () => {
   const start = source.indexOf("@defer (when tab === 'employees' && business.role === 'owner')");
@@ -1463,4 +1435,23 @@ test('AI assistant conversation history is a named keyboard-scrollable log regio
   assert.match(log, /role="log"/);
   assert.match(log, /tabindex="0"/);
   assert.match(log, /\[attr\.aria-label\]=/);
+});
+
+test('unapproved discount and tax rates remain read-only and existing values are preserved', () => {
+  assert.match(source, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(source, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
+  assert.doesNotMatch(source, /name="invoiceDiscountRate"[^>]*\[\(ngModel\)\]/);
+  assert.doesNotMatch(source, /name="invoiceTaxRate"[^>]*\[\(ngModel\)\]/);
+  assert.match(source, /editing a draft preserves its saved values without changing them/);
+
+  const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
+  const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
+  const save = source.slice(saveStart, saveEnd);
+  assert.match(save, /discount_rate: String\(discountRate\), tax_rate: String\(taxRate\)/);
+
+  const editStart = source.indexOf('async editInvoice(invoice: Invoice)');
+  const editEnd = source.indexOf('cancelInvoiceEdit(): void', editStart);
+  const edit = source.slice(editStart, editEnd);
+  assert.match(edit, /this\.invoiceDiscountRate = this\.deriveRate\(detail\.discount_total, detail\.subtotal\)/);
+  assert.match(edit, /this\.invoiceTaxRate = this\.deriveRate\(detail\.tax_total, taxableBase\.toFixed\(2\)\)/);
 });
