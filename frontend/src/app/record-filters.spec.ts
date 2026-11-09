@@ -38,12 +38,12 @@ test('searches invoices by customer name and invoice number', () => {
 test('combines invoice text, status, and customer filters', () => {
   const invoices = [
     { id: '1', invoice_number: 'INV-001', currency_code: 'EGP', status: 'issued', total: '100', customer_id: 'c1' },
-    { id: '2', invoice_number: 'INV-002', currency_code: 'USD', status: 'paid', total: '50', customer_id: 'c2' },
+    { id: '2', invoice_number: 'INV-002', currency_code: 'USD', status: 'void', total: '50', customer_id: 'c2' },
     { id: '3', invoice_number: 'INV-003', currency_code: 'EGP', status: 'issued', total: '70', customer_id: 'c1' },
   ];
   assert.deepEqual(filterInvoices(invoices, 'inv-00', 'issued', 'c1').map(x => x.id), ['1', '3']);
   assert.deepEqual(filterInvoices(invoices, 'usd', 'all').map(x => x.id), ['2']);
-  assert.deepEqual(filterInvoices(invoices, '', 'paid').map(x => x.id), ['2']);
+  assert.deepEqual(filterInvoices(invoices, '', 'void').map(x => x.id), ['2']);
   assert.deepEqual(filterInvoices(invoices, 'صادرة', 'all', '', status => status === 'issued' ? 'صادرة' : status).map(x => x.id), ['1', '3']);
 });
 
