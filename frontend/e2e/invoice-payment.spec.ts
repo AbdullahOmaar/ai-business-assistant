@@ -594,7 +594,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
   // The workspace name renders before the initial data load finishes. Wait for
   // the seeded invoice row, which is rendered only after the workspace's
   // parallel dashboard/customer/product/invoice/payment/expense load completes.
-  await page.getByRole('button', { name: 'Invoices', exact: true }).click();
+  await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
   await expect(
     page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-A' })
   ).toBeVisible();
@@ -614,7 +614,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
 }
 
 async function openInvoices(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Invoices', exact: true }).click();
+  await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
   await expect(page.locator('#invoices-section-heading')).toBeVisible();
 }
 
