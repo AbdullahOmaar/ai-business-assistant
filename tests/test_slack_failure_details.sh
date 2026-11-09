@@ -82,7 +82,7 @@ output_file=$(mktemp)
 CURL_ARGS_FILE=$(mktemp)
 MOCK_CIRCLECI_OUTPUT="$large_output"
 curl() {
-  printf '%s\\n' "$@" > "$CURL_ARGS_FILE"
+  printf '%s\n' "$@" > "$CURL_ARGS_FILE"
   local destination=''
   while (($#)); do
     if [[ "$1" == '--output' ]]; then destination="$2"; shift 2; else shift; fi
