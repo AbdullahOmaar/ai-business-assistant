@@ -43,7 +43,128 @@ excerpt=$(format_excerpt "$long_log")
 
 # JSON-safe Slack block text preserves quotes, backslashes, and newlines.
 block_json=$(slack_text_json '*Failed step:*' 'Step "compile" failed\with detail')
-[[ "$(jq -r . <<< "$block_json")" == $'*Failed step:*\nStep "compile" failed\with detail' ]]
+[[ "$(jq -r . <<< "$block_json")" == 
+
+# Missing API token must produce a safe fallback and never call the network.
+tmp_env=$(mktemp)
+BASH_ENV="$tmp_env"
+unset CIRCLE_API_TOKEN || true
+CIRCLE_BUILD_NUM=12345
+collect_failure_details
+# shellcheck disable=SC1090
+source "$tmp_env"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == *'CIRCLE_API_TOKEN is not configured'* ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == *'Add CIRCLE_API_TOKEN'* ]]
+
+# Environment export preserves quotes and multiline excerpts.
+tmp_env2=$(mktemp)
+BASH_ENV="$tmp_env2"
+write_bash_env 'Step with spaces and "quotes"' $'first line\nsecond line'
+# shellcheck disable=SC1090
+source "$tmp_env2"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == $'*Failed step:*\nStep with spaces and "quotes"' ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == $'*Redacted error excerpt:*\n```\nfirst line\nsecond line\n```' ]]
+rm -f "$tmp_env" "$tmp_env2"
+
+echo 'Slack failure diagnostic helper tests passed.'*Failed step:*\nStep "compile" failed\with detail' ]]
+step_block=$(slack_text_json '*Failed step:*' 'Step "compile" failed\with detail')
+excerpt_block=$(slack_text_json 
+
+# Missing API token must produce a safe fallback and never call the network.
+tmp_env=$(mktemp)
+BASH_ENV="$tmp_env"
+unset CIRCLE_API_TOKEN || true
+CIRCLE_BUILD_NUM=12345
+collect_failure_details
+# shellcheck disable=SC1090
+source "$tmp_env"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == *'CIRCLE_API_TOKEN is not configured'* ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == *'Add CIRCLE_API_TOKEN'* ]]
+
+# Environment export preserves quotes and multiline excerpts.
+tmp_env2=$(mktemp)
+BASH_ENV="$tmp_env2"
+write_bash_env 'Step with spaces and "quotes"' $'first line\nsecond line'
+# shellcheck disable=SC1090
+source "$tmp_env2"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == $'*Failed step:*\nStep with spaces and "quotes"' ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == $'*Redacted error excerpt:*\n```\nfirst line\nsecond line\n```' ]]
+rm -f "$tmp_env" "$tmp_env2"
+
+echo 'Slack failure diagnostic helper tests passed.'*Redacted error excerpt:*\n```' 
+
+# Missing API token must produce a safe fallback and never call the network.
+tmp_env=$(mktemp)
+BASH_ENV="$tmp_env"
+unset CIRCLE_API_TOKEN || true
+CIRCLE_BUILD_NUM=12345
+collect_failure_details
+# shellcheck disable=SC1090
+source "$tmp_env"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == *'CIRCLE_API_TOKEN is not configured'* ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == *'Add CIRCLE_API_TOKEN'* ]]
+
+# Environment export preserves quotes and multiline excerpts.
+tmp_env2=$(mktemp)
+BASH_ENV="$tmp_env2"
+write_bash_env 'Step with spaces and "quotes"' $'first line\nsecond line'
+# shellcheck disable=SC1090
+source "$tmp_env2"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == $'*Failed step:*\nStep with spaces and "quotes"' ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == $'*Redacted error excerpt:*\n```\nfirst line\nsecond line\n```' ]]
+rm -f "$tmp_env" "$tmp_env2"
+
+echo 'Slack failure diagnostic helper tests passed.'line one\nline two\n```')
+payload=$(jq -n --argjson step "$step_block" --argjson excerpt "$excerpt_block" \
+  '{blocks:[{type:"section",text:{type:"mrkdwn",text:$step}},{type:"section",text:{type:"mrkdwn",text:$excerpt}}]}')
+[[ "$(jq -r '.blocks[0].text.text' <<< "$payload")" == 
+
+# Missing API token must produce a safe fallback and never call the network.
+tmp_env=$(mktemp)
+BASH_ENV="$tmp_env"
+unset CIRCLE_API_TOKEN || true
+CIRCLE_BUILD_NUM=12345
+collect_failure_details
+# shellcheck disable=SC1090
+source "$tmp_env"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == *'CIRCLE_API_TOKEN is not configured'* ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == *'Add CIRCLE_API_TOKEN'* ]]
+
+# Environment export preserves quotes and multiline excerpts.
+tmp_env2=$(mktemp)
+BASH_ENV="$tmp_env2"
+write_bash_env 'Step with spaces and "quotes"' $'first line\nsecond line'
+# shellcheck disable=SC1090
+source "$tmp_env2"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == $'*Failed step:*\nStep with spaces and "quotes"' ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == $'*Redacted error excerpt:*\n```\nfirst line\nsecond line\n```' ]]
+rm -f "$tmp_env" "$tmp_env2"
+
+echo 'Slack failure diagnostic helper tests passed.'*Failed step:*\nStep "compile" failed\with detail' ]]
+[[ "$(jq -r '.blocks[1].text.text' <<< "$payload")" == 
+
+# Missing API token must produce a safe fallback and never call the network.
+tmp_env=$(mktemp)
+BASH_ENV="$tmp_env"
+unset CIRCLE_API_TOKEN || true
+CIRCLE_BUILD_NUM=12345
+collect_failure_details
+# shellcheck disable=SC1090
+source "$tmp_env"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == *'CIRCLE_API_TOKEN is not configured'* ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == *'Add CIRCLE_API_TOKEN'* ]]
+
+# Environment export preserves quotes and multiline excerpts.
+tmp_env2=$(mktemp)
+BASH_ENV="$tmp_env2"
+write_bash_env 'Step with spaces and "quotes"' $'first line\nsecond line'
+# shellcheck disable=SC1090
+source "$tmp_env2"
+[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == $'*Failed step:*\nStep with spaces and "quotes"' ]]
+[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == $'*Redacted error excerpt:*\n```\nfirst line\nsecond line\n```' ]]
+rm -f "$tmp_env" "$tmp_env2"
+
+echo 'Slack failure diagnostic helper tests passed.'*Redacted error excerpt:*\n```\nline one\nline two\n```' ]]
 
 # Missing API token must produce a safe fallback and never call the network.
 tmp_env=$(mktemp)
