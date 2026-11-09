@@ -1726,3 +1726,132 @@ def test_payment_idempotency_reuse_with_changed_payload_has_no_api_side_effects(
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_invoice_number_uniqueness_is_business_scoped_and_conflicts_roll_back():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        source_invoice = session.get(Invoice, invoice_id)
+        assert source_invoice is not None
+        customer_id = source_invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/invoices"
+    payload = {
+        "invoice_number": "RET-INV-1",
+        "currency_code": "EGP",
+        "customer_id": str(customer_id),
+        "lines": [{"description": "Duplicate number", "quantity": "1.000", "unit_price": "5.00"}],
+    }
+    try:
+        with Session(engine) as session:
+            baseline = (
+                session.scalar(select(func.count()).select_from(Invoice).where(
+                    Invoice.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(InvoiceLine).where(
+                    Invoice.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )),
+            )
+
+        duplicate = client.post(base, json=payload)
+        assert duplicate.status_code == 409, duplicate.text
+        assert duplicate.json()["detail"] == "The operation conflicts with existing business data."
+        with Session(engine) as session:
+            after_duplicate = (
+                session.scalar(select(func.count()).select_from(Invoice).where(
+                    Invoice.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(InvoiceLine).where(
+                    InvoiceLine.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )),
+            )
+        assert after_duplicate == baseline
+
+        draft_payload = {
+            **payload,
+            "invoice_number": "RET-INV-2",
+            "lines": [{"description": "Original draft line", "quantity": "2.000", "unit_price": "7.00"}],
+        }
+        created = client.post(base, json=draft_payload)
+        assert created.status_code == 201, created.text
+        draft_id = UUID(created.json()["id"])
+        with Session(engine) as session:
+            before_conflicting_edit = (
+                session.scalar(select(func.count()).select_from(Invoice).where(
+                    Invoice.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(InvoiceLine).where(
+                    Invoice.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )),
+            )
+
+        conflicting_edit = client.patch(
+            f"{base}/{draft_id}",
+            json={
+                **draft_payload,
+                "invoice_number": "RET-INV-1",
+                "lines": [{"description": "Must not replace", "quantity": "1.000", "unit_price": "1.00"}],
+            },
+        )
+        assert conflicting_edit.status_code == 409, conflicting_edit.text
+        with Session(engine) as session:
+            after_conflicting_edit = (
+                session.scalar(select(func.count()).select_from(Invoice).where(
+                    Invoice.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(InvoiceLine).where(
+                    InvoiceLine.business_id == business_id
+                )),
+                session.scalar(select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )),
+            )
+            saved_draft = session.get(Invoice, draft_id)
+            saved_line = session.scalar(select(InvoiceLine).where(
+                InvoiceLine.invoice_id == draft_id,
+                InvoiceLine.business_id == business_id,
+            ))
+            assert after_conflicting_edit == before_conflicting_edit
+            assert saved_draft is not None
+            assert saved_draft.invoice_number == "RET-INV-2"
+            assert saved_draft.total == Decimal("14.00")
+            assert saved_line is not None
+            assert saved_line.description == "Original draft line"
+            assert saved_line.quantity == Decimal("2.000")
+
+        with Session(engine) as session:
+            other_business = Business(name="Other invoice numbering tenant", currency_code="EGP")
+            session.add(other_business)
+            session.flush()
+            session.add(BusinessMembership(
+                business_id=other_business.id,
+                user_subject="test-subject",
+                role=MembershipRole.OWNER,
+            ))
+            session.commit()
+            other_business_id = other_business.id
+
+        same_number_other_tenant = client.post(
+            f"/api/v1/businesses/{other_business_id}/invoices",
+            json={
+                **payload,
+                "customer_id": None,
+                "lines": [{"description": "Other tenant invoice", "quantity": "1.000", "unit_price": "5.00"}],
+            },
+        )
+        assert same_number_other_tenant.status_code == 201, same_number_other_tenant.text
+        assert same_number_other_tenant.json()["invoice_number"] == "RET-INV-1"
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
