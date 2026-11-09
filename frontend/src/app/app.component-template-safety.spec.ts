@@ -1027,12 +1027,16 @@ test('purchase orders remain creatable by members while receiving and payment wr
 });
 
 test('local CSV exports follow the backend owner-only export permission', () => {
-  const exportButton = `<button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button>`;
-  assert.equal(source.split(exportButton).length - 1, 3, 'the three current-list export buttons must remain available to owners');
-  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
+  assert.equal((source.match(/\(click\)="exportCurrentList\(\)"/g) || []).length, 3,
+    'the three current-list export buttons must remain available to owners');
+  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary(?: invoice-export)?" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
   const listExportStart = source.indexOf('exportCurrentList(): void');
   const listExportEnd = source.indexOf('syncPaymentCustomer(): void', listExportStart);
-  assert.match(source.slice(listExportStart, listExportEnd), /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+  const listExport = source.slice(listExportStart, listExportEnd);
+  assert.match(listExport, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+  assert.match(listExport, /headers = \['customer_name', 'invoice_number', 'issue_date', 'status', 'total', 'currency', 'remaining_balance'\]/);
+  assert.match(listExport, /this\.customerNameForInvoice\(item\.customer_id\)/);
+  assert.match(listExport, /item\.status === 'issued' \? item\.outstanding_amount/);
   const paymentExportStart = source.indexOf('exportPaymentsCsv(): void');
   const paymentExportEnd = source.indexOf('async createPayment(): Promise<void>', paymentExportStart);
   assert.match(source.slice(paymentExportStart, paymentExportEnd), /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
