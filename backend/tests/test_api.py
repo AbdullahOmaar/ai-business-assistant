@@ -1911,7 +1911,7 @@ def test_invoice_api_create_and_edit_multi_line_draft_uses_catalog_price_and_per
                 select(InvoiceLine).where(
                     InvoiceLine.invoice_id == created_id,
                     InvoiceLine.business_id == business_id,
-                ).order_by(InvoiceLine.id)
+                ).order_by(InvoiceLine.description, InvoiceLine.id)
             ).all()
             audit_count = session.scalar(
                 select(func.count()).select_from(AuditEvent).where(
@@ -1957,7 +1957,7 @@ def test_invoice_api_create_and_edit_multi_line_draft_uses_catalog_price_and_per
                 select(InvoiceLine).where(
                     InvoiceLine.invoice_id == created_id,
                     InvoiceLine.business_id == business_id,
-                ).order_by(InvoiceLine.id)
+                ).order_by(InvoiceLine.description, InvoiceLine.id)
             ).all()
             audit_count = session.scalar(
                 select(func.count()).select_from(AuditEvent).where(
