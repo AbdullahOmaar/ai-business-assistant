@@ -35,11 +35,14 @@ extract_output_text() {
 
 redact_text() {
   local raw="$1"
-  local secrets
-  secrets=$(jq -cn \
-    --arg slack "${SLACK_ACCESS_TOKEN:-}" \
-    --arg circle "${CIRCLE_API_TOKEN:-}" \
-    '[$slack, $circle] | map(select(length >= 8))' 2>/dev/null) || secrets='[]'
+  local secrets='[]'
+  local key value
+  while IFS= read -r key; do
+    value="${!key}"
+    if [[ ${#value} -ge 8 ]]; then
+      secrets=$(jq --arg secret "$value" '. + [$secret]' <<< "$secrets" 2>/dev/null) || secrets='[]'
+    fi
+  done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
 
   printf '%s' "$raw" | jq -Rs --argjson secrets "$secrets" '
     reduce $secrets[] as $secret (. ; split($secret) | join("[REDACTED]"))
@@ -58,7 +61,7 @@ format_excerpt() {
   local raw="$1"
   local cleaned
   cleaned=$(printf '%s' "$raw" \
-    | sed -E 's/\\x1B\\[[0-9;]*[[:alpha:]]//g' \
+    | sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' \
     | awk 'NF { if (length($0) > 220) print substr($0, 1, 220) "…"; else print $0 }' \
     | tail -n 12)
   if [[ -z "$cleaned" ]]; then
