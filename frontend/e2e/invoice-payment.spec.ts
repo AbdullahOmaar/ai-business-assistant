@@ -626,18 +626,15 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   const editor = page.locator('aba-invoice-draft-editor');
   await editor.locator('input[name="invoiceNumber"]').fill('T38-E2E-001');
   await editor.locator('select[name="customerId"]').selectOption('customer-a');
-  let productSelect = editor.locator('select[name^="product-"]');
-  if (await productSelect.count() === 0) {
-    const lineKind = editor.locator('select[name^="kind-"]').first();
-    if (await lineKind.count() > 0) {
-      await lineKind.selectOption('product');
-    } else {
-      await editor.getByRole('button', { name: '+ Product', exact: true }).click();
-    }
-    productSelect = editor.locator('select[name^="product-"]');
+  const lineCards = editor.locator('.line-card');
+  if (await lineCards.count() === 0) {
+    await editor.getByRole('button', { name: '+ Product', exact: true }).click();
   }
-  await expect(productSelect.first()).toBeVisible();
-  await productSelect.first().selectOption('product-a');
+  await expect(lineCards).toHaveCount(1);
+  const firstLine = lineCards.first();
+  await firstLine.getByLabel('Line type').selectOption('product');
+  await expect(firstLine.getByLabel('Product')).toBeVisible();
+  await firstLine.getByLabel('Product').selectOption('product-a');
   await editor.locator('input[name^="quantity-"]').first().fill('2');
   await expect(editor.locator('.server-summary')).toHaveCount(0);
 

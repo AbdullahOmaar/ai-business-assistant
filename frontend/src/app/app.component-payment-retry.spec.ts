@@ -35,3 +35,11 @@ test('payment form details are locked while an uncertain request is pending', ()
   assert.match(source, /paymentLoading \? t\('جارٍ التسجيل…'/);
   assert.match(source, /paymentRetryPending \? t\('إعادة المحاولة بنفس الدفعة'/);
 });
+
+test('numeric payment form values are normalized before creating the retry snapshot', () => {
+  const payment = methodBetween('async createPayment(): Promise<void>', 'useAssistantSuggestion(');
+  assert.match(payment, /const amount = String\(this\.paymentAmount \?\? ''\)\.trim\(\)/);
+  assert.match(payment, /const allocation = String\(this\.paymentAllocationAmount \?\? ''\)\.trim\(\)/);
+  assert.match(payment, /amount,\s*currency_code:/);
+  assert.match(payment, /amount: allocation/);
+});

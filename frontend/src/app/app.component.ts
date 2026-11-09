@@ -1452,8 +1452,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private pendingInvoiceDraftOutcome: InvoiceDraftOutcomeSnapshot | null = null;
   private readonly invoiceDraftOutcomeVault = new InvoiceDraftOutcomeVault();
   paymentCustomerId = '';
-  paymentAmount = '';
-  paymentAllocationAmount = '';
+  paymentAmount: string | number = '';
+  paymentAllocationAmount: string | number = '';
   paymentMessage = '';
   paymentMessageKind: 'info' | 'success' | 'warning' | 'error' = 'info';
   paymentInvoiceId = '';
@@ -4064,11 +4064,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.paymentRetryPending = true;
       this.paymentIdempotencyKey = retrySnapshot.payload.idempotency_key;
     } else {
-      if (!this.paymentAmount.trim() || !this.paymentCustomerId) {
+      const amount = String(this.paymentAmount ?? '').trim();
+      if (!amount || !this.paymentCustomerId) {
         this.error = this.t('اختَر العميل وأدخل مبلغ الدفعة.', 'Choose a customer and enter the payment amount.');
         return;
       }
-      const allocation = this.paymentAllocationAmount.trim();
+      const allocation = String(this.paymentAllocationAmount ?? '').trim();
       if (this.paymentInvoiceId && !allocation) {
         this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
         return;
@@ -4077,7 +4078,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.paymentIdempotencyKey = 'payment-' + businessId + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
       }
       retrySnapshot = createPaymentRetrySnapshot(businessId, {
-        amount: this.paymentAmount.trim(),
+        amount,
         currency_code: businessSnapshot.currency_code,
         idempotency_key: this.paymentIdempotencyKey,
         customer_id: this.paymentCustomerId,
