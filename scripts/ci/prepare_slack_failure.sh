@@ -87,10 +87,20 @@ curl_config_quote() {
   jq -rn --arg value "$1" '$value | @json'
 }
 
+download_output_json() {
+  local url="$1"
+  local output_file="$2"
+  local max_bytes="${ABA_MAX_CIRCLECI_OUTPUT_BYTES:-1048576}"
+
+  printf 'url = %s\\n' "$(curl_config_quote "$url")" \\
+    | curl --silent --show-error --fail --location --max-time 8 \\
+        --max-filesize "$max_bytes" --output "$output_file" --config - 2>/dev/null
+}
+
 collect_failure_details() {
   local step='Failed step details unavailable'
   local excerpt='Open the CircleCI job link for the full output.'
-  local api_url api_config job_payload failed_steps temp_dir item name urls url output log_text combined redacted
+  local api_url api_config job_payload failed_steps temp_dir item name urls url output_file output log_text combined redacted
 
   if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     step='Diagnostic tooling unavailable in this job image'
@@ -119,7 +129,7 @@ collect_failure_details() {
     "$(curl_config_quote "Accept: application/json")" \
     "$(curl_config_quote "$api_url")")
   job_payload=$(printf '%s' "$api_config" \
-    | curl --silent --show-error --fail --location --max-time 12 --config - 2>/dev/null)
+    | curl --silent --show-error --fail --location --max-time 12 --max-filesize 1048576 --config - 2>/dev/null)
   if [[ -z "$job_payload" ]] || ! jq -e '.steps | type == "array"' >/dev/null 2>&1 <<< "$job_payload"; then
     step='Failed step lookup unavailable — CircleCI API request failed'
     excerpt='Check that CIRCLE_API_TOKEN is valid and can read project job details. Open the CircleCI job link for full logs.'
@@ -160,11 +170,14 @@ collect_failure_details() {
     ' <<< "$item" 2>/dev/null)
     while IFS= read -r url; do
       [[ "$url" == https://* ]] || continue
-      output=$(printf 'url = %s\n' "$(curl_config_quote "$url")" \
-        | curl --silent --show-error --fail --location --max-time 8 --range -262144 --max-filesize 262144 --config - 2>/dev/null)
-      [[ -n "$output" ]] || continue
-      log_text=$(extract_output_text "$output")
-      [[ -n "$log_text" ]] && printf '%s\n' "$log_text" >> "$combined"
+      output_file="$temp_dir/output-$count.json"
+      if download_output_json "$url" "$output_file"; then
+        output=$(cat "$output_file" 2>/dev/null)
+        log_text=$(extract_output_text "$output")
+        [[ -n "$log_text" ]] && printf '%s\\n' "$log_text" >> "$combined"
+      else
+        printf '%s\\n' 'Step output omitted: CircleCI response exceeded the 1 MiB safety limit or could not be retrieved. Open the CircleCI job link for full logs.' >> "$combined"
+      fi
     done <<< "$urls"
     count=$((count + 1))
     [[ "$count" -ge 2 ]] && break
