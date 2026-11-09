@@ -99,6 +99,13 @@ config_file="${CIRCLECI_CONFIG_FILE:-$SCRIPT_DIR/../.circleci/config.yml}"
 [[ "$(grep -c -- '- notify-on-failure' "$config_file")" -eq 8 ]]
 [[ "$(grep -c 'context: slack-secrets' "$config_file")" -eq 14 ]]
 grep -Fq 'event: fail' "$config_file"
+! grep -Fq 'event: pass' "$config_file"
+grep -Fq 'ignore_errors: true' "$config_file"
+grep -Fq 'CIRCLE_WORKFLOW_ID' "$config_file"
+grep -Fq 'CIRCLE_JOB' "$config_file"
+grep -Fq 'CIRCLE_BRANCH' "$config_file"
+grep -Fq 'CIRCLE_SHA1' "$config_file"
+grep -Fq 'CIRCLE_BUILD_URL' "$config_file"
 grep -Fq '"text": "*Failed step:*\n${ABA_FAILURE_STEP}"' "$config_file"
 grep -Fq '"text": "*Redacted error excerpt:*\n```\n${ABA_FAILURE_EXCERPT}\n```"' "$config_file"
 
