@@ -3335,3 +3335,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - This commit is a justified correction of a confirmed source-level test defect, not a retry of unchanged code. It triggered the configured non-main CircleCI workflow automatically.
 - Latest exact head `7723742d1746b00703ce4437db7ef79529c36d32`: all six CircleCI jobs 15688–15693 were blocked pre-start with `free-plan-no-credits-available`; aggregate 15694 is `not_run`. No tests/build/audit/browser step executed. Vercel Preview lookup returned zero deployments for this branch.
 - No paid credit purchase/plan upgrade, merge, production deployment, DB write or migration. Full maintainer diff review and rendered RTL/LTR/mobile/accessibility acceptance remain NOT COMPLETE / NOT RUN.
+
+
+## T38 Add Invoice editor redesign — RTL navigation review — 2026-11-09
+
+- Static maintainer review found the back-navigation glyph was fixed leftward in both locales. Updated the editor to use a right arrow in Arabic RTL and a left arrow in English LTR; added a source regression assertion in `frontend/src/app/invoice-ui.spec.ts`.
+- Latest source commit containing the RTL direction test: `d6a30052973d43a512bbb11cb2f133f3648a19ab`.
+- CircleCI on that exact source commit: jobs 15716–15721 all blocked before start with `free-plan-no-credits-available`; aggregate did not execute. No tests/build/audit/browser checks ran.
+- This is a presentation/accessibility correction only. No API/backend/schema/financial semantics changed. No paid top-up, merge, production deployment, DB write or migration.
+- Remaining: CircleCI credits, exact-head 7/7 CircleCI, rendered Preview RTL/LTR/mobile/keyboard/screen-reader/device acceptance, and final maintainer review.
