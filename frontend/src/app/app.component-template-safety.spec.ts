@@ -1278,7 +1278,8 @@ test('payment submit remains available to reveal required-field validation', () 
   assert.ok(form.includes('payment-customer-error'));
   assert.match(form, /<button class="primary" type="submit" \[disabled\]="paymentLoading"/);
   assert.doesNotMatch(form, /\[disabled\]="[^"]*paymentForm\.invalid/);
-  assert.match(source, /if \(!this\.paymentAmount\.trim\(\) \|\| !this\.paymentCustomerId\)/);
+  assert.match(source, /const amount = String\(this\.paymentAmount \?\? ''\)\.trim\(\)/);
+  assert.match(source, /const allocation = String\(this\.paymentAllocationAmount \?\? ''\)\.trim\(\)/);
 });
 
 test('Home KPI cards use one column on narrow mobile viewports', () => {
