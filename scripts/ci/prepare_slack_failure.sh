@@ -2,8 +2,6 @@
 # Collect a small, redacted excerpt from CircleCI's failed step output.
 # This helper is deliberately best-effort: it must never mask the original CI failure.
 
-set +e
-set +x
 
 failed_steps_json() {
   local payload="$1"
@@ -170,6 +168,7 @@ collect_failure_details() {
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  step_names=''
+  set +e
+  set +x
   collect_failure_details "$@" || true
 fi
