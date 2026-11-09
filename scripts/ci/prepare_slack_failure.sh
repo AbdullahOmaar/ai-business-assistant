@@ -3,10 +3,7 @@
 # This helper is deliberately best-effort: it must never mask the original CI failure.
 
 set +e
-
-fallback_step() {
-  printf '%s' "${1:-Failed step details unavailable}"
-}
+set +x
 
 failed_steps_json() {
   local payload="$1"
@@ -62,6 +59,7 @@ format_excerpt() {
   local cleaned
   cleaned=$(printf '%s' "$raw" \
     | sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' \
+    | tr '\140' "'" \
     | awk 'NF { if (length($0) > 220) print substr($0, 1, 220) "…"; else print $0 }' \
     | tail -n 12)
   if [[ -z "$cleaned" ]]; then
@@ -107,8 +105,8 @@ collect_failure_details() {
   fi
 
   api_url="https://circleci.com/api/v1.1/project/gh/${CIRCLE_PROJECT_USERNAME:-AbdullahOmaar}/${CIRCLE_PROJECT_REPONAME:-ai-business-assistant}/${CIRCLE_BUILD_NUM}"
-  job_payload=$(curl --silent --show-error --fail --location --max-time 12 \
-    --header "Circle-Token: ${CIRCLE_API_TOKEN}" "$api_url" 2>/dev/null)
+  job_payload=$(printf 'header = "Circle-Token: %s"\nurl = "%s"\n' "$CIRCLE_API_TOKEN" "$api_url" \
+    | curl --silent --show-error --fail --location --max-time 12 --config - 2>/dev/null)
   if [[ -z "$job_payload" ]] || ! jq -e '.steps | type == "array"' >/dev/null 2>&1 <<< "$job_payload"; then
     step='Failed step lookup unavailable — CircleCI API request failed'
     excerpt='Check that CIRCLE_API_TOKEN is valid and can read project job details. Open the CircleCI job link for full logs.'
@@ -149,7 +147,8 @@ collect_failure_details() {
     ' <<< "$item" 2>/dev/null)
     while IFS= read -r url; do
       [[ "$url" == https://* ]] || continue
-      output=$(curl --silent --show-error --fail --location --max-time 8 "$url" 2>/dev/null)
+      output=$(printf 'url = "%s"\n' "$url" \
+        | curl --silent --show-error --fail --location --max-time 8 --config - 2>/dev/null)
       [[ -n "$output" ]] || continue
       log_text=$(extract_output_text "$output")
       [[ -n "$log_text" ]] && printf '%s\n' "$log_text" >> "$combined"
