@@ -19,8 +19,8 @@ test('print action is exposed only for issued invoices in desktop rows and mobil
     const draftStart = block.indexOf("invoice.status === 'draft'");
     const issuedStart = block.indexOf("@else if (invoice.status === 'issued')", draftStart);
     assert.ok(draftStart >= 0 && issuedStart > draftStart);
-    assert.doesNotMatch(block.slice(draftStart, issuedStart), /printInvoice\\(invoice\\)/);
-    assert.match(block.slice(issuedStart), /printInvoice\\(invoice\\)/);
+    assert.ok(!block.slice(draftStart, issuedStart).includes('printInvoice(invoice)'));
+    assert.ok(block.slice(issuedStart).includes('printInvoice(invoice)'));
   }
 });
 
