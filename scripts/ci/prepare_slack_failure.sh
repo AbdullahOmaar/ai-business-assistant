@@ -48,7 +48,11 @@ redact_text() {
     | gsub("AKIA[0-9A-Z]{16}"; "[REDACTED]")
     | gsub("(?i)aws_secret_access_key[[:space:]]*[:=][[:space:]]*[A-Za-z0-9/+=]{20,}"; "AWS_SECRET_ACCESS_KEY=[REDACTED]")
     | gsub("eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"; "[REDACTED JWT]")
-    | gsub("(?i)(password|passwd|token|secret|api[_-]?key)[[:space:]]*[:=][[:space:]]*[^[:space:],;]+"; "[REDACTED]")
+    | gsub("(?i)\"(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)\"[[:space:]]*:[[:space:]]*\"([^\"\\\\]|\\\\.)*\""; "[REDACTED JSON CREDENTIAL]")
+    | gsub("(?i)'(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)'[[:space:]]*:[[:space:]]*'[^']*'"; "[REDACTED YAML CREDENTIAL]")
+    | gsub("(?i)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*\"([^\"\\\\]|\\\\.)*\""; "[REDACTED]")
+    | gsub("(?i)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*'[^']*'"; "[REDACTED]")
+    | gsub("(?im)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*[^\\r\\n,;}]+")
     | gsub("(?i)[a-z][a-z0-9+.-]*://[^:/@[:space:]]+:[^@[:space:]]+@"; "[REDACTED URL CREDENTIALS]@")
     | gsub("(?i)https?://[^[:space:]]*[?&](token|access_token|signature|sig|x-amz-signature|x-amz-security-token|awsaccesskeyid|x-goog-signature)=[^[:space:]]+"; "[REDACTED SIGNED URL]")
     | gsub("-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"; "[REDACTED PRIVATE KEY]")
@@ -66,7 +70,7 @@ format_excerpt() {
   if [[ -z "$cleaned" ]]; then
     printf '%s' 'No step output was returned by CircleCI.'
   else
-    printf '%s' "$cleaned" | head -c 1400
+    printf '%s' "$cleaned" | tail -c 1400
   fi
 }
 
