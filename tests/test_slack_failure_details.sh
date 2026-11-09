@@ -34,6 +34,13 @@ redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basi
 [[ "$redacted" != *'abc'* ]]
 [[ "$redacted" != *'postgresql+psycopg://dbuser'* ]]
 [[ "$redacted" == *'[REDACTED]'* ]]
+json_credentials=$(redact_text '{"password":"generated-password-value","access_token":"generated-access-value","client_secret":"value with spaces"}')
+[[ "$json_credentials" != *'generated-password-value'* ]]
+[[ "$json_credentials" != *'generated-access-value'* ]]
+[[ "$json_credentials" != *'value with spaces'* ]]
+yaml_credentials=$(redact_text $"'password': 'quoted secret value'\npassword=\"quoted value with spaces\"")
+[[ "$yaml_credentials" != *'quoted secret value'* ]]
+[[ "$yaml_credentials" != *'quoted value with spaces'* ]]
 jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
 jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
 jwt_signature='SyntheticSignatureForTestsValue'
@@ -57,9 +64,9 @@ redacted_key=$(redact_text "$private_key")
 [[ "$redacted_key" != *'private-key-body-must-not-leak'* ]]
 [[ "$redacted_key" == *'[REDACTED PRIVATE KEY]'* ]]
 
-long_log=$(for i in $(seq 1 30); do printf 'diagnostic line %02d with a moderately long error detail\n' "$i"; done)
+long_log=$(for i in $(seq 1 12); do printf 'diagnostic line %02d %0200d\n' "$i" "$i"; done)
 excerpt=$(format_excerpt "$long_log")
-[[ "$excerpt" == *'diagnostic line 30'* ]]
+[[ "$excerpt" == *'diagnostic line 12'* ]]
 [[ "$excerpt" != *'```'* ]]
 [[ "$excerpt" != *'diagnostic line 01'* ]]
 [[ "$(printf '%s' "$excerpt" | wc -c)" -le 1400 ]]
