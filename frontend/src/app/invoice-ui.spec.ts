@@ -83,7 +83,9 @@ test('invoice editor groups details, line items and server-owned totals into res
 });
 
 test('invoice summary shows currency once and keeps its pending state localized', () => {
-  assert.match(editorSource, /class="currency"\>\{\{ currencyCode \}\}<\/span>/);
+  assert.match(editorSource, /@if \(!serverSummary\) \{\s*<span class="currency">\{\{ currencyCode \}\}<\/span>/);
   assert.match(editorSource, /class="invoice-summary-pending" \[attr\.aria-label\]="t\('إجماليات الفاتورة بعد الحفظ', 'Invoice totals after save'\)"/);
-  assert.doesNotMatch(editorSource, /serverSummary\.(?:subtotal|discount_total|tax_total|total) \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code/);
+  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code \}\}/);
+  assert.doesNotMatch(editorSource, /serverSummary\.(?:subtotal|discount_total|tax_total) \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code/);
+  assert.doesNotMatch(editorSource, /class="server-summary[^"]*invoice-summary-pending"/);
 });
