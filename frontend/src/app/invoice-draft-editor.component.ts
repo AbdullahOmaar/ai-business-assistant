@@ -40,7 +40,7 @@ import type {
           {{ t('رقم الفاتورة', 'Invoice number') }}
           <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="64" [disabled]="locked" />
         </label>
-        <label>
+        <label class="customer-field">
           {{ t('العميل', 'Customer') }}
           <select name="customerId" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="locked">
             <option value="">{{ t('اختَر العميل', 'Choose customer') }}</option>
@@ -163,6 +163,7 @@ import type {
     .editor-heading p, .muted { color: var(--muted, #667085); margin: 4px 0 0; }
     .currency { font-weight: 700; white-space: nowrap; }
     .invoice-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .invoice-fields .customer-field { grid-column: 1 / -1; }
     label { display: grid; gap: 6px; min-width: 0; font-size: .92rem; }
     input, select { width: 100%; min-width: 0; box-sizing: border-box; }
     .line-list { display: grid; gap: 10px; }
