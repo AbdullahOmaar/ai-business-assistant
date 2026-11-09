@@ -125,7 +125,7 @@ test('invoice amounts use consistent grouped decimal formatting in the list and 
   assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
 });
 
-test('responsive invoice list uses a semantic desktop table and dedicated mobile cards', () => {
+test('responsive invoice list uses the accessible table fallback and compact responsive cards', () => {
   assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
   assert.match(source, /class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption"/);
@@ -134,7 +134,8 @@ test('responsive invoice list uses a semantic desktop table and dedicated mobile
   assert.match(source, /class="invoice-cards"/);
   assert.match(source, /class="invoice-card-financials"/);
   assert.match(source, /\.invoice-table-wrap\{display:none\}/);
-  assert.match(source, /\.invoice-card-financials\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(source, /\.invoice-cards\{display:grid;grid-template-columns:repeat\(auto-fit/);
+  assert.match(source, /\.invoice-card-financials\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(source, /class="list-row customer-list-row"/);
 });
 
