@@ -3325,3 +3325,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Remaining evidence boundary:** local frontend test/build commands and physical Android/PWA acceptance were NOT RUN because the available Desktop Commander device is offline. CircleCI exact-head test/build/browser-smoke passed.
 - **Security note:** an existing temporary shareable Vercel Protection Bypass remains attached to the production alias and expires 2026-11-10 05:26 Cairo. This release did not create or revoke it; Owner/Admin decision remains required. Do not copy its token into project records.
 - **Overall:** this bounded invoice UX release is complete as a merged and deployed Web release. Do not mark T18/T50 or the wider product acceptance workstreams VERIFIED COMPLETE based on this slice.
+
+
+## T38 Add Invoice editor redesign — CI assertion correction — 2026-11-09
+
+- Repository `AGENTS.md` contains the permanent Owner directive effective 2026-11-08 that lifts all prior CircleCI execution freezes; this supersedes the earlier PR #363 checkpoint's task-level stop condition. CircleCI remains the only approved CI provider.
+- Confirmed defect in `frontend/src/app/invoice-ui.spec.ts`: the negative regex alternative `moveLine` matched the existing `removeLine` method. Corrected it to the word-boundary expression `\bmoveLine\b`, preserving the intended prohibition on reorder controls without rejecting the remove handler.
+- Source correction commit: `30932a73be8e73623f34d4c22e54242417c6b0be`.
+- This commit is a justified CI diagnostic change, not a retry of unchanged code. The new commit should trigger the configured non-main CircleCI workflow automatically.
+- Exact-head CircleCI results, root causes for the other failed jobs, Preview availability, rendered RTL/LTR/mobile/accessibility acceptance and full maintainer review remain pending verification. No merge, production deployment, DB write or migration performed.
