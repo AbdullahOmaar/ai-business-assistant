@@ -52,7 +52,7 @@ redact_text() {
     | gsub("(?i)\u0027(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)\u0027[[:space:]]*:[[:space:]]*\u0027[^\u0027]*\u0027"; "[REDACTED YAML CREDENTIAL]")
     | gsub("(?i)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*\"([^\"\\\\]|\\\\.)*\""; "[REDACTED]")
     | gsub("(?i)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*\u0027[^\u0027]*\u0027"; "[REDACTED]")
-    | gsub("(?im)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*[^\\r\\n,;}]+")
+    | gsub("(?im)(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)[[:space:]]*[:=][[:space:]]*[^\\r\\n,;}]+"; "[REDACTED]")
     | gsub("(?i)[a-z][a-z0-9+.-]*://[^:/@[:space:]]+:[^@[:space:]]+@"; "[REDACTED URL CREDENTIALS]@")
     | gsub("(?i)https?://[^[:space:]]*[?&](token|access_token|signature|sig|x-amz-signature|x-amz-security-token|awsaccesskeyid|x-goog-signature)=[^[:space:]]+"; "[REDACTED SIGNED URL]")
     | gsub("-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"; "[REDACTED PRIVATE KEY]")
