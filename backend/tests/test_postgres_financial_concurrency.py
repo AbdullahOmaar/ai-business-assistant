@@ -226,6 +226,50 @@ def test_concurrent_payments_cannot_overallocate_an_invoice(postgres_engine, pg_
         assert invoice.total - allocated == Decimal("25.00")
 
 
+def test_concurrent_multi_invoice_payments_with_opposite_allocation_order_do_not_deadlock(
+    postgres_engine, pg_workspace,
+):
+    invoice_a, _ = _make_issued_invoice(postgres_engine, pg_workspace, "LOCK-A", "100.00")
+    invoice_b, _ = _make_issued_invoice(postgres_engine, pg_workspace, "LOCK-B", "100.00")
+
+    def record(index):
+        ordered = (
+            [(invoice_a, Decimal("50.00")), (invoice_b, Decimal("50.00"))]
+            if index == 0
+            else [(invoice_b, Decimal("50.00")), (invoice_a, Decimal("50.00"))]
+        )
+        with Session(postgres_engine) as session:
+            try:
+                payment = record_payment(
+                    session,
+                    principal=pg_workspace["principal"],
+                    business_id=pg_workspace["business_id"],
+                    customer_id=pg_workspace["customer_id"],
+                    amount=Decimal("100.00"),
+                    currency_code="EGP",
+                    idempotency_key=f"multi-order-{index}-{uuid4().hex}",
+                    allocations=ordered,
+                )
+                session.commit()
+                return ("ok", payment.id)
+            except Exception as exc:
+                session.rollback()
+                return ("error", type(exc).__name__, str(exc))
+
+    results = _run_two_concurrently(record)
+    assert all(result[0] == "ok" for result in results), results
+
+    with Session(postgres_engine) as session:
+        assert session.scalar(select(func.count()).select_from(Payment)) == 2
+        assert session.scalar(select(func.count()).select_from(PaymentAllocation)) == 4
+        for invoice_id in (invoice_a, invoice_b):
+            allocated = session.scalar(select(func.sum(PaymentAllocation.amount)).where(
+                PaymentAllocation.business_id == pg_workspace["business_id"],
+                PaymentAllocation.invoice_id == invoice_id,
+            ))
+            assert allocated == Decimal("100.00")
+
+
 def test_concurrent_stock_sales_cannot_overdraw_inventory(postgres_engine, pg_workspace):
     business_id = pg_workspace["business_id"]
     principal = pg_workspace["principal"]

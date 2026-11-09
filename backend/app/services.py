@@ -574,14 +574,23 @@ def record_payment(
     # Validate every allocation before persisting the payment. This keeps rejected
     # cross-business, wrong-customer, currency, and over-allocation requests from
     # leaving a payment row behind, including on SQLite test connections.
-    validated_allocations = []
-    allocated_total = ZERO
-    for invoice_id, allocation_amount in requested:
+    # Acquire all invoice row locks in deterministic order. Different payment
+    # requests may list the same invoices in opposite orders; sorting prevents
+    # an A→B / B→A row-lock deadlock while preserving caller order for validation
+    # and allocation creation below.
+    locked_invoices = {}
+    for invoice_id in sorted(requested_map, key=str):
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == invoice_id, Invoice.business_id == business_id,
         ).with_for_update()).one_or_none()
         if invoice is None or invoice.status != "issued":
             raise WorkflowError("Payment can only be allocated to an issued invoice in this business")
+        locked_invoices[invoice_id] = invoice
+
+    validated_allocations = []
+    allocated_total = ZERO
+    for invoice_id, allocation_amount in requested:
+        invoice = locked_invoices[invoice_id]
         if invoice.currency_code != currency:
             raise WorkflowError("Payment and invoice currencies must match")
         if invoice.customer_id != customer_id:
