@@ -31,6 +31,7 @@ redacted=$(redact_text 'Authorization: Bearer abcdef123456 password=hunter2 toke
 long_log=$(for i in $(seq 1 30); do printf 'diagnostic line %02d with a moderately long error detail\n' "$i"; done)
 excerpt=$(format_excerpt "$long_log")
 [[ "$excerpt" == *'diagnostic line 30'* ]]
+[[ "$excerpt" != *'```'* ]]
 [[ "$excerpt" != *'diagnostic line 01'* ]]
 [[ ${#excerpt} -le 1400 ]]
 
