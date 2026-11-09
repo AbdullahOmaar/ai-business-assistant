@@ -96,6 +96,8 @@ grep -Fq -- '--max-filesize' "$CURL_ARGS_FILE"
 downloaded_output=$(cat "$output_file")
 large_text=$(extract_output_text "$downloaded_output")
 [[ "$large_text" == *'FINAL_ERROR_MARKER'* ]]
+large_excerpt=$(format_excerpt "$large_text")
+[[ "$large_excerpt" == *'FINAL_ERROR_MARKER'* ]]
 rm -f "$output_file" "$CURL_ARGS_FILE"
 unset -f curl
 unset MOCK_CIRCLECI_OUTPUT CURL_ARGS_FILE
