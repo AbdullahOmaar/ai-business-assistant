@@ -592,11 +592,11 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
 
   // The workspace name renders before the initial data load finishes. Wait for
-  // the seeded invoice row, which is rendered only after the workspace's
+  // the seeded invoice card, which is rendered only after the workspace's
   // parallel dashboard/customer/product/invoice/payment/expense load completes.
   await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
   await expect(
-    page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-A' })
+    page.locator('.invoice-card').filter({ hasText: 'INV-ISSUED-A' })
   ).toBeVisible();
 
   return {
@@ -663,8 +663,8 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
     expect(createPayload).not.toHaveProperty(forbidden);
   }
 
-  const createdInvoiceRow = page.locator('.invoice-table tbody tr').filter({ hasText: 'T38-E2E-001' });
-  await createdInvoiceRow.getByRole('button', { name: 'Edit', exact: true }).click();
+  const createdInvoiceCard = page.locator('.invoice-card').filter({ hasText: 'T38-E2E-001' });
+  await createdInvoiceCard.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(editor.getByRole('heading', { name: 'Edit invoice draft' })).toBeVisible();
   await editor.locator('.line-card').nth(1).getByLabel('Service description').fill('Updated installation service');
   await editor.getByRole('button', { name: 'Save invoice draft' }).click();
@@ -718,7 +718,7 @@ test('late invoice detail is discarded and its print window closes after a works
     )
   ).toBe(true);
   await expect(
-    page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-B' })
+    page.locator('.invoice-card').filter({ hasText: 'INV-ISSUED-B' })
   ).toBeVisible({ timeout: 20_000 });
   const customerFilter = page.locator('select[name="invoiceFilterCustomer"]');
   await expect(customerFilter).toBeVisible();
