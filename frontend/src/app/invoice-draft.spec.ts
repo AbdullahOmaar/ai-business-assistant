@@ -5,7 +5,6 @@ import {
   findInvoiceDraftRecoveryMatch,
   invoiceDraftLinesFromExisting,
   localizeInvoiceDraftValidationMessage,
-  moveInvoiceDraftLine,
   removeInvoiceDraftLine,
   toInvoiceDraftPayload,
   validateInvoiceDraft,
@@ -87,13 +86,20 @@ test('preserves input strings and order in the server request', () => {
   assert.equal(payload.lines[1].unit_price, '0.00');
 });
 
-test('moves and removes draft rows without mutating the original collection', () => {
+test('removes draft rows without mutating the original collection or removing the last required row', () => {
   const lines = [productLine, manualLine];
-  assert.deepEqual(moveInvoiceDraftLine(lines, 0, 1), [manualLine, productLine]);
-  assert.deepEqual(lines, [productLine, manualLine]);
   assert.deepEqual(removeInvoiceDraftLine(lines, 0), [manualLine]);
+  assert.deepEqual(lines, [productLine, manualLine]);
   assert.deepEqual(removeInvoiceDraftLine(lines, 8), lines);
   assert.deepEqual(removeInvoiceDraftLine([productLine], 0), [productLine]);
+});
+
+test('preserves invoice notes in the draft payload and enforces the API length limit', () => {
+  const payload = toInvoiceDraftPayload({ ...validInput(), notes: '  Call before delivery  ' }, products, customers);
+  assert.equal(payload.notes, 'Call before delivery');
+  assert.equal(toInvoiceDraftPayload({ ...validInput(), notes: '   ' }, products, customers).notes, null);
+  assert.match(validateInvoiceDraft({ ...validInput(), notes: 'x'.repeat(2001) }, products, customers) ?? '', /notes/i);
+  assert.equal(validateInvoiceDraft({ ...validInput(), notes: 'x'.repeat(2000) }, products, customers), null);
 });
 
 test('matches the API maximum of 500 invoice lines', () => {
