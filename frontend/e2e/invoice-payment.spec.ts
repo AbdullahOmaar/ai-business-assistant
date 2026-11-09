@@ -646,7 +646,7 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await serviceLine.getByLabel('Quantity').fill('1');
   await editor.getByRole('button', { name: 'Save invoice draft' }).click();
 
-  await expect(editor.getByText(/777\.77 EGP/)).toBeVisible();
+  await expect(editor.locator('.server-summary .total strong')).toHaveText('777.77 EGP');
   expect(harness.invoiceCreateRequests).toHaveLength(1);
   const createPayload = harness.invoiceCreateRequests[0];
   expect(createPayload.invoice_number).toBe('T38-E2E-001');
@@ -669,7 +669,7 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await editor.locator('.line-card').nth(1).getByLabel('Service description').fill('Updated installation service');
   await editor.getByRole('button', { name: 'Save invoice draft' }).click();
 
-  await expect(editor.getByText(/888\.88 EGP/)).toBeVisible();
+  await expect(editor.locator('.server-summary .total strong')).toHaveText('888.88 EGP');
   expect(harness.invoiceUpdateRequests).toHaveLength(1);
   expect(harness.apiRequests.some(item =>
     item.method === 'PATCH' && item.path === '/api/v1/businesses/business-a/invoices/invoice-created-a'
