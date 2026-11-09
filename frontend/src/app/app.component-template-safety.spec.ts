@@ -50,11 +50,16 @@ test('workspace version and build time live inside the current-business card', (
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)\}/);
 });
 
-test('invoice creation is presented before the responsive invoice search and filters', () => {
+test('the new invoice editor replaces the old disclosure before invoice search and filters', () => {
   const toolbar = source.indexOf('class="invoice-toolbar"');
-  const create = source.indexOf('class="invoice-create-disclosure"', toolbar);
+  const panel = source.indexOf('class="invoice-create-panel"', toolbar);
+  const createButton = source.indexOf('class="primary invoice-create-button"', toolbar);
   const controls = source.indexOf('class="invoice-controls"', toolbar);
-  assert.ok(toolbar >= 0 && create > toolbar && controls > create);
+  assert.ok(toolbar >= 0 && panel > toolbar && createButton > panel && controls > createButton);
+  assert.doesNotMatch(source, /invoice-create-disclosure|onInvoiceCreateToggle/);
+  assert.match(source, /\[discountRate\]="invoiceDiscountRate"/);
+  assert.match(source, /\[taxRate\]="invoiceTaxRate"/);
+  assert.match(source, /\(cancel\)="cancelInvoiceEdit\(\)"/);
   assert.match(source, /Search by customer name or invoice number/);
   assert.match(source, /name="invoiceFilterCustomer"/);
   assert.match(source, /class="invoice-search-icon"/);
@@ -1467,12 +1472,13 @@ test('AI assistant conversation history is a named keyboard-scrollable log regio
   assert.match(log, /\[attr\.aria-label\]=/);
 });
 
-test('unapproved discount and tax rates remain read-only and existing values are preserved', () => {
-  assert.match(source, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
-  assert.match(source, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
-  assert.doesNotMatch(source, /name="invoiceDiscountRate"[^>]*\[\(ngModel\)\]/);
-  assert.doesNotMatch(source, /name="invoiceTaxRate"[^>]*\[\(ngModel\)\]/);
-  assert.match(source, /editing a draft preserves its saved values without changing them/);
+test('unapproved discount and tax rates remain read-only and saved values are preserved', () => {
+  assert.match(invoiceEditorSource, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(invoiceEditorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
+  assert.doesNotMatch(invoiceEditorSource, /name="invoiceDiscountRate"[^>]*\[\(ngModel\)\]/);
+  assert.doesNotMatch(invoiceEditorSource, /name="invoiceTaxRate"[^>]*\[\(ngModel\)\]/);
+  assert.match(source, /\[discountRate\]="invoiceDiscountRate"/);
+  assert.match(source, /\[taxRate\]="invoiceTaxRate"/);
 
   const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
   const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
@@ -1484,4 +1490,5 @@ test('unapproved discount and tax rates remain read-only and existing values are
   const edit = source.slice(editStart, editEnd);
   assert.match(edit, /this\.invoiceDiscountRate = this\.deriveRate\(detail\.discount_total, detail\.subtotal\)/);
   assert.match(edit, /this\.invoiceTaxRate = this\.deriveRate\(detail\.tax_total, taxableBase\.toFixed\(2\)\)/);
+  assert.match(edit, /this\.invoiceDraftNotes = detail\.notes \?\? ''/);
 });
