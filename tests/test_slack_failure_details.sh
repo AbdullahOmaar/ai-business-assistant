@@ -2,7 +2,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=/dev/null
-source "$SCRIPT_DIR/../ci/prepare_slack_failure.sh"
+source "$SCRIPT_DIR/../scripts/ci/prepare_slack_failure.sh"
 
 command -v jq >/dev/null 2>&1 || { echo 'jq is required for CI diagnostic helper tests'; exit 1; }
 
@@ -23,6 +23,7 @@ redacted=$(redact_text 'Authorization: Bearer abcdef123456 password=hunter2 toke
 [[ "$redacted" != *'abcdef123456'* ]]
 [[ "$redacted" != *'hunter2'* ]]
 [[ "$redacted" != *'dbpass'* ]]
+[[ "$redacted" != *'ci_password'* ]]
 [[ "$redacted" != *'xoxb-fake-slack-token-1234567890'* ]]
 [[ "$redacted" != *'circleci-fake-api-token-1234567890'* ]]
 [[ "$redacted" == *'[REDACTED]'* ]]
