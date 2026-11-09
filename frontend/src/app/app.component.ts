@@ -644,6 +644,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else {
                   <div class="invoice-table-wrap" tabindex="0" [attr.aria-label]="t('جدول الفواتير، استخدم الأسهم أو التمرير الأفقي عند الحاجة', 'Invoice table; use arrow keys or horizontal scrolling when needed')">
                     <table class="invoice-table">
+                      <caption>{{ t('قائمة الفواتير', 'Invoice list') }}</caption>
                       <thead><tr>
                         <th scope="col">{{ t('العميل', 'Customer') }}</th><th scope="col">{{ t('الفاتورة / التاريخ', 'Invoice / date') }}</th>
                         <th scope="col">{{ t('القيمة', 'Amount') }}</th><th scope="col">{{ t('المتبقي', 'Remaining') }}</th>
@@ -1209,6 +1210,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .invoice-export{min-height:40px;white-space:nowrap;padding:8px 11px}
     .invoice-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}
     .invoice-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:auto}
+    .invoice-table caption{padding:10px 13px;text-align:start;color:var(--aba-color-text-secondary,#64748b);font-size:11px;font-weight:700}
     .invoice-table th,.invoice-table td{padding:12px 13px;text-align:start;vertical-align:middle;border-bottom:1px solid var(--aba-color-border-subtle,#e2e8f0);overflow-wrap:anywhere}
     .invoice-table th{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
     .invoice-table th:nth-child(3),.invoice-table th:nth-child(4){text-align:end}
@@ -1569,8 +1571,17 @@ export class AppComponent implements OnInit, OnDestroy {
       filename = 'products.csv'; headers = ['name', 'sku', 'unit_price', 'currency', 'stock_tracked'];
       rows = this.filteredProducts.map(item => [item.name, item.sku || '', item.unit_price, this.business?.currency_code || '', item.is_stock_tracked ? 'yes' : 'no']);
     } else if (this.tab === 'invoices') {
-      filename = 'invoices.csv'; headers = ['invoice_number', 'status', 'total', 'currency'];
-      rows = this.filteredInvoices.map(item => [item.invoice_number, item.status, item.total, item.currency_code]);
+      filename = 'invoices.csv';
+      headers = ['customer_name', 'invoice_number', 'issue_date', 'status', 'total', 'currency', 'remaining_balance'];
+      rows = this.filteredInvoices.map(item => [
+        this.customerNameForInvoice(item.customer_id),
+        item.invoice_number,
+        item.issue_date || item.created_at || '',
+        item.status,
+        item.total,
+        item.currency_code,
+        item.status === 'issued' ? item.outstanding_amount ?? '' : '',
+      ]);
     } else return;
     const csv = buildCsv(headers, rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
