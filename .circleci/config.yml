@@ -11,8 +11,8 @@ commands:
       - run:
           name: Initialize Slack failure fallback
           command: |
-            echo 'export ABA_FAILURE_STEP="Not captured"' >> "$BASH_ENV"
-            echo 'export ABA_FAILURE_EXCERPT="The job failed before diagnostic collection could run."' >> "$BASH_ENV"
+            echo 'export ABA_FAILURE_STEP_BLOCK_JSON="\"*Failed step:*\\nNot captured\"' >> "$BASH_ENV"
+            echo 'export ABA_FAILURE_EXCERPT_BLOCK_JSON="\"*Redacted error excerpt:*\\n```\\nThe job failed before diagnostic collection could run.\\n```\"' >> "$BASH_ENV"
   notify-on-failure:
     steps:
       - run:
@@ -63,14 +63,14 @@ commands:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Failed step:*\n${ABA_FAILURE_STEP}"
+                    "text": ${ABA_FAILURE_STEP_BLOCK_JSON}
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Redacted error excerpt:*\n```\n${ABA_FAILURE_EXCERPT}\n```"
+                    "text": ${ABA_FAILURE_EXCERPT_BLOCK_JSON}
                   }
                 },
                 {
