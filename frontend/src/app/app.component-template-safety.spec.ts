@@ -50,12 +50,15 @@ test('workspace version and build time live inside the current-business card', (
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)\}/);
 });
 
-test('invoice creation is presented before invoice filtering', () => {
+test('invoice creation is presented before the responsive invoice search and filters', () => {
   const toolbar = source.indexOf('class="invoice-toolbar"');
   const create = source.indexOf('class="invoice-create-disclosure"', toolbar);
-  const filter = source.indexOf('customer-invoice-filter', toolbar);
-  assert.ok(toolbar >= 0 && create > toolbar && filter > create);
-  assert.equal((source.match(/class="inline-form customer-invoice-filter"/g) || []).length, 1);
+  const controls = source.indexOf('class="invoice-controls"', toolbar);
+  assert.ok(toolbar >= 0 && create > toolbar && controls > create);
+  assert.match(source, /Search by customer name or invoice number/);
+  assert.match(source, /name="invoiceFilterCustomer"/);
+  assert.match(source, /class="invoice-search-icon"/);
+  assert.equal((source.match(/class="invoice-controls"/g) || []).length, 1);
 });
 
 test('expense and notification types use selectable, localized options', () => {
@@ -105,13 +108,34 @@ test('workspace header keeps business name, selector, and release time in separa
   assert.match(source, /\.workspace-release-meta-inline \.version-pill\{max-width:100%;white-space:normal;overflow-wrap:anywhere\}/);
 });
 
-test('responsive sizing rules keep numeric invoice fields compact and cards within mobile width', () => {
+test('invoice customer filter can load additional customer pages for name search', () => {
+  assert.match(source, /@if \(customersHasMore\) \{\s*<button class="secondary invoice-load-more-customers" type="button" \(click\)="loadMoreInvoiceCustomers\(\)" \[disabled\]="customersLoadingMore"/);
+  assert.match(source, /Load 100 more customers to search/);
+  assert.match(source, /Loading customers/);
+  assert.match(source, /\.invoice-export,\.invoice-load-more-customers\{grid-column:1\/-1;justify-self:end\}/);
+  assert.match(source, /\.invoice-export,\.invoice-load-more-customers\{grid-column:auto;justify-self:stretch\}/);
+});
+
+test('invoice amounts use consistent grouped decimal formatting in the list and server summary', () => {
+  assert.match(source, /invoice\.total \| number:'1\.2-2'/);
+  assert.match(source, /invoice\.outstanding_amount \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.subtotal \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.discount_total \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.tax_total \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
+});
+
+test('responsive invoice list uses a semantic desktop table and dedicated mobile cards', () => {
   assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
-  assert.match(source, /\.list-row\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
-  assert.match(source, /class="list-row invoice-list-row"/);
+  assert.match(source, /class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption"/);
+  assert.match(source, /<caption id="invoice-table-caption">/);
+  assert.match(source, /class="invoice-table"/);
+  assert.match(source, /class="invoice-cards"/);
+  assert.match(source, /class="invoice-card-financials"/);
+  assert.match(source, /\.invoice-table-wrap\{display:none\}/);
+  assert.match(source, /\.invoice-card-financials\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(source, /class="list-row customer-list-row"/);
-  assert.match(source, /\.customer-list-row,\.invoice-list-row\{grid-template-columns:36px minmax\(0,1fr\)/);
 });
 
 test('financial and integrity report basis labels are localized', () => {
@@ -853,14 +877,14 @@ test('invoice print and draft edit cannot mix records across a workspace switch'
 
 test('invoice drafts are available to workspace members while issue and void remain owner-only', () => {
   const toolbarStart = source.indexOf('<div class="invoice-toolbar">');
-  const filterStart = source.indexOf('<div class="inline-form customer-invoice-filter">', toolbarStart);
+  const filterStart = source.indexOf('<div class="invoice-controls">', toolbarStart);
   const toolbar = source.slice(toolbarStart, filterStart);
   assert.ok(toolbarStart >= 0 && filterStart > toolbarStart);
   assert.match(toolbar, /<aba-invoice-draft-editor/);
   assert.match(toolbar, /\(saveDraft\)="saveInvoiceDraft\(\$event\)"/);
 
-  const rowStart = source.indexOf('@for (invoice of filteredInvoices');
-  const rowEnd = source.indexOf('</article> }', rowStart);
+  const rowStart = source.indexOf('@for (invoice of filteredInvoices', filterStart);
+  const rowEnd = source.indexOf('</tr>', rowStart);
   const row = source.slice(rowStart, rowEnd);
   assert.ok(rowStart >= 0 && rowEnd > rowStart);
   const draftStart = row.indexOf("@if (invoice.status === 'draft')");
@@ -1021,12 +1045,16 @@ test('purchase orders remain creatable by members while receiving and payment wr
 });
 
 test('local CSV exports follow the backend owner-only export permission', () => {
-  const exportButton = `<button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button>`;
-  assert.equal(source.split(exportButton).length - 1, 3, 'the three current-list export buttons must remain available to owners');
-  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
+  assert.equal((source.match(/\(click\)="exportCurrentList\(\)"/g) || []).length, 3,
+    'the three current-list export buttons must remain available to owners');
+  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary(?: invoice-export)?" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
   const listExportStart = source.indexOf('exportCurrentList(): void');
   const listExportEnd = source.indexOf('syncPaymentCustomer(): void', listExportStart);
-  assert.match(source.slice(listExportStart, listExportEnd), /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+  const listExport = source.slice(listExportStart, listExportEnd);
+  assert.match(listExport, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
+  assert.match(listExport, /headers = \['customer_name', 'invoice_number', 'issue_date', 'created_at', 'status', 'total', 'currency', 'remaining_balance'\]/);
+  assert.match(listExport, /this\.customerNameForInvoice\(item\.customer_id\)/);
+  assert.match(listExport, /item\.status === 'issued' \? item\.outstanding_amount/);
   const paymentExportStart = source.indexOf('exportPaymentsCsv(): void');
   const paymentExportEnd = source.indexOf('async createPayment(): Promise<void>', paymentExportStart);
   assert.match(source.slice(paymentExportStart, paymentExportEnd), /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.payments\.length\) return;/);

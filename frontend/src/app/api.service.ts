@@ -14,7 +14,7 @@ export interface Business {
 }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; }
-export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; }
+export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
 export interface InvoiceDetail extends Invoice {
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
