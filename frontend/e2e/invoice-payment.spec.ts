@@ -592,11 +592,11 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
 
   // The workspace name renders before the initial data load finishes. Wait for
-  // the seeded invoice row, which is rendered only after the workspace's
+  // the seeded invoice card, which is rendered only after the workspace's
   // parallel dashboard/customer/product/invoice/payment/expense load completes.
   await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
   await expect(
-    page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-A' })
+    page.locator('.invoice-card').filter({ hasText: 'INV-ISSUED-A' })
   ).toBeVisible();
 
   return {
