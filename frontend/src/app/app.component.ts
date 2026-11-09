@@ -594,7 +594,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
                 <div class="invoice-toolbar">
                   @if (invoiceCreateOpen) {
-                    <section class="invoice-create-panel" aria-label="Add invoice editor">
+                    <section class="invoice-create-panel" [attr.aria-label]="t('نموذج إضافة فاتورة', 'Add invoice editor')">
                       <aba-invoice-draft-editor
                         [language]="language" [products]="products" [customers]="customers"
                         [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
