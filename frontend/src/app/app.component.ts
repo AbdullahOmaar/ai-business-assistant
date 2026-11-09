@@ -591,42 +591,118 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'invoices') {
               <section abaCard class="panel">
                 <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
-                <div class="invoice-toolbar"><details class="invoice-create-disclosure" [open]="invoiceCreateOpen" (toggle)="onInvoiceCreateToggle($event)"><summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
-                <div class="inline-form invoice-form">
-                  <label>{{ t('الخصم الحالي (%)', 'Current discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" [value]="invoiceDiscountRate" readonly aria-readonly="true"></label>
-                  <label>{{ t('الضريبة الحالية (%)', 'Current tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" [value]="invoiceTaxRate" readonly aria-readonly="true"></label>
-                  <p class="footnote">{{ t('الخصم والضريبة للقراءة فقط حتى اعتماد العقد المالي المشترك؛ عند تعديل مسودة نحافظ على القيم المحفوظة دون تغييرها.', 'Discount and tax are read-only until the shared financial contract is approved; editing a draft preserves its saved values without changing them.') }}</p>
-                  <aba-invoice-draft-editor
-                    [language]="language"
-                    [products]="products"
-                    [customers]="customers"
-                    [currencyCode]="business.currency_code"
-                    [invoiceNumber]="invoiceNumber"
-                    [customerId]="invoiceCustomerId"
-                    [saving]="invoiceDraftSaving"
-                    [blocked]="invoiceDraftUncertain"
-                    [serverSummary]="invoiceDraftSummary"
-                    [initialLines]="invoiceDraftInitialLines"
-                    [draftRevision]="invoiceDraftRevision"
-                    [editing]="!!editingInvoiceId"
-                    [hasMoreCustomers]="customersHasMore"
-                    [hasMoreProducts]="productsHasMore"
-                    [loadingMoreCustomers]="customersLoadingMore"
-                    [loadingMoreProducts]="productsLoadingMore"
-                    (loadMoreCustomers)="loadMoreInvoiceCustomers()"
-                    (loadMoreProducts)="loadMoreInvoiceProducts()"
-                    (saveDraft)="saveInvoiceDraft($event)"
-                    (newDraft)="startNewInvoiceDraft()"
-                    (refreshStatus)="refreshInvoiceDraftStatus()"
-                  />
+                <div class="invoice-toolbar">
+                  <details class="invoice-create-disclosure" [open]="invoiceCreateOpen" (toggle)="onInvoiceCreateToggle($event)">
+                    <summary><span>{{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}</span><small>{{ t('افتح النموذج بشكل مستقل عن تصفية الفواتير', 'Open the form separately from invoice filtering') }}</small></summary>
+                    <div class="inline-form invoice-form">
+                      <label class="invoice-discount-field">{{ t('الخصم الحالي (%)', 'Current discount (%)') }}<input name="invoiceDiscountRate" type="number" min="0" max="100" step="any" [value]="invoiceDiscountRate" readonly aria-readonly="true"></label>
+                      <label>{{ t('الضريبة الحالية (%)', 'Current tax (%)') }}<input name="invoiceTaxRate" type="number" min="0" max="100" step="any" [value]="invoiceTaxRate" readonly aria-readonly="true"></label>
+                      <p class="footnote">{{ t('الخصم والضريبة للقراءة فقط حتى اعتماد العقد المالي المشترك؛ عند تعديل مسودة نحافظ على القيم المحفوظة دون تغييرها.', 'Discount and tax are read-only until the shared financial contract is approved; editing a draft preserves its saved values without changing them.') }}</p>
+                      <aba-invoice-draft-editor
+                        [language]="language" [products]="products" [customers]="customers"
+                        [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
+                        [customerId]="invoiceCustomerId" [saving]="invoiceDraftSaving"
+                        [blocked]="invoiceDraftUncertain" [serverSummary]="invoiceDraftSummary"
+                        [initialLines]="invoiceDraftInitialLines" [draftRevision]="invoiceDraftRevision"
+                        [editing]="!!editingInvoiceId" [hasMoreCustomers]="customersHasMore"
+                        [hasMoreProducts]="productsHasMore" [loadingMoreCustomers]="customersLoadingMore"
+                        [loadingMoreProducts]="productsLoadingMore"
+                        (loadMoreCustomers)="loadMoreInvoiceCustomers()" (loadMoreProducts)="loadMoreInvoiceProducts()"
+                        (saveDraft)="saveInvoiceDraft($event)" (newDraft)="startNewInvoiceDraft()"
+                        (refreshStatus)="refreshInvoiceDraftStatus()" />
+                    </div>
+                  </details>
                 </div>
-                </details><div class="inline-form customer-invoice-filter"><label>{{ t('تصفية الفواتير الموجودة حسب العميل', 'Filter existing invoices by customer') }}<select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId"><option value="">{{ t('عرض فواتير كل العملاء', 'Show all customers’ invoices') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label></div></div>
                 @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
-                <div class="list-tools"><input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث عن فاتورة', 'Search invoices')" [placeholder]="t('ابحث برقم الفاتورة أو العملة…', 'Search by invoice number or currency…')" [(ngModel)]="invoiceSearch"><select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="draft">{{ t('مسودة', 'Draft') }}</option><option value="issued">{{ t('صادرة', 'Issued') }}</option><option value="paid">{{ t('مدفوعة', 'Paid') }}</option><option value="overdue">{{ t('متأخرة', 'Overdue') }}</option><option value="void">{{ t('ملغاة', 'Voided') }}</option></select>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <div class="list">
-                  @for (invoice of filteredInvoices; track invoice.id) { <article class="list-row invoice-list-row"><div class="invoice-mark">▤</div><div class="grow"><strong>{{ invoice.invoice_number }}</strong><small>{{ customerNameForInvoice(invoice.customer_id) }} · {{ invoiceStatusLabel(invoice.status) }} · {{ invoice.currency_code }}</small></div><strong>{{ invoice.total }} {{ invoice.currency_code }}</strong>@if (invoice.status === 'draft') { <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button><button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } } @else if (invoice.status === 'issued') { <small>{{ t('المتبقي: ', 'Outstanding: ') }}{{ invoice.outstanding_amount ?? t('جارٍ التحميل', 'loading') }} {{ invoice.currency_code }}</small>@if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> } <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>@if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> } }</article> }
-                  @if (!filteredInvoices.length) { <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all') ? t('لا توجد فواتير مطابقة للفلاتر.', 'No invoices match these filters.') : (invoiceFilterCustomerId ? t('لا توجد فواتير مرتبطة بالعميل المحدد.', 'No invoices linked to the selected customer.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.'))" /> }
+                <div class="invoice-controls">
+                  <label class="invoice-search">
+                    <svg class="invoice-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث باسم العميل أو رقم الفاتورة', 'Search by customer name or invoice number')" [placeholder]="t('ابحث باسم العميل أو رقم الفاتورة…', 'Search customer or invoice number…')" [(ngModel)]="invoiceSearch">
+                  </label>
+                  <label class="invoice-filter"><span>{{ t('الحالة', 'Status') }}</span>
+                    <select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter">
+                      <option value="all">{{ t('كل الحالات', 'All statuses') }}</option>
+                      <option value="draft">{{ t('مسودة', 'Draft') }}</option>
+                      <option value="issued">{{ t('صادرة', 'Issued') }}</option>
+                      <option value="void">{{ t('ملغاة', 'Voided') }}</option>
+                    </select>
+                  </label>
+                  <label class="invoice-filter"><span>{{ t('العميل', 'Customer') }}</span>
+                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId">
+                      <option value="">{{ t('كل العملاء', 'All customers') }}</option>
+                      @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
+                    </select>
+                  </label>
+                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button> }
                 </div>
+                @if (loading && !invoices.length) {
+                  <p class="invoice-list-state" role="status" aria-live="polite">{{ t('جارٍ تحميل الفواتير…', 'Loading invoices…') }}</p>
+                } @else if (error && !invoices.length) {
+                  <aba-state-message kind="error" [description]="error" />
+                } @else if (!filteredInvoices.length) {
+                  <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('لا توجد فواتير مطابقة للبحث والفلاتر.', 'No invoices match your search and filters.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.')" />
+                } @else {
+                  <div class="invoice-table-wrap">
+                    <table class="invoice-table">
+                      <thead><tr>
+                        <th scope="col">{{ t('العميل', 'Customer') }}</th><th scope="col">{{ t('الفاتورة / التاريخ', 'Invoice / date') }}</th>
+                        <th scope="col">{{ t('القيمة', 'Amount') }}</th><th scope="col">{{ t('المتبقي', 'Remaining') }}</th>
+                        <th scope="col">{{ t('الحالة', 'Status') }}</th><th scope="col">{{ t('الإجراءات', 'Actions') }}</th>
+                      </tr></thead>
+                      <tbody>
+                        @for (invoice of filteredInvoices; track invoice.id) {
+                          <tr>
+                            <td class="invoice-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong></td>
+                            <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ (invoice.issue_date || invoice.created_at) ? ((invoice.issue_date || invoice.created_at) | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable') }}</small></td>
+                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></td>
+                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.status === 'issued' ? (invoice.outstanding_amount ?? '—') + ' ' + invoice.currency_code : '—' }}</bdi></td>
+                            <td><span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span></td>
+                            <td><div class="invoice-actions">
+                              @if (invoice.status === 'draft') {
+                                <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>
+                                @if (business?.role === 'owner') {
+                                  <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button>
+                                  <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
+                                }
+                              } @else if (invoice.status === 'issued') {
+                                @if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> }
+                                <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>
+                                @if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }
+                              }
+                            </div></td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="invoice-cards">
+                    @for (invoice of filteredInvoices; track invoice.id) {
+                      <article class="invoice-card">
+                        <header class="invoice-card-header">
+                          <div class="invoice-card-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong><small>{{ invoice.invoice_number }} · {{ (invoice.issue_date || invoice.created_at) ? ((invoice.issue_date || invoice.created_at) | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable') }}</small></div>
+                          <span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span>
+                        </header>
+                        <div class="invoice-card-financials">
+                          <div><small>{{ t('قيمة الفاتورة', 'Invoice amount') }}</small><strong><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></strong></div>
+                          <div><small>{{ t('المتبقي', 'Remaining balance') }}</small><strong><bdi dir="ltr">{{ invoice.status === 'issued' ? (invoice.outstanding_amount ?? '—') + ' ' + invoice.currency_code : '—' }}</bdi></strong></div>
+                        </div>
+                        <div class="invoice-actions">
+                          @if (invoice.status === 'draft') {
+                            <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>
+                            @if (business?.role === 'owner') {
+                              <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button>
+                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
+                            }
+                          } @else if (invoice.status === 'issued') {
+                            @if (business?.role === 'owner' && hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> }
+                            <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>
+                            @if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button> }
+                          }
+                        </div>
+                      </article>
+                    }
+                  </div>
+                }
                 @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
                 <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
               </section>
@@ -1119,6 +1195,57 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   .home-shortcut-link__icon{flex-basis:24px;width:24px;height:24px}
   .module-directory-grid{gap:7px}
 }
+    /* Sales invoice list: dense desktop table, purpose-built mobile cards, and consistent actions. */
+    .invoice-controls{display:grid;grid-template-columns:minmax(240px,1fr) minmax(130px,170px) minmax(170px,230px) auto;align-items:end;gap:9px;margin:12px 0}
+    .invoice-search{position:relative;display:block;min-width:0}
+    .invoice-search input{width:100%;min-height:42px;padding-inline-start:40px}
+    .invoice-search-icon{position:absolute;inset-inline-start:12px;top:50%;width:18px;height:18px;transform:translateY(-50%);color:var(--aba-color-text-secondary,#64748b);pointer-events:none}
+    .invoice-filter{display:grid;gap:5px;min-width:0;color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:700}
+    .invoice-filter select{width:100%;min-width:0}
+    .invoice-export{min-height:40px;white-space:nowrap;padding:8px 11px}
+    .invoice-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}
+    .invoice-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:auto}
+    .invoice-table th,.invoice-table td{padding:12px 13px;text-align:start;vertical-align:middle;border-bottom:1px solid var(--aba-color-border-subtle,#e2e8f0);overflow-wrap:anywhere}
+    .invoice-table th{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
+    .invoice-table tbody tr:last-child td{border-bottom:0}
+    .invoice-table tbody tr:hover{background:var(--aba-color-surface-subtle,#f8fafc)}
+    .invoice-customer{min-width:170px}
+    .invoice-customer strong{display:block;font-size:13px;line-height:1.5;color:var(--aba-color-text-primary,#172033);overflow-wrap:anywhere}
+    .invoice-reference{min-width:150px}
+    .invoice-reference strong,.invoice-reference small{display:block}
+    .invoice-reference strong{font-size:12px;font-variant-numeric:tabular-nums}
+    .invoice-reference small{margin-top:3px;color:var(--aba-color-text-secondary,#64748b);font-size:10px}
+    .invoice-money{min-width:115px;text-align:end!important;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .invoice-status-badge{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:4px 9px;border:1px solid var(--aba-color-border,#d0d5dd);border-radius:999px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
+    .invoice-status-badge.status-draft{border-color:#d0d5dd;background:#f2f4f7;color:#344054}
+    .invoice-status-badge.status-issued{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+    .invoice-status-badge.status-void{border-color:#fecaca;background:#fef2f2;color:#b42318}
+    .invoice-actions{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;min-width:0}
+    .invoice-actions button{min-height:34px;padding:6px 9px;font-size:11px;white-space:nowrap}
+    .invoice-cards{display:none}
+    .invoice-list-state{padding:18px;border:1px dashed var(--aba-color-border,#d0d5dd);border-radius:12px;color:var(--aba-color-text-secondary,#64748b);text-align:center}
+    .invoice-discount-field{color:#b42318!important}
+    .invoice-discount-field input{border-color:#fda29b;color:#b42318}
+    @media(max-width:1050px){.invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}.invoice-export{grid-column:1/-1;justify-self:end}}
+    @media(max-width:760px){
+      .invoice-controls{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:8px}
+      .invoice-controls label,.invoice-controls select,.invoice-search input,.invoice-export{width:100%;max-width:none}
+      .invoice-export{grid-column:auto;justify-self:stretch}
+      .invoice-table-wrap{display:none}
+      .invoice-cards{display:grid;gap:10px;margin-top:12px}
+      .invoice-card{display:grid;gap:12px;min-width:0;padding:13px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:13px;background:var(--aba-color-surface,#fff)}
+      .invoice-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+      .invoice-card-customer{display:grid;gap:4px;min-width:0}
+      .invoice-card-customer strong{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+      .invoice-card-customer small{font-size:11px;color:var(--aba-color-text-secondary,#64748b);overflow-wrap:anywhere}
+      .invoice-card-financials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .invoice-card-financials>div{display:grid;gap:4px;min-width:0;padding:9px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:10px;background:var(--aba-color-surface-subtle,#f8fafc)}
+      .invoice-card-financials small{font-size:10px;color:var(--aba-color-text-secondary,#64748b)}
+      .invoice-card-financials strong{font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+      .invoice-card .invoice-actions{padding-top:2px}
+      .invoice-card .invoice-actions button{min-height:42px;padding:8px 11px;font-size:12px}
+    }
+
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -1213,7 +1340,7 @@ export class AppComponent implements OnInit, OnDestroy {
   purchaseSearch = '';
   recurringSearch = '';
   notificationSearch = '';
-  invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'paid' | 'overdue' | 'void' = 'all';
+  invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'void' = 'all';
   payments: Payment[] = [];
   expenses: Expense[] = [];
   suppliers: Supplier[] = [];
@@ -1387,7 +1514,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status));
+    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id));
   }
 
   get filteredSuppliers(): Supplier[] {
