@@ -49,7 +49,7 @@ jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
 jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
 jwt_signature='SyntheticSignatureForTestsValue'
 jwt_value="${jwt_header}.${jwt_payload}.${jwt_signature}"
-jwt_redacted=$(redact_text "token=none ${jwt_value}")
+jwt_redacted=$(redact_text "${jwt_value}")
 [[ "$jwt_redacted" != *"$jwt_header"* ]]
 [[ "$jwt_redacted" == *'[REDACTED JWT]'* ]]
 config_quoted=$(curl_config_quote 'line "quoted" \\ value')
