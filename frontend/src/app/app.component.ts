@@ -689,15 +689,57 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @for (invoice of filteredInvoices; track invoice.id) {
                       <article class="invoice-card">
                         <header class="invoice-card-header">
-                          <div class="invoice-card-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong><small>{{ invoice.invoice_number }} · {{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }}</small></div>
-                          <span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span>
+                          <div class="invoice-card-customer">
+                            <span class="invoice-customer-avatar" aria-hidden="true">{{ customerInitialForInvoice(invoice.customer_id) }}</span>
+                            <div class="invoice-card-customer-copy">
+                              <strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong>
+                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
+                            </div>
+                          </div>
+                          <span class="invoice-status-badge"
+                            [class.status-draft]="invoiceCardStatusTone(invoice) === 'draft'"
+                            [class.status-issued]="invoiceCardStatusTone(invoice) === 'issued'"
+                            [class.status-void]="invoiceCardStatusTone(invoice) === 'void'"
+                            [class.status-paid]="invoiceCardStatusTone(invoice) === 'paid'"
+                            [class.status-partial]="invoiceCardStatusTone(invoice) === 'partial'"
+                            [class.status-unpaid]="invoiceCardStatusTone(invoice) === 'unpaid'">{{ invoiceCardStatusLabel(invoice) }}</span>
                         </header>
                         <div class="invoice-card-financials">
-                          <div><small>{{ t('قيمة الفاتورة', 'Invoice amount') }}</small><strong><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }} {{ invoice.currency_code }}</bdi></strong></div>
-                          <div><small>{{ t('المتبقي', 'Remaining balance') }}</small><strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
-                                  <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }} {{ invoice.currency_code }}</bdi>
-                                } @else { — }</strong></div>
+                          <div>
+                            <small>{{ t('الإجمالي', 'Total') }}</small>
+                            <strong><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }}</bdi></strong>
+                          </div>
+                          <div>
+                            <small>{{ t('المدفوع', 'Paid') }}</small>
+                            <strong>@if (invoice.allocated_payments !== undefined) {
+                              <bdi dir="ltr">{{ invoice.allocated_payments | number:'1.2-2' }}</bdi>
+                            } @else { — }</strong>
+                          </div>
+                          <div>
+                            <small>{{ t('المتبقي', 'Remaining') }}</small>
+                            <strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
+                              <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }}</bdi>
+                            } @else { — }</strong>
+                          </div>
                         </div>
+                        @if (invoicePaymentProgress(invoice) !== null) {
+                          <div class="invoice-payment-progress"
+                            [class.tone-paid]="invoicePaymentTone(invoice) === 'paid'"
+                            [class.tone-partial]="invoicePaymentTone(invoice) === 'partial'"
+                            [class.tone-unpaid]="invoicePaymentTone(invoice) === 'unpaid'"
+                            role="progressbar"
+                            [attr.aria-label]="t('نسبة سداد الفاتورة', 'Invoice payment progress')"
+                            [attr.aria-valuemin]="0" [attr.aria-valuemax]="100"
+                            [attr.aria-valuenow]="invoicePaymentProgress(invoice)">
+                            <span [style.width.%]="invoicePaymentProgress(invoice)"></span>
+                          </div>
+                          <div class="invoice-payment-caption"
+                            [class.tone-paid]="invoicePaymentTone(invoice) === 'paid'"
+                            [class.tone-partial]="invoicePaymentTone(invoice) === 'partial'"
+                            [class.tone-unpaid]="invoicePaymentTone(invoice) === 'unpaid'">
+                            <small>{{ invoicePaymentProgressLabel(invoice) }}</small>
+                          </div>
+                        }
                         <div class="invoice-actions">
                           @if (invoice.status === 'draft') {
                             <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>
@@ -1243,24 +1285,47 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .invoice-list-state{padding:18px;border:1px dashed var(--aba-color-border,#d0d5dd);border-radius:12px;color:var(--aba-color-text-secondary,#64748b);text-align:center}
     .invoice-discount-field{color:#b42318!important}
     .invoice-discount-field input{border-color:#fda29b;color:#b42318}
+    .invoice-table-wrap{display:none}
+    .invoice-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px;margin-top:12px}
+    .invoice-card{display:grid;gap:12px;min-width:0;padding:13px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:14px;background:var(--aba-color-surface,#fff)}
+    .invoice-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+    .invoice-card-customer{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:9px;min-width:0}
+    .invoice-customer-avatar{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--aba-color-primary-border,#99f6e4);border-radius:50%;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:14px;font-weight:700;line-height:1}
+    .invoice-card-customer-copy{display:grid;gap:3px;min-width:0}
+    .invoice-card-customer strong{font-size:14px;font-weight:600;line-height:1.4;color:var(--aba-color-text-primary,#172033);overflow-wrap:anywhere}
+    .invoice-card-meta{font-size:11px;font-weight:400;line-height:1.4;color:var(--aba-color-text-secondary,#64748b);overflow-wrap:anywhere}
+    .invoice-cards .invoice-status-badge{flex:0 0 auto;max-width:120px;text-align:center}
+    .invoice-status-badge.status-paid{border-color:var(--aba-color-success-border,#bbf7d0);background:var(--aba-color-success-soft,#ecfdf5);color:var(--aba-color-success-text,#065f46)}
+    .invoice-status-badge.status-partial{border-color:var(--aba-color-warning-border,#fde68a);background:var(--aba-color-warning-soft,#fffbeb);color:var(--aba-color-warning-text,#92400e)}
+    .invoice-status-badge.status-unpaid{border-color:var(--aba-color-danger-border,#fecaca);background:var(--aba-color-danger-soft,#fef2f2);color:var(--aba-color-danger-text,#991b1b)}
+    .invoice-card-financials{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-width:0}
+    .invoice-card-financials>div{display:grid;align-content:start;gap:4px;min-width:0;padding:8px 7px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:10px;background:var(--aba-color-surface-subtle,#f8fafc)}
+    .invoice-card-financials small{font-size:10px;line-height:1.35;color:var(--aba-color-text-secondary,#64748b)}
+    .invoice-card-financials strong{font-size:13px;font-weight:700;line-height:1.35;font-variant-numeric:tabular-nums;color:var(--aba-color-text-primary,#172033);overflow-wrap:anywhere}
+    .invoice-payment-progress{height:6px;overflow:hidden;border-radius:999px;background:var(--aba-color-border-subtle,#e2e8f0)}
+    .invoice-payment-progress>span{display:block;height:100%;border-radius:inherit;transition:width 180ms ease}
+    .invoice-payment-progress.tone-paid>span{background:var(--aba-color-success-text,#16a34a)}
+    .invoice-payment-progress.tone-partial>span{background:var(--aba-color-warning-text,#d97706)}
+    .invoice-payment-progress.tone-unpaid>span{background:var(--aba-color-danger-text,#dc2626)}
+    .invoice-payment-caption{display:flex;justify-content:flex-end;gap:8px;min-width:0;font-size:10px;line-height:1.3}
+    .invoice-payment-caption.tone-paid{color:var(--aba-color-success-text,#16a34a)}
+    .invoice-payment-caption.tone-partial{color:var(--aba-color-warning-text,#d97706)}
+    .invoice-payment-caption.tone-unpaid{color:var(--aba-color-danger-text,#dc2626)}
+    .invoice-card .invoice-actions{padding-top:2px}
+    .invoice-card .invoice-actions button{min-height:40px;padding:7px 10px;font-size:12px}
     @media(max-width:1050px){.invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}.invoice-export,.invoice-load-more-customers{grid-column:1/-1;justify-self:end}}
     @media(max-width:760px){
+      .invoice-cards{grid-template-columns:minmax(0,1fr)}
+      .invoice-card{padding:12px;gap:11px}
+      .invoice-card-header{gap:8px}
+      .invoice-cards .invoice-status-badge{max-width:108px;white-space:normal}
+      .invoice-card-financials{gap:6px}
+      .invoice-card-financials>div{padding:7px 5px}
+      .invoice-card-financials strong{font-size:12px}
       .invoice-controls{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:8px}
       .invoice-controls label,.invoice-controls select,.invoice-search input,.invoice-export,.invoice-load-more-customers{width:100%;max-width:none}
       .invoice-export,.invoice-load-more-customers{grid-column:auto;justify-self:stretch}
-      .invoice-table-wrap{display:none}
-      .invoice-cards{display:grid;gap:10px;margin-top:12px}
-      .invoice-card{display:grid;gap:12px;min-width:0;padding:13px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:13px;background:var(--aba-color-surface,#fff)}
-      .invoice-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
-      .invoice-card-customer{display:grid;gap:4px;min-width:0}
-      .invoice-card-customer strong{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
-      .invoice-card-customer small{font-size:11px;color:var(--aba-color-text-secondary,#64748b);overflow-wrap:anywhere}
-      .invoice-card-financials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-      .invoice-card-financials>div{display:grid;gap:4px;min-width:0;padding:9px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:10px;background:var(--aba-color-surface-subtle,#f8fafc)}
-      .invoice-card-financials small{font-size:10px;color:var(--aba-color-text-secondary,#64748b)}
-      .invoice-card-financials strong{font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-      .invoice-card .invoice-actions{padding-top:2px}
-      .invoice-card .invoice-actions button{min-height:42px;padding:8px 11px;font-size:12px}
+
     }
 
   `]
@@ -1511,6 +1576,49 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!customerId) return this.t('عميل غير محدد (سجل قديم)', 'Unlinked customer (legacy record)');
     return this.customers.find(customer => customer.id === customerId)?.name
       || this.t('العميل غير موجود في القائمة الحالية', 'Customer not in the current list');
+  }
+
+  customerInitialForInvoice(customerId?: string | null): string {
+    if (!customerId) return this.t('؟', '?');
+    const name = this.customers.find(customer => customer.id === customerId)?.name?.trim();
+    return name ? Array.from(name)[0] ?? this.t('؟', '?') : this.t('؟', '?');
+  }
+
+  invoicePaymentTone(invoice: Invoice): 'paid' | 'partial' | 'unpaid' | null {
+    if (invoice.status !== 'issued' || invoice.allocated_payments === undefined || invoice.outstanding_amount === undefined) return null;
+    const allocated = Number(invoice.allocated_payments);
+    const outstanding = Number(invoice.outstanding_amount);
+    if (!Number.isFinite(allocated) || !Number.isFinite(outstanding)) return null;
+    if (outstanding <= 0) return 'paid';
+    return allocated > 0 ? 'partial' : 'unpaid';
+  }
+
+  invoicePaymentProgress(invoice: Invoice): number | null {
+    if (!this.invoicePaymentTone(invoice)) return null;
+    const total = Number(invoice.total);
+    const allocated = Number(invoice.allocated_payments);
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(allocated)) return null;
+    return Math.min(100, Math.max(0, allocated / total * 100));
+  }
+
+  invoicePaymentProgressLabel(invoice: Invoice): string {
+    const progress = this.invoicePaymentProgress(invoice);
+    if (progress === null) return '';
+    const percent = Math.round(progress);
+    return this.t('تم سداد ' + percent + '%', percent + '% paid');
+  }
+
+  invoiceCardStatusTone(invoice: Invoice): string {
+    return this.invoicePaymentTone(invoice)
+      || (invoice.status === 'draft' ? 'draft' : invoice.status === 'void' ? 'void' : 'issued');
+  }
+
+  invoiceCardStatusLabel(invoice: Invoice): string {
+    const tone = this.invoicePaymentTone(invoice);
+    if (tone === 'paid') return this.t('مدفوعة', 'Paid');
+    if (tone === 'partial') return this.t('مدفوعة جزئياً', 'Partially paid');
+    if (tone === 'unpaid') return this.t('غير مدفوعة', 'Unpaid');
+    return this.invoiceStatusLabel(invoice.status);
   }
 
   customerInvoiceCount(customerId: string): number {
