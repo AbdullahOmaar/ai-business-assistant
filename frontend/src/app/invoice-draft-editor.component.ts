@@ -27,7 +27,9 @@ import type {
           <h3>{{ editing ? t('تعديل مسودة الفاتورة', 'Edit invoice draft') : t('فاتورة جديدة', 'New invoice') }}</h3>
           <p>{{ t('أضف المنتجات أو الخدمات، وسيتم حساب الإجماليات على الخادم.', 'Add products or services; totals are calculated by the server.') }}</p>
         </div>
-        <span class="currency">{{ currencyCode }}</span>
+        @if (!serverSummary) {
+          <span class="currency">{{ currencyCode }}</span>
+        }
         @if (editing && !serverSummary) {
           <button type="button" class="secondary" (click)="newDraft.emit()" [disabled]="saving">
             {{ t('إلغاء التعديل', 'Cancel edit') }}
@@ -162,11 +164,11 @@ import type {
           @if (serverSummary.tax_total !== null && serverSummary.tax_total !== undefined) {
             <div><span>{{ t('الضريبة', 'Tax') }}</span><strong>{{ serverSummary.tax_total | number:'1.2-2' }}</strong></div>
           }
-          <div class="total"><span>{{ t('الإجمالي النهائي', 'Grand total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }}</strong></div>
+          <div class="total"><span>{{ t('الإجمالي النهائي', 'Grand total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
           <button type="button" class="secondary" (click)="startNewDraft()" [disabled]="saving">{{ t('إنشاء فاتورة أخرى', 'Start another invoice') }}</button>
         </section>
       } @else {
-        <section class="server-summary invoice-summary invoice-summary-pending" [attr.aria-label]="t('إجماليات الفاتورة بعد الحفظ', 'Invoice totals after save')">
+        <section class="invoice-summary-pending" [attr.aria-label]="t('إجماليات الفاتورة بعد الحفظ', 'Invoice totals after save')">
           <div class="summary-heading">
             <div>
               <h4>{{ t('ملخص الفاتورة', 'Invoice summary') }}</h4>
@@ -222,8 +224,8 @@ import type {
     .line-actions { justify-self: end; }
     .line-actions .icon-button { min-width: 34px; min-height: 34px; padding: 5px 8px; }
     .danger, .error { color: var(--aba-color-danger-text, #b42318); }
-    .server-summary { display: grid; gap: 9px; min-width: 0; padding: 14px; border: 1px solid var(--aba-color-border, #d0d5dd); border-radius: 14px; background: var(--aba-color-surface, #fff); }
-    .server-summary h4 { margin: 0; color: var(--aba-color-text-primary, #172033); font-size: 14px; }
+    .server-summary, .invoice-summary-pending { display: grid; gap: 9px; min-width: 0; padding: 14px; border: 1px solid var(--aba-color-border, #d0d5dd); border-radius: 14px; background: var(--aba-color-surface, #fff); }
+    .server-summary h4, .invoice-summary-pending h4 { margin: 0; color: var(--aba-color-text-primary, #172033); font-size: 14px; }
     .server-summary > div:not(.summary-heading) { display: flex; justify-content: space-between; gap: 12px; color: var(--aba-color-text-secondary, #64748b); font-size: 12px; }
     .server-summary div strong { color: var(--aba-color-text-primary, #172033); font-weight: 600; text-align: end; font-variant-numeric: tabular-nums; }
     .server-summary .total { margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--aba-color-border-subtle, #e2e8f0); font-size: 14px; font-weight: 700; }
