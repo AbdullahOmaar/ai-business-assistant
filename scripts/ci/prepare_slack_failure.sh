@@ -34,20 +34,22 @@ redact_text() {
   local key value
   while IFS= read -r key; do
     value="${!key}"
-    if [[ ${#value} -ge 4 ]]; then
+    if [[ -n "$value" ]]; then
       secrets=$(jq --arg secret "$value" '. + [$secret]' <<< "$secrets" 2>/dev/null) || secrets='[]'
     fi
   done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
 
   printf '%s' "$raw" | jq -Rsr --argjson secrets "$secrets" '
     reduce $secrets[] as $secret (. ; split($secret) | join("[REDACTED]"))
-    | gsub("(?i)authorization[[:space:]]*:[[:space:]]*bearer[[:space:]]+[^[:space:]]+"; "Authorization: Bearer [REDACTED]")
+    | gsub("(?im)(authorization[[:space:]]*:[[:space:]]*)[^\\r\\n]+"; "Authorization: [REDACTED]")
     | gsub("(?i)bearer[[:space:]]+[A-Za-z0-9._~+/-]+=*"; "Bearer [REDACTED]")
     | gsub("xox[baprs]-[A-Za-z0-9-]{10,}"; "[REDACTED]")
     | gsub("gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}"; "[REDACTED]")
     | gsub("AKIA[0-9A-Z]{16}"; "[REDACTED]")
+    | gsub("(?i)aws_secret_access_key[[:space:]]*[:=][[:space:]]*[A-Za-z0-9/+=]{20,}"; "AWS_SECRET_ACCESS_KEY=[REDACTED]")
+    | gsub("eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"; "[REDACTED JWT]")
     | gsub("(?i)(password|passwd|token|secret|api[_-]?key)[[:space:]]*[:=][[:space:]]*[^[:space:],;]+"; "[REDACTED]")
-    | gsub("(?i)(postgres(ql)?|mysql)://[^:/@[:space:]]+:[^@[:space:]]+@"; "database://[REDACTED]@")
+    | gsub("(?i)[a-z][a-z0-9+.-]*://[^:/@[:space:]]+:[^@[:space:]]+@"; "[REDACTED URL CREDENTIALS]@")
     | gsub("(?i)https?://[^[:space:]]*[?&](token|access_token|signature|sig|x-amz-signature|x-amz-security-token|awsaccesskeyid|x-goog-signature)=[^[:space:]]+"; "[REDACTED SIGNED URL]")
     | gsub("-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----"; "[REDACTED PRIVATE KEY]")
   ' 2>/dev/null || printf '%s' '[Failure output redaction unavailable; open the CircleCI job logs directly.]'
@@ -77,10 +79,14 @@ write_bash_env() {
   fi
 }
 
+curl_config_quote() {
+  jq -rn --arg value "$1" '$value | @json'
+}
+
 collect_failure_details() {
   local step='Failed step details unavailable'
   local excerpt='Open the CircleCI job link for the full output.'
-  local api_url job_payload failed_steps temp_dir item name urls url output log_text combined redacted
+  local api_url api_config job_payload failed_steps temp_dir item name urls url output log_text combined redacted
 
   if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     step='Diagnostic tooling unavailable in this job image'
@@ -104,7 +110,11 @@ collect_failure_details() {
   fi
 
   api_url="https://circleci.com/api/v1.1/project/gh/${CIRCLE_PROJECT_USERNAME:-AbdullahOmaar}/${CIRCLE_PROJECT_REPONAME:-ai-business-assistant}/${CIRCLE_BUILD_NUM}"
-  job_payload=$(printf 'header = "Circle-Token: %s"\nurl = "%s"\n' "$CIRCLE_API_TOKEN" "$api_url" \
+  api_config=$(printf 'header = %s\nheader = %s\nurl = %s\n' \
+    "$(curl_config_quote "Circle-Token: $CIRCLE_API_TOKEN")" \
+    "$(curl_config_quote "Accept: application/json")" \
+    "$(curl_config_quote "$api_url")")
+  job_payload=$(printf '%s' "$api_config" \
     | curl --silent --show-error --fail --location --max-time 12 --config - 2>/dev/null)
   if [[ -z "$job_payload" ]] || ! jq -e '.steps | type == "array"' >/dev/null 2>&1 <<< "$job_payload"; then
     step='Failed step lookup unavailable — CircleCI API request failed'
@@ -146,8 +156,8 @@ collect_failure_details() {
     ' <<< "$item" 2>/dev/null)
     while IFS= read -r url; do
       [[ "$url" == https://* ]] || continue
-      output=$(printf 'url = "%s"\n' "$url" \
-        | curl --silent --show-error --fail --location --max-time 8 --config - 2>/dev/null)
+      output=$(printf 'url = %s\n' "$(curl_config_quote "$url")" \
+        | curl --silent --show-error --fail --location --max-time 8 --max-filesize 262144 --config - 2>/dev/null)
       [[ -n "$output" ]] || continue
       log_text=$(extract_output_text "$output")
       [[ -n "$log_text" ]] && printf '%s\n' "$log_text" >> "$combined"
