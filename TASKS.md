@@ -11,6 +11,21 @@ The Owner permanently lifts the prior CircleCI execution freeze. This supersedes
 
 This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
 
+# T38 Add Invoice editor redesign — implementation checkpoint — 2026-11-09
+
+- **Status:** IN PROGRESS. Owner requested full replacement of the old Add Invoice editor with the T38 wireframe, Notion reference, and Web deployment after all release gates.
+- **Feature owner / primary writer:** Project Master. Single writer for the invoice editor and Master-owned shell/API typing paths.
+- **Branch:** `master/t38-add-invoice-editor-redesign-20261109`; base `main` SHA `e018c56640cc63573cdaec590fa5018148d5f662`; implementation head before this ledger checkpoint `b5e0e15e3bcb74076e1e701e2d5b3072f02d9362`.
+- **Notion reference:** T38 — EPIC: Sales, Invoices & Payments lifecycle; appended the desktop/mobile Add Invoice wireframe, explicit UI-only boundaries, acceptance criteria and manual single-writer claim.
+- **Scope:** Replace the old disclosure/inline Add Invoice presentation; Product/Service segmented line controls; catalog price read-only; manual service description/price; compact add-line action; remove-only lines (no reorder); read-only discount/tax side-by-side; server-returned subtotal/adjustments/total; notes persisted via the existing invoice create/update API contract. Preserve draft editing, tenant/auth guards and uncertain-write recovery.
+- **Changed paths:** invoice draft editor, draft model, app shell, API TypeScript contracts, shared style tokens, source-level UI/flow tests and mocked invoice/payment E2E.
+- **Financial/data boundary:** No backend, schema, migration, stock, payment, posting or calculation changes. Notes use the existing backend field (max 2,000 characters). Discount/tax remain read-only because T37 is DRAFT / NOT APPROVED; totals remain server-authoritative.
+- **Exact-head CI:** CircleCI reports FAILURE for all six substantive jobs on the current implementation head; failure logs are inaccessible from this execution connection, so root cause is UNKNOWN. Semaphore failure is retired/non-authoritative. No blind retry was issued. Local tests/build are NOT RUN because the execution container cannot reach GitHub; rely on CircleCI only.
+- **Visual acceptance:** Rendered Preview RTL/LTR, mobile viewport, keyboard, screen-reader and physical Android checks are NOT RUN.
+- **Release:** No PR merge, production deployment, production DB write or migration performed. Production Web remains on the previously verified main deployment.
+- **Next:** obtain the CircleCI failure diagnosis, rerun only with a justified changed condition, complete full maintainer diff review, validate rendered Preview and exact-head gates, then request/consume explicit merge and production release authorization.
+
+
 # Policy conflict sweep — 2026-11-08
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
