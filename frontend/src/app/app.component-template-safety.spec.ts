@@ -1034,7 +1034,7 @@ test('local CSV exports follow the backend owner-only export permission', () => 
   const listExportEnd = source.indexOf('syncPaymentCustomer(): void', listExportStart);
   const listExport = source.slice(listExportStart, listExportEnd);
   assert.match(listExport, /if \(!this\.business \|\| this\.business\.role !== 'owner'\) return;/);
-  assert.match(listExport, /headers = \['customer_name', 'invoice_number', 'issue_date', 'status', 'total', 'currency', 'remaining_balance'\]/);
+  assert.match(listExport, /headers = \['customer_name', 'invoice_number', 'issue_date', 'created_at', 'status', 'total', 'currency', 'remaining_balance'\]/);
   assert.match(listExport, /this\.customerNameForInvoice\(item\.customer_id\)/);
   assert.match(listExport, /item\.status === 'issued' \? item\.outstanding_amount/);
   const paymentExportStart = source.indexOf('exportPaymentsCsv(): void');
