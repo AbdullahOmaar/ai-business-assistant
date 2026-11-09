@@ -636,14 +636,14 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   const productSelect = firstLine.locator('select').nth(1);
   await expect(productSelect).toBeVisible();
   await productSelect.selectOption('product-a');
-  await editor.locator('input[name^="quantity-"]').first().fill('2');
+  await firstLine.getByLabel('Quantity').fill('2');
   await expect(editor.locator('.server-summary')).toHaveCount(0);
 
   await editor.getByRole('button', { name: '+ Service' }).click();
   const serviceLine = editor.locator('.line-card').nth(1);
-  await serviceLine.locator('input[name^="description-"]').fill('Installation service');
-  await serviceLine.locator('input[name^="price-"]').fill('50.00');
-  await serviceLine.locator('input[name^="quantity-"]').fill('1');
+  await serviceLine.getByLabel('Service description').fill('Installation service');
+  await serviceLine.getByLabel('Unit price (EGP)').fill('50.00');
+  await serviceLine.getByLabel('Quantity').fill('1');
   await editor.getByRole('button', { name: 'Save invoice draft' }).click();
 
   await expect(editor.getByText(/777\.77 EGP/)).toBeVisible();
@@ -666,7 +666,7 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   const createdInvoiceRow = page.locator('.invoice-table tbody tr').filter({ hasText: 'T38-E2E-001' });
   await createdInvoiceRow.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(editor.getByRole('heading', { name: 'Edit invoice draft' })).toBeVisible();
-  await editor.locator('.line-card').nth(1).locator('input[name^="description-"]').fill('Updated installation service');
+  await editor.locator('.line-card').nth(1).getByLabel('Service description').fill('Updated installation service');
   await editor.getByRole('button', { name: 'Save invoice draft' }).click();
 
   await expect(editor.getByText(/888\.88 EGP/)).toBeVisible();
