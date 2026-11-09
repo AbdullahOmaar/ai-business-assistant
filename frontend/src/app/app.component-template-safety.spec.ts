@@ -1228,7 +1228,7 @@ test('invoice customer and dynamic line fields expose accessible localized valid
   assert.match(invoiceEditorSource, /<label>/);
   assert.match(invoiceEditorSource, /name="invoiceNumber"/);
   assert.match(invoiceEditorSource, /name="customerId"/);
-  assert.match(invoiceEditorSource, /@for \(line of lines; track line\.id\)/);
+  assert.match(invoiceEditorSource, /@for \(line of lines; track line\.id(?:; let index = \$index)?\)/);
   assert.ok(invoiceEditorSource.includes("[name]=\"'quantity-' + line.id\""));
   assert.ok(invoiceEditorSource.includes("[name]=\"'description-' + line.id\""));
   assert.ok(invoiceEditorSource.includes("[name]=\"'price-' + line.id\""));
