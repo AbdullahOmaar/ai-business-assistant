@@ -337,6 +337,13 @@ jobs:
       - initialize-failure-details
       - checkout
       - run:
+          name: Install Slack failure diagnostic tooling
+          command: |
+            set -euo pipefail
+            apt-get update
+            apt-get install -y --no-install-recommends jq
+            rm -rf /var/lib/apt/lists/*
+      - run:
           name: Install frontend dependencies and run Chromium E2E
           command: |
             set -euo pipefail

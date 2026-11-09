@@ -158,6 +158,12 @@ grep -Fq 'CIRCLE_JOB' "$config_file"
 grep -Fq 'CIRCLE_BRANCH' "$config_file"
 grep -Fq 'CIRCLE_SHA1' "$config_file"
 grep -Fq 'CIRCLE_BUILD_URL' "$config_file"
+grep -Fq -- '- image: mcr.microsoft.com/playwright:v1.55.0-noble' "$config_file"
+grep -Fq 'name: Install Slack failure diagnostic tooling' "$config_file"
+grep -Fq 'apt-get install -y --no-install-recommends jq' "$config_file"
+diagnostic_install_line=$(grep -nF 'name: Install Slack failure diagnostic tooling' "$config_file" | cut -d: -f1)
+browser_smoke_line=$(grep -nF 'name: Install frontend dependencies and run Chromium E2E' "$config_file" | cut -d: -f1)
+[[ "$diagnostic_install_line" -lt "$browser_smoke_line" ]]
 grep -Fq '"text": "*Failed step:*\n${ABA_FAILURE_STEP}"' "$config_file"
 grep -Fq '"text": "*Redacted error excerpt:*\n```\n${ABA_FAILURE_EXCERPT}\n```"' "$config_file"
 
