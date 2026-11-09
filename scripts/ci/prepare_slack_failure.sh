@@ -92,8 +92,8 @@ download_output_json() {
   local output_file="$2"
   local max_bytes="${ABA_MAX_CIRCLECI_OUTPUT_BYTES:-1048576}"
 
-  printf 'url = %s\\n' "$(curl_config_quote "$url")" \\
-    | curl --silent --show-error --fail --location --max-time 8 \\
+  printf 'url = %s\n' "$(curl_config_quote "$url")" \
+    | curl --silent --show-error --fail --location --max-time 8 \
         --max-filesize "$max_bytes" --output "$output_file" --config - 2>/dev/null
 }
 
@@ -174,9 +174,9 @@ collect_failure_details() {
       if download_output_json "$url" "$output_file"; then
         output=$(cat "$output_file" 2>/dev/null)
         log_text=$(extract_output_text "$output")
-        [[ -n "$log_text" ]] && printf '%s\\n' "$log_text" >> "$combined"
+        [[ -n "$log_text" ]] && printf '%s\n' "$log_text" >> "$combined"
       else
-        printf '%s\\n' 'Step output omitted: CircleCI response exceeded the 1 MiB safety limit or could not be retrieved. Open the CircleCI job link for full logs.' >> "$combined"
+        printf '%s\n' 'Step output omitted: CircleCI response exceeded the 1 MiB safety limit or could not be retrieved. Open the CircleCI job link for full logs.' >> "$combined"
       fi
     done <<< "$urls"
     count=$((count + 1))
