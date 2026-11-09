@@ -654,7 +654,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         @for (invoice of filteredInvoices; track invoice.id) {
                           <tr>
                             <td class="invoice-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong></td>
-                            <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ (invoice.issue_date || invoice.created_at) ? ((invoice.issue_date || invoice.created_at) | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable') }}</small></td>
+                            <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }}</small></td>
                             <td class="invoice-money"><bdi dir="ltr">{{ invoice.total }} {{ invoice.currency_code }}</bdi></td>
                             <td class="invoice-money"><bdi dir="ltr">{{ invoice.status === 'issued' && invoice.outstanding_amount !== undefined ? invoice.outstanding_amount + ' ' + invoice.currency_code : '—' }}</bdi></td>
                             <td><span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span></td>
@@ -682,7 +682,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @for (invoice of filteredInvoices; track invoice.id) {
                       <article class="invoice-card">
                         <header class="invoice-card-header">
-                          <div class="invoice-card-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong><small>{{ invoice.invoice_number }} · {{ (invoice.issue_date || invoice.created_at) ? ((invoice.issue_date || invoice.created_at) | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable') }}</small></div>
+                          <div class="invoice-card-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong><small>{{ invoice.invoice_number }} · {{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }}</small></div>
                           <span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span>
                         </header>
                         <div class="invoice-card-financials">
