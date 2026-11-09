@@ -34,7 +34,7 @@ redact_text() {
   local key value
   while IFS= read -r key; do
     value="${!key}"
-    if [[ ${#value} -ge 8 ]]; then
+    if [[ ${#value} -ge 4 ]]; then
       secrets=$(jq --arg secret "$value" '. + [$secret]' <<< "$secrets" 2>/dev/null) || secrets='[]'
     fi
   done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
@@ -67,12 +67,34 @@ format_excerpt() {
   fi
 }
 
+slack_text_json() {
+  local label="$1"
+  local value="$2"
+  if command -v jq >/dev/null 2>&1; then
+    jq -Rn --arg label "$label" --arg value "$value" '$label + "\n" + $value'
+    return
+  fi
+
+  # Minimal JSON-string fallback for images without jq.
+  value=${value//\\/\\\\}
+  value=${value//\"/\\\"}
+  value=${value//$'\r'/}
+  value=${value//$'\t'/\\t}
+  value=${value//$'\n'/\\n}
+  label=${label//\\/\\\\}
+  label=${label//\"/\\\"}
+  printf '"%s\\n%s"\n' "$label" "$value"
+}
+
 write_bash_env() {
   local step="$1"
   local excerpt="$2"
+  local step_json excerpt_json
   if [[ -n "${BASH_ENV:-}" ]]; then
-    printf 'export ABA_FAILURE_STEP=%q\n' "$step" >> "$BASH_ENV"
-    printf 'export ABA_FAILURE_EXCERPT=%q\n' "$excerpt" >> "$BASH_ENV"
+    step_json=$(slack_text_json '*Failed step:*' "$step")
+    excerpt_json=$(slack_text_json $'*Redacted error excerpt:*\n```' "$excerpt"$'\n```')
+    printf 'export ABA_FAILURE_STEP_BLOCK_JSON=%q\n' "$step_json" >> "$BASH_ENV"
+    printf 'export ABA_FAILURE_EXCERPT_BLOCK_JSON=%q\n' "$excerpt_json" >> "$BASH_ENV"
   fi
 }
 
