@@ -16,35 +16,58 @@ extracted=$(extract_output_text "$sample_output")
 [[ "$extracted" == *'AssertionError: expected 2 but got 1'* ]]
 [[ "$extracted" == *'FAILED tests/test_api.py::test_invoice'* ]]
 
-export SLACK_ACCESS_TOKEN='xoxb-fake-slack-token-1234567890'
+# Isolate pattern-based redaction tests from environment-backed secret replacement.
+while IFS= read -r key; do
+  unset "$key"
+done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
+
+assert_redacted() {
+  local input="$1"
+  local secret="$2"
+  local marker="$3"
+  local result
+  result=$(redact_text "$input")
+  if [[ "$result" == *"$secret"* || "$result" != *"$marker"* ]]; then
+    printf 'A redaction regression assertion failed.\n' >&2
+    return 1
+  fi
+}
+
+# Each pattern gets an independent input, so another rule cannot hide a broken one.
+assert_redacted $'Authorization: Bearer abcdef123456' 'abcdef123456' 'Authorization: [REDACTED]'
+assert_redacted 'Bearer bearer-secret-value-123456' 'bearer-secret-value-123456' 'Bearer [REDACTED]'
+assert_redacted 'Authorization: Basic dXNlcjpwYXNz' 'dXNlcjpwYXNz' 'Authorization: [REDACTED]'
+assert_redacted 'password=hunter2' 'hunter2' '[REDACTED]'
+assert_redacted 'token=xyz' 'xyz' '[REDACTED]'
+assert_redacted 'postgres://dbuser:dbpass@localhost/db' 'dbpass' '[REDACTED URL CREDENTIALS]'
+assert_redacted 'postgresql+psycopg://dbuser:dbpass@localhost/db' 'dbpass' '[REDACTED URL CREDENTIALS]'
+assert_redacted 'AWS_SECRET_ACCESS_KEY=SyntheticAWSSecretForTestsValue' 'SyntheticAWSSecretForTestsValue' 'AWS_SECRET_ACCESS_KEY=[REDACTED]'
+assert_redacted 'xoxb-fake-slack-token-1234567890' 'xoxb-fake-slack-token-1234567890' '[REDACTED]'
+assert_redacted 'ghp_123456789012345678901234567890123456' 'ghp_123456789012345678901234567890123456' '[REDACTED]'
+assert_redacted 'github_pat_123456789012345678901234567890123456' 'github_pat_123456789012345678901234567890123456' '[REDACTED]'
+assert_redacted 'AKIA1234567890ABCDEF' 'AKIA1234567890ABCDEF' '[REDACTED]'
+assert_redacted 'ASIA1234567890ABCDEF' 'ASIA1234567890ABCDEF' '[REDACTED]'
+assert_redacted '{"password":"generated-password-value"}' 'generated-password-value' '[REDACTED JSON CREDENTIAL]'
+assert_redacted '{"access_token":"generated-access-value"}' 'generated-access-value' '[REDACTED JSON CREDENTIAL]'
+assert_redacted '{"client_secret":"value with spaces"}' 'value with spaces' '[REDACTED JSON CREDENTIAL]'
+assert_redacted '{"refresh_token":"generated-refresh-value"}' 'generated-refresh-value' '[REDACTED JSON CREDENTIAL]'
+assert_redacted "'password': 'quoted secret value'" 'quoted secret value' '[REDACTED YAML CREDENTIAL]'
+assert_redacted 'password="quoted value with spaces"' 'quoted value with spaces' '[REDACTED]'
+assert_redacted 'password: unquoted value with spaces' 'unquoted value with spaces' '[REDACTED]'
+assert_redacted 'GET https://storage.example/log?X-Amz-Signature=abc123&X-Amz-Security-Token=def456' 'abc123' '[REDACTED SIGNED URL]'
+
+private_key=$'-----BEGIN PRIVATE KEY-----\nprivate-key-body-must-not-leak\n-----END PRIVATE KEY-----'
+assert_redacted "$private_key" 'private-key-body-must-not-leak' '[REDACTED PRIVATE KEY]'
+
+# Exact environment-backed secret values, including short values, are redacted independently.
 export CIRCLE_API_TOKEN='circleci-fake-api-token-1234567890'
-export DATABASE_URL='postgresql://ci_user:ci_password@localhost/test_db'
+env_redacted=$(redact_text "prefix:${CIRCLE_API_TOKEN}:suffix")
+[[ "$env_redacted" == 'prefix:[REDACTED]:suffix' ]]
 export SHORT_TOKEN='abc'
-aws_secret='SyntheticAWSSecretForTestsValue'
-redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basic dXNlcjpwYXNz\npassword=hunter2 token=xyz postgres://dbuser:dbpass@localhost/db postgresql+psycopg://dbuser:dbpass@localhost/db AWS_SECRET_ACCESS_KEY='"$aws_secret"' xoxb-fake-slack-token-1234567890 circleci-fake-api-token-1234567890 abc')
-[[ "$redacted" != *'abcdef123456'* ]]
-[[ "$redacted" != *'hunter2'* ]]
-[[ "$redacted" != *'dbpass'* ]]
-[[ "$redacted" != *'dXNlcjpwYXNz'* ]]
-[[ "$redacted" != *"$aws_secret"* ]]
-[[ "$redacted" != *'Authorization: Basic'* ]]
-[[ "$redacted" != *'ci_password'* ]]
-[[ "$redacted" != *'xoxb-fake-slack-token-1234567890'* ]]
-[[ "$redacted" != *'circleci-fake-api-token-1234567890'* ]]
-[[ "$redacted" != *'abc'* ]]
-[[ "$redacted" != *'postgresql+psycopg://dbuser'* ]]
-[[ "$redacted" == *'[REDACTED]'* ]]
-json_credentials=$(redact_text '{"password":"generated-password-value","access_token":"generated-access-value","client_secret":"value with spaces","refresh_token":"value with \"escaped-json-secret-value\""}')
-[[ "$json_credentials" != *'generated-password-value'* ]]
-[[ "$json_credentials" != *'generated-access-value'* ]]
-[[ "$json_credentials" != *'value with spaces'* ]]
-[[ "$json_credentials" != *'escaped-json-secret-value'* ]]
-yaml_credentials=$(redact_text "'password': 'quoted secret value'")
-[[ "$yaml_credentials" != *'quoted secret value'* ]]
-quoted_value=$(redact_text 'password="quoted value with spaces"')
-unquoted_value=$(redact_text 'password: unquoted value with spaces')
-[[ "$unquoted_value" != *'unquoted value with spaces'* ]]
-[[ "$quoted_value" != *'quoted value with spaces'* ]]
+short_redacted=$(redact_text 'prefix:abc:suffix')
+[[ "$short_redacted" == 'prefix:[REDACTED]:suffix' ]]
+unset CIRCLE_API_TOKEN SHORT_TOKEN
+
 jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
 jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
 jwt_signature='SyntheticSignatureForTestsValue'

@@ -37,7 +37,7 @@ redact_text() {
     if [[ -n "$value" ]]; then
       secrets=$(jq --arg secret "$value" '. + [$secret]' <<< "$secrets" 2>/dev/null) || secrets='[]'
     fi
-  done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
+  done < <(compgen -e | grep -Ei '(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|DATABASE_URL|CREDENTIAL)' || true)
 
   printf '%s' "$raw" | jq -Rsr --argjson secrets "$secrets" '
     reduce $secrets[] as $secret (. ; split($secret) | join("[REDACTED]"))
@@ -45,7 +45,7 @@ redact_text() {
     | gsub("(?i)bearer[[:space:]]+[A-Za-z0-9._~+/-]+=*"; "Bearer [REDACTED]")
     | gsub("xox[baprs]-[A-Za-z0-9-]{10,}"; "[REDACTED]")
     | gsub("gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,}"; "[REDACTED]")
-    | gsub("AKIA[0-9A-Z]{16}"; "[REDACTED]")
+    | gsub("AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}"; "[REDACTED]")
     | gsub("(?i)aws_secret_access_key[[:space:]]*[:=][[:space:]]*[A-Za-z0-9/+=]{20,}"; "AWS_SECRET_ACCESS_KEY=[REDACTED]")
     | gsub("eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"; "[REDACTED JWT]")
     | gsub("(?i)\"(password|passwd|token|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|private[_-]?key)\"[[:space:]]*:[[:space:]]*\"([^\"\\\\]|\\\\.)*\""; "[REDACTED JSON CREDENTIAL]")
