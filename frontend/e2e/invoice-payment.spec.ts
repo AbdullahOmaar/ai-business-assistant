@@ -189,6 +189,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
       line_total: '50.00',
     }, {
       id: 'line-service-a',
+      product_id: null,
       description: 'Installation service',
       quantity: '1',
       unit_price: '50.00',
@@ -605,7 +606,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
 
 async function openInvoices(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Invoices', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Sales & invoices' })).toBeVisible();
+  await expect(page.locator('#invoices-section-heading')).toBeVisible();
 }
 
 test('OWNER creates and edits a mixed product/service draft using server-returned totals', async ({ page }) => {
