@@ -588,29 +588,12 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
   await page.getByLabel('Email address').fill('owner@example.test');
   await page.getByLabel('Password').fill('mock-password-123');
 
-  // The workspace name renders before loadWorkspaceData() finishes its parallel
-  // dashboard/customer/product/invoice/payment/expense requests. Wait for the
-  // complete initial data set so each scenario starts from a deterministic state.
-  const initialWorkspaceDataPaths = [
-    '/api/v1/businesses',
-    '/api/v1/businesses/business-a/dashboard',
-    '/api/v1/businesses/business-a/customers',
-    '/api/v1/businesses/business-a/products',
-    '/api/v1/businesses/business-a/invoices',
-    '/api/v1/businesses/business-a/payments',
-    '/api/v1/businesses/business-a/expenses',
-  ];
-  const initialWorkspaceResponses = initialWorkspaceDataPaths.map(path =>
-    page.waitForResponse(response =>
-      response.request().method() === 'GET' &&
-      new URL(response.url()).pathname === path &&
-      response.ok()
-    )
-  );
-
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
-  await Promise.all(initialWorkspaceResponses);
+
+  // The workspace name renders before the initial data load finishes. Wait for
+  // the seeded invoice row, which is rendered only after the workspace's
+  // parallel dashboard/customer/product/invoice/payment/expense load completes.
   await page.getByRole('button', { name: 'Invoices', exact: true }).click();
   await expect(
     page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-A' })
