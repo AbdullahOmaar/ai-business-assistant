@@ -34,10 +34,11 @@ redacted=$(redact_text $'Authorization: Bearer abcdef123456\nAuthorization: Basi
 [[ "$redacted" != *'abc'* ]]
 [[ "$redacted" != *'postgresql+psycopg://dbuser'* ]]
 [[ "$redacted" == *'[REDACTED]'* ]]
-json_credentials=$(redact_text '{"password":"generated-password-value","access_token":"generated-access-value","client_secret":"value with spaces"}')
+json_credentials=$(redact_text '{"password":"generated-password-value","access_token":"generated-access-value","client_secret":"value with spaces","refresh_token":"value with \"escaped-json-secret-value\""}')
 [[ "$json_credentials" != *'generated-password-value'* ]]
 [[ "$json_credentials" != *'generated-access-value'* ]]
 [[ "$json_credentials" != *'value with spaces'* ]]
+[[ "$json_credentials" != *'escaped-json-secret-value'* ]]
 yaml_credentials=$(redact_text "'password': 'quoted secret value'")
 [[ "$yaml_credentials" != *'quoted secret value'* ]]
 quoted_value=$(redact_text 'password="quoted value with spaces"')
