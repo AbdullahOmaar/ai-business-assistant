@@ -633,7 +633,7 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await expect(lineCards).toHaveCount(1);
   const firstLine = lineCards.first();
   await firstLine.getByLabel('Line type').selectOption('product');
-  const productSelect = firstLine.locator('select[name^="product-"]');
+  const productSelect = firstLine.locator('select').nth(1);
   await expect(productSelect).toBeVisible();
   await productSelect.selectOption('product-a');
   await editor.locator('input[name^="quantity-"]').first().fill('2');
