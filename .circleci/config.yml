@@ -23,71 +23,71 @@ commands:
           channel: C0CFWGM87HC
           event: fail
           custom: |
-          {
-            "text": "CircleCI job failed: ${CIRCLE_JOB} on ${CIRCLE_BRANCH}",
-            "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "CI Job Failed :red_circle:",
-                  "emoji": true
-                }
-              },
-              {
-                "type": "section",
-                "fields": [
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Project:*\n${CIRCLE_PROJECT_REPONAME}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Workflow ID:*\n${CIRCLE_WORKFLOW_ID}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Job:*\n${CIRCLE_JOB}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Branch:*\n${CIRCLE_BRANCH}"
-                  },
-                  {
-                    "type": "mrkdwn",
-                    "text": "*Commit:*\n`${CIRCLE_SHA1}`"
+            {
+              "text": "CircleCI job failed: ${CIRCLE_JOB} on ${CIRCLE_BRANCH}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "CI Job Failed :red_circle:",
+                    "emoji": true
                   }
-                ]
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Failed step:*\n${ABA_FAILURE_STEP}"
-                }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "*Redacted error excerpt:*\n```\n${ABA_FAILURE_EXCERPT}\n```"
-                }
-              },
-              {
-                "type": "actions",
-                "elements": [
-                  {
-                    "type": "button",
-                    "text": {
-                      "type": "plain_text",
-                      "text": "Open CircleCI job"
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Project:*\n${CIRCLE_PROJECT_REPONAME}"
                     },
-                    "url": "${CIRCLE_BUILD_URL}"
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow ID:*\n${CIRCLE_WORKFLOW_ID}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Job:*\n${CIRCLE_JOB}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${CIRCLE_BRANCH}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n`${CIRCLE_SHA1}`"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Failed step:*\n${ABA_FAILURE_STEP}"
                   }
-                ]
-              }
-            ]
-          }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Redacted error excerpt:*\n```\n${ABA_FAILURE_EXCERPT}\n```"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "Open CircleCI job"
+                      },
+                      "url": "${CIRCLE_BUILD_URL}"
+                    }
+                  ]
+                }
+              ]
+            }
           ignore_errors: true
 
 jobs:
