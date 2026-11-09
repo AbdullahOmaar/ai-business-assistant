@@ -481,7 +481,7 @@ aba-metric-card small {
 :root body .shell .invoice-create-button {
   border-radius: var(--aba-radius-control);
   background: var(--aba-color-primary);
-  color: var(--aba-color-text-on-primary);
+  color: #fff;
 }
 
 :root body .shell .invoice-line-row,
