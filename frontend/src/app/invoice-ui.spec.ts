@@ -6,7 +6,7 @@ const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), '
 const editorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
 
 test('editor back navigation mirrors correctly for RTL and LTR', () => {
-  assert.match(editorSource, /language === 'ar' \\? '→' : '←'/);
+  assert.match(editorSource, /language === 'ar' \? '→' : '←'/);
 });
 const cardStart = appSource.indexOf('<div class="invoice-cards">');
 const cardEnd = appSource.indexOf('\n                  </div>', cardStart);
