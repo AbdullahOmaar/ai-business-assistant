@@ -1596,3 +1596,133 @@ def test_invoice_number_and_line_description_limits_match_persisted_columns_with
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
+
+
+def test_payment_currency_mismatch_rejected_without_writes_or_audit_events():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    try:
+        with Session(engine) as session:
+            baseline = (
+                session.scalar(select(func.count()).select_from(Payment)),
+                session.scalar(select(func.count()).select_from(PaymentAllocation)),
+                session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                ),
+            )
+
+        response = client.post(
+            base,
+            json={
+                "amount": "5.00",
+                "currency_code": "USD",
+                "idempotency_key": "reject-cross-currency-payment",
+                "customer_id": str(customer_id),
+                "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+            },
+        )
+        assert response.status_code == 422, response.text
+        assert response.json()["detail"] == "Payment and invoice currencies must match"
+
+        with Session(engine) as session:
+            after = (
+                session.scalar(select(func.count()).select_from(Payment)),
+                session.scalar(select(func.count()).select_from(PaymentAllocation)),
+                session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                ),
+            )
+        assert after == baseline
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
+
+
+def test_payment_idempotency_reuse_with_changed_payload_has_no_api_side_effects():
+    engine, business_id, invoice_id, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        invoice = session.get(Invoice, invoice_id)
+        assert invoice is not None and invoice.customer_id is not None
+        customer_id = invoice.customer_id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/payments"
+    payload = {
+        "amount": "5.00",
+        "currency_code": "EGP",
+        "idempotency_key": "same-key-changed-api-payload",
+        "customer_id": str(customer_id),
+        "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+        "method": "cash",
+        "reference": "API idempotency regression",
+    }
+    try:
+        first = client.post(base, json=payload)
+        assert first.status_code == 201, first.text
+
+        with Session(engine) as session:
+            baseline = (
+                session.scalar(select(func.count()).select_from(Payment)),
+                session.scalar(select(func.count()).select_from(PaymentAllocation)),
+                session.scalar(
+                    select(func.count()).select_from(AuditEvent).where(
+                        AuditEvent.business_id == business_id
+                    )
+                ),
+            )
+            original_payment = session.scalar(select(Payment).where(
+                Payment.business_id == business_id,
+                Payment.idempotency_key == payload["idempotency_key"],
+            ))
+            original_allocation = session.scalar(select(PaymentAllocation).where(
+                PaymentAllocation.business_id == business_id,
+                PaymentAllocation.payment_id == UUID(first.json()["id"]),
+            ))
+            assert original_payment is not None
+            assert original_allocation is not None
+
+        changed_amount = {
+            **payload,
+            "amount": "6.00",
+            "allocations": [{"invoice_id": str(invoice_id), "amount": "6.00"}],
+        }
+        changed_allocation = {
+            **payload,
+            "allocations": [{"invoice_id": str(invoice_id), "amount": "4.00"}],
+        }
+        for changed in (changed_amount, changed_allocation):
+            response = client.post(base, json=changed)
+            assert response.status_code == 422, response.text
+            assert response.json()["detail"] == (
+                "Idempotency key was already used for different payment details"
+            )
+            with Session(engine) as session:
+                after = (
+                    session.scalar(select(func.count()).select_from(Payment)),
+                    session.scalar(select(func.count()).select_from(PaymentAllocation)),
+                    session.scalar(
+                        select(func.count()).select_from(AuditEvent).where(
+                            AuditEvent.business_id == business_id
+                        )
+                    ),
+                )
+                stored_payment = session.get(Payment, original_payment.id)
+                stored_allocation = session.get(PaymentAllocation, original_allocation.id)
+                assert after == baseline
+                assert stored_payment is not None and stored_payment.amount == Decimal("5.00")
+                assert stored_allocation is not None and stored_allocation.amount == Decimal("5.00")
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
