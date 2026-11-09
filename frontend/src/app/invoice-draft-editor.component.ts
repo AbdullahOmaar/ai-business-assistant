@@ -148,7 +148,7 @@ import type {
       }
 
       @if (serverSummary) {
-        <section class="server-summary invoice-summary" aria-live="polite" [attr.aria-label]="t('ملخص الفاتورة', 'Invoice summary')">
+        <section class="server-summary invoice-summary" aria-live="polite" [attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')">
           <div class="summary-heading">
             <div>
               <h4>{{ t('ملخص الفاتورة', 'Invoice summary') }}</h4>
