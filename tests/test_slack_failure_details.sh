@@ -75,6 +75,31 @@ excerpt=$(format_excerpt "$long_log")
 [[ "$excerpt" != *'diagnostic line 01'* ]]
 [[ "$(printf '%s' "$excerpt" | wc -c)" -le 1400 ]]
 
+# Large CircleCI step-output JSON must be downloaded as a complete document so its final error survives.
+large_output=$(jq -cn '[range(0; 10000) | {message:("diagnostic line " + tostring)}] + [{message:"FINAL_ERROR_MARKER"}]')
+[[ "${#large_output}" -gt 262144 && "${#large_output}" -lt 1048576 ]]
+output_file=$(mktemp)
+CURL_ARGS_FILE=$(mktemp)
+MOCK_CIRCLECI_OUTPUT="$large_output"
+curl() {
+  printf '%s\\n' "$@" > "$CURL_ARGS_FILE"
+  local destination=''
+  while (($#)); do
+    if [[ "$1" == '--output' ]]; then destination="$2"; shift 2; else shift; fi
+  done
+  [[ -n "$destination" ]] || return 1
+  printf '%s' "$MOCK_CIRCLECI_OUTPUT" > "$destination"
+}
+download_output_json 'https://circleci.example/large-output' "$output_file"
+! grep -Fq -- '--range' "$CURL_ARGS_FILE"
+grep -Fq -- '--max-filesize' "$CURL_ARGS_FILE"
+downloaded_output=$(cat "$output_file")
+large_text=$(extract_output_text "$downloaded_output")
+[[ "$large_text" == *'FINAL_ERROR_MARKER'* ]]
+rm -f "$output_file" "$CURL_ARGS_FILE"
+unset -f curl
+unset MOCK_CIRCLECI_OUTPUT CURL_ARGS_FILE
+
 # Match the Slack Orb 6.1.3 variable sanitization used by its custom template.
 slack_orb_sanitize_value() {
   local value="$1"
