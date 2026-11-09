@@ -42,12 +42,13 @@ export function filterInvoices<T extends InvoiceSearchItem>(
   statusFilter: 'all' | 'draft' | 'issued' | 'paid' | 'overdue' | 'void',
   customerId = '',
   statusLabel: (status: string) => string = status => status,
+  customerName: (customerId: string | null | undefined) => string = () => '',
 ): T[] {
   const q = normalized(query);
   return items.filter(item =>
     (!customerId || item.customer_id === customerId)
     && (statusFilter === 'all' || item.status === statusFilter)
-    && (!q || [item.invoice_number, item.currency_code, item.status, statusLabel(item.status), item.total].some(value => normalized(value).includes(q))),
+    && (!q || [item.invoice_number, customerName(item.customer_id), item.currency_code, item.status, statusLabel(item.status), item.total].some(value => normalized(value).includes(q))),
   );
 }
 
