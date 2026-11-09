@@ -50,7 +50,7 @@ test('Product and Service use a segmented toggle with no reorder controls or lar
   assert.match(editorSource, /changeKind\(line, 'product'\)/);
   assert.match(editorSource, /changeKind\(line, 'manual'\)/);
   assert.match(editorSource, /Add another line/);
-  assert.doesNotMatch(editorSource, /Move up|Move down|moveLine|line-kind-select|class="add-actions"/);
+  assert.doesNotMatch(editorSource, /Move up|Move down|\bmoveLine\b|line-kind-select|class="add-actions"/);
 });
 
 
