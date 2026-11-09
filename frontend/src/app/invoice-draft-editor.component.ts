@@ -102,7 +102,6 @@ import type {
               </label>
             } @else {
               <label class="service-description-field">
-                <span class="field-hint">Product / Service</span>
                 {{ t('وصف الخدمة', 'Service description') }}
                 <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
               </label>
