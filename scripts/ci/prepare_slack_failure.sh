@@ -157,7 +157,7 @@ collect_failure_details() {
     while IFS= read -r url; do
       [[ "$url" == https://* ]] || continue
       output=$(printf 'url = %s\n' "$(curl_config_quote "$url")" \
-        | curl --silent --show-error --fail --location --max-time 8 --max-filesize 262144 --config - 2>/dev/null)
+        | curl --silent --show-error --fail --location --max-time 8 --range -262144 --max-filesize 262144 --config - 2>/dev/null)
       [[ -n "$output" ]] || continue
       log_text=$(extract_output_text "$output")
       [[ -n "$log_text" ]] && printf '%s\n' "$log_text" >> "$combined"
