@@ -645,7 +645,8 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
     expect(createPayload).not.toHaveProperty(forbidden);
   }
 
-  await page.getByRole('button', { name: 'Edit', exact: true }).last().click();
+  const createdInvoiceRow = page.locator('.invoice-table tbody tr').filter({ hasText: 'T38-E2E-001' });
+  await createdInvoiceRow.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(editor.getByRole('heading', { name: 'Edit invoice draft' })).toBeVisible();
   await editor.locator('.line-card').nth(1).locator('input[name^="description-"]').fill('Updated installation service');
   await editor.getByRole('button', { name: 'Save invoice draft' }).click();
