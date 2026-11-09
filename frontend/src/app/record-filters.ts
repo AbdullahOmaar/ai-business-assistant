@@ -39,7 +39,7 @@ export function filterProducts<T extends ProductSearchItem>(
 export function filterInvoices<T extends InvoiceSearchItem>(
   items: readonly T[],
   query: string,
-  statusFilter: 'all' | 'draft' | 'issued' | 'paid' | 'overdue' | 'void',
+  statusFilter: 'all' | 'draft' | 'issued' | 'void',
   customerId = '',
   statusLabel: (status: string) => string = status => status,
   customerName: (customerId: string | null | undefined) => string = () => '',
