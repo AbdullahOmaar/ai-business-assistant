@@ -11,7 +11,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
   template: `
     <section class="invoice-editor-shell" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       <header class="editor-topbar">
-        <button type="button" class="back-button" (click)="cancel.emit()" [disabled]="saving || blocked" [attr.aria-label]="t('العودة إلى الفواتير', 'Back to invoices')">←</button>
+        <button type="button" class="back-button" (click)="cancel.emit()" [disabled]="saving || blocked" [attr.aria-label]="t('العودة إلى الفواتير', 'Back to invoices')">{{ language === 'ar' ? '→' : '←' }}</button>
         <div class="editor-title">
           <h3>{{ editing ? t('تعديل مسودة الفاتورة', 'Edit invoice draft') : t('إنشاء فاتورة جديدة', 'Create a new invoice') }}</h3>
           <p>{{ t('احفظ الفاتورة كمسودة أولاً؛ لن يتم إصدارها من هذه الشاشة.', 'Save the invoice as a draft first; this screen does not issue it.') }}</p>
