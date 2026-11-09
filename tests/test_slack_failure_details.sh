@@ -50,16 +50,28 @@ excerpt=$(format_excerpt "$long_log")
 [[ "$excerpt" != *'diagnostic line 01'* ]]
 [[ "$(printf '%s' "$excerpt" | wc -c)" -le 1400 ]]
 
-# JSON-safe Slack block text preserves quotes, backslashes, and newlines.
-block_json=$(slack_text_json '*Failed step:*' 'Step "compile" failed\with detail')
-[[ "$(jq -r . <<< "$block_json")" == $'*Failed step:*\nStep "compile" failed\with detail' ]]
+# Match the Slack Orb 6.1.3 variable sanitization used by its custom template.
+slack_orb_sanitize_value() {
+  local value="$1"
+  value=$(printf '%s' "$value" | awk '{gsub(/\\/, "&\\"); print $0}')
+  value=$(printf '%s' "$value" | tr -d '\r' | awk 'NR > 1 { printf("\\n") } { printf("%s", $0) }')
+  value=$(printf '%s' "$value" | awk '{gsub(/"/, "\\\""); print $0}')
+  printf '%s' "$value"
+}
 
-step_block=$(slack_text_json '*Failed step:*' 'Step "compile" failed\with detail')
-excerpt_block=$(slack_text_json $'*Redacted error excerpt:*\n```' $'line one\nline two\n```')
-payload=$(jq -n --argjson step "$step_block" --argjson excerpt "$excerpt_block" \
-  '{blocks:[{type:"section",text:{type:"mrkdwn",text:$step}},{type:"section",text:{type:"mrkdwn",text:$excerpt}}]}')
+export ABA_FAILURE_STEP='Step "compile" failed\with detail'
+export ABA_FAILURE_EXCERPT=$'line one\nline two'
+custom_template='{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Failed step:*\n${ABA_FAILURE_STEP}"}},{"type":"section","text":{"type":"mrkdwn","text":"*Redacted error excerpt:*\n${ABA_FAILURE_EXCERPT}"}}]}'
+# The Slack Orb parses custom JSON before it substitutes environment variables.
+jq -e . <<< "$custom_template" >/dev/null
+ABA_FAILURE_STEP=$(slack_orb_sanitize_value "$ABA_FAILURE_STEP")
+ABA_FAILURE_EXCERPT=$(slack_orb_sanitize_value "$ABA_FAILURE_EXCERPT")
+CUSTOM_BODY_MODIFIED=$(printf '%s' "$custom_template" | jq '.')
+CUSTOM_BODY_MODIFIED=$(printf '%s' "$CUSTOM_BODY_MODIFIED" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/`/\\`/g')
+payload="$(eval printf '%s' \"$CUSTOM_BODY_MODIFIED\")"
+jq -e . <<< "$payload" >/dev/null
 [[ "$(jq -r '.blocks[0].text.text' <<< "$payload")" == $'*Failed step:*\nStep "compile" failed\with detail' ]]
-[[ "$(jq -r '.blocks[1].text.text' <<< "$payload")" == $'*Redacted error excerpt:*\n```\nline one\nline two\n```' ]]
+[[ "$(jq -r '.blocks[1].text.text' <<< "$payload")" == $'*Redacted error excerpt:*\nline one\nline two' ]]
 
 # Missing API token must produce a safe fallback and never call the network.
 tmp_env=$(mktemp)
@@ -69,8 +81,8 @@ CIRCLE_BUILD_NUM=12345
 collect_failure_details
 # shellcheck disable=SC1090
 source "$tmp_env"
-[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == *'CIRCLE_API_TOKEN is not configured'* ]]
-[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == *'Add CIRCLE_API_TOKEN'* ]]
+[[ "$ABA_FAILURE_STEP" == *'CIRCLE_API_TOKEN is not configured'* ]]
+[[ "$ABA_FAILURE_EXCERPT" == *'Add CIRCLE_API_TOKEN'* ]]
 
 # Environment export preserves quotes and multiline excerpts.
 tmp_env2=$(mktemp)
@@ -78,8 +90,8 @@ BASH_ENV="$tmp_env2"
 write_bash_env 'Step with spaces and "quotes"' $'first line\nsecond line'
 # shellcheck disable=SC1090
 source "$tmp_env2"
-[[ "$(jq -r . <<< "$ABA_FAILURE_STEP_BLOCK_JSON")" == $'*Failed step:*\nStep with spaces and "quotes"' ]]
-[[ "$(jq -r . <<< "$ABA_FAILURE_EXCERPT_BLOCK_JSON")" == $'*Redacted error excerpt:*\n```\nfirst line\nsecond line\n```' ]]
+[[ "$ABA_FAILURE_STEP" == 'Step with spaces and "quotes"' ]]
+[[ "$ABA_FAILURE_EXCERPT" == $'first line\nsecond line' ]]
 rm -f "$tmp_env" "$tmp_env2"
 
 echo 'Slack failure diagnostic helper tests passed.'
