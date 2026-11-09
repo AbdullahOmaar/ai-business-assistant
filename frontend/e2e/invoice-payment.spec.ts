@@ -628,7 +628,12 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await editor.locator('select[name="customerId"]').selectOption('customer-a');
   let productSelect = editor.locator('select[name^="product-"]');
   if (await productSelect.count() === 0) {
-    await editor.getByRole('button', { name: '+ Product', exact: true }).click();
+    const lineKind = editor.locator('select[name^="kind-"]').first();
+    if (await lineKind.count() > 0) {
+      await lineKind.selectOption('product');
+    } else {
+      await editor.getByRole('button', { name: '+ Product', exact: true }).click();
+    }
     productSelect = editor.locator('select[name^="product-"]');
   }
   await expect(productSelect.first()).toBeVisible();
@@ -708,6 +713,12 @@ test('late invoice detail is discarded and its print window closes after a works
 
   await page.locator('.workspace-bar select').selectOption('business-b');
   await expect(page.locator('#workspace-current-name')).toHaveText('Beta Retail');
+  await openInvoices(page);
+  await expect.poll(
+    () => harness.apiRequests.some(item =>
+      item.method === 'GET' && item.path === '/api/v1/businesses/business-b/invoices'
+    )
+  ).toBe(true);
   await expect(
     page.locator('.invoice-table tbody tr').filter({ hasText: 'INV-ISSUED-B' })
   ).toBeVisible({ timeout: 20_000 });
@@ -748,6 +759,14 @@ test('payment controls stay locked while pending and retry preserves the exact p
       })
   );
   expect(invalidControls, 'Payment form controls must be valid before submission').toEqual([]);
+  await expect(paymentForm).toHaveClass(/ng-valid/);
+  const angularInvalidControls = await paymentForm.locator('input.ng-invalid, select.ng-invalid').evaluateAll(elements =>
+    elements.map(element => {
+      const control = element as HTMLInputElement | HTMLSelectElement;
+      return { name: control.name, value: control.value, classes: control.className };
+    })
+  );
+  expect(angularInvalidControls, 'Angular form controls must be valid before submission').toEqual([]);
   await page.getByRole('button', { name: 'Record payment', exact: true }).click();
   await expect.poll(
     () => harness.apiRequests.filter(item => item.method === 'POST').map(item => item.path)
