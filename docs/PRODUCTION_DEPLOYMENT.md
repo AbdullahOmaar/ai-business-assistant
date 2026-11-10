@@ -76,7 +76,7 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 ## CI provider and required status
 
 - **GitHub Actions is the primary CI provider** for tests, builds, browser checks and dependency/security audits. The canonical pipeline is `.github/workflows/ci.yml`; GitHub remains canonical for source code, branches, commits, PRs and release SHAs.
-- GitHub Actions checks out the exact workflow event SHA and each substantive job verifies `git rev-parse HEAD` equals `GITHUB_SHA`. Workflows use read-only `contents: read` permissions and do not require repository secrets for test/build/security jobs; fork PR code receives no secrets.
+- GitHub Actions checks out the exact workflow event SHA and each substantive job verifies `git rev-parse HEAD` equals the PR head SHA (`github.event.pull_request.head.sha`) or the pushed commit SHA (`github.sha`). Workflows use read-only `contents: read` permissions and do not require repository secrets for test/build/security jobs; fork PR code receives no secrets.
 - The GitHub Actions workflow runs backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
 - CircleCI remains configured as the transition fallback and current required gate. Do not retire it until GitHub Actions exact-SHA validation and enforceable main-branch required-check controls are verified.
 - GitLab CI is inactive and Semaphore is retired/non-authoritative; neither is a validation provider.
