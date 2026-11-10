@@ -279,6 +279,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow, label).toBe(false);
   };
+  const assertReleaseGuideMobileLayout = async (width: number) => {
+    const layout = await page.evaluate(() => ({
+      hasOverflow: document.documentElement.scrollWidth > window.innerWidth,
+      summaryHeights: Array.from(document.querySelectorAll(
+        '.release-feature-group > summary, .release-version > summary'
+      )).map(summary => summary.getBoundingClientRect().height),
+    }));
+    expect(layout.hasOverflow, `Release Guide must not overflow at ${width}px`).toBe(false);
+    expect(layout.summaryHeights.length).toBeGreaterThan(0);
+    for (const height of layout.summaryHeights) {
+      expect(height, `Release Guide disclosure rows must remain touch-friendly at ${width}px`).toBeGreaterThanOrEqual(48);
+    }
+  };
   const assertHomeMobileGrid = async (width: number) => {
     // Angular may briefly re-evaluate the dashboard branch after a viewport resize.
     await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 10_000 });
@@ -322,6 +335,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(moreTrigger).toHaveClass(/active/);
   await expect(moreTrigger).toBeFocused();
   await expect(page.getByRole('heading', { name: /دليل التطبيق والإصدارات|App guide & versions/ })).toBeVisible();
+  for (const width of [360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await assertReleaseGuideMobileLayout(width);
+  }
 
   await moreTrigger.click();
   const guideMenuItem = page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ });
@@ -332,6 +349,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await languageAction.click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  for (const width of [360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await assertReleaseGuideMobileLayout(width);
+  }
   // Language was switched from App Guide; return to Home before measuring Home grids.
   await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
   await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
