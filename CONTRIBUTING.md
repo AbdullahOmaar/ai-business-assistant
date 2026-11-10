@@ -121,7 +121,7 @@ Every substantive handoff must state:
 ## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
 
 - GitHub Actions with `.github/workflows/ci.yml` is the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
-- CircleCI, GitLab and Semaphore are retired/non-authoritative. Semaphore is retired/non-authoritative.
+- CircleCI, GitLab and Semaphore are retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
 - The Owner's 2026-11-10 decision authorizes normal GitHub Actions triggers and manual workflow dispatch; provider/quota/permission failures remain NOT RUN/BLOCKED.
 - A full documented maintainer review of the current cumulative diff is mandatory. A second independent reviewer is not a default project gate under the Owner Policy effective 2026-11-06; require one only where provider-enforced protection or a separate explicit Owner-approved security policy requires it.
