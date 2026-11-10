@@ -91,7 +91,7 @@ This directive changes CI execution permission only. It does not waive tests, se
 - **Candidate version and DRAFT/APPROVED state:**
 - **Maintainer / Master full-diff self-review (exact SHA + findings):**
 - **Project-level review gate:** None beyond the accountable maintainer/Project Master full diff self-review recorded on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
-- **Maintainer self-review findings and disposition:****
+- **Maintainer self-review findings and disposition:**
 - **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
 - **Canonical source SHA / PR:**
