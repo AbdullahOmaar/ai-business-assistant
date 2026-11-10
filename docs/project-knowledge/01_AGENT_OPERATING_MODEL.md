@@ -63,7 +63,7 @@ Team map:
 - Chat 2 — Inventory, Purchasing & Suppliers.
 - Chat 3 — Expenses, Cash Flow & Reports.
 - Chat 4 — Employees & Payroll.
-- Chat 5 — independent QA, Integration & Security; tests/reviews Chat 1–4 work and routes defects to the feature owner.
+- Chat 5 — independent QA, Integration & Security; runs test-based verification on Chat 1–4 work, reports findings and routes defects to the feature owner. This QA function does not create a separate reviewer or approval gate.
 
 Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. CircleCI is the sole active and approved test/build/security validation provider under the owner's 2026-11-04 direction and current `AGENTS.md`; GitLab is inactive for current validation and Semaphore is retired. `docs/PRODUCTION_DEPLOYMENT.md` is aligned with this decision in the 1.0.3 candidate. Do not introduce GitHub Actions as replacement test/build CI. Validate the exact candidate SHA with all CircleCI jobs; never rely on stale or unrelated statuses. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
 
