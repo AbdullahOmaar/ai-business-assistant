@@ -161,7 +161,9 @@ prepare-source:
         exit 1
       }
       git -C source remote remove origin
-      echo "Verified GitHub source SHA: $actual_sha"
+      rm -rf source/.git
+      test ! -e source/.git
+      echo "Verified GitHub source SHA: $actual_sha; removed VCS metadata from source artifact"
   artifacts:
     access: maintainer
     when: always
