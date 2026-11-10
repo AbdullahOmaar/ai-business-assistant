@@ -22,7 +22,7 @@ superseded_by: none
 
 # Security Policy & Release Gates
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback.ng repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 
