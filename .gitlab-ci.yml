@@ -154,7 +154,7 @@ resolve-event:
 
       with open("event.env", "w", encoding="utf-8") as env_file:
           for key, value in resolved.items():
-              env_file.write(f"{key}={value}\\n")
+              env_file.write(f"{key}={value}\n")
 
       event = resolved["GITHUB_EVENT"]
       sha = resolved["SOURCE_SHA"]
