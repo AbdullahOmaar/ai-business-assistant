@@ -1,11 +1,11 @@
-# GitLab Free manual validation only.
-# GitHub remains canonical. Every run must supply SOURCE_SHA and fetch that exact
-# private GitHub commit. No deployment or production data access is performed.
+# GitLab Free automatic validation only.
+# GitHub remains canonical. GitHub webhook payloads select the exact source SHA;
+# every job fetches and validates that immutable GitHub commit. No deployment or
+# production data access is performed.
 
 workflow:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_PIPELINE_SOURCE == "api"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger"'
     - when: never
 
 stages:
@@ -32,10 +32,55 @@ variables:
       - job-status/
     expire_in: 7 days
 
+resolve-event:
+  extends: .status-artifacts
+  stage: prepare
+  image: python:3.12-alpine
+  script:
+    - |
+      set -eu
+      : "${TRIGGER_PAYLOAD:?GitHub webhook payload is required}"
+      python - <<'PY'
+      import json
+      import os
+      import re
+
+      payload_path = os.environ["TRIGGER_PAYLOAD"]
+      with open(payload_path, encoding="utf-8") as payload_file:
+          payload = json.load(payload_file)
+
+      pull_request = payload.get("pull_request")
+      if isinstance(pull_request, dict):
+          sha = pull_request.get("head", {}).get("sha", "")
+          event = "pull_request"
+      else:
+          sha = payload.get("after", "")
+          event = "push"
+
+      if not re.fullmatch(r"[0-9a-f]{40}", sha):
+          raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
+
+      with open("event.env", "w", encoding="utf-8") as env_file:
+          env_file.write(f"SOURCE_SHA={sha}\n")
+          env_file.write(f"GITHUB_EVENT={event}\n")
+
+      print(f"Resolved {event} event to GitHub source SHA: {sha}")
+      PY
+  artifacts:
+    when: always
+    reports:
+      dotenv: event.env
+    paths:
+      - job-status/
+    expire_in: 7 days
+
 status-pending:
   extends: .status-artifacts
   stage: prepare
   image: curlimages/curl:8.11.1
+  needs:
+    - job: resolve-event
+      artifacts: true
   environment:
     name: status-report
   script:
@@ -47,7 +92,7 @@ status-pending:
         *[!0-9a-f]*|'') echo "SOURCE_SHA must be 40 lowercase hexadecimal characters." >&2; exit 1 ;;
       esac
       test "$(printf %s "$SOURCE_SHA" | wc -c)" -eq 40
-      payload="$(printf '{"state":"pending","context":"gitlab/manual-sha","description":"GitLab manual SHA validation in progress","target_url":"%s"}' "$CI_PIPELINE_URL")"
+      payload="$(printf '{"state":"pending","context":"gitlab/automatic","description":"GitLab automatic exact-SHA validation in progress","target_url":"%s"}' "$CI_PIPELINE_URL")"
       curl --fail --silent --show-error \
         --request POST \
         --header "Accept: application/vnd.github+json" \
@@ -62,6 +107,8 @@ prepare-source:
   stage: prepare
   image: alpine:3.21
   needs:
+    - job: resolve-event
+      artifacts: true
     - job: status-pending
       artifacts: true
   environment:
@@ -290,6 +337,8 @@ report-final:
     name: status-report
   when: always
   needs:
+    - job: resolve-event
+      artifacts: true
     - job: status-pending
       artifacts: true
     - job: prepare-source
@@ -316,7 +365,7 @@ report-final:
       : "$SOURCE_SHA"
       : "$GITHUB_STATUS_TOKEN"
       failed=0
-      for job in status-pending prepare-source backend-tests frontend-tests backend-container-smoke frontend-build python-dependency-audit frontend-dependency-audit backup-restore-safety frontend-browser-e2e; do
+      for job in resolve-event status-pending prepare-source backend-tests frontend-tests backend-container-smoke frontend-build python-dependency-audit frontend-dependency-audit backup-restore-safety frontend-browser-e2e; do
         status_file="job-status/$job.txt"
         job_status="$(cat "$status_file" 2>/dev/null || printf 'missing')"
         if [ "$job_status" != "success" ]; then
@@ -328,12 +377,12 @@ report-final:
       done
       if [ "$failed" -eq 0 ]; then
         state="success"
-        description="All GitLab manual SHA validation jobs passed"
+        description="All GitLab automatic exact-SHA validation jobs passed"
       else
         state="failure"
-        description="One or more GitLab manual SHA validation jobs failed or did not run"
+        description="One or more GitLab automatic exact-SHA validation jobs failed or did not run"
       fi
-      payload="$(printf '{"state":"%s","context":"gitlab/manual-sha","description":"%s","target_url":"%s"}' "$state" "$description" "$CI_PIPELINE_URL")"
+      payload="$(printf '{"state":"%s","context":"gitlab/automatic","description":"%s","target_url":"%s"}' "$state" "$description" "$CI_PIPELINE_URL")"
       curl --fail --silent --show-error \
         --request POST \
         --header "Accept: application/vnd.github+json" \
