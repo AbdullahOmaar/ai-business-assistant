@@ -26,6 +26,31 @@ test('muted copy and placeholders use the contrast-safe neutral token', () => {
   assert.match(css, /input::placeholder[\s\S]*?color:\s*var\(--aiba-muted\)/);
 });
 
+test('primary button white labels meet WCAG AA contrast at every gradient stop', () => {
+  const token = (name: string) => css.match(new RegExp(name + ':\\s*(#[0-9a-f]{6})', 'i'))?.[1];
+  const luminance = (hex: string) => {
+    const channels = hex.slice(1).match(/.{2}/g)!.map(value => parseInt(value, 16) / 255);
+    const linear = channels.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  };
+  const contrast = (hex: string) => 1.05 / (luminance(hex) + 0.05);
+  const strong = token('--aiba-brand-strong');
+  const brand = token('--aiba-brand');
+  assert.ok(strong && brand, 'primary gradient tokens must resolve to six-digit colors');
+  assert.match(css, /background:\\s*linear-gradient\\(135deg,\\s*var\\(--aiba-brand-strong\\) 0%,\\s*var\\(--aiba-brand\\) 100%\\)/);
+  for (const stop of [strong, brand]) assert.ok(contrast(stop) >= 4.5, stop + ' must provide at least 4.5:1 contrast with white');
+});
+
+test('KPI card surface is drawn once by the inner component, not the Angular host', () => {
+  const host = css.match(/:root body \.shell \.metric-grid > aba-metric-card\\s*\\{([^}]*)\\}/)?.[1] ?? '';
+  const inner = css.match(/:root body \.shell \.metric-grid > aba-metric-card \.aba-metric-card\\s*\\{([^}]*)\\}/)?.[1] ?? '';
+  assert.match(host, /min-height:/);
+  assert.doesNotMatch(host, /\\b(padding|border|background|box-shadow)\\s*:/);
+  assert.match(inner, /border:/);
+  assert.match(inner, /background:/);
+  assert.match(inner, /box-shadow:/);
+});
+
 test('Angular loads the design system after the existing application stylesheet', () => {
   const styles = angular.projects['ai-business-assistant'].architect.build.options.styles;
   assert.deepEqual(styles, ['src/styles.css', 'src/design-system.css']);
@@ -36,7 +61,7 @@ test('forms, fields, filters, buttons, tables and cards share reusable visual ru
     'form.stack', 'form.inline-form', '.list-tools', '.customer-invoice-filter',
     '.filter-bar', 'input:focus-visible', 'input[aria-invalid="true"]',
     'button.primary', 'button.secondary', '.table-wrap thead th',
-    '.table-wrap tbody td', 'section.panel', '.metric-grid > aba-metric-card',
+    '.table-wrap tbody td', 'section.panel', '.metric-grid > aba-metric-card .aba-metric-card',
     'form.expense-form', 'form.payment-form', 'form.invoice-form',
     '.invoice-toolbar', '.statement-filters', '.invoice-table-wrap thead th',
     '.audit-table-wrap tbody td', '.invoice-card', '.line-card', '.server-summary',
