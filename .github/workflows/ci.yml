@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-\${{ github.workflow }}-\${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -182,12 +182,12 @@ jobs:
     steps:
       - name: Require every substantive CI job to succeed
         env:
-          BACKEND_ACCOUNTING: \${{ needs.backend-accounting.result }}
-          FRONTEND_UNIT_TESTS: \${{ needs.frontend-unit-tests.result }}
-          FRONTEND_PRODUCTION_BUILD: \${{ needs.frontend-production-build.result }}
-          FRONTEND_DEPENDENCY_AUDIT: \${{ needs.frontend-dependency-audit.result }}
-          FRONTEND_BROWSER_SMOKE: \${{ needs.frontend-browser-smoke.result }}
-          BACKEND_CONTAINER: \${{ needs.backend-container.result }}
+          BACKEND_ACCOUNTING: ${{ needs.backend-accounting.result }}
+          FRONTEND_UNIT_TESTS: ${{ needs.frontend-unit-tests.result }}
+          FRONTEND_PRODUCTION_BUILD: ${{ needs.frontend-production-build.result }}
+          FRONTEND_DEPENDENCY_AUDIT: ${{ needs.frontend-dependency-audit.result }}
+          FRONTEND_BROWSER_SMOKE: ${{ needs.frontend-browser-smoke.result }}
+          BACKEND_CONTAINER: ${{ needs.backend-container.result }}
         run: |
           printf 'backend-accounting=%s\n' "$BACKEND_ACCOUNTING"
           printf 'frontend-unit-tests=%s\n' "$FRONTEND_UNIT_TESTS"
