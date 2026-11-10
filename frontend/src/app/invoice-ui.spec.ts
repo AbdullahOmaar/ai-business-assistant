@@ -85,7 +85,7 @@ test('invoice editor groups details, line items, server totals and notes in the 
   assert.match(editorSource, /aria-labelledby="invoice-lines-heading"/);
   assert.match(editorSource, /aria-labelledby="invoice-summary-heading"/);
   assert.match(editorSource, /aria-labelledby="invoice-notes-heading"/);
-  assert.match(editorSource, /class="product-line"/);
+  assert.match(editorSource, /class="line-fields product-line"/);
   assert.match(editorSource, /class="service-line"/);
   assert.match(editorSource, /class="summary-total"/);
   assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
