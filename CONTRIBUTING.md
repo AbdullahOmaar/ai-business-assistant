@@ -2,7 +2,7 @@
 
 The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
 
-- GitHub Push and Pull Request webhook events are intended to trigger GitLab Free through the Pipeline Trigger API. GitLab must extract the event's exact GitHub SHA, fetch that commit from the private canonical repository, verify the checkout, and report the result against the same SHA.
+- GitHub branch Push webhook events trigger GitLab Free through the Pipeline Trigger API. Direct webhook support is documented for Push/Tag events; this implementation subscribes to Pushes only, not Pull Request events. The pipeline extracts `after` from `TRIGGER_PAYLOAD`, fetches that exact commit from the private canonical repository, verifies the checkout, and reports the result against the same SHA. The resulting commit status is visible on any PR containing that commit.
 - GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
 - CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
 - No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
@@ -120,7 +120,7 @@ Every substantive handoff must state:
 
 ## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
 
-- GitLab Free is the intended automatic exact-SHA CI provider; require every substantive job and the aggregate on the exact GitHub candidate SHA.
+- GitLab Free is the intended automatic exact-SHA CI provider; direct webhook scope is branch Push events only, with commit statuses visible on associated PRs. Require every substantive job and the aggregate on the exact GitHub candidate SHA.
 - CircleCI remains configured as the transition fallback and current required gate until GitLab automatic triggering, exact-SHA validation, GitHub status reporting and enforceable merge-control acceptance are verified.
 - GitHub Actions and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
