@@ -1,15 +1,18 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Permanent Owner directive — GitHub Actions CI migration (effective 2026-11-10)
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier GitHub Actions-only, GitHub Actions-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- The core required workflow is .github/workflows/ci.yml; it runs backend accounting/tests and PostgreSQL migration validation, knowledge-package validation, frontend unit tests and production build, frontend dependency audit, Playwright browser smoke, backend container/import checks, backup/restore safety guards, and a single aggregate gate.
+- The required aggregate status is CI / all-checks-passed and must be successful on the exact current PR head SHA. Individual substantive jobs must also be inspected; an aggregate cannot conceal skipped or missing required jobs.
+- .github/workflows/dependency-security.yml runs scheduled and manually requested Python/npm dependency audits.
+- GitHub Actions is retired for this repository. Do not trigger, retry, require, or treat GitHub Actions results as current release evidence. The migration removes .github/workflows/ci.yml.
+- GitLab CI and Semaphore remain inactive/non-authoritative. Do not substitute them.
+- Use the repository's approved GitHub-hosted runner configuration. Do not enable paid larger runners, purchase credits, or change billing without separate Owner authorization.
+- Provider availability, Actions permissions, quotas, and organization/repository policy still apply. If Actions cannot execute, record the exact cause as NOT RUN/BLOCKED; never claim an unexecuted job passed.
+- During cutover, update GitHub branch protection to require CI / all-checks-passed; confirm the effective setting through Owner/Admin UI readback because the connected integration cannot verify branch protection.
+- Full maintainer diff review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization, and separate production-deployment authorization remain mandatory.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This changes CI provider authority only. It does not waive tests, security, review, merge, data-integrity, migration, or release gates. The repository cutover becomes effective when this migration PR is merged; do not disable the current mainline validation before the replacement workflow has passed on the migration candidate.
 
 ## Summary
 <!-- User-visible outcome, defect addressed, and why this is one coherent work package. -->
@@ -47,17 +50,17 @@ This directive changes CI execution permission only. It does not waive tests, se
 - [ ] No unrelated scope, duplicate PR, unsafe rewrite or unapproved force push.
 
 ## Exact-SHA verification
-- **Approved provider:** CircleCI only
+- **Approved provider:** GitHub Actions only
 - **Permanent CI execution authorization / provider-quota state checked:**
-- **CircleCI workflow URL for exact head:**
+- **GitHub Actions workflow URL for exact head:**
 - **Exact SHA tested:**
 - **Substantive jobs and outcomes:**
 - **Aggregate result:**
 - **Checks actually run (commands / environment / timestamps):**
 - **Checks NOT RUN / BLOCKED and exact reason:**
-- **GitGuardian / other supplementary evidence (not a CircleCI substitute):**
+- **GitGuardian / other supplementary evidence (not a GitHub Actions substitute):**
 
-- [ ] All required CircleCI substantive jobs and aggregate passed on exact current head.
+- [ ] All required GitHub Actions substantive jobs and aggregate passed on exact current head.
 - [ ] Failures were investigated and affected checks rerun only after the condition changed.
 - [ ] No alternate/retired CI provider was treated as a replacement.
 - [ ] Final cumulative diff was reviewed for regressions, secrets, unsafe changes and unrelated paths.
