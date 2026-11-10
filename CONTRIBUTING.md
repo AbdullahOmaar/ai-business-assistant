@@ -17,7 +17,7 @@ This guide applies to every person and AI agent contributing to AI Business Assi
 
 ## 1. Roles and accountability
 
-One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. For routine PRs, the accountable maintainer may perform and document the full review; a second reviewer is not a default requirement unless GitHub branch protection requires one. Controlled/security/architecture changes and canonical controlled Project Knowledge publication/update require an independent non-author review plus authorized approval.
+One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
 
 | Role | Accountable for | Required behavior and limits |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ One person may cover multiple roles on a small team, but ownership and review re
 
 - The owner decides material product behavior and approves cost, production, identity/security, and data-risk decisions.
 - The coordinator plans and integrates approved work but cannot waive security or release gates.
-- The implementer proposes and builds; the accountable maintainer/Project Master verifies the evidence and records findings. Controlled/security/architecture and controlled-knowledge changes also require independent non-author review and authorized approval; routine PRs do not require a separate reviewer by default.
+- The implementer proposes and builds; the accountable maintainer/Project Master verifies the evidence and records findings. No separate independent reviewer is required by project policy for Security/Architecture or controlled-knowledge changes. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA; formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed.
 - The release operator executes only an approved release that meets the deployment runbook. A merged PR, green build, HTTP 200, or preview alone does not prove production readiness.
 - If a required role or permission is unavailable, mark the task `BLOCKED`, complete independent safe work, and specify the missing approval/access. Do not bypass the gate.
 
@@ -121,7 +121,7 @@ Every substantive handoff must state:
 - GitHub Actions, GitLab and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
 - The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
-- A full documented maintainer self-review of the current cumulative diff is mandatory. Routine PRs do not require a separate independent reviewer by default; controlled/security/architecture changes and controlled-knowledge publication/update require an independent non-author review plus authorized approval. Any formal GitHub branch-protection approval remains mandatory and must not be bypassed.
+- A full documented maintainer/Project Master self-review of the current cumulative diff on the exact candidate SHA is mandatory for every change. No separate independent reviewer is required by project policy, including for routine PRs, Security/Architecture and controlled-knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory and must never be bypassed.
 - Before merge, require a non-Draft READY PR, exact-head checks, current maintainer review, resolved blocking review threads, reconciled base/divergence, provider protections satisfied and explicit Owner merge authorization. `mergeable=true` is not approval.
 - Merge authorization and production deployment authorization are separate. Disclose auto-deployment coupling and obtain the required production authorization before a merge that automatically deploys.
 
