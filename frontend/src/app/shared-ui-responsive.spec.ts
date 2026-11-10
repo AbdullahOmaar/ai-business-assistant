@@ -41,3 +41,22 @@ test('mobile app header keeps secondary context readable without shrinking touch
   assert.match(mobileHeaderCss, /\.icon-button,[\s\S]*width:\s*44px/);
   assert.match(mobileHeaderCss, /@media\s*\(max-width:\s*380px\)[\s\S]*font-size:\s*11px/);
 });
+
+test('shared UI styles remain syntactically balanced and contain no escaped media-query separators', () => {
+  const componentStyles = [stateMessage, sectionHeader, metricCard, quickAccess].map(source => {
+    const match = source.match(/styles: \[`([\s\S]*?)`\],/);
+    assert.ok(match, 'component style block must be present');
+    return match[1];
+  });
+  const allStyles = [...componentStyles, mobileHeaderCss];
+  for (const styles of allStyles) {
+    let depth = 0;
+    for (const character of styles) {
+      if (character === '{') depth += 1;
+      if (character === '}') depth -= 1;
+      assert.ok(depth >= 0, 'CSS closing brace must have a matching opening brace');
+    }
+    assert.equal(depth, 0, 'CSS blocks must have balanced braces');
+    assert.ok(!styles.includes(String.raw\x60\\n    @media\x60), 'media queries must be separated by real CSS whitespace');
+  }
+});
