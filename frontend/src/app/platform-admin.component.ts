@@ -319,6 +319,24 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
     @media(max-width:600px){.section-heading{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.section-heading>.outline-button{max-width:100%;justify-self:start}}
     @media(max-width:480px){.heading h1{font-size:25px}.metric-grid{gap:9px}.metric-card{padding:12px;min-height:140px}.metric-card>strong{font-size:25px}.metric-card>span:not(.metric-icon){font-size:11px}.metric-card small{font-size:10px}.metric-icon{width:29px;height:29px}.panel{padding:12px}.detail-grid{grid-template-columns:1fr 1fr;gap:8px}.detail-grid>div{padding:9px}.status-form{grid-template-columns:1fr}.status-form .primary-button{grid-column:auto;width:100%}.identity small{max-width:160px}.quiet-button{padding:8px 10px}.section-nav button{gap:6px;font-size:11px}.notice{align-items:flex-start}}
     .system-status-panel{margin-bottom:16px}.runtime-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:10px 0 14px}.runtime-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.runtime-grid>div{display:grid;gap:6px;min-width:0;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}.runtime-grid small{font-size:10px;color:var(--muted)}.runtime-grid strong{font-size:12px;overflow-wrap:anywhere}.runtime-grid .runtime-commit{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.runtime-good{color:var(--aba-color-success-text,#18784c)}.runtime-bad{color:var(--aba-color-danger-text,#a74436)}.runtime-note{font-size:10px;line-height:1.5;color:var(--muted);margin:12px 0 0}
+    /* Mobile accessibility baseline: keep controls reachable and dense copy legible. */
+    @media(max-width:760px){
+      .section-nav button,.quiet-button,.outline-button,.primary-button,.text-action,.pagination button{min-height:44px}
+      .filters input,.filters select,.status-form select,.status-form textarea,.user-role-form select,.user-role-form textarea{min-height:44px}
+      .filters label,.status-form label,.user-role-form label>span{font-size:12px}
+      .runtime-grid small,.runtime-note,.data-note small,.admin-footer{font-size:11px}
+      .identity-access-heading>strong,.identity-permissions>strong{font-size:11px}
+      .permission-token{min-height:32px;padding:5px 7px;font-size:11px;line-height:1.4}
+    }
+    @media(max-width:480px){
+      .section-nav button{min-height:46px;font-size:12px}
+      .metric-card>span:not(.metric-icon){font-size:12px}
+      .metric-card small{font-size:11px}
+      .compact-table th,.compact-table td{font-size:11px;line-height:1.4}
+      .heading p:not(.eyebrow){font-size:14px}
+      .section-heading p:not(.eyebrow){font-size:13px}
+      .notice{font-size:13px}
+    }
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
     /* Compact admin identity summary and avoid needless horizontal scrolling. */
