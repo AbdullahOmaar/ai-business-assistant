@@ -137,8 +137,8 @@ jobs:
       PYTHONUNBUFFERED: "1"
     steps:
       - initialize-failure-details
-      - restore-backend-pip-cache
       - checkout
+      - restore-backend-pip-cache
       - run:
           name: Install backend test and audit dependencies
           command: |
@@ -226,8 +226,8 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
-      - restore-frontend-npm-cache
       - checkout
+      - restore-frontend-npm-cache
       - run:
           name: Verify Node runtime and install frontend dependencies
           command: |
@@ -252,8 +252,8 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
-      - restore-frontend-npm-cache
       - checkout
+      - restore-frontend-npm-cache
       - run:
           name: Verify Node runtime and install frontend dependencies
           command: |
@@ -284,8 +284,8 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
-      - restore-frontend-npm-cache
       - checkout
+      - restore-frontend-npm-cache
       - run:
           name: Verify Node runtime and install frontend dependencies
           command: |
@@ -344,8 +344,8 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
-      - restore-backend-pip-cache
       - checkout
+      - restore-backend-pip-cache
       - run:
           name: Audit Python dependencies
           command: |
@@ -361,8 +361,8 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
-      - restore-frontend-npm-cache
       - checkout
+      - restore-frontend-npm-cache
       - run:
           name: Audit frontend dependencies
           command: |
@@ -380,8 +380,8 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
-      - restore-frontend-npm-cache
       - checkout
+      - restore-frontend-npm-cache
       - run:
           name: Install Slack failure diagnostic tooling
           command: |
