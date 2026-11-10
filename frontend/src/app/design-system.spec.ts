@@ -37,15 +37,15 @@ test('primary button white labels meet WCAG AA contrast at every gradient stop',
   const strong = token('--aiba-brand-strong');
   const brand = token('--aiba-brand');
   assert.ok(strong && brand, 'primary gradient tokens must resolve to six-digit colors');
-  assert.match(css, /background:\\s*linear-gradient\\(135deg,\\s*var\\(--aiba-brand-strong\\) 0%,\\s*var\\(--aiba-brand\\) 100%\\)/);
+  assert.match(css, /background:\s*linear-gradient\(135deg,\s*var\(--aiba-brand-strong\) 0%,\s*var\(--aiba-brand\) 100%\)/);
   for (const stop of [strong, brand]) assert.ok(contrast(stop) >= 4.5, stop + ' must provide at least 4.5:1 contrast with white');
 });
 
 test('KPI card surface is drawn once by the inner component, not the Angular host', () => {
-  const host = css.match(/:root body \.shell \.metric-grid > aba-metric-card\\s*\\{([^}]*)\\}/)?.[1] ?? '';
-  const inner = css.match(/:root body \.shell \.metric-grid > aba-metric-card \.aba-metric-card\\s*\\{([^}]*)\\}/)?.[1] ?? '';
+  const host = css.match(/:root body \.shell \.metric-grid > aba-metric-card\s*\{([^}]*)\}/)?.[1] ?? '';
+  const inner = css.match(/:root body \.shell \.metric-grid > aba-metric-card \.aba-metric-card\s*\{([^}]*)\}/)?.[1] ?? '';
   assert.match(host, /min-height:/);
-  assert.doesNotMatch(host, /\\b(padding|border|background|box-shadow)\\s*:/);
+  assert.doesNotMatch(host, /\b(padding|border|background|box-shadow)\s*:/);
   assert.match(inner, /border:/);
   assert.match(inner, /background:/);
   assert.match(inner, /box-shadow:/);
