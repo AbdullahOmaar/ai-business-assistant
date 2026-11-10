@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.5
+version: 1.0.6
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T21:48:00Z
+last_verified_at: 2026-11-10T22:43:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -13,7 +13,8 @@ canonical_sources:
   - https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
+related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
 supersedes: none
 superseded_by: none
 ---
@@ -138,6 +139,18 @@ Before review/publication:
 Run:
 `python scripts/validate_project_knowledge.py`
 
+### Validation frequency and CI evidence economy
+
+Follow the Owner's economical validation decision in the canonical [MWOS — Modular Workstream Operating System](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea):
+
+- Batch coherent work and avoid repetitive full-suite runs after small edits, checkpoints, chat resumptions or documentation-only changes.
+- During implementation, run targeted checks only for changed behavior/configuration, a concrete defect diagnosis, or a material immediate risk.
+- At batch close, run one relevant final validation on the final candidate SHA. Reuse PASS evidence only if SHA, workflow/configuration, dependencies, environment and context are unchanged.
+- Rerun only after a changed candidate/fix, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need. Do not repeat an unchanged failure just to seek green.
+- Mandatory exact-SHA checks, security/tenant-isolation/financial invariants, formal branch protections and acceptance criteria are not optional.
+- Documentation-only changes do not require application tests/build solely because documentation changed unless a required workflow or documentation validator requires them. The current GitHub Actions workflow runs on every PR; enforced checks remain required.
+- Record the final SHA, checks run/reused, rerun reason, results and NOT RUN items. Test economy is not a gate bypass.
+
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
@@ -179,6 +192,19 @@ For every scenario, record the fixture/input, canonical source references, packa
 
 ## 11. Changelog
 
+### 1.0.6 — 2026-11-11 — DRAFT
+- Reconciled the package with the live repository policy: GitHub Actions is the primary test/build/security CI provider; CircleCI is a transition fallback pending required-check enforcement/release-gate verification; GitLab is inactive and Semaphore retired/non-authoritative.
+- Added the Owner's economical test/CI execution policy: batch work, use targeted checks only when justified, validate the final candidate SHA once, reuse still-valid PASS evidence, rerun only after a changed condition or concrete diagnostic need, and preserve all enforced exact-SHA gates.
+- Updated all five documents to the same package version and refreshed source evidence to main `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb`.
+- Preserved dated 1.0.2/1.0.3 CI-provider decisions and earlier review-policy checkpoints as historical changelog evidence; current policy is defined by this version and live `AGENTS.md`.
+- This package remains DRAFT. PR merge, APPROVED status, Project Sources publication, and Project Instructions UI save/readback are not authorized or claimed by this change.
+
+### 1.0.5 — 2026-11-10 — DRAFT
+- Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
+- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
+- Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, Owner authorization, data-integrity controls and separate production authorization remain unchanged.
+- This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
+
 ### 1.0.4 — 2026-11-06 — DRAFT
 - Removed the project-level mandatory independent-reviewer gate for routine merges and controlled knowledge updates.
 - The accountable maintainer/Project Master may perform and document self-review; a second reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
@@ -187,14 +213,14 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Project Sources publication and Project Instructions UI save/readback remain NOT VERIFIED.
 
 ### 1.0.3 — 2026-11-05 — DRAFT
-- Refreshed the five documents' GitHub source baseline to current main `d7ff459d9478b88a39c1b0cb944468f0ea392c37` and rechecked source-map references.
+- Refreshed the five documents' GitHub source baseline to current main `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` and rechecked source-map references.
 - Corrected CI authority to the owner's CircleCI-only decision reflected in `AGENTS.md`; corrected the Production Deployment Runbook to remove stale GitLab-only statements.
 - Added a CircleCI step to run `scripts/validate_project_knowledge.py` and all 17 standard-library validator regression tests on the candidate SHA.
 - The five documents remain DRAFT. The Master maintainer review is not independent approval; no Project Sources publication or Project Instructions UI readback is claimed.
 - T37 remains DRAFT / NOT APPROVED. S01–S11 full product E2E and live Project Sources publication/readback remain NOT VERIFIED.
 
 ### 1.0.2 — 2026-11-04 — DRAFT
-- Refreshed canonical GitHub references to main SHA `d7ff459d9478b88a39c1b0cb944468f0ea392c37` after checking the current `AGENTS.md` and Production Deployment Runbook.
+- Refreshed canonical GitHub references to main SHA `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` after checking the current `AGENTS.md` and Production Deployment Runbook.
 - Corrected CI authority: GitLab CI is the sole approved validation provider; CircleCI and Semaphore are retired/non-authoritative; GitHub Actions is not a replacement test/build provider.
 - Historical note: recorded the owner's explicit approval from the Master conversation on 2026-11-04; independent review was still outstanding under the policy in force at that time.
 - Reconfirmed validator, 17 unit tests and S01–S11 E2E remain NOT RUN in this session. No CI pipeline, merge, deployment, production write or migration was triggered.
@@ -215,9 +241,3 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Preserved the unresolved T37 authority conflict as fail-closed; did not promote historical approval text.
 - Project Sources inventory/publication and Project Instructions UI readback remain NOT VERIFIED.
 
-
-### 1.0.5 — 2026-11-10 — DRAFT
-- Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
-- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
-- Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, Owner authorization, data-integrity controls and separate production authorization remain unchanged.
-- This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
