@@ -144,7 +144,9 @@ prepare-source:
         printf 'SOURCE_SHA=%s\n' "$SOURCE_SHA"
         printf 'GITHUB_EVENT=%s\n' "${GITHUB_EVENT:-unknown}"
         printf 'GITHUB_REPOSITORY=%s\n' "${GITHUB_REPOSITORY:-}"
-        printf 'GITHUB_PR_NUMBER=%s\n' "${GITHUB_PR_NUMBER:-}"
+        if [ -n "${GITHUB_PR_NUMBER:-}" ]; then
+          printf 'GITHUB_PR_NUMBER=%s\n' "$GITHUB_PR_NUMBER"
+        fi
       } > event.env
       case "$SOURCE_SHA" in
         *[!0-9a-f]*|'') echo "SOURCE_SHA must be 40 lowercase hexadecimal characters." >&2; exit 1 ;;
