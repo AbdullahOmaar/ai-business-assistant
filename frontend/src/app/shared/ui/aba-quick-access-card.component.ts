@@ -24,7 +24,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     .aba-quick-access__icon{flex:0 0 36px;width:36px;height:36px;display:grid;place-items:center;border-radius:var(--aba-radius-control, 9px);background:var(--aba-color-primary-soft, #ecfdf5);color:var(--aba-color-primary, #0f766e);font-size:var(--aba-font-size-lg, 16px)}
     .aba-quick-access__copy{display:grid;gap:var(--aba-space-1, 4px);min-width:0;flex:1}
     .aba-quick-access__copy strong{font-size:var(--aba-font-size-sm, 12px);line-height:var(--aba-line-height-normal, 1.5);font-weight:var(--aba-font-weight-semibold, 600);overflow-wrap:anywhere}
-    .aba-quick-access__copy>span{color:var(--aba-color-text-secondary, #64748b);font-size:var(--aba-font-size-xs, 11px);line-height:var(--aba-line-height-relaxed, 1.65);overflow-wrap:anywhere}
+    .aba-quick-access__copy>span{color:var(--aba-color-text-secondary, #64748b);font-size:var(--aba-font-size-sm, 12px);line-height:var(--aba-line-height-relaxed, 1.65);overflow-wrap:anywhere}
     .aba-quick-access__arrow{align-self:center;color:var(--aba-color-text-secondary, #64748b);font-size:var(--aba-font-size-sm, 12px)}
     :host-context([dir="rtl"]) .aba-quick-access__arrow{transform:scaleX(-1)}
     @media(prefers-reduced-motion:reduce){.aba-quick-access{transition:none}.aba-quick-access:hover:not(:disabled){transform:none}}
@@ -36,10 +36,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       :host-context(.module-directory-grid) .aba-quick-access__arrow{display:none}
     }
     @media(max-width:380px){
-      :host-context(.module-directory-grid) .aba-quick-access{min-height:92px;gap:6px;padding:8px}
+      :host-context(.module-directory-grid) .aba-quick-access{min-height:96px;gap:6px;padding:8px}
       :host-context(.module-directory-grid) .aba-quick-access__icon{flex-basis:28px;width:28px;height:28px;font-size:14px}
-      :host-context(.module-directory-grid) .aba-quick-access__copy strong{font-size:11px}
-      :host-context(.module-directory-grid) .aba-quick-access__copy>span{font-size:10px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy strong{font-size:12px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy>span{font-size:11px}
     }
   `],
 })
