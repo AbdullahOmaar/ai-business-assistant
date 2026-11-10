@@ -80,7 +80,6 @@
 
 :root body .shell .main {
   min-width: 0;
-  width: 100%;
 }
 
 :root body .shell .topbar h1,
