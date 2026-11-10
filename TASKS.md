@@ -12,9 +12,9 @@
 
 ---
 
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## HISTORICAL (SUPERSEDED 2026-11-10) — CircleCI execution unfreeze (effective 2026-11-08)
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+Historical directive retained for audit only. The Owner's 2026-11-10 GitHub Actions provider decision supersedes this CircleCI-only rule.
 
 - CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
 - No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
