@@ -201,7 +201,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 ### 1.0.6 — 2026-11-11 — DRAFT
 - Reconciled the package with the live repository policy: GitHub Actions is the primary test/build/security CI provider; CircleCI is a transition fallback pending required-check enforcement/release-gate verification; GitLab is inactive and Semaphore retired/non-authoritative.
 - Added the Owner's economical test/CI execution policy: batch work, use targeted checks only when justified, validate the final candidate SHA once, reuse still-valid PASS evidence, rerun only after a changed condition or concrete diagnostic need, and preserve all enforced exact-SHA gates.
-- Updated all five documents to the same package version and refreshed source evidence to main `104163c6f756aae827bed83a0839154ea6b7dfcb`.
+- Updated all five documents to the same package version and refreshed source evidence to main `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb`.
 - Preserved dated 1.0.2/1.0.3 CI-provider decisions and earlier review-policy checkpoints as historical changelog evidence; current policy is defined by this version and live `AGENTS.md`.
 - This package remains DRAFT. PR merge, APPROVED status, Project Sources publication, and Project Instructions UI save/readback are not authorized or claimed by this change.
 
