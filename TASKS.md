@@ -3377,3 +3377,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **No operational CI evidence:** no webhook delivery, GitLab CI Lint, automatic pipeline, exact-SHA full validation or GitHub status report. The only GitLab pipeline remains the older skipped push-source pipeline. CircleCI stays active as transition fallback.
 - **Latest exact GitHub head status:** six CircleCI failures and one retired Semaphore failure; no retry, root causes UNKNOWN pending provider logs. Private GitHub Free merge-control enforcement remains BLOCKED / NOT VERIFIED.
 - **Review/delivery:** full maintainer diff review recorded; independent non-author review for controlled policy publication pending. No merge, CI retirement, production deployment, DB operation, paid upgrade or repository visibility change.
+
+
+## GitLab artifact confidentiality hardening — 2026-11-10
+
+- Added `artifacts:access: maintainer` to all five artifact definitions in `.gitlab-ci.yml`, including the source checkout artifact, to restrict artifact downloads to Maintainers/Owners. GitLab documents this setting as controlling UI/API artifact access; it does not restrict job logs or downstream job-token artifact access.
+- GitHub/GitLab CI config copies were read back byte-identical at 12,564 bytes.
+- **Still mandatory before any pipeline/secrets:** GitLab project `public_jobs=true` means job logs are publicly accessible according to the Projects API. Disable public job logs (`public_jobs=false`) in project settings. The artifact ACL does not solve public job-log visibility.
+- CI-config branch remains protected but `developers_can_push=true`; set push access to Maintainers only. Rotate the exposed runner-registration token. No settings changes could be performed with available GitLab connector actions.
+- No webhook, pipeline, CI Lint, token variables, exact-SHA validation or GitHub status report configured/observed. CircleCI remains the transition gate.
