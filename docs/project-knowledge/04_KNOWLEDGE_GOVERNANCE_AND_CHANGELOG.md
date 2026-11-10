@@ -20,7 +20,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review and verified UI readback; a second reviewer is not a default requirement.
+> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review and verified UI readback. No separate independent reviewer is required by project policy.
 
 ## 1. Package manifest
 
