@@ -4,7 +4,7 @@ title: Security Policy & Release Gates
 version: 1.0.7
 status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T23:10:43.820Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
