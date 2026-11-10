@@ -21,7 +21,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback.nifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
 
 ## 1. Package manifest
 
