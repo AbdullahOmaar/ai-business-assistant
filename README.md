@@ -13,6 +13,7 @@ AI-powered business assistant for retail shops and service providers.
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
 - **Intended CI (GitLab Free; automatic cutover pending):** https://gitlab.com/abdullahomarrefaat/ai-business-assistant (pipeline: [`.gitlab-ci.yml`](.gitlab-ci.yml))
 - **Transition CI fallback (CircleCI):** https://circleci.com/gh/AbdullahOmaar/ai-business-assistant (keep active until exact-SHA validation, GitHub status reporting and merge-control gates are verified)
+- **GitLab webhook scope:** GitHub branch Push events only; GitLab reports status against the exact commit SHA, visible on any associated PR. Direct Pull Request webhook events are not configured.
 - **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
 - **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
 - **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
