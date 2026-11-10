@@ -213,14 +213,14 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Project Sources publication and Project Instructions UI save/readback remain NOT VERIFIED.
 
 ### 1.0.3 — 2026-11-05 — DRAFT
-- Refreshed the five documents' GitHub source baseline to current main `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` and rechecked source-map references.
+- Refreshed the five documents' GitHub source baseline to current main `d7ff459d9478b88a39c1b0cb944468f0ea392c37` and rechecked source-map references.
 - Corrected CI authority to the owner's CircleCI-only decision reflected in `AGENTS.md`; corrected the Production Deployment Runbook to remove stale GitLab-only statements.
 - Added a CircleCI step to run `scripts/validate_project_knowledge.py` and all 17 standard-library validator regression tests on the candidate SHA.
 - The five documents remain DRAFT. The Master maintainer review is not independent approval; no Project Sources publication or Project Instructions UI readback is claimed.
 - T37 remains DRAFT / NOT APPROVED. S01–S11 full product E2E and live Project Sources publication/readback remain NOT VERIFIED.
 
 ### 1.0.2 — 2026-11-04 — DRAFT
-- Refreshed canonical GitHub references to main SHA `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` after checking the current `AGENTS.md` and Production Deployment Runbook.
+- Refreshed canonical GitHub references to main SHA `d7ff459d9478b88a39c1b0cb944468f0ea392c37` after checking the current `AGENTS.md` and Production Deployment Runbook.
 - Corrected CI authority: GitLab CI is the sole approved validation provider; CircleCI and Semaphore are retired/non-authoritative; GitHub Actions is not a replacement test/build provider.
 - Historical note: recorded the owner's explicit approval from the Master conversation on 2026-11-04; independent review was still outstanding under the policy in force at that time.
 - Reconfirmed validator, 17 unit tests and S01–S11 E2E remain NOT RUN in this session. No CI pipeline, merge, deployment, production write or migration was triggered.
