@@ -20,7 +20,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review, independent non-author review for controlled/security/architecture changes, and verified UI readback.
+> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
 
 ## 1. Package manifest
 
@@ -98,7 +98,7 @@ At every Workstream Closeout:
    - **NEW CANONICAL DECISION:** create or update the owning ADR/Notion decision first; then summarize/link it here.
 6. Do not copy dynamic status, test output, temporary blockers, customer data, secrets or payroll-sensitive data into Project Sources.
 7. Update the canonical GitHub file with version, owner, UTC verification time, review date, source links and supersession metadata.
-8. Document maintainer/Project Master self-review for controlled/security/architecture changes and obtain an independent non-author review plus authorized approval before publishing/updating controlled knowledge. Do not mark APPROVED without the authorized owner decision and required checks; satisfy any formal GitHub branch-protection approval if configured.
+8. Document maintainer/Project Master full self-review on the exact candidate SHA before publishing/updating controlled knowledge. No separate independent reviewer is required by project policy. Do not mark APPROVED without the authorized Owner decision and required checks; satisfy any formal GitHub branch-protection approval if configured.
 9. Publish only the approved version to ChatGPT Project Sources.
 10. Read back every published file and compare filename, version and content with the GitHub canonical copy.
 11. Update this changelog and the existing Notion task/handoff with exact PR/SHA, versions, publication/readback state and remaining gaps.
@@ -141,7 +141,7 @@ Run:
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
-- Review owner: the accountable maintainer/Project Master records self-review. Controlled/security/architecture changes and canonical controlled-knowledge publication/update require an independent non-author review plus authorized approval. Formal GitHub branch-protection approvals, if configured, remain mandatory.
+- Review owner: the accountable maintainer/Project Master records self-review. No separate independent reviewer is required by project policy for any change, including Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if configured, remain mandatory and must never be bypassed.
 - Stable documents: review every 90 days or on relevant scope/identity/source-authority event.
 - Controlled documents: review every 30 days or immediately on relevant policy/ADR/security/release change.
 - The review schedule is a proposed maintenance default until explicitly approved by the owner.
@@ -180,8 +180,8 @@ For every scenario, record the fixture/input, canonical source references, packa
 ## 11. Changelog
 
 ### 1.0.5 — 2026-11-10 — DRAFT
-- Owner decision: clarify that routine PRs do not require a separate reviewer by default, while preserving the mandatory independent non-author review and authorized approval for controlled/security/architecture changes and canonical controlled Project Knowledge publication/update.
-- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA; independent review remains an additional gate for controlled changes.
+- Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
+- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
 - Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, owner authorization, data-integrity controls and separate production authorization remain unchanged.
 - Updated AGENTS.md, CONTRIBUTING.md, Production Deployment Runbook and PR template to use one consistent self-review rule.
 - This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
