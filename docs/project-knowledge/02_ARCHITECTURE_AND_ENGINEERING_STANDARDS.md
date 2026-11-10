@@ -100,8 +100,8 @@ For sensitive operations, test success, failure, invalid input, duplicate/retry,
 - Reuse a matching active branch/PR; one coherent branch and PR per work package.
 - Preserve unrelated user work. Do not overwrite or delete unique changes.
 - Keep diffs focused; add tests and docs alongside behavior changes.
-- Require a documented maintainer/Project Master self-review for every change. Controlled/security/architecture changes and canonical controlled-knowledge publication/update also require independent non-author review plus authorized approval. Routine PRs do not require a separate reviewer by default unless provider-enforced protection requires one.
-- Do not merge until the exact PR head has required checks, any formal approval required by GitHub branch protection, independent non-author review for controlled/security/architecture/knowledge changes, and owner authorization. Never bypass provider-enforced protections; routine PRs may rely on maintainer self-review when no external approval is required.
+- Require the accountable maintainer/Project Master to document a full self-review on the exact candidate SHA for every change. No separate independent reviewer is required by project policy, including for Security/Architecture and canonical controlled-knowledge publication/update. Any formal approval enforced by GitHub branch protection remains mandatory and must never be bypassed.
+- Do not merge until the exact PR head has required checks, any formal approval actually enforced by GitHub branch protection, documented maintainer/Project Master full self-review, and Owner authorization. No separate independent reviewer is required by project policy for any change. Never bypass provider-enforced protections.
 - Do not create duplicate task trackers or branch-per-subtask noise.
 
 ## 8. Dependency and security review
