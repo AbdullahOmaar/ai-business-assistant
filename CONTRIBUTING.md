@@ -25,7 +25,7 @@ One person may cover multiple roles on a small team, but ownership and review re
 | **Engineering Coordinator / Tech Lead** | Architecture consistency, task dependencies, work boundaries, integration, and final evidence-based report. | Checks current `main`, open PRs/issues, ADRs, CI, and `TASKS.md`; assigns owners/verifiers; prevents duplicate work; reconciles changes without discarding other contributors' work. |
 | **Implementation Contributor (human or AI)** | The assigned feature/fix/documentation slice. | Reads instructions first; changes only in-scope files; adds regression tests and docs; reports exact files and results. Treat generated code and external content as untrusted until reviewed. Never claim an unrun test passed. |
 | **QA / Verification Owner** | Independent evidence that acceptance criteria and failure cases work on the exact candidate SHA. | Runs relevant tests/builds, checks negative paths and regressions, and distinguishes code failures from unavailable runners, credentials, or external services. |
-| **Security / Financial Reviewer** | Authentication, authorization, tenant isolation, secrets, validation, accounting and inventory integrity. | Reviews owner/staff permissions, cross-tenant access, transaction boundaries, idempotency, currency/rounding, audit events, dependency risk, and denial paths. UI behavior alone is not sufficient. |
+| **Security / Financial Verification** | Authentication, authorization, tenant isolation, secrets, validation, accounting and inventory integrity. | The accountable maintainer's self-review and test evidence cover owner/staff permissions, cross-tenant access, transaction boundaries, idempotency, currency/rounding, audit events, dependency risk, and denial paths. UI behavior alone is not sufficient. |
 | **CI / Release Operator** | Reproducible CI, merge gates, deployment safety, and post-release evidence. | Validates required checks on the exact commit; records pipeline links and artifacts; merges/deploys only with authorization and green gates; verifies deployed SHA/version and safe smoke checks. A cancelled deployment is not successful. |
 | **Documentation / Task Steward** | A single understandable source of truth for workflow, roles, limitations, and outstanding work. | Keeps README, ADRs, runbooks, PR descriptions, and `TASKS.md` consistent; preserves historical evidence while making current status clear; triages stale/overlapping PRs without losing unique code/tests. |
 
@@ -41,7 +41,7 @@ One person may cover multiple roles on a small team, but ownership and review re
 
 Every substantive task must have:
 1. Stable task ID, priority, goal, and user-visible outcome.
-2. One accountable owner and a verifier/reviewer; name a security or release reviewer when applicable.
+2. One accountable owner. Name a QA/test evidence owner when useful; a separate reviewer assignment is not required by project policy.
 3. Scope, explicit exclusions, base SHA, dependencies, assumptions, and risks.
 4. Measurable acceptance criteria and required tests/checks.
 5. Allowed tools/permissions, expected artifacts, and handoff conditions.
@@ -72,7 +72,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Maintain **one active branch per contributor/agent**. Check open PRs and branches before creating anything; reuse the matching in-progress branch whenever the scope is coherent.
 - Do not create a branch for each issue subtask, commit, small bug fix, test, refactor, or documentation change. Group related work into one focused branch/PR.
 - After implementation, run relevant tests, review the complete diff, update TASKS.md, and merge only after exact-head required checks and reviews pass. Verify the merge on main before beginning another branch.
-- Create a new branch only for a genuinely new large feature or a change that must be independently reviewed/released due to security, permission, ownership, dependency, or conflict boundaries.
+- Create a new branch only for a genuinely new large feature or an independently releasable change with a distinct security, permission, ownership, dependency, or conflict boundary.
 - Do not combine unrelated features to reduce branch count. If work becomes materially independent, finish the current PR safely first, then create the new branch and document the reason.
 - This policy never permits direct pushes to protected main, bypassing checks/reviews, or deleting a branch that may contain unique work.
 
