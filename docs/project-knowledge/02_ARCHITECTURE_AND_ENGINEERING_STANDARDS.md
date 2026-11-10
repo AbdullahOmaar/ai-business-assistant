@@ -1,27 +1,27 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.6
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T22:43:43Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/ARCHITECTURE_BASELINE.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/adr/ADR-001-v0-architecture.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/ARCHITECTURE_BASELINE.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/adr/ADR-001-v0-architecture.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/CONTRIBUTING.md
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Architecture & Engineering Standards
 
-> **Publication state:** DRAFT. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
 
 ## 1. Accepted V0 architecture
 

@@ -1,28 +1,28 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.6
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T22:43:43Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/CONTRIBUTING.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Security Policy & Release Gates
 
-> **Publication state:** DRAFT. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 

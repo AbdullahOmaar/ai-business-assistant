@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.6
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T22:43:43Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -14,14 +14,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Knowledge Governance & Changelog
 
-> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
 
 ## 1. Package manifest
 
@@ -191,6 +191,12 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Historical note (superseded by policy 1.0.4): at this checkpoint, the same Project Master maintainer authored and reviewed the candidate, and the then-current policy still required independent review. Owner approval was recorded on 2026-11-04.
 
 ## 11. Changelog
+
+### 1.0.7 — 2026-11-11 — APPROVED
+- Owner authorized the consistent five-document ABA-KNOW package to move from DRAFT to APPROVED for Project Sources publication.
+- Updated all five metadata records to version 1.0.7 and refreshed source verification against the post-PR-#369 main snapshot. The effective package approval is distinct from the Project Sources upload/readback, which remains NOT VERIFIED until all five files are uploaded together and compared with this canonical version.
+- The 2026-11-11 approval does not change product scope, architecture decisions, security controls, financial semantics or release gates. T37 remains DRAFT / NOT APPROVED.
+- Maintainer full diff self-review and exact-candidate CI are recorded on the follow-up PR before merge; no provider-enforced gate is waived.
 
 ### 1.0.6 — 2026-11-11 — DRAFT
 - Reconciled the package with the live repository policy: GitHub Actions is the primary test/build/security CI provider; CircleCI is a transition fallback pending required-check enforcement/release-gate verification; GitLab is inactive and Semaphore retired/non-authoritative.

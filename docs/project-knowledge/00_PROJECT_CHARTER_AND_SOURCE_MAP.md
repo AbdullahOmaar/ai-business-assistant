@@ -1,27 +1,27 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.6
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T22:43:43Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2027-01-28
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/README.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/README.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
-related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Project Charter & Source Map
 
-> **Publication state:** DRAFT. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
 
 ## 1. Project identity
 
