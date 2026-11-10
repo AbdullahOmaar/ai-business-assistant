@@ -81,7 +81,10 @@ test('shared cards use comfortable mobile padding and reduce narrow-card vertica
 test('release guide keeps card padding and disclosure targets comfortable on mobile', () => {
   assert.match(releaseGuide, /@media\(max-width:600px\)\{[\s\S]*\.release-guide-panel\{padding:16px\}[\s\S]*\.release-feature-group>summary,\.release-version>summary\{padding:12px\}/);
   assert.match(releaseGuide, /@media\(max-width:380px\)\{[\s\S]*\.release-guide-panel\{padding:12px\}[\s\S]*\.release-feature-group>summary,\.release-version>summary\{padding:10px;gap:8px\}/);
-  assert.match(releaseGuide, /min-height:48px/);
+  assert.match(releaseGuide, /min-height:52px;touch-action:manipulation/);
+  assert.match(releaseGuide, /content:'⌄'[\s\S]*?transition:transform 160ms ease/);
+  assert.match(releaseGuide, /\[open\]>summary\{background:var\(--aba-color-surface-subtle/);
+  assert.match(releaseGuide, /prefers-reduced-motion:reduce\)\{\.release-feature-group>summary:after,\.release-version>summary:after\{transition:none\}\}/);
 });
 
 test('Platform Admin mobile controls remain touch-friendly and readable', () => {
