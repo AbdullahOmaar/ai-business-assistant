@@ -3344,3 +3344,16 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - CircleCI on that exact source commit: jobs 15716–15721 all blocked before start with `free-plan-no-credits-available`; aggregate did not execute. No tests/build/audit/browser checks ran.
 - This is a presentation/accessibility correction only. No API/backend/schema/financial semantics changed. No paid top-up, merge, production deployment, DB write or migration.
 - Remaining: CircleCI credits, exact-head 7/7 CircleCI, rendered Preview RTL/LTR/mobile/keyboard/screen-reader/device acceptance, and final maintainer review.
+
+
+## T38 — GitHub Actions availability validation — 2026-11-10
+
+- **Owner CI direction:** CircleCI, GitHub Actions and GitLab remain retained options; do not cancel or remove any provider. Use whichever configured provider can actually execute the required checks. This explicit Owner direction supersedes the older CircleCI-only provider selection wording for this workstream; canonical policy-file reconciliation remains a separate review item.
+- **Current candidate before this ledger update:** `f1138658c30463690cdae1be5dc3d3c6192ad738` on PR #363, branch `master/t38-add-invoice-editor-redesign-20261109`.
+- **GitHub Actions exact-head verification:** workflow run `42794252680` (Verify backend and frontend) SUCCESS: backend pytest + PostgreSQL migration validation SUCCESS; frontend unit tests SUCCESS; frontend production build SUCCESS. Workflow run `42794252499` (Dependency security scan) SUCCESS: Python and npm dependency audits SUCCESS.
+- **Test assertion fixes:** updated only `frontend/src/app/app.component-template-safety.spec.ts` and `frontend/src/app/invoice-ui.spec.ts`. Six stale assertions from the former editor markup/card selectors were aligned with the new component; the final service-line selector was corrected to match `class="line-fields service-line"`. No application behavior changed. At the previous candidate, frontend tests reached 379/380; the corrected current candidate then passed all tests and build.
+- **CircleCI:** still retained; exact-head jobs remain blocked before execution with `free-plan-no-credits-available`. No paid upgrade/top-up. Semaphore status remains retired/non-authoritative.
+- **GitLab:** project `abdullahomarrefaat/ai-business-assistant` exists (ID `88667297`), but the T38 branch is absent from that mirror; no GitLab pipeline was triggered because it cannot validate this exact candidate SHA.
+- **Coverage boundary:** current GitHub Actions workflows do not evidence the CircleCI browser E2E job or backend container/backup-restore safety job for this candidate. Rendered Preview RTL/LTR/mobile/keyboard/screen-reader and physical Android acceptance remain NOT RUN. Therefore Actions checks are green but do not establish full T38 release acceptance.
+- **Release:** PR #363 remains OPEN / DRAFT / UNMERGED. No Preview, merge, production deployment, DB write or migration. Full maintainer source diff review remains complete; runtime/visual acceptance is incomplete.
+- **Next action:** resolve missing browser/container validation coverage through a safe exact-SHA provider path, then obtain a Vercel Preview and complete rendered/accessibility/device acceptance. Keep merge and production deployment as separate Owner-authorized gates.
