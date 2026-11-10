@@ -61,14 +61,14 @@ redact_text() {
 
 strip_ansi_codes() {
   local raw="$1"
-  printf '%s' "$raw" | sed -E 's/\\x1B\\[[0-9;]*[[:alpha:]]//g'
+  printf '%s' "$raw" | sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g'
 }
 
 format_excerpt() {
   local raw="$1"
   local cleaned
   cleaned=$(strip_ansi_codes "$raw" \
-    | tr '\\140' "'" \
+    | tr '\140' "'" \
     | awk 'NF { if (length($0) > 220) print substr($0, 1, 220) "…"; else print $0 }' \
     | tail -n 12)
   if [[ -z "$cleaned" ]]; then
