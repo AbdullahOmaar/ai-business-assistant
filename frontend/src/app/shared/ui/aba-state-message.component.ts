@@ -38,7 +38,8 @@ export type AbaStateKind = 'loading' | 'empty' | 'error' | 'success' | 'info' | 
     .aba-state-message__spinner{flex:0 0 18px;width:18px;height:18px;border:2px solid var(--aba-color-border-strong, #cbd5e1);border-top-color:var(--aba-color-primary, #0f766e);border-radius:50%;animation:aba-spin .75s linear infinite}
     @keyframes aba-spin{to{transform:rotate(360deg)}}
     @media(prefers-reduced-motion:reduce){.aba-state-message__spinner{animation:none;border-top-color:var(--aba-color-primary, #0f766e)}}
-    @media(max-width:480px){.aba-state-message{align-items:flex-start;flex-wrap:wrap}.aba-state-message__action{margin-inline-start:auto}}\n    @media(max-width:380px){.aba-state-message{padding:10px}.aba-state-message__action{width:100%;margin-inline-start:0}}
+    @media(max-width:480px){.aba-state-message{align-items:flex-start;flex-wrap:wrap}.aba-state-message__action{margin-inline-start:auto}}
+    @media(max-width:380px){.aba-state-message{padding:10px}.aba-state-message__action{width:100%;margin-inline-start:0}}
   `],
 })
 export class AbaStateMessageComponent {
