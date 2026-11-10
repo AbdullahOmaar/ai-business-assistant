@@ -24,7 +24,7 @@ The Owner explicitly removes the project-level separate independent-reviewer req
 - Updated and read back canonical Notion pages: Product & Agent Operating Model, Universal Work Execution Standard, Work Package & Handoff Standard, Master Task Plan, Agent Prompt Registry, and E2E Operating Model.
 - ABA-KNOW-00..04 remain DRAFT. Project Sources publication and Project Instructions UI save/readback are NOT VERIFIED.
 - GitHub effective branch-protection approval requirements remain UNKNOWN pending Owner/Admin UI readback. Never bypass them.
-- Documentation-only candidate. Tests/build/security CI are NOT RUN on this branch. No merge, deployment, production DB write/migration, or branch-protection change.
+- Documentation-only candidate. CircleCI exact-head validation on `430afb1f2020f123371a306b5a8a1f79faffd9f1`: all six substantive jobs and aggregate `verify-non-main/all-checks-passed` SUCCESS. Semaphore failure is retired/non-authoritative. This evidence applies only to SHA `430afb1f2020f123371a306b5a8a1f79faffd9f1`; this TASKS.md update advances the candidate and requires fresh exact-head validation. No merge, deployment, production DB write/migration, or branch-protection change.
 
 
 # Historical policy conflict sweep — 2026-11-08 (superseded by Owner policy effective 2026-11-10)
