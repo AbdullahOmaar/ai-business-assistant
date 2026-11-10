@@ -405,9 +405,13 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await expect(page.getByRole('heading', { name: /Users & access|المستخدمون والصلاحيات/ })).toBeVisible();
   await expect(page.getByLabel(/Email address or UID|البريد الإلكتروني أو UID/)).toBeVisible();
 
-  const pageHasHorizontalOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > window.innerWidth,
-  );
-  expect(pageHasHorizontalOverflow).toBe(false);
+  for (const width of [360, 390, 430, 768, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(page.getByRole('heading', { name: /Users & access|المستخدمون والصلاحيات/ })).toBeVisible();
+    const pageHasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    );
+    expect(pageHasHorizontalOverflow, `Platform Admin must not overflow at ${width}px`).toBe(false);
+  }
   expect(uncaughtErrors).toEqual([]);
 });
