@@ -45,56 +45,119 @@ resolve-event:
       import os
       import re
 
+      CANONICAL_REPOSITORY = "abdullahomaar/ai-business-assistant"
+      ALLOWED_PR_ACTIONS = {"opened", "synchronize", "reopened", "ready_for_review"}
+
+      def resolve_event(payload):
+          if not isinstance(payload, dict):
+              raise ValueError("Webhook payload must be a JSON object.")
+          repository_data = payload.get("repository")
+          if not isinstance(repository_data, dict):
+              raise ValueError("Webhook repository metadata is missing.")
+          repository = repository_data.get("full_name", "")
+          if not isinstance(repository, str) or repository.casefold() != CANONICAL_REPOSITORY:
+              raise ValueError("Webhook repository does not match the canonical GitHub repository.")
+
+          pull_request = payload.get("pull_request")
+          pr_number = ""
+          if pull_request is not None:
+              if not isinstance(pull_request, dict):
+                  raise ValueError("Pull request payload must be an object.")
+              event = "pull_request"
+              action = payload.get("action", "")
+              if action not in ALLOWED_PR_ACTIONS:
+                  raise ValueError(f"Pull request action is not a validation trigger: {action or 'missing'}")
+              base = pull_request.get("base") or {}
+              head = pull_request.get("head") or {}
+              if not isinstance(base, dict) or not isinstance(head, dict):
+                  raise ValueError("Pull request base/head metadata is invalid.")
+              base_repo = base.get("repo") or {}
+              head_repo = head.get("repo") or {}
+              if not isinstance(base_repo, dict) or not isinstance(head_repo, dict):
+                  raise ValueError("Pull request repository metadata is invalid.")
+              base_name = base_repo.get("full_name", "")
+              head_name = head_repo.get("full_name", "")
+              if not isinstance(base_name, str) or base_name.casefold() != CANONICAL_REPOSITORY:
+                  raise ValueError("Pull request base is not the canonical repository.")
+              if not isinstance(head_name, str) or not head_name:
+                  raise ValueError("Pull request head repository is missing.")
+              if (pull_request.get("state") or "").casefold() != "open":
+                  raise ValueError("Only open pull requests are validated.")
+              pr_number = pull_request.get("number", payload.get("number", ""))
+              if isinstance(pr_number, bool) or not isinstance(pr_number, int) or pr_number < 1:
+                  raise ValueError("Pull request number is invalid.")
+              sha = head.get("sha", "")
+          else:
+              event = "push"
+              sha = payload.get("after", "")
+              ref = payload.get("ref", "")
+              if not isinstance(ref, str) or not ref.startswith("refs/heads/"):
+                  raise ValueError("Only GitHub branch push events are supported.")
+              if payload.get("deleted") is True:
+                  raise ValueError("Deleted-branch webhook events do not run validation.")
+
+          if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+              raise ValueError("Webhook did not contain a valid 40-character GitHub commit SHA.")
+          return {
+              "SOURCE_SHA": sha,
+              "GITHUB_EVENT": event,
+              "GITHUB_REPOSITORY": repository,
+              "PR_NUMBER": str(pr_number),
+          }
+
+      canonical = {"repository": {"full_name": CANONICAL_REPOSITORY}}
+      valid_push = {**canonical, "ref": "refs/heads/feature/test", "after": "a" * 40, "deleted": False}
+      valid_same_repo_pr = {
+          **canonical, "action": "opened", "pull_request": {
+              "number": 42, "state": "open",
+              "base": {"repo": {"full_name": CANONICAL_REPOSITORY}},
+              "head": {"repo": {"full_name": CANONICAL_REPOSITORY}, "sha": "b" * 40},
+          },
+      }
+      valid_fork_pr = {
+          **canonical, "action": "synchronize", "pull_request": {
+              "number": 43, "state": "open",
+              "base": {"repo": {"full_name": CANONICAL_REPOSITORY}},
+              "head": {"repo": {"full_name": "contributor/ai-business-assistant"}, "sha": "c" * 40},
+          },
+      }
+      invalid_payloads = [
+          {**valid_push, "repository": {"full_name": "attacker/other"}},
+          {**valid_push, "ref": "refs/tags/v1.0.0"},
+          {**valid_push, "deleted": True},
+          {**valid_push, "after": "not-a-sha"},
+          {**valid_same_repo_pr, "action": "closed"},
+          {**valid_same_repo_pr, "pull_request": {**valid_same_repo_pr["pull_request"], "state": "closed"}},
+          {**valid_same_repo_pr, "pull_request": {**valid_same_repo_pr["pull_request"], "number": True}},
+      ]
+      for name, sample in (
+          ("branch push", valid_push),
+          ("same-repository pull request", valid_same_repo_pr),
+          ("fork pull request", valid_fork_pr),
+      ):
+          resolve_event(sample)
+      for sample in invalid_payloads:
+          try:
+              resolve_event(sample)
+          except ValueError:
+              continue
+          raise SystemExit("Resolver self-test unexpectedly accepted an invalid webhook payload.")
+      print("Webhook resolver self-tests passed: 3 valid event shapes accepted; 7 invalid payloads rejected.")
+
       payload_path = os.environ.get("TRIGGER_PAYLOAD", "")
       if not payload_path or not os.path.isfile(payload_path):
           raise SystemExit("GitLab TRIGGER_PAYLOAD is missing; configure this pipeline with a GitHub webhook delivery.")
 
       with open(payload_path, encoding="utf-8") as payload_file:
           payload = json.load(payload_file)
-
-      repository = (payload.get("repository") or {}).get("full_name", "")
-      if repository.casefold() != "abdullahomaar/ai-business-assistant":
-          raise SystemExit("Webhook repository does not match the canonical GitHub repository.")
-
-      pull_request = payload.get("pull_request")
-      pr_number = ""
-      if isinstance(pull_request, dict):
-          event = "pull_request"
-          action = payload.get("action", "")
-          allowed_actions = {"opened", "synchronize", "reopened", "ready_for_review"}
-          if action not in allowed_actions:
-              raise SystemExit(f"Pull request action is not a validation trigger: {action or 'missing'}")
-          base_repository = ((pull_request.get("base") or {}).get("repo") or {}).get("full_name", "")
-          head = pull_request.get("head") or {}
-          head_repository = (head.get("repo") or {}).get("full_name", "")
-          if base_repository.casefold() != "abdullahomaar/ai-business-assistant":
-              raise SystemExit("Pull request base is not the canonical repository.")
-          if not head_repository:
-              raise SystemExit("Pull request head repository is missing.")
-          if (pull_request.get("state") or "").casefold() != "open":
-              raise SystemExit("Only open pull requests are validated.")
-          pr_number = pull_request.get("number", payload.get("number", ""))
-          if not isinstance(pr_number, int) or pr_number < 1:
-              raise SystemExit("Pull request number is invalid.")
-          sha = head.get("sha") or ""
-      else:
-          event = "push"
-          sha = payload.get("after", "")
-          ref = payload.get("ref", "")
-          if not ref.startswith("refs/heads/"):
-              raise SystemExit("Only GitHub branch push events are supported.")
-          if payload.get("deleted") is True:
-              raise SystemExit("Deleted-branch webhook events do not run validation.")
-
-      if not re.fullmatch(r"[0-9a-f]{40}", sha):
-          raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
+      resolved = resolve_event(payload)
 
       with open("event.env", "w", encoding="utf-8") as env_file:
-          env_file.write(f"SOURCE_SHA={sha}\n")
-          env_file.write(f"GITHUB_EVENT={event}\n")
-          env_file.write(f"GITHUB_REPOSITORY={repository}\n")
-          env_file.write(f"PR_NUMBER={pr_number}\n")
+          for key, value in resolved.items():
+              env_file.write(f"{key}={value}\\n")
 
+      event = resolved["GITHUB_EVENT"]
+      sha = resolved["SOURCE_SHA"]
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
   artifacts:
