@@ -3399,3 +3399,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Latest observed exact GitHub candidate status before this ledger update: six CircleCI FAILURE contexts and one retired Semaphore FAILURE; no retry, root causes UNKNOWN pending logs. CircleCI remains active as transition fallback/current gate.
 - GitHub private Free does not support protected branches/required status checks; merge-control acceptance remains BLOCKED / NOT VERIFIED. No paid upgrade or repository-public conversion authorized.
 - Full maintainer diff review recorded; independent non-author review for controlled knowledge publication pending. No merge, CircleCI retirement, production deployment, DB operation, paid provisioning or gate bypass.
+
+
+## Source artifact minimization checkpoint — 2026-11-10
+
+- Removed the fetched Git repository metadata directory from the GitLab source artifact after exact SHA verification and remote removal: source/.git is deleted and asserted absent before artifact upload. Downstream tests/builds need only the source tree; they do not need Git history or remote metadata.
+- GitHub/GitLab .gitlab-ci.yml copies read back byte-identical at 12,660 bytes. GitLab runner branch/MR !350 head at this checkpoint: 8172ad3cb65d09a758c4f3d8fcedb82725caa6b9.
+- GitHub PR #367 head before this TASKS-only checkpoint: 0c0316a1f4a9a4c5373cb7888d66984b26b02744, base e018c56640cc63573cdaec590fa5018148d5f662; OPEN / DRAFT / UNMERGED.
+- No webhook, credentials, GitLab CI Lint, automatic pipeline, exact-SHA validation or GitHub status report. CircleCI remains the current transition gate; do not reuse older exact-SHA evidence.
