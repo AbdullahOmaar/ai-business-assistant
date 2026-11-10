@@ -445,7 +445,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(chatLog).toHaveAttribute('aria-live', 'polite');
   const composer = page.getByRole('textbox', { name: /سؤالك للمساعد الذكي|Your question for the AI assistant/ });
   const sendButton = page.getByRole('button', { name: /إرسال|Send/ });
-  await composer.fill('What happened this month?');
+  const longChatPrompt = Array.from({ length: 12 }, (_, index =>
+    `سؤال ${index + 1}: راجع الفواتير المستحقة والتحصيلات المسجلة والمصروفات خلال الفترة المحددة، ووضّح مصدر كل رقم وما إذا كان المبلغ مسددًا أو ما زال مستحقًا.`
+  )).join('\\n');
+  expect(longChatPrompt.length).toBeLessThanOrEqual(2000);
+  await composer.fill(longChatPrompt);
   await sendButton.click();
 
   await expect(page.locator('.aba-state-message[role="status"]')).toContainText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/);
@@ -453,7 +457,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(chatAttempts).toBe(1);
   const errorState = page.locator('.aba-state-message[role="alert"]');
   await expect(errorState).toContainText('Temporary assistant failure.');
-  await expect(composer).toHaveValue('What happened this month?');
+  await expect(composer).toHaveValue(longChatPrompt);
   await expect(page.locator('.chat-message')).toHaveCount(1);
   const retryButton = page.getByRole('button', { name: /إعادة المحاولة|Retry/ });
   await expect(retryButton).toBeEnabled();
@@ -477,8 +481,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(paymentRequests).toEqual(['/api/v1/businesses/business-1/payments']);
   expect(chatAttempts).toBe(2);
   expect(chatRequests).toEqual([
-    { businessId: 'business-1', message: 'What happened this month?', authorization: 'Bearer ' + idToken },
-    { businessId: 'business-1', message: 'What happened this month?', authorization: 'Bearer ' + idToken },
+    { businessId: 'business-1', message: longChatPrompt, authorization: 'Bearer ' + idToken },
+    { businessId: 'business-1', message: longChatPrompt, authorization: 'Bearer ' + idToken },
   ]);
 
   // Focusing the composer hides the fixed mobile dock. Simulate the Android
