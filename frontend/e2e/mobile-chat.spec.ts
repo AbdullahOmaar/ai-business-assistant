@@ -312,6 +312,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       };
       return {
         metricColumns: columns('.metric-grid'),
+        metricSupportingFontSizes: Array.from(document.querySelectorAll('.metric-grid aba-metric-card small'))
+          .map(element => getComputedStyle(element).fontSize),
         quickAccessColumns: columns('.home-shortcut-list'),
         moduleColumns: columns('.module-directory-grid'),
         headerControlHeights: Array.from(document.querySelectorAll(
@@ -327,6 +329,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       };
     });
     expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
+    expect(layout.metricSupportingFontSizes.length, `KPI supporting copy must render at ${width}px`).toBeGreaterThan(0);
+    for (const fontSize of layout.metricSupportingFontSizes) {
+      expect(fontSize, `KPI supporting copy must meet the 12px mobile minimum at ${width}px`).toBe('12px');
+    }
     expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
     expect(layout.headerControlHeights).toHaveLength(4);
