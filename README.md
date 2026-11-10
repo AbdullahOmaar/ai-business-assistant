@@ -11,7 +11,8 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
-- **Approved CI (CircleCI):** https://circleci.com/gh/AbdullahOmaar/ai-business-assistant (pipeline: [\.circleci/config.yml](.circleci/config.yml))
+- **Intended CI (GitLab Free; automatic cutover pending):** https://gitlab.com/abdullahomarrefaat/ai-business-assistant (pipeline: [`.gitlab-ci.yml`](.gitlab-ci.yml))
+- **Transition CI fallback (CircleCI):** https://circleci.com/gh/AbdullahOmaar/ai-business-assistant (keep active until exact-SHA validation, GitHub status reporting and merge-control gates are verified)
 - **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
 - **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
 - **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
