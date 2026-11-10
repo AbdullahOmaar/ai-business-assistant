@@ -3,9 +3,11 @@
 # every job fetches and validates that immutable GitHub commit. No deployment or
 # production data access is performed.
 
+# Run only from protected GitLab main after the reviewed CI config is merged.
+# Never execute this secret-bearing pipeline from the candidate feature branch.
 workflow:
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "trigger"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $CI_COMMIT_REF_NAME == "main" && $CI_COMMIT_REF_PROTECTED == "true"'
     - when: never
 
 stages:
