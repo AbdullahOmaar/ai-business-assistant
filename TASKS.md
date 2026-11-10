@@ -1,20 +1,38 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Owner-approved GitHub Actions CI transition — effective 2026-11-10
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive and the earlier GitLab Free selection. GitHub remains canonical for code, branches, pull requests and release SHAs. GitHub Actions using standard GitHub-hosted `ubuntu-latest` runners is now the primary test/build/security CI provider.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- The repository is Public. Standard GitHub-hosted runner usage is free for public repositories; no self-hosted runner, paid larger runner or separate server is required.
+- The single authoritative workflow is `.github/workflows/ci.yml`: backend pytest + disposable PostgreSQL migration/schema checks + project-knowledge validator, frontend unit tests, production build, npm dependency audit, Playwright browser smoke, backend container + backup/restore safety checks, and fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies the checkout matches the exact workflow event SHA. Workflow permissions are read-only; test/build/security jobs require no repository secrets. No production DB or production deployment is accessed.
+- CircleCI remains configured as a transition fallback until all six GitHub Actions jobs and the aggregate pass on exact candidate SHAs and main-branch required-check enforcement is verified. Do not retire CircleCI early.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- Main reports `protected=true`; classic branch-protection read returns 403. Ruleset readback shows active Copilot review and the former PR-approval ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN pending Owner/Admin readback.
+- No paid upgrade, merge, CI retirement, production deployment, production DB write/migration or gate bypass is authorized by this provider decision. Existing maintainer review, security, merge and separate deployment gates remain mandatory.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+Implementation remains IN_PROGRESS. Existing PR #367 is repurposed from the GitLab candidate to this GitHub Actions transition. The full suite has passed on checkpoint SHA `a9f386cd40cb4c955035e97d05aee9dbd32d08d1`; this next documentation cleanup creates a new head and requires fresh exact-SHA validation. PR #367 remains Draft and unmerged pending required-check readback, independent non-author review and remaining release gates.
+
+## GitHub Actions exact-SHA validation checkpoint — 2026-11-10 20:24 UTC
+
+- **PR:** [#367](https://github.com/AbdullahOmaar/ai-business-assistant/pull/367), OPEN / DRAFT / UNMERGED. Exact head: `2e63d4ade65a4ddb8289e7a5df0e59fd8f1f2552`; base: `e018c56640cc63573cdaec590fa5018148d5f662`. Ten changed paths (+414 / -257).
+- **GitHub Actions:** run [42894557772](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/42894557772) completed SUCCESS on the exact head. All six substantive jobs passed: backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke and backend-container. Fail-closed `all-checks-passed` aggregate also passed.
+- **Backend evidence:** pytest **278 passed, 21 warnings**. Disposable PostgreSQL startup, Alembic upgrade/current/schema-drift checks, project-knowledge validator, offline migration SQL generation and `pip-audit` all passed.
+- **Frontend evidence:** Playwright Chromium browser smoke **21 passed**. Frontend unit tests, production build and `npm audit --audit-level=high` passed.
+- **Container/safety evidence:** backend image build/import and backup/restore safety-guard tests passed.
+- **Secrets scan:** GitGuardian SUCCESS; no secrets detected across 73 commits.
+- **Fallback evidence:** CircleCI reported all six substantive contexts plus its aggregate SUCCESS on the same SHA. The legacy Semaphore context reports FAILURE; Semaphore is retired/non-authoritative and must not be mistaken for a GitHub Actions failure. The combined legacy commit status remains failure because that retired context is still present.
+- **Merge protection:** main is marked protected. Classic branch-protection endpoint returns 403 to this integration. Ruleset readback shows the Copilot code-review rule active and the former `main-protection-and-gitlab-sync` PR-approval ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN until Owner/Admin UI readback.
+- **Review:** no PR review submissions or inline review threads are recorded. Independent non-author review and authorized approval of this controlled CI policy change remain outstanding. Do not mark the migration VERIFIED COMPLETE, merge, or retire CircleCI.
+- **Runtime warning:** the initial candidate used action major versions that emitted Node.js 20 deprecation warnings on the current runner. The next candidate updates checkout/setup-python/setup-node/upload-artifact to current Node.js 24 releases, pinned by verified full commit SHAs; it requires a fresh full exact-head run.
+- **Next:** verify required-check/PR enforcement via Owner/Admin UI readback; obtain independent non-author review; then reassess merge readiness. No production deployment or database operation occurred.
+
+
+---
 
 # Policy conflict sweep — 2026-11-08
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
-- Effective rule: CircleCI remains the sole approved CI provider; unavailable/frozen CircleCI means NOT RUN/BLOCKED, not provider substitution. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
+- Effective rule as of 2026-11-08: CircleCI remained the sole approved CI provider; unavailable/frozen CircleCI meant NOT RUN/BLOCKED, not provider substitution. This dated rule is superseded by the explicit Owner decision effective 2026-11-10 selecting GitHub Actions as primary CI with CircleCI as transition fallback. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
 - This is a consistency correction to governance candidate [PR #349](https://github.com/AbdullahOmaar/ai-business-assistant/pull/349). Refresh exact head before consuming check evidence. No CI trigger/retry, tests, merge or deployment was performed.
 
 ---
@@ -3310,3 +3328,110 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Remaining evidence boundary:** local frontend test/build commands and physical Android/PWA acceptance were NOT RUN because the available Desktop Commander device is offline. CircleCI exact-head test/build/browser-smoke passed.
 - **Security note:** an existing temporary shareable Vercel Protection Bypass remains attached to the production alias and expires 2026-11-10 05:26 Cairo. This release did not create or revoke it; Owner/Admin decision remains required. Do not copy its token into project records.
 - **Overall:** this bounded invoice UX release is complete as a merged and deployed Web release. Do not mark T18/T50 or the wider product acceptance workstreams VERIFIED COMPLETE based on this slice.
+
+
+## Owner-approved automatic GitHub → GitLab Free CI migration — 2026-11-10
+
+- **Decision:** GitHub remains canonical for source, branches, PRs and release SHAs. GitLab Free is the intended automatic CI provider. CircleCI remains configured and is the current required transition gate until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and enforceable merge control are verified. No CircleCI retirement, paid upgrade, public conversion, merge or deployment is authorized.
+- **GitHub candidate:** Draft PR [#367](https://github.com/AbdullahOmaar/ai-business-assistant/pull/367), branch `ci/gitlab-manual-sha-20261110`. The prior manual `SOURCE_SHA` pipeline was replaced with a webhook-triggered design: GitLab `resolve-event` reads `TRIGGER_PAYLOAD`, extracts push `after` or `pull_request.head.sha`, then the pipeline fetches and verifies that exact GitHub SHA and reports `gitlab/automatic` status to it.
+- **Changed paths:** `.gitlab-ci.yml`, `AGENTS.md`, `CONTRIBUTING.md`, `.github/pull_request_template.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `README.md`, and this task ledger. GitLab runner-side `.gitlab-ci.yml` was updated separately on branch `ci/gitlab-manual-sha-20261110`; GitHub and GitLab copies were read back byte-identical (11,693 bytes) at the verification checkpoint.
+- **GitLab candidate:** Draft MR [!350](https://gitlab.com/abdullahomarrefaat/ai-business-assistant/-/merge_requests/350), project `88667297`, branch `ci/gitlab-manual-sha-20261110`. Latest observed GitLab branch head before this task-ledger append: `892ee41271897084762ffe0f12aeefc7b0a63c35`.
+- **Validation:** No GitLab CI Lint or real automatic webhook pipeline has run. The only observed GitLab pipeline remains the earlier `skipped` push pipeline for the manual-only config. GitHub exact-head combined status at the pre-ledger PR head `9142824a99fdf7ffb91edec23f892f898d866bda` reports CircleCI job failures and a retired Semaphore failure; no GitLab status is present. Do not retry unchanged CircleCI failures. Refresh the PR head and checks after this commit.
+- **Merge control:** The repository is private on GitHub Free. Official GitHub documentation says protected branches are available for private repositories on Pro/Team/Enterprise, not Free. Merge control remains BLOCKED / NOT VERIFIED; no paid upgrade, public conversion or bypass is authorized.
+- **Security:** A GitLab runner-registration credential was exposed in project metadata output during inspection. Treat it as compromised; Owner must rotate/reset it in GitLab Settings → CI/CD → Runners. Never reuse or copy the exposed value. The webhook Pipeline Trigger Token is a separate credential and must remain secret.
+- **Remaining provider setup:** rotate the exposed runner-registration credential; create a GitLab Pipeline Trigger Token; configure the GitHub webhook for Push events (and optionally PR events only after separately proving the experimental PR delivery path) to the GitLab trigger endpoint pinned to `main` **after** the CI config MR is approved and merged. The CI config now refuses trigger pipelines unless the ref is protected GitLab `main`; this avoids executing candidate-branch config while Developers can push to that branch. Live readback confirms GitLab `main` is protected with `developers_can_push=false`, while the candidate branch remains `developers_can_push=true`. Add protected + masked GitLab variables `GITHUB_READ_TOKEN` (environment scope `source-fetch`, Contents read-only) and `GITHUB_STATUS_TOKEN` (environment scope `status-report`, Commit statuses read/write). Never paste tokens into chat.
+- **Review/publication:** The GitHub policy change remains Draft. Full maintainer diff review and separate independent non-author review for canonical controlled policy publication remain outstanding. Notion Master Task Plan records the Owner decision; the mandatory execution standard and Agent Prompt Registry still need a reviewed, versioned policy update/readback.
+- **Next:** complete independent review and explicit merge authorization for the CI config MR; after it is merged to protected GitLab `main`, configure the one-time trigger token/webhook and scoped variables (connector currently exposes no actions to perform those settings changes); run GitLab CI Lint and observe a real exact-SHA pipeline/status. Resolve the private GitHub Free merge-control blocker before CI retirement or any application PR merge.
+
+
+## Owner decision supersession — automatic GitHub → GitLab Free CI — 2026-11-10
+
+This later Owner decision explicitly supersedes the earlier manual-`SOURCE_SHA` execution mode. The Owner approved automatic GitHub Push + Pull Request webhook triggering of GitLab Free. GitHub remains canonical for code, PRs and exact source SHAs. GitLab extracts the event SHA, fetches/verifies the exact GitHub commit, executes validation and reports to that same SHA under `gitlab/automatic`. No manual SHA entry is required after one-time setup.
+
+The implementation candidate remains Draft PR #367 / Draft GitLab MR !350 on `ci/gitlab-manual-sha-20261110`. The CI config is fail-closed to trigger pipelines on protected GitLab `main` only; the candidate branch cannot run the secret-bearing pipeline. CircleCI remains the current required transition gate until automatic GitLab trigger, exact-SHA full validation, GitHub status reporting and merge control are proven. No retirement, merge, production deploy, production DB operation, paid upgrade or repository-public conversion is authorized.
+
+The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer credential. GitLab's trigger endpoint does not validate GitHub's HMAC webhook signature. The GitLab CI configuration ref must be protected with Maintainer-only push permission because jobs on it can access protected environment-scoped tokens. GitHub private Free merge enforcement remains BLOCKED / NOT VERIFIED until an enforceable solution is separately authorized and proven.
+
+
+## Automatic GitLab CI source-review checkpoint — 2026-11-10 17:18 UTC
+
+- **Owner decision:** Automatic GitHub Push + Pull Request webhook → GitLab Free Pipeline Trigger API; GitHub remains canonical. This supersedes the previous manual-`SOURCE_SHA` mode and the earlier CircleCI-only provider selection. CircleCI remains the transition fallback/current required gate until all cutover acceptance criteria are proven.
+- **Critical defect found and fixed:** The previous `resolve-event` assumed GitHub webhook fields would be available as predefined GitLab CI variables. GitLab supplies the webhook JSON as the file-type `TRIGGER_PAYLOAD`; the pipeline now parses that file, validates canonical repository/base repository, extracts push/tag `after` or PR `head.sha`, validates the 40-character SHA, and exports resolved values through dotenv. Push and PR payload shapes passed synthetic parser smoke checks. This is not a GitLab CI Lint or real pipeline result.
+- **Latest GitHub candidate head:** `0e9089286359e670686f08d86344389745c99a69`, PR #367 OPEN / DRAFT / UNMERGED.
+- **Latest GitLab runner branch head:** `06a45e9099e86172bef7cd39593b3be11d9a7616`, MR !350 OPEN / DRAFT / UNMERGED. GitHub and GitLab `.gitlab-ci.yml` copies read back byte-identical at 13,671 bytes.
+- **GitLab ref protection:** branch is protected, but live branch readback says `developers_can_push=true`. Restrict pushes to Maintainers only before enabling protected CI variables. The GitLab connector exposes no branch-protection mutation action; this remains Owner UI work.
+- **Exact-head GitHub status:** six CircleCI job contexts FAILURE plus one retired Semaphore context FAILURE on the latest GitHub candidate head. No GitLab status. No retry; root causes UNKNOWN pending provider logs.
+- **Pipeline evidence:** no webhook delivery, GitLab CI Lint, real automatic pipeline, exact-SHA validation or GitHub status report observed. Earlier GitLab pipeline remains a skipped push-source pipeline from the old manual-only workflow.
+- **GitHub merge control:** private GitHub Free does not include protected branches per current official GitHub documentation; required status-check enforcement remains BLOCKED / NOT VERIFIED. No public conversion, paid upgrade or bypass authorized.
+- **Independent review:** full maintainer diff review and independent non-author review for controlled policy changes remain pending. No merge, CircleCI retirement, production deployment or DB operation.
+- **Security remediation:** rotate/reset the exposed GitLab runner-registration credential in GitLab UI. Keep Pipeline Trigger Token and GitHub PATs secret; never paste into chat.
+- **Changed paths in PR:** `.gitlab-ci.yml`, `AGENTS.md`, `CONTRIBUTING.md`, `.github/pull_request_template.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `README.md`, `TASKS.md`.
+
+
+## CI webhook resolver review — latest source checkpoint
+
+- GitHub branch latest candidate before this ledger append: `ee73e4933bf4ca1617ec753e4c700a65f6656465`; GitLab runner branch: `c1b18c4c51d6ba9b95d99ec17d4d45b3e6539b05`. Both PR #367 and MR !350 remain OPEN / DRAFT / UNMERGED.
+- GitHub/GitLab `.gitlab-ci.yml` copies are byte-identical at 13,728 bytes. Resolver now reads GitLab's file-type `TRIGGER_PAYLOAD`, supports branch/tag push and PR payload shapes, validates canonical repository/base repository and full SHA, and writes non-empty dotenv values only.
+- Synthetic parser smoke checks passed for push and PR payload examples. No GitLab CI Lint or actual webhook-triggered pipeline was run.
+- GitLab branch is protected, but `developers_can_push=true`. Must change allowed push role to Maintainers only before creating protected variables or enabling webhook. Connector has no branch-protection mutation action; Owner UI required.
+- Full PR diff source scan: seven changed paths; no literal credential/token values found. Maintainer self-review is recorded; independent non-author review for controlled policy publication remains pending.
+- Latest GitHub candidate combined status: six CircleCI FAILURE contexts and one retired Semaphore FAILURE context. No retry; root causes UNKNOWN pending logs. No GitLab status or pipeline result.
+- Notion Master Task Plan contains the Owner decision and latest webhook-payload correction checkpoint (readback verified).
+- Private GitHub Free branch-protection/required-status enforcement remains BLOCKED / NOT VERIFIED; no paid upgrade/public conversion/bypass authorized. CircleCI remains the transition gate.
+- No merge, CI retirement, production deployment, DB operation or paid provisioning.
+
+
+## Direct webhook scope and GitLab project security checkpoint — 2026-11-10
+
+- **Official trigger contract checked:** GitLab's current Free-tier trigger documentation explicitly supports direct webhook triggering for Push/Tag events and exposes the full webhook body through file-type `TRIGGER_PAYLOAD`. It does not document Pull Request events on this direct path. The resolver includes a Pull Request payload handler, but PR-event delivery through this endpoint remains experimental and unverified; do not claim it is operational until a real GitHub delivery and exact-SHA pipeline are observed.
+- **Pipeline correction:** removed PR payload parsing and `refs/pull/<number>/head` fetch path. Resolver now validates the canonical repository, branch ref, non-deleted push and 40-character `after` SHA; source-fetch fetches that exact SHA and verifies `git rev-parse HEAD`.
+- **Local source test:** exact resolver block executed against one valid branch-push payload and four invalid payloads (wrong repository, tag ref, deleted branch, malformed SHA). Valid payload accepted; all four invalid cases rejected; dotenv output verified. This is NOT GitLab CI Lint and NOT a real pipeline.
+- **Exact config readback:** GitHub and GitLab `.gitlab-ci.yml` copies byte-identical at 12,449 bytes. GitHub PR #367 head `e7d42b721448fe795ddaf994661b41466f15fbfc`; GitLab MR !350 head `47936a98044e6b684ae27429f465dc08b1161613`. Both remain OPEN / DRAFT / UNMERGED.
+- **GitLab visibility clarification:** project readback shows `visibility=private` and `public_jobs=true`. The API describes this flag as job-log public accessibility, but GitLab's pipeline-visibility documentation says non-member visibility settings do not apply to private projects. Actual unauthenticated job-log access is UNKNOWN; do not label this proven public exposure. Set `public_jobs=false` as defense-in-depth if available or verify unauthenticated access before credentials.
+- **Existing critical branch trust gap:** GitLab CI-config branch is protected, but `developers_can_push=true`. Restrict push to Maintainers only before adding protected variables; otherwise a Developer could change CI configuration that runs with protected credentials.
+- **Credential remediation:** project metadata readback exposed the runner-registration token again. Rotate/reset it in GitLab UI immediately; do not reuse or copy it. No token is reproduced here. The connector exposes no project-settings or protected-branch mutation action, so these changes remain Owner UI actions.
+- **One-time setup still outstanding:** disable public job logs; restrict CI-config ref to Maintainers; rotate runner token; create trigger token; configure GitHub Pushes-only webhook; add protected/masked GitHub read/status variables with environment scopes `source-fetch` and `status-report`.
+- **No operational CI evidence:** no webhook delivery, GitLab CI Lint, automatic pipeline, exact-SHA full validation or GitHub status report. The only GitLab pipeline remains the older skipped push-source pipeline. CircleCI stays active as transition fallback.
+- **Latest exact GitHub head status:** six CircleCI failures and one retired Semaphore failure; no retry, root causes UNKNOWN pending provider logs. Private GitHub Free merge-control enforcement remains BLOCKED / NOT VERIFIED.
+- **Review/delivery:** full maintainer diff review recorded; independent non-author review for controlled policy publication pending. No merge, CI retirement, production deployment, DB operation, paid upgrade or repository visibility change.
+
+
+## GitLab artifact confidentiality hardening — 2026-11-10
+
+- Added `artifacts:access: maintainer` to all five artifact definitions in `.gitlab-ci.yml`, including the source checkout artifact, to restrict artifact downloads to Maintainers/Owners. GitLab documents this setting as controlling UI/API artifact access; it does not restrict job logs or downstream job-token artifact access.
+- GitHub/GitLab CI config copies were read back byte-identical at 12,564 bytes.
+- **Visibility clarification:** `public_jobs=true` is returned by the API, but the project is private and GitLab docs state non-member pipeline visibility controls do not apply to private projects. Actual external job-log access is UNKNOWN. `artifacts:access: maintainer` still restricts artifact downloads; verify log access or set `public_jobs=false` as defense-in-depth.
+- CI-config branch remains protected but `developers_can_push=true`; set push access to Maintainers only. Rotate the exposed runner-registration token. No settings changes could be performed with available GitLab connector actions.
+- No webhook, pipeline, CI Lint, token variables, exact-SHA validation or GitHub status report configured/observed. CircleCI remains the transition gate.
+
+
+## CI migration closeout checkpoint — 2026-11-10 20:20 Cairo time
+
+- GitHub PR #367 is OPEN / DRAFT / UNMERGED; latest observed head before this ledger update: `fd4c02dc1da268852be077bcd1a588c4a6ef40ee`, base `e018c56640cc63573cdaec590fa5018148d5f662`; 7 changed paths, 474 additions / 109 deletions. No submitted review or review threads.
+- GitLab MR !350 is OPEN / DRAFT / UNMERGED at `40ee1920932a13e2b264e4afd3f5b4df479d9b83`. GitHub/GitLab `.gitlab-ci.yml` copies are byte-identical at 12,564 bytes.
+- Direct GitLab webhook contract verified against official docs: Push/Tag only, file-type `TRIGGER_PAYLOAD`; candidate additionally contains experimental PR payload parsing, but the PR delivery path is not documented by GitLab and remains unverified. No automatic status report is verified until a real trigger pipeline passes.
+- Resolver source smoke test: one valid branch-push payload accepted; four invalid cases rejected (wrong repo, tag, deleted branch, malformed SHA). This is NOT GitLab CI Lint or a real pipeline.
+- **Security blocker:** CI-config branch is protected but `developers_can_push=true`; restrict pushes to Maintainers before protected variables or webhook activation. The private project reports `public_jobs=true`, but actual unauthenticated job-log exposure is UNKNOWN under GitLab's private-project visibility rules; set false as defense-in-depth or verify access. Rotate/reset the previously exposed runner-registration token. No available connector action can perform these settings changes.
+- No webhook, trigger token, GitHub PAT variables, CI Lint, automatic pipeline, exact-SHA full validation or GitHub status report configured/observed. GitLab pipeline history only contains the earlier skipped pipeline.
+- Latest observed exact GitHub candidate status before this ledger update: six CircleCI FAILURE contexts and one retired Semaphore FAILURE; no retry, root causes UNKNOWN pending logs. CircleCI remains active as transition fallback/current gate.
+- GitHub private Free does not support protected branches/required status checks; merge-control acceptance remains BLOCKED / NOT VERIFIED. No paid upgrade or repository-public conversion authorized.
+- Full maintainer diff review recorded; independent non-author review for controlled knowledge publication pending. No merge, CircleCI retirement, production deployment, DB operation, paid provisioning or gate bypass.
+
+
+## Source artifact minimization checkpoint — 2026-11-10
+
+- Removed the fetched Git repository metadata directory from the GitLab source artifact after exact SHA verification and remote removal: source/.git is deleted and asserted absent before artifact upload. Downstream tests/builds need only the source tree; they do not need Git history or remote metadata.
+- GitHub/GitLab .gitlab-ci.yml copies read back byte-identical at 12,660 bytes. GitLab runner branch/MR !350 head at this checkpoint: 8172ad3cb65d09a758c4f3d8fcedb82725caa6b9.
+- GitHub PR #367 head before this TASKS-only checkpoint: 0c0316a1f4a9a4c5373cb7888d66984b26b02744, base e018c56640cc63573cdaec590fa5018148d5f662; OPEN / DRAFT / UNMERGED.
+- No webhook, credentials, GitLab CI Lint, automatic pipeline, exact-SHA validation or GitHub status report. CircleCI remains the current transition gate; do not reuse older exact-SHA evidence.
+
+
+## CI migration execution checkpoint — 2026-11-10 19:02 Cairo time
+
+- GitHub PR #367 was OPEN / DRAFT / UNMERGED at head `2d8ff453b364a8f885bd42cac0595edb8d035213`, base `e018c56640cc63573cdaec590fa5018148d5f662`; 7 changed paths, +599/-109. GitLab MR !350 was OPEN / DRAFT / UNMERGED at `9414dd31fdc0b513fcdd3f74fa876e9b8bb0d27b`.
+- GitHub and GitLab candidate `.gitlab-ci.yml` copies were read back byte-identical at 18,267 bytes. The resolver parses `TRIGGER_PAYLOAD`, validates exact SHA and repository/PR metadata, includes self-tests for 3 valid payload shapes and 7 invalid payloads, and rejects payloads above GitLab.com's documented 1 MiB file-variable limit.
+- Added a fail-closed workflow rule: the secret-bearing pipeline runs only for `trigger` source on protected GitLab `main`. Live readback: `main` protected, `developers_can_push=false`; candidate branch protected but `developers_can_push=true`, and cannot execute this pipeline under the new rule.
+- GitLab documents direct webhook triggers for Push/Tag events only. PR payload parsing exists but PR delivery through this endpoint is experimental and NOT VERIFIED. No webhook, trigger token, project variables, CI Lint, automatic pipeline, exact-SHA full validation or GitHub status report observed; pipeline history still has only the earlier skipped push pipeline.
+- GitLab connector does not expose webhook, trigger-token, project-variable, runner-token rotation or branch-permission mutation actions. Runner-registration token rotation remains outstanding; do not reuse the exposed credential.
+- Provider-policy candidate remains DRAFT pending independent non-author review and formal Owner publication/versioned readback. The currently published Operating Model still names CircleCI as the sole approved provider; CircleCI remains the required gate. Exact PR head status: six CircleCI FAILURE contexts and one retired Semaphore FAILURE. CircleCI is no longer frozen under the current Owner directive, but no unchanged retry was issued; root causes remain UNKNOWN because CircleCI logs are unavailable through the current connector.
+- Full maintainer diff review refreshed; no literal credentials found in the seven-path PR diff. No submitted GitHub review or review threads. No merge, CI retirement, production deployment, DB operation, paid upgrade, repo visibility change or gate bypass.

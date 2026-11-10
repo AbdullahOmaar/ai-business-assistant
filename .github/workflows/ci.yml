@@ -1,25 +1,25 @@
 name: Verify backend and frontend
-
 on:
   pull_request:
-    branches: ["**"]
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/**"
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: ["main", "feat/**"]
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/**"
+    branches: [main]
+  schedule:
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  backend:
+  backend-accounting:
+    name: backend-accounting
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
@@ -34,34 +34,207 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-    defaults:
-      run:
-        working-directory: backend
     env:
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/ai_business_assistant_test
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/ai_business_assistant_test
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/ai_business_assistant_test
+      CI_ALLOW_DATABASE_SCHEMA_TESTS: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt
-      - run: pytest -q
-      - name: Validate migrations against PostgreSQL
-        run: alembic upgrade head
+      - name: Install backend test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt pip-audit
+      - name: Wait for disposable PostgreSQL
+        run: |
+          python - <<'PY'
+          import time
+          import psycopg
+          deadline = time.monotonic() + 90
+          dsn = "postgresql://postgres:postgres@127.0.0.1:5432/ai_business_assistant_test"
+          while True:
+              try:
+                  with psycopg.connect(dsn, connect_timeout=3):
+                      print("Disposable PostgreSQL is accepting connections.")
+                  break
+              except psycopg.OperationalError:
+                  if time.monotonic() >= deadline:
+                      raise SystemExit("PostgreSQL did not become ready within 90 seconds.")
+                  time.sleep(2)
+          PY
+      - name: Apply migrations and check schema drift
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head
+          python -m alembic current
+          python -m alembic check
+      - name: Run backend regression suite
+        working-directory: backend
+        run: |
+          mkdir -p test-results
+          python -m pytest -q --junitxml=test-results/pytest.xml
+      - name: Validate project knowledge and regression tests
+        run: |
+          python scripts/validate_project_knowledge.py
+          python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
+      - name: Verify offline migration SQL generation
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
+          test -s /tmp/alembic-upgrade.sql
+      - name: Audit Python dependencies
+        run: pip-audit -r backend/requirements.txt
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-pytest-results
+          path: backend/test-results/pytest.xml
+          if-no-files-found: ignore
 
-  frontend:
+  frontend-unit-tests:
+    name: frontend-unit-tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-      - run: npm install
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
       - name: Run frontend unit tests
+        working-directory: frontend
         run: npm test
-      # Dependency security is audited in the dedicated workflow.
-      - run: npm run build
+
+  frontend-production-build:
+    name: frontend-production-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Generate build metadata
+        working-directory: frontend
+        run: npm run prebuild
+      - name: Compile production frontend
+        working-directory: frontend
+        run: npx ng build
+
+  frontend-dependency-audit:
+    name: frontend-dependency-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Audit npm dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  frontend-browser-smoke:
+    name: frontend-browser-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Mark workspace safe for Git inside the container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Install frontend dependencies and Playwright
+        working-directory: frontend
+        run: |
+          node --version
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright --version
+      - name: Run Chromium browser smoke
+        working-directory: frontend
+        run: npx playwright test
+      - name: Upload browser test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-browser-smoke-results
+          path: frontend/test-results/
+          if-no-files-found: ignore
+
+  backend-container:
+    name: backend-container
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Verify backup and restore safety guards without database access
+        run: |
+          bash -n scripts/backup-restore-drill.sh
+          bash -n scripts/backup-restore-drill.test.sh
+          bash scripts/backup-restore-drill.test.sh
+      - name: Build backend image
+        run: docker build --pull --tag ai-business-assistant-backend:ci ./backend
+      - name: Verify FastAPI application import in container
+        run: docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
+
+  all-checks-passed:
+    name: all-checks-passed
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container]
+    steps:
+      - name: Require every substantive job to succeed
+        env:
+          BACKEND: ${{ needs.backend-accounting.result }}
+          FRONTEND_TESTS: ${{ needs.frontend-unit-tests.result }}
+          FRONTEND_BUILD: ${{ needs.frontend-production-build.result }}
+          FRONTEND_AUDIT: ${{ needs.frontend-dependency-audit.result }}
+          BROWSER_SMOKE: ${{ needs.frontend-browser-smoke.result }}
+          BACKEND_CONTAINER: ${{ needs.backend-container.result }}
+        run: |
+          set -euo pipefail
+          for result in "$BACKEND" "$FRONTEND_TESTS" "$FRONTEND_BUILD" "$FRONTEND_AUDIT" "$BROWSER_SMOKE" "$BACKEND_CONTAINER"; do
+            if [ "$result" != "success" ]; then
+              echo "::error::Required CI job did not succeed: $result"
+              exit 1
+            fi
+          done
+          echo "All six required GitHub Actions jobs passed."
