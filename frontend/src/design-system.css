@@ -143,7 +143,7 @@
   padding: 10px 17px;
   border: 1px solid var(--aiba-brand);
   border-radius: var(--aiba-radius-control);
-  background: linear-gradient(135deg, var(--aiba-brand) 0%, var(--aiba-brand-bright) 100%);
+  background: linear-gradient(135deg, var(--aiba-brand-strong) 0%, var(--aiba-brand) 100%);
   color: #ffffff;
   font-size: var(--aiba-text-sm);
   font-weight: 720;
@@ -353,8 +353,7 @@
   gap: var(--aiba-space-3);
 }
 
-:root body .shell .metric-grid > .metric,
-:root body .shell .metric-grid > aba-metric-card {
+:root body .shell .metric-grid > .metric {
   min-width: 0;
   min-height: 148px;
   padding: var(--aiba-space-5);
@@ -365,8 +364,26 @@
   transition: border-color var(--aiba-motion), box-shadow var(--aiba-motion), transform var(--aiba-motion);
 }
 
+/* The Angular KPI host is layout-only; the component's inner card owns the single surface. */
+:root body .shell .metric-grid > aba-metric-card {
+  display: block;
+  min-width: 0;
+  min-height: 148px;
+}
+
+:root body .shell .metric-grid > aba-metric-card .aba-metric-card {
+  min-height: inherit;
+  height: 100%;
+  padding: var(--aiba-space-5);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: linear-gradient(180deg, #ffffff 0%, var(--aiba-surface-raised) 100%);
+  box-shadow: var(--aiba-shadow-card);
+  transition: border-color var(--aiba-motion), box-shadow var(--aiba-motion), transform var(--aiba-motion);
+}
+
 :root body .shell .metric-grid > .metric:hover,
-:root body .shell .metric-grid > aba-metric-card:hover {
+:root body .shell .metric-grid > aba-metric-card:hover .aba-metric-card {
   border-color: #c5d8d7;
   box-shadow: var(--aiba-shadow-card-hover);
   transform: translateY(-2px);
@@ -1131,6 +1148,14 @@
 }
 
 @media (max-width: 760px) {
+  :root body .shell .metric-grid > aba-metric-card {
+    min-height: 132px;
+  }
+
+  :root body .shell .metric-grid > aba-metric-card .aba-metric-card {
+    padding: var(--aiba-space-3);
+  }
+
   :root body .shell .employee-form,
   :root body .shell .payroll-form,
   :root body .shell .status-form,
@@ -1242,6 +1267,16 @@
 :root body .shell .admin-shell .permission-card h3 {
   color: var(--aiba-ink);
   font-weight: 720;
+}
+
+@media (max-width: 380px) {
+  :root body .shell .metric-grid > aba-metric-card {
+    min-height: 120px;
+  }
+
+  :root body .shell .metric-grid > aba-metric-card .aba-metric-card {
+    padding: 10px;
+  }
 }
 
 @media (max-width: 480px) {
