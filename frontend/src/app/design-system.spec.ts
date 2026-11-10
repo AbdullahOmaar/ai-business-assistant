@@ -22,8 +22,8 @@ test('the final AIBA visual direction defines a complete semantic token foundati
 });
 
 test('muted copy and placeholders use the contrast-safe neutral token', () => {
-  assert.match(css, /--aiba-muted:\\s*#5f6e83/);
-  assert.match(css, /input::placeholder[\\s\\S]*?color:\\s*var\\(--aiba-muted\\)/);
+  assert.match(css, /--aiba-muted:\s*#5f6e83/);
+  assert.match(css, /input::placeholder[\s\S]*?color:\s*var\\(--aiba-muted\\)/);
 });
 
 test('Angular loads the design system after the existing application stylesheet', () => {
