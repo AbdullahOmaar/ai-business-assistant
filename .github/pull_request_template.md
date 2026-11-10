@@ -89,13 +89,12 @@ This directive changes CI execution permission only. It does not waive tests, se
 ## Canonical knowledge publication (only when applicable)
 - **Document/package being published:**
 - **Candidate version and DRAFT/APPROVED state:**
-- **Author / maintainer self-review:**
-- **Independent reviewer (must not be the author):**
-- **Independent findings and disposition:**
+- **Maintainer / Master full-diff self-review (exact SHA + findings):**
+- **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
 - **Canonical source SHA / PR:**
 - **Project Sources filenames, upload and readback evidence:**
-- [ ] Independent knowledge review is complete and recorded.
+- [ ] Maintainer self-review is complete and recorded; no separate independent reviewer is required by project policy.
 - [ ] Authorized publication decision exists.
 - [ ] All five files are one consistent approved version set.
 - [ ] Project Sources UI upload and readback are verified, or publication is explicitly NOT DONE.

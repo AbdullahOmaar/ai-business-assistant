@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.4
+version: 1.0.5
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-05T00:03:00Z
+last_verified_at: 2026-11-10T00:00:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -15,14 +15,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
+related_github_sha: e018c56640cc63573cdaec590fa5018148d5f662
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. The accountable maintainer may complete and document self-review; a separate reviewer is optional unless provider-enforced or explicitly approved policy requires one. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Publication state:** DRAFT. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. The accountable maintainer/Project Master completes and documents self-review; no separate independent reviewer is required by project policy. Formal GitHub branch-protection approvals, if configured, remain mandatory. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -85,7 +85,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Maintainer review:** the accountable maintainer checks the exact candidate, records findings and owns the review decision. A second reviewer is optional unless a provider-enforced or explicitly approved policy requires one.
+- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate, records findings and owns the review decision. No separate independent reviewer is required by project policy; formal GitHub branch-protection approvals, if configured, remain mandatory.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.
