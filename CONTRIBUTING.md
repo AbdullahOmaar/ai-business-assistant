@@ -1,11 +1,11 @@
 ## Permanent Owner directive — GitHub Actions CI migration (effective 2026-11-10)
 
-The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier GitHub Actions-only, GitHub Actions-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
+The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier CircleCI-only, CircleCI-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
 
 - The core required workflow is .github/workflows/ci.yml; it runs backend accounting/tests and PostgreSQL migration validation, knowledge-package validation, frontend unit tests and production build, frontend dependency audit, Playwright browser smoke, backend container/import checks, backup/restore safety guards, and a single aggregate gate.
 - The required aggregate status is CI / all-checks-passed and must be successful on the exact current PR head SHA. Individual substantive jobs must also be inspected; an aggregate cannot conceal skipped or missing required jobs.
 - .github/workflows/dependency-security.yml runs scheduled and manually requested Python/npm dependency audits.
-- GitHub Actions is retired for this repository. Do not trigger, retry, require, or treat GitHub Actions results as current release evidence. The migration removes .github/workflows/ci.yml.
+- CircleCI is retired for this repository. Do not trigger, retry, require, or treat CircleCI results as current release evidence. The migration removes .circleci/config.yml.
 - GitLab CI and Semaphore remain inactive/non-authoritative. Do not substitute them.
 - Use the repository's approved GitHub-hosted runner configuration. Do not enable paid larger runners, purchase credits, or change billing without separate Owner authorization.
 - Provider availability, Actions permissions, quotas, and organization/repository policy still apply. If Actions cannot execute, record the exact cause as NOT RUN/BLOCKED; never claim an unexecuted job passed.
@@ -96,7 +96,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If GitHub Actions or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute CircleCI, GitLab or Semaphore, and do not treat a local partial run as full GitHub Actions evidence. Manual reruns are permanently Owner-authorized under the 2026-11-08 directive; record root cause and changed condition, and do not retry unchanged failures blindly.
+- If GitHub Actions or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute CircleCI, GitLab or Semaphore, and do not treat a local partial run as full GitHub Actions evidence. Manual workflow dispatch is authorized under the 2026-11-10 Owner directive; diagnose before retrying unchanged failures.
 
 ## 6. Required handoff report
 
@@ -123,7 +123,7 @@ Every substantive handoff must state:
 - GitHub Actions with `.github/workflows/ci.yml` is the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
 - CircleCI, GitLab and Semaphore are retired/non-authoritative. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
-- The permanent Owner directive effective 2026-11-08 authorizes normal GitHub Actions triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- The Owner's 2026-11-10 decision authorizes normal GitHub Actions triggers and manual workflow dispatch; provider/quota/permission failures remain NOT RUN/BLOCKED.
 - A full documented maintainer review of the current cumulative diff is mandatory. A second independent reviewer is not a default project gate under the Owner Policy effective 2026-11-06; require one only where provider-enforced protection or a separate explicit Owner-approved security policy requires it.
 - Before merge, require a non-Draft READY PR, exact-head checks, current maintainer review, resolved blocking review threads, reconciled base/divergence, provider protections satisfied and explicit Owner merge authorization. `mergeable=true` is not approval.
 - Merge authorization and production deployment authorization are separate. Disclose auto-deployment coupling and obtain the required production authorization before a merge that automatically deploys.
