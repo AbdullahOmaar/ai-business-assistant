@@ -57,6 +57,6 @@ test('shared UI styles remain syntactically balanced and contain no escaped medi
       assert.ok(depth >= 0, 'CSS closing brace must have a matching opening brace');
     }
     assert.equal(depth, 0, 'CSS blocks must have balanced braces');
-    assert.ok(!styles.includes(String.raw\x60\\n    @media\x60), 'media queries must be separated by real CSS whitespace');
+    assert.ok(!styles.includes('\\n    @media'), 'media queries must be separated by real CSS whitespace');
   }
 });
