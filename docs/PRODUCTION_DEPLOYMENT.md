@@ -2,7 +2,7 @@
 
 The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
 
-- GitHub Push and Pull Request webhook events are intended to trigger GitLab Free through the Pipeline Trigger API. GitLab must extract the event's exact GitHub SHA, fetch that commit from the private canonical repository, verify the checkout, and report the result against the same SHA.
+- GitHub branch Push webhook events trigger GitLab Free through the Pipeline Trigger API. GitLab's documented direct-webhook path covers Push/Tag events; this implementation subscribes to branch Pushes only, not Pull Request events. The pipeline extracts `after` from `TRIGGER_PAYLOAD`, fetches that exact commit from the private canonical repository, verifies the checkout, and reports the result against the same SHA. The resulting commit status appears on any PR containing that commit.
 - GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
 - CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
 - No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
@@ -78,7 +78,7 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 ## CI provider and required status
 
 - **GitLab Free is the intended automatic CI provider** for tests, builds, browser checks and dependency/security audits. The canonical candidate pipeline is `.gitlab-ci.yml`; GitHub remains canonical for source code, branches, commits, PRs and release SHAs.
-- GitLab must receive GitHub Push and Pull Request webhook events, extract the exact GitHub SHA from `TRIGGER_PAYLOAD`, fetch and verify that exact commit, then report pending/final status to the same SHA.
+- GitLab receives GitHub branch Push webhook events only, extracts the exact GitHub SHA from `TRIGGER_PAYLOAD`, fetches and verifies that exact commit, then reports pending/final status to the same SHA. The status is associated with any PR containing the commit; no direct PR-event webhook is configured.
 - The GitLab pipeline is designed to run backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
 - CircleCI remains configured as the transition fallback and current required gate. Do not retire it until automatic trigger, exact-SHA validation, GitHub status reporting and enforceable merge-control acceptance are verified. GitLab's official external-repository integration and pull mirroring are Premium/Ultimate; the Free path uses a direct trigger webhook.
 - Do not introduce GitHub Actions as a replacement test/build CI provider. Semaphore is retired/non-authoritative.
