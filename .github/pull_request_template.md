@@ -18,8 +18,8 @@ This directive changes CI execution permission only. It does not waive tests, se
 - **Canonical task / issue ID and Notion link:**
 - **Accountable Feature Owner:**
 - **Actual primary writer:**
-- **Maintainer reviewer:**
-- **Additional reviewer:** N/A unless enforced by provider or required by a separate explicit Owner-approved policy
+- **Maintainer self-review owner:**
+- **Formal GitHub branch-protection approval:** N/A unless GitHub actually enforces one
 - **Owned paths / shared-path boundary:**
 - **Out of scope / explicit deferrals:**
 
@@ -91,7 +91,7 @@ This directive changes CI execution permission only. It does not waive tests, se
 - **Candidate version and DRAFT/APPROVED state:**
 - **Maintainer / Master full-diff self-review (exact SHA + findings):**
 - **Separate independent reviewer:** NOT REQUIRED by project policy for any change. Record the accountable maintainer/Project Master full diff self-review on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
-- **Independent findings and disposition (when required):**
+- **Maintainer self-review findings and disposition:****
 - **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
 - **Canonical source SHA / PR:**
