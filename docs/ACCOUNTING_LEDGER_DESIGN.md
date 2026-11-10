@@ -1,6 +1,6 @@
 # Double-Entry General Ledger — Design Proposal
 
-**Status:** Proposed; requires independent accounting and engineering review before implementation.  
+**Status:** Proposed; requires explicit Owner/accounting approval of financial semantics, documented maintainer/Project Master full self-review of the design on the exact candidate SHA, and required tests before implementation. No separate independent reviewer is required by project policy; any formal GitHub branch-protection approval actually enforced remains mandatory.  
 **Tracking issue:** [#81 — Double-entry general ledger and chart of accounts](https://github.com/AbdullahOmaar/ai-business-assistant/issues/81)  
 **Scope:** Design only. No schema migration, journal posting, or production data change is authorized by this document.
 
@@ -46,7 +46,7 @@ Fields: id, business_id, journal_entry_id, account_id, line_number, debit_amount
 - Composite foreign keys must ensure entry and account belong to the same business.
 - Posted lines are append-only; database permissions and service checks should enforce this as far as the hosting model permits.
 
-A posted-entry invariant must be checked in the posting transaction under appropriate locking. A simple row-level CHECK constraint cannot enforce the sum across multiple journal lines, so the posting service and integration tests are mandatory. Consider a database trigger only if compatible with migrations and hosting and independently reviewed.
+A posted-entry invariant must be checked in the posting transaction under appropriate locking. A simple row-level CHECK constraint cannot enforce the sum across multiple journal lines, so the posting service and integration tests are mandatory. Consider a database trigger only if compatible with migrations and hosting, covered by tests, and included in the accountable maintainer/Project Master's documented self-review.
 
 ## 3. Minimum chart-of-accounts template
 
@@ -128,7 +128,7 @@ Do not bulk-post existing records as part of the initial schema migration.
 4. Define opening balances and source-event eligibility with the business owner/accounting reviewer.
 5. Generate a dry-run report with expected journal entries and per-currency trial-balance totals.
 6. Reconcile invoice totals, receipts, expenses, and opening balances to approved source-of-truth records.
-7. Have an independent reviewer sign off on the dry-run output and rollback/restore plan.
+7. The accountable maintainer/Project Master documents full self-review of the dry-run output and rollback/restore plan on the exact candidate SHA; the Owner retains separate approval of financial basis and any production posting decision.
 8. Enable posting for new events behind a feature flag only after posting service and integration tests pass.
 9. Backfill historical events in small idempotent batches only after explicit approval, with resumability and an auditable result log.
 10. Verify the trial balance per business and currency before considering historical posting complete.
@@ -155,7 +155,7 @@ No customer assignment, invoice total, payment, allocation, or historical balanc
 Do not enable production posting until all are true:
 
 - An accounting reviewer approves the accounting basis, chart of accounts, tax handling, returns/refunds, and opening balances.
-- An independent engineer reviews schema, posting transaction, idempotency, tenant isolation, and rollback behavior.
+- The accountable maintainer/Project Master documents full self-review of schema, posting transaction, idempotency, tenant isolation, and rollback behavior on the exact candidate SHA; any formal GitHub branch-protection approval actually enforced remains mandatory.
 - PostgreSQL integration tests and migrations pass.
 - Dry-run reconciliation has no unexplained difference.
 - Backup restoration has been tested.
@@ -169,6 +169,6 @@ Do not enable production posting until all are true:
 3. Whether inventory is in scope for the first ledger release or explicitly deferred until cost layers/COGS are ready.
 4. The default chart-of-accounts template and permitted customization.
 5. Whether multi-currency uses transaction-currency ledgers, functional currency, or both, and the FX source/date policy.
-6. Who provides independent accounting approval and who provides independent code review.
+6. Who provides the required accounting approval for financial semantics, and who is accountable for the maintainer/Project Master full self-review of the code and rollback evidence.
 
 **Current recommendation:** implement the ledger schema and posting engine only after this design is reviewed. Keep existing operational reports clearly labeled as preliminary until reconciled to the ledger.
