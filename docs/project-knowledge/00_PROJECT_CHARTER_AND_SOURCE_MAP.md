@@ -1,20 +1,20 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.5
+version: 1.0.6
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T21:48:00Z
+last_verified_at: 2026-11-10T22:43:43Z
 review_due: 2027-01-28
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/README.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/README.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
-related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
+related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
 supersedes: none
 superseded_by: none
 ---
@@ -83,7 +83,7 @@ The Notion Production V1 Charter owns exact release scope, module acceptance and
 | Information class | Authoritative source | How Project Sources should be used |
 | --- | --- | --- |
 | Source code, branches, commits, issues, PRs, reviews | GitHub live repository | Orientation and links only |
-| Tests and CI | CircleCI is the sole active and approved test/build/security validation provider (`.circleci/config.yml`); GitHub is canonical for source, PRs and release SHA | Verify the CircleCI workflow and all substantive jobs on the exact candidate SHA; do not rely on stale run statuses. GitLab is inactive and Semaphore is retired |
+| Tests and CI | GitHub Actions (`.github/workflows/ci.yml`) is the Owner-selected primary test/build/security CI provider; CircleCI remains a transition fallback until required-check enforcement and release gates are verified. GitLab is inactive; Semaphore is retired/non-authoritative | Validate required checks on the exact candidate SHA. Batch related work, use targeted checks only when needed, reuse still-valid PASS evidence, and avoid redundant full-suite reruns; never bypass a required gate |
 | Deployment and runtime | Vercel deployment/runtime evidence; Neon for schema/revision evidence | Link to runbooks; never claim live state |
 | Product scope and release outcomes | Approved Notion Production V1 Charter and versioned product decisions | Stable summary only; defer to canonical page |
 | Assignments, ownership, dependencies, workstream status | Notion Master Task Plan and canonical task pages | Explain where to look; do not mirror current rows |
@@ -105,6 +105,7 @@ The Notion Production V1 Charter owns exact release scope, module acceptance and
 - [Security Route Inventory](../SECURITY_ROUTE_INVENTORY.md)
 
 ### Notion
+- [MWOS — Modular Workstream Operating System](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea)
 - [Production V1 ERP Charter](https://app.notion.com/p/4099320b90fb81259288c92962839b90)
 - [Product Home](https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b)
 - [Master Task Plan](https://app.notion.com/p/4089320b90fb81019388ce0caa28d086)
