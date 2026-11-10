@@ -40,30 +40,51 @@ resolve-event:
     - |
       set -eu
       python - <<'PY'
+      import json
       import os
       import re
 
-      repository = os.environ.get("GITHUB_REPOSITORY", "")
-      event = os.environ.get("GITHUB_EVENT", "")
-      sha = os.environ.get("SOURCE_SHA", "")
-      pr_number = os.environ.get("GITHUB_PR_NUMBER", "")
+      payload_path = os.environ.get("TRIGGER_PAYLOAD", "")
+      if not payload_path or not os.path.isfile(payload_path):
+          raise SystemExit("GitLab TRIGGER_PAYLOAD is missing; configure this pipeline with a GitHub webhook delivery.")
 
+      with open(payload_path, encoding="utf-8") as payload_file:
+          payload = json.load(payload_file)
+
+      repository = (payload.get("repository") or {}).get("full_name", "")
       if repository.casefold() != "abdullahomaar/ai-business-assistant":
-          raise SystemExit("Trigger repository does not match the canonical GitHub repository.")
-      if event not in {"pull_request", "merged"}:
-          raise SystemExit("Unsupported GitHub event type.")
-      if event == "pull_request" and (not pr_number.isdigit() or int(pr_number) < 1):
-          raise SystemExit("Pull request event did not contain a valid PR number.")
+          raise SystemExit("Webhook repository does not match the canonical GitHub repository.")
+
+      if isinstance(payload.get("pull_request"), dict):
+          event = "pull_request"
+          pull_request = payload["pull_request"]
+          sha = ((pull_request.get("head") or {}).get("sha")) or ""
+          pr_number = str(payload.get("number") or "")
+          base_repository = ((pull_request.get("base") or {}).get("repo") or {}).get("full_name", "")
+          if base_repository.casefold() != "abdullahomaar/ai-business-assistant":
+              raise SystemExit("Pull request base repository is not the canonical GitHub repository.")
+          if not pr_number.isdigit() or int(pr_number) < 1:
+              raise SystemExit("Pull request webhook did not contain a valid PR number.")
+      else:
+          event = "push"
+          sha = payload.get("after", "")
+          pr_number = ""
+          ref = payload.get("ref", "")
+          if not ref.startswith("refs/heads/"):
+              raise SystemExit("Only GitHub branch push events are supported; tag/deletion events are ignored.")
+          if payload.get("deleted") is True:
+              raise SystemExit("Deleted-branch webhook events do not run validation.")
+
       if not re.fullmatch(r"[0-9a-f]{40}", sha):
-          raise SystemExit("Trigger did not contain a valid 40-character GitHub commit SHA.")
+          raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
 
       with open("event.env", "w", encoding="utf-8") as env_file:
-          env_file.write(f"SOURCE_SHA={sha}\n")
-          env_file.write(f"GITHUB_EVENT={event}\n")
-          env_file.write(f"GITHUB_REPOSITORY={repository}\n")
-          env_file.write(f"GITHUB_PR_NUMBER={pr_number}\n")
+          env_file.write(f"SOURCE_SHA={sha}\\n")
+          env_file.write(f"GITHUB_EVENT={event}\\n")
+          env_file.write(f"GITHUB_REPOSITORY={repository}\\n")
+          env_file.write(f"GITHUB_PR_NUMBER={pr_number}\\n")
 
-      print(f"Validated {event} event for canonical GitHub SHA: {sha}")
+      print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
   artifacts:
     when: always
@@ -72,7 +93,6 @@ resolve-event:
     paths:
       - job-status/
     expire_in: 7 days
-
 status-pending:
   extends: .status-artifacts
   stage: prepare
