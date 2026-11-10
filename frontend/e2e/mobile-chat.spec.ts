@@ -365,6 +365,13 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
     if (width <= 430) await assertHomeMobileGrid(width);
+    if ([320, 390, 1280].includes(width)) {
+      await page.screenshot({
+        path: `test-results/aiba-home-${width}px-ar.png`,
+        fullPage: true,
+        animations: 'disabled',
+      });
+    }
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
@@ -426,6 +433,15 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(ltrMoreMenuLayout.overflowY).toBe('auto');
   expect(ltrMoreMenuLayout.overscrollBehavior).toBe('contain');
   await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await page.locator('.mobile-app-header .brand-button').click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('.dashboard-period')).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/aiba-home-390px-ltr.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
   await expect(moreTrigger).toBeFocused();
   for (const width of [360, 390, 430]) {

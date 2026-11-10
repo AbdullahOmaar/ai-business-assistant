@@ -55,9 +55,10 @@ test('mobile, reduced-motion and high-contrast behavior remain defined', () => {
   assert.match(css, /forced-colors:\s*active/);
 });
 
-test('Home KPIs keep two readable columns at narrow phone widths', () => {
-  const narrowMobileRule = css.slice(css.lastIndexOf('@media (max-width: 380px)'));
-  assert.match(narrowMobileRule, /\.metric-grid\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(narrowMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
-  assert.match(narrowMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
+test('Home KPIs and module shortcuts keep two readable columns at narrow phone widths', () => {
+  const kpiMobileRule = css.slice(css.indexOf('/* At the narrowest supported phone width'));
+  const shortcutMobileRule = css.slice(css.indexOf('/* Keep the Home action and module grids'));
+  assert.match(kpiMobileRule, /\.metric-grid\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(kpiMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
+  assert.match(shortcutMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
 });
