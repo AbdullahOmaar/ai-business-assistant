@@ -21,7 +21,7 @@ git -C "$repo" add .
 git -C "$repo" commit -qm "baseline"
 base_sha="$(git -C "$repo" rev-parse HEAD)"
 
-git -C "$repo" config core.hooksPath .githooks
+bash "$repo/scripts/ci/install_git_hooks.sh"
 [[ "$(git -C "$repo" config --get core.hooksPath)" == ".githooks" ]]
 
 cat > "$fake_bin/circleci" <<'CIRCLECI'
