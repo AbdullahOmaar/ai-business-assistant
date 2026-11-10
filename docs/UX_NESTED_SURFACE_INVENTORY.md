@@ -375,3 +375,15 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - The source regression now checks the exact `document:focusin` HostListener via a literal source string and locates the handler using the actual newline boundary.
 - Focused static source readback: 6/6 assertions PASS; authored Node test execution remains **NOT RUN**.
+
+## AI Assistant UX transformation baseline — 2026-11-10
+
+- **Source baseline:** current deployed/main UI is based on `main@e018c56640cc63573cdaec590fa5018148d5f662`. Source readback covered `frontend/src/app/app.component.ts`, `frontend/src/app/api.service.ts`, and `backend/app/assistant_api.py`.
+- **Current interaction contract:** the chat is rendered inline in the root Angular shell. `sendChat()` sends one authenticated, workspace-scoped JSON request through `ApiService.chat()` to `POST /api/v1/businesses/{business_id}/assistant/chat`; the response is a `ChatReply` containing `answer`, `sources`, and optional `mode`. This is request/response, not streaming.
+- **Existing safeguards to preserve:** the request is fenced by workspace ID, authenticated UID, role and signed-in state; only the last eight messages are sent; stale responses clear chat state; failures restore the draft and expose retry; the UI discloses the limited local fallback mode and source records.
+- **Current UX limits confirmed by source:** messages are held in component memory (no persistent/searchable conversation history); messages render as plain text paragraphs; there are no message-level copy/regenerate actions or attachment controls. The current `ChatInput` contract accepts only `message` and `history`; there is no file/attachment contract or streaming response type.
+- **Do not simulate missing capabilities:** streaming, attachments, persistent/searchable history, and structured Markdown/table/chart rendering must not be represented as working until supported by an approved API/product contract. Frontend-only fake upload/streaming controls are out of scope.
+- **Shared-path ownership boundary:** the chat template, composer and its responsive keyboard styles live in `frontend/src/app/app.component.ts`; global foundation styles live in `frontend/src/styles.css`. Active PR #363 currently changes both paths for the invoice editor. The Master UI/UX branch deliberately avoids those shared files until PR #363 is reconciled; no overlapping edits were made.
+- **Next chat UX slice:** after the shared-path writer boundary is clear, improve the existing request/response composer, message hierarchy/actions and long-response presentation without changing the API contract; keep streaming, file upload and durable history explicitly deferred.
+- **Acceptance still NOT RUN:** rendered 360/390/430px and tablet/desktop checks, Arabic RTL/English LTR, long-response behavior, Android keyboard/visual viewport, screen-reader/keyboard/200% zoom, and physical installed-PWA behavior. Source inspection is not rendered/device acceptance.
+- **Scope:** source-level UX baseline only; no chat API/backend/database, auth, tenant, AI-provider or business-rule changes.
