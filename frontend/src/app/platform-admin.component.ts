@@ -370,6 +370,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
       .user-role-form label>span,.panel-heading p,.caution p,.field-error,.data-note p,
       .permission-token,.identity-access-heading>strong,.identity-permissions>strong{font-size:12px}
       .metric-card small{font-size:12px}
+      .data-note p{font-size:12px}
     }
   `]
 })
