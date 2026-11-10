@@ -120,7 +120,7 @@ prepare-source:
       set -eu
       : "$SOURCE_SHA"
       : "$GITHUB_READ_TOKEN"
-      printf 'SOURCE_SHA=%s\\nGITHUB_EVENT=%s\\n' "$SOURCE_SHA" "${GITHUB_EVENT:-unknown}" > event.env
+      printf 'SOURCE_SHA=%s\nGITHUB_EVENT=%s\n' "$SOURCE_SHA" "${GITHUB_EVENT:-unknown}" > event.env
       case "$SOURCE_SHA" in
         *[!0-9a-f]*|'') echo "SOURCE_SHA must be 40 lowercase hexadecimal characters." >&2; exit 1 ;;
       esac
