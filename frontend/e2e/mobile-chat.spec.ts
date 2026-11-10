@@ -391,7 +391,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await languageAction.click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-  await moreTrigger.click();
   await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
   const ltrMoreMenuLayout = await page.locator('#mobile-more-menu').evaluate(element => ({
     direction: getComputedStyle(element).direction,
