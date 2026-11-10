@@ -405,19 +405,28 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/)).toBeVisible();
 
+  const chatLog = page.locator('.chat-log');
+  await expect(chatLog).toHaveAttribute('role', 'log');
+  await expect(chatLog).toHaveAttribute('aria-live', 'polite');
   const composer = page.getByRole('textbox', { name: /سؤالك للمساعد الذكي|Your question for the AI assistant/ });
   const sendButton = page.getByRole('button', { name: /إرسال|Send/ });
   await composer.fill('What happened this month?');
   await sendButton.click();
 
-  await expect(page.getByText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/)).toBeVisible();
-  await expect(page.getByText('Temporary assistant failure.')).toBeVisible();
+  await expect(page.locator('.aba-state-message[role="status"]')).toContainText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/);
+  await expect(sendButton).toBeDisabled();
+  expect(chatAttempts).toBe(1);
+  const errorState = page.locator('.aba-state-message[role="alert"]');
+  await expect(errorState).toContainText('Temporary assistant failure.');
+  await expect(composer).toHaveValue('What happened this month?');
+  await expect(page.locator('.chat-message')).toHaveCount(1);
   const retryButton = page.getByRole('button', { name: /إعادة المحاولة|Retry/ });
   await expect(retryButton).toBeEnabled();
   await retryButton.click();
 
-  await expect(page.getByText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/)).toBeVisible();
+  await expect(page.locator('.aba-state-message[role="status"]')).toContainText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/);
   const assistantMessage = page.locator('.chat-message').last();
+  await expect(page.locator('.chat-message')).toHaveCount(2);
   await expect(assistantMessage.locator('p')).toContainText('ملخص النشاط للفترة المحددة');
   await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
   const chatLogLayout = await page.locator('.chat-log').evaluate(element => ({
