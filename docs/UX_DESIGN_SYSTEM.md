@@ -130,7 +130,7 @@ The CSS and source-level checks verify the visual contract. They do not replace 
 
 The post-merge review identified two valid presentation defects and the follow-up addresses them:
 - Primary button gradient stops now use the darker brand-strong and brand tokens. White labels are checked against the WCAG AA 4.5:1 normal-text contrast threshold at both stops.
-- KPI Angular hosts are layout-only. The inner `.aba-metric-card` component owns the single border, surface, radius, padding and shadow, avoiding nested card frames and preserving content width on phones.
+- KPI Angular hosts are layout-only at every breakpoint, including an explicit zero-padding reset at ≤380px. The inner `.aba-metric-card` component owns the single border, surface, radius, padding and shadow, avoiding nested card frames and preserving content width on phones. The regression test inspects every matching host rule, including responsive overrides.
 
 The browser-smoke artifact now retains full-page references and adds true 844px viewport captures at 320px / 390px RTL and 390px LTR. Full-page screenshots are not used to judge fixed-position navigation overlap because fixed elements are anchored to the viewport during full-page capture.
 
