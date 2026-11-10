@@ -317,6 +317,9 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         headerControlHeights: Array.from(document.querySelectorAll(
           '.mobile-app-header .brand-button, .mobile-app-header .assistant-shortcut, .mobile-app-header .icon-button, .mobile-app-header .profile-trigger'
         )).map(control => control.getBoundingClientRect().height),
+        dockItemHeights: Array.from(document.querySelectorAll('.sidebar > .nav-item'))
+          .filter(item => getComputedStyle(item).display !== 'none')
+          .map(item => item.getBoundingClientRect().height),
         headerPageRowHeight: document.querySelector('.mobile-app-header .page-context')?.getBoundingClientRect().height ?? 0,
         headerWorkspaceRowHeight: document.querySelector('.mobile-app-header .workspace-context')?.getBoundingClientRect().height ?? 0,
       };
@@ -325,6 +328,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
     expect(layout.headerControlHeights).toHaveLength(4);
+    expect(layout.dockItemHeights).toHaveLength(4);
+    for (const height of layout.dockItemHeights) {
+      expect(height, `Mobile dock controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
+    }
     expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
     expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
@@ -340,8 +347,13 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.setViewportSize({ width: 360, height: 800 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
   await moreTrigger.click();
+  await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(moreTrigger).toHaveAttribute('aria-controls', 'mobile-more-menu');
+  await expect(page.locator('#mobile-more-menu .mobile-more-group')).toHaveCount(5);
   await page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(moreTrigger).not.toHaveAttribute('aria-controls');
   await expect(moreTrigger).toHaveClass(/active/);
   await expect(moreTrigger).toBeFocused();
   await expect(page.getByRole('heading', { name: /دليل التطبيق والإصدارات|App guide & versions/ })).toBeVisible();
