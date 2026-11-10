@@ -227,7 +227,7 @@ This section clarifies the operational detail for every human, specialist chat a
 - One active writing branch per contributor. A separate branch is justified only by a genuinely independent authorization/release boundary or independently reviewable outcome; record the reason and freeze writes on that contributor's previous branch during the independent work.
 
 ### CI and merge gate clarification
-- GitLab Free and `.gitlab-ci.yml` are the intended automatic repository CI provider after cutover. Direct webhook scope is branch Push events only; the resulting SHA status is shared with its associated PR. Require every substantive job and the aggregate on the exact GitHub candidate SHA.
+- GitLab Free and `.gitlab-ci.yml` are the intended automatic repository CI provider after cutover. The direct Pipeline Trigger webhook resolver accepts branch Push and Pull Request events (opened, synchronize, reopened, ready_for_review), validates the canonical repository and exact SHA, and reports status to that SHA. Require every substantive job and the aggregate on the exact GitHub candidate SHA.
 - CircleCI remains configured as the transition fallback and current required gate until GitLab's automatic trigger, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified.
 - GitHub Actions and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative; empty contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
 - Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
