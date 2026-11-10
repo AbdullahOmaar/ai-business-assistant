@@ -76,7 +76,7 @@ No destructive migration, production write, snapshot/restore or production data 
 
 - Inspect the exact branch, base/head SHA, changed files and mergeability.
 - Required checks must be green on the exact PR head; checks on another SHA or empty/unavailable checks are NOT PASS.
-- A documented maintainer/Project Master self-review is sufficient for all project changes, including security and architecture changes. No separate independent reviewer is required by project policy. Any formal approval actually required by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where a formal approval is required.
+- A documented maintainer/Project Master self-review is required for all changes. Controlled/security/architecture changes and canonical controlled-knowledge publication/update additionally require independent non-author review plus authorized approval. Routine PRs do not require a separate reviewer by default unless GitHub branch protection enforces one. Any formal approval must be satisfied on the exact PR head; comments are not approvals where a formal approval is required.
 - Resolve material review findings and inspect the final diff for secrets, unrelated changes, authorization gaps and data-integrity risk.
 - Merge only with explicit owner authorization and all repository gates satisfied.
 - Never bypass branch protection, provider-enforced required reviews, frozen CI or security gates. Do not invent an additional independent-review requirement.
