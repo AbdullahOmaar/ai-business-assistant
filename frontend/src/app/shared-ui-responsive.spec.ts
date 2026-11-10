@@ -26,7 +26,7 @@ test('section headings and descriptions remain readable on narrow screens', () =
 
 test('mobile KPI labels and supporting values retain a readable minimum size', () => {
   assert.match(metricCard, /\.aba-metric-card__label\{display:block;[^}]*font-size:var\(--aba-font-size-sm, 12px\)/);
-  assert.match(metricCard, /@media\(max-width:380px\)\{[\s\S]*\.aba-metric-card__label\{font-size:11px\}[\s\S]*\.aba-metric-card__values small\{font-size:10px\}/);
+  assert.match(metricCard, /@media\(max-width:380px\)\{[\s\S]*\.aba-metric-card__label\{font-size:11px\}[\s\S]*\.aba-metric-card__values small\{font-size:11px\}/);
   assert.match(metricCard, /overflow-wrap:anywhere/);
 });
 

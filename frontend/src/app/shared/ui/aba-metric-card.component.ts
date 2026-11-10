@@ -31,7 +31,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
       .aba-metric-card{min-height:104px;padding:10px}
       .aba-metric-card__label{font-size:11px}
       .aba-metric-card__values strong{font-size:15px}
-      .aba-metric-card__values small{font-size:10px}
+      .aba-metric-card__values small{font-size:11px}
     }
   `],
 })
