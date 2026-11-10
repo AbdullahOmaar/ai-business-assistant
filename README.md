@@ -11,9 +11,8 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
-- **Intended CI (GitLab Free; automatic cutover pending):** https://gitlab.com/abdullahomarrefaat/ai-business-assistant (pipeline: [`.gitlab-ci.yml`](.gitlab-ci.yml))
-- **Transition CI fallback (CircleCI):** https://circleci.com/gh/AbdullahOmaar/ai-business-assistant (keep active until exact-SHA validation, GitHub status reporting and merge-control gates are verified)
-- **GitLab webhook scope:** branch Push is the documented direct-webhook path. `.gitlab-ci.yml` also contains a Pull Request payload resolver (opened/synchronize/reopened/ready_for_review), but GitLab's documented direct-webhook contract covers Push/Tag only; PR delivery remains experimental and unverified until a real GitHub webhook delivery is observed.
+- **Primary CI:** GitHub Actions — [workflow runs](https://github.com/AbdullahOmaar/ai-business-assistant/actions) (`.github/workflows/ci.yml`, standard hosted runners; public-repository standard usage is free).
+- **Transition fallback:** [CircleCI](https://circleci.com/gh/AbdullahOmaar/ai-business-assistant) remains configured until GitHub Actions full exact-SHA validation and required-check enforcement are verified.
 - **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
 - **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
 - **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
@@ -64,7 +63,7 @@ The repository includes:
 - Angular email/password sign-in, authenticated API client, live dashboard/customer/product/invoice views, invoice draft editing/issuing/voiding, and a record-grounded AI chat UI.
 - Invoice issuance stock deductions as auditable stock movements for tracked products and insufficient-stock validation.
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
-- GitLab Free is the intended automatic exact-SHA runner for backend tests, PostgreSQL migration validation, frontend unit tests/builds, Playwright browser smoke, backend container checks, and dependency/security audits. CircleCI remains the transition fallback/current required gate until cutover acceptance is verified.
+- GitHub Actions is the primary exact-SHA runner for backend tests, PostgreSQL migration validation, frontend unit tests/builds, Playwright browser smoke, backend container checks, and dependency/security audits. CircleCI remains the transition fallback until cutover acceptance is verified.
 - Regression tests for cross-business authorization boundaries, invoice state transitions, and AI input/provider safety.
 
 ## Release blockers and known limitations

@@ -1,19 +1,16 @@
-## Owner-approved CI provider transition — effective 2026-11-10
+## Owner-approved CI provider change — effective 2026-11-10
 
-The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
+The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
 
-- GitHub branch Push events are the documented direct-webhook trigger path to GitLab Free. The resolver also accepts Pull Request payloads (opened, synchronize, reopened, ready_for_review), including forks, and source-fetch reads canonical `refs/pull/<number>/head` with exact-SHA verification. GitLab's documented direct-webhook contract covers Push/Tag only; PR-event delivery remains experimental and NOT VERIFIED until a real delivery is observed. GitHub tokens are limited to source-fetch/status-report jobs; code-execution jobs receive no GitHub tokens.
-- GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
-- CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
-- Before enabling the GitLab webhook/credentials, restrict the protected CI-config ref to Maintainers-only push and rotate the exposed runner-registration token. The private project reports `public_jobs=true`; GitLab's visibility docs say non-member pipeline visibility settings do not apply to private projects, so actual unauthenticated job-log access is UNKNOWN. Set `public_jobs=false` as defense-in-depth if available or verify access before credentials. Artifact definitions use `artifacts:access: maintainer` for the private source checkout and other artifacts.
-- No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
-- For retries, record the failed job/root cause and changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If either approved transition path cannot execute, record the exact cause as NOT RUN/BLOCKED; never infer success from a skipped or missing pipeline.
-- Required substantive jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- GitHub private Free does not provide protected-branch/status-check enforcement for private repositories. Until an enforceable merge-control solution is verified, mark the merge gate BLOCKED / NOT VERIFIED; do not bypass it, make the repository public, or incur a paid upgrade without separate Owner approval.
-- Full maintainer review, provider-enforced protections where available, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
+- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
+- GitHub Actions becomes the primary CI provider only after the full six-job suite and aggregate are observed passing on exact candidate SHAs and the main-branch required-check configuration is verified. CircleCI remains configured as a transition fallback until then; do not retire it early.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- The current GitHub main-branch metadata reports protection but no effective required-status enforcement. Public-repository Free supports branch protection, but the Owner/Admin must verify that `all-checks-passed` is required and that PRs are required before treating merge control as enforced.
+- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
 
-This directive changes the intended CI provider and transition plan only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
 # Contributing and Project Roles
 
@@ -97,7 +94,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If GitLab's automatic webhook, runner or logs are unavailable, record the exact check as NOT RUN / BLOCKED; CircleCI remains the transition fallback until cutover acceptance. Do not treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
+- If GitHub-hosted runner allocation or logs are unavailable, record the exact check as NOT RUN / BLOCKED; CircleCI remains the transition fallback until cutover acceptance. Do not treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
 
 ## 6. Required handoff report
 
@@ -121,9 +118,9 @@ Every substantive handoff must state:
 
 ## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
 
-- GitLab Free is the intended automatic exact-SHA CI provider; direct Pipeline Trigger webhooks accept branch Push and Pull Request events and report status against the exact GitHub SHA. Require every substantive job and the aggregate on the exact GitHub candidate SHA.
-- CircleCI remains configured as the transition fallback and current required gate until GitLab automatic triggering, exact-SHA validation, GitHub status reporting and enforceable merge-control acceptance are verified.
-- GitHub Actions and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
+- GitHub Actions is the primary exact-SHA CI provider. Require the six substantive jobs and `all-checks-passed` aggregate on the exact workflow SHA.
+- CircleCI remains configured as the transition fallback until GitHub Actions exact-SHA validation and enforceable main-branch required-check controls are verified.
+- GitLab CI and Semaphore are not approved CI providers. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
 - Record retry root cause and changed condition; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
 - A full documented maintainer review of the current cumulative diff is mandatory. A second independent reviewer is not a default project gate under the Owner Policy effective 2026-11-06; require one only where provider-enforced protection or a separate explicit Owner-approved security policy requires it.

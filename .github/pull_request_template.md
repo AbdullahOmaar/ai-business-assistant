@@ -1,18 +1,16 @@
-## Owner-approved CI provider transition — effective 2026-11-10
+## Owner-approved CI provider change — effective 2026-11-10
 
-The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
+The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
 
-- GitHub branch Push events are the documented direct-webhook trigger path to GitLab Free. The resolver also accepts Pull Request payloads (including forks) and source-fetch fetches canonical `refs/pull/<number>/head` with exact-SHA verification; GitLab's documented direct-webhook contract covers Push/Tag only, so PR-event delivery remains experimental and NOT VERIFIED. GitHub tokens are restricted to source-fetch/status-report jobs; test/build/security jobs receive no GitHub tokens.
-- GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
-- CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
-- No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
-- For retries, record the failed job/root cause and changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If either approved transition path cannot execute, record the exact cause as NOT RUN/BLOCKED; never infer success from a skipped or missing pipeline.
-- Required substantive jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- GitHub private Free does not provide protected-branch/status-check enforcement for private repositories. Until an enforceable merge-control solution is verified, mark the merge gate BLOCKED / NOT VERIFIED; do not bypass it, make the repository public, or incur a paid upgrade without separate Owner approval.
-- Full maintainer review, provider-enforced protections where available, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
+- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
+- GitHub Actions becomes the primary CI provider only after the full six-job suite and aggregate are observed passing on exact candidate SHAs and the main-branch required-check configuration is verified. CircleCI remains configured as a transition fallback until then; do not retire it early.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- The current GitHub main-branch metadata reports protection but no effective required-status enforcement. Public-repository Free supports branch protection, but the Owner/Admin must verify that `all-checks-passed` is required and that PRs are required before treating merge control as enforced.
+- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
 
-This directive changes the intended CI provider and transition plan only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
 ## Summary
 <!-- User-visible outcome, defect addressed, and why this is one coherent work package. -->
@@ -50,9 +48,9 @@ This directive changes the intended CI provider and transition plan only. It doe
 - [ ] No unrelated scope, duplicate PR, unsafe rewrite or unapproved force push.
 
 ## Exact-SHA verification
-- **Intended provider:** GitLab Free automatic webhook pipeline (exact-SHA); CircleCI remains transition gate until cutover acceptance
+- **Primary provider:** GitHub Actions hosted runners; CircleCI remains transition fallback until cutover acceptance
 - **Permanent CI execution authorization / provider-quota state checked:**
-- **GitLab pipeline URL for exact head:**
+- **GitHub Actions workflow URL for exact head:**
 - **Exact SHA tested:**
 - **Substantive jobs and outcomes:**
 - **Aggregate result:**
@@ -60,7 +58,7 @@ This directive changes the intended CI provider and transition plan only. It doe
 - **Checks NOT RUN / BLOCKED and exact reason:**
 - **GitGuardian / other supplementary evidence (not a CI substitute):**
 
-- [ ] All required exact-SHA jobs and aggregate passed on exact current head (GitLab after cutover; CircleCI remains required until then).
+- [ ] All six GitHub Actions substantive jobs and `all-checks-passed` aggregate passed on exact workflow SHA; CircleCI fallback remains available until cutover acceptance.
 - [ ] Failures were investigated and affected checks rerun only after the condition changed.
 - [ ] No unapproved/retired CI provider was treated as a replacement.
 - [ ] Final cumulative diff was reviewed for regressions, secrets, unsafe changes and unrelated paths.

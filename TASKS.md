@@ -1,21 +1,21 @@
-## Owner-approved automatic GitHub → GitLab Free CI transition — effective 2026-11-10
+## Owner-approved GitHub Actions CI transition — effective 2026-11-10
 
-The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive and the earlier manual-`SOURCE_SHA` GitLab execution mode. GitHub remains canonical for source code, branches, pull requests and release SHAs. GitLab Free is the intended automatic test/build/security CI provider.
+The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive and the earlier GitLab Free selection. GitHub remains canonical for code, branches, pull requests and release SHAs. GitHub Actions using standard GitHub-hosted `ubuntu-latest` runners is now the primary test/build/security CI provider.
 
-- GitHub branch Push events are the documented direct-webhook trigger path to GitLab Free's Pipeline Trigger API on the protected GitLab CI-configuration ref. `.gitlab-ci.yml` also parses Pull Request payloads (opened/synchronize/reopened/ready_for_review), fetches the canonical `refs/pull/<number>/head`, and checks the exact head SHA. However, GitLab's documented direct-webhook contract covers Push/Tag events only; PR-event delivery through this endpoint is experimental and NOT VERIFIED until a real GitHub webhook delivery is observed. Push-triggered exact-SHA status reporting is also NOT VERIFIED until the trigger is configured and a pipeline passes.
-- CircleCI remains configured as a transition fallback and current required validation gate until the automatic GitLab trigger, full exact-SHA pipeline, GitHub status reporting and enforceable merge control are verified. Do not retire CircleCI early.
-- GitHub Actions must not replace GitLab for test/build/security execution. The intended integration is the direct GitHub branch-Push webhook → GitLab Pipeline Trigger API, not a GitHub Actions build/test workflow.
-- GitLab branch protection must restrict CI-config writes to Maintainers only. Protected, masked least-privilege GitHub tokens are scoped only to source-fetch and status-report jobs; test/build/security jobs receive no GitHub credentials.
-- A direct GitHub webhook secret is not verified as HMAC by GitLab's trigger endpoint. The Pipeline Trigger Token is a bearer credential and must remain secret.
-- The private GitHub Free repository's required status-check/branch-protection enforcement remains BLOCKED / NOT VERIFIED under the current plan constraints. Do not bypass, publicize or pay-upgrade without separate Owner approval.
-- No CI provider retirement, merge, production deployment, DB write/migration, paid provisioning or source ownership transfer is authorized. Existing exact-SHA, maintainer review, security, merge and separate deployment gates remain mandatory.
+- The repository is Public. Standard GitHub-hosted runner usage is free for public repositories; no self-hosted runner, paid larger runner or separate server is required.
+- The single authoritative workflow is `.github/workflows/ci.yml`: backend pytest + disposable PostgreSQL migration/schema checks + project-knowledge validator, frontend unit tests, production build, npm dependency audit, Playwright browser smoke, backend container + backup/restore safety checks, and fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies the checkout matches the exact workflow event SHA. Workflow permissions are read-only; test/build/security jobs require no repository secrets. No production DB or production deployment is accessed.
+- CircleCI remains configured as a transition fallback until all six GitHub Actions jobs and the aggregate pass on exact candidate SHAs and main-branch required-check enforcement is verified. Do not retire CircleCI early.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- Current main metadata reports `protected=true` but effective required-status enforcement is disabled/NOT VERIFIED. Public-repository Free supports branch protection; configure `all-checks-passed` as required and require PRs before treating merge control as enforced.
+- No paid upgrade, merge, CI retirement, production deployment, production DB write/migration or gate bypass is authorized by this provider decision. Existing maintainer review, security, merge and separate deployment gates remain mandatory.
 
-This is the current Owner decision for the CI migration workstream and supersedes earlier provider/execution-mode statements in this ledger.
+Implementation remains IN_PROGRESS. Existing PR #367 is being repurposed from the GitLab candidate to this GitHub Actions transition; it remains Draft and unmerged until the exact-SHA suite and required-check model are verified.
 
 # Policy conflict sweep — 2026-11-08
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
-- Effective rule as of 2026-11-08: CircleCI remained the sole approved CI provider; unavailable/frozen CircleCI meant NOT RUN/BLOCKED, not provider substitution. This dated rule is superseded by the explicit Owner decision effective 2026-11-10 selecting automatic GitHub → GitLab Free CI with CircleCI as transition fallback. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
+- Effective rule as of 2026-11-08: CircleCI remained the sole approved CI provider; unavailable/frozen CircleCI meant NOT RUN/BLOCKED, not provider substitution. This dated rule is superseded by the explicit Owner decision effective 2026-11-10 selecting GitHub Actions as primary CI with CircleCI as transition fallback. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
 - This is a consistency correction to governance candidate [PR #349](https://github.com/AbdullahOmaar/ai-business-assistant/pull/349). Refresh exact head before consuming check evidence. No CI trigger/retry, tests, merge or deployment was performed.
 
 ---

@@ -1,19 +1,16 @@
-## Owner-approved CI provider transition — effective 2026-11-10
+## Owner-approved CI provider change — effective 2026-11-10
 
-The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
+The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
 
-- GitHub branch Push events are the documented direct-webhook trigger path to GitLab Free. The resolver also accepts Pull Request payloads (opened, synchronize, reopened, ready_for_review), including forks, and source-fetch fetches canonical `refs/pull/<number>/head` with exact-SHA verification. GitLab's documented direct-webhook contract covers Push/Tag only; PR-event delivery remains experimental and NOT VERIFIED until a real delivery is observed. GitHub tokens are isolated to source-fetch/status-report jobs; code-execution jobs receive no GitHub tokens.
-- GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
-- CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
-- The candidate config refuses trigger pipelines unless they run from protected GitLab `main`; live readback confirms `main` is protected with `developers_can_push=false`. The candidate branch still permits Developer pushes but cannot execute the secret-bearing pipeline. Rotate the exposed runner-registration token before adding credentials. The private project reports `public_jobs=true`; actual unauthenticated job-log access is UNKNOWN. Set `public_jobs=false` as defense-in-depth if available or verify access before credentials. Keep CI artifacts restricted with `artifacts:access: maintainer`.
-- No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
-- For retries, record the failed job/root cause and changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If either approved transition path cannot execute, record the exact cause as NOT RUN/BLOCKED; never infer success from a skipped or missing pipeline.
-- Required substantive jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- GitHub private Free does not provide protected-branch/status-check enforcement for private repositories. Until an enforceable merge-control solution is verified, mark the merge gate BLOCKED / NOT VERIFIED; do not bypass it, make the repository public, or incur a paid upgrade without separate Owner approval.
-- Full maintainer review, provider-enforced protections where available, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
+- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
+- GitHub Actions becomes the primary CI provider only after the full six-job suite and aggregate are observed passing on exact candidate SHAs and the main-branch required-check configuration is verified. CircleCI remains configured as a transition fallback until then; do not retire it early.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- The current GitHub main-branch metadata reports protection but no effective required-status enforcement. Public-repository Free supports branch protection, but the Owner/Admin must verify that `all-checks-passed` is required and that PRs are required before treating merge control as enforced.
+- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
 
-This directive changes the intended CI provider and transition plan only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
 # Production deployment runbook
 
@@ -51,7 +48,7 @@ Health checks:
 
 The Web Vercel project root is `frontend`. The repository-owned `frontend/vercel.json` explicitly runs `node scripts/write-build-info.mjs && ng build` and publishes `dist/ai-business-assistant/browser` (the Angular application builder's browser output directory). This is required because the Angular framework auto-detected build can invoke `ng build` directly and bypass npm's `prebuild` lifecycle, leaving the UI commit label and service-worker cache name as `unknown`.
 
-GitLab Free is the intended automatic exact-SHA test/build validation provider and is designed to run the full frontend unit suite, production build, and Playwright checks. CircleCI remains the transition fallback and current required gate until GitLab cutover is verified. The Vercel build command stamps per-commit UI/service-worker metadata and compiles the frontend; it is not a replacement test gate.
+GitHub Actions is the primary exact-SHA test/build validation provider and runs the full frontend unit suite, production build, and Playwright checks. CircleCI remains the transition fallback until GitHub Actions cutover is verified. The Vercel build command stamps per-commit UI/service-worker metadata and compiles the frontend; it is not a replacement test gate.
 
 Preview builds are fail-closed by `scripts/write-build-info.mjs`: when `VERCEL_ENV=preview`, it replaces the checked-in production runtime config with an empty setup-required config unless all isolated Preview values are supplied. Configure these Vercel Preview environment variables only after a synthetic API and Firebase project exist: `ABA_PREVIEW_API_BASE_URL`, `ABA_PREVIEW_FIREBASE_API_KEY`, `ABA_PREVIEW_FIREBASE_AUTH_DOMAIN`, `ABA_PREVIEW_FIREBASE_PROJECT_ID`, and `ABA_PREVIEW_FIREBASE_APP_ID`. A partial set or the known Production API/Firebase identifiers fails the build. Production and local builds retain the existing runtime config. Do not sign in or mutate data from a Preview until the synthetic runtime is configured and verified.
 
@@ -70,7 +67,7 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 - **Reuse before creating:** Check the current branch and open PRs first. Update an existing in-progress branch/PR when appropriate; avoid duplicate work and unnecessary branch churn.
 - **Review budget:** target no more than 15 changed paths OR 800 non-generated changed lines. These are planning thresholds, not hard caps. Above either target, split only at a genuinely independent boundary or attach a staged-review plan naming path/behavior batches, dependencies, and checks. Never create micro-PRs or hide generated/lockfile changes.
 - **Shared-file ownership:** name one primary writer and exact owned paths per work package. One writer at a time edits coordination-sensitive paths such as `app.component.ts`, `TASKS.md`, global tokens, shared contracts, authorization boundaries and DB/schema files. Manual claims coordinate but are not atomic locks.
-- **CI evidence:** GitLab Free is the intended automatic exact-SHA provider. Require substantive jobs and aggregate on the exact GitHub candidate SHA. CircleCI remains the transition fallback/current gate until automatic GitLab trigger, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified. Do not substitute Actions or Semaphore. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED.
+- **CI evidence:** GitHub Actions is the primary exact-SHA provider. Require all six substantive jobs and `all-checks-passed` on the exact workflow SHA. CircleCI remains the transition fallback until GitHub Actions validation and enforceable main-branch required-check controls are verified. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED.
 - **Review and merge:** a full maintainer diff review is mandatory. A second reviewer is required only by provider-enforced protection or a separate explicit Owner-approved security policy. Before merge require READY/non-Draft, exact-head checks, current maintainer review, blocking threads resolved, base/divergence reconciled, provider protections satisfied and explicit Owner merge authorization.
 - **Production deploys are release events, not per-task events:** Do not deploy after each commit or minor fix. Build and test the full coherent change set, merge the approved candidate, and deploy only when a new important feature/feature bundle or critical fix is ready for release. Normally trigger one production deployment for each affected project per release; do not deploy an unchanged project. Merge and deployment authorization remain separate.
 - **Release gate before trigger:** Confirm exact merged main SHA, required CI/security/build checks, release markers ([release-web] and/or [release-api] for affected projects), and Ignore Build Step behavior. If a gate or quota blocks deployment, stop repeated retries, record the exact error, continue independent work, and retry only after the cause is resolved or the quota window resets.
@@ -78,17 +75,17 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 ## CI provider and required status
 
-- **GitLab Free is the intended automatic CI provider** for tests, builds, browser checks and dependency/security audits. The canonical candidate pipeline is `.gitlab-ci.yml`; GitHub remains canonical for source code, branches, commits, PRs and release SHAs.
-- GitLab's documented direct-webhook path receives GitHub branch Push events and extracts the exact SHA from `TRIGGER_PAYLOAD`. The resolver also accepts PR payloads and fetches the canonical PR ref, but PR delivery through this endpoint is experimental and NOT VERIFIED until observed. Code-execution jobs receive no GitHub credentials.
-- The GitLab pipeline is designed to run backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
-- CircleCI remains configured as the transition fallback and current required gate. Do not retire it until automatic trigger, exact-SHA validation, GitHub status reporting and enforceable merge-control acceptance are verified. GitLab's official external-repository integration and pull mirroring are Premium/Ultimate; the Free path uses a direct trigger webhook.
-- Do not introduce GitHub Actions as a replacement test/build CI provider. Semaphore is retired/non-authoritative.
+- **GitHub Actions is the primary CI provider** for tests, builds, browser checks and dependency/security audits. The canonical pipeline is `.github/workflows/ci.yml`; GitHub remains canonical for source code, branches, commits, PRs and release SHAs.
+- GitHub Actions checks out the exact workflow event SHA and each substantive job verifies `git rev-parse HEAD` equals `GITHUB_SHA`. Workflows use read-only `contents: read` permissions and do not require repository secrets for test/build/security jobs; fork PR code receives no secrets.
+- The GitHub Actions workflow runs backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
+- CircleCI remains configured as the transition fallback and current required gate. Do not retire it until GitHub Actions exact-SHA validation and enforceable main-branch required-check controls are verified.
+- GitLab CI is inactive and Semaphore is retired/non-authoritative; neither is a validation provider.
 - Verify every substantive job and the aggregate on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
 - GitHub private Free cannot enforce required status checks for private repositories under the current plan. Merge control remains BLOCKED / NOT VERIFIED until an enforceable solution is proven; never bypass the gate.
 
 ## Release gates
 
-1. Verify the approved exact-SHA CI provider passes on the exact release candidate SHA, including backend tests, validator tests, frontend build/audit, Playwright browser smoke, and backend container verification. Until GitLab cutover is verified, CircleCI remains the required transition gate.
+1. Verify the approved exact-SHA CI provider passes on the exact release candidate SHA, including backend tests, validator tests, frontend build/audit, Playwright browser smoke, and backend container verification. Until GitHub Actions cutover is verified, CircleCI remains the required transition gate.
 2. Confirm the production database's current Alembic revision and schema without modifying data.
 3. Take a production backup and prove it can be restored into an isolated non-production database; record recovery evidence.
 4. Review migration SQL and run the migration against a disposable PostgreSQL database or restored non-production clone. Only run production migrations after explicit owner approval and the approved backup/rollback plan.
@@ -181,7 +178,7 @@ At task start, record a compact release profile on the existing Notion task / Gi
 - Likely affected applications/projects (Web/API/etc.) and explicitly unaffected projects.
 - Whether GitHub merge to main automatically triggers production deployment for each affected Vercel project; confirm Git integration, production branch, release markers, Ignore Build Step and project root/dependency boundaries.
 - Whether schema/migration, secrets/configuration, paid resources, production data, or external side effects are involved.
-- Applicable GitLab automatic pipeline and/or CircleCI transition workflow, required exact-head jobs, and current provider/quota availability.
+- Applicable GitHub Actions workflow and/or CircleCI transition workflow, required exact-head jobs, and current provider/quota availability.
 - Required owner decisions: merge authorization, production deployment authorization, and any separate production data/migration approval.
 
 Do this once before coding. Recheck only when a relevant configuration, scope, branch/base or release target changes. Never defer deployment-coupling discovery until after the owner says “merge”.
@@ -191,7 +188,7 @@ Do this once before coding. Recheck only when a relevant configuration, scope, b
 Maintain one current packet in the existing task/PR rather than scattering evidence across repeated status messages:
 - PR URL, base SHA, exact head SHA, changed-file inventory and merge-base/divergence.
 - Acceptance criteria mapped to tests and results.
-- GitLab automatic pipeline URL and substantive job outcomes on the exact head (plus CircleCI transition evidence until cutover).
+- GitHub Actions workflow URL and substantive job outcomes on the exact head (plus CircleCI fallback evidence until cutover).
 - Current review submissions and provider/repository-enforced requirements (a comment is not an approval).
 - Diff/security/data-integrity review, migrations and production side-effect assessment.
 - Release profile: affected projects, automatic deployment behavior, release markers/ignore rules, and explicit non-targets.
