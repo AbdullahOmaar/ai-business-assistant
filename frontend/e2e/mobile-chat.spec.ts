@@ -320,6 +320,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         dockItemHeights: Array.from(document.querySelectorAll('.sidebar > .nav-item'))
           .filter(item => getComputedStyle(item).display !== 'none')
           .map(item => item.getBoundingClientRect().height),
+        dockHeight: document.querySelector('.sidebar')?.getBoundingClientRect().height ?? 0,
+        mainBottomPadding: Number.parseFloat(getComputedStyle(document.querySelector('.main')!).paddingBottom),
         headerPageRowHeight: document.querySelector('.mobile-app-header .page-context')?.getBoundingClientRect().height ?? 0,
         headerWorkspaceRowHeight: document.querySelector('.mobile-app-header .workspace-context')?.getBoundingClientRect().height ?? 0,
       };
@@ -332,6 +334,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     for (const height of layout.dockItemHeights) {
       expect(height, `Mobile dock controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
+    expect(layout.mainBottomPadding, 'main content must clear the mobile dock and safe-area allowance').toBeGreaterThanOrEqual(layout.dockHeight);
+    expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(112);
     expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
     expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
@@ -355,6 +359,17 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
   await expect(moreTrigger).toHaveAttribute('aria-controls', 'mobile-more-menu');
   await expect(page.locator('#mobile-more-menu .mobile-more-group')).toHaveCount(5);
+  const moreMenuLayout = await page.locator('#mobile-more-menu').evaluate(element => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    maxHeight: Number.parseFloat(getComputedStyle(element).maxHeight),
+    overflowY: getComputedStyle(element).overflowY,
+    overscrollBehavior: getComputedStyle(element).overscrollBehavior,
+  }));
+  expect(moreMenuLayout.scrollHeight).toBeGreaterThan(moreMenuLayout.clientHeight);
+  expect(moreMenuLayout.maxHeight).toBeLessThanOrEqual(520);
+  expect(moreMenuLayout.overflowY).toBe('auto');
+  expect(moreMenuLayout.overscrollBehavior).toBe('contain');
   await page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
   await expect(moreTrigger).toHaveAttribute('aria-expanded', 'false');
