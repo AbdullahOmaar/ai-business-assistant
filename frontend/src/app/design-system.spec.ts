@@ -59,4 +59,5 @@ test('Home KPIs keep two readable columns at narrow phone widths', () => {
   const narrowMobileRule = css.slice(css.lastIndexOf('@media (max-width: 380px)'));
   assert.match(narrowMobileRule, /\.metric-grid\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(narrowMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
+  assert.match(narrowMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
 });
