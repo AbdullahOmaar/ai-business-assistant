@@ -1,11 +1,11 @@
 ## Permanent Owner directive — GitHub Actions CI migration (effective 2026-11-10)
 
-The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier GitHub Actions-only, GitHub Actions-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
+The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier CircleCI-only, CircleCI-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
 
 - The core required workflow is .github/workflows/ci.yml; it runs backend accounting/tests and PostgreSQL migration validation, knowledge-package validation, frontend unit tests and production build, frontend dependency audit, Playwright browser smoke, backend container/import checks, backup/restore safety guards, and a single aggregate gate.
 - The required aggregate status is CI / all-checks-passed and must be successful on the exact current PR head SHA. Individual substantive jobs must also be inspected; an aggregate cannot conceal skipped or missing required jobs.
 - .github/workflows/dependency-security.yml runs scheduled and manually requested Python/npm dependency audits.
-- GitHub Actions is retired for this repository. Do not trigger, retry, require, or treat GitHub Actions results as current release evidence. The migration removes .github/workflows/ci.yml.
+- CircleCI is retired for this repository. Do not trigger, retry, require, or treat CircleCI results as current release evidence. The migration removes .circleci/config.yml.
 - GitLab CI and Semaphore remain inactive/non-authoritative. Do not substitute them.
 - Use the repository's approved GitHub-hosted runner configuration. Do not enable paid larger runners, purchase credits, or change billing without separate Owner authorization.
 - Provider availability, Actions permissions, quotas, and organization/repository policy still apply. If Actions cannot execute, record the exact cause as NOT RUN/BLOCKED; never claim an unexecuted job passed.
@@ -58,7 +58,7 @@ This changes CI provider authority only. It does not waive tests, security, revi
 - **Aggregate result:**
 - **Checks actually run (commands / environment / timestamps):**
 - **Checks NOT RUN / BLOCKED and exact reason:**
-- **GitGuardian / other supplementary evidence (not a GitHub Actions substitute):**
+- **GitGuardian / other supplementary evidence (not a CI substitute):**
 
 - [ ] All required GitHub Actions substantive jobs and aggregate passed on exact current head.
 - [ ] Failures were investigated and affected checks rerun only after the condition changed.
