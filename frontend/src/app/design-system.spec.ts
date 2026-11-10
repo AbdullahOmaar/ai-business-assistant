@@ -47,7 +47,9 @@ test('KPI card surface is drawn once by the inner component, not the Angular hos
   const inner = css.match(/:root body \.shell \.metric-grid > aba-metric-card \.aba-metric-card\s*\{([^}]*)\}/)?.[1] ?? '';
   assert.ok(hostBlocks.length >= 3, 'base and responsive Angular host rules must remain covered');
   for (const [, selector, declarations] of hostBlocks) {
-    assert.doesNotMatch(declarations, /\b(padding|border|background|box-shadow)\s*:/, selector.trim());
+    const hostPadding = declarations.match(/\bpadding\s*:\s*([^;]+);/)?.[1].trim();
+    assert.ok(!hostPadding || hostPadding === '0' || hostPadding === '0px', selector.trim() + ' must not add host padding');
+    assert.doesNotMatch(declarations, /\b(border|background|box-shadow)\s*:/, selector.trim());
   }
   assert.match(inner, /border:/);
   assert.match(inner, /background:/);
