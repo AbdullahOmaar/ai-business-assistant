@@ -1,15 +1,16 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Owner-approved automatic GitHub → GitLab Free CI transition — effective 2026-11-10
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive and the earlier manual-`SOURCE_SHA` GitLab execution mode. GitHub remains canonical for source code, branches, pull requests and release SHAs. GitLab Free is the intended automatic test/build/security CI provider.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- GitHub Push and Pull Request webhook events trigger GitLab Free's Pipeline Trigger API on the protected GitLab CI-configuration ref. The pipeline extracts the exact source SHA from the webhook payload, validates the repository/event/SHA, fetches the exact canonical GitHub revision, verifies `git rev-parse HEAD`, and reports pending/final status to that same SHA.
+- CircleCI remains configured as a transition fallback and current required validation gate until the automatic GitLab trigger, full exact-SHA pipeline, GitHub status reporting and enforceable merge control are verified. Do not retire CircleCI early.
+- GitHub Actions must not replace GitLab for test/build/security execution. The intended integration is the direct GitHub webhook → GitLab Pipeline Trigger API, not a GitHub Actions build/test workflow.
+- GitLab branch protection must restrict CI-config writes to Maintainers only. Protected, masked least-privilege GitHub tokens are scoped only to source-fetch and status-report jobs; test/build/security jobs receive no GitHub credentials.
+- A direct GitHub webhook secret is not verified as HMAC by GitLab's trigger endpoint. The Pipeline Trigger Token is a bearer credential and must remain secret.
+- The private GitHub Free repository's required status-check/branch-protection enforcement remains BLOCKED / NOT VERIFIED under the current plan constraints. Do not bypass, publicize or pay-upgrade without separate Owner approval.
+- No CI provider retirement, merge, production deployment, DB write/migration, paid provisioning or source ownership transfer is authorized. Existing exact-SHA, maintainer review, security, merge and separate deployment gates remain mandatory.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This is the current Owner decision for the CI migration workstream and supersedes earlier provider/execution-mode statements in this ledger.
 
 # Policy conflict sweep — 2026-11-08
 
@@ -3324,3 +3325,12 @@ Scope: one branch only, `fix/ui-ux-review-batch-2026-10-28`, created from `main`
 - **Owner UI setup still required:** rotate the runner-registration credential; create a GitLab Pipeline Trigger Token; add the GitHub webhook for Pushes + Pull requests using the GitLab trigger endpoint pinned to the protected GitLab config branch; restrict that branch to Maintainers; add protected + masked GitLab variables `GITHUB_READ_TOKEN` (scope `source-fetch`, Contents read-only) and `GITHUB_STATUS_TOKEN` (scope `status-report`, Commit statuses read/write). Never paste tokens into chat.
 - **Review/publication:** The GitHub policy change remains Draft. Full maintainer diff review and separate independent non-author review for canonical controlled policy publication remain outstanding. Notion Master Task Plan records the Owner decision; the mandatory execution standard and Agent Prompt Registry still need a reviewed, versioned policy update/readback.
 - **Next:** finish source-level review of the pipeline and docs; validate YAML using GitLab CI Lint; configure secrets/webhook through Owner UI; observe automatic exact-SHA run and GitHub status; resolve the private GitHub Free merge-control blocker before any CI retirement or merge.
+
+
+## Owner decision supersession — automatic GitHub → GitLab Free CI — 2026-11-10
+
+This later Owner decision explicitly supersedes the earlier manual-`SOURCE_SHA` execution mode. The Owner approved automatic GitHub Push + Pull Request webhook triggering of GitLab Free. GitHub remains canonical for code, PRs and exact source SHAs. GitLab extracts the event SHA, fetches/verifies the exact GitHub commit, executes validation and reports to that same SHA under `gitlab/automatic`. No manual SHA entry is required after one-time setup.
+
+The implementation candidate remains Draft PR #367 / Draft GitLab MR !350 on `ci/gitlab-manual-sha-20261110`. CircleCI remains the current required transition gate until automatic GitLab trigger, exact-SHA full validation, GitHub status reporting and merge control are proven. No retirement, merge, production deploy, production DB operation, paid upgrade or repository-public conversion is authorized.
+
+The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer credential. GitLab's trigger endpoint does not validate GitHub's HMAC webhook signature. The GitLab CI configuration ref must be protected with Maintainer-only push permission because jobs on it can access protected environment-scoped tokens. GitHub private Free merge enforcement remains BLOCKED / NOT VERIFIED until an enforceable solution is separately authorized and proven.
