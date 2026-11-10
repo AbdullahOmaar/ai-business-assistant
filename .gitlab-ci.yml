@@ -57,6 +57,7 @@ resolve-event:
           raise SystemExit("Webhook repository does not match the canonical GitHub repository.")
 
       pull_request = payload.get("pull_request")
+      pr_number = ""
       if isinstance(pull_request, dict):
           event = "pull_request"
           action = payload.get("action", "")
@@ -64,14 +65,18 @@ resolve-event:
           if action not in allowed_actions:
               raise SystemExit(f"Pull request action is not a validation trigger: {action or 'missing'}")
           base_repository = ((pull_request.get("base") or {}).get("repo") or {}).get("full_name", "")
-          head_repository = ((pull_request.get("head") or {}).get("repo") or {}).get("full_name", "")
+          head = pull_request.get("head") or {}
+          head_repository = (head.get("repo") or {}).get("full_name", "")
           if base_repository.casefold() != "abdullahomaar/ai-business-assistant":
               raise SystemExit("Pull request base is not the canonical repository.")
-          if head_repository.casefold() != "abdullahomaar/ai-business-assistant":
-              raise SystemExit("Fork pull requests are not accepted by this secret-bearing pipeline.")
+          if not head_repository:
+              raise SystemExit("Pull request head repository is missing.")
           if (pull_request.get("state") or "").casefold() != "open":
               raise SystemExit("Only open pull requests are validated.")
-          sha = ((pull_request.get("head") or {}).get("sha") or "")
+          pr_number = pull_request.get("number", payload.get("number", ""))
+          if not isinstance(pr_number, int) or pr_number < 1:
+              raise SystemExit("Pull request number is invalid.")
+          sha = head.get("sha") or ""
       else:
           event = "push"
           sha = payload.get("after", "")
@@ -85,9 +90,10 @@ resolve-event:
           raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
 
       with open("event.env", "w", encoding="utf-8") as env_file:
-          env_file.write(f"SOURCE_SHA={sha}\n")
-          env_file.write(f"GITHUB_EVENT={event}\n")
-          env_file.write(f"GITHUB_REPOSITORY={repository}\n")
+          env_file.write(f"SOURCE_SHA={sha}\\n")
+          env_file.write(f"GITHUB_EVENT={event}\\n")
+          env_file.write(f"GITHUB_REPOSITORY={repository}\\n")
+          env_file.write(f"PR_NUMBER={pr_number}\\n")
 
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
@@ -149,6 +155,7 @@ prepare-source:
         printf 'SOURCE_SHA=%s\n' "$SOURCE_SHA"
         printf 'GITHUB_EVENT=%s\n' "${GITHUB_EVENT:-unknown}"
         printf 'GITHUB_REPOSITORY=%s\n' "${GITHUB_REPOSITORY:-}"
+        printf 'PR_NUMBER=%s\n' "${PR_NUMBER:-}"
       } > event.env
       case "$SOURCE_SHA" in
         *[!0-9a-f]*|'') echo "SOURCE_SHA must be 40 lowercase hexadecimal characters." >&2; exit 1 ;;
@@ -170,7 +177,14 @@ prepare-source:
       export GIT_TERMINAL_PROMPT=0
       git -C source init
       git -C source remote add origin https://github.com/AbdullahOmaar/ai-business-assistant.git
-      git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
+      if [ "${GITHUB_EVENT:-push}" = "pull_request" ]; then
+        case "${PR_NUMBER:-}" in
+          ''|*[!0-9]*) echo "PR_NUMBER must be a positive integer for pull request source fetch." >&2; exit 1 ;;
+        esac
+        git -C source fetch --no-tags --depth=1 origin "refs/pull/$PR_NUMBER/head"
+      else
+        git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
+      fi
       git -C source checkout --detach FETCH_HEAD
       actual_sha="$(git -C source rev-parse HEAD)"
       test "$actual_sha" = "$SOURCE_SHA" || {
