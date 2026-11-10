@@ -1,11 +1,11 @@
 ## Permanent Owner directive — GitHub Actions CI migration (effective 2026-11-10)
 
-The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier GitHub Actions-only, GitHub Actions-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
+The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier CircleCI-only, CircleCI-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
 
 - The core required workflow is .github/workflows/ci.yml; it runs backend accounting/tests and PostgreSQL migration validation, knowledge-package validation, frontend unit tests and production build, frontend dependency audit, Playwright browser smoke, backend container/import checks, backup/restore safety guards, and a single aggregate gate.
 - The required aggregate status is CI / all-checks-passed and must be successful on the exact current PR head SHA. Individual substantive jobs must also be inspected; an aggregate cannot conceal skipped or missing required jobs.
 - .github/workflows/dependency-security.yml runs scheduled and manually requested Python/npm dependency audits.
-- GitHub Actions is retired for this repository. Do not trigger, retry, require, or treat GitHub Actions results as current release evidence. The migration removes .github/workflows/ci.yml.
+- CircleCI is retired for this repository. Do not trigger, retry, require, or treat CircleCI results as current release evidence. The migration removes .circleci/config.yml.
 - GitLab CI and Semaphore remain inactive/non-authoritative. Do not substitute them.
 - Use the repository's approved GitHub-hosted runner configuration. Do not enable paid larger runners, purchase credits, or change billing without separate Owner authorization.
 - Provider availability, Actions permissions, quotas, and organization/repository policy still apply. If Actions cannot execute, record the exact cause as NOT RUN/BLOCKED; never claim an unexecuted job passed.
@@ -118,7 +118,7 @@ Never rely only on chat history. If the execution environment ends, leave a chec
 Do not narrate every trivial edit or ask permission between ordinary implementation steps. Send concise progress updates at meaningful milestones. Final reports must separate verified complete, partially complete, not run, and blocked. Prefer evidence (commit SHA, workflow run, test output, deployment version) over claims.
 
 ## Repository-specific validation
-Inspect `.github/workflows/ci.yml` before choosing commands. GitHub Actions defines backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. GitHub Actions is the authoritative CI runner. GitLab and GitHub Actions are not release-validation providers for this project. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
+Inspect `.github/workflows/ci.yml` before choosing commands. GitHub Actions defines backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. GitHub Actions is the authoritative CI runner. CircleCI, GitLab and Semaphore are retired/non-authoritative providers for this project. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
 
 ## Vibe-coding workflow and AI-agent orchestration
 
@@ -227,7 +227,7 @@ This section clarifies the operational detail for every human, specialist chat a
 - GitHub Actions and `.github/workflows/ci.yml` remain the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
 - CircleCI, GitLab and Semaphore are retired/non-authoritative. Semaphore is retired/non-authoritative; its status failure does not negate valid GitHub Actions evidence.
 - Empty status contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
-- The permanent Owner directive effective 2026-11-08 authorizes normal GitHub Actions triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- The Owner's 2026-11-10 decision authorizes normal GitHub Actions triggers and manual workflow dispatch. Provider/quota/permission failures remain NOT RUN/BLOCKED; do not substitute another provider.
 - A documented full maintainer diff review is mandatory. Under the Owner Policy effective 2026-11-06, a second independent reviewer is not a default project gate; require one only when provider-enforced protection or a separate explicit Owner-approved security policy requires it. This ordinary merge default does NOT waive independent review before canonical controlled Project Knowledge is published or updated: that publication gate is separate, and the reviewer must not be the content author, per `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`.
 - Merge only from a non-Draft READY PR after exact-head checks, maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus explicit Owner merge authorization. `mergeable=true` is not approval.
 - Merge authorization and production deployment authorization remain separate. Disclose auto-deployment coupling before merge; get the required deployment authorization before any merge that automatically deploys.
