@@ -1,25 +1,23 @@
-name: Verify backend and frontend
+name: CI
 
 on:
   pull_request:
-    branches: ["**"]
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/**"
   push:
-    branches: ["main", "feat/**"]
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/**"
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-\${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  backend:
+  backend-accounting:
+    name: CI / backend-accounting
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
@@ -34,34 +32,172 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-    defaults:
-      run:
-        working-directory: backend
     env:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/ai_business_assistant_test
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/ai_business_assistant_test
+      CI_ALLOW_DATABASE_SCHEMA_TESTS: "true"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt
-      - run: pytest -q
-      - name: Validate migrations against PostgreSQL
-        run: alembic upgrade head
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend test and audit dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt pip-audit
+      - name: Apply migrations and check schema drift against PostgreSQL
+        working-directory: backend
+        run: |
+          python -m alembic upgrade head
+          python -m alembic current
+          python -m alembic check
+      - name: Run full backend and financial regression suite
+        working-directory: backend
+        run: python -m pytest -q
+      - name: Validate shared project knowledge package and regression tests
+        run: |
+          python scripts/validate_project_knowledge.py
+          python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
+      - name: Verify offline migration SQL generation
+        working-directory: backend
+        run: python -m alembic upgrade head --sql > "$RUNNER_TEMP/alembic-upgrade.sql"
+      - name: Audit Python dependencies
+        run: pip-audit -r backend/requirements.txt
 
-  frontend:
+  frontend-unit-tests:
+    name: CI / frontend-unit-tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm install
-      - name: Run frontend unit tests
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Run frontend unit and source regression tests
+        working-directory: frontend
         run: npm test
-      # Dependency security is audited in the dedicated workflow.
-      - run: npm run build
+
+  frontend-production-build:
+    name: CI / frontend-production-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Generate build metadata
+        working-directory: frontend
+        run: npm run prebuild
+      - name: Compile optimized production frontend
+        working-directory: frontend
+        run: npx ng build
+
+  frontend-dependency-audit:
+    name: CI / frontend-dependency-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+      - name: Audit npm dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  frontend-browser-smoke:
+    name: CI / frontend-browser-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install frontend dependencies and run Chromium E2E
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
+          npx playwright --version
+          npx playwright test
+      - name: Upload browser test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-browser-smoke-results
+          path: frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  backend-container:
+    name: CI / backend-container
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify backup/restore safety guards without database access
+        run: |
+          bash -n scripts/backup-restore-drill.sh
+          bash -n scripts/backup-restore-drill.test.sh
+          bash scripts/backup-restore-drill.test.sh
+      - name: Build backend container
+        run: docker build --pull --tag ai-business-assistant-backend:ci ./backend
+      - name: Verify FastAPI application import from container
+        run: docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
+
+  all-checks-passed:
+    name: CI / all-checks-passed
+    if: always()
+    needs:
+      - backend-accounting
+      - frontend-unit-tests
+      - frontend-production-build
+      - frontend-dependency-audit
+      - frontend-browser-smoke
+      - backend-container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every substantive CI job to succeed
+        env:
+          BACKEND_ACCOUNTING: \${{ needs.backend-accounting.result }}
+          FRONTEND_UNIT_TESTS: \${{ needs.frontend-unit-tests.result }}
+          FRONTEND_PRODUCTION_BUILD: \${{ needs.frontend-production-build.result }}
+          FRONTEND_DEPENDENCY_AUDIT: \${{ needs.frontend-dependency-audit.result }}
+          FRONTEND_BROWSER_SMOKE: \${{ needs.frontend-browser-smoke.result }}
+          BACKEND_CONTAINER: \${{ needs.backend-container.result }}
+        run: |
+          printf 'backend-accounting=%s\\n' "$BACKEND_ACCOUNTING"
+          printf 'frontend-unit-tests=%s\\n' "$FRONTEND_UNIT_TESTS"
+          printf 'frontend-production-build=%s\\n' "$FRONTEND_PRODUCTION_BUILD"
+          printf 'frontend-dependency-audit=%s\\n' "$FRONTEND_DEPENDENCY_AUDIT"
+          printf 'frontend-browser-smoke=%s\\n' "$FRONTEND_BROWSER_SMOKE"
+          printf 'backend-container=%s\\n' "$BACKEND_CONTAINER"
+          test "$BACKEND_ACCOUNTING" = success
+          test "$FRONTEND_UNIT_TESTS" = success
+          test "$FRONTEND_PRODUCTION_BUILD" = success
+          test "$FRONTEND_DEPENDENCY_AUDIT" = success
+          test "$FRONTEND_BROWSER_SMOKE" = success
+          test "$BACKEND_CONTAINER" = success
