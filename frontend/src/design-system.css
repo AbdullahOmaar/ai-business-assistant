@@ -813,3 +813,22 @@
     box-shadow: none;
   }
 }
+
+/* At the narrowest supported phone width, keep the Home KPIs scannable in two columns. */
+@media (max-width: 380px) {
+  :root body .shell .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  :root body .shell .metric-grid > .metric,
+  :root body .shell .metric-grid > aba-metric-card {
+    min-height: 126px;
+    padding: 12px;
+  }
+
+  :root body .shell .metric-grid .metric strong,
+  :root body .shell .metric-grid aba-metric-card strong {
+    font-size: 17px;
+  }
+}

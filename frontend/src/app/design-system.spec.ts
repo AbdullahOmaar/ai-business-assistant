@@ -43,8 +43,7 @@ test('the complete Home dashboard screen uses the new hero, metric and quick-acc
     '.dashboard-trust-note', '.metric-grid', '.home-shortcut-list',
     '.home-shortcut-link', '.module-directory-summary',
   ]) {
-    assert.ok(app.includes(selector.replace(/\./g, 'class="').split(' ')[0]) || css.includes(selector),
-      'missing Home dashboard treatment: ' + selector);
+    assert.ok(app.includes(selector.slice(1)), 'missing Home dashboard markup: ' + selector);
     assert.ok(css.includes(selector), 'missing dashboard styling: ' + selector);
   }
 });
@@ -54,4 +53,10 @@ test('mobile, reduced-motion and high-contrast behavior remain defined', () => {
   assert.match(css, /@media\s*\(max-width:\s*380px\)/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
   assert.match(css, /forced-colors:\s*active/);
+});
+
+test('Home KPIs keep two readable columns at narrow phone widths', () => {
+  const narrowMobileRule = css.slice(css.lastIndexOf('@media (max-width: 380px)'));
+  assert.match(narrowMobileRule, /\.metric-grid\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(narrowMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
 });
