@@ -619,7 +619,7 @@ async function openInvoices(page: Page): Promise<void> {
   await expect(page.locator('#invoices-section-heading')).toBeVisible();
 }
 
-test('OWNER creates and edits a mixed product/service draft using server-returned totals', async ({ page }) => {
+test('OWNER creates and edits a mixed product/service draft using server-returned totals', async ({ page }, testInfo) => {
   const harness = await setupOwner(page);
   await openInvoices(page);
 
@@ -643,7 +643,21 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await serviceLine.getByLabel('Unit price (EGP)').fill('50.00');
   await serviceLine.getByLabel('Quantity').fill('1');
   await editor.getByLabel('Invoice notes (optional)').fill('Call before delivery');
-  await editor.getByRole('button', { name: 'Save draft', exact: true }).click();
+
+  // Capture the actual editor surface in both directions at narrow phone widths.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-ltr.png'), fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('.user-area').getByRole('button', { name: 'العربية', exact: true }).click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath('invoice-editor-320-rtl.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-rtl.png'), fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('.user-area').getByRole('button', { name: 'English', exact: true }).click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
 
   await expect(editor.locator('.summary-total strong')).toHaveText('777.77 EGP');
   expect(harness.invoiceCreateRequests).toHaveLength(1);
