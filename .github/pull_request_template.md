@@ -90,14 +90,14 @@ This directive changes CI execution permission only. It does not waive tests, se
 - **Document/package being published:**
 - **Candidate version and DRAFT/APPROVED state:**
 - **Maintainer / Master full-diff self-review (exact SHA + findings):**
-- **Independent non-author reviewer (required for controlled/security/architecture/knowledge changes; N/A for routine PRs):**
+- **Separate independent reviewer:** NOT REQUIRED by project policy for any change. Record the accountable maintainer/Project Master full diff self-review on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
 - **Independent findings and disposition (when required):**
 - **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
 - **Canonical source SHA / PR:**
 - **Project Sources filenames, upload and readback evidence:**
 - [ ] Maintainer self-review is complete and recorded.
-- [ ] Independent non-author review is complete for controlled/security/architecture/knowledge changes (N/A for routine PRs).
+- [ ] Accountable maintainer/Project Master full diff self-review is documented for this exact candidate SHA; any formal GitHub branch-protection approval actually enforced is satisfied.
 - [ ] Authorized publication decision exists.
 - [ ] All five files are one consistent approved version set.
 - [ ] Project Sources UI upload and readback are verified, or publication is explicitly NOT DONE.
