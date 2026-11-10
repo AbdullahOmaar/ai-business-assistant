@@ -21,7 +21,7 @@ superseded_by: none
 
 # Architecture & Engineering Standards
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback.nd accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
 
 ## 1. Accepted V0 architecture
 
