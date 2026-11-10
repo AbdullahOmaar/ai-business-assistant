@@ -1,0 +1,815 @@
+/*
+ * AIBA Design System — Owner-directed visual direction, 2026-11-11.
+ * This layer is intentionally separate from styles.css while PR #363 owns that path.
+ * It standardizes presentation only; no component state, API, permission, or domain behavior.
+ */
+
+:root {
+  /* Brand + surface aliases */
+  --aiba-brand: #0f766e;
+  --aiba-brand-strong: #115e59;
+  --aiba-brand-bright: #0d9488;
+  --aiba-brand-soft: #ecfdf5;
+  --aiba-brand-line: #99f6e4;
+  --aiba-ink: #172033;
+  --aiba-ink-soft: #344256;
+  --aiba-muted: #64748b;
+  --aiba-muted-soft: #94a3b8;
+  --aiba-page: #f4f7fb;
+  --aiba-surface: #ffffff;
+  --aiba-surface-raised: #fbfdff;
+  --aiba-surface-tint: #f6fafb;
+  --aiba-line: #e2e8f0;
+  --aiba-line-strong: #cbd5e1;
+  --aiba-focus: #2563eb;
+  --aiba-nav: #101b2c;
+  --aiba-nav-raised: #1b2d42;
+  --aiba-nav-accent: #5eead4;
+
+  /* Typography — system-first, no external font request or startup dependency. */
+  --aiba-font-sans: Inter, "Noto Sans Arabic", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --aiba-text-xs: 12px;
+  --aiba-text-sm: 13px;
+  --aiba-text-md: 14px;
+  --aiba-text-lg: 16px;
+  --aiba-text-xl: 19px;
+  --aiba-heading-sm: 22px;
+  --aiba-heading-md: 28px;
+  --aiba-heading-lg: 32px;
+  --aiba-leading-tight: 1.25;
+  --aiba-leading-normal: 1.5;
+  --aiba-leading-relaxed: 1.65;
+
+  /* Consistent 4px spacing scale. */
+  --aiba-space-1: 4px;
+  --aiba-space-2: 8px;
+  --aiba-space-3: 12px;
+  --aiba-space-4: 16px;
+  --aiba-space-5: 20px;
+  --aiba-space-6: 24px;
+  --aiba-space-8: 32px;
+  --aiba-space-10: 40px;
+  --aiba-space-12: 48px;
+
+  /* Control, card and overlay geometry. */
+  --aiba-control-sm: 38px;
+  --aiba-control-md: 44px;
+  --aiba-control-lg: 48px;
+  --aiba-radius-control: 11px;
+  --aiba-radius-card: 16px;
+  --aiba-radius-panel: 20px;
+  --aiba-radius-pill: 999px;
+  --aiba-shadow-card: 0 2px 8px rgb(15 23 42 / 4%), 0 12px 28px rgb(15 23 42 / 3%);
+  --aiba-shadow-card-hover: 0 8px 22px rgb(15 23 42 / 7%), 0 18px 38px rgb(15 23 42 / 5%);
+  --aiba-shadow-popover: 0 18px 48px rgb(15 23 42 / 15%);
+  --aiba-motion: 160ms cubic-bezier(.2, 0, 0, 1);
+}
+
+/* App-level rhythm and typography. */
+:root body,
+:root body .shell {
+  font-family: var(--aiba-font-sans);
+  color: var(--aiba-ink);
+}
+
+:root body .shell {
+  background: var(--aiba-page);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+:root body .shell .main {
+  min-width: 0;
+  width: 100%;
+}
+
+:root body .shell .topbar h1,
+:root body .shell .mobile-page-heading h1 {
+  color: var(--aiba-ink);
+  font-size: clamp(22px, 2.3vw, var(--aiba-heading-lg));
+  font-weight: 760;
+  line-height: var(--aiba-leading-tight);
+  letter-spacing: -.035em;
+}
+
+:root body .shell .section-head h2,
+:root body .shell .panel h2,
+:root body .shell .panel h3 {
+  color: var(--aiba-ink);
+  font-weight: 720;
+  letter-spacing: -.02em;
+  line-height: var(--aiba-leading-tight);
+}
+
+:root body .shell .section-head p,
+:root body .shell .muted,
+:root body .shell .footnote {
+  color: var(--aiba-muted);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+/* Navigation: deep navy frame with a restrained teal active state. */
+:root body .shell .sidebar {
+  background: linear-gradient(180deg, var(--aiba-nav) 0%, #0b1422 100%);
+  border-inline-start: 1px solid rgb(148 163 184 / 12%);
+}
+
+:root body .shell .nav-item {
+  min-height: 44px;
+  margin-block: 2px;
+  border-radius: 11px;
+  transition: background var(--aiba-motion), color var(--aiba-motion), transform var(--aiba-motion);
+}
+
+:root body .shell .nav-item:hover:not(.active) {
+  background: rgb(148 163 184 / 10%);
+  color: #ffffff;
+}
+
+:root body .shell .nav-item.active {
+  background: linear-gradient(115deg, #145b62 0%, #174c65 100%);
+  color: #ffffff;
+  box-shadow: inset 3px 0 0 var(--aiba-nav-accent);
+}
+
+:root body .shell .brand-mark {
+  box-shadow: 0 8px 24px rgb(13 148 136 / 18%);
+}
+
+/* Primary and secondary action hierarchy. */
+:root body .shell button.primary,
+:root body .shell .primary[type="button"],
+:root body .shell .primary[type="submit"] {
+  min-height: var(--aiba-control-md);
+  padding: 10px 17px;
+  border: 1px solid var(--aiba-brand);
+  border-radius: var(--aiba-radius-control);
+  background: linear-gradient(135deg, var(--aiba-brand) 0%, var(--aiba-brand-bright) 100%);
+  color: #ffffff;
+  font-size: var(--aiba-text-sm);
+  font-weight: 720;
+  line-height: 1.25;
+  box-shadow: 0 3px 9px rgb(15 118 110 / 15%);
+  transition: box-shadow var(--aiba-motion), filter var(--aiba-motion), transform var(--aiba-motion);
+}
+
+:root body .shell button.primary:hover:not(:disabled),
+:root body .shell .primary[type="button"]:hover:not(:disabled),
+:root body .shell .primary[type="submit"]:hover:not(:disabled) {
+  filter: saturate(1.08) brightness(.98);
+  box-shadow: 0 6px 16px rgb(15 118 110 / 20%);
+  transform: translateY(-1px);
+}
+
+:root body .shell button.secondary,
+:root body .shell .secondary[type="button"] {
+  min-height: var(--aiba-control-md);
+  padding: 9px 14px;
+  border: 1px solid var(--aiba-line-strong);
+  border-radius: var(--aiba-radius-control);
+  background: var(--aiba-surface);
+  color: var(--aiba-ink-soft);
+  font-size: var(--aiba-text-sm);
+  font-weight: 650;
+  line-height: 1.3;
+  transition: background var(--aiba-motion), border-color var(--aiba-motion), box-shadow var(--aiba-motion);
+}
+
+:root body .shell button.secondary:hover:not(:disabled),
+:root body .shell .secondary[type="button"]:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  box-shadow: 0 2px 7px rgb(15 23 42 / 5%);
+}
+
+:root body .shell button:disabled,
+:root body .shell input:disabled,
+:root body .shell select:disabled,
+:root body .shell textarea:disabled {
+  cursor: not-allowed;
+  opacity: .62;
+}
+
+:root body .shell button:focus-visible,
+:root body .shell a:focus-visible,
+:root body .shell input:focus-visible,
+:root body .shell select:focus-visible,
+:root body .shell textarea:focus-visible,
+:root body .shell summary:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 75%);
+  outline-offset: 3px;
+}
+
+/* Fields: consistent label, value, placeholder, error and focus treatment. */
+:root body .shell label {
+  min-width: 0;
+  color: var(--aiba-ink-soft);
+  font-size: var(--aiba-text-sm);
+  font-weight: 650;
+  line-height: var(--aiba-leading-normal);
+}
+
+:root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell select,
+:root body .shell textarea {
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--aiba-control-lg);
+  padding: 11px 13px;
+  border: 1px solid var(--aiba-line-strong);
+  border-radius: var(--aiba-radius-control);
+  background: var(--aiba-surface);
+  color: var(--aiba-ink);
+  font-family: var(--aiba-font-sans);
+  font-size: var(--aiba-text-md);
+  font-weight: 450;
+  line-height: var(--aiba-leading-normal);
+  box-shadow: inset 0 1px 1px rgb(15 23 42 / 2%);
+  transition: background var(--aiba-motion), border-color var(--aiba-motion), box-shadow var(--aiba-motion);
+}
+
+:root body .shell textarea {
+  min-height: 104px;
+  padding-block: 12px;
+  resize: vertical;
+}
+
+:root body .shell input::placeholder,
+:root body .shell textarea::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+:root body .shell input:hover:not(:disabled):not(:focus-visible),
+:root body .shell select:hover:not(:disabled):not(:focus-visible),
+:root body .shell textarea:hover:not(:disabled):not(:focus-visible) {
+  border-color: #94a3b8;
+}
+
+:root body .shell input:focus-visible,
+:root body .shell select:focus-visible,
+:root body .shell textarea:focus-visible {
+  border-color: var(--aiba-focus);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 12%);
+}
+
+:root body .shell input[aria-invalid="true"],
+:root body .shell select[aria-invalid="true"],
+:root body .shell textarea[aria-invalid="true"] {
+  border-color: #dc6464;
+  background: #fffafa;
+}
+
+:root body .shell input[type="checkbox"],
+:root body .shell input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--aiba-brand);
+  flex: 0 0 auto;
+}
+
+:root body .shell .field-error {
+  color: #b42318;
+  font-size: var(--aiba-text-xs);
+  font-weight: 600;
+  line-height: var(--aiba-leading-relaxed);
+}
+
+/* Form groups and filters share the same surface and spacing rules. */
+:root body .shell form.stack {
+  display: grid;
+  gap: var(--aiba-space-4);
+}
+
+:root body .shell form.stack > label,
+:root body .shell form.inline-form:not(.expense-form):not(.invoice-form) > label {
+  display: grid;
+  align-content: start;
+  gap: var(--aiba-space-2);
+}
+
+:root body .shell form.inline-form:not(.expense-form):not(.invoice-form) {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  align-items: end;
+  gap: var(--aiba-space-3);
+  padding: var(--aiba-space-4);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell .list-tools,
+:root body .shell .customer-invoice-filter,
+:root body .shell .invoice-controls,
+:root body .shell .filter-bar,
+:root body .shell .operations-search {
+  min-width: 0;
+  gap: var(--aiba-space-2);
+  padding: var(--aiba-space-3);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell .list-tools {
+  margin-block: var(--aiba-space-4);
+}
+
+:root body .shell .list-tools input,
+:root body .shell .list-tools select,
+:root body .shell .customer-invoice-filter input,
+:root body .shell .customer-invoice-filter select,
+:root body .shell .invoice-controls input,
+:root body .shell .invoice-controls select,
+:root body .shell .filter-bar input,
+:root body .shell .filter-bar select {
+  min-width: 0;
+  flex: 1 1 190px;
+}
+
+/* Cards and KPI blocks: quiet surface, stronger hierarchy, shared geometry. */
+:root body .shell section.panel,
+:root body .shell .workspace-bar,
+:root body .shell .invoice-preview,
+:root body .shell .chat-log,
+:root body .shell .assistant-suggestions,
+:root body .shell .csv-import-panel,
+:root body .shell .statement-panel {
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-panel);
+  background: var(--aiba-surface);
+  box-shadow: var(--aiba-shadow-card);
+}
+
+:root body .shell section.panel {
+  padding: clamp(16px, 2vw, 24px);
+}
+
+:root body .shell section.panel + section.panel {
+  margin-block-start: var(--aiba-space-4);
+}
+
+:root body .shell .metric-grid {
+  gap: var(--aiba-space-3);
+}
+
+:root body .shell .metric-grid > .metric,
+:root body .shell .metric-grid > aba-metric-card {
+  min-width: 0;
+  min-height: 148px;
+  padding: var(--aiba-space-5);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: linear-gradient(180deg, #ffffff 0%, var(--aiba-surface-raised) 100%);
+  box-shadow: var(--aiba-shadow-card);
+  transition: border-color var(--aiba-motion), box-shadow var(--aiba-motion), transform var(--aiba-motion);
+}
+
+:root body .shell .metric-grid > .metric:hover,
+:root body .shell .metric-grid > aba-metric-card:hover {
+  border-color: #c5d8d7;
+  box-shadow: var(--aiba-shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+:root body .shell .metric-grid .metric > span,
+:root body .shell .metric-grid aba-metric-card [metricLabel] {
+  display: block;
+  margin-block-end: 10px;
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  font-weight: 680;
+  line-height: var(--aiba-leading-normal);
+}
+
+:root body .shell .metric-grid .metric strong,
+:root body .shell .metric-grid aba-metric-card strong {
+  color: var(--aiba-ink);
+  font-size: clamp(18px, 1.9vw, 24px);
+  font-weight: 760;
+  line-height: 1.25;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+:root body .shell .metric-grid .metric small,
+:root body .shell .metric-grid aba-metric-card small {
+  margin-block-start: var(--aiba-space-2);
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell .count,
+:root body .shell .version-pill {
+  border: 1px solid #cfe9e4;
+  border-radius: var(--aiba-radius-pill);
+  background: #effaf7;
+  color: #115e59;
+  font-size: var(--aiba-text-xs);
+  font-weight: 720;
+}
+
+/* Full Home dashboard treatment: the first complete screen using the final direction. */
+:root body .shell .dashboard-period {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: var(--aiba-space-4);
+  min-width: 0;
+  margin-block: 0 var(--aiba-space-4);
+  padding: clamp(20px, 3vw, 30px);
+  overflow: hidden;
+  border: 1px solid #244b62;
+  border-radius: var(--aiba-radius-panel);
+  background:
+    radial-gradient(circle at 9% 15%, rgb(94 234 212 / 17%), transparent 31%),
+    linear-gradient(125deg, #101b2c 0%, #173b50 56%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 34px rgb(15 23 42 / 16%);
+}
+
+:root body .shell .dashboard-period::after {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: -90px;
+  inset-inline-end: -70px;
+  width: 250px;
+  height: 250px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(94 234 212 / 10%), transparent 67%);
+  content: "";
+  pointer-events: none;
+}
+
+:root body .shell .dashboard-period__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--aiba-space-3);
+}
+
+:root body .shell .dashboard-period__title {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(21px, 2.2vw, 28px);
+  font-weight: 760;
+  line-height: var(--aiba-leading-tight);
+  letter-spacing: -.03em;
+}
+
+:root body .shell .dashboard-period__heading > strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--aiba-radius-pill);
+  background: rgb(255 255 255 / 10%);
+  color: #eafffb;
+  font-size: var(--aiba-text-xs);
+  font-weight: 680;
+  white-space: nowrap;
+}
+
+:root body .shell .dashboard-period__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aiba-space-2) var(--aiba-space-6);
+  color: #d7e7ed;
+  font-size: var(--aiba-text-sm);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell .dashboard-period__details bdi {
+  color: #ffffff;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+:root body .shell .dashboard-trust-note {
+  display: grid;
+  gap: var(--aiba-space-2);
+  margin-block: var(--aiba-space-4) 0;
+  padding: var(--aiba-space-4) var(--aiba-space-5);
+  border: 1px solid #c6e8e1;
+  border-radius: var(--aiba-radius-card);
+  background: linear-gradient(135deg, #effaf7 0%, #f6fbfa 100%);
+  color: #155e59;
+  font-size: var(--aiba-text-sm);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell .dashboard-trust-note strong {
+  color: #115e59;
+  font-size: var(--aiba-text-sm);
+  font-weight: 760;
+}
+
+/* Quick access is a real action grid, not a row of generic text buttons. */
+:root body .shell .module-launcher,
+:root body .shell .module-directory {
+  margin-block-start: var(--aiba-space-4);
+}
+
+:root body .shell .home-shortcut-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--aiba-space-3);
+  margin-block-start: var(--aiba-space-4);
+}
+
+:root body .shell .home-shortcut-link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--aiba-space-3);
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 13px;
+  border: 1px solid var(--aiba-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f9fcfc);
+  color: var(--aiba-ink);
+  font-size: var(--aiba-text-sm);
+  font-weight: 700;
+  text-align: start;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 3%);
+  transition: border-color var(--aiba-motion), background var(--aiba-motion), box-shadow var(--aiba-motion), transform var(--aiba-motion);
+}
+
+:root body .shell .home-shortcut-link:hover {
+  border-color: #9dcac3;
+  background: #f1faf8;
+  box-shadow: var(--aiba-shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+:root body .shell .home-shortcut-link__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d0e9e4;
+  border-radius: 11px;
+  background: #eaf8f4;
+  color: #0f766e;
+  font-size: 16px;
+}
+
+:root body .shell .home-shortcut-link__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: var(--aiba-leading-normal);
+}
+
+:root body .shell .module-directory-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--aiba-space-3);
+  min-height: 64px;
+  padding: var(--aiba-space-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+:root body .shell .module-directory-summary::-webkit-details-marker {
+  display: none;
+}
+
+:root body .shell .module-directory-summary__copy {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+:root body .shell .module-directory-summary__title {
+  color: var(--aiba-ink);
+  font-size: var(--aiba-text-lg);
+  font-weight: 740;
+}
+
+:root body .shell .module-directory-summary__copy small {
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell .module-directory-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--aiba-brand-soft);
+  color: var(--aiba-brand-strong);
+  font-size: 18px;
+  transition: transform var(--aiba-motion);
+}
+
+:root body .shell .module-directory-disclosure[open] .module-directory-toggle {
+  transform: rotate(45deg);
+}
+
+/* Data tables: clear headers and touch-scroll containment without changing data shape. */
+:root body .shell .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 3%);
+  -webkit-overflow-scrolling: touch;
+}
+
+:root body .shell .table-wrap table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--aiba-ink);
+  font-size: var(--aiba-text-sm);
+}
+
+:root body .shell .table-wrap thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  padding: 13px 14px;
+  border-block-end: 1px solid var(--aiba-line);
+  background: #f5f9fa;
+  color: #475569;
+  font-size: var(--aiba-text-xs);
+  font-weight: 760;
+  line-height: var(--aiba-leading-normal);
+  text-align: start;
+  white-space: nowrap;
+}
+
+:root body .shell .table-wrap tbody td {
+  padding: 13px 14px;
+  border-block-end: 1px solid #edf1f5;
+  color: var(--aiba-ink-soft);
+  line-height: var(--aiba-leading-normal);
+  vertical-align: middle;
+}
+
+:root body .shell .table-wrap tbody tr:last-child td {
+  border-block-end: 0;
+}
+
+:root body .shell .table-wrap tbody tr:hover {
+  background: #f7fbfa;
+}
+
+:root body .shell .table-wrap td bdi,
+:root body .shell .table-wrap td [dir="ltr"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* List cards and state surfaces complete the same visual language. */
+:root body .shell .list-row {
+  gap: var(--aiba-space-3);
+  border-color: var(--aiba-line);
+  border-radius: 14px;
+  background: var(--aiba-surface);
+}
+
+:root body .shell .list-row strong {
+  color: var(--aiba-ink);
+  font-size: var(--aiba-text-sm);
+  font-weight: 720;
+}
+
+:root body .shell .list-row small {
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell .notice,
+:root body .shell .form-validation,
+:root body .shell .expense-validation {
+  border-radius: 14px;
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell aba-state-message {
+  display: block;
+  margin-block: var(--aiba-space-3);
+}
+
+/* Responsive behavior: preserve information hierarchy and avoid cramped controls. */
+@media (max-width: 900px) {
+  :root body .shell .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  :root body .shell .main {
+    padding-inline: 14px;
+  }
+
+  :root body .shell section.panel {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  :root body .shell .dashboard-period {
+    gap: 13px;
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  :root body .shell .dashboard-period__details {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  :root body .shell .home-shortcut-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  :root body .shell .home-shortcut-link {
+    min-height: 54px;
+    padding: 9px 10px;
+  }
+
+  :root body .shell form.inline-form:not(.expense-form):not(.invoice-form) {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 13px;
+  }
+
+  :root body .shell .list-tools,
+  :root body .shell .customer-invoice-filter,
+  :root body .shell .invoice-controls,
+  :root body .shell .filter-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root body .shell .list-tools input,
+  :root body .shell .list-tools select,
+  :root body .shell .list-tools button {
+    width: 100%;
+  }
+
+  :root body .shell .table-wrap table {
+    min-width: 560px;
+  }
+}
+
+@media (max-width: 380px) {
+  :root body .shell .main {
+    padding-inline: 11px;
+  }
+
+  :root body .shell .dashboard-period {
+    padding: 16px;
+  }
+
+  :root body .shell .metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root body .shell .home-shortcut-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root body .shell section.panel {
+    padding: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root body .shell *,
+  :root body .shell *::before,
+  :root body .shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :root body .shell button:focus-visible,
+  :root body .shell a:focus-visible,
+  :root body .shell input:focus-visible,
+  :root body .shell select:focus-visible,
+  :root body .shell textarea:focus-visible,
+  :root body .shell summary:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 3px;
+    box-shadow: none;
+  }
+}
