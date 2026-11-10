@@ -79,10 +79,11 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
     .release-guide-current-badge{display:inline-flex;align-items:center;padding:7px 9px;border-radius:999px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary,#0f766e);font-size:10px;font-weight:700;white-space:nowrap}
     .release-guide-groups,.release-history{display:grid;gap:12px;margin:12px 0 22px;min-width:0}
     .release-feature-group,.release-version{border:1px solid var(--aba-color-border,#dbe4ea);border-radius:13px;background:var(--aba-color-surface,#fff);min-width:0;overflow:hidden}
-    .release-feature-group>summary,.release-version>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;list-style:none;cursor:pointer;padding:13px 14px;min-height:48px}
+    .release-feature-group>summary,.release-version>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;list-style:none;cursor:pointer;padding:13px 14px;min-height:52px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .release-feature-group>summary::-webkit-details-marker,.release-version>summary::-webkit-details-marker{display:none}
-    .release-feature-group>summary:after,.release-version>summary:after{content:'＋';margin-inline-start:auto;display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:8px;background:var(--aba-color-surface-hover,#f1f5f9);color:var(--aba-color-text-muted,#334155)}
-    .release-feature-group[open]>summary:after,.release-version[open]>summary:after{content:'−'}
+    .release-feature-group>summary:after,.release-version>summary:after{content:'⌄';margin-inline-start:auto;display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:9px;background:var(--aba-color-surface-hover,#f1f5f9);color:var(--aba-color-text-muted,#334155);font-size:19px;line-height:1;transition:transform 160ms ease}
+    .release-feature-group[open]>summary,.release-version[open]>summary{background:var(--aba-color-surface-subtle,#f8fafc)}
+    .release-feature-group[open]>summary:after,.release-version[open]>summary:after{transform:rotate(180deg)}
     .release-feature-group>summary strong{font-size:14px;flex:1 1 160px}
     .release-feature-group>summary small{flex:1 1 100%;font-size:12px;color:var(--aba-color-text-secondary,#64748b);line-height:1.5;overflow-wrap:anywhere}
     .release-feature-group ul,.release-version ul{margin:0;padding-block-end:14px;padding-inline-start:32px;padding-inline-end:0;display:grid;gap:10px;font-size:13px;line-height:1.55}
@@ -90,6 +91,7 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
     .release-feature-group li span{display:block;margin-top:2px;color:var(--aba-color-text-muted,#475569);font-size:12px;overflow-wrap:anywhere}
     .release-guide-footnote{margin:15px 0 0;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;line-height:1.6}
     .release-guide-panel summary:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:-2px}
+    @media(prefers-reduced-motion:reduce){.release-feature-group>summary:after,.release-version>summary:after{transition:none}}
     .release-history-title{margin-top:26px}
     @media(max-width:600px){
       .release-guide-panel{padding:16px}
