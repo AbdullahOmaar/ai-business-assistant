@@ -445,9 +445,9 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(chatLog).toHaveAttribute('aria-live', 'polite');
   const composer = page.getByRole('textbox', { name: /سؤالك للمساعد الذكي|Your question for the AI assistant/ });
   const sendButton = page.getByRole('button', { name: /إرسال|Send/ });
-  const longChatPrompt = Array.from({ length: 12 }, (_, index =>
+  const longChatPrompt = Array.from({ length: 12 }, (_, index) =>
     `سؤال ${index + 1}: راجع الفواتير المستحقة والتحصيلات المسجلة والمصروفات خلال الفترة المحددة، ووضّح مصدر كل رقم وما إذا كان المبلغ مسددًا أو ما زال مستحقًا.`
-  )).join('\\n');
+  ).join('\n');
   expect(longChatPrompt.length).toBeLessThanOrEqual(2000);
   await composer.fill(longChatPrompt);
   await sendButton.click();
