@@ -19,7 +19,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     'الخطوة التالية: حدّد الفترة المطلوبة، ثم راجع الفواتير والمدفوعات والمصروفات كلًّا في مصدره. إذا كانت البيانات ناقصة، أكمل التسجيل أولًا وأعد تشغيل الملخص.',
     'ملاحظة: هذه إجابة توضيحية طويلة لاختبار عرض النص والتمرير على الهاتف؛ لا تمثل توصية مالية أو تغييرًا في سجلات النشاط.',
     'نهاية الملخص: لا توجد سجلات إضافية في العينة الحالية، ويمكنك متابعة المراجعة من الأقسام المرتبطة دون مغادرة مساحة العمل.'
-  ].join('\\n\\n');
+  ].join('\n\n');
   page.on('pageerror', error => uncaughtErrors.push(error.message));
   await page.addInitScript(() => {
     window.localStorage.setItem('aba-language', 'ar');
