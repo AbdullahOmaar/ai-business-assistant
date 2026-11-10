@@ -71,6 +71,10 @@ test('print refuses stale invoice details and closes the popup before writing HT
   const statusCheck = method.indexOf("if (detail.status !== 'issued')");
   const htmlWrite = method.indexOf('printWindow.document.write(');
   assert.ok(staleCheck >= 0 && statusCheck > staleCheck && htmlWrite > statusCheck);
-  assert.match(method.slice(staleCheck, statusCheck), /printWindow\.close\(\)/);
+  const staleBranch = method.slice(staleCheck, statusCheck);
+  const nonIssuedBranch = method.slice(statusCheck, htmlWrite);
+  assert.match(staleBranch, /printWindow\.close\(\);\s*return;/);
+  assert.match(nonIssuedBranch, /if \(detail\.status !== 'issued'\) \{\s*throw new Error\(/);
+  assert.match(method.slice(method.indexOf('} catch (error) {')), /printWindow\.close\(\)/);
   assert.match(method, /printWindow\.onload = \(\) => printWindow\.print\(\)/);
 });
