@@ -90,7 +90,7 @@ This directive changes CI execution permission only. It does not waive tests, se
 - **Document/package being published:**
 - **Candidate version and DRAFT/APPROVED state:**
 - **Maintainer / Master full-diff self-review (exact SHA + findings):**
-- **Separate independent reviewer:** NOT REQUIRED by project policy for any change. Record the accountable maintainer/Project Master full diff self-review on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+- **Project-level review gate:** None beyond the accountable maintainer/Project Master full diff self-review recorded on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
 - **Maintainer self-review findings and disposition:****
 - **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
