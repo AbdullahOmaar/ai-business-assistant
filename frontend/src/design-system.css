@@ -1022,3 +1022,148 @@
     min-width: 680px;
   }
 }
+
+
+/* Employee, payroll, admin and assistant forms complete the shared form contract. */
+:root body .shell .employee-form,
+:root body .shell .payroll-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  align-items: end;
+  gap: var(--aiba-space-3);
+  min-width: 0;
+  margin-block: var(--aiba-space-4);
+}
+
+:root body .shell .employee-form label,
+:root body .shell .payroll-form label,
+:root body .shell .employee-tools label,
+:root body .shell .filters label,
+:root body .shell .status-form label,
+:root body .shell .user-role-form label {
+  display: grid;
+  align-content: start;
+  gap: var(--aiba-space-2);
+  min-width: 0;
+  color: var(--aiba-ink-soft);
+  font-size: var(--aiba-text-sm);
+  font-weight: 650;
+  line-height: var(--aiba-leading-normal);
+}
+
+:root body .shell .employee-tools,
+:root body .shell .filters,
+:root body .shell .audit-filters,
+:root body .shell .invoice-toolbar,
+:root body .shell .statement-filters {
+  min-width: 0;
+  gap: var(--aiba-space-3);
+  padding: var(--aiba-space-3);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell .filters,
+:root body .shell .audit-filters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+:root body .shell .filters .search-field,
+:root body .shell .audit-filters .search-field {
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+:root body .shell .filters label:not(.search-field),
+:root body .shell .audit-filters label:not(.search-field) {
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+:root body .shell .employee-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) auto;
+  align-items: end;
+}
+
+:root body .shell .status-form,
+:root body .shell .user-role-form {
+  display: grid;
+  align-items: end;
+  gap: var(--aiba-space-3);
+  min-width: 0;
+  padding-block-start: var(--aiba-space-3);
+}
+
+:root body .shell .status-form {
+  grid-template-columns: minmax(160px, .7fr) minmax(220px, 1.5fr) auto;
+}
+
+:root body .shell .user-role-form {
+  grid-template-columns: minmax(180px, 1fr) minmax(200px, 2fr) auto;
+}
+
+:root body .shell .status-form textarea,
+:root body .shell .user-role-form textarea {
+  min-width: 0;
+  width: 100%;
+}
+
+:root body .shell .chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--aiba-space-2);
+  min-width: 0;
+}
+
+:root body .shell .chat-form textarea {
+  min-width: 0;
+  min-height: 48px;
+  max-height: 180px;
+}
+
+:root body .shell .chat-form button {
+  min-width: 88px;
+}
+
+@media (max-width: 760px) {
+  :root body .shell .employee-form,
+  :root body .shell .payroll-form,
+  :root body .shell .status-form,
+  :root body .shell .user-role-form,
+  :root body .shell .chat-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root body .shell .employee-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root body .shell .filters,
+  :root body .shell .audit-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  :root body .shell .filters label,
+  :root body .shell .audit-filters label,
+  :root body .shell .filters .search-field,
+  :root body .shell .audit-filters .search-field {
+    width: 100%;
+    min-width: 0;
+    flex: auto;
+  }
+
+  :root body .shell .filters button,
+  :root body .shell .audit-filters button,
+  :root body .shell .status-form button,
+  :root body .shell .user-role-form button,
+  :root body .shell .chat-form button {
+    width: 100%;
+  }
+}

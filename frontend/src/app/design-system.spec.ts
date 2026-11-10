@@ -35,6 +35,8 @@ test('forms, fields, filters, buttons, tables and cards share reusable visual ru
     'form.expense-form', 'form.payment-form', 'form.invoice-form',
     '.invoice-toolbar', '.statement-filters', '.invoice-table-wrap thead th',
     '.audit-table-wrap tbody td', '.invoice-card', '.line-card', '.server-summary',
+    '.employee-form', '.payroll-form', '.employee-tools', '.filters', '.audit-filters',
+    '.status-form', '.user-role-form', '.chat-form',
   ]) {
     assert.ok(css.includes(selector), 'missing design system selector: ' + selector);
   }

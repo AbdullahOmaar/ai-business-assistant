@@ -434,7 +434,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(ltrMoreMenuLayout.overscrollBehavior).toBe('contain');
   await page.keyboard.press('Escape');
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
-  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
   await expect(moreTrigger).toBeFocused();
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
