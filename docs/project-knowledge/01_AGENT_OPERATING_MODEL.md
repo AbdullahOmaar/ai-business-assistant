@@ -22,7 +22,7 @@ superseded_by: none
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT. The Owner's policy decision of 2026-11-10 removes the project-level independent-reviewer requirement for all project changes. The accountable maintainer/Project Master completes and documents self-review; formal GitHub branch-protection approvals, if configured, remain mandatory. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Publication state:** DRAFT. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. The accountable maintainer/Project Master completes and documents self-review; no separate independent reviewer is required by project policy. Formal GitHub branch-protection approvals, if configured, remain mandatory. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
