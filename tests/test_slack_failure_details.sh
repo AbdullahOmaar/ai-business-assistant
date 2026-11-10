@@ -82,9 +82,9 @@ unset ANSI_SPLIT_SECRET
 jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
 jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
 jwt_signature='SyntheticSignatureForTestsValue'
-jwt_value="\${jwt_header}.\${jwt_payload}.\${jwt_signature}"
-jwt_redacted=$(redact_text "\${jwt_value}")
-[[ "$jwt_redacted" != *"\${jwt_header}"* ]]
+jwt_value="${jwt_header}.${jwt_payload}.${jwt_signature}"
+jwt_redacted=$(redact_text "${jwt_value}")
+[[ "$jwt_redacted" != *"${jwt_header}"* ]]
 [[ "$jwt_redacted" == *'[REDACTED JWT]'* ]]
 config_quoted=$(curl_config_quote 'line "quoted" \\ value')
 [[ "$(jq -r . <<< "$config_quoted")" == 'line "quoted" \\ value' ]]
@@ -118,8 +118,8 @@ MOCK_CIRCLECI_OUTPUT="$large_output"
 curl() {
   local config_input
   config_input=$(cat)
-  printf '%s\\n' "$@" > "$CURL_ARGS_FILE"
-  printf '%s\\n' "$config_input" > "$CURL_CONFIG_FILE"
+  printf '%s\n' "$@" > "$CURL_ARGS_FILE"
+  printf '%s\n' "$config_input" > "$CURL_CONFIG_FILE"
   local destination=''
   while (($#)); do
     if [[ "$1" == '--output' ]]; then destination="$2"; shift 2; else shift; fi
@@ -254,8 +254,8 @@ MOCK_CIRCLECI_OUTPUT="$large_output"
 curl() {
   local config_input
   config_input=$(cat)
-  printf '%s\\n' "$@" > "$CURL_ARGS_FILE"
-  printf '%s\\n' "$config_input" > "$CURL_CONFIG_FILE"
+  printf '%s\n' "$@" > "$CURL_ARGS_FILE"
+  printf '%s\n' "$config_input" > "$CURL_CONFIG_FILE"
   local destination=''
   while (($#)); do
     if [[ "$1" == '--output' ]]; then destination="$2"; shift 2; else shift; fi
