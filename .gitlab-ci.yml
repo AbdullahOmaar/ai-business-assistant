@@ -56,21 +56,38 @@ resolve-event:
       if repository.casefold() != "abdullahomaar/ai-business-assistant":
           raise SystemExit("Webhook repository does not match the canonical GitHub repository.")
 
-      event = "push"
-      sha = payload.get("after", "")
-      ref = payload.get("ref", "")
-      if not ref.startswith("refs/heads/"):
-          raise SystemExit("Only GitHub branch push events are supported.")
-      if payload.get("deleted") is True:
-          raise SystemExit("Deleted-branch webhook events do not run validation.")
+      pull_request = payload.get("pull_request")
+      if isinstance(pull_request, dict):
+          event = "pull_request"
+          action = payload.get("action", "")
+          allowed_actions = {"opened", "synchronize", "reopened", "ready_for_review"}
+          if action not in allowed_actions:
+              raise SystemExit(f"Pull request action is not a validation trigger: {action or 'missing'}")
+          base_repository = ((pull_request.get("base") or {}).get("repo") or {}).get("full_name", "")
+          head_repository = ((pull_request.get("head") or {}).get("repo") or {}).get("full_name", "")
+          if base_repository.casefold() != "abdullahomaar/ai-business-assistant":
+              raise SystemExit("Pull request base is not the canonical repository.")
+          if head_repository.casefold() != "abdullahomaar/ai-business-assistant":
+              raise SystemExit("Fork pull requests are not accepted by this secret-bearing pipeline.")
+          if (pull_request.get("state") or "").casefold() != "open":
+              raise SystemExit("Only open pull requests are validated.")
+          sha = ((pull_request.get("head") or {}).get("sha") or "")
+      else:
+          event = "push"
+          sha = payload.get("after", "")
+          ref = payload.get("ref", "")
+          if not ref.startswith("refs/heads/"):
+              raise SystemExit("Only GitHub branch push events are supported.")
+          if payload.get("deleted") is True:
+              raise SystemExit("Deleted-branch webhook events do not run validation.")
 
       if not re.fullmatch(r"[0-9a-f]{40}", sha):
           raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
 
       with open("event.env", "w", encoding="utf-8") as env_file:
-          env_file.write(f"SOURCE_SHA={sha}\n")
-          env_file.write(f"GITHUB_EVENT={event}\n")
-          env_file.write(f"GITHUB_REPOSITORY={repository}\n")
+          env_file.write(f"SOURCE_SHA={sha}\\n")
+          env_file.write(f"GITHUB_EVENT={event}\\n")
+          env_file.write(f"GITHUB_REPOSITORY={repository}\\n")
 
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
