@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.6
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T22:43:43Z
+last_verified_at: 2026-11-10T23:10:43.820Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -15,15 +15,15 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
-related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT. The Owner's policy decision of 2026-11-10 removes the project-level independent-reviewer requirement for all changes, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master documents full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback.ner's policy decision of 2026-11-10 removes the project-level independent-reviewer requirement for all changes, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master documents full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
