@@ -70,12 +70,21 @@ unset CIRCLE_API_TOKEN SHORT_TOKEN
 
 # ANSI color codes must be removed before secret matching, never after redaction.
 export ANSI_SPLIT_SECRET='secret-value-123456'
-ansi_split_log=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
+ansi_split_log=$'prefix:secret-\033[31mvalue-123456:suffix'
+ansi_normalized=$(strip_ansi_codes "$ansi_split_log")
+[[ "$ansi_normalized" == 'prefix:secret-value-123456:suffix' ]]
+ansi_redacted=$(redact_text "$ansi_normalized")
+ansi_excerpt=$(format_excerpt "$ansi_redacted")
+[[ "$ansi_redacted" == 'prefix:[REDACTED]:suffix' ]]
+[[ "$ansi_excerpt" != *'secret-value-123456'* ]]
+unset ANSI_SPLIT_SECRET
+
+jwt_header=$(printf '%s' '{"alg":"HS256"}' | base64 | tr -d '=\n')
 jwt_payload=$(printf '%s' '{"sub":"synthetic-test-user"}' | base64 | tr -d '=\n')
 jwt_signature='SyntheticSignatureForTestsValue'
-jwt_value="${jwt_header}.${jwt_payload}.${jwt_signature}"
-jwt_redacted=$(redact_text "${jwt_value}")
-[[ "$jwt_redacted" != *"$jwt_header"* ]]
+jwt_value="\${jwt_header}.\${jwt_payload}.\${jwt_signature}"
+jwt_redacted=$(redact_text "\${jwt_value}")
+[[ "$jwt_redacted" != *"\${jwt_header}"* ]]
 [[ "$jwt_redacted" == *'[REDACTED JWT]'* ]]
 config_quoted=$(curl_config_quote 'line "quoted" \\ value')
 [[ "$(jq -r . <<< "$config_quoted")" == 'line "quoted" \\ value' ]]
