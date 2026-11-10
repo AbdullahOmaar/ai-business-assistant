@@ -362,6 +362,15 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
       .compact-table th:nth-child(3),.compact-table td:nth-child(3){width:16%}
       .compact-table th:nth-child(4),.compact-table td:nth-child(4){width:32%}
     }
+    @media(max-width:760px){
+      .runtime-grid small,.runtime-note,.currency-row small,.business-link small,.detail-grid small,
+      .user-cell small,.grant-row small,.membership-chip small,.membership-detail-row small,
+      .user-facts-grid small,.user-root-label,.data-note small{font-size:11px}
+      .read-only,.status-pill,.role-pill,.nav-count,.filters label,.status-form label,
+      .user-role-form label>span,.panel-heading p,.caution p,.field-error,.data-note p,
+      .permission-token,.identity-access-heading>strong,.identity-permissions>strong{font-size:12px}
+      .metric-card small{font-size:12px}
+    }
   `]
 })
 export class PlatformAdminComponent implements OnInit {

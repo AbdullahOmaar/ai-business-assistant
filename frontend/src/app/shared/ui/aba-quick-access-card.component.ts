@@ -39,7 +39,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       :host-context(.module-directory-grid) .aba-quick-access{min-height:96px;gap:6px;padding:8px}
       :host-context(.module-directory-grid) .aba-quick-access__icon{flex-basis:28px;width:28px;height:28px;font-size:14px}
       :host-context(.module-directory-grid) .aba-quick-access__copy strong{font-size:12px}
-      :host-context(.module-directory-grid) .aba-quick-access__copy>span{font-size:11px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy>span{font-size:12px}
     }
   `],
 })

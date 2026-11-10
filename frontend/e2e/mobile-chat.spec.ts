@@ -314,6 +314,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         metricColumns: columns('.metric-grid'),
         metricSupportingFontSizes: Array.from(document.querySelectorAll('.metric-grid aba-metric-card small'))
           .map(element => getComputedStyle(element).fontSize),
+        headerLabelFontSizes: Array.from(document.querySelectorAll('.mobile-app-header .context-label'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
+        workspaceNameFontSizes: Array.from(document.querySelectorAll('.mobile-app-header .workspace-copy strong'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
+        quickAccessDescriptionFontSizes: Array.from(document.querySelectorAll('.home-shortcut-list .aba-quick-access__copy > span'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
+        sectionDescriptionFontSizes: Array.from(document.querySelectorAll('.aba-section-header p'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
         quickAccessColumns: columns('.home-shortcut-list'),
         moduleColumns: columns('.module-directory-grid'),
         headerControlHeights: Array.from(document.querySelectorAll(
@@ -333,6 +341,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     for (const fontSize of layout.metricSupportingFontSizes) {
       expect(fontSize, `KPI supporting copy must meet the 12px mobile minimum at ${width}px`).toBe('12px');
     }
+    expect(layout.headerLabelFontSizes.length, `workspace context label must render at ${width}px`).toBeGreaterThan(0);
+    for (const fontSize of layout.headerLabelFontSizes) expect(fontSize).toBeGreaterThanOrEqual(11);
+    for (const fontSize of layout.workspaceNameFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
+    for (const fontSize of layout.quickAccessDescriptionFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
+    for (const fontSize of layout.sectionDescriptionFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
     expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
     expect(layout.headerControlHeights).toHaveLength(4);

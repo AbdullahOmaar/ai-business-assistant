@@ -413,3 +413,37 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Added a source regression assertion for the effective <=760px rule and mocked Playwright checks at 360/390/430px for computed cell font size and no horizontal page overflow.
 - Presentation and test-fixture changes only. No platform permission, API, data, financial, or administrative behavior changed.
 - Node tests, Playwright, Angular build, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA checks remain NOT RUN until an approved runner and device environment are available.
+
+
+## T18 shared-component polish and 19-destination source review — 2026-11-11
+
+**Review basis:** current `main@405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` and the same T18 branch after its merge-sync. This is a source-level review of every destination in `WORKSPACE_MODULE_CATALOG`; it is not a rendered visual sign-off for all routes. The Production login page was separately inspected at 360×800, 390×844 and 1280×800 in Arabic, plus English at 360×800: no horizontal overflow, all form controls visible and 44px high, but an unnecessary vertical scrollbar/blank area below the card remains. The owner of `app.component.ts` and `styles.css` is PR #363, so that login-shell finding is recorded for handoff and not edited here.
+
+| Destination | Screen-by-screen source review | T18 action / ownership boundary |
+|---|---|---|
+| Overview / Home | Four currency-separated source-backed KPIs, date/timezone basis, role-filtered shortcuts, full 19-destination disclosure and retryable workspace error state are preserved. | Shared KPI/quick-access/header typography and computed-size E2E coverage; root dashboard template/global shell remain PR #363-owned. |
+| Customers | Customer list/search, CSV preview-before-import, workspace reset and customer statement are present; wide statement table has keyboard-scroll semantics. | Shared headers/state feedback only; CSV and statement workflow semantics unchanged. |
+| Products & inventory | Product list/search, CSV preview-before-import and OWNER-only positive opening-stock input with STAFF zero payload are preserved. | Shared headers/state feedback only; stock permissions and payload unchanged. |
+| Invoices | Draft editor, validation/summary, issued-invoice lifecycle, print and void-confirmation paths remain separate. | PR #363 owns app shell, invoice editor/draft flow and shared global CSS; no edits to those paths. |
+| Payments & collections | Localized payment-method labels/search and payment outcome messaging remain distinct from invoice totals. | Shared section/state surfaces only; allocation and payment semantics unchanged. |
+| Expenses | Localized fixed expense categories/search and uncertain-save outcome guidance remain in place. | Shared state/header styling only; no expense classification or posting changes. |
+| Employees & payroll | Lazy-loaded OWNER route and privacy-safe employee labels remain the documented boundary. | Chat 4 / T41 single-writer ownership; no payroll source changes. |
+| AI assistant | Request/response contract, tenant/role fencing, retry-draft behavior, plain-text history and source references remain unchanged; no streaming/upload capability is implied. | Composer/root shell is PR #363-owned; existing mocked mobile journey gains typography assertions only. |
+| Reports / operating result | Preliminary revenue/expense basis and limitation that COGS is not deducted remain visible. | Shared section/state surfaces only; no new metrics or profit claims. |
+| Tax summary | Read-only saved invoice tax summary remains currency-separated. | Shared presentation only; no tax rules/calculations changed. |
+| Activity log | Read-only event view and keyboard-focusable horizontally scrollable table contract remain. | Shared headings and mobile type scale only; event vocabulary/data unchanged. |
+| Data integrity | Read-only legacy-link/allocation mismatch review remains separate from normal operations. | Shared state/notice styling only; no repair or mutation action introduced. |
+| App guide / Release Guide | Native `details/summary` disclosure, 52px rows, chevron, open state and reduced-motion behavior remain. | Improve footnote and version/status badge readability; guide content/availability unchanged. |
+| Platform Admin | Separate platform permission domain, role-grant/revocation and audit workflows remain isolated; compact four-column summary remains horizontally contained. | Improve functional-label, status-chip, data-note and metadata readability; no roles, permissions or admin actions changed. |
+| Suppliers | Workspace-scoped supplier directory and local visible-field search remain. | Shared headings and type hierarchy only; no AP/bill semantics added. |
+| Purchasing | Purchase-order states and OWNER-only eligible receiving remain; receiving is not represented as supplier payment. | Shared confirmation/header presentation only; no stock/payment lifecycle changes. |
+| Recurring invoices | Scheduling metadata remains distinct from automatic invoice generation. | Shared headings/state presentation only; no scheduler or issue capability implied. |
+| Notifications | Notification records/status remain metadata-only; delivery provider/worker requirement remains explicit. | Shared headings/state presentation only; no sent/delivered claim or retry action added. |
+| Operational health | Read-only health/configuration check and localized status mapping remain. | Shared state/header presentation only; no new health signals or false-green state. |
+
+### Shared component disposition
+
+- **Keep as-is after review:** `AbaCard` spacing/surface tokens, KPI card's 12px inherited projected-copy token, state-message alert/status semantics, and the confirmation dialog's safe-area-aware mobile bottom sheet / 48px actions / narrow-screen stacking.
+- **Polish in this batch:** mobile header context labels/workspace selector/shortcut type; quick-access descriptions; section-count badges; Platform Admin explanatory copy/status metadata; Release Guide footnote/version badge.
+- **Regression budget:** extend the existing shared source spec and the existing mocked mobile Home viewport journey. Run the authoritative six-job exact-SHA workflow once at batch close; do not repeat unchanged checks.
+- **Acceptance boundary:** source and mocked Playwright are not a substitute for authenticated OWNER/STAFF/two-tenant rendered review, full route-by-route RTL/LTR screenshots, screen-reader/keyboard/200% zoom, or physical Android installed-PWA acceptance. Those remain open until an authenticated isolated test path/device is available.

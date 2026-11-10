@@ -142,7 +142,7 @@
   border-radius: 10px;
   background: var(--aba-color-surface, #ffffff);
   color: var(--aba-color-text-primary, #172033);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 .assistant-shortcut {
