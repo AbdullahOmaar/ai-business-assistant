@@ -52,7 +52,7 @@ Aim for a small, reviewable vertical slice—not a production-ready financial pl
 4. Keep changes small. Avoid unrelated refactors.
 5. Add or update tests for behavior changes.
 6. Open a PR; do not push directly to `main`.
-7. A PR is not complete until its author can explain the change, tests are checked, and a reviewer has reviewed it.
+7. A PR is not complete until its author can explain the change, tests are checked, and the accountable maintainer has completed and documented full self-review; any formal GitHub branch-protection approval actually enforced remains mandatory.
 8. **Do not merge PRs without Abdullah's explicit approval.**
 9. Never commit credentials, tokens, private customer data, or real business records.
 10. If blocked for more than 20–30 minutes, write what was attempted, the error, and the next question in the issue. Do not silently copy an unexplained fix.
@@ -151,7 +151,7 @@ Aim for a small, reviewable vertical slice—not a production-ready financial pl
 - Prepare a month-end decision log and prioritized backlog.
 
 **Trainee**
-- Fix one small, reviewer-approved issue or add edge-case tests.
+- Fix one small, maintainer-self-reviewed issue or add edge-case tests.
 - Review another PR using a checklist and ask constructive questions.
 - Produce a short learning summary: what I can now explain, what I can do with help, and what remains unclear.
 - Rebuild or explain one small piece without copying a previous answer, then compare with the implementation.
