@@ -59,12 +59,16 @@ redact_text() {
   ' 2>/dev/null || printf '%s' '[Failure output redaction unavailable; open the CircleCI job logs directly.]'
 }
 
+strip_ansi_codes() {
+  local raw="$1"
+  printf '%s' "$raw" | sed -E 's/\\x1B\\[[0-9;]*[[:alpha:]]//g'
+}
+
 format_excerpt() {
   local raw="$1"
   local cleaned
-  cleaned=$(printf '%s' "$raw" \
-    | sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' \
-    | tr '\140' "'" \
+  cleaned=$(strip_ansi_codes "$raw" \
+    | tr '\\140' "'" \
     | awk 'NF { if (length($0) > 220) print substr($0, 1, 220) "…"; else print $0 }' \
     | tail -n 12)
   if [[ -z "$cleaned" ]]; then
@@ -100,7 +104,7 @@ download_output_json() {
 collect_failure_details() {
   local step='Failed step details unavailable'
   local excerpt='Open the CircleCI job link for the full output.'
-  local api_url api_config job_payload failed_steps temp_dir item name urls url output_file output log_text combined redacted
+  local api_url api_config job_payload failed_steps temp_dir item name urls url output_file output log_text combined normalized_log redacted
 
   if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
     step='Diagnostic tooling unavailable in this job image'
@@ -187,7 +191,8 @@ collect_failure_details() {
   if ! grep -qv '^Step: ' "$combined" 2>/dev/null; then
     excerpt='CircleCI identified the failed step but returned no step output. Open the CircleCI job link for full logs.'
   else
-    redacted=$(redact_text "$(cat "$combined" 2>/dev/null)")
+    normalized_log=$(strip_ansi_codes "$(cat "$combined" 2>/dev/null)")
+    redacted=$(redact_text "$normalized_log")
     excerpt=$(format_excerpt "$redacted")
   fi
   rm -rf "$temp_dir" 2>/dev/null
