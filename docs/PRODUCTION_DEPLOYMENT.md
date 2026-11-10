@@ -79,10 +79,10 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 - **GitHub Actions is the sole active and approved CI provider** for tests, builds, browser checks and dependency/security audits. The canonical core pipeline is `.github/workflows/ci.yml`; scheduled/manual dependency audits are in `.github/workflows/dependency-security.yml`.
 - GitHub remains canonical for source code, branches, commits, PRs and release SHAs. GitHub Actions validates the exact GitHub commit; it is not a second source of truth.
-- The GitHub Actions workflow runs backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
+- The GitHub Actions workflow runs backend pytest and Alembic checks against disposable PostgreSQL, shared-knowledge package validation, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, and Python/npm dependency audits.
 - GitLab CI is inactive for current validation. Do not trigger, retry, wait on, or require GitLab pipeline or mirror statuses. Semaphore is retired/non-authoritative; its status context is not a release gate.
 - CircleCI, GitLab CI and Semaphore are retired/non-authoritative.
-- Verify every substantive GitHub Actions job and the aggregate workflow on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
+- Verify every substantive GitHub Actions job and the CI / all-checks-passed aggregate on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
 - If GitHub Actions or its logs are unavailable, record the exact check as NOT RUN / BLOCKED; do not substitute a retired or unapproved provider.
 
 ## Release gates
