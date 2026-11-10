@@ -15,7 +15,7 @@ This is the current Owner decision for the CI migration workstream and supersede
 # Policy conflict sweep — 2026-11-08
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
-- Effective rule: CircleCI remains the sole approved CI provider; unavailable/frozen CircleCI means NOT RUN/BLOCKED, not provider substitution. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
+- Effective rule as of 2026-11-08: CircleCI remained the sole approved CI provider; unavailable/frozen CircleCI meant NOT RUN/BLOCKED, not provider substitution. This dated rule is superseded by the explicit Owner decision effective 2026-11-10 selecting automatic GitHub → GitLab Free CI with CircleCI as transition fallback. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
 - This is a consistency correction to governance candidate [PR #349](https://github.com/AbdullahOmaar/ai-business-assistant/pull/349). Refresh exact head before consuming check evidence. No CI trigger/retry, tests, merge or deployment was performed.
 
 ---
