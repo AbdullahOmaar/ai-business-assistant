@@ -3,7 +3,6 @@ set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
-needs_validation=false
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   [[ -z "${local_sha:-}" ]] && continue
@@ -23,10 +22,14 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
 
   if ! git diff --quiet "$base_sha" "$local_sha" -- .circleci/config.yml; then
-    needs_validation=true
+    committed_config="$(mktemp "${TMPDIR:-/tmp}/circleci-config.XXXXXX")"
+    trap 'rm -f "$committed_config"' EXIT
+    if ! git show "$local_sha:.circleci/config.yml" > "$committed_config"; then
+      printf 'Cannot read .circleci/config.yml from outgoing commit %s.\n' "$local_sha" >&2
+      exit 1
+    fi
+    "$repo_root/scripts/ci/validate_circleci_config.sh" "$committed_config"
+    rm -f "$committed_config"
+    trap - EXIT
   fi
 done
-
-if [[ "$needs_validation" == true ]]; then
-  "$repo_root/scripts/ci/validate_circleci_config.sh"
-fi
