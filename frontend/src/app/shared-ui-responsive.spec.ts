@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+const cardSurface = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
 const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
@@ -49,7 +50,7 @@ test('shared UI styles remain syntactically balanced and contain no escaped medi
     assert.ok(match, 'component style block must be present');
     return match[1];
   });
-  const allStyles = [...componentStyles, mobileHeaderCss];
+  const allStyles = [...componentStyles, mobileHeaderCss, cardSurface.match(/styles: \[`([\s\S]*?)`\],/)?.[1] ?? ''];
   for (const styles of allStyles) {
     let depth = 0;
     for (const character of styles) {
@@ -69,4 +70,9 @@ test('mobile confirmation dialogs use a safe-area-aware bottom sheet with reacha
   assert.match(confirmDialog, /\.confirm-actions button\{min-width:0;min-height:48px\}/);
   assert.match(confirmDialog, /@media\(max-width:380px\)\{\.confirm-actions\{grid-template-columns:1fr\}\}/);
   assert.match(confirmDialog, /prefers-reduced-motion:reduce\)\{\.confirm-dialog\{animation:none\}\}/);
+});
+
+test('shared cards use comfortable mobile padding and reduce narrow-card vertical gaps', () => {
+  assert.match(cardSurface, /@media\(max-width:600px\)\{[\s\S]*:host\{padding:var\(--aba-space-4, 16px\)\}[\s\S]*:host\(\.narrow\)\{margin-block:24px\}/);
+  assert.match(cardSurface, /@media\(max-width:380px\)\{[\s\S]*:host\{padding:var\(--aba-space-3, 12px\)\}[\s\S]*:host\(\.narrow\)\{margin-block:16px\}/);
 });
