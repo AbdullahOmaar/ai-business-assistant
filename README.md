@@ -11,7 +11,7 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
-- **Approved CI (CircleCI):** https://circleci.com/gh/AbdullahOmaar/ai-business-assistant (pipeline: [\.circleci/config.yml](.circleci/config.yml))
+- **Approved CI (GitHub Actions):** https://github.com/AbdullahOmaar/ai-business-assistant/actions (workflows: [ci.yml](.github/workflows/ci.yml), [dependency-security.yml](.github/workflows/dependency-security.yml))
 - **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
 - **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
 - **Mobile navigation PR (merged):** https://github.com/AbdullahOmaar/ai-business-assistant/pull/55
@@ -62,7 +62,7 @@ The repository includes:
 - Angular email/password sign-in, authenticated API client, live dashboard/customer/product/invoice views, invoice draft editing/issuing/voiding, and a record-grounded AI chat UI.
 - Invoice issuance stock deductions as auditable stock movements for tracked products and insufficient-stock validation.
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
-- CircleCI for backend tests, PostgreSQL migration validation, frontend unit tests and production builds, Playwright browser smoke, backend container checks, and dependency/security audits.
+- GitHub Actions for backend tests, PostgreSQL migration validation, frontend unit tests and production builds, Playwright browser smoke, backend container checks, and dependency/security audits.
 - Regression tests for cross-business authorization boundaries, invoice state transitions, and AI input/provider safety.
 
 ## Release blockers and known limitations
