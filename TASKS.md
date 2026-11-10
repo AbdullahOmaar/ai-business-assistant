@@ -3349,3 +3349,16 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Independent review:** full maintainer diff review and independent non-author review for controlled policy changes remain pending. No merge, CircleCI retirement, production deployment or DB operation.
 - **Security remediation:** rotate/reset the exposed GitLab runner-registration credential in GitLab UI. Keep Pipeline Trigger Token and GitHub PATs secret; never paste into chat.
 - **Changed paths in PR:** `.gitlab-ci.yml`, `AGENTS.md`, `CONTRIBUTING.md`, `.github/pull_request_template.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `README.md`, `TASKS.md`.
+
+
+## CI webhook resolver review — latest source checkpoint
+
+- GitHub branch latest candidate before this ledger append: `ee73e4933bf4ca1617ec753e4c700a65f6656465`; GitLab runner branch: `c1b18c4c51d6ba9b95d99ec17d4d45b3e6539b05`. Both PR #367 and MR !350 remain OPEN / DRAFT / UNMERGED.
+- GitHub/GitLab `.gitlab-ci.yml` copies are byte-identical at 13,728 bytes. Resolver now reads GitLab's file-type `TRIGGER_PAYLOAD`, supports branch/tag push and PR payload shapes, validates canonical repository/base repository and full SHA, and writes non-empty dotenv values only.
+- Synthetic parser smoke checks passed for push and PR payload examples. No GitLab CI Lint or actual webhook-triggered pipeline was run.
+- GitLab branch is protected, but `developers_can_push=true`. Must change allowed push role to Maintainers only before creating protected variables or enabling webhook. Connector has no branch-protection mutation action; Owner UI required.
+- Full PR diff source scan: seven changed paths; no literal credential/token values found. Maintainer self-review is recorded; independent non-author review for controlled policy publication remains pending.
+- Latest GitHub candidate combined status: six CircleCI FAILURE contexts and one retired Semaphore FAILURE context. No retry; root causes UNKNOWN pending logs. No GitLab status or pipeline result.
+- Notion Master Task Plan contains the Owner decision and latest webhook-payload correction checkpoint (readback verified).
+- Private GitHub Free branch-protection/required-status enforcement remains BLOCKED / NOT VERIFIED; no paid upgrade/public conversion/bypass authorized. CircleCI remains the transition gate.
+- No merge, CI retirement, production deployment, DB operation or paid provisioning.
