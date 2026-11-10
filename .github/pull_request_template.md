@@ -58,7 +58,7 @@ This directive changes the intended CI provider and transition plan only. It doe
 - **Aggregate result:**
 - **Checks actually run (commands / environment / timestamps):**
 - **Checks NOT RUN / BLOCKED and exact reason:**
-- **GitGuardian / other supplementary evidence (not a CircleCI substitute):**
+- **GitGuardian / other supplementary evidence (not a CI substitute):**
 
 - [ ] All required exact-SHA jobs and aggregate passed on exact current head (GitLab after cutover; CircleCI remains required until then).
 - [ ] Failures were investigated and affected checks rerun only after the condition changed.
