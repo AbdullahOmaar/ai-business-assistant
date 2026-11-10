@@ -105,7 +105,7 @@ No data, navigation, permissions, API requests or business meaning is altered by
 - Desktop: multi-column KPI and form layouts; card content stays shrink-safe.
 - Tablet: KPI cards flow to two columns; forms and filter groups reflow rather than overflow.
 - Mobile (760px and below): single-column forms, stacked filters, compact hero metadata, and touch-friendly controls.
-- Narrow mobile (380px and below): KPI and quick-access cards become a single column to preserve readable labels and values.
+- Narrow mobile (380px and below): KPI and quick-access cards retain two columns with shrink-safe content, compact padding and readable labels; verify at 320px.
 - RTL/LTR: use logical properties (`margin-inline`, `padding-inline`, `border-inline`) and keep identifiers, dates and currency codes directionally isolated where the data already uses `bdi`.
 - Reduced motion and forced-colors modes retain their native accessibility behavior.
 
