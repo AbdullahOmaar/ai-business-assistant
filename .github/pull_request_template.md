@@ -19,8 +19,8 @@ This directive changes the CI provider and validation implementation only. It do
 - **Canonical task / issue ID and Notion link:**
 - **Accountable Feature Owner:**
 - **Actual primary writer:**
-- **Maintainer reviewer:**
-- **Additional reviewer:** N/A unless enforced by provider or required by a separate explicit Owner-approved policy
+- **Maintainer self-review owner:**
+- **Formal GitHub branch-protection approval:** N/A unless GitHub actually enforces one
 - **Owned paths / shared-path boundary:**
 - **Out of scope / explicit deferrals:**
 
@@ -90,13 +90,15 @@ This directive changes the CI provider and validation implementation only. It do
 ## Canonical knowledge publication (only when applicable)
 - **Document/package being published:**
 - **Candidate version and DRAFT/APPROVED state:**
-- **Author / maintainer self-review:**
-- **Independent reviewer (must not be the author):**
-- **Independent findings and disposition:**
+- **Maintainer / Master full-diff self-review (exact SHA + findings):**
+- **Project-level review gate:** None beyond the accountable maintainer/Project Master full diff self-review recorded on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+- **Maintainer self-review findings and disposition:**
+- **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
 - **Canonical source SHA / PR:**
 - **Project Sources filenames, upload and readback evidence:**
-- [ ] Independent knowledge review is complete and recorded.
+- [ ] Maintainer self-review is complete and recorded.
+- [ ] Accountable maintainer/Project Master full diff self-review is documented for this exact candidate SHA; any formal GitHub branch-protection approval actually enforced is satisfied.
 - [ ] Authorized publication decision exists.
 - [ ] All five files are one consistent approved version set.
 - [ ] Project Sources UI upload and readback are verified, or publication is explicitly NOT DONE.

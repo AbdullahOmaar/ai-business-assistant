@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.4
+version: 1.0.5
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-05T00:03:00Z
+last_verified_at: 2026-11-10T21:48:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -15,14 +15,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
+related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT. Owner approval was explicitly recorded in the Master conversation on 2026-11-04. The accountable maintainer may complete and document self-review; a separate reviewer is optional unless provider-enforced or explicitly approved policy requires one. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Publication state:** DRAFT. The Owner's policy decision of 2026-11-10 removes the project-level independent-reviewer requirement for all changes, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master documents full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -63,7 +63,7 @@ Team map:
 - Chat 2 — Inventory, Purchasing & Suppliers.
 - Chat 3 — Expenses, Cash Flow & Reports.
 - Chat 4 — Employees & Payroll.
-- Chat 5 — independent QA, Integration & Security; tests/reviews Chat 1–4 work and routes defects to the feature owner.
+- Chat 5 — independent QA, Integration & Security; runs test-based verification on Chat 1–4 work, reports findings and routes defects to the feature owner. This QA function does not create a separate reviewer or approval gate.
 
 Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. CircleCI is the sole active and approved test/build/security validation provider under the owner's 2026-11-04 direction and current `AGENTS.md`; GitLab is inactive for current validation and Semaphore is retired. `docs/PRODUCTION_DEPLOYMENT.md` is aligned with this decision in the 1.0.3 candidate. Do not introduce GitHub Actions as replacement test/build CI. Validate the exact candidate SHA with all CircleCI jobs; never rely on stale or unrelated statuses. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
 
@@ -85,7 +85,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Maintainer review:** the accountable maintainer checks the exact candidate, records findings and owns the review decision. A second reviewer is optional unless a provider-enforced or explicitly approved policy requires one.
+- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate, records findings and owns the review decision. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.
