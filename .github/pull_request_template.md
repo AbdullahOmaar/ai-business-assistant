@@ -1,15 +1,16 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Owner-approved CI provider change — effective 2026-11-10
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
+- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
+- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). Main-branch required-check enforcement and PR requirement remain UNKNOWN because the GitHub protection endpoint returned 403; do not treat merge control as enforced until Owner/Admin readback confirms it. CircleCI remains configured as a transition fallback; do not retire it until required-check enforcement and release gates are verified.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- Main is marked protected, but the classic branch-protection endpoint returns 403 to this integration. Ruleset readback shows the Copilot code-review rule active and the former `main-protection-and-gitlab-sync` ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN until Owner/Admin readback; do not treat merge control as enforced.
+- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
 ## Summary
 <!-- User-visible outcome, defect addressed, and why this is one coherent work package. -->
@@ -18,8 +19,8 @@ This directive changes CI execution permission only. It does not waive tests, se
 - **Canonical task / issue ID and Notion link:**
 - **Accountable Feature Owner:**
 - **Actual primary writer:**
-- **Maintainer reviewer:**
-- **Additional reviewer:** N/A unless enforced by provider or required by a separate explicit Owner-approved policy
+- **Maintainer self-review owner:**
+- **Formal GitHub branch-protection approval:** N/A unless GitHub actually enforces one
 - **Owned paths / shared-path boundary:**
 - **Out of scope / explicit deferrals:**
 
@@ -47,19 +48,19 @@ This directive changes CI execution permission only. It does not waive tests, se
 - [ ] No unrelated scope, duplicate PR, unsafe rewrite or unapproved force push.
 
 ## Exact-SHA verification
-- **Approved provider:** CircleCI only
+- **Primary provider:** GitHub Actions hosted runners; CircleCI remains transition fallback until cutover acceptance
 - **Permanent CI execution authorization / provider-quota state checked:**
-- **CircleCI workflow URL for exact head:**
+- **GitHub Actions workflow URL for exact head:**
 - **Exact SHA tested:**
 - **Substantive jobs and outcomes:**
 - **Aggregate result:**
 - **Checks actually run (commands / environment / timestamps):**
 - **Checks NOT RUN / BLOCKED and exact reason:**
-- **GitGuardian / other supplementary evidence (not a CircleCI substitute):**
+- **GitGuardian / other supplementary evidence (not a CI substitute):**
 
-- [ ] All required CircleCI substantive jobs and aggregate passed on exact current head.
+- [ ] All six GitHub Actions substantive jobs and `all-checks-passed` aggregate passed on exact workflow SHA; CircleCI fallback remains available until cutover acceptance.
 - [ ] Failures were investigated and affected checks rerun only after the condition changed.
-- [ ] No alternate/retired CI provider was treated as a replacement.
+- [ ] No unapproved/retired CI provider was treated as a replacement.
 - [ ] Final cumulative diff was reviewed for regressions, secrets, unsafe changes and unrelated paths.
 
 ## Maintainer review and merge readiness
@@ -89,13 +90,15 @@ This directive changes CI execution permission only. It does not waive tests, se
 ## Canonical knowledge publication (only when applicable)
 - **Document/package being published:**
 - **Candidate version and DRAFT/APPROVED state:**
-- **Author / maintainer self-review:**
-- **Independent reviewer (must not be the author):**
-- **Independent findings and disposition:**
+- **Maintainer / Master full-diff self-review (exact SHA + findings):**
+- **Project-level review gate:** None beyond the accountable maintainer/Project Master full diff self-review recorded on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+- **Maintainer self-review findings and disposition:**
+- **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**
 - **Canonical source SHA / PR:**
 - **Project Sources filenames, upload and readback evidence:**
-- [ ] Independent knowledge review is complete and recorded.
+- [ ] Maintainer self-review is complete and recorded.
+- [ ] Accountable maintainer/Project Master full diff self-review is documented for this exact candidate SHA; any formal GitHub branch-protection approval actually enforced is satisfied.
 - [ ] Authorized publication decision exists.
 - [ ] All five files are one consistent approved version set.
 - [ ] Project Sources UI upload and readback are verified, or publication is explicitly NOT DONE.

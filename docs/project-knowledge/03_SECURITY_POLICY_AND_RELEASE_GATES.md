@@ -1,27 +1,28 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.4
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-05T00:03:00Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/CONTRIBUTING.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
-related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Security Policy & Release Gates
 
-> **Publication state:** DRAFT. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 
@@ -76,19 +77,24 @@ No destructive migration, production write, snapshot/restore or production data 
 
 - Inspect the exact branch, base/head SHA, changed files and mergeability.
 - Required checks must be green on the exact PR head; checks on another SHA or empty/unavailable checks are NOT PASS.
-- Only reviews explicitly required by GitHub branch protection or a separately approved security policy are mandatory; satisfy those on the exact PR head. Otherwise, a documented maintainer self-review is sufficient. Comments are not approvals where a formal approval is required.
+- A documented maintainer/Project Master full self-review on the exact candidate SHA is required for all changes. No separate independent reviewer is required by project policy, including for Security/Architecture and canonical controlled-knowledge publication/update. Any formal approval actually enforced by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where formal approval is required.
 - Resolve material review findings and inspect the final diff for secrets, unrelated changes, authorization gaps and data-integrity risk.
 - Merge only with explicit owner authorization and all repository gates satisfied.
-- Never bypass branch protection, provider-enforced required reviews, frozen CI or security gates. Do not invent an additional independent-review requirement.
+- Never bypass branch protection, provider-enforced required reviews, CI or security gates. Do not add a project-level independent-reviewer requirement. Formal GitHub approvals actually enforced remain mandatory.
 - A Draft PR, mergeable flag, passing local subset or successful preview is not merge authorization.
 
 ## 7. CI and validation constraints
 
-- **CircleCI is the sole active and approved test/build/security validation provider**; `.circleci/config.yml` is the canonical pipeline definition. GitHub remains authoritative for source code, branches, PRs and release SHAs.
-- GitLab CI is inactive for current validation. Do not trigger, retry, wait on, or require GitLab pipeline or mirror statuses. Semaphore is retired/non-authoritative.
-- Do not introduce GitHub Actions as replacement test/build CI.
-- Verify every substantive CircleCI job and the aggregate workflow on the exact candidate SHA. A successful workflow on a different branch/SHA is not release evidence.
-- If CircleCI is unavailable or its job logs cannot be inspected, record the exact check as NOT RUN / BLOCKED; do not substitute a retired or unapproved provider.
+- **Primary CI provider:** GitHub Actions using GitHub-hosted runners. `.github/workflows/ci.yml` is the single authoritative validation workflow.
+- The exact-SHA workflow requires six substantive jobs: `backend-accounting`, `frontend-unit-tests`, `frontend-production-build`, `frontend-dependency-audit`, `frontend-browser-smoke`, and `backend-container`, plus the fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies that its checkout equals the workflow event SHA. CI permissions are read-only; backend database/schema checks use only a disposable PostgreSQL service and never production.
+- CircleCI remains configured as a transition fallback until GitHub Actions required-check enforcement and release gates are verified. Do not retire CircleCI early or treat it as the primary provider.
+- GitLab CI is inactive and not an approved provider. Semaphore is retired/non-authoritative.
+- Main-branch required-check and PR/approval enforcement remain UNKNOWN until Owner/Admin readback confirms the effective GitHub protection configuration. Main being marked protected or a written policy is not proof that specific checks/approvals are enforced.
+- Batch related changes and validate the final candidate SHA once. Use targeted checks during implementation only when behavior/configuration changed, diagnosing a concrete defect, or risk requires immediate evidence. Reuse a PASS only when SHA, workflow/configuration, dependencies, environment and context are unchanged.
+- Rerun only after a real candidate/fix change, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need. Do not rerun an unchanged failure to seek a green result; record provider/quota/permission failures as NOT RUN / BLOCKED when appropriate. See the canonical [MWOS economical validation decision](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea).
+- Documentation-only changes do not justify application tests/build solely because text changed unless a required workflow or documentation validator requires them. The current PR workflow is configured to run for every pull request, so its enforced exact-head checks must still be satisfied. Do not weaken triggers or suppress required checks to avoid a run.
+- Empty contexts, GitGuardian-only checks, authored-but-unexecuted tests, stale results, or successful checks on another SHA are NOT PASS.
 - Distinguish application test failures from provider, quota, permission or log-access failures. Never describe a pending or failed job as successful.
 
 ## 8. Production deployment gates

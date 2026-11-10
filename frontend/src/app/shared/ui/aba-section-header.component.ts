@@ -26,15 +26,15 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .aba-section-header{display:flex;align-items:center;justify-content:space-between;gap:var(--aba-space-3, 12px);min-width:0;margin-bottom:var(--aba-space-4, 16px)}
     .aba-section-header__copy{min-width:0}
     .aba-section-header h2,.aba-section-header h3{margin:0 0 var(--aba-space-2, 8px);font-size:var(--aba-font-size-lg, 16px);line-height:var(--aba-line-height-relaxed, 1.65);font-weight:var(--aba-font-weight-bold, 700);color:var(--aba-color-text-primary, #172033)}
-    .aba-section-header p{margin:0;color:var(--aba-color-text-secondary, #64748b);font-size:var(--aba-font-size-xs, 11px);line-height:var(--aba-line-height-relaxed, 1.65);overflow-wrap:anywhere}
+    .aba-section-header p{margin:0;color:var(--aba-color-text-secondary, #64748b);font-size:var(--aba-font-size-sm, 12px);line-height:1.55;overflow-wrap:anywhere}
     .aba-section-header__actions{display:flex;align-items:center;gap:var(--aba-space-2, 8px);flex-wrap:wrap}
-    .aba-section-header__count{display:inline-flex;align-items:center;padding:7px 9px;border-radius:var(--aba-radius-pill, 999px);background:var(--aba-color-primary-soft, #ecfdf5);color:var(--aba-color-primary, #0f766e);font-size:var(--aba-font-size-2xs, 10px);font-weight:var(--aba-font-weight-bold, 700);white-space:nowrap}
+    .aba-section-header__count{display:inline-flex;align-items:center;padding:7px 9px;border-radius:var(--aba-radius-pill, 999px);background:var(--aba-color-primary-soft, #ecfdf5);color:var(--aba-color-primary, #0f766e);font-size:var(--aba-font-size-xs, 11px);font-weight:var(--aba-font-weight-bold, 700);white-space:nowrap}
     .aba-section-header h2,.aba-section-header h3{overflow-wrap:anywhere}
     @media(max-width:760px){.aba-section-header{align-items:flex-start;gap:var(--aba-space-2, 8px)}}
     @media(max-width:600px){
       .aba-section-header{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:var(--aba-space-2, 8px)}
       .aba-section-header__actions{width:100%;min-width:0;justify-content:flex-start}
-      .aba-section-header h2,.aba-section-header h3{font-size:var(--aba-font-size-base, 14px)}
+      .aba-section-header h2,.aba-section-header h3{font-size:15px}
     }
   `],
 })

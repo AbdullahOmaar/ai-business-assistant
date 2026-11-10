@@ -136,7 +136,7 @@ All tasks below are proposed backlog items; none is marked implemented or verifi
 | AUD-08 | Verify recurring-work execution and UI claims | P2 | Runtime worker/deployment evidence | UI/docs distinguish configured schedules from executed jobs; retries and failures observable. | BACKLOG |
 | AUD-09 | Add concise active audit checkpoint to task ledger | P2/P3 | This plan | Current next action/status is easy to find; historical TASKS entries preserved. | IN_PROGRESS (documentation only) |
 
-For each implementation task, create or reconcile an existing GitHub Issue before opening a duplicate. Include root cause or hypothesis, expected files, alternatives, risk, estimate, acceptance criteria, tests, rollback, reviewer, and definition of done.
+For each implementation task, create or reconcile an existing GitHub Issue before opening a duplicate. Include root cause or hypothesis, expected files, alternatives, risk, estimate, acceptance criteria, tests, rollback, accountable maintainer self-review owner, and definition of done.
 
 ## 10. Production readiness gates
 
