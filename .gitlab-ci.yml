@@ -39,44 +39,31 @@ resolve-event:
   script:
     - |
       set -eu
-      : "${TRIGGER_PAYLOAD:?GitHub webhook payload is required}"
       python - <<'PY'
-      import json
       import os
       import re
 
-      payload_path = os.environ["TRIGGER_PAYLOAD"]
-      with open(payload_path, encoding="utf-8") as payload_file:
-          payload = json.load(payload_file)
+      repository = os.environ.get("GITHUB_REPOSITORY", "")
+      event = os.environ.get("GITHUB_EVENT", "")
+      sha = os.environ.get("SOURCE_SHA", "")
+      pr_number = os.environ.get("GITHUB_PR_NUMBER", "")
 
-      repository = payload.get("repository", {}).get("full_name", "")
       if repository.casefold() != "abdullahomaar/ai-business-assistant":
-          raise SystemExit("Webhook repository does not match the canonical GitHub repository.")
-
-      pull_request = payload.get("pull_request")
-      pr_number = ""
-      if isinstance(pull_request, dict):
-          sha = pull_request.get("head", {}).get("sha", "")
-          pr_number = str(pull_request.get("number", ""))
-          if not pr_number.isdigit() or int(pr_number) < 1:
-              raise SystemExit("Pull request webhook did not contain a valid PR number.")
-          event = "pull_request"
-      else:
-          if payload.get("deleted") is True:
-              raise SystemExit("Deleted-branch webhook events are not validation candidates.")
-          sha = payload.get("after", "")
-          event = "push"
-
+          raise SystemExit("Trigger repository does not match the canonical GitHub repository.")
+      if event not in {"pull_request", "merged"}:
+          raise SystemExit("Unsupported GitHub event type.")
+      if event == "pull_request" and (not pr_number.isdigit() or int(pr_number) < 1):
+          raise SystemExit("Pull request event did not contain a valid PR number.")
       if not re.fullmatch(r"[0-9a-f]{40}", sha):
-          raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
+          raise SystemExit("Trigger did not contain a valid 40-character GitHub commit SHA.")
 
       with open("event.env", "w", encoding="utf-8") as env_file:
           env_file.write(f"SOURCE_SHA={sha}\n")
           env_file.write(f"GITHUB_EVENT={event}\n")
-          if pr_number:
-              env_file.write(f"GITHUB_PR_NUMBER={pr_number}\n")
+          env_file.write(f"GITHUB_REPOSITORY={repository}\n")
+          env_file.write(f"GITHUB_PR_NUMBER={pr_number}\n")
 
-      print(f"Resolved {event} event to canonical GitHub source SHA: {sha}")
+      print(f"Validated {event} event for canonical GitHub SHA: {sha}")
       PY
   artifacts:
     when: always
@@ -135,9 +122,8 @@ prepare-source:
       {
         printf 'SOURCE_SHA=%s\n' "$SOURCE_SHA"
         printf 'GITHUB_EVENT=%s\n' "${GITHUB_EVENT:-unknown}"
-        if [ -n "${GITHUB_PR_NUMBER:-}" ]; then
-          printf 'GITHUB_PR_NUMBER=%s\n' "$GITHUB_PR_NUMBER"
-        fi
+        printf 'GITHUB_REPOSITORY=%s\n' "${GITHUB_REPOSITORY:-}"
+        printf 'GITHUB_PR_NUMBER=%s\n' "${GITHUB_PR_NUMBER:-}"
       } > event.env
       case "$SOURCE_SHA" in
         *[!0-9a-f]*|'') echo "SOURCE_SHA must be 40 lowercase hexadecimal characters." >&2; exit 1 ;;
@@ -159,7 +145,7 @@ prepare-source:
       export GIT_TERMINAL_PROMPT=0
       git -C source init
       git -C source remote add origin https://github.com/AbdullahOmaar/ai-business-assistant.git
-      if [ "${GITHUB_EVENT:-push}" = "pull_request" ]; then
+      if [ "$GITHUB_EVENT" = "pull_request" ]; then
         : "${GITHUB_PR_NUMBER:?Pull request number is required for pull-request events}"
         git -C source fetch --no-tags --depth=1 origin "refs/pull/$GITHUB_PR_NUMBER/head"
       else
