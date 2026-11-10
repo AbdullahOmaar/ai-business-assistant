@@ -20,7 +20,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review and verified UI readback; a second reviewer is not a default requirement.
+> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review and verified UI readback. No separate independent reviewer is required by project policy.
 
 ## 1. Package manifest
 
@@ -186,7 +186,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Updated AGENTS.md, CONTRIBUTING.md, Production Deployment Runbook and PR template to use one consistent self-review rule.
 - This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
 
-### 1.0.4 — 2026-11-06 — DRAFT
+### 1.0.4 — 2026-11-06 — DRAFT (SUPERSEDED BY 1.0.5)
 - Removed the project-level mandatory independent-reviewer gate for routine merges and controlled knowledge updates.
 - The accountable maintainer/Project Master may perform and document self-review; a second reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
 - Preserved owner merge authorization, exact-head required checks, provider-enforced branch protections, security/data-integrity controls and production release authorization.
