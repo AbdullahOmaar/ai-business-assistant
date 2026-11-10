@@ -308,10 +308,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       expect(height, `Mobile header controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
   };
-  for (const width of [320, 360, 390, 412, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
-    if (width <= 412) await assertHomeMobileGrid(width);
+    if (width <= 430) await assertHomeMobileGrid(width);
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
@@ -335,10 +335,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   // Language was switched from App Guide; return to Home before measuring Home grids.
   await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
   await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
-  for (const width of [320, 360, 390, 412, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
-    if (width <= 412) await assertHomeMobileGrid(width);
+    if (width <= 430) await assertHomeMobileGrid(width);
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
