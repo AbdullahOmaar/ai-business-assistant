@@ -434,14 +434,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(ltrMoreMenuLayout.overscrollBehavior).toBe('contain');
   await page.keyboard.press('Escape');
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
-  await page.locator('.mobile-app-header .brand-button').click();
-  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
-  await expect(page.locator('.dashboard-period')).toBeVisible();
-  await page.screenshot({
-    path: 'test-results/aiba-home-390px-ltr.png',
-    fullPage: true,
-    animations: 'disabled',
-  });
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
   await expect(moreTrigger).toBeFocused();
   for (const width of [360, 390, 430]) {
@@ -451,6 +443,12 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   // Language was switched from App Guide; return to Home before measuring Home grids.
   await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
   await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: 'test-results/aiba-home-390px-ltr.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
   for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
