@@ -347,6 +347,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.setViewportSize({ width: 360, height: 800 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
   await moreTrigger.click();
+  await expect(page.getByRole('navigation', { name: /أقسام إضافية|Additional sections/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toBeFocused();
+  await moreTrigger.click();
   await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
   await expect(moreTrigger).toHaveAttribute('aria-controls', 'mobile-more-menu');
   await expect(page.locator('#mobile-more-menu .mobile-more-group')).toHaveCount(5);
