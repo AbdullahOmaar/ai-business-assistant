@@ -11,6 +11,22 @@ The Owner permanently lifts the prior CircleCI execution freeze. This supersedes
 
 This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
 
+# Owner policy decision — independent reviewer requirement removed — 2026-11-10
+
+The Owner explicitly removes the project-level separate independent-reviewer requirement for **all changes**: routine PRs, Security/Architecture changes, and canonical controlled Project Knowledge publication/update.
+
+- Required replacement: the accountable maintainer / Project Master performs and records a full diff self-review against the exact candidate SHA.
+- No separate independent reviewer is required by project policy.
+- Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed. This decision does not alter provider-enforced settings.
+- Exact-SHA CI/security checks, Owner merge authorization, security/data-integrity controls, and separate production-deployment authorization remain unchanged.
+- Governance candidate: [PR #368](https://github.com/AbdullahOmaar/ai-business-assistant/pull/368), branch `governance/remove-independent-review-gate-20261110`, current recorded head `de404f9be04351b3a3dca953d4b25017d31334d6`, base `e018c56640cc63573cdaec590fa5018148d5f662`. Refresh live head/status before any action.
+- Updated repository policy files: `AGENTS.md`, `CONTRIBUTING.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `.github/pull_request_template.md`, and ABA-KNOW-00..04 under `docs/project-knowledge/`.
+- Updated and read back canonical Notion pages: Product & Agent Operating Model, Universal Work Execution Standard, Work Package & Handoff Standard, Master Task Plan, Agent Prompt Registry, and E2E Operating Model.
+- ABA-KNOW-00..04 remain DRAFT. Project Sources publication and Project Instructions UI save/readback are NOT VERIFIED.
+- GitHub effective branch-protection approval requirements remain UNKNOWN pending Owner/Admin UI readback. Never bypass them.
+- Documentation-only candidate. Tests/build/security CI are NOT RUN on this branch. No merge, deployment, production DB write/migration, or branch-protection change.
+
+
 # Policy conflict sweep — 2026-11-08
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
