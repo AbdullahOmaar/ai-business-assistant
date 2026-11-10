@@ -394,15 +394,15 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(page.locator('.compact-table')).toBeVisible();
-      const compactTableFontSizes = await page.locator('.compact-table th, .compact-table td').evaluateAll(
+    const compactTableFontSizes = await page.locator('.compact-table th, .compact-table td').evaluateAll(
       cells => cells.map(cell => Number.parseFloat(getComputedStyle(cell).fontSize)),
-      );
-      expect(compactTableFontSizes.length).toBeGreaterThan(0);
-      for (const fontSize of compactTableFontSizes) {
-        expect(fontSize, `Platform Admin summary text must be at least 11px at ${width}px`).toBeGreaterThanOrEqual(11);
-      }
-      const overviewHasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-      expect(overviewHasHorizontalOverflow, `Platform Admin overview must not overflow at ${width}px`).toBe(false);
+    );
+    expect(compactTableFontSizes.length).toBeGreaterThan(0);
+    for (const fontSize of compactTableFontSizes) {
+      expect(fontSize, `Platform Admin summary text must be at least 11px at ${width}px`).toBeGreaterThanOrEqual(11);
+    }
+    const overviewHasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+    expect(overviewHasHorizontalOverflow, `Platform Admin overview must not overflow at ${width}px`).toBe(false);
   }
   overviewFailure = true;
   await page.getByRole('button', { name: /Refresh data|تحديث البيانات/ }).click();
