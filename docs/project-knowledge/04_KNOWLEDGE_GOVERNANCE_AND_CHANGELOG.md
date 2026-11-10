@@ -183,7 +183,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
 - The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
 - Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, owner authorization, data-integrity controls and separate production authorization remain unchanged.
-- Updated AGENTS.md, CONTRIBUTING.md, Production Deployment Runbook and PR template to use one consistent self-review rule.
+- Aligned AGENTS.md, CONTRIBUTING.md, Production Deployment Runbook, PR template, TASKS.md, Accounting Ledger Design, Audit Master Plan, Security Route Inventory, Team Month One Plan and ABA-KNOW-00..04 with the Owner's single-maintainer self-review policy.
 - This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
 
 ### 1.0.4 — 2026-11-06 — DRAFT
