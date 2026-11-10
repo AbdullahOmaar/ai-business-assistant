@@ -4,7 +4,7 @@ title: Knowledge Governance & Changelog
 version: 1.0.5
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T00:00:00Z
+last_verified_at: 2026-11-10T21:48:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -13,7 +13,7 @@ canonical_sources:
   - https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-related_github_sha: e018c56640cc63573cdaec590fa5018148d5f662
+related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
 supersedes: none
 superseded_by: none
 ---
@@ -179,13 +179,6 @@ For every scenario, record the fixture/input, canonical source references, packa
 
 ## 11. Changelog
 
-### 1.0.5 — 2026-11-10 — DRAFT
-- Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
-- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
-- Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, owner authorization, data-integrity controls and separate production authorization remain unchanged.
-- Aligned AGENTS.md, CONTRIBUTING.md, Production Deployment Runbook, PR template, TASKS.md, Accounting Ledger Design, Audit Master Plan, Security Route Inventory, Team Month One Plan and ABA-KNOW-00..04 with the Owner's single-maintainer self-review policy.
-- This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
-
 ### 1.0.4 — 2026-11-06 — DRAFT
 - Removed the project-level mandatory independent-reviewer gate for routine merges and controlled knowledge updates.
 - The accountable maintainer/Project Master may perform and document self-review; a second reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
@@ -221,3 +214,10 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Recorded source authority, role discovery, engineering/security guardrails and closeout publication workflow.
 - Preserved the unresolved T37 authority conflict as fail-closed; did not promote historical approval text.
 - Project Sources inventory/publication and Project Instructions UI readback remain NOT VERIFIED.
+
+
+### 1.0.5 — 2026-11-10 — DRAFT
+- Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
+- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
+- Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, Owner authorization, data-integrity controls and separate production authorization remain unchanged.
+- This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.

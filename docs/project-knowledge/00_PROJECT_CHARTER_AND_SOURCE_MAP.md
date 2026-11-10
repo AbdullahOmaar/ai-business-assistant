@@ -4,7 +4,7 @@ title: Project Charter & Source Map
 version: 1.0.5
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T00:00:00Z
+last_verified_at: 2026-11-10T21:48:00Z
 review_due: 2027-01-28
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
@@ -14,7 +14,7 @@ canonical_sources:
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
-related_github_sha: e018c56640cc63573cdaec590fa5018148d5f662
+related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
 supersedes: none
 superseded_by: none
 ---

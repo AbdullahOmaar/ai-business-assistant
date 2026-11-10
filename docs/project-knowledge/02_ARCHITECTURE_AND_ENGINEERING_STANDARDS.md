@@ -4,7 +4,7 @@ title: Architecture & Engineering Standards
 version: 1.0.5
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T00:00:00Z
+last_verified_at: 2026-11-10T21:48:00Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
@@ -13,7 +13,7 @@ canonical_sources:
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/adr/ADR-001-v0-architecture.md
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/CONTRIBUTING.md
-related_github_sha: e018c56640cc63573cdaec590fa5018148d5f662
+related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
 supersedes: none
 superseded_by: none
 ---
