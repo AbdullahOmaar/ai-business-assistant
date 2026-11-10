@@ -27,6 +27,7 @@ variables:
     - mkdir -p "$CI_PROJECT_DIR/job-status"
     - printf '%s\n' "$CI_JOB_STATUS" > "$CI_PROJECT_DIR/job-status/$CI_JOB_NAME.txt"
   artifacts:
+    access: maintainer
     when: always
     paths:
       - job-status/
@@ -74,6 +75,7 @@ resolve-event:
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
   artifacts:
+    access: maintainer
     when: always
     reports:
       dotenv: event.env
@@ -161,6 +163,7 @@ prepare-source:
       git -C source remote remove origin
       echo "Verified GitHub source SHA: $actual_sha"
   artifacts:
+    access: maintainer
     when: always
     reports:
       dotenv: event.env
@@ -222,6 +225,7 @@ backend-tests:
     - python scripts/validate_project_knowledge.py
     - python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
   artifacts:
+    access: maintainer
     when: always
     reports:
       junit: source/backend/test-results/pytest.xml
@@ -335,6 +339,7 @@ frontend-browser-e2e:
     - npx playwright --version
     - npx playwright test
   artifacts:
+    access: maintainer
     when: always
     paths:
       - job-status/
