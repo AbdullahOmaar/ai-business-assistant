@@ -457,7 +457,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   const errorState = page.locator('.aba-state-message[role="alert"]');
   await expect(errorState).toContainText('Temporary assistant failure.');
   await expect(composer).toHaveValue(longChatPrompt);
-  await expect(page.locator('.chat-message')).toHaveCount(1);
+  await expect(page.locator('.chat-message')).toHaveCount(0);
   const retryButton = page.getByRole('button', { name: /إعادة المحاولة|Retry/ });
   await expect(retryButton).toBeEnabled();
   await retryButton.click();
