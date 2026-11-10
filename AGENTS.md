@@ -140,7 +140,7 @@ If the task is too large, split it into independently reviewable subtasks with e
 - **Coordinator/architect:** owns the task ledger, architecture consistency, dependency graph, scope, integration, and final report; reconciles agent outputs against repository reality.
 - **Implementation agent:** owns only its assigned files or module and must include tests/docs required by its change.
 - **Test/verification agent:** independently checks acceptance criteria, edge cases, failure paths, and regression risks; must report exact commands/results and may not claim checks it did not run.
-- **Security/review agent (when assigned):** may review authorization, tenant isolation, secrets, injection/input validation, financial correctness, dependency risk, and unintended scope; a separate reviewer is not a default merge prerequisite.
+- **Security verification support (when assigned):** may provide evidence on authorization, tenant isolation, secrets, injection/input validation, financial correctness, dependency risk, and unintended scope. This is optional verification support, not a separate reviewer or approval gate.
 - Begin with one implementation agent. Add parallel agents only when work is genuinely separable and file ownership/conflict boundaries are explicit.
 - Never allow multiple agents to edit the same files concurrently without a deliberate integration/locking strategy. The coordinator resolves conflicting advice and is accountable for the final result.
 - Agents must report changed files, evidence, unresolved questions, and exact next steps—not just a summary of intentions.
@@ -231,7 +231,7 @@ This section clarifies the operational detail for every human, specialist chat a
 
 ### Canonical records
 - Notion owns task ownership, assignment, dependency, decisions and handoffs. GitHub owns code, branches, PRs, formal reviews and exact-SHA CI. Vercel/Neon own deployment/runtime and database schema evidence.
-- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and path ownership, base/head SHA, changed files, acceptance criteria, commands/results, reviewer, PR state, CI links, release impact and NOT RUN/BLOCKED items.
+- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and path ownership, base/head SHA, changed files, acceptance criteria, commands/results, maintainer self-review owner/findings, formal GitHub branch-protection approval state (if configured), PR state, CI links, release impact and NOT RUN/BLOCKED items.
 - Update `TASKS.md` at meaningful checkpoints. Treat appended old snapshots as HISTORICAL unless refreshed from live GitHub/provider evidence; do not add a second task tracker.
 - If branch protection/ruleset cannot be read, record UNKNOWN and resolve through Owner/Admin GitHub UI readback. Never claim protection is enabled from a written policy alone.
 - A Notion/GitHub change does not update ChatGPT Project Instructions or uploaded Project Sources. Report those surfaces as unsynchronized until separately saved and read back.
