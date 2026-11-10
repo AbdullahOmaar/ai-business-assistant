@@ -55,25 +55,13 @@ resolve-event:
       if repository.casefold() != "abdullahomaar/ai-business-assistant":
           raise SystemExit("Webhook repository does not match the canonical GitHub repository.")
 
-      if isinstance(payload.get("pull_request"), dict):
-          event = "pull_request"
-          pull_request = payload["pull_request"]
-          sha = ((pull_request.get("head") or {}).get("sha")) or ""
-          pr_number = str(payload.get("number") or "")
-          base_repository = ((pull_request.get("base") or {}).get("repo") or {}).get("full_name", "")
-          if base_repository.casefold() != "abdullahomaar/ai-business-assistant":
-              raise SystemExit("Pull request base repository is not the canonical GitHub repository.")
-          if not pr_number.isdigit() or int(pr_number) < 1:
-              raise SystemExit("Pull request webhook did not contain a valid PR number.")
-      else:
-          event = "push"
-          sha = payload.get("after", "")
-          pr_number = ""
-          ref = payload.get("ref", "")
-          if not (ref.startswith("refs/heads/") or ref.startswith("refs/tags/")):
-              raise SystemExit("Unsupported GitHub push ref; only branch and tag pushes are accepted.")
-          if payload.get("deleted") is True:
-              raise SystemExit("Deleted-ref webhook events do not run validation.")
+      event = "push"
+      sha = payload.get("after", "")
+      ref = payload.get("ref", "")
+      if not ref.startswith("refs/heads/"):
+          raise SystemExit("Only GitHub branch push events are supported.")
+      if payload.get("deleted") is True:
+          raise SystemExit("Deleted-branch webhook events do not run validation.")
 
       if not re.fullmatch(r"[0-9a-f]{40}", sha):
           raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
@@ -83,7 +71,6 @@ resolve-event:
           env_file.write(f"GITHUB_EVENT={event}\n")
           env_file.write(f"GITHUB_REPOSITORY={repository}\n")
           if pr_number:
-              env_file.write(f"GITHUB_PR_NUMBER={pr_number}\n")
 
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
@@ -144,9 +131,6 @@ prepare-source:
         printf 'SOURCE_SHA=%s\n' "$SOURCE_SHA"
         printf 'GITHUB_EVENT=%s\n' "${GITHUB_EVENT:-unknown}"
         printf 'GITHUB_REPOSITORY=%s\n' "${GITHUB_REPOSITORY:-}"
-        if [ -n "${GITHUB_PR_NUMBER:-}" ]; then
-          printf 'GITHUB_PR_NUMBER=%s\n' "$GITHUB_PR_NUMBER"
-        fi
       } > event.env
       case "$SOURCE_SHA" in
         *[!0-9a-f]*|'') echo "SOURCE_SHA must be 40 lowercase hexadecimal characters." >&2; exit 1 ;;
@@ -168,12 +152,7 @@ prepare-source:
       export GIT_TERMINAL_PROMPT=0
       git -C source init
       git -C source remote add origin https://github.com/AbdullahOmaar/ai-business-assistant.git
-      if [ "$GITHUB_EVENT" = "pull_request" ]; then
-        : "${GITHUB_PR_NUMBER:?Pull request number is required for pull-request events}"
-        git -C source fetch --no-tags --depth=1 origin "refs/pull/$GITHUB_PR_NUMBER/head"
-      else
-        git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
-      fi
+      git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
       git -C source checkout --detach FETCH_HEAD
       actual_sha="$(git -C source rev-parse HEAD)"
       test "$actual_sha" = "$SOURCE_SHA" || {
