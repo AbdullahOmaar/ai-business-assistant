@@ -62,7 +62,7 @@ The repository includes:
 - Angular email/password sign-in, authenticated API client, live dashboard/customer/product/invoice views, invoice draft editing/issuing/voiding, and a record-grounded AI chat UI.
 - Invoice issuance stock deductions as auditable stock movements for tracked products and insufficient-stock validation.
 - A date-filtered dashboard API that separates invoiced sales, recorded payments, expenses, and outstanding balances by currency.
-- CircleCI for backend tests, PostgreSQL migration validation, frontend unit tests and production builds, Playwright browser smoke, backend container checks, and dependency/security audits.
+- GitLab Free is the intended automatic exact-SHA runner for backend tests, PostgreSQL migration validation, frontend unit tests/builds, Playwright browser smoke, backend container checks, and dependency/security audits. CircleCI remains the transition fallback/current required gate until cutover acceptance is verified.
 - Regression tests for cross-business authorization boundaries, invoice state transitions, and AI input/provider safety.
 
 ## Release blockers and known limitations
