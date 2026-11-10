@@ -1,15 +1,18 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Permanent Owner directive — GitHub Actions CI migration (effective 2026-11-10)
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner selects GitHub Actions as the sole approved repository CI provider. This decision supersedes all earlier GitHub Actions-only, GitHub Actions-freeze/unfreeze, GitLab CI, and provider-substitution instructions.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- The core required workflow is .github/workflows/ci.yml; it runs backend accounting/tests and PostgreSQL migration validation, knowledge-package validation, frontend unit tests and production build, frontend dependency audit, Playwright browser smoke, backend container/import checks, backup/restore safety guards, and a single aggregate gate.
+- The required aggregate status is CI / all-checks-passed and must be successful on the exact current PR head SHA. Individual substantive jobs must also be inspected; an aggregate cannot conceal skipped or missing required jobs.
+- .github/workflows/dependency-security.yml runs scheduled and manually requested Python/npm dependency audits.
+- GitHub Actions is retired for this repository. Do not trigger, retry, require, or treat GitHub Actions results as current release evidence. The migration removes .github/workflows/ci.yml.
+- GitLab CI and Semaphore remain inactive/non-authoritative. Do not substitute them.
+- Use the repository's approved GitHub-hosted runner configuration. Do not enable paid larger runners, purchase credits, or change billing without separate Owner authorization.
+- Provider availability, Actions permissions, quotas, and organization/repository policy still apply. If Actions cannot execute, record the exact cause as NOT RUN/BLOCKED; never claim an unexecuted job passed.
+- During cutover, update GitHub branch protection to require CI / all-checks-passed; confirm the effective setting through Owner/Admin UI readback because the connected integration cannot verify branch protection.
+- Full maintainer diff review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization, and separate production-deployment authorization remain mandatory.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This changes CI provider authority only. It does not waive tests, security, review, merge, data-integrity, migration, or release gates. The repository cutover becomes effective when this migration PR is merged; do not disable the current mainline validation before the replacement workflow has passed on the migration candidate.
 
 # Production deployment runbook
 
@@ -47,7 +50,7 @@ Health checks:
 
 The Web Vercel project root is `frontend`. The repository-owned `frontend/vercel.json` explicitly runs `node scripts/write-build-info.mjs && ng build` and publishes `dist/ai-business-assistant/browser` (the Angular application builder's browser output directory). This is required because the Angular framework auto-detected build can invoke `ng build` directly and bypass npm's `prebuild` lifecycle, leaving the UI commit label and service-worker cache name as `unknown`.
 
-CircleCI remains the sole approved test/build validation provider and runs the full frontend unit suite, production build, and Playwright checks. The Vercel build command stamps the per-commit UI/service-worker metadata and compiles the frontend; it is not a replacement test gate.
+GitHub Actions remains the sole approved test/build validation provider and runs the full frontend unit suite, production build, and Playwright checks. The Vercel build command stamps the per-commit UI/service-worker metadata and compiles the frontend; it is not a replacement test gate.
 
 Preview builds are fail-closed by `scripts/write-build-info.mjs`: when `VERCEL_ENV=preview`, it replaces the checked-in production runtime config with an empty setup-required config unless all isolated Preview values are supplied. Configure these Vercel Preview environment variables only after a synthetic API and Firebase project exist: `ABA_PREVIEW_API_BASE_URL`, `ABA_PREVIEW_FIREBASE_API_KEY`, `ABA_PREVIEW_FIREBASE_AUTH_DOMAIN`, `ABA_PREVIEW_FIREBASE_PROJECT_ID`, and `ABA_PREVIEW_FIREBASE_APP_ID`. A partial set or the known Production API/Firebase identifiers fails the build. Production and local builds retain the existing runtime config. Do not sign in or mutate data from a Preview until the synthetic runtime is configured and verified.
 
@@ -66,7 +69,7 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 - **Reuse before creating:** Check the current branch and open PRs first. Update an existing in-progress branch/PR when appropriate; avoid duplicate work and unnecessary branch churn.
 - **Review budget:** target no more than 15 changed paths OR 800 non-generated changed lines. These are planning thresholds, not hard caps. Above either target, split only at a genuinely independent boundary or attach a staged-review plan naming path/behavior batches, dependencies, and checks. Never create micro-PRs or hide generated/lockfile changes.
 - **Shared-file ownership:** name one primary writer and exact owned paths per work package. One writer at a time edits coordination-sensitive paths such as `app.component.ts`, `TASKS.md`, global tokens, shared contracts, authorization boundaries and DB/schema files. Manual claims coordinate but are not atomic locks.
-- **CI evidence:** CircleCI is the sole approved provider. Require substantive jobs and aggregate on the exact candidate SHA. Do not substitute Actions, GitLab or Semaphore. The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- **CI evidence:** GitHub Actions is the sole approved provider. Require substantive jobs and aggregate on the exact candidate SHA. CircleCI, GitLab and Semaphore are retired/non-authoritative. The permanent Owner directive effective 2026-11-08 authorizes normal GitHub Actions triggers and manual trigger/retry without per-run Owner approval. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
 - **Review and merge:** a full maintainer diff review is mandatory. A second reviewer is required only by provider-enforced protection or a separate explicit Owner-approved security policy. Before merge require READY/non-Draft, exact-head checks, current maintainer review, blocking threads resolved, base/divergence reconciled, provider protections satisfied and explicit Owner merge authorization.
 - **Production deploys are release events, not per-task events:** Do not deploy after each commit or minor fix. Build and test the full coherent change set, merge the approved candidate, and deploy only when a new important feature/feature bundle or critical fix is ready for release. Normally trigger one production deployment for each affected project per release; do not deploy an unchanged project. Merge and deployment authorization remain separate.
 - **Release gate before trigger:** Confirm exact merged main SHA, required CI/security/build checks, release markers ([release-web] and/or [release-api] for affected projects), and Ignore Build Step behavior. If a gate or quota blocks deployment, stop repeated retries, record the exact error, continue independent work, and retry only after the cause is resolved or the quota window resets.
@@ -74,17 +77,17 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 ## CI provider and required status
 
-- **CircleCI is the sole active and approved CI provider** for tests, builds, browser checks and dependency/security audits. The canonical pipeline is `.circleci/config.yml`.
-- GitHub remains canonical for source code, branches, commits, PRs and release SHAs. CircleCI validates the exact GitHub commit; it is not a second source of truth.
-- The CircleCI workflow runs backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
+- **GitHub Actions is the sole active and approved CI provider** for tests, builds, browser checks and dependency/security audits. The canonical pipeline is `.github/workflows/ci.yml`.
+- GitHub remains canonical for source code, branches, commits, PRs and release SHAs. GitHub Actions validates the exact GitHub commit; it is not a second source of truth.
+- The GitHub Actions workflow runs backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
 - GitLab CI is inactive for current validation. Do not trigger, retry, wait on, or require GitLab pipeline or mirror statuses. Semaphore is retired/non-authoritative; its status context is not a release gate.
-- Do not introduce GitHub Actions as a replacement test/build CI provider.
-- Verify every substantive CircleCI job and the aggregate workflow on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
-- If CircleCI or its logs are unavailable, record the exact check as NOT RUN / BLOCKED; do not substitute a retired or unapproved provider.
+- CircleCI, GitLab CI and Semaphore are retired/non-authoritative.
+- Verify every substantive GitHub Actions job and the aggregate workflow on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
+- If GitHub Actions or its logs are unavailable, record the exact check as NOT RUN / BLOCKED; do not substitute a retired or unapproved provider.
 
 ## Release gates
 
-1. Verify the CircleCI workflow passes on the exact release candidate SHA, including backend tests, validator tests, frontend build/audit, Playwright browser smoke, and backend container verification.
+1. Verify the GitHub Actions workflow passes on the exact release candidate SHA, including backend tests, validator tests, frontend build/audit, Playwright browser smoke, and backend container verification.
 2. Confirm the production database's current Alembic revision and schema without modifying data.
 3. Take a production backup and prove it can be restored into an isolated non-production database; record recovery evidence.
 4. Review migration SQL and run the migration against a disposable PostgreSQL database or restored non-production clone. Only run production migrations after explicit owner approval and the approved backup/rollback plan.
@@ -177,7 +180,7 @@ At task start, record a compact release profile on the existing Notion task / Gi
 - Likely affected applications/projects (Web/API/etc.) and explicitly unaffected projects.
 - Whether GitHub merge to main automatically triggers production deployment for each affected Vercel project; confirm Git integration, production branch, release markers, Ignore Build Step and project root/dependency boundaries.
 - Whether schema/migration, secrets/configuration, paid resources, production data, or external side effects are involved.
-- Applicable CircleCI workflow, required exact-head jobs and the permanent Owner CI authorization and current provider/quota availability.
+- Applicable GitHub Actions workflow, required exact-head jobs and the permanent Owner CI authorization and current provider/quota availability.
 - Required owner decisions: merge authorization, production deployment authorization, and any separate production data/migration approval.
 
 Do this once before coding. Recheck only when a relevant configuration, scope, branch/base or release target changes. Never defer deployment-coupling discovery until after the owner says “merge”.
@@ -187,7 +190,7 @@ Do this once before coding. Recheck only when a relevant configuration, scope, b
 Maintain one current packet in the existing task/PR rather than scattering evidence across repeated status messages:
 - PR URL, base SHA, exact head SHA, changed-file inventory and merge-base/divergence.
 - Acceptance criteria mapped to tests and results.
-- CircleCI workflow URL and substantive job outcomes on the exact head.
+- GitHub Actions workflow URL and substantive job outcomes on the exact head.
 - Current review submissions and provider/repository-enforced requirements (a comment is not an approval).
 - Diff/security/data-integrity review, migrations and production side-effect assessment.
 - Release profile: affected projects, automatic deployment behavior, release markers/ignore rules, and explicit non-targets.
@@ -229,4 +232,4 @@ After authorization and all gates:
 
 This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the reviewer/QA validates the evidence; Master coordinates cross-project release; only the authorized owner grants reserved approvals. A documented maintainer full-diff review is mandatory. A second reviewer is not a default ordinary-merge requirement unless provider protection or separate explicit Owner-approved security policy requires it. This does not waive the separate independent non-author review required before canonical controlled Project Knowledge publication/update.
 
-**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, the permanent CircleCI execution authorization and exact-SHA requirements, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.
+**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, the GitHub Actions exact-SHA requirements, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.
