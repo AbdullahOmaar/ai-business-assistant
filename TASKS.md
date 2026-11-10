@@ -19,7 +19,7 @@ The Owner explicitly removes the project-level separate independent-reviewer req
 - No separate independent reviewer is required by project policy.
 - Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed. This decision does not alter provider-enforced settings.
 - Exact-SHA CI/security checks, Owner merge authorization, security/data-integrity controls, and separate production-deployment authorization remain unchanged.
-- Governance candidate: [PR #368](https://github.com/AbdullahOmaar/ai-business-assistant/pull/368), branch `governance/remove-independent-review-gate-20261110`, current recorded head `de404f9be04351b3a3dca953d4b25017d31334d6`, base `e018c56640cc63573cdaec590fa5018148d5f662`. Refresh live head/status before any action.
+- Governance candidate: [PR #368](https://github.com/AbdullahOmaar/ai-business-assistant/pull/368), branch `governance/remove-independent-review-gate-20261110`, live PR head (must be refreshed before action), base `e018c56640cc63573cdaec590fa5018148d5f662`. Do not rely on a copied head SHA in this ledger.
 - Updated repository policy files: `AGENTS.md`, `CONTRIBUTING.md`, `docs/PRODUCTION_DEPLOYMENT.md`, `.github/pull_request_template.md`, and ABA-KNOW-00..04 under `docs/project-knowledge/`.
 - Updated and read back canonical Notion pages: Product & Agent Operating Model, Universal Work Execution Standard, Work Package & Handoff Standard, Master Task Plan, Agent Prompt Registry, and E2E Operating Model.
 - ABA-KNOW-00..04 remain DRAFT. Project Sources publication and Project Instructions UI save/readback are NOT VERIFIED.
@@ -27,7 +27,7 @@ The Owner explicitly removes the project-level separate independent-reviewer req
 - Documentation-only candidate. Tests/build/security CI are NOT RUN on this branch. No merge, deployment, production DB write/migration, or branch-protection change.
 
 
-# Policy conflict sweep — 2026-11-08
+# Historical policy conflict sweep — 2026-11-08 (superseded by Owner policy effective 2026-11-10)
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
 - Effective rule: CircleCI remains the sole approved CI provider; unavailable/frozen CircleCI means NOT RUN/BLOCKED, not provider substitution. Ordinary PR merge has no default second-reviewer gate unless required by provider/explicit security policy; canonical controlled Project Knowledge publication separately requires a non-author independent reviewer.
@@ -35,7 +35,7 @@ The Owner explicitly removes the project-level separate independent-reviewer req
 
 ---
 
-# Canonical knowledge review gate clarification — 2026-11-08
+# Historical canonical knowledge review gate clarification — 2026-11-08 (superseded by Owner policy effective 2026-11-10)
 
 - Clarified that the 2026-11-06 no-default-independent-review Owner Policy applies to **ordinary PR merge**. It does not remove the separate requirement for a reviewer who did not author the content before canonical controlled Project Knowledge is published/updated.
 - Mirrored the exception into `AGENTS.md`, the original `CONTRIBUTING.md` role boundary and `.github/pull_request_template.md`.
