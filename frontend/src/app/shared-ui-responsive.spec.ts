@@ -96,4 +96,5 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
   assert.match(styleBlock, /\.filters label,\.status-form label,\.user-role-form label>span\{font-size:12px\}/);
   assert.match(styleBlock, /@media\(max-width:480px\)\{[\s\S]*?\.section-nav button\{min-height:46px;font-size:12px\}/);
   assert.match(styleBlock, /\.compact-table th,\.compact-table td\{font-size:11px;line-height:1\.4\}/);
+  assert.match(styleBlock, /@media\(max-width:760px\)\{[\s\S]*?\.compact-table th,\.compact-table td\{padding:7px 5px;font-size:11px;line-height:1\.4\}/);
 });

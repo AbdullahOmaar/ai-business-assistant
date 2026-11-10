@@ -280,7 +280,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
           generated_at: '2026-10-27T00:00:00+00:00',
           businesses: { total: 0, active: 0, inactive: 0 },
           users: { distinct_subjects: 1, memberships: 0 },
-          invoices: { count: 0, by_currency_and_status: [] },
+          invoices: { count: 2, by_currency_and_status: [{ currency_code: 'EGP', status: 'issued', count: 2, total: '1500.00' }] },
           payments: { count: 0, by_currency: [] },
           audit_events: { count: 0 },
           limitations: [],
@@ -391,6 +391,19 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
   await expect(page.getByText('Member identities')).toBeVisible();
   await expect(page.getByText('Healthy').first()).toBeVisible();
+  for (const width of [360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(page.locator('.compact-table')).toBeVisible();
+      const compactTableFontSizes = await page.locator('.compact-table th, .compact-table td').evaluateAll(
+      cells => cells.map(cell => Number.parseFloat(getComputedStyle(cell).fontSize)),
+      );
+      expect(compactTableFontSizes.length).toBeGreaterThan(0);
+      for (const fontSize of compactTableFontSizes) {
+        expect(fontSize, `Platform Admin summary text must be at least 11px at ${width}px`).toBeGreaterThanOrEqual(11);
+      }
+      const overviewHasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+      expect(overviewHasHorizontalOverflow, `Platform Admin overview must not overflow at ${width}px`).toBe(false);
+  }
   overviewFailure = true;
   await page.getByRole('button', { name: /Refresh data|تحديث البيانات/ }).click();
   await expect(page.getByText('Member identities')).toHaveCount(0);

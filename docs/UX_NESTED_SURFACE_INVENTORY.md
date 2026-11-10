@@ -405,3 +405,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The disclosure indicator rotates on open and disables its transition under reduced-motion preferences. Native `details/summary` behavior, content, bilingual copy and feature availability remain unchanged.
 - Added source-level regression assertions for touch sizing, open-state styling, chevron affordance and reduced-motion behavior.
 - Visual-only change; no API, data, permission, route or business behavior changed. Node test execution and rendered mobile/RTL/LTR/keyboard acceptance remain **NOT RUN**.
+
+## Platform Admin compact-summary readability correction — 2026-11-10
+
+- Source review found the narrow-screen compact invoice summary table was reduced to 10px by a later <=760px override, superseding the earlier 11px mobile rule.
+- Raised the effective compact table cell typography to 11px with a 1.4 line height while retaining the four-column fixed layout and narrow-screen column proportions.
+- Added a source regression assertion for the effective <=760px rule and mocked Playwright checks at 360/390/430px for computed cell font size and no horizontal page overflow.
+- Presentation and test-fixture changes only. No platform permission, API, data, financial, or administrative behavior changed.
+- Node tests, Playwright, Angular build, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA checks remain NOT RUN until an approved runner and device environment are available.

@@ -356,7 +356,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
       .identity-access-top{gap:7px}
       .identity-access-heading .user-uid{overflow-wrap:anywhere}
       .compact-table table{min-width:0}
-      .compact-table th,.compact-table td{padding:7px 5px;font-size:10px}
+      .compact-table th,.compact-table td{padding:7px 5px;font-size:11px;line-height:1.4}
       .compact-table th:nth-child(1),.compact-table td:nth-child(1){width:19%}
       .compact-table th:nth-child(2),.compact-table td:nth-child(2){width:33%}
       .compact-table th:nth-child(3),.compact-table td:nth-child(3){width:16%}
