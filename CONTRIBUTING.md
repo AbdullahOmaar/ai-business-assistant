@@ -121,7 +121,7 @@ Every substantive handoff must state:
 
 ## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
 
-- GitLab Free is the intended automatic exact-SHA CI provider; direct webhook scope is branch Push events only, with commit statuses visible on associated PRs. Require every substantive job and the aggregate on the exact GitHub candidate SHA.
+- GitLab Free is the intended automatic exact-SHA CI provider; direct Pipeline Trigger webhooks accept branch Push and Pull Request events and report status against the exact GitHub SHA. Require every substantive job and the aggregate on the exact GitHub candidate SHA.
 - CircleCI remains configured as the transition fallback and current required gate until GitLab automatic triggering, exact-SHA validation, GitHub status reporting and enforceable merge-control acceptance are verified.
 - GitHub Actions and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
