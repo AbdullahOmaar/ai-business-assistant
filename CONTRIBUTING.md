@@ -1,15 +1,18 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Owner-approved CI provider transition — effective 2026-11-10
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- GitHub Push and Pull Request webhook events are intended to trigger GitLab Free through the Pipeline Trigger API. GitLab must extract the event's exact GitHub SHA, fetch that commit from the private canonical repository, verify the checkout, and report the result against the same SHA.
+- GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
+- CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
+- No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
+- For retries, record the failed job/root cause and changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
+- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If either approved transition path cannot execute, record the exact cause as NOT RUN/BLOCKED; never infer success from a skipped or missing pipeline.
+- Required substantive jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
+- GitHub private Free does not provide protected-branch/status-check enforcement for private repositories. Until an enforceable merge-control solution is verified, mark the merge gate BLOCKED / NOT VERIFIED; do not bypass it, make the repository public, or incur a paid upgrade without separate Owner approval.
+- Full maintainer review, provider-enforced protections where available, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This directive changes the intended CI provider and transition plan only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
 
 # Contributing and Project Roles
 
@@ -93,7 +96,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If CircleCI or its logs are unavailable, record the exact check as NOT RUN / BLOCKED and continue independent safe validation. Do not substitute another CI provider or treat a local partial run as full CircleCI evidence. Manual reruns are permanently Owner-authorized under the 2026-11-08 directive; record root cause and changed condition, and do not retry unchanged failures blindly.
+- If GitLab's automatic webhook, runner or logs are unavailable, record the exact check as NOT RUN / BLOCKED; CircleCI remains the transition fallback until cutover acceptance. Do not treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
 
 ## 6. Required handoff report
 
