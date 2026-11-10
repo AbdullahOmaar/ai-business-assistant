@@ -2,7 +2,7 @@
 
 The Owner selects GitLab Free as the intended automatic repository CI provider. GitHub remains canonical for source code, branches, pull requests and release SHAs.
 
-- GitHub branch Push and Pull Request webhook events trigger GitLab Free through the Pipeline Trigger API. For PRs (including forks), source-fetch fetches the canonical `refs/pull/<number>/head` and verifies the exact webhook head SHA. GitHub tokens are restricted to source-fetch/status-report jobs; test/build/security jobs receive no GitHub tokens.
+- GitHub branch Push events are the documented direct-webhook trigger path to GitLab Free. The resolver also accepts Pull Request payloads (including forks) and source-fetch fetches canonical `refs/pull/<number>/head` with exact-SHA verification; GitLab's documented direct-webhook contract covers Push/Tag only, so PR-event delivery remains experimental and NOT VERIFIED. GitHub tokens are restricted to source-fetch/status-report jobs; test/build/security jobs receive no GitHub tokens.
 - GitLab's official external-repository CI integration and pull mirroring require Premium/Ultimate; the Free implementation uses the direct Pipeline Trigger webhook path and a protected GitLab runner-configuration ref.
 - CircleCI remains configured and active as the transition fallback. Until automatic GitLab triggering, exact-SHA validation, GitHub status reporting and merge-control acceptance are verified, CircleCI's exact-SHA checks remain the current required validation gate. Do not retire CircleCI early.
 - No session, agent or task may silently change the selected provider, disable CircleCI during transition, or substitute GitHub Actions/Semaphore. Only a later explicit Owner decision may amend this directive.
