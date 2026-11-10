@@ -120,10 +120,11 @@ Every substantive handoff must state:
 
 ## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
 
-- CircleCI with `.circleci/config.yml` is the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
-- GitHub Actions, GitLab and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
+- GitLab Free is the intended automatic exact-SHA CI provider; require every substantive job and the aggregate on the exact GitHub candidate SHA.
+- CircleCI remains configured as the transition fallback and current required gate until GitLab automatic triggering, exact-SHA validation, GitHub status reporting and enforceable merge-control acceptance are verified.
+- GitHub Actions and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
-- The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
+- Record retry root cause and changed condition; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
 - A full documented maintainer review of the current cumulative diff is mandatory. A second independent reviewer is not a default project gate under the Owner Policy effective 2026-11-06; require one only where provider-enforced protection or a separate explicit Owner-approved security policy requires it.
 - Before merge, require a non-Draft READY PR, exact-head checks, current maintainer review, resolved blocking review threads, reconciled base/divergence, provider protections satisfied and explicit Owner merge authorization. `mergeable=true` is not approval.
 - Merge authorization and production deployment authorization are separate. Disclose auto-deployment coupling and obtain the required production authorization before a merge that automatically deploys.
