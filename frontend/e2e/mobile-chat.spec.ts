@@ -438,6 +438,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/)).toBeVisible();
+  await expect(page.locator('.chat-log .aba-state-message[role="status"]')).toContainText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/);
 
   const chatLog = page.locator('.chat-log');
   await expect(chatLog).toHaveAttribute('role', 'log');
