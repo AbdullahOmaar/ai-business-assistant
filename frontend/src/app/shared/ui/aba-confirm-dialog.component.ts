@@ -64,7 +64,16 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input
     .confirm-actions button:disabled{opacity:.55;cursor:not-allowed}
     .confirm-actions button:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:3px}
     @media(forced-colors:active){.confirm-dialog:focus-visible{outline:2px solid Highlight;outline-offset:3px;box-shadow:none}}
-    @media(max-width:480px){.confirm-dialog{grid-template-columns:1fr;padding:17px;border-radius:15px}.confirm-mark{width:34px;height:34px}.confirm-actions{display:grid;grid-template-columns:1fr 1fr}.confirm-actions button{min-width:0}}
+    @media(max-width:480px){
+      .confirm-backdrop{align-items:end;justify-items:stretch;padding:0;backdrop-filter:none}
+      .confirm-dialog{grid-template-columns:1fr;align-self:end;width:100%;max-width:none;max-height:min(88dvh,calc(100dvh - env(safe-area-inset-top,0px)));padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));border:1px solid var(--aba-color-border-strong,#cbd5e1);border-bottom:0;border-radius:20px 20px 0 0;animation:aba-confirm-sheet-in .18s ease-out}
+      .confirm-mark{width:34px;height:34px}
+      .confirm-actions{display:grid;grid-template-columns:1fr 1fr}
+      .confirm-actions button{min-width:0;min-height:48px}
+    }
+    @media(max-width:380px){.confirm-actions{grid-template-columns:1fr}}
+    @keyframes aba-confirm-sheet-in{from{transform:translateY(16px);opacity:.85}to{transform:translateY(0);opacity:1}}
+    @media(prefers-reduced-motion:reduce){.confirm-dialog{animation:none}}
   `],
 })
 export class AbaConfirmDialogComponent implements OnInit, AfterViewInit, OnDestroy {

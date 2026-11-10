@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.4
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-05T00:03:00Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -13,14 +13,15 @@ canonical_sources:
   - https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Knowledge Governance & Changelog
 
-> **Publication state:** DRAFT. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer self-review and verified UI readback; a second reviewer is not a default requirement.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
 
 ## 1. Package manifest
 
@@ -82,7 +83,7 @@ Suggested review cadence (operational proposal, pending owner approval):
 5. Preserve historical records and mark superseded material; never erase history to hide a conflict.
 6. If authority remains ambiguous, mark CONFLICTED / UNKNOWN and fail closed for consequential actions.
 7. Record the exact conflict, source references, owner and required resolution.
-8. Update only affected documents after the canonical decision is resolved and checked by the accountable maintainer.
+8. Update only affected documents after the canonical decision is resolved and checked by the accountable maintainer/Project Master.
 
 ## 5. Workstream closeout → knowledge update
 
@@ -98,7 +99,7 @@ At every Workstream Closeout:
    - **NEW CANONICAL DECISION:** create or update the owning ADR/Notion decision first; then summarize/link it here.
 6. Do not copy dynamic status, test output, temporary blockers, customer data, secrets or payroll-sensitive data into Project Sources.
 7. Update the canonical GitHub file with version, owner, UTC verification time, review date, source links and supersession metadata.
-8. Document maintainer self-review for controlled/security/architecture changes. Obtain a second reviewer only when GitHub branch protection or an explicitly approved security policy requires one. Do not mark APPROVED without the authorized owner decision and required checks.
+8. Document maintainer/Project Master full self-review on the exact candidate SHA before publishing/updating controlled knowledge. No separate independent reviewer is required by project policy. Do not mark APPROVED without the authorized Owner decision and required checks; satisfy any formal GitHub branch-protection approval if configured.
 9. Publish only the approved version to ChatGPT Project Sources.
 10. Read back every published file and compare filename, version and content with the GitHub canonical copy.
 11. Update this changelog and the existing Notion task/handoff with exact PR/SHA, versions, publication/readback state and remaining gaps.
@@ -138,10 +139,22 @@ Before review/publication:
 Run:
 `python scripts/validate_project_knowledge.py`
 
+### Validation frequency and CI evidence economy
+
+Follow the Owner's economical validation decision in the canonical [MWOS — Modular Workstream Operating System](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea):
+
+- Batch coherent work and avoid repetitive full-suite runs after small edits, checkpoints, chat resumptions or documentation-only changes.
+- During implementation, run targeted checks only for changed behavior/configuration, a concrete defect diagnosis, or a material immediate risk.
+- At batch close, run one relevant final validation on the final candidate SHA. Reuse PASS evidence only if SHA, workflow/configuration, dependencies, environment and context are unchanged.
+- Rerun only after a changed candidate/fix, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need. Do not repeat an unchanged failure just to seek green.
+- Mandatory exact-SHA checks, security/tenant-isolation/financial invariants, formal branch protections and acceptance criteria are not optional.
+- Documentation-only changes do not require application tests/build solely because documentation changed unless a required workflow or documentation validator requires them. The current GitHub Actions workflow runs on every PR; enforced checks remain required.
+- Record the final SHA, checks run/reused, rerun reason, results and NOT RUN items. Test economy is not a gate bypass.
+
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
-- Review owner: the accountable maintainer/Project Master may review and approve their own documentation changes with a recorded self-review. A second reviewer is optional unless a provider-enforced or explicitly approved policy requires one.
+- Review owner: the accountable maintainer/Project Master records self-review. No separate independent reviewer is required by project policy for any change, including Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if configured, remain mandatory and must never be bypassed.
 - Stable documents: review every 90 days or on relevant scope/identity/source-authority event.
 - Controlled documents: review every 30 days or immediately on relevant policy/ADR/security/release change.
 - The review schedule is a proposed maintenance default until explicitly approved by the owner.
@@ -165,7 +178,7 @@ These scenarios define expected behavior of the shared knowledge layer. They are
 | S10 | Stale/conflicting information is found | Applies event invalidation, preserves prior versions and points to a canonical successor only after verification |
 | S11 | An agent attempts an unauthorized action | Refuses the protected action, records the blocker and verifies no unauthorized branch, PR, database, financial or deployment side effect |
 
-For every scenario, record the fixture/input, canonical source references, package version, observed output, forbidden side effects, pass/fail, runner/tool context, timestamp and reviewer disposition. Until such execution evidence exists, every scenario remains NOT RUN.
+For every scenario, record the fixture/input, canonical source references, package version, observed output, forbidden side effects, pass/fail, runner/tool context, timestamp and maintainer disposition. Until such execution evidence exists, every scenario remains NOT RUN.
 
 
 ## 12. Maintainer self-review record — 2026-10-30
@@ -178,6 +191,25 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Historical note (superseded by policy 1.0.4): at this checkpoint, the same Project Master maintainer authored and reviewed the candidate, and the then-current policy still required independent review. Owner approval was recorded on 2026-11-04.
 
 ## 11. Changelog
+
+### 1.0.7 — 2026-11-11 — APPROVED
+- Owner authorized the consistent five-document ABA-KNOW package to move from DRAFT to APPROVED for Project Sources publication.
+- Updated all five metadata records to version 1.0.7 and refreshed source verification against the post-PR-#369 main snapshot. The effective package approval is distinct from the Project Sources upload/readback, which remains NOT VERIFIED until all five files are uploaded together and compared with this canonical version.
+- The 2026-11-11 approval does not change product scope, architecture decisions, security controls, financial semantics or release gates. T37 remains DRAFT / NOT APPROVED.
+- Maintainer full diff self-review and exact-candidate CI are recorded on the follow-up PR before merge; no provider-enforced gate is waived.
+
+### 1.0.6 — 2026-11-11 — DRAFT
+- Reconciled the package with the live repository policy: GitHub Actions is the primary test/build/security CI provider; CircleCI is a transition fallback pending required-check enforcement/release-gate verification; GitLab is inactive and Semaphore retired/non-authoritative.
+- Added the Owner's economical test/CI execution policy: batch work, use targeted checks only when justified, validate the final candidate SHA once, reuse still-valid PASS evidence, rerun only after a changed condition or concrete diagnostic need, and preserve all enforced exact-SHA gates.
+- Updated all five documents to the same package version and refreshed source evidence to main `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb`.
+- Preserved dated 1.0.2/1.0.3 CI-provider decisions and earlier review-policy checkpoints as historical changelog evidence; current policy is defined by this version and live `AGENTS.md`.
+- This package remains DRAFT. PR merge, APPROVED status, Project Sources publication, and Project Instructions UI save/readback are not authorized or claimed by this change.
+
+### 1.0.5 — 2026-11-10 — DRAFT
+- Owner decision: remove the project-level separate independent-reviewer requirement completely, including routine PRs, Security/Architecture changes and canonical controlled Project Knowledge publication/update.
+- The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. No separate project-level independent review is required.
+- Formal approvals actually enforced by GitHub branch protection remain mandatory and must never be bypassed. Exact-SHA CI/security checks, Owner authorization, data-integrity controls and separate production authorization remain unchanged.
+- This candidate remains DRAFT until merged; Project Sources and Project Instructions UI readback are not claimed.
 
 ### 1.0.4 — 2026-11-06 — DRAFT
 - Removed the project-level mandatory independent-reviewer gate for routine merges and controlled knowledge updates.
@@ -214,3 +246,4 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Recorded source authority, role discovery, engineering/security guardrails and closeout publication workflow.
 - Preserved the unresolved T37 authority conflict as fail-closed; did not promote historical approval text.
 - Project Sources inventory/publication and Project Instructions UI readback remain NOT VERIFIED.
+

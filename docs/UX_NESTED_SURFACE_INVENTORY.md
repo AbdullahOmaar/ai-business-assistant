@@ -375,3 +375,75 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - The source regression now checks the exact `document:focusin` HostListener via a literal source string and locates the handler using the actual newline boundary.
 - Focused static source readback: 6/6 assertions PASS; authored Node test execution remains **NOT RUN**.
+
+## AI Assistant UX transformation baseline — 2026-11-10
+
+- **Source baseline:** current deployed/main UI is based on `main@e018c56640cc63573cdaec590fa5018148d5f662`. Source readback covered `frontend/src/app/app.component.ts`, `frontend/src/app/api.service.ts`, and `backend/app/assistant_api.py`.
+- **Current interaction contract:** the chat is rendered inline in the root Angular shell. `sendChat()` sends one authenticated, workspace-scoped JSON request through `ApiService.chat()` to `POST /api/v1/businesses/{business_id}/assistant/chat`; the response is a `ChatReply` containing `answer`, `sources`, and optional `mode`. This is request/response, not streaming.
+- **Existing safeguards to preserve:** the request is fenced by workspace ID, authenticated UID, role and signed-in state; only the last eight messages are sent; stale responses clear chat state; failures restore the draft and expose retry; the UI discloses the limited local fallback mode and source records.
+- **Current UX limits confirmed by source:** messages are held in component memory (no persistent/searchable conversation history); messages render as plain text paragraphs; there are no message-level copy/regenerate actions or attachment controls. The current `ChatInput` contract accepts only `message` and `history`; there is no file/attachment contract or streaming response type.
+- **Do not simulate missing capabilities:** streaming, attachments, persistent/searchable history, and structured Markdown/table/chart rendering must not be represented as working until supported by an approved API/product contract. Frontend-only fake upload/streaming controls are out of scope.
+- **Shared-path ownership boundary:** the chat template, composer and its responsive keyboard styles live in `frontend/src/app/app.component.ts`; global foundation styles live in `frontend/src/styles.css`. Active PR #363 currently changes both paths for the invoice editor. The Master UI/UX branch deliberately avoids those shared files until PR #363 is reconciled; no overlapping edits were made.
+- **Next chat UX slice:** after the shared-path writer boundary is clear, improve the existing request/response composer, message hierarchy/actions and long-response presentation without changing the API contract; keep streaming, file upload and durable history explicitly deferred.
+- **Long-response E2E source coverage:** the mocked mobile-chat journey now returns a multi-paragraph Arabic answer and asserts that the transcript becomes vertically scrollable without horizontal overflow, then scrolls to the final paragraph. This is authored test coverage only; Playwright execution remains NOT RUN.
+- **Chat retry/state E2E source coverage:** the mocked OWNER journey sends a 1,742-character Arabic prompt (within the 2,000-character limit) and checks failed-draft restoration, initial empty/status and transcript live-region semantics, loading/status announcement, disabled send during an in-flight request, error/alert semantics, no fake assistant error message, and successful retry. Long Arabic response scrolling remains covered. This is source coverage only until Playwright runs.
+- **Mobile navigation E2E source coverage:** the mocked OWNER journey asserts the accepted four-slot dock and >=44px targets, main-content clearance below the dock, and More's five non-empty work-area groups, bounded internal scrolling/overscroll containment, expanded/controls semantics, Escape-to-close and focus restoration in both RTL and LTR. This remains source-only until Playwright runs.
+- **Acceptance still NOT RUN:** rendered 360/390/430px and tablet/desktop checks, Arabic RTL/English LTR, long-response behavior, Android keyboard/visual viewport, screen-reader/keyboard/200% zoom, and physical installed-PWA behavior. Source inspection is not rendered/device acceptance.
+- **Scope:** source-level UX baseline only; no chat API/backend/database, auth, tenant, AI-provider or business-rule changes.
+
+## Platform Admin mobile usability refinement — 2026-11-10
+
+- The separate Platform Admin surface now keeps navigation, action buttons, pagination controls and form controls at a minimum 44px touch height on mobile; section navigation rises to 46px at narrow widths.
+- Mobile filter labels, dashboard metric labels/supporting copy, notices and compact-table text use larger minimum typography while preserving the existing table layout and permission/domain boundaries.
+- Added source-level regression assertions in `frontend/src/app/shared-ui-responsive.spec.ts` for touch-target and mobile typography rules.
+- This is a visual/accessibility-only change. No platform permissions, APIs, business data, role rules or administrative actions changed.
+- Test execution, rendered RTL/LTR review, keyboard/screen-reader acceptance and physical Android/PWA checks remain NOT RUN pending exact-head CI and browser/device access.
+
+## Release Guide mobile disclosure refinement — 2026-11-10
+
+- Feature-group and version-history disclosure rows now provide a 52px minimum touch target, a clear down-chevron affordance, and a subtle surface highlight while expanded.
+- The disclosure indicator rotates on open and disables its transition under reduced-motion preferences. Native `details/summary` behavior, content, bilingual copy and feature availability remain unchanged.
+- Added source-level regression assertions for touch sizing, open-state styling, chevron affordance and reduced-motion behavior.
+- Visual-only change; no API, data, permission, route or business behavior changed. Node test execution and rendered mobile/RTL/LTR/keyboard acceptance remain **NOT RUN**.
+
+## Platform Admin compact-summary readability correction — 2026-11-10
+
+- Source review found the narrow-screen compact invoice summary table was reduced to 10px by a later <=760px override, superseding the earlier 11px mobile rule.
+- Raised the effective compact table cell typography to 11px with a 1.4 line height while retaining the four-column fixed layout and narrow-screen column proportions.
+- Added a source regression assertion for the effective <=760px rule and mocked Playwright checks at 360/390/430px for computed cell font size and no horizontal page overflow.
+- Presentation and test-fixture changes only. No platform permission, API, data, financial, or administrative behavior changed.
+- Node tests, Playwright, Angular build, rendered RTL/LTR, keyboard/screen-reader and physical Android/PWA checks remain NOT RUN until an approved runner and device environment are available.
+
+
+## T18 shared-component polish and 19-destination source review — 2026-11-11
+
+**Review basis:** current `main@405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` and the same T18 branch after its merge-sync. This is a source-level review of every destination in `WORKSPACE_MODULE_CATALOG`; it is not a rendered visual sign-off for all routes. The Production login page was separately inspected at 360×800, 390×844 and 1280×800 in Arabic, plus English at 360×800: no horizontal overflow, all form controls visible and 44px high, but an unnecessary vertical scrollbar/blank area below the card remains. The owner of `app.component.ts` and `styles.css` is PR #363, so that login-shell finding is recorded for handoff and not edited here.
+
+| Destination | Screen-by-screen source review | T18 action / ownership boundary |
+|---|---|---|
+| Overview / Home | Four currency-separated source-backed KPIs, date/timezone basis, role-filtered shortcuts, full 19-destination disclosure and retryable workspace error state are preserved. | Shared KPI/quick-access/header typography and computed-size E2E coverage; root dashboard template/global shell remain PR #363-owned. |
+| Customers | Customer list/search, CSV preview-before-import, workspace reset and customer statement are present; wide statement table has keyboard-scroll semantics. | Shared headers/state feedback only; CSV and statement workflow semantics unchanged. |
+| Products & inventory | Product list/search, CSV preview-before-import and OWNER-only positive opening-stock input with STAFF zero payload are preserved. | Shared headers/state feedback only; stock permissions and payload unchanged. |
+| Invoices | Draft editor, validation/summary, issued-invoice lifecycle, print and void-confirmation paths remain separate. | PR #363 owns app shell, invoice editor/draft flow and shared global CSS; no edits to those paths. |
+| Payments & collections | Localized payment-method labels/search and payment outcome messaging remain distinct from invoice totals. | Shared section/state surfaces only; allocation and payment semantics unchanged. |
+| Expenses | Localized fixed expense categories/search and uncertain-save outcome guidance remain in place. | Shared state/header styling only; no expense classification or posting changes. |
+| Employees & payroll | Lazy-loaded OWNER route and privacy-safe employee labels remain the documented boundary. | Chat 4 / T41 single-writer ownership; no payroll source changes. |
+| AI assistant | Request/response contract, tenant/role fencing, retry-draft behavior, plain-text history and source references remain unchanged; no streaming/upload capability is implied. | Composer/root shell is PR #363-owned; existing mocked mobile journey gains typography assertions only. |
+| Reports / operating result | Preliminary revenue/expense basis and limitation that COGS is not deducted remain visible. | Shared section/state surfaces only; no new metrics or profit claims. |
+| Tax summary | Read-only saved invoice tax summary remains currency-separated. | Shared presentation only; no tax rules/calculations changed. |
+| Activity log | Read-only event view and keyboard-focusable horizontally scrollable table contract remain. | Shared headings and mobile type scale only; event vocabulary/data unchanged. |
+| Data integrity | Read-only legacy-link/allocation mismatch review remains separate from normal operations. | Shared state/notice styling only; no repair or mutation action introduced. |
+| App guide / Release Guide | Native `details/summary` disclosure, 52px rows, chevron, open state and reduced-motion behavior remain. | Improve footnote and version/status badge readability; guide content/availability unchanged. |
+| Platform Admin | Separate platform permission domain, role-grant/revocation and audit workflows remain isolated; compact four-column summary remains horizontally contained. | Improve functional-label, status-chip, data-note and metadata readability; no roles, permissions or admin actions changed. |
+| Suppliers | Workspace-scoped supplier directory and local visible-field search remain. | Shared headings and type hierarchy only; no AP/bill semantics added. |
+| Purchasing | Purchase-order states and OWNER-only eligible receiving remain; receiving is not represented as supplier payment. | Shared confirmation/header presentation only; no stock/payment lifecycle changes. |
+| Recurring invoices | Scheduling metadata remains distinct from automatic invoice generation. | Shared headings/state presentation only; no scheduler or issue capability implied. |
+| Notifications | Notification records/status remain metadata-only; delivery provider/worker requirement remains explicit. | Shared headings/state presentation only; no sent/delivered claim or retry action added. |
+| Operational health | Read-only health/configuration check and localized status mapping remain. | Shared state/header presentation only; no new health signals or false-green state. |
+
+### Shared component disposition
+
+- **Keep as-is after review:** `AbaCard` spacing/surface tokens, KPI card's 12px inherited projected-copy token, state-message alert/status semantics, and the confirmation dialog's safe-area-aware mobile bottom sheet / 48px actions / narrow-screen stacking.
+- **Polish in this batch:** mobile header context labels/workspace selector/shortcut type; quick-access descriptions; section-count badges; Platform Admin explanatory copy/status metadata; Release Guide footnote/version badge.
+- **Regression budget:** extend the existing shared source spec and the existing mocked mobile Home viewport journey. Run the authoritative six-job exact-SHA workflow once at batch close; do not repeat unchanged checks.
+- **Acceptance boundary:** source and mocked Playwright are not a substitute for authenticated OWNER/STAFF/two-tenant rendered review, full route-by-route RTL/LTR screenshots, screen-reader/keyboard/200% zoom, or physical Android installed-PWA acceptance. Those remain open until an authenticated isolated test path/device is available.

@@ -1,15 +1,16 @@
-## Permanent Owner directive — CircleCI execution unfreeze (effective 2026-11-08)
+## Owner-approved CI provider change — effective 2026-11-10
 
-The Owner permanently lifts the prior CircleCI execution freeze. This supersedes all older session-level, task-level and historical instructions prohibiting CircleCI execution.
+The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
 
-- CircleCI via `.circleci/config.yml` remains the sole approved repository CI provider. Normal configured triggers and manual trigger/retry are authorized for every contributor and session; no additional per-run Owner approval is required.
-- No session, agent or task may impose a temporary or permanent CI freeze. Only a later explicit Owner decision may amend this directive.
-- For a manual retry, record the failed job/root cause and the changed condition or concrete diagnostic justification. Do not blindly retry an unchanged failure.
-- Provider availability, quota, credentials, repository permissions and infrastructure limits still apply. If CircleCI cannot execute, record the exact cause as NOT RUN/BLOCKED; never substitute GitHub Actions, GitLab or Semaphore.
-- Required substantive CircleCI jobs and the aggregate must pass on the exact current candidate SHA. Empty contexts, stale-SHA checks and partial results remain NOT PASS.
-- Full maintainer review, provider-enforced protections, resolved blocking threads, non-Draft READY state, explicit Owner merge authorization and separate production-deployment authorization remain mandatory.
+- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
+- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
+- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
+- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). Main-branch required-check enforcement and PR requirement remain UNKNOWN because the GitHub protection endpoint returned 403; do not treat merge control as enforced until Owner/Admin readback confirms it. CircleCI remains configured as a transition fallback; do not retire it until required-check enforcement and release gates are verified.
+- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
+- Main is marked protected, but the classic branch-protection endpoint returns 403 to this integration. Ruleset readback shows the Copilot code-review rule active and the former `main-protection-and-gitlab-sync` ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN until Owner/Admin readback; do not treat merge control as enforced.
+- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
 
-This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
+This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
 # Autonomous Engineering Rules
 
@@ -67,10 +68,10 @@ Stop and ask for human input only when necessary for a material product decision
 ### Branch discipline (mandatory for every human and AI contributor)
 - **One active work branch per contributor/agent at a time.** Before creating one, inspect the current branch/worktree, remote branches, and open PRs. Reuse the contributor's existing active branch or update the matching in-progress PR when the scope is the same; never create a second branch just to start another small task.
 - **No branch-per-task or branch-per-commit.** Batch related bug fixes, tests, documentation, and small follow-ups into the same coherent work item and branch. Finish the work, run the required checks, update the task ledger, and merge that branch through the normal approved PR process before starting another branch.
-- **Create a new branch only for a genuinely new, substantial feature or a clearly independent change boundary**—for example, independently releasable work, a different security/review/permission boundary, or a change that would create material conflicts if combined. A new chat, agent, tiny fix, test, refactor, or documentation edit is not by itself a reason to create a branch.
+- **Create a new branch only for a genuinely new, substantial feature or a clearly independent change boundary**—for example, independently releasable work, a different security/permission/release boundary, or a change that would create material conflicts if combined. A new chat, agent, tiny fix, test, refactor, or documentation edit is not by itself a reason to create a branch.
 - If a contributor's branch already has an open PR, continue on that branch while its scope remains coherent. Do not create duplicate branches/PRs or stack feature branches unless a real dependency requires it and the coordinator records why.
 - Keep PRs focused on one coherent outcome; do not bundle unrelated features merely to avoid a branch. If the scope materially changes, finish/merge or safely close the current work before starting a separate branch.
-- Merge only after required checks pass on the exact PR head, any review/approval explicitly required by GitHub branch protection or repository rules is satisfied, the accountable maintainer has reviewed the diff, and the owner has authorized merge. There is no additional project-level independent-reviewer requirement for ordinary PR merge by default; this does not waive the separate non-author independent-review gate for canonical controlled Project Knowledge publication/update, as specified in the governance section below. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
+- Merge only after required checks pass on the exact PR head, any formal approval explicitly required by GitHub branch protection is satisfied, the accountable maintainer/Project Master has completed and documented the full diff self-review, and the owner has authorized merge. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
 - Branch discipline does not authorize direct pushes to protected main, unsafe merges, deleting branches with unique work, or bypassing release/security approvals.
 - Do not deploy after every commit, fix, or small task. Validate locally/CI and use previews when useful; deploy to production only for a meaningful, approved release—normally a new important feature, a deliberate feature bundle, or a critical production fix.
 - Batch related changes and tests, merge the approved release candidate, then trigger at most one production deployment per affected Vercel project for that release. Do not trigger the unaffected project. Do not retry deployment attempts repeatedly when quota, configuration, or build gates block them; diagnose first and wait for the platform limit to reset if needed.
@@ -79,7 +80,7 @@ Stop and ask for human input only when necessary for a material product decision
 - Inspect current branch, status, diff, and existing uncommitted work before editing.
 - Never discard or overwrite unrelated user changes.
 - Use a focused branch and coherent commits where supported.
-- Never bypass required checks, repository protections, any provider-enforced required review, or authorization. A separate independent reviewer is optional unless GitHub branch protection or an explicitly approved security policy requires one.
+- Never bypass required checks, repository protections, any formal approval required by GitHub branch protection, or authorization. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
 - Do not commit secrets or sensitive production/customer data.
 - Avoid destructive database operations. Review migrations and rollback/recovery implications before proposing or applying them.
 - Do not run production migrations or consequential production data changes without the required explicit approval.
@@ -92,10 +93,14 @@ Stop and ask for human input only when necessary for a material product decision
 - The maintainer-facing update procedure is documented in `docs/RELEASE_HISTORY.md`.
 
 ## CI, merge, and deployment
-- **CircleCI is the approved test/build/security validation provider** for this repository; `.circleci/config.yml` is the canonical pipeline definition. GitHub remains the source of truth for code, branches, PRs and release SHA.
-- GitLab CI is inactive for current validation. Do not trigger, retry, wait on, or require GitLab pipeline or mirror statuses. Existing `.gitlab-ci.yml` is not an approved validation path unless the owner changes this decision.
-- Do not use GitHub Actions or Semaphore as replacement test/build CI.
-- Verify the CircleCI pipeline on the exact candidate SHA before merging; record the pipeline/workflow URL and substantive job outcomes. A successful workflow on a different branch/SHA is not evidence for the current candidate.
+- **Primary CI provider:** GitHub Actions using standard GitHub-hosted `ubuntu-latest` runners. The repository is Public, so standard hosted runner usage is free; do not provision self-hosted or paid larger runners.
+- `.github/workflows/ci.yml` is the single authoritative workflow and must run backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container, and fail-closed all-checks-passed on the exact workflow SHA.
+- Use read-only workflow permissions and no repository secrets for PR test/build/security jobs. Fork PR code must never receive secrets. PostgreSQL validation uses only the disposable service container; never connect CI to production.
+- Pin third-party GitHub Actions to verified full commit SHAs and include the upstream release version in a comment. Before updating a pin, inspect the official release notes and rerun the full exact-SHA workflow.
+- CircleCI remains configured as a transition fallback until GitHub Actions exact-SHA full validation and enforceable main-branch required-check configuration are verified. Do not retire CircleCI early.
+- GitLab CI is inactive and is not an approved CI or release provider. Do not trigger GitLab pipelines or provision GitLab runners/webhooks/variables.
+- Verify every required pipeline on the exact candidate SHA; record the provider, pipeline URL and substantive job outcomes. A successful workflow on a different branch/SHA is not evidence for the current candidate.
+- GitHub main protection cannot be fully inspected by this integration (classic protection endpoint 403). Ruleset readback shows active Copilot review but the previous PR-approval ruleset is disabled; required status checks and approval enforcement remain UNKNOWN until Owner/Admin readback. Never bypass the gate.
 - Merge only when authorized and repository policies/checks allow it; comments and mergeability are not approvals.
 - Deploy only when requested/authorized and release gates are satisfied.
 - After deployment, verify the deployed commit/version and health/smoke checks. A green build or HTTP response alone does not prove the whole user journey works.
@@ -115,7 +120,7 @@ Never rely only on chat history. If the execution environment ends, leave a chec
 Do not narrate every trivial edit or ask permission between ordinary implementation steps. Send concise progress updates at meaningful milestones. Final reports must separate verified complete, partially complete, not run, and blocked. Prefer evidence (commit SHA, workflow run, test output, deployment version) over claims.
 
 ## Repository-specific validation
-Inspect `.circleci/config.yml` before choosing commands. CircleCI defines backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. CircleCI is the authoritative CI runner. GitLab and GitHub Actions are not release-validation providers for this project. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
+Inspect `.github/workflows/ci.yml` before choosing commands. GitHub Actions is the primary CI provider and its single workflow covers backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. CircleCI remains a transition fallback until GitHub Actions exact-SHA validation and required-check enforcement are verified. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
 
 ## Vibe-coding workflow and AI-agent orchestration
 
@@ -140,7 +145,7 @@ If the task is too large, split it into independently reviewable subtasks with e
 - **Coordinator/architect:** owns the task ledger, architecture consistency, dependency graph, scope, integration, and final report; reconciles agent outputs against repository reality.
 - **Implementation agent:** owns only its assigned files or module and must include tests/docs required by its change.
 - **Test/verification agent:** independently checks acceptance criteria, edge cases, failure paths, and regression risks; must report exact commands/results and may not claim checks it did not run.
-- **Security/review agent (when assigned):** may review authorization, tenant isolation, secrets, injection/input validation, financial correctness, dependency risk, and unintended scope; a separate reviewer is not a default merge prerequisite.
+- **Security verification support (when assigned):** may provide evidence on authorization, tenant isolation, secrets, injection/input validation, financial correctness, dependency risk, and unintended scope. This is optional verification support, not a separate reviewer or approval gate.
 - Begin with one implementation agent. Add parallel agents only when work is genuinely separable and file ownership/conflict boundaries are explicit.
 - Never allow multiple agents to edit the same files concurrently without a deliberate integration/locking strategy. The coordinator resolves conflicting advice and is accountable for the final result.
 - Agents must report changed files, evidence, unresolved questions, and exact next steps—not just a summary of intentions.
@@ -184,7 +189,7 @@ If the task is too large, split it into independently reviewable subtasks with e
 ## Master audit plan and cross-session continuity
 - The canonical audit/planning reference is `docs/AUDIT_MASTER_PLAN.md`. Read it before any new audit, planning, design, or implementation session, together with this file and the latest relevant `TASKS.md` checkpoint.
 - At session start, re-check current `main` SHA, working-tree status when local access exists, relevant Issues/PRs, exact-head CI, and deployment evidence. Treat audit-plan counts/SHA/status as a dated snapshot, not live truth.
-- Keep GitHub as the source of truth for code, PRs, and Issues; CircleCI is the sole CI evidence provider; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
+- Keep GitHub as the source of truth for code, PRs, Issues and GitHub Actions CI evidence; CircleCI remains the transition fallback; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
 - The audit plan is read-only planning until the user explicitly authorizes implementation. Do not infer approval to fix application code, merge PRs, or deploy from the existence of the plan.
 - After each substantial session, update `TASKS.md` with actual evidence, checks run/not run, blockers, branch/commit/PR, and one next action. Update `docs/AUDIT_MASTER_PLAN.md` when findings, priorities, decisions, or acceptance criteria change. Never mark a task VERIFIED without evidence.
 
@@ -194,15 +199,15 @@ If the task is too large, split it into independently reviewable subtasks with e
 Use the **Release Preflight → Candidate Ready → Owner Decision → Merge → Deploy → Live Verify** workflow in `docs/PRODUCTION_DEPLOYMENT.md` for every PR that may reach production.
 
 - Discover release impact **before implementation**, not after the user says merge: inspect affected Vercel projects, Git integration/automatic production deploy behavior, release markers, Ignore Build Step rules, migrations, and whether merge itself deploys. Record affected and intentionally unaffected projects in the task/PR.
-- Keep one current release evidence packet on the existing task/PR: base SHA, exact head SHA, changed paths, merge-base/divergence, relevant tests, CircleCI workflow and substantive jobs on that exact head, current review state, security/data-impact review, deployment impact, and NOT RUN items.
+- Keep one current release evidence packet on the existing task/PR: base SHA, exact head SHA, changed paths, merge-base/divergence, relevant tests, GitHub Actions exact-SHA workflow and substantive jobs on that exact head (CircleCI fallback evidence until cutover), current review state, security/data-impact review, deployment impact, and NOT RUN items.
 - Reuse valid evidence while the exact head and relevant configuration remain unchanged. A new commit, changed base, changed workflow/configuration, or changed release target invalidates only the affected evidence; do not restart unrelated checks or re-read unchanged sources without a reason.
 - Parallelize independent read-only inspections (PR/review/check state, deployment configuration, diff inventory); serialize dependent writes and wait for each write result before the next.
 - Before requesting approval, present one concise **READY / BLOCKED** decision packet. Ask only for the specific missing owner authorization. If merge automatically triggers production deployment, disclose that coupling before merge and obtain the required release authorization up front; never surprise the owner after merge.
 - After approval, merge once through the normal repository path, verify the merge commit and main checks, then monitor only the affected deployment(s). Distinguish skipped/ignored builds from build failures. Verify production alias, deployed SHA/version, health/readiness and relevant safe smoke tests.
 - Do not equate merge, Vercel READY, HTTP 200, preview success, or green CI alone with production verification. Keep incomplete criteria open.
-- This fast path removes duplicate investigation and late surprises; it does **not** waive owner authorization, provider-enforced protections, required exact-head checks/reviews, CircleCI policy, security/data-integrity controls, or separate production authorization.
+- This fast path removes duplicate investigation and late surprises; it does **not** waive owner authorization, provider-enforced protections, required exact-head checks/reviews, CI provider transition policy, security/data-integrity controls, or separate production authorization.
 
-- Batch related implementation, tests and documentation into one coherent commit/candidate before requesting CI or opening the PR. Do not create one commit per file or micro-edit when a single safe commit is possible: each pushed head can trigger another full CircleCI run. Once the candidate CI starts, avoid changing its head unless a real fix is required; if it changes, validate the new exact SHA and do not reuse stale results.
+- Batch related implementation, tests and documentation into one coherent commit/candidate before requesting CI or opening the PR. Do not create one commit per file or micro-edit when a single safe commit is possible: each pushed head can trigger another full CI run. Once the candidate CI starts, avoid changing its head unless a real fix is required; if it changes, validate the new exact SHA and do not reuse stale results.
 
 ## Integration and review policy addendum — Owner-authorized 2026-11-08
 
@@ -221,17 +226,17 @@ This section clarifies the operational detail for every human, specialist chat a
 - One active writing branch per contributor. A separate branch is justified only by a genuinely independent authorization/release boundary or independently reviewable outcome; record the reason and freeze writes on that contributor's previous branch during the independent work.
 
 ### CI and merge gate clarification
-- CircleCI and `.circleci/config.yml` remain the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
-- GitHub Actions, GitLab and Semaphore are not replacement CI providers. Semaphore is retired/non-authoritative; its status failure does not negate valid CircleCI evidence.
-- Empty status contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
-- The permanent Owner directive effective 2026-11-08 authorizes normal CircleCI triggers and manual trigger/retry without per-run Owner approval. No session, agent or task may re-impose a freeze. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not substitute another provider.
-- A documented full maintainer diff review is mandatory. Under the Owner Policy effective 2026-11-06, a second independent reviewer is not a default project gate; require one only when provider-enforced protection or a separate explicit Owner-approved security policy requires it. This ordinary merge default does NOT waive independent review before canonical controlled Project Knowledge is published or updated: that publication gate is separate, and the reviewer must not be the content author, per `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`.
+- GitHub Actions and `.github/workflows/ci.yml` are the primary repository CI provider. Require all six substantive jobs and the fail-closed `all-checks-passed` aggregate on the exact workflow SHA.
+- CircleCI remains configured as a transition fallback until GitHub Actions required-check enforcement and release gates are verified.
+- GitLab CI and Semaphore are not approved CI providers. Semaphore is retired/non-authoritative; empty contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
+- Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
+- A documented full maintainer diff self-review is mandatory for every PR and controlled Project Knowledge update. No separate project-level reviewer is required for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
 - Merge only from a non-Draft READY PR after exact-head checks, maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus explicit Owner merge authorization. `mergeable=true` is not approval.
 - Merge authorization and production deployment authorization remain separate. Disclose auto-deployment coupling before merge; get the required deployment authorization before any merge that automatically deploys.
 
 ### Canonical records
 - Notion owns task ownership, assignment, dependency, decisions and handoffs. GitHub owns code, branches, PRs, formal reviews and exact-SHA CI. Vercel/Neon own deployment/runtime and database schema evidence.
-- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and path ownership, base/head SHA, changed files, acceptance criteria, commands/results, reviewer, PR state, CI links, release impact and NOT RUN/BLOCKED items.
+- Keep one current evidence packet on the existing task/PR: task ID, accountable owner, primary writer and path ownership, base/head SHA, changed files, acceptance criteria, commands/results, maintainer self-review owner/findings, formal GitHub branch-protection approval state (if configured), PR state, CI links, release impact and NOT RUN/BLOCKED items.
 - Update `TASKS.md` at meaningful checkpoints. Treat appended old snapshots as HISTORICAL unless refreshed from live GitHub/provider evidence; do not add a second task tracker.
 - If branch protection/ruleset cannot be read, record UNKNOWN and resolve through Owner/Admin GitHub UI readback. Never claim protection is enabled from a written policy alone.
 - A Notion/GitHub change does not update ChatGPT Project Instructions or uploaded Project Sources. Report those surfaces as unsynchronized until separately saved and read back.

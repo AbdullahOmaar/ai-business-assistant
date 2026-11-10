@@ -1,26 +1,27 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.4
-status: DRAFT
+version: 1.0.7
+status: APPROVED
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-05T00:03:00Z
+last_verified_at: 2026-11-10T23:10:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/ARCHITECTURE_BASELINE.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/adr/ADR-001-v0-architecture.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/CONTRIBUTING.md
-related_github_sha: 63a0e6467b430f2305be37a3f1e3716c102d6335
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/ARCHITECTURE_BASELINE.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/adr/ADR-001-v0-architecture.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/CONTRIBUTING.md
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
+related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
 supersedes: none
 superseded_by: none
 ---
 
 # Architecture & Engineering Standards
 
-> **Publication state:** DRAFT. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
 
 ## 1. Accepted V0 architecture
 
@@ -93,6 +94,10 @@ Use the smallest test that proves the contract, then expand to the relevant laye
 
 For sensitive operations, test success, failure, invalid input, duplicate/retry, unauthorized role, foreign tenant and absence of unintended state/audit changes. A test result is valid only for the exact source SHA it tested.
 
+### 6.1 Economical validation and evidence reuse
+
+Follow the Owner's economical validation decision in the canonical [MWOS — Modular Workstream Operating System](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea). Batch related changes and avoid repeated full-suite runs after small edits, checkpoints, chat resumptions or documentation-only changes. Use targeted tests during implementation only when behavior/configuration changes, diagnosing a concrete defect, or risk requires immediate evidence. At batch close, run one relevant final validation on the final candidate SHA. Reuse PASS evidence only while the exact SHA, workflow/configuration, dependencies, environment and context remain unchanged. Rerun only after a real candidate/fix change, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need; never repeat an unchanged failure merely to seek green. Mandatory exact-SHA security, tenant-isolation and financial-invariant checks, formal protections and acceptance criteria remain required. Documentation-only changes do not need application tests/build solely due to text changes unless a required workflow or documentation validator requires them. Record SHA, checks run/reused, rerun reason, results and NOT RUN items.
+
 ## 7. Code review and branch discipline
 
 - Read `AGENTS.md` before changes and follow `CONTRIBUTING.md`.
@@ -100,8 +105,8 @@ For sensitive operations, test success, failure, invalid input, duplicate/retry,
 - Reuse a matching active branch/PR; one coherent branch and PR per work package.
 - Preserve unrelated user work. Do not overwrite or delete unique changes.
 - Keep diffs focused; add tests and docs alongside behavior changes.
-- Require a documented maintainer self-review for every change. A second/independent reviewer may be added when useful, but is not a default gate unless GitHub branch protection or an explicitly approved security policy requires one.
-- Do not merge until the exact PR head has required checks, any review explicitly required by GitHub branch protection or approved policy, and the owner has authorized merge. Maintainer self-review is sufficient when no external review is required.
+- Require the accountable maintainer/Project Master to document a full self-review on the exact candidate SHA for every change. No separate independent reviewer is required by project policy, including for Security/Architecture and canonical controlled-knowledge publication/update. Any formal approval enforced by GitHub branch protection remains mandatory and must never be bypassed.
+- Do not merge until the exact PR head has required checks, any formal approval actually enforced by GitHub branch protection, documented maintainer/Project Master full self-review, and Owner authorization. No separate independent reviewer is required by project policy for any change. Never bypass provider-enforced protections.
 - Do not create duplicate task trackers or branch-per-subtask noise.
 
 ## 8. Dependency and security review

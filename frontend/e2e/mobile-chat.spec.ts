@@ -10,6 +10,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
   const paymentRequests: string[] = [];
   let chatAttempts = 0;
+  const longAssistantAnswer = [
+    'ملخص النشاط للفترة المحددة: لا توجد مبيعات مسجلة في العينة الحالية، لذلك لا يمكن استنتاج نمو أو تراجع في الإيرادات من هذه البيانات وحدها.',
+    'التحصيل: راجع سجل المدفوعات والفواتير المرتبطة قبل اعتبار أي مبلغ محصلًا. الفاتورة الصادرة ليست دليلًا على استلام النقد، ويجب إبقاء الرصيد المستحق منفصلًا عن التحصيل.',
+    'المصروفات: اعتمد فقط على المصروفات المسجلة في مساحة العمل والفترة المختارة. لا تخلط بين المصروفات النقدية والالتزامات أو المشتريات التي لم تُسجل كمصروف.',
+    'العملاء: لا توجد في هذه الاستجابة عينة كافية لترتيب العملاء أو تقييم سلوكهم. استخدم تفاصيل السجلات المصرح بها بدلًا من افتراض بيانات غير موجودة.',
+    'المخزون: لا يمكن تأكيد الاحتياج لإعادة التخزين من ملخص المبيعات الفارغ. افحص أرصدة وحركات المخزون الفعلية قبل اقتراح أي إجراء.',
+    'الخطوة التالية: حدّد الفترة المطلوبة، ثم راجع الفواتير والمدفوعات والمصروفات كلًّا في مصدره. إذا كانت البيانات ناقصة، أكمل التسجيل أولًا وأعد تشغيل الملخص.',
+    'ملاحظة: هذه إجابة توضيحية طويلة لاختبار عرض النص والتمرير على الهاتف؛ لا تمثل توصية مالية أو تغييرًا في سجلات النشاط.',
+    'نهاية الملخص: لا توجد سجلات إضافية في العينة الحالية، ويمكنك متابعة المراجعة من الأقسام المرتبطة دون مغادرة مساحة العمل.'
+  ].join('\n\n');
   page.on('pageerror', error => uncaughtErrors.push(error.message));
   await page.addInitScript(() => {
     window.localStorage.setItem('aba-language', 'ar');
@@ -243,7 +253,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         status: 200,
         headers: corsHeaders,
         body: JSON.stringify({
-          answer: 'Your workspace has no recorded sales in this sample period.',
+          answer: longAssistantAnswer,
           sources: [],
           mode: 'local-fallback',
         }),
@@ -279,6 +289,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow, label).toBe(false);
   };
+  const assertReleaseGuideMobileLayout = async (width: number) => {
+    const layout = await page.evaluate(() => ({
+      hasOverflow: document.documentElement.scrollWidth > window.innerWidth,
+      summaryHeights: Array.from(document.querySelectorAll(
+        '.release-feature-group > summary, .release-version > summary'
+      )).map(summary => summary.getBoundingClientRect().height),
+    }));
+    expect(layout.hasOverflow, `Release Guide must not overflow at ${width}px`).toBe(false);
+    expect(layout.summaryHeights.length).toBeGreaterThan(0);
+    for (const height of layout.summaryHeights) {
+      expect(height, `Release Guide disclosure rows must remain touch-friendly at ${width}px`).toBeGreaterThanOrEqual(48);
+    }
+  };
   const assertHomeMobileGrid = async (width: number) => {
     // Angular may briefly re-evaluate the dashboard branch after a viewport resize.
     await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 10_000 });
@@ -289,39 +312,101 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       };
       return {
         metricColumns: columns('.metric-grid'),
+        metricSupportingFontSizes: Array.from(document.querySelectorAll('.metric-grid aba-metric-card small'))
+          .map(element => getComputedStyle(element).fontSize),
+        headerLabelFontSizes: Array.from(document.querySelectorAll('.mobile-app-header .context-label'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
+        workspaceNameFontSizes: Array.from(document.querySelectorAll('.mobile-app-header .workspace-copy strong'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
+        quickAccessDescriptionFontSizes: Array.from(document.querySelectorAll('.home-shortcut-list .aba-quick-access__copy > span'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
+        sectionDescriptionFontSizes: Array.from(document.querySelectorAll('.aba-section-header p'))
+          .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
         quickAccessColumns: columns('.home-shortcut-list'),
         moduleColumns: columns('.module-directory-grid'),
         headerControlHeights: Array.from(document.querySelectorAll(
           '.mobile-app-header .brand-button, .mobile-app-header .assistant-shortcut, .mobile-app-header .icon-button, .mobile-app-header .profile-trigger'
         )).map(control => control.getBoundingClientRect().height),
+        dockItemHeights: Array.from(document.querySelectorAll('.sidebar > .nav-item'))
+          .filter(item => getComputedStyle(item).display !== 'none')
+          .map(item => item.getBoundingClientRect().height),
+        dockHeight: document.querySelector('.sidebar')?.getBoundingClientRect().height ?? 0,
+        mainBottomPadding: Number.parseFloat(getComputedStyle(document.querySelector('.main')!).paddingBottom),
         headerPageRowHeight: document.querySelector('.mobile-app-header .page-context')?.getBoundingClientRect().height ?? 0,
         headerWorkspaceRowHeight: document.querySelector('.mobile-app-header .workspace-context')?.getBoundingClientRect().height ?? 0,
       };
     });
     expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
+    expect(layout.metricSupportingFontSizes.length, `KPI supporting copy must render at ${width}px`).toBeGreaterThan(0);
+    for (const fontSize of layout.metricSupportingFontSizes) {
+      expect(fontSize, `KPI supporting copy must meet the 12px mobile minimum at ${width}px`).toBe('12px');
+    }
+    expect(layout.headerLabelFontSizes.length, `workspace context label must render at ${width}px`).toBeGreaterThan(0);
+    for (const fontSize of layout.headerLabelFontSizes) expect(fontSize).toBeGreaterThanOrEqual(11);
+    for (const fontSize of layout.workspaceNameFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
+    for (const fontSize of layout.quickAccessDescriptionFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
+    for (const fontSize of layout.sectionDescriptionFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
     expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
     expect(layout.headerControlHeights).toHaveLength(4);
+    expect(layout.dockItemHeights).toHaveLength(4);
+    for (const height of layout.dockItemHeights) {
+      expect(height, `Mobile dock controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
+    }
+    expect(layout.mainBottomPadding, 'main content must clear the mobile dock and safe-area allowance').toBeGreaterThanOrEqual(layout.dockHeight);
+    expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(112);
     expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
     expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
       expect(height, `Mobile header controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
   };
-  for (const width of [320, 360, 390, 412, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
-    if (width <= 412) await assertHomeMobileGrid(width);
+    if (width <= 430) await assertHomeMobileGrid(width);
+    if ([320, 390, 1280].includes(width)) {
+      await page.screenshot({
+        path: `test-results/aiba-home-${width}px-ar.png`,
+        fullPage: true,
+        animations: 'disabled',
+      });
+    }
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
   await moreTrigger.click();
+  await expect(page.getByRole('navigation', { name: /أقسام إضافية|Additional sections/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toBeFocused();
+  await moreTrigger.click();
+  await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(moreTrigger).toHaveAttribute('aria-controls', 'mobile-more-menu');
+  await expect(page.locator('#mobile-more-menu .mobile-more-group')).toHaveCount(5);
+  const moreMenuLayout = await page.locator('#mobile-more-menu').evaluate(element => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    maxHeight: Number.parseFloat(getComputedStyle(element).maxHeight),
+    overflowY: getComputedStyle(element).overflowY,
+    overscrollBehavior: getComputedStyle(element).overscrollBehavior,
+  }));
+  expect(moreMenuLayout.scrollHeight).toBeGreaterThan(moreMenuLayout.clientHeight);
+  expect(moreMenuLayout.maxHeight).toBeLessThanOrEqual(520);
+  expect(moreMenuLayout.overflowY).toBe('auto');
+  expect(moreMenuLayout.overscrollBehavior).toBe('contain');
   await page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ }).click();
   await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(moreTrigger).not.toHaveAttribute('aria-controls');
   await expect(moreTrigger).toHaveClass(/active/);
   await expect(moreTrigger).toBeFocused();
   await expect(page.getByRole('heading', { name: /دليل التطبيق والإصدارات|App guide & versions/ })).toBeVisible();
+  for (const width of [360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await assertReleaseGuideMobileLayout(width);
+  }
 
   await moreTrigger.click();
   const guideMenuItem = page.locator('#mobile-more-menu').getByRole('button', { name: /دليل التطبيق والإصدارات|App guide & versions/ });
@@ -332,13 +417,41 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await languageAction.click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
+  const ltrMoreMenuLayout = await page.locator('#mobile-more-menu').evaluate(element => ({
+    direction: getComputedStyle(element).direction,
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+    overflowY: getComputedStyle(element).overflowY,
+    overscrollBehavior: getComputedStyle(element).overscrollBehavior,
+  }));
+  expect(ltrMoreMenuLayout.direction).toBe('ltr');
+  expect(ltrMoreMenuLayout.scrollHeight).toBeGreaterThan(ltrMoreMenuLayout.clientHeight);
+  expect(ltrMoreMenuLayout.scrollWidth).toBeLessThanOrEqual(ltrMoreMenuLayout.clientWidth);
+  expect(ltrMoreMenuLayout.overflowY).toBe('auto');
+  expect(ltrMoreMenuLayout.overscrollBehavior).toBe('contain');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toBeFocused();
+  for (const width of [360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    await assertReleaseGuideMobileLayout(width);
+  }
   // Language was switched from App Guide; return to Home before measuring Home grids.
   await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
   await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
-  for (const width of [320, 360, 390, 412, 768, 1280]) {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: 'test-results/aiba-home-390px-ltr.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
+  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
-    if (width <= 412) await assertHomeMobileGrid(width);
+    if (width <= 430) await assertHomeMobileGrid(width);
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
@@ -356,25 +469,51 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/)).toBeVisible();
+  await expect(page.locator('.chat-log .aba-state-message[role="status"]')).toContainText(/ابدأ بسؤال سريع عن نشاطك|Start with a quick business question/);
 
+  const chatLog = page.locator('.chat-log');
+  await expect(chatLog).toHaveAttribute('role', 'log');
+  await expect(chatLog).toHaveAttribute('aria-live', 'polite');
   const composer = page.getByRole('textbox', { name: /سؤالك للمساعد الذكي|Your question for the AI assistant/ });
   const sendButton = page.getByRole('button', { name: /إرسال|Send/ });
-  await composer.fill('What happened this month?');
+  const longChatPrompt = Array.from({ length: 12 }, (_, index) =>
+    `سؤال ${index + 1}: راجع الفواتير المستحقة والتحصيلات المسجلة والمصروفات خلال الفترة المحددة، ووضّح مصدر كل رقم وما إذا كان المبلغ مسددًا أو ما زال مستحقًا.`
+  ).join('\n');
+  expect(longChatPrompt.length).toBeLessThanOrEqual(2000);
+  await composer.fill(longChatPrompt);
   await sendButton.click();
 
-  await expect(page.getByText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/)).toBeVisible();
-  await expect(page.getByText('Temporary assistant failure.')).toBeVisible();
+  await expect(page.locator('.aba-state-message[role="status"]')).toContainText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/);
+  await expect(sendButton).toBeDisabled();
+  expect(chatAttempts).toBe(1);
+  const errorState = page.locator('.aba-state-message[role="alert"]');
+  await expect(errorState).toContainText('Temporary assistant failure.');
+  await expect(composer).toHaveValue(longChatPrompt);
+  await expect(page.locator('.chat-message')).toHaveCount(0);
   const retryButton = page.getByRole('button', { name: /إعادة المحاولة|Retry/ });
   await expect(retryButton).toBeEnabled();
   await retryButton.click();
 
-  await expect(page.getByText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/)).toBeVisible();
-  await expect(page.getByText('Your workspace has no recorded sales in this sample period.')).toBeVisible();
+  await expect(page.locator('.aba-state-message[role="status"]')).toContainText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/);
+  const assistantMessage = page.locator('.chat-message').last();
+  await expect(page.locator('.chat-message')).toHaveCount(2);
+  await expect(assistantMessage.locator('p')).toContainText('ملخص النشاط للفترة المحددة');
+  await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
+  const chatLogLayout = await page.locator('.chat-log').evaluate(element => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+  }));
+  expect(chatLogLayout.scrollHeight).toBeGreaterThan(chatLogLayout.clientHeight);
+  expect(chatLogLayout.scrollWidth).toBeLessThanOrEqual(chatLogLayout.clientWidth);
+  await page.locator('.chat-log').evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
   expect(paymentRequests).toEqual(['/api/v1/businesses/business-1/payments']);
   expect(chatAttempts).toBe(2);
   expect(chatRequests).toEqual([
-    { businessId: 'business-1', message: 'What happened this month?', authorization: 'Bearer ' + idToken },
-    { businessId: 'business-1', message: 'What happened this month?', authorization: 'Bearer ' + idToken },
+    { businessId: 'business-1', message: longChatPrompt, authorization: 'Bearer ' + idToken },
+    { businessId: 'business-1', message: longChatPrompt, authorization: 'Bearer ' + idToken },
   ]);
 
   // Focusing the composer hides the fixed mobile dock. Simulate the Android
