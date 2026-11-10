@@ -70,10 +70,10 @@ resolve-event:
           sha = payload.get("after", "")
           pr_number = ""
           ref = payload.get("ref", "")
-          if not ref.startswith("refs/heads/"):
-              raise SystemExit("Only GitHub branch push events are supported; tag/deletion events are ignored.")
+          if not (ref.startswith("refs/heads/") or ref.startswith("refs/tags/")):
+              raise SystemExit("Unsupported GitHub push ref; only branch and tag pushes are accepted.")
           if payload.get("deleted") is True:
-              raise SystemExit("Deleted-branch webhook events do not run validation.")
+              raise SystemExit("Deleted-ref webhook events do not run validation.")
 
       if not re.fullmatch(r"[0-9a-f]{40}", sha):
           raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
@@ -82,7 +82,8 @@ resolve-event:
           env_file.write(f"SOURCE_SHA={sha}\n")
           env_file.write(f"GITHUB_EVENT={event}\n")
           env_file.write(f"GITHUB_REPOSITORY={repository}\n")
-          env_file.write(f"GITHUB_PR_NUMBER={pr_number}\n")
+          if pr_number:
+              env_file.write(f"GITHUB_PR_NUMBER={pr_number}\n")
 
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
