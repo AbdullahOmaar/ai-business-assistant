@@ -837,10 +837,14 @@
     gap: 8px;
   }
 
-  :root body .shell .metric-grid > .metric,
-  :root body .shell .metric-grid > aba-metric-card {
+  :root body .shell .metric-grid > .metric {
     min-height: 126px;
     padding: 12px;
+  }
+
+  :root body .shell .metric-grid > aba-metric-card {
+    min-height: 126px;
+    padding: 0;
   }
 
   :root body .shell .metric-grid .metric strong,
@@ -1272,6 +1276,7 @@
 @media (max-width: 380px) {
   :root body .shell .metric-grid > aba-metric-card {
     min-height: 120px;
+    padding: 0;
   }
 
   :root body .shell .metric-grid > aba-metric-card .aba-metric-card {
