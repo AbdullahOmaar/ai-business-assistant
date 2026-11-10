@@ -854,3 +854,172 @@
     height: 28px;
   }
 }
+
+
+/* Shared domain forms, filters, tables and nested cards use the same AIBA system. */
+:root body .shell form.expense-form,
+:root body .shell form.payment-form,
+:root body .shell form.invoice-form {
+  display: grid;
+  align-items: end;
+  min-width: 0;
+  gap: var(--aiba-space-3);
+  padding: var(--aiba-space-4);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell form.expense-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+
+:root body .shell form.payment-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+:root body .shell form.invoice-form {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 100px auto auto;
+}
+
+:root body .shell form.expense-form > label,
+:root body .shell form.payment-form > label,
+:root body .shell form.invoice-form > label {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: var(--aiba-space-2);
+}
+
+:root body .shell .invoice-toolbar,
+:root body .shell .statement-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  min-width: 0;
+  gap: var(--aiba-space-3);
+  padding: var(--aiba-space-3);
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell .invoice-toolbar > *,
+:root body .shell .statement-filters > * {
+  min-width: 0;
+  flex: 1 1 170px;
+}
+
+:root body .shell .table-wrap,
+:root body .shell .invoice-table-wrap,
+:root body .shell .audit-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface);
+}
+
+:root body .shell .table-wrap thead th,
+:root body .shell .invoice-table-wrap thead th,
+:root body .shell .audit-table-wrap thead th {
+  background: var(--aiba-surface-tint);
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  font-weight: 720;
+  line-height: var(--aiba-leading-normal);
+}
+
+:root body .shell .table-wrap tbody td,
+:root body .shell .invoice-table-wrap tbody td,
+:root body .shell .audit-table-wrap tbody td {
+  border-block-end: 1px solid var(--aiba-line);
+  color: var(--aiba-ink-soft);
+  font-size: var(--aiba-text-sm);
+  line-height: var(--aiba-leading-normal);
+  vertical-align: middle;
+}
+
+:root body .shell .table-wrap tbody tr:hover,
+:root body .shell .invoice-table-wrap tbody tr:hover,
+:root body .shell .audit-table-wrap tbody tr:hover {
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell .invoice-card,
+:root body .shell .line-card,
+:root body .shell .invoice-section,
+:root body .shell .invoice-summary,
+:root body .shell .server-summary,
+:root body .shell .invoice-summary-pending,
+:root body .shell .statement-panel,
+:root body .shell .chat-panel {
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface);
+  box-shadow: var(--aiba-shadow-card);
+}
+
+:root body .shell .invoice-draft {
+  gap: var(--aiba-space-4);
+}
+
+:root body .shell .line-card {
+  background: var(--aiba-surface-tint);
+  box-shadow: none;
+}
+
+:root body .shell .invoice-summary-pending,
+:root body .shell .summary-pending-note {
+  background: var(--aiba-surface-tint);
+}
+
+@media (max-width: 900px) {
+  :root body .shell form.expense-form,
+  :root body .shell form.payment-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :root body .shell form.expense-form > button,
+  :root body .shell form.payment-form > button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 760px) {
+  :root body .shell form.expense-form,
+  :root body .shell form.payment-form,
+  :root body .shell form.invoice-form {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--aiba-space-3);
+  }
+
+  :root body .shell form.expense-form > button,
+  :root body .shell form.payment-form > button,
+  :root body .shell form.invoice-form > button {
+    width: 100%;
+    grid-column: auto;
+  }
+
+  :root body .shell .invoice-toolbar,
+  :root body .shell .statement-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--aiba-space-2);
+  }
+
+  :root body .shell .invoice-toolbar > *,
+  :root body .shell .statement-filters > * {
+    width: 100%;
+    flex: auto;
+  }
+
+  :root body .shell .invoice-table-wrap table,
+  :root body .shell .audit-table-wrap table {
+    min-width: 680px;
+  }
+}

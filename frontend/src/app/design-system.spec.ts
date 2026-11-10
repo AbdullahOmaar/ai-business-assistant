@@ -32,6 +32,9 @@ test('forms, fields, filters, buttons, tables and cards share reusable visual ru
     '.filter-bar', 'input:focus-visible', 'input[aria-invalid="true"]',
     'button.primary', 'button.secondary', '.table-wrap thead th',
     '.table-wrap tbody td', 'section.panel', '.metric-grid > aba-metric-card',
+    'form.expense-form', 'form.payment-form', 'form.invoice-form',
+    '.invoice-toolbar', '.statement-filters', '.invoice-table-wrap thead th',
+    '.audit-table-wrap tbody td', '.invoice-card', '.line-card', '.server-summary',
   ]) {
     assert.ok(css.includes(selector), 'missing design system selector: ' + selector);
   }
