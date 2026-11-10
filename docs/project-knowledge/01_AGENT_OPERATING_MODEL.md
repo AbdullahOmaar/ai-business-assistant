@@ -23,7 +23,7 @@ superseded_by: none
 
 # Agent Operating Model
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback.ner's policy decision of 2026-11-10 removes the project-level independent-reviewer requirement for all changes, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master documents full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
