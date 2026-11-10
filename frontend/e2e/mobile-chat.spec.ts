@@ -10,6 +10,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
   const paymentRequests: string[] = [];
   let chatAttempts = 0;
+  const longAssistantAnswer = [
+    'ملخص النشاط للفترة المحددة: لا توجد مبيعات مسجلة في العينة الحالية، لذلك لا يمكن استنتاج نمو أو تراجع في الإيرادات من هذه البيانات وحدها.',
+    'التحصيل: راجع سجل المدفوعات والفواتير المرتبطة قبل اعتبار أي مبلغ محصلًا. الفاتورة الصادرة ليست دليلًا على استلام النقد، ويجب إبقاء الرصيد المستحق منفصلًا عن التحصيل.',
+    'المصروفات: اعتمد فقط على المصروفات المسجلة في مساحة العمل والفترة المختارة. لا تخلط بين المصروفات النقدية والالتزامات أو المشتريات التي لم تُسجل كمصروف.',
+    'العملاء: لا توجد في هذه الاستجابة عينة كافية لترتيب العملاء أو تقييم سلوكهم. استخدم تفاصيل السجلات المصرح بها بدلًا من افتراض بيانات غير موجودة.',
+    'المخزون: لا يمكن تأكيد الاحتياج لإعادة التخزين من ملخص المبيعات الفارغ. افحص أرصدة وحركات المخزون الفعلية قبل اقتراح أي إجراء.',
+    'الخطوة التالية: حدّد الفترة المطلوبة، ثم راجع الفواتير والمدفوعات والمصروفات كلًّا في مصدره. إذا كانت البيانات ناقصة، أكمل التسجيل أولًا وأعد تشغيل الملخص.',
+    'ملاحظة: هذه إجابة توضيحية طويلة لاختبار عرض النص والتمرير على الهاتف؛ لا تمثل توصية مالية أو تغييرًا في سجلات النشاط.',
+    'نهاية الملخص: لا توجد سجلات إضافية في العينة الحالية، ويمكنك متابعة المراجعة من الأقسام المرتبطة دون مغادرة مساحة العمل.'
+  ].join('\\n\\n');
   page.on('pageerror', error => uncaughtErrors.push(error.message));
   await page.addInitScript(() => {
     window.localStorage.setItem('aba-language', 'ar');
@@ -243,7 +253,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         status: 200,
         headers: corsHeaders,
         body: JSON.stringify({
-          answer: 'Your workspace has no recorded sales in this sample period.',
+          answer: longAssistantAnswer,
           sources: [],
           mode: 'local-fallback',
         }),
@@ -390,7 +400,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await retryButton.click();
 
   await expect(page.getByText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/)).toBeVisible();
-  await expect(page.getByText('Your workspace has no recorded sales in this sample period.')).toBeVisible();
+  const assistantMessage = page.locator('.chat-message').last();
+  await expect(assistantMessage.locator('p')).toContainText('ملخص النشاط للفترة المحددة');
+  await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
+  const chatLogLayout = await page.locator('.chat-log').evaluate(element => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+  }));
+  expect(chatLogLayout.scrollHeight).toBeGreaterThan(chatLogLayout.clientHeight);
+  expect(chatLogLayout.scrollWidth).toBeLessThanOrEqual(chatLogLayout.clientWidth);
+  await page.locator('.chat-log').evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
   expect(paymentRequests).toEqual(['/api/v1/businesses/business-1/payments']);
   expect(chatAttempts).toBe(2);
   expect(chatRequests).toEqual([
