@@ -91,7 +91,15 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
     .release-guide-footnote{margin:15px 0 0;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;line-height:1.6}
     .release-guide-panel summary:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:-2px}
     .release-history-title{margin-top:26px}
-    @media(max-width:600px){.release-guide-panel{padding:12px}.release-feature-group>summary,.release-version>summary{padding:12px}.release-guide-version-pill{font-size:10px}}
+    @media(max-width:600px){
+      .release-guide-panel{padding:16px}
+      .release-feature-group>summary,.release-version>summary{padding:12px}
+      .release-guide-version-pill{font-size:10px}
+    }
+    @media(max-width:380px){
+      .release-guide-panel{padding:12px}
+      .release-feature-group>summary,.release-version>summary{padding:10px;gap:8px}
+    }
   `],
 })
 export class ReleaseGuideComponent {
