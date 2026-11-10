@@ -22,7 +22,7 @@ superseded_by: none
 
 # Agent Operating Model
 
-> **Publication state:** DRAFT. The Owner's policy decision of 2026-11-10 clarifies that routine PRs do not require a separate reviewer by default. Controlled/security/architecture changes and canonical controlled-knowledge publication/update still require independent non-author review plus authorized approval. The accountable maintainer/Project Master documents self-review; formal GitHub branch-protection approvals remain mandatory. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Publication state:** DRAFT. The Owner's policy decision of 2026-11-10 removes the project-level independent-reviewer requirement for all changes, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master documents full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -85,7 +85,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate, records findings and owns the review decision. Routine PRs do not require a separate independent reviewer by default. Controlled/security/architecture changes and canonical controlled-knowledge publication/update require independent non-author review plus authorized approval; formal GitHub branch-protection approvals remain mandatory.
+- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate, records findings and owns the review decision. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.
