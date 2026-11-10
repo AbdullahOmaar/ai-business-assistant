@@ -1751,7 +1751,7 @@ def test_invoice_number_uniqueness_is_business_scoped_and_conflicts_roll_back():
                     Invoice.business_id == business_id
                 )),
                 session.scalar(select(func.count()).select_from(InvoiceLine).where(
-                    Invoice.business_id == business_id
+                    InvoiceLine.business_id == business_id
                 )),
                 session.scalar(select(func.count()).select_from(AuditEvent).where(
                     AuditEvent.business_id == business_id
