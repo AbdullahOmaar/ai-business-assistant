@@ -165,7 +165,7 @@ These scenarios define expected behavior of the shared knowledge layer. They are
 | S10 | Stale/conflicting information is found | Applies event invalidation, preserves prior versions and points to a canonical successor only after verification |
 | S11 | An agent attempts an unauthorized action | Refuses the protected action, records the blocker and verifies no unauthorized branch, PR, database, financial or deployment side effect |
 
-For every scenario, record the fixture/input, canonical source references, package version, observed output, forbidden side effects, pass/fail, runner/tool context, timestamp and reviewer disposition. Until such execution evidence exists, every scenario remains NOT RUN.
+For every scenario, record the fixture/input, canonical source references, package version, observed output, forbidden side effects, pass/fail, runner/tool context, timestamp and maintainer disposition. Until such execution evidence exists, every scenario remains NOT RUN.
 
 
 ## 12. Maintainer self-review record — 2026-10-30
