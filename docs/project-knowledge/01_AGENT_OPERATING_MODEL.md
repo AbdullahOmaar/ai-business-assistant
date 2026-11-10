@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.5
+version: 1.0.6
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T21:48:00Z
+last_verified_at: 2026-11-10T22:43:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -12,10 +12,11 @@ canonical_sources:
   - https://app.notion.com/p/4089320b90fb81609645e481ef626401
   - https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
+related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
 supersedes: none
 superseded_by: none
 ---
@@ -65,7 +66,7 @@ Team map:
 - Chat 4 — Employees & Payroll.
 - Chat 5 — independent QA, Integration & Security; runs test-based verification on Chat 1–4 work, reports findings and routes defects to the feature owner. This QA function does not create a separate reviewer or approval gate.
 
-Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. CircleCI is the sole active and approved test/build/security validation provider under the owner's 2026-11-04 direction and current `AGENTS.md`; GitLab is inactive for current validation and Semaphore is retired. `docs/PRODUCTION_DEPLOYMENT.md` is aligned with this decision in the 1.0.3 candidate. Do not introduce GitHub Actions as replacement test/build CI. Validate the exact candidate SHA with all CircleCI jobs; never rely on stale or unrelated statuses. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
+Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitHub Actions (`.github/workflows/ci.yml`) is the Owner-selected primary test/build/security CI provider; CircleCI remains a transition fallback until required-check enforcement and release gates are verified. GitLab is inactive and Semaphore is retired/non-authoritative. Batch related work and use the economical validation policy in Section 6.1, owned by the canonical MWOS; required exact-SHA checks remain mandatory. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
 
 ## 3. Auto role and workstream discovery
 
@@ -114,6 +115,20 @@ For each assigned task:
 7. Review the diff for regressions, unrelated edits, secrets, authorization and data-integrity risks.
 8. Update the same canonical task/PR with evidence, NOT RUN checks, blockers and next action.
 9. Continue independent work around a blocker; do not stop after a plan, one subtask or a checkpoint report.
+
+## 6.1 Economical test and CI execution
+
+Follow the Owner's economical validation decision recorded in the canonical [MWOS — Modular Workstream Operating System](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea):
+
+- Batch coherent changes. Do not run the full suite repeatedly after every small edit, checkpoint, chat continuation or documentation-only change.
+- During implementation, run targeted checks only when behavior/configuration changed, a concrete defect is being diagnosed, or risk requires immediate evidence.
+- At batch close, perform one relevant final validation on the final candidate SHA. Reuse a PASS result when the exact SHA, workflow/configuration, dependencies, environment and execution context are unchanged.
+- Rerun only after a real candidate/fix change, a justified flaky-test diagnosis, provider/runner recovery, or a concrete diagnostic need. Do not repeat an unchanged failure merely to seek a green result.
+- Preserve mandatory exact-SHA security, tenant-isolation and financial-invariant checks, formal branch protections and acceptance criteria. Test economy never authorizes a gate bypass.
+- Documentation-only changes do not justify application tests/build solely because text changed, unless the repository workflow or a required documentation validator requires them. If a required workflow is configured to run for the PR, satisfy its enforced checks.
+- Record the exact SHA, checks run or validly reused, rerun reason, results, and every NOT RUN item.
+
+The current repository workflow runs on every pull request and includes the six substantive GitHub Actions jobs plus the fail-closed aggregate. Do not alter that workflow's trigger or suppress required checks as part of a documentation-only package update.
 
 ## 7. Handoff contract
 

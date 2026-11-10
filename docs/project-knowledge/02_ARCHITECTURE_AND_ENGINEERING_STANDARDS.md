@@ -1,19 +1,20 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.5
+version: 1.0.6
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T21:48:00Z
+last_verified_at: 2026-11-10T22:43:43Z
 review_due: 2026-11-29
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/ARCHITECTURE_BASELINE.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/docs/adr/ADR-001-v0-architecture.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/d7ff459d9478b88a39c1b0cb944468f0ea392c37/CONTRIBUTING.md
-related_github_sha: 57f84ac6df6776e05ff22c05e16444697a1bd1a7
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/ARCHITECTURE_BASELINE.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/docs/adr/ADR-001-v0-architecture.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/405cceb5b36ae972c2979cb2aa7a540c4aecd0eb/CONTRIBUTING.md
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
+related_github_sha: 405cceb5b36ae972c2979cb2aa7a540c4aecd0eb
 supersedes: none
 superseded_by: none
 ---
@@ -92,6 +93,10 @@ Use the smallest test that proves the contract, then expand to the relevant laye
 6. Security/dependency checks for secrets, vulnerable dependencies and authorization regressions.
 
 For sensitive operations, test success, failure, invalid input, duplicate/retry, unauthorized role, foreign tenant and absence of unintended state/audit changes. A test result is valid only for the exact source SHA it tested.
+
+### 6.1 Economical validation and evidence reuse
+
+Follow the Owner's economical validation decision in the canonical [MWOS — Modular Workstream Operating System](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea). Batch related changes and avoid repeated full-suite runs after small edits, checkpoints, chat resumptions or documentation-only changes. Use targeted tests during implementation only when behavior/configuration changes, diagnosing a concrete defect, or risk requires immediate evidence. At batch close, run one relevant final validation on the final candidate SHA. Reuse PASS evidence only while the exact SHA, workflow/configuration, dependencies, environment and context remain unchanged. Rerun only after a real candidate/fix change, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need; never repeat an unchanged failure merely to seek green. Mandatory exact-SHA security, tenant-isolation and financial-invariant checks, formal protections and acceptance criteria remain required. Documentation-only changes do not need application tests/build solely due to text changes unless a required workflow or documentation validator requires them. Record SHA, checks run/reused, rerun reason, results and NOT RUN items.
 
 ## 7. Code review and branch discipline
 
