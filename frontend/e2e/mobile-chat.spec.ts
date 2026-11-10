@@ -391,6 +391,25 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await languageAction.click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await moreTrigger.click();
+  await expect(moreTrigger).toHaveAttribute('aria-expanded', 'true');
+  const ltrMoreMenuLayout = await page.locator('#mobile-more-menu').evaluate(element => ({
+    direction: getComputedStyle(element).direction,
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    scrollWidth: element.scrollWidth,
+    clientWidth: element.clientWidth,
+    overflowY: getComputedStyle(element).overflowY,
+    overscrollBehavior: getComputedStyle(element).overscrollBehavior,
+  }));
+  expect(ltrMoreMenuLayout.direction).toBe('ltr');
+  expect(ltrMoreMenuLayout.scrollHeight).toBeGreaterThan(ltrMoreMenuLayout.clientHeight);
+  expect(ltrMoreMenuLayout.scrollWidth).toBeLessThanOrEqual(ltrMoreMenuLayout.clientWidth);
+  expect(ltrMoreMenuLayout.overflowY).toBe('auto');
+  expect(ltrMoreMenuLayout.overscrollBehavior).toBe('contain');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toBeFocused();
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await assertReleaseGuideMobileLayout(width);
