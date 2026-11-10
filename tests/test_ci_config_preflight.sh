@@ -21,7 +21,7 @@ git -C "$repo" add .
 git -C "$repo" commit -qm "baseline"
 base_sha="$(git -C "$repo" rev-parse HEAD)"
 
-bash "$repo/scripts/ci/install_git_hooks.sh"
+(cd "$repo" && bash scripts/ci/install_git_hooks.sh)
 [[ "$(git -C "$repo" config --get core.hooksPath)" == ".githooks" ]]
 
 cat > "$fake_bin/circleci" <<'CIRCLECI'
@@ -37,7 +37,7 @@ git -C "$repo" add .circleci/config.yml
 git -C "$repo" commit -qm "change CircleCI config"
 config_sha="$(git -C "$repo" rev-parse HEAD)"
 printf 'refs/heads/feature %s refs/heads/feature %s\n' "$config_sha" "$base_sha" \
-  | "$repo/.githooks/pre-push"
+  | (cd "$repo" && .githooks/pre-push)
 grep -Fq "config validate $repo/.circleci/config.yml" "$log"
 
 printf 'docs only\n' > "$repo/docs.txt"
@@ -45,7 +45,7 @@ git -C "$repo" add docs.txt
 git -C "$repo" commit -qm "docs only"
 docs_sha="$(git -C "$repo" rev-parse HEAD)"
 printf 'refs/heads/feature %s refs/heads/feature %s\n' "$docs_sha" "$config_sha" \
-  | "$repo/.githooks/pre-push"
+  | (cd "$repo" && .githooks/pre-push)
 [[ "$(wc -l < "$log")" -eq 1 ]]
 
 git -C "$repo" checkout -q -b new-feature
@@ -55,7 +55,7 @@ git -C "$repo" commit -qm "new branch config change"
 new_branch_sha="$(git -C "$repo" rev-parse HEAD)"
 zero_sha="0000000000000000000000000000000000000000"
 printf 'refs/heads/new-feature %s refs/heads/new-feature %s\n' "$new_branch_sha" "$zero_sha" \
-  | "$repo/.githooks/pre-push"
+  | (cd "$repo" && .githooks/pre-push)
 [[ "$(wc -l < "$log")" -eq 2 ]]
 
 echo "CircleCI config pre-push guard tests passed."
