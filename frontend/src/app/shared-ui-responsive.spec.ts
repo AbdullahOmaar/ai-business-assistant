@@ -9,6 +9,7 @@ const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.t
 const quickAccess = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const mobileHeaderCss = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const confirmDialog = readFileSync(new URL('./shared/ui/aba-confirm-dialog.component.ts', import.meta.url), 'utf8');
+const releaseGuide = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
 
 test('mobile state feedback keeps readable copy and a full-width action at 360px', () => {
   assert.match(stateMessage, /font-size:13px;line-height:1\.45/);
@@ -75,4 +76,10 @@ test('mobile confirmation dialogs use a safe-area-aware bottom sheet with reacha
 test('shared cards use comfortable mobile padding and reduce narrow-card vertical gaps', () => {
   assert.match(cardSurface, /@media\(max-width:600px\)\{[\s\S]*:host\{padding:var\(--aba-space-4, 16px\)\}[\s\S]*:host\(\.narrow\)\{margin-block:24px\}/);
   assert.match(cardSurface, /@media\(max-width:380px\)\{[\s\S]*:host\{padding:var\(--aba-space-3, 12px\)\}[\s\S]*:host\(\.narrow\)\{margin-block:16px\}/);
+});
+
+test('release guide keeps card padding and disclosure targets comfortable on mobile', () => {
+  assert.match(releaseGuide, /@media\(max-width:600px\)\{[\s\S]*\.release-guide-panel\{padding:16px\}[\s\S]*\.release-feature-group>summary,\.release-version>summary\{padding:12px\}/);
+  assert.match(releaseGuide, /@media\(max-width:380px\)\{[\s\S]*\.release-guide-panel\{padding:12px\}[\s\S]*\.release-feature-group>summary,\.release-version>summary\{padding:10px;gap:8px\}/);
+  assert.match(releaseGuide, /min-height:48px/);
 });
