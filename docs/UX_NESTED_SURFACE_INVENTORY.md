@@ -398,3 +398,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Added source-level regression assertions in `frontend/src/app/shared-ui-responsive.spec.ts` for touch-target and mobile typography rules.
 - This is a visual/accessibility-only change. No platform permissions, APIs, business data, role rules or administrative actions changed.
 - Test execution, rendered RTL/LTR review, keyboard/screen-reader acceptance and physical Android/PWA checks remain NOT RUN pending exact-head CI and browser/device access.
+
+## Release Guide mobile disclosure refinement — 2026-11-10
+
+- Feature-group and version-history disclosure rows now provide a 52px minimum touch target, a clear down-chevron affordance, and a subtle surface highlight while expanded.
+- The disclosure indicator rotates on open and disables its transition under reduced-motion preferences. Native `details/summary` behavior, content, bilingual copy and feature availability remain unchanged.
+- Added source-level regression assertions for touch sizing, open-state styling, chevron affordance and reduced-motion behavior.
+- Visual-only change; no API, data, permission, route or business behavior changed. Node test execution and rendered mobile/RTL/LTR/keyboard acceptance remain **NOT RUN**.
