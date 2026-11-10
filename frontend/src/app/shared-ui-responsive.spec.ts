@@ -83,3 +83,14 @@ test('release guide keeps card padding and disclosure targets comfortable on mob
   assert.match(releaseGuide, /@media\(max-width:380px\)\{[\s\S]*\.release-guide-panel\{padding:12px\}[\s\S]*\.release-feature-group>summary,\.release-version>summary\{padding:10px;gap:8px\}/);
   assert.match(releaseGuide, /min-height:48px/);
 });
+
+test('Platform Admin mobile controls remain touch-friendly and readable', () => {
+  const platformAdmin = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
+  const styleBlock = platformAdmin.match(/styles: \[`([\s\S]*?)`\]/)?.[1] ?? '';
+  assert.ok(styleBlock.length > 0, 'Platform Admin styles must be present');
+  assert.match(styleBlock, /@media\(max-width:760px\)\{[\s\S]*?\.section-nav button,\.quiet-button,\.outline-button,\.primary-button,\.text-action,\.pagination button\{min-height:44px\}/);
+  assert.match(styleBlock, /\.filters input,\.filters select,\.status-form select,\.status-form textarea,\.user-role-form select,\.user-role-form textarea\{min-height:44px\}/);
+  assert.match(styleBlock, /\.filters label,\.status-form label,\.user-role-form label>span\{font-size:12px\}/);
+  assert.match(styleBlock, /@media\(max-width:480px\)\{[\s\S]*?\.section-nav button\{min-height:46px;font-size:12px\}/);
+  assert.match(styleBlock, /\.compact-table th,\.compact-table td\{font-size:11px;line-height:1\.4\}/);
+});
