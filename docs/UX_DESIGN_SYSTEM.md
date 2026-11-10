@@ -27,7 +27,7 @@ AIBA uses an **Arabic-first, modern business workspace** visual language:
 | Surface | `#FFFFFF` | Cards, dialogs and controls |
 | Surface tint | `#F6FAFB` | Forms and filter bands |
 | Text | `#172033` | Primary text |
-| Muted | `#64748B` | Supporting text |
+| Muted | `#5F6E83` | Supporting text and placeholders; contrast-safe on the page surface |
 | Border | `#E2E8F0` | Separation and control outlines |
 | Focus | `#2563EB` | Visible keyboard focus |
 | Success / warning / error | Existing semantic palette | Status only; never color-only meaning |
@@ -68,6 +68,7 @@ Spacing uses a 4px base scale: 4, 8, 12, 16, 20, 24, 32, 40 and 48px.
 
 ### Fields and forms
 - Persistent labels remain the source of field meaning; placeholders are examples only.
+- Shared form layouts cover expenses, payments, invoice drafts, employee/payroll, Platform Admin status/role forms and the assistant composer.
 - Text, date, number, select and textarea controls share height, radius, border and focus treatment.
 - Invalid fields use the existing `aria-invalid` contract and inline error copy. The design layer does not alter validation rules or submission behavior.
 - Inline forms flow into a responsive grid; stacked forms retain a single vertical rhythm.
@@ -75,11 +76,13 @@ Spacing uses a 4px base scale: 4, 8, 12, 16, 20, 24, 32, 40 and 48px.
 
 ### Filters
 - Search, select and period controls sit in a shared tinted filter surface.
+- The same layout contract covers invoice and statement filters, employee tools, Platform Admin filters and audit filters.
 - Search fields may grow; select controls remain shrink-safe.
 - On phones, filters become a single vertical stack with full-width actions. Clearing filters remains the responsibility of each feature.
 
 ### Cards and metrics
 - Shared card surfaces use the same border, radius, padding and shadow.
+- Home KPIs and Platform Admin metrics, permission cards, detail panels and empty states use the same surface geometry.
 - KPI values are visually prominent but remain separated by currency and the existing server-provided meaning. No new sums, ratios or client calculations are introduced.
 - Empty, loading, warning and error states keep their semantic state components.
 

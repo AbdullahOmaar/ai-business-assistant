@@ -21,6 +21,11 @@ test('the final AIBA visual direction defines a complete semantic token foundati
   }
 });
 
+test('muted copy and placeholders use the contrast-safe neutral token', () => {
+  assert.match(css, /--aiba-muted:\\s*#5f6e83/);
+  assert.match(css, /input::placeholder[\\s\\S]*?color:\\s*var\\(--aiba-muted\\)/);
+});
+
 test('Angular loads the design system after the existing application stylesheet', () => {
   const styles = angular.projects['ai-business-assistant'].architect.build.options.styles;
   assert.deepEqual(styles, ['src/styles.css', 'src/design-system.css']);
@@ -37,6 +42,8 @@ test('forms, fields, filters, buttons, tables and cards share reusable visual ru
     '.audit-table-wrap tbody td', '.invoice-card', '.line-card', '.server-summary',
     '.employee-form', '.payroll-form', '.employee-tools', '.filters', '.audit-filters',
     '.status-form', '.user-role-form', '.chat-form',
+    '.admin-shell .metric-card', '.admin-shell .permission-card',
+    '.admin-shell .section-nav', '.admin-shell .detail-grid',
   ]) {
     assert.ok(css.includes(selector), 'missing design system selector: ' + selector);
   }

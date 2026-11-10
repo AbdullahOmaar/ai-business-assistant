@@ -13,7 +13,7 @@
   --aiba-brand-line: #99f6e4;
   --aiba-ink: #172033;
   --aiba-ink-soft: #344256;
-  --aiba-muted: #64748b;
+  --aiba-muted: #5f6e83;
   --aiba-muted-soft: #94a3b8;
   --aiba-page: #f4f7fb;
   --aiba-surface: #ffffff;
@@ -235,7 +235,7 @@
 
 :root body .shell input::placeholder,
 :root body .shell textarea::placeholder {
-  color: #94a3b8;
+  color: var(--aiba-muted);
   opacity: 1;
 }
 
@@ -1165,5 +1165,92 @@
   :root body .shell .user-role-form button,
   :root body .shell .chat-form button {
     width: 100%;
+  }
+}
+
+
+/* Dense admin workspaces share the same card, tab and empty-state geometry. */
+:root body .shell .admin-shell .metric-card,
+:root body .shell .admin-shell .permission-card,
+:root body .shell .admin-shell .detail-grid > div,
+:root body .shell .admin-shell .runtime-grid > div,
+:root body .shell .admin-shell .empty-panel,
+:root body .shell .employee-panel {
+  min-width: 0;
+  border-color: var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface);
+  box-shadow: var(--aiba-shadow-card);
+}
+
+:root body .shell .admin-shell .metric-card {
+  padding: var(--aiba-space-4);
+  gap: var(--aiba-space-2);
+}
+
+:root body .shell .admin-shell .metric-card > strong {
+  color: var(--aiba-ink);
+  font-size: clamp(20px, 2vw, 28px);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+:root body .shell .admin-shell .metric-card > span:not(.metric-icon),
+:root body .shell .admin-shell .metric-card small,
+:root body .shell .admin-shell .runtime-grid small {
+  color: var(--aiba-muted);
+}
+
+:root body .shell .admin-shell .permission-card {
+  padding: var(--aiba-space-4);
+  gap: var(--aiba-space-3);
+}
+
+:root body .shell .admin-shell .section-nav {
+  gap: var(--aiba-space-2);
+  padding: var(--aiba-space-1);
+  border-color: var(--aiba-line);
+  border-radius: var(--aiba-radius-card);
+  background: var(--aiba-surface-tint);
+}
+
+:root body .shell .admin-shell .section-nav button {
+  min-height: var(--aiba-control-md);
+  border-radius: var(--aiba-radius-control);
+  color: var(--aiba-muted);
+}
+
+:root body .shell .admin-shell .section-nav button.active {
+  border-color: var(--aiba-line);
+  background: var(--aiba-surface);
+  color: var(--aiba-brand-strong);
+  box-shadow: var(--aiba-shadow-card);
+}
+
+:root body .shell .admin-shell .detail-grid > div,
+:root body .shell .admin-shell .runtime-grid > div {
+  padding: var(--aiba-space-3);
+}
+
+:root body .shell .admin-shell .empty-panel {
+  border-style: dashed;
+  background: var(--aiba-surface-tint);
+  box-shadow: none;
+}
+
+:root body .shell .admin-shell .panel-heading h3,
+:root body .shell .admin-shell .permission-card h3 {
+  color: var(--aiba-ink);
+  font-weight: 720;
+}
+
+@media (max-width: 480px) {
+  :root body .shell .admin-shell .metric-card {
+    min-height: 0;
+    padding: var(--aiba-space-3);
+  }
+
+  :root body .shell .admin-shell .permission-card {
+    padding: var(--aiba-space-3);
   }
 }
