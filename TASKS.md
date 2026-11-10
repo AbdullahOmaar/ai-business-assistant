@@ -3386,3 +3386,16 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Still mandatory before any pipeline/secrets:** GitLab project `public_jobs=true` means job logs are publicly accessible according to the Projects API. Disable public job logs (`public_jobs=false`) in project settings. The artifact ACL does not solve public job-log visibility.
 - CI-config branch remains protected but `developers_can_push=true`; set push access to Maintainers only. Rotate the exposed runner-registration token. No settings changes could be performed with available GitLab connector actions.
 - No webhook, pipeline, CI Lint, token variables, exact-SHA validation or GitHub status report configured/observed. CircleCI remains the transition gate.
+
+
+## CI migration closeout checkpoint — 2026-11-10 20:20 Cairo time
+
+- GitHub PR #367 is OPEN / DRAFT / UNMERGED; latest observed head before this ledger update: `fd4c02dc1da268852be077bcd1a588c4a6ef40ee`, base `e018c56640cc63573cdaec590fa5018148d5f662`; 7 changed paths, 474 additions / 109 deletions. No submitted review or review threads.
+- GitLab MR !350 is OPEN / DRAFT / UNMERGED at `40ee1920932a13e2b264e4afd3f5b4df479d9b83`. GitHub/GitLab `.gitlab-ci.yml` copies are byte-identical at 12,564 bytes.
+- Direct GitLab webhook contract verified against official docs: Push/Tag only, file-type `TRIGGER_PAYLOAD`; candidate deliberately supports branch Pushes only. The status is posted to the exact commit SHA and appears on PRs containing that commit. No direct PR event is configured.
+- Resolver source smoke test: one valid branch-push payload accepted; four invalid cases rejected (wrong repo, tag, deleted branch, malformed SHA). This is NOT GitLab CI Lint or a real pipeline.
+- **Security blockers:** GitLab project is private but `public_jobs=true` (job logs publicly accessible); CI-config branch is protected but `developers_can_push=true`. Before webhook, secrets or pipeline: set `public_jobs=false`, restrict branch pushes to Maintainers, and rotate/reset the previously exposed runner-registration token. No available connector action can perform these settings changes.
+- No webhook, trigger token, GitHub PAT variables, CI Lint, automatic pipeline, exact-SHA full validation or GitHub status report configured/observed. GitLab pipeline history only contains the earlier skipped pipeline.
+- Latest observed exact GitHub candidate status before this ledger update: six CircleCI FAILURE contexts and one retired Semaphore FAILURE; no retry, root causes UNKNOWN pending logs. CircleCI remains active as transition fallback/current gate.
+- GitHub private Free does not support protected branches/required status checks; merge-control acceptance remains BLOCKED / NOT VERIFIED. No paid upgrade or repository-public conversion authorized.
+- Full maintainer diff review recorded; independent non-author review for controlled knowledge publication pending. No merge, CircleCI retirement, production deployment, DB operation, paid provisioning or gate bypass.
