@@ -65,7 +65,7 @@ resolve-event:
                   raise ValueError("Pull request payload must be an object.")
               event = "pull_request"
               action = payload.get("action", "")
-              if action not in ALLOWED_PR_ACTIONS:
+              if not isinstance(action, str) or action not in ALLOWED_PR_ACTIONS:
                   raise ValueError(f"Pull request action is not a validation trigger: {action or 'missing'}")
               base = pull_request.get("base") or {}
               head = pull_request.get("head") or {}
@@ -81,7 +81,8 @@ resolve-event:
                   raise ValueError("Pull request base is not the canonical repository.")
               if not isinstance(head_name, str) or not head_name:
                   raise ValueError("Pull request head repository is missing.")
-              if (pull_request.get("state") or "").casefold() != "open":
+              pr_state = pull_request.get("state", "")
+              if not isinstance(pr_state, str) or pr_state.casefold() != "open":
                   raise ValueError("Only open pull requests are validated.")
               pr_number = pull_request.get("number", payload.get("number", ""))
               if isinstance(pr_number, bool) or not isinstance(pr_number, int) or pr_number < 1:
@@ -147,6 +148,11 @@ resolve-event:
       payload_path = os.environ.get("TRIGGER_PAYLOAD", "")
       if not payload_path or not os.path.isfile(payload_path):
           raise SystemExit("GitLab TRIGGER_PAYLOAD is missing; configure this pipeline with a GitHub webhook delivery.")
+      payload_size = os.path.getsize(payload_path)
+      if payload_size > 1024 * 1024:
+          raise SystemExit(
+              f"GitLab.com TRIGGER_PAYLOAD exceeds the 1 MiB file-variable limit: {payload_size} bytes."
+          )
 
       with open(payload_path, encoding="utf-8") as payload_file:
           payload = json.load(payload_file)
