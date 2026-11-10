@@ -151,6 +151,8 @@ prepare-source:
       echo "Verified GitHub source SHA: $actual_sha"
   artifacts:
     when: always
+    reports:
+      dotenv: event.env
     paths:
       - source/
       - job-status/
