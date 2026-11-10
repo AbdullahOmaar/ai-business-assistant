@@ -390,3 +390,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **Mobile navigation E2E source coverage:** the mocked OWNER journey asserts the accepted four-slot dock and >=44px targets, main-content clearance below the dock, and More's five non-empty work-area groups, bounded internal scrolling/overscroll containment, expanded/controls semantics, Escape-to-close and focus restoration in both RTL and LTR. This remains source-only until Playwright runs.
 - **Acceptance still NOT RUN:** rendered 360/390/430px and tablet/desktop checks, Arabic RTL/English LTR, long-response behavior, Android keyboard/visual viewport, screen-reader/keyboard/200% zoom, and physical installed-PWA behavior. Source inspection is not rendered/device acceptance.
 - **Scope:** source-level UX baseline only; no chat API/backend/database, auth, tenant, AI-provider or business-rule changes.
+
+## Platform Admin mobile usability refinement — 2026-11-10
+
+- The separate Platform Admin surface now keeps navigation, action buttons, pagination controls and form controls at a minimum 44px touch height on mobile; section navigation rises to 46px at narrow widths.
+- Mobile filter labels, dashboard metric labels/supporting copy, notices and compact-table text use larger minimum typography while preserving the existing table layout and permission/domain boundaries.
+- Added source-level regression assertions in `frontend/src/app/shared-ui-responsive.spec.ts` for touch-target and mobile typography rules.
+- This is a visual/accessibility-only change. No platform permissions, APIs, business data, role rules or administrative actions changed.
+- Test execution, rendered RTL/LTR review, keyboard/screen-reader acceptance and physical Android/PWA checks remain NOT RUN pending exact-head CI and browser/device access.
