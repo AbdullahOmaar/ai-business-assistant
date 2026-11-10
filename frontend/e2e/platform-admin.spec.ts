@@ -412,6 +412,15 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
       () => document.documentElement.scrollWidth > window.innerWidth,
     );
     expect(pageHasHorizontalOverflow, `Platform Admin must not overflow at ${width}px`).toBe(false);
+    if (width <= 760) {
+      const sectionNavHeights = await page.locator('.section-nav button').evaluateAll(
+        buttons => buttons.map(button => button.getBoundingClientRect().height),
+      );
+      expect(sectionNavHeights.length).toBeGreaterThan(0);
+      for (const height of sectionNavHeights) {
+        expect(height, `Platform Admin navigation targets must be at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
+      }
+    }
   }
   expect(uncaughtErrors).toEqual([]);
 });
