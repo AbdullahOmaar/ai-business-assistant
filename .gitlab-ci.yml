@@ -85,9 +85,9 @@ resolve-event:
           raise SystemExit("Webhook did not contain a valid 40-character GitHub commit SHA.")
 
       with open("event.env", "w", encoding="utf-8") as env_file:
-          env_file.write(f"SOURCE_SHA={sha}\\n")
-          env_file.write(f"GITHUB_EVENT={event}\\n")
-          env_file.write(f"GITHUB_REPOSITORY={repository}\\n")
+          env_file.write(f"SOURCE_SHA={sha}\n")
+          env_file.write(f"GITHUB_EVENT={event}\n")
+          env_file.write(f"GITHUB_REPOSITORY={repository}\n")
 
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
