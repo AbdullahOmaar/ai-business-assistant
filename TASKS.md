@@ -7,10 +7,23 @@ The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive 
 - Every substantive job verifies the checkout matches the exact workflow event SHA. Workflow permissions are read-only; test/build/security jobs require no repository secrets. No production DB or production deployment is accessed.
 - CircleCI remains configured as a transition fallback until all six GitHub Actions jobs and the aggregate pass on exact candidate SHAs and main-branch required-check enforcement is verified. Do not retire CircleCI early.
 - GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Current main metadata reports `protected=true` but effective required-status enforcement is disabled/NOT VERIFIED. Public-repository Free supports branch protection; configure `all-checks-passed` as required and require PRs before treating merge control as enforced.
+- Current main metadata reports `protected=true`; the branch-protection endpoint returns 403 for this integration. Required-status enforcement and PR requirement are UNKNOWN. Owner/Admin must read back that `all-checks-passed` is required and PRs are required before treating merge control as enforced.
 - No paid upgrade, merge, CI retirement, production deployment, production DB write/migration or gate bypass is authorized by this provider decision. Existing maintainer review, security, merge and separate deployment gates remain mandatory.
 
-Implementation remains IN_PROGRESS. Existing PR #367 is being repurposed from the GitLab candidate to this GitHub Actions transition; it remains Draft and unmerged until the exact-SHA suite and required-check model are verified.
+Implementation remains IN_PROGRESS. Existing PR #367 is repurposed from the GitLab candidate to this GitHub Actions transition. The full suite has passed on checkpoint SHA `a9f386cd40cb4c955035e97d05aee9dbd32d08d1`; this next documentation cleanup creates a new head and requires fresh exact-SHA validation. PR #367 remains Draft and unmerged pending required-check readback, independent non-author review and remaining release gates.
+
+## GitHub Actions exact-SHA validation checkpoint — 2026-11-10 20:19 UTC
+
+- **PR:** [#367](https://github.com/AbdullahOmaar/ai-business-assistant/pull/367), OPEN / DRAFT / UNMERGED. Checkpoint head: `a9f386cd40cb4c955035e97d05aee9dbd32d08d1`; base: `e018c56640cc63573cdaec590fa5018148d5f662`. The PR contains 10 changed paths (+403 / -257) at this checkpoint.
+- **GitHub Actions:** run [42893926261](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/42893926261) completed SUCCESS on that exact SHA. All six substantive jobs passed: backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke and backend-container. Fail-closed `all-checks-passed` aggregate also passed.
+- **Backend evidence:** pytest reported 278 passed (21 warnings); PostgreSQL migrations/schema checks, knowledge validator, offline migration SQL and Python dependency audit completed in the successful backend job.
+- **Security evidence:** GitGuardian completed SUCCESS and reported no secrets detected across the 72 commits scanned.
+- **Fallback evidence:** CircleCI reported all six substantive contexts plus its aggregate SUCCESS on the same SHA. A legacy Semaphore status reported FAILURE; Semaphore is retired/non-authoritative and must not be mistaken for a GitHub Actions failure. The combined legacy commit status therefore still reports failure due to that retired context.
+- **Merge protection:** main reports `protected=true`, but the protection endpoint is inaccessible to the current integration (403). Whether `all-checks-passed` is required and PRs are enforced remains UNKNOWN; Owner/Admin readback is required.
+- **Review:** no PR reviews were present at checkpoint. Because this changes controlled CI policy and engineering guidance, independent non-author review and authorized approval remain outstanding. Do not mark this provider transition VERIFIED COMPLETE, merge, or retire CircleCI.
+- **Next:** rerun the full suite on the updated PR head after this checkpoint; obtain branch-protection readback and independent review; then reassess exact-head merge readiness. No production deployment or database operation was performed.
+
+---
 
 # Policy conflict sweep — 2026-11-08
 

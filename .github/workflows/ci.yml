@@ -44,8 +44,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Mark workspace safe for Git inside the container
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Verify exact source SHA
         run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - uses: actions/setup-python@v5
