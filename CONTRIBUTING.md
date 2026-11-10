@@ -71,7 +71,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 
 - Maintain **one active branch per contributor/agent**. Check open PRs and branches before creating anything; reuse the matching in-progress branch whenever the scope is coherent.
 - Do not create a branch for each issue subtask, commit, small bug fix, test, refactor, or documentation change. Group related work into one focused branch/PR.
-- After implementation, run relevant tests, review the complete diff, update TASKS.md, and merge only after exact-head required checks and reviews pass. Verify the merge on main before beginning another branch.
+- After implementation, run relevant tests, complete and record the accountable maintainer's full diff self-review, update TASKS.md, and merge only after exact-head required checks and any formal GitHub branch-protection approval actually enforced pass. Verify the merge on main before beginning another branch.
 - Create a new branch only for a genuinely new large feature or an independently releasable change with a distinct security, permission, ownership, dependency, or conflict boundary.
 - Do not combine unrelated features to reduce branch count. If work becomes materially independent, finish the current PR safely first, then create the new branch and document the reason.
 - This policy never permits direct pushes to protected main, bypassing checks/reviews, or deleting a branch that may contain unique work.
