@@ -5,6 +5,31 @@ version: 2.1
 orbs:
   slack: circleci/slack@6.1.3
 
+  restore-frontend-npm-cache:
+    steps:
+      - restore_cache:
+          keys:
+            - frontend-npm-v1-{{ checksum "frontend/package-lock.json" }}
+            - frontend-npm-v1-
+  save-frontend-npm-cache:
+    steps:
+      - save_cache:
+          key: frontend-npm-v1-{{ checksum "frontend/package-lock.json" }}
+          paths:
+            - ~/.npm
+  restore-backend-pip-cache:
+    steps:
+      - restore_cache:
+          keys:
+            - backend-pip-v1-{{ checksum "backend/requirements.txt" }}
+            - backend-pip-v1-
+  save-backend-pip-cache:
+    steps:
+      - save_cache:
+          key: backend-pip-v1-{{ checksum "backend/requirements.txt" }}
+          paths:
+            - ~/.cache/pip
+
 commands:
   initialize-failure-details:
     steps:
@@ -111,6 +136,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
     steps:
       - initialize-failure-details
+      - restore-backend-pip-cache
       - checkout
       - run:
           name: Install backend test and audit dependencies
@@ -190,6 +216,7 @@ jobs:
           path: /tmp/alembic-upgrade.sql
           destination: alembic-upgrade.sql
 
+      - save-backend-pip-cache
       - notify-on-failure
   frontend-unit-tests:
     docker:
@@ -198,6 +225,7 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
+      - restore-frontend-npm-cache
       - checkout
       - run:
           name: Verify Node runtime and install frontend dependencies
@@ -214,6 +242,7 @@ jobs:
             cd frontend
             npm test
 
+      - save-frontend-npm-cache
       - notify-on-failure
   frontend-production-build:
     docker:
@@ -222,6 +251,7 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
+      - restore-frontend-npm-cache
       - checkout
       - run:
           name: Verify Node runtime and install frontend dependencies
@@ -244,6 +274,7 @@ jobs:
             cd frontend
             npx ng build
 
+      - save-frontend-npm-cache
       - notify-on-failure
   frontend-dependency-audit:
     docker:
@@ -252,6 +283,7 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
+      - restore-frontend-npm-cache
       - checkout
       - run:
           name: Verify Node runtime and install frontend dependencies
@@ -271,6 +303,7 @@ jobs:
           path: /tmp/npm-audit.txt
           destination: npm-audit.txt
 
+      - save-frontend-npm-cache
       - notify-on-failure
   backend-container:
     docker:
@@ -303,12 +336,14 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
+      - restore-backend-pip-cache
       - checkout
       - run:
           name: Audit Python dependencies
           command: |
             python -m pip install --upgrade pip pip-audit
             pip-audit -r backend/requirements.txt
+      - save-backend-pip-cache
       - notify-on-failure
 
   dependency-audit-frontend:
@@ -318,6 +353,7 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
+      - restore-frontend-npm-cache
       - checkout
       - run:
           name: Audit frontend dependencies
@@ -326,6 +362,7 @@ jobs:
             cd frontend
             npm ci --no-audit --no-fund
             npm audit --audit-level=high
+      - save-frontend-npm-cache
       - notify-on-failure
 
   frontend-browser-smoke:
@@ -335,6 +372,7 @@ jobs:
     working_directory: ~/project
     steps:
       - initialize-failure-details
+      - restore-frontend-npm-cache
       - checkout
       - run:
           name: Install Slack failure diagnostic tooling
@@ -358,6 +396,7 @@ jobs:
           path: frontend/test-results/e2e-junit.xml
           destination: frontend-e2e-junit.xml
 
+      - save-frontend-npm-cache
       - notify-on-failure
   all-checks-passed:
     type: no-op

@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+needs_validation=false
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_sha:-}" ]] && continue
+  [[ "$local_sha" =~ ^0+$ ]] && continue
+
+  base_sha="$remote_sha"
+  if [[ "$remote_sha" =~ ^0+$ ]]; then
+    base_ref="${CIRCLECI_PREFLIGHT_BASE_REF:-origin/main}"
+    if ! git rev-parse --verify "$base_ref^{commit}" >/dev/null 2>&1; then
+      base_ref="main"
+    fi
+    if ! git rev-parse --verify "$base_ref^{commit}" >/dev/null 2>&1; then
+      printf 'Cannot determine a base revision for CircleCI config preflight. Fetch main and retry.\n' >&2
+      exit 1
+    fi
+    base_sha="$(git rev-parse "$base_ref^{commit}")"
+  fi
+
+  if ! git diff --quiet "$base_sha" "$local_sha" -- .circleci/config.yml; then
+    needs_validation=true
+  fi
+done
+
+if [[ "$needs_validation" == true ]]; then
+  "$repo_root/scripts/ci/validate_circleci_config.sh"
+fi

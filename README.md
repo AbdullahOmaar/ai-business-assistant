@@ -42,6 +42,21 @@ See [ADR-001 — V0 architecture](docs/adr/ADR-001-v0-architecture.md).
 - Require human approval for consequential AI-proposed changes and keep important actions auditable.
 - Derive stock balances from recorded movements rather than silently overwriting quantity totals.
 
+## CircleCI configuration preflight
+
+After cloning, enable the repository's pre-push hook once:
+
+```bash
+bash scripts/ci/install_git_hooks.sh
+```
+
+When an outgoing push changes `.circleci/config.yml`, the hook runs
+`circleci config validate` before sending the commit. Install the CircleCI CLI
+using the [official instructions](https://circleci.com/docs/guides/toolkit/how-to-install-the-circleci-cli/)
+before pushing CI configuration changes. Ordinary code pushes skip this check.
+CircleCI remains the only authoritative CI provider; this local check does not
+replace exact-SHA CircleCI jobs or the aggregate result.
+
 ## Project documentation
 
 - [Contribution guide, roles, and engineering workflow](CONTRIBUTING.md)
