@@ -42,10 +42,13 @@ test('primary button white labels meet WCAG AA contrast at every gradient stop',
 });
 
 test('KPI card surface is drawn once by the inner component, not the Angular host', () => {
-  const host = css.match(/:root body \.shell \.metric-grid > aba-metric-card\s*\{([^}]*)\}/)?.[1] ?? '';
+  const hostBlocks = [...css.matchAll(/([^{}]*metric-grid > aba-metric-card[^{}]*)\{([^{}]*)\}/g)]
+    .filter(([, selector]) => !selector.includes('.aba-metric-card'));
   const inner = css.match(/:root body \.shell \.metric-grid > aba-metric-card \.aba-metric-card\s*\{([^}]*)\}/)?.[1] ?? '';
-  assert.match(host, /min-height:/);
-  assert.doesNotMatch(host, /\b(padding|border|background|box-shadow)\s*:/);
+  assert.ok(hostBlocks.length >= 3, 'base and responsive Angular host rules must remain covered');
+  for (const [, selector, declarations] of hostBlocks) {
+    assert.doesNotMatch(declarations, /\b(padding|border|background|box-shadow)\s*:/, selector.trim());
+  }
   assert.match(inner, /border:/);
   assert.match(inner, /background:/);
   assert.match(inner, /box-shadow:/);
