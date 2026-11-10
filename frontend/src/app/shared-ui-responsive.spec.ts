@@ -7,6 +7,7 @@ const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.compo
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
 const quickAccess = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const mobileHeaderCss = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const confirmDialog = readFileSync(new URL('./shared/ui/aba-confirm-dialog.component.ts', import.meta.url), 'utf8');
 
 test('mobile state feedback keeps readable copy and a full-width action at 360px', () => {
   assert.match(stateMessage, /font-size:13px;line-height:1\.45/);
@@ -59,4 +60,13 @@ test('shared UI styles remain syntactically balanced and contain no escaped medi
     assert.equal(depth, 0, 'CSS blocks must have balanced braces');
     assert.ok(!styles.includes('\\n    @media'), 'media queries must be separated by real CSS whitespace');
   }
+});
+
+test('mobile confirmation dialogs use a safe-area-aware bottom sheet with reachable actions', () => {
+  assert.match(confirmDialog, /@media\(max-width:480px\)\{[\s\S]*\.confirm-backdrop\{align-items:end;justify-items:stretch;padding:0;backdrop-filter:none\}/);
+  assert.match(confirmDialog, /border-radius:20px 20px 0 0/);
+  assert.match(confirmDialog, /env\(safe-area-inset-bottom,0px\)/);
+  assert.match(confirmDialog, /\.confirm-actions button\{min-width:0;min-height:48px\}/);
+  assert.match(confirmDialog, /@media\(max-width:380px\)\{\.confirm-actions\{grid-template-columns:1fr\}\}/);
+  assert.match(confirmDialog, /prefers-reduced-motion:reduce\)\{\.confirm-dialog\{animation:none\}\}/);
 });
