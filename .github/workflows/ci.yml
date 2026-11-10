@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   backend-accounting:
-    name: CI / backend-accounting
+    name: backend-accounting
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -69,7 +69,7 @@ jobs:
         run: pip-audit -r backend/requirements.txt
 
   frontend-unit-tests:
-    name: CI / frontend-unit-tests
+    name: frontend-unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -87,7 +87,7 @@ jobs:
         run: npm test
 
   frontend-production-build:
-    name: CI / frontend-production-build
+    name: frontend-production-build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -108,7 +108,7 @@ jobs:
         run: npx ng build
 
   frontend-dependency-audit:
-    name: CI / frontend-dependency-audit
+    name: frontend-dependency-audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -126,7 +126,7 @@ jobs:
         run: npm audit --audit-level=high
 
   frontend-browser-smoke:
-    name: CI / frontend-browser-smoke
+    name: frontend-browser-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
@@ -153,7 +153,7 @@ jobs:
           retention-days: 7
 
   backend-container:
-    name: CI / backend-container
+    name: backend-container
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -169,7 +169,7 @@ jobs:
         run: docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
 
   all-checks-passed:
-    name: CI / all-checks-passed
+    name: all-checks-passed
     if: always()
     needs:
       - backend-accounting
@@ -189,12 +189,12 @@ jobs:
           FRONTEND_BROWSER_SMOKE: \${{ needs.frontend-browser-smoke.result }}
           BACKEND_CONTAINER: \${{ needs.backend-container.result }}
         run: |
-          printf 'backend-accounting=%s\\n' "$BACKEND_ACCOUNTING"
-          printf 'frontend-unit-tests=%s\\n' "$FRONTEND_UNIT_TESTS"
-          printf 'frontend-production-build=%s\\n' "$FRONTEND_PRODUCTION_BUILD"
-          printf 'frontend-dependency-audit=%s\\n' "$FRONTEND_DEPENDENCY_AUDIT"
-          printf 'frontend-browser-smoke=%s\\n' "$FRONTEND_BROWSER_SMOKE"
-          printf 'backend-container=%s\\n' "$BACKEND_CONTAINER"
+          printf 'backend-accounting=%s\n' "$BACKEND_ACCOUNTING"
+          printf 'frontend-unit-tests=%s\n' "$FRONTEND_UNIT_TESTS"
+          printf 'frontend-production-build=%s\n' "$FRONTEND_PRODUCTION_BUILD"
+          printf 'frontend-dependency-audit=%s\n' "$FRONTEND_DEPENDENCY_AUDIT"
+          printf 'frontend-browser-smoke=%s\n' "$FRONTEND_BROWSER_SMOKE"
+          printf 'backend-container=%s\n' "$BACKEND_CONTAINER"
           test "$BACKEND_ACCOUNTING" = success
           test "$FRONTEND_UNIT_TESTS" = success
           test "$FRONTEND_PRODUCTION_BUILD" = success
