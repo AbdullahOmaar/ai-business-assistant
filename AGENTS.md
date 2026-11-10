@@ -118,7 +118,7 @@ Never rely only on chat history. If the execution environment ends, leave a chec
 Do not narrate every trivial edit or ask permission between ordinary implementation steps. Send concise progress updates at meaningful milestones. Final reports must separate verified complete, partially complete, not run, and blocked. Prefer evidence (commit SHA, workflow run, test output, deployment version) over claims.
 
 ## Repository-specific validation
-Inspect `.github/workflows/ci.yml` before choosing commands. GitHub Actions defines backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. GitHub Actions is the authoritative CI runner. CircleCI, GitLab and Semaphore are retired/non-authoritative providers for this project. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
+Inspect `.github/workflows/ci.yml` and `.github/workflows/dependency-security.yml` before choosing commands. GitHub Actions defines backend pytest/Alembic checks against disposable PostgreSQL, shared-knowledge package validation, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. GitHub Actions is the authoritative CI runner. CircleCI, GitLab and Semaphore are retired/non-authoritative providers for this project. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
 
 ## Vibe-coding workflow and AI-agent orchestration
 
@@ -225,7 +225,7 @@ This section clarifies the operational detail for every human, specialist chat a
 
 ### CI and merge gate clarification
 - GitHub Actions and `.github/workflows/ci.yml` remain the sole approved repository CI provider. Require every substantive job and the aggregate workflow on the exact candidate SHA.
-- CircleCI, GitLab and Semaphore are retired/non-authoritative. Semaphore is retired/non-authoritative; its status failure does not negate valid GitHub Actions evidence.
+- CircleCI, GitLab and Semaphore are retired/non-authoritative; their status failures do not negate valid GitHub Actions evidence.
 - Empty status contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
 - The Owner's 2026-11-10 decision authorizes normal GitHub Actions triggers and manual workflow dispatch. Provider/quota/permission failures remain NOT RUN/BLOCKED; do not substitute another provider.
 - A documented full maintainer diff review is mandatory. Under the Owner Policy effective 2026-11-06, a second independent reviewer is not a default project gate; require one only when provider-enforced protection or a separate explicit Owner-approved security policy requires it. This ordinary merge default does NOT waive independent review before canonical controlled Project Knowledge is published or updated: that publication gate is separate, and the reviewer must not be the content author, per `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`.
