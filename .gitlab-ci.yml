@@ -70,7 +70,6 @@ resolve-event:
           env_file.write(f"SOURCE_SHA={sha}\n")
           env_file.write(f"GITHUB_EVENT={event}\n")
           env_file.write(f"GITHUB_REPOSITORY={repository}\n")
-          if pr_number:
 
       print(f"Validated GitHub {event} webhook for canonical SHA: {sha}")
       PY
