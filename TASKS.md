@@ -11,6 +11,20 @@ The Owner permanently lifts the prior CircleCI execution freeze. This supersedes
 
 This directive changes CI execution permission only. It does not waive tests, security, review, merge, data-integrity, migration or release gates.
 
+# Global CI Failure Notifications — Slack Diagnostics — 2026-11-10
+
+- **Task / PR:** Global CI Failure Notifications — Slack Diagnostics; [PR #364](https://github.com/AbdullahOmaar/ai-business-assistant/pull/364), branch `ci/slack-failure-diagnostics-clean-20261109`, base `main@e018c56640cc63573cdaec590fa5018148d5f662`.
+- **Current exact head:** `e13af62b42afbfda127398929abdb9eb7f11634b` (14 commits; 3 implementation paths plus this ledger checkpoint).
+- **Scope:** failure-only Slack diagnostics for all configured CircleCI verification and scheduled dependency-audit jobs; 8 notifier placements across 14 workflow job invocations with `slack-secrets`.
+- **Review fixes:** removed the stale unset `$redacted` assertion; changed the mocked `curl` to consume piped config input before returning (prevents SIGPIPE); strips ANSI control codes before secret redaction and adds a split-secret regression; removed a duplicated trailing test block. The two current Greptile P1 threads (curl mock and ANSI secret leak) are resolved. The prior stale-variable and redaction-test threads are also resolved/outdated.
+- **Security / automated review:** GitGuardian Security Checks SUCCESS on exact head `e13af62...`; Greptile Review is IN PROGRESS on that exact head. No formal review approval is claimed.
+- **Validation:** current-head Bash syntax and full `tests/test_slack_failure_details.sh` execution are NOT RUN. CircleCI exact-head execution/check is absent; do not substitute Semaphore. Slack has legacy generic CircleCI failure notifications, but no controlled detailed-diagnostics delivery is verified. Presence/validity of `CIRCLE_API_TOKEN` in `slack-secrets` remains UNKNOWN.
+- **Provider access:** CircleCI remains the sole approved CI provider and the Owner directive permits normal triggers/retries. A saved CircleCI browser profile exists, but its signed-in state for CircleCI is not recorded; do not assume access. No Desktop Commander is required.
+- **Safety:** PR remains OPEN / non-Draft. No merge, production deployment, production DB write or migration.
+- **Next action:** confirm whether the saved CircleCI browser profile is already signed in; then inspect pipeline/settings and the `slack-secrets` variable names without exposing values, execute the exact-head CircleCI jobs, and run one controlled failure-only Slack delivery test. Re-review the exact final diff and update this checkpoint with evidence.
+
+---
+
 # Policy conflict sweep — 2026-11-08
 
 - Corrected legacy wording in `AGENTS.md`, `CONTRIBUTING.md` and `docs/PRODUCTION_DEPLOYMENT.md` that could be read as (a) waiving independent review for canonical Knowledge publication or (b) allowing unapproved alternate CI runners.
