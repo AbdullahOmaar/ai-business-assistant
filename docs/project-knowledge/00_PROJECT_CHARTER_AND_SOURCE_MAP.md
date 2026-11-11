@@ -1,27 +1,27 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.7
-status: APPROVED
+version: 1.0.8
+status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T23:10:43Z
-review_due: 2027-01-28
+last_verified_at: 2026-11-11T05:55:00Z
+review_due: 2027-02-09
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/README.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/README.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
-related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
+related_github_sha: 827f220da14139605294923cc5550e088c2589e3
 supersedes: none
 superseded_by: none
 ---
 
 # Project Charter & Source Map
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
+> **Approval state:** DRAFT candidate version 1.0.8; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
 
 ## 1. Project identity
 
@@ -31,6 +31,7 @@ superseded_by: none
 - **Product baseline:** Production V1 ERP Charter in Notion.
 - **Primary product direction:** web-first business operations with AI assistance grounded in the business's authorized records.
 - **Current accepted V0 application stack:** Angular frontend, Python/FastAPI backend, PostgreSQL persistence.
+- **Current lifecycle classification (Owner decision, 2026-11-11):** development / pre-release; not yet a real customer-production business environment, even when provider targets or aliases use the Production label. Provider technical metadata remains unchanged and must be reported accurately.
 
 ## 2. Product mission and intended outcomes
 
@@ -63,7 +64,7 @@ The Notion Production V1 Charter owns exact release scope, module acceptance and
 - This knowledge package does not add product features or redefine release scope.
 - The accepted V0 architecture is web-first. A second client such as Flutter is deferred unless validated demand and an approved decision change that boundary.
 - Financial semantics, tax, COGS, AP, FX, GL, payroll statutory/effective-date rules and posting behavior must follow a current, explicit, versioned approval. The current Notion handover records a T37 authority conflict and treats T37 as Draft / NOT APPROVED until reconciled; dependent changes remain fail-closed.
-- No file in this package authorizes merge, production deployment, production migration, paid provisioning or production data changes.
+- This package records the Owner's bounded development-stage authorization for account/workspace creation, use of project data needed for assigned work, and invoice create/edit through normal authenticated application/API workflows, including on a deployment technically labelled Production. It does not authorize hard deletion, payment/settlement/void/post operations, destructive migrations, external transactions/messages, paid provisioning, merge or release; those remain separately gated.
 
 ## 5. Glossary
 

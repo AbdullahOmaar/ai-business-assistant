@@ -1,3 +1,19 @@
+## Owner-authorized AIBA development-stage data operations — effective 2026-11-11
+
+The Owner confirms that AIBA is still in development / pre-release and is not yet a real customer-production business environment. This lifecycle classification applies even if Vercel reports `target=production`, a public alias contains “production”, or a Neon branch is named production. Keep provider metadata accurate; this decision does not rename infrastructure or change provider settings.
+
+For every AIBA Master/specialist chat, AI agent and assigned project worker, the Owner grants standing permission—without repeated per-operation approval—to:
+- Create application/user accounts and development/test business or workspace accounts in the currently running AIBA environment, including a deployment technically labelled Production.
+- Read and use existing project/application data needed for the assigned development, QA, debugging and verification task.
+- Create and edit invoice records through the normal authenticated application/API workflows, including in the currently deployed environment.
+- Exercise authenticated journeys that create or update accounts and invoices to verify project behavior.
+
+Continue to enforce authentication, server-side authorization, business/workspace isolation, validation, idempotency and audit logging. Use normal application/API paths; do not bypass these controls with direct SQL or hidden administrative shortcuts.
+
+This standing authorization does not imply permission to hard-delete accounts or business data, void/cancel/post issued financial records, mutate payment/allocation/settlement history, move real money, send external email/SMS/WhatsApp/notifications, file taxes, change provider security settings, execute destructive migrations, or provision paid services. Those remain separately gated. It does not authorize new financial semantics; T37 remains DRAFT / NOT APPROVED. Use only necessary project data and never expose secrets, credentials, payroll-sensitive content or raw customer data in prompts, documentation, screenshots or logs.
+
+The decision is recorded in the canonical [Notion Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44) and [Master Control Center](https://app.notion.com/p/4099320b90fb81499af2d7ffada690c7). Merge/release, migrations and external side effects retain their separate authorization gates.
+
 ## Owner-approved CI provider change — effective 2026-11-10
 
 The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
@@ -83,7 +99,7 @@ Stop and ask for human input only when necessary for a material product decision
 - Never bypass required checks, repository protections, any formal approval required by GitHub branch protection, or authorization. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
 - Do not commit secrets or sensitive production/customer data.
 - Avoid destructive database operations. Review migrations and rollback/recovery implications before proposing or applying them.
-- Do not run production migrations or consequential production data changes without the required explicit approval.
+- Apply the Owner's standing development-stage authorization recorded above: create application/workspace accounts, use project data needed for assigned work, and create/edit invoices through normal authenticated app/API workflows even where the provider labels the target Production. Do not request repeated approval for those named operations. Destructive actions, migrations, financial posting/void/payment/settlement mutations, external side effects, paid provisioning, provider-security changes, merge and release remain separately gated.
 
 ## Versioning and user-facing feature guide
 - Keep `frontend/package.json`, `backend/pyproject.toml`, and `backend/app/main.py` on the same release version for a coordinated full-stack release. Update `frontend/src/app/build-info.ts` fallback only as needed for local runs; production build metadata is generated from the frontend package version.

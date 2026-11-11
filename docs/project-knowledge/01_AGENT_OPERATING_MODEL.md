@@ -1,11 +1,11 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.7
-status: APPROVED
+version: 1.0.8
+status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T23:10:43Z
-review_due: 2026-11-29
+last_verified_at: 2026-11-11T05:55:00Z
+review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
 canonical_sources:
@@ -15,15 +15,15 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
-related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
+related_github_sha: 827f220da14139605294923cc5550e088c2589e3
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** DRAFT candidate version 1.0.8; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -66,7 +66,15 @@ Team map:
 - Chat 4 — Employees & Payroll.
 - Chat 5 — independent QA, Integration & Security; runs test-based verification on Chat 1–4 work, reports findings and routes defects to the feature owner. This QA function does not create a separate reviewer or approval gate.
 
-Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitHub Actions (`.github/workflows/ci.yml`) is the Owner-selected primary test/build/security CI provider; CircleCI remains a transition fallback until required-check enforcement and release gates are verified. GitLab is inactive and Semaphore is retired/non-authoritative. Batch related work and use the economical validation policy in Section 6.1, owned by the canonical MWOS; required exact-SHA checks remain mandatory. No production DB write/migration, destructive action, merge or production deployment without explicit owner authorization and all required gates. Merge and deployment are separate decisions.
+Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitHub Actions (`.github/workflows/ci.yml`) is the Owner-selected primary test/build/security CI provider; CircleCI remains a transition fallback until required-check enforcement and release gates are verified. GitLab is inactive and Semaphore is retired/non-authoritative. Batch related work and use the economical validation policy in Section 6.1, owned by the canonical MWOS; required exact-SHA checks remain mandatory. The Owner's standing development-stage authorization permits application/workspace account creation, use of project data for assigned development/QA, and invoice create/edit through authenticated app/API workflows, including on the environment technically labelled Production. This does not authorize destructive actions, migrations, financial posting/void/payment/settlement changes, external side effects, paid provisioning, merge or release; these retain separate gates. Merge and deployment are separate decisions.
+
+## 2.2 Owner-authorized development-stage data operations
+
+AIBA is currently in development / pre-release; the Owner confirms it is not yet a real customer-production business environment. This remains the project lifecycle classification even when Vercel/Neon use technical Production labels. Do not alter or misreport provider metadata.
+
+All AIBA workers/agents have standing authorization, without repeated per-operation approval, to create application/user and business/workspace accounts, use existing project data needed for assigned development/QA, and create/edit invoice records through normal authenticated application/API workflows in the currently running environment, including the deployment technically labelled Production.
+
+This does not waive authentication, tenant isolation, validation, idempotency, audit logging or service boundaries. It does not authorize hard deletion, void/cancel/post, payment/allocation/settlement-history mutation, real-money movement, external messaging, destructive migrations, paid provisioning, provider-security changes, merge or release. T37 remains DRAFT / NOT APPROVED; no financial semantics are changed. The canonical decision is in the [Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44).
 
 ## 3. Auto role and workstream discovery
 
