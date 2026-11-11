@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.11
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:33:04.426Z
+last_verified_at: 2026-11-11T23:40:35Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -21,7 +21,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** DRAFT candidate version 1.0.11. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review-policy conflict:** the canonical MWOS Owner decision effective 2026-11-10 waives separate project-level review for controlled knowledge updates, while active project instructions require independent non-author review and authorized approval for controlled/security/architecture changes and knowledge publication. Keep this package DRAFT / CONFLICTED until the Owner/Master reconciles the policy; maintainer self-review is not independent. Formal GitHub branch-protection requirements remain mandatory.
+> **Approval state:** DRAFT candidate version 1.0.12. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review-policy conflict:** the canonical MWOS Owner decision effective 2026-11-10 waives separate project-level review for controlled knowledge updates, while active project instructions require independent non-author review and authorized approval for controlled/security/architecture changes and knowledge publication. Keep this package DRAFT / CONFLICTED until the Owner/Master reconciles the policy; maintainer self-review is not independent. Formal GitHub branch-protection requirements remain mandatory.
 
 ## 1. Package manifest
 
@@ -191,6 +191,13 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Historical note (superseded by policy 1.0.4): at this checkpoint, the same Project Master maintainer authored and reviewed the candidate, and the then-current policy still required independent review. Owner approval was recorded on 2026-11-04.
 
 ## 11. Changelog
+
+### 1.0.12 — 2026-11-12 — DRAFT / CONFLICTED
+- Fixed exact-head GitHub Actions run 43120797275 on predecessor candidate 92dfc75117cd1909b700a4a1daa02197f1464169: the project-knowledge validator rejected all five `last_verified_at` values because they included fractional seconds. The timestamp contract requires second-precision UTC ISO-8601; all five metadata values are aligned accordingly.
+- Removed duplicated "no separate reviewer" assertions from contributor, PR-template, deployment and architecture/security knowledge guidance. These documents now point to the canonical review/governance policy and preserve the unresolved conflict between the 2026-11-10 Notion Owner waiver and active project instructions requiring independent non-author review plus authorized approval for controlled/security/architecture changes and knowledge publication.
+- The package remains DRAFT / CONFLICTED pending Owner/Master policy reconciliation; no Project Sources publication/readback or APPROVED state is claimed.
+- All five repository knowledge files advance together to version 1.0.12 with one second-precision UTC verification timestamp. `related_github_sha` remains the verified main source baseline.
+- Documentation-only change. No application source, CI workflow, API, database/schema/migration, financial semantics, production data or deployment behavior changed.
 
 ### 1.0.11 — 2026-11-12 — DRAFT / CONFLICTED
 - Recorded an unresolved review-governance conflict: the canonical MWOS Owner decision effective 2026-11-10 waives separate project-level review for all changes, including controlled/security/architecture and controlled Project Knowledge publication; active AIBA project instructions require independent non-author review and authorized approval for those controlled categories and knowledge publication.

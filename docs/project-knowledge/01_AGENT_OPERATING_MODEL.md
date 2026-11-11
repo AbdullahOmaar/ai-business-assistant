@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.11
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:33:04.426Z
+last_verified_at: 2026-11-11T23:40:35Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -23,7 +23,7 @@ superseded_by: none
 
 # Agent Operating Model
 
-> **Approval state:** DRAFT candidate version 1.0.11; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -94,7 +94,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate, records findings and owns the review decision. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed.
+- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate and records findings. Review gates for controlled/security/architecture changes and knowledge publication are defined by `AGENTS.md` and ABA-KNOW-04. The Owner's 2026-11-10 Notion decision waives separate project-level review, while active project instructions require independent non-author review and authorized approval for controlled changes and publication; keep the package DRAFT / CONFLICTED until reconciled. Maintainer self-review does not count as independent review. Formal GitHub branch-protection approvals remain mandatory.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.

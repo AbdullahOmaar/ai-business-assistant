@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.11
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:33:04.426Z
+last_verified_at: 2026-11-11T23:40:35Z
 review_due: 2027-02-09
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
@@ -22,7 +22,7 @@ superseded_by: none
 
 # Project Charter & Source Map
 
-> **Approval state:** DRAFT candidate version 1.0.11; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
+> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
 
 ## 1. Project identity
 

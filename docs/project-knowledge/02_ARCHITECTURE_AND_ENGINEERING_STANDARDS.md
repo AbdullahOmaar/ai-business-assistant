@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.11
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:33:04.426Z
+last_verified_at: 2026-11-11T23:40:35Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
@@ -21,7 +21,7 @@ superseded_by: none
 
 # Architecture & Engineering Standards
 
-> **Approval state:** DRAFT candidate version 1.0.11; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
+> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
 
 ## 1. Accepted V0 architecture
 
@@ -105,8 +105,8 @@ Follow the Owner's economical validation decision in the canonical [MWOS — Mod
 - Reuse a matching active branch/PR; one coherent branch and PR per work package.
 - Preserve unrelated user work. Do not overwrite or delete unique changes.
 - Keep diffs focused; add tests and docs alongside behavior changes.
-- Require the accountable maintainer/Project Master to document a full self-review on the exact candidate SHA for every change. No separate independent reviewer is required by project policy, including for Security/Architecture and canonical controlled-knowledge publication/update. Any formal approval enforced by GitHub branch protection remains mandatory and must never be bypassed.
-- Do not merge until the exact PR head has required checks, any formal approval actually enforced by GitHub branch protection, documented maintainer/Project Master full self-review, and Owner authorization. No separate independent reviewer is required by project policy for any change. Never bypass provider-enforced protections.
+- Require the accountable maintainer/Project Master to document a full self-review on the exact candidate SHA for every change. Controlled/security/architecture changes and knowledge publication must also satisfy the applicable independent non-author review and authorized-approval gate in active project instructions. The Owner's 2026-11-10 Notion decision waives that review, so the package remains DRAFT / CONFLICTED until the policy is reconciled. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
+- Do not merge until the exact PR head has required checks, any formal approval actually enforced by GitHub branch protection, documented maintainer/Project Master full self-review, any applicable independent non-author review and authorized approval, and Owner authorization. Never bypass provider-enforced protections.
 - Do not create duplicate task trackers or branch-per-subtask noise.
 
 ## 8. Dependency and security review

@@ -80,7 +80,7 @@ Use the required provider, workflow and gate definitions in [AGENTS.md](../AGENT
 - **Document/package being published:**
 - **Candidate version and DRAFT/APPROVED state:**
 - **Maintainer / Master full-diff self-review (exact SHA + findings):**
-- **Project-level review gate:** None beyond the accountable maintainer/Project Master full diff self-review recorded on this exact candidate SHA. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+- **Project-level review gate:** Follow the review policy in `AGENTS.md` and `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`. Record the accountable maintainer/Project Master full diff self-review on this exact candidate SHA; satisfy any applicable independent non-author review and authorized-approval gate for controlled/security/architecture changes and knowledge publication. Formal GitHub branch-protection approvals remain mandatory.
 - **Maintainer self-review findings and disposition:**
 - **Required GitHub branch-protection approval (if enforced):**
 - **Owner approval / decision record:**

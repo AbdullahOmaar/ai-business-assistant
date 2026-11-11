@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.11
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:33:04.426Z
+last_verified_at: 2026-11-11T23:40:35Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
@@ -22,7 +22,7 @@ superseded_by: none
 
 # Security Policy & Release Gates
 
-> **Approval state:** DRAFT candidate version 1.0.11; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 
@@ -85,7 +85,7 @@ This document does not authorize destructive migrations, direct database changes
 
 - Inspect the exact branch, base/head SHA, changed files and mergeability.
 - Required checks must be green on the exact PR head; checks on another SHA or empty/unavailable checks are NOT PASS.
-- A documented maintainer/Project Master full self-review on the exact candidate SHA is required for all changes. No separate independent reviewer is required by project policy, including for Security/Architecture and canonical controlled-knowledge publication/update. Any formal approval actually enforced by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where formal approval is required.
+- A documented maintainer/Project Master full self-review on the exact candidate SHA is required for all changes. Controlled/security/architecture changes and knowledge publication must also satisfy the applicable independent non-author review and authorized-approval gate in active project instructions. The Owner's 2026-11-10 Notion decision waives that review; keep the package DRAFT / CONFLICTED until the policy is reconciled. Any formal approval actually enforced by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where formal approval is required.
 - Resolve material review findings and inspect the final diff for secrets, unrelated changes, authorization gaps and data-integrity risk.
 - Merge only with explicit owner authorization and all repository gates satisfied.
 - Never bypass branch protection, provider-enforced required reviews, CI or security gates. Do not add a project-level independent-reviewer requirement. Formal GitHub approvals actually enforced remain mandatory.

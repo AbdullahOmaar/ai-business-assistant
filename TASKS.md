@@ -1,3 +1,12 @@
+## Master continuation — exact-head validator failure and documentation alignment — 2026-11-12
+
+- Exact PR-head GitHub Actions run [43120797275](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43120797275) on `92dfc75117cd1909b700a4a1daa02197f1464169` completed FAILURE. Five substantive jobs PASS (backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke); `backend-accounting` failed only in the Project Knowledge validator because all five `last_verified_at` values included fractional seconds. Backend regression suite and migration/schema checks completed PASS. `authenticated-api-smoke` was SKIPPED as expected for this documentation-only PR. The fail-closed `all-checks-passed` aggregate therefore FAILED.
+- Corrected the timestamp contract to second-precision UTC and aligned duplicated reviewer-policy statements across contributor guidance, PR template, deployment runbook and the five-document package. The unresolved Owner Notion waiver vs active project-instruction independent-review gate remains explicit; package stays DRAFT / CONFLICTED.
+- All five package files advance together to v1.0.12 / DRAFT with shared second-precision UTC metadata. Project Sources upload/readback remains NOT VERIFIED.
+- No app tests were manually repeated; the exact-head required workflow is the validation gate and will execute on the new commit. No merge or deployment.
+
+---
+
 ## Metadata readback correction — 2026-11-12
 
 - Exact repository readback caught stale approval-state banner text: all five ABA-KNOW frontmatter records were version 1.0.11 while their banners still displayed 1.0.10.
