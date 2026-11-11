@@ -409,7 +409,10 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     if (view === 'overview') {
       await page.getByRole('button', { name: language === 'en' ? /Overview/ : /نظرة عامة/ }).click();
       await expect(page.getByRole('heading', { name: language === 'en' ? /Admin center/ : /مركز الإدارة/ })).toBeVisible();
-      await expect(page.locator('.main .panel:visible').first()).toBeVisible();
+      // Wait for the mocked overview and runtime health data, not just the
+      // always-present system-status panel, before capturing the viewport.
+      await expect(page.locator('.metric-card')).toHaveCount(4, { timeout: 20_000 });
+      await expect(page.locator('.runtime-summary .status-pill')).toHaveText('Healthy', { timeout: 20_000 });
     } else {
       await page.getByRole('button', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ }).click();
       await expect(page.getByRole('heading', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ })).toBeVisible();
@@ -463,12 +466,26 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     const overviewHasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overviewHasHorizontalOverflow, `Platform Admin overview must not overflow at ${width}px`).toBe(false);
   }
+  // Restore English before asserting the failure-path labels. Otherwise the
+  // English-only strings are absent simply because the page is still Arabic.
+  await page.evaluate(() => window.localStorage.setItem('aba-language', 'en'));
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(page.getByRole('heading', { name: /Admin center/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.metric-card')).toHaveCount(4, { timeout: 20_000 });
+  await expect(page.locator('.runtime-summary .status-pill')).toHaveText('Healthy', { timeout: 20_000 });
+
   overviewFailure = true;
-  await page.getByRole('button', { name: /Refresh data|تحديث البيانات/ }).click();
-  await expect(page.getByText('Member identities')).toHaveCount(0);
+  await page.getByRole('button', { name: /Refresh data/ }).click();
+  await expect(page.locator('.section-content .notice.error[role="alert"]'))
+    .toContainText('Platform administrator access is not granted.');
+  await expect(page.locator('.metric-card')).toHaveCount(0);
+
   systemStatusFailure = true;
-  await page.getByRole('button', { name: /Check now|فحص الآن/ }).click();
-  await expect(page.getByText('Healthy')).toHaveCount(0);
+  await page.getByRole('button', { name: /Check now/ }).click();
+  await expect(page.locator('.system-status-panel .notice.error[role="alert"]'))
+    .toContainText('Platform administrator access is not granted.');
+  await expect(page.locator('.runtime-summary')).toHaveCount(0);
 
   // The admin navigation and directory remain keyboard-operable on mobile.
   const usersAccessTab = page.getByRole('button', { name: /Users & access|المستخدمون والصلاحيات/ });
