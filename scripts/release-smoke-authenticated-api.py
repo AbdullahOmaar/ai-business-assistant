@@ -204,7 +204,7 @@ def main() -> None:
                 fail("Invoice create/edit audit events are missing or unexpected.")
 
             cross_tenant = client.get(
-                f"/api/v1/invoices/{invoice_id}?{invoice_query}",
+                f"{invoice_url}/{invoice_id}",
                 headers=headers_other,
             )
             if cross_tenant.status_code != 403:
@@ -223,7 +223,7 @@ def main() -> None:
                 fail(f"Cross-tenant audit read returned HTTP {denied_audit.status_code}, expected 403.")
 
             audit_after = client.get(
-                f"/api/v1/audit-events?{audit_query}", headers=headers_owner
+                audit_url, headers=headers_owner
             )
             if audit_after.status_code != 200 or audit_after.json().get("total") != audit_before.json().get("total"):
                 fail("Rejected cross-tenant reads changed the owner's audit history.")

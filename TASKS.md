@@ -3534,3 +3534,9 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Exact-head candidate run 42978565115 on 922023551de4bb49ac275332bd88268f796ca537 passed migrations/readiness and reached the new persistence checks, then returned HTTP 404 on invoice list reload.
 - Route inspection confirmed extended API endpoints are mounted under /api/v1/businesses/{business_id}; the invoice detail/list and audit paths therefore require business_id in the path, not as a query parameter. The candidate smoke now uses the actual router prefix for invoice list/detail and audit reads, matching the public API route contract. No business API route or production code was changed.
 - Prior public API smoke 42976575719 remains successful against the current public alias; candidate-local smoke must pass separately on exact SHA before merge.
+
+
+## T07 smoke route follow-through — 2026-11-11
+
+- Final route review found two remaining cross-tenant/audit re-read calls still referenced the old query-param paths after the primary candidate invoice paths were corrected. Updated those calls to reuse the verified business-scoped router paths; no application API code changed.
+- This is a test-harness-only correction; exact-head CI rerun is required.
