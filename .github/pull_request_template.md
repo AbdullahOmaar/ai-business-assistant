@@ -1,16 +1,4 @@
-## Owner-approved CI provider change — effective 2026-11-10
-
-The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
-
-- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
-- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
-- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
-- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App. No separate PR-approval count is currently enforced. CircleCI's GitHub webhook is disabled and no project schedules exist.
-- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main's active default-branch ruleset requires the GitHub Actions `all-checks-passed` check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; no separate PR-approval count is configured.
-- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations, and gate bypasses remain separately restricted.
-
-This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
+> Repository-wide CI provider selection, required checks, exact-SHA validation and merge eligibility are defined in [AGENTS.md](../AGENTS.md). This template records evidence for the candidate; it does not redefine repository-wide gates.
 
 ## Summary
 <!-- User-visible outcome, defect addressed, and why this is one coherent work package. -->
@@ -47,21 +35,22 @@ This directive changes the CI provider and validation implementation only. It do
 - [ ] No overlapping active writer claim; manual claim is understood not to be a lock.
 - [ ] No unrelated scope, duplicate PR, unsafe rewrite or unapproved force push.
 
-## Exact-SHA verification
-- **Primary provider:** GitHub Actions hosted runners only; CircleCI webhook disabled.
-- **Permanent CI execution authorization / provider-quota state checked:**
-- **GitHub Actions workflow URL for exact head:**
-- **Exact SHA tested:**
-- **Substantive jobs and outcomes:**
-- **Aggregate result:**
-- **Checks actually run (commands / environment / timestamps):**
-- **Checks NOT RUN / BLOCKED and exact reason:**
-- **GitGuardian / other supplementary evidence (not a CI substitute):**
+## Exact-SHA CI evidence
 
-- [ ] All six GitHub Actions substantive jobs and `all-checks-passed` aggregate passed on exact workflow SHA; GitHub Actions is the sole active CI provider.
-- [ ] Failures were investigated and affected checks rerun only after the condition changed.
-- [ ] No unapproved/retired CI provider was treated as a replacement.
-- [ ] Final cumulative diff was reviewed for regressions, secrets, unsafe changes and unrelated paths.
+Use the required provider, workflow and gate definitions in [AGENTS.md](../AGENTS.md). Record the observed candidate evidence here.
+
+- **Workflow URL for the current head:**
+- **PR head SHA at validation:**
+- **Workflow event SHA:**
+- **Exact-SHA match:** PASS / FAIL / NOT VERIFIED
+- **Required aggregate result:**
+- **Substantive checks actually reported and outcomes:**
+- **Checks NOT RUN / BLOCKED and exact reason:**
+- **Failure diagnosis and changed-condition retry (if applicable):**
+- **Supplementary security evidence (not a CI substitute):**
+
+- [ ] Current repository-required checks passed on the exact current PR head.
+- [ ] The full cumulative diff was reviewed for regressions, secrets, unsafe changes and unrelated paths.
 
 ## Maintainer review and merge readiness
 - **Maintainer full-diff review evidence / exact SHA:**
