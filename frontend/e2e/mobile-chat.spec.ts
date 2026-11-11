@@ -268,6 +268,28 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     });
   });
 
+  // At the narrowest supported phone width, scroll to the true end of Home and
+  // prove the final module-directory panel is not hidden beneath the fixed dock.
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(async () => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
+  const finalHomeLayout = await page.evaluate(() => {
+    const finalPanel = document.querySelector('.main .module-directory');
+    const dock = document.querySelector('.sidebar');
+    if (!finalPanel || !dock) return null;
+    return {
+      panelBottom: finalPanel.getBoundingClientRect().bottom,
+      dockTop: dock.getBoundingClientRect().top,
+      scrollY: window.scrollY,
+      maxScrollY: document.documentElement.scrollHeight - window.innerHeight,
+    };
+  });
+  expect(finalHomeLayout, 'Home final panel and fixed mobile dock must both render').not.toBeNull();
+  expect(finalHomeLayout!.scrollY).toBeGreaterThan(0);
+  expect(finalHomeLayout!.panelBottom, 'the final Home panel must be fully above the fixed dock at maximum scroll').toBeLessThanOrEqual(finalHomeLayout!.dockTop + 1);
+
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /مرحبًا بعودتك|Welcome back/ })).toBeVisible({ timeout: 20_000 });
