@@ -1542,3 +1542,47 @@
 :root body .shell .filter-bar button {
   min-height: 44px;
 }
+
+
+/* Keyboard users can bypass repeated workspace navigation on every route. */
+:root body .shell .skip-link {
+  position: absolute;
+  z-index: 1200;
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  transform: translateY(calc(-100% - 16px));
+  border: 1px solid var(--aiba-brand-strong);
+  border-radius: var(--aiba-radius-control);
+  background: var(--aiba-brand-strong);
+  color: #ffffff;
+  font-size: var(--aiba-text-sm);
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+  box-shadow: var(--aiba-shadow-popover);
+  transition: transform var(--aiba-motion);
+}
+
+:root body .shell .skip-link:focus {
+  transform: translateY(0);
+}
+
+:root body .shell #main-content:focus {
+  outline: none;
+}
+
+:root body .shell #main-content {
+  scroll-margin-block-start: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root body .shell .skip-link {
+    transition: none;
+  }
+}

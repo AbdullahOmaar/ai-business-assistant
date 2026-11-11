@@ -38,6 +38,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
+      <a class="skip-link" href="#main-content">{{ t('تخطي إلى المحتوى الرئيسي', 'Skip to main content') }}</a>
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
@@ -137,7 +138,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           }
           <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('جلسة موثّقة', 'Verified session') }}<small>{{ t('يتحقق الخادم من صلاحيات مساحة العمل', 'The server verifies workspace permissions') }}</small></div>
         </aside>
-        <main class="main">
+        <main class="main" id="main-content" tabindex="-1">
           @if (!isInstalled) {
             <section class="mobile-install-card" [attr.aria-label]="t('تثبيت التطبيق', 'Install app')">
               <div class="mobile-install-copy">

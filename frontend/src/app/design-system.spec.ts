@@ -117,3 +117,14 @@ test('mobile state messages wrap retry actions and reserve document viewport cle
   assert.match(css, /@media\s*\(max-width:\s*600px\)[\s\S]*?:root body \.shell \.aba-state-message\s*\{\s*flex-wrap:\s*wrap/);
   assert.doesNotMatch(app, /\.main,[^{]*\{[^}]*scroll-padding-block-end/);
 });
+
+
+test('every authenticated workspace route exposes a localized skip link to the main landmark', () => {
+  assert.match(app, /class="skip-link" href="#main-content"/);
+  assert.match(app, /تخطي إلى المحتوى الرئيسي/);
+  assert.match(app, /Skip to main content/);
+  assert.match(app, /<main class="main" id="main-content" tabindex="-1">/);
+  assert.match(css, /\.skip-link\s*\{[\s\S]*?min-height:\s*44px/);
+  assert.match(css, /\.skip-link:focus\s*\{[\s\S]*?transform:\s*translateY\(0\)/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce[\s\S]*?\.skip-link\s*\{[\s\S]*?transition:\s*none/);
+});
