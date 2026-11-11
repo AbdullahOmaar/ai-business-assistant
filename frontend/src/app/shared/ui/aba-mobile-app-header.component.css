@@ -220,3 +220,24 @@
   .assistant-shortcut span:last-child { display: none; }
   .page-copy h1 { font-size: 16px; }
 }
+
+/* Consistent keyboard and touch feedback for every mobile header action. */
+.mobile-app-header :is(button, select):focus-visible {
+  outline: 3px solid var(--aba-color-focus-ring, #2563eb);
+  outline-offset: 2px;
+  position: relative;
+  z-index: 1;
+}
+.mobile-app-header button:not(:disabled) {
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  touch-action: manipulation;
+}
+.mobile-app-header button:not(:disabled):active { transform: scale(.97); }
+.mobile-app-header button:not(:disabled):hover {
+  border-color: var(--aba-color-primary-border, #99f6e4);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-app-header button:not(:disabled) { transition: none; }
+  .mobile-app-header button:not(:disabled):active { transform: none; }
+}

@@ -1,3 +1,24 @@
+## UX/UI mobile-first redesign — active Master work package — 2026-11-11
+
+- **Branch:** `feature/ui-ux-mobile-first-redesign-20261111`
+- **Start/base:** `main@a2b9c55dcb8758e109379c7857f882dc82a0ec58`
+- **Scope:** frontend presentation, shared Angular UI, responsive behavior, Arabic RTL / English LTR, keyboard/accessibility affordances, browser/unit tests, and UX documentation only.
+- **Out of scope:** API/backend, authentication or authorization semantics, tenant isolation, database/schema/migrations, invoices/payments/accounting/tax/stock/payroll behavior, external notifications and CI/provider settings. Merge and Web Production deployment remain separate gates; the Owner explicitly authorized them for this PR on 2026-11-11.
+- **Execution:** one branch and coherent milestone commits; refresh main before each integration milestone and merge-sync only when required; no force-push. One primary writer for shared UI paths.
+- **Acceptance checklist:**
+  1. Refresh and map the current 19 supported destinations and existing shared shell/components without adding/removing routes or changing feature scope.
+  2. Improve the highest-impact mobile-first layouts and navigation affordances while preserving all existing behavior and server-authoritative states.
+  3. Verify 320/360/390/412/430/768/1280px where relevant, Arabic RTL and English LTR, keyboard focus, reduced motion, and no unintended horizontal overflow.
+  4. Add regression coverage for every changed interaction/layout contract.
+  5. Run focused checks during implementation and the relevant full frontend tests/build plus exact-SHA required CI at batch close; record NOT RUN honestly.
+  6. Complete full maintainer diff/security/scope review and update UX documentation with evidence.
+- **Baseline evidence:** Phase 1 UX Blueprint is accepted as documentation-only; Phase 2 Design System baseline is merged, but Figma Variables/component library, full 19-route rendered audit, authenticated role/tenant walkthrough, assistive technology/200% zoom, and physical Android installed-PWA acceptance remain separate incomplete criteria. Do not infer those gates from source-level tests.
+- **Current checkpoint:** PR #377 adds the localized keyboard skip link, focusable main landmark, visible-on-focus styling, reduced-motion handling, signed-in gating, bilingual in-app guide entry, and mobile account disclosure DOM/tab-order improvements. Header regression spec moved to the top-level app test glob so CI executes it. The previous exact-head frontend test failed because the contrast-token RegExp string was under-escaped; this sync restores the required double backslash. Fresh exact-SHA CI is required. No API/DB/business behavior changed.
+- **Release:** Owner explicitly authorized merge and Web Production deployment for this PR. The API project is not in this PR's code scope; its separate release path remains independently verified.
+
+
+---
+
 ## Owner-approved GitHub Actions CI transition — effective 2026-11-10
 
 The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive and the earlier GitLab Free selection. GitHub remains canonical for code, branches, pull requests and release SHAs. GitHub Actions using standard GitHub-hosted `ubuntu-latest` runners is now the primary test/build/security CI provider.

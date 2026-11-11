@@ -44,6 +44,20 @@ import type { Business } from '../../api.service';
           </button>
         </div>
       </div>
+      @if (profileMenuOpen) {
+        <div #accountMenu id="mobile-account-menu" class="account-menu" role="group"
+          [attr.aria-label]="t('خيارات الحساب', 'Account options')">
+          <p class="account-email">{{ userEmail }}</p>
+          <button type="button" class="account-action" (click)="requestLanguageToggle()">
+            <span aria-hidden="true">文</span>
+            <span>{{ language === 'ar' ? 'English' : 'العربية' }}</span>
+          </button>
+          <button type="button" class="account-action sign-out-action" (click)="requestSignOut()">
+            <span aria-hidden="true">↪</span>
+            <span>{{ t('تسجيل الخروج', 'Sign out') }}</span>
+          </button>
+        </div>
+      }
       <div class="workspace-context">
         <div class="workspace-copy">
           <span class="context-label">{{ t('مساحة العمل الحالية', 'Current workspace') }}</span>
@@ -61,20 +75,6 @@ import type { Business } from '../../api.service';
           </label>
         }
       </div>
-      @if (profileMenuOpen) {
-        <div id="mobile-account-menu" class="account-menu" role="group"
-          [attr.aria-label]="t('خيارات الحساب', 'Account options')">
-          <p class="account-email">{{ userEmail }}</p>
-          <button type="button" class="account-action" (click)="requestLanguageToggle()">
-            <span aria-hidden="true">文</span>
-            <span>{{ language === 'ar' ? 'English' : 'العربية' }}</span>
-          </button>
-          <button type="button" class="account-action sign-out-action" (click)="requestSignOut()">
-            <span aria-hidden="true">↪</span>
-            <span>{{ t('تسجيل الخروج', 'Sign out') }}</span>
-          </button>
-        </div>
-      }
     </section>
   `,
   styleUrl: './aba-mobile-app-header.component.css'
