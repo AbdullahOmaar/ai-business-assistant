@@ -87,6 +87,7 @@ test('issue and void mutations are Owner-only and auth/workspace fenced', () => 
 test('uncertain invoice edits recover by immutable invoice ID instead of the edited invoice number', () => {
   const verify = methodBetween('async refreshInvoiceDraftStatus()', 'private escapePrintHtml');
   assert.match(verify, /findInvoiceDraftRecoveryMatch\(invoices, pending\)/);
+  assert.match(verify, /this\.invoiceDraftNotes = detail\.notes \?\? ''/);
 });
 
 const componentSourceFile = ts.createSourceFile('app.component.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);

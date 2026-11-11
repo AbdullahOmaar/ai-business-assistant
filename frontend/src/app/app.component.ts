@@ -3759,6 +3759,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.editingInvoiceId = detail.id;
       this.invoiceNumber = detail.invoice_number;
       this.invoiceCustomerId = detail.customer_id || pending.customerId;
+      this.invoiceDraftNotes = detail.notes ?? '';
       this.invoiceDiscountRate = pending.discountRate;
       this.invoiceTaxRate = pending.taxRate;
       this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
