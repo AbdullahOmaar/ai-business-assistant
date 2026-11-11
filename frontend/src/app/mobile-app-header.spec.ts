@@ -70,7 +70,7 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.match(styles, /overflow-wrap: anywhere/);
   assert.ok(appSource.includes('env(safe-area-inset-top'));
   assert.match(appSource, /class="mobile-install-card"/);
-  assert.match(appSource, /class="install-help-inline"/);
+  assert.match(appSource, /class="install-help install-help-inline"/);
   assert.ok(appSource.includes('.install-help-inline{position:static;'), 'install help is in normal document flow');
   assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
   assert.match(source, /aria-live="polite" aria-atomic="true"/);
@@ -116,7 +116,7 @@ test('mobile app header and install guidance stay in normal document flow', () =
   assert.match(styles, /:host\s*\{[^}]*position:\s*relative/s);
   assert.doesNotMatch(styles, /:host\s*\{[^}]*position:\s*sticky/s);
   assert.match(appSource, /class="mobile-install-card"/);
-  assert.match(appSource, /class="install-help-inline"/);
+  assert.match(appSource, /class="install-help install-help-inline"/);
   assert.match(appSource, /mobile-install-button/);
   assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
 });;
