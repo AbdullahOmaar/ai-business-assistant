@@ -26,7 +26,8 @@ test('section headings and descriptions remain readable on narrow screens', () =
   assert.match(sectionHeader, /font-size:var\(--aba-font-size-sm, 12px\);line-height:1\.55/);
   assert.match(sectionHeader, /class="aba-section-header__count"/);
   assert.match(sectionHeader, /aba-section-header__count\{[^}]*font-size:var\(--aba-font-size-xs, 11px\)/);
-  assert.match(designSystem, /\.aba-section-header__actions \.aba-section-header__count\s*\{[^}]*font-size:\s*var\(--aiba-text-xs\)/);
+  assert.match(appTemplate, /<span class="count">/);
+  assert.match(designSystem, /\.aba-section-header__actions :is\(\.aba-section-header__count, \.count\)\s*\{[^}]*font-size:\s*var\(--aiba-text-xs\)/);
   assert.match(sectionHeader, /@media\(max-width:600px\)\{[\s\S]*\.aba-section-header h2,\.aba-section-header h3\{font-size:15px\}/);
   assert.match(sectionHeader, /grid-template-columns:minmax\(0,1fr\)/);
 });

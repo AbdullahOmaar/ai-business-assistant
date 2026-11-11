@@ -3603,3 +3603,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Acceptance remaining:** all-19-destination rendered review, authenticated role/tenant journeys, full screen-reader/keyboard, high-contrast/200% zoom, physical Android Chrome/installed-PWA remain NOT RUN.
 - **Safety:** no API/backend/auth/tenant/DB/schema/financial/inventory/payroll behavior changes. No merge, deployment, migration or production data mutation.
 - **Note:** this ledger update changes the candidate SHA; rerun the exact-head workflow after the documentation commit before using the earlier run as final branch-head evidence.
+
+
+## T18 maintainer diff-review correction — 2026-11-11
+
+- Maintainer review of PR #378 found that the shared section header supports both its own `.aba-section-header__count` input and projected `.count` labels supplied by workspace pages.
+- The neutral global badge rule now covers both forms through one explicit selector. Regression coverage asserts the component-owned class, the projected workspace count markup and the combined selector.
+- No component markup, count value, business behavior, role/tenant, API or data changes.
+- Exact-head GitHub Actions validation is pending on the resulting correction SHA; prior CI evidence applies only to parent commits.

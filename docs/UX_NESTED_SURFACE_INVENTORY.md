@@ -479,3 +479,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **Still NOT RUN:** full rendered audit of all 19 destinations; authenticated OWNER/STAFF/two-tenant route walkthrough; screen-reader and full keyboard-only acceptance across routes; high-contrast/200% zoom; physical Android Chrome and installed-PWA acceptance.
 - **Disposition:** PR remains OPEN / DRAFT / UNMERGED. Active Copilot code-review ruleset remains a merge gate. No merge, production deployment or database mutation.
 - **Next:** record the documentation-closeout exact-head run, then leave the PR draft until the outstanding route/device/accessibility acceptance and review gate are satisfied.
+
+
+## Maintainer review correction — shared count badge coverage — 2026-11-11
+
+- The shared section header has two count forms: its own `.aba-section-header__count` input and projected `.count` labels supplied by workspace pages. The neutral global badge treatment now targets both forms, rather than only one of them.
+- Strengthened `shared-ui-responsive.spec.ts` to assert the component-owned count class, the projected `.count` usage in the workspace template, and the combined CSS selector.
+- This is a CSS targeting/test-quality correction only; count values, component markup, business behavior and accessibility semantics are unchanged.
+- Exact-head CI is pending for the resulting correction commit; previous PASS evidence is not reused as final-head evidence.
