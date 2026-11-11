@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const component = readFileSync(new URL('./aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
-const css = readFileSync(new URL('./aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const component = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
+const css = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 
 test('mobile account popup is a disclosure whose actions follow its trigger in keyboard order', () => {
   assert.ok(component.includes('[attr.aria-expanded]="profileMenuOpen"'));
