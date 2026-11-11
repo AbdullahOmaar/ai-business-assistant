@@ -150,3 +150,8 @@ test('mobile account menu closes when keyboard focus leaves without stealing foc
 test('mobile page title stays compact beside fixed actions on narrow phone widths', () => {
   assert.match(styles, /@media \(max-width: 420px\) \{\s*\.page-copy h1 \{ font-size: 16px; \}/);
 });
+
+
+test('Arabic mobile page titles preserve natural connected-script letter spacing', () => {
+  assert.match(styles, /\.mobile-app-header\[dir="rtl"\] \.page-copy h1 \{ letter-spacing: normal; \}/);
+});
