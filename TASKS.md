@@ -3490,3 +3490,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Acceptance:** exact-head GitHub Actions run must show the new authenticated-api-smoke job SUCCESS and the fail-closed all-checks-passed aggregate SUCCESS. A failed/blocked provider call is NOT PASS; inspect the exact response and fix only if safe.
 - **Current state before this candidate:** PR #359 head `f18cc746b2c87691445e52a1e456ccc33923c97d`; all six standard jobs, aggregate, GitGuardian and Greptile passed on that exact SHA. Main `a2b9c55dcb8758e109379c7857f882dc82a0ec58`. Production API health/readiness are 200; /version still reports v1.3.5 / `baed61476b1c`, older than main. Authenticated live smoke had not been run.
 - **Disposition:** IN_PROGRESS; the runner-based authenticated smoke is added below and awaits exact-head execution. Merge and API deployment remain pending this evidence. Owner has explicitly requested merge and deployment; no gate is waived.
+
+
+## T07 candidate API smoke correction — 2026-11-11
+
+- Exact-head Greptile review identified a P1 flaw in the first runner-based smoke: it called the live Production API, which was running an older SHA, and the invoice reload URL did not match the actual API route. That earlier authenticated-api-smoke PASS is not evidence for candidate-code acceptance.
+- Replaced the live API call with an in-process HTTP integration smoke against the exact checked-out PR head. The job applies candidate Alembic migrations to a disposable GitHub Actions PostgreSQL service, verifies the API /version reports the exact candidate SHA and /readyz is healthy, then exercises unauthenticated denial, two isolated test principals/workspaces, EGP draft create/edit/reload, invoice audit events, and cross-tenant invoice/workspace/audit denial.
+- The test-only principal resolver is installed only through FastAPI dependency_overrides in the isolated test process; the production Firebase verifier is unchanged and remains separately covered by backend/tests/test_firebase_auth.py. This smoke does not claim a live Firebase/Production test.
+- All smoke data is confined to the disposable CI database; no live Firebase identities, production database records, external messages, invoice issue/post/void, payment or deletion occur.
+- Exact-head CI and Greptile review must rerun on the new commit. Merge/API release remains pending until the corrected job and all required exact-head checks pass and the current diff is reviewed.

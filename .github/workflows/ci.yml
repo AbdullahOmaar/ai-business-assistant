@@ -223,15 +223,53 @@ jobs:
       github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: aiba_release_smoke
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aiba_release_smoke"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/aiba_release_smoke
+      EXPECTED_API_COMMIT: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Verify exact source SHA
         run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
-      - name: Run authenticated API smoke using synthetic QA identities
-        run: python3 scripts/release-smoke-authenticated-api.py
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt
+      - name: Wait for disposable PostgreSQL
+        run: |
+          for attempt in $(seq 1 45); do
+            if pg_isready -h 127.0.0.1 -p 5432 -U postgres -d aiba_release_smoke; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Disposable PostgreSQL did not become ready."
+          exit 1
+      - name: Apply candidate migrations to disposable PostgreSQL
+        working-directory: backend
+        run: python -m alembic upgrade head
+      - name: Run authenticated smoke against the exact candidate API
+        working-directory: backend
+        run: python ../scripts/release-smoke-authenticated-api.py
 
   all-checks-passed:
     name: all-checks-passed
@@ -261,4 +299,4 @@ jobs:
             echo "::error::Authenticated API smoke is required for the invoice release candidate but did not succeed: $API_SMOKE"
             exit 1
           fi
-          echo "All six required GitHub Actions jobs passed; any branch-scoped release smoke also passed."
+          echo "All six standard jobs and any branch-scoped candidate smoke passed."
