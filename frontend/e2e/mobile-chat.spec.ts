@@ -6,7 +6,7 @@ const ownerUid = 'workspace-owner-uid';
 const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoid29ya3NwYWNlLW93bmVyLXVpZCIsInVpZCI6IndvcmtzcGFjZS1vd25lci11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
 
 test('mobile Home layout and chat remain usable across viewport and keyboard changes', async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const uncaughtErrors: string[] = [];
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
   const paymentRequests: string[] = [];
@@ -718,16 +718,24 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   };
 
   await assertRouteSweep(390, 'ar');
+  // Complete all Arabic RTL widths before using the More-menu language action.
+  await assertRouteSweep(360, 'ar');
+  await assertRouteSweep(430, 'ar');
+  await assertRouteSweep(768, 'ar');
+  await assertRouteSweep(1280, 'ar');
+
+  // The More menu is mobile-only; restore a phone viewport after the tablet/desktop sweeps.
+  await page.setViewportSize({ width: 390, height: 844 });
+  // The first More-menu action is the language toggle (Arabic -> English).
   await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await assertRouteSweep(390, 'en');
-  await page.locator('.sidebar').getByRole('button', { name: /More sections/ }).click();
-  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
-  await page.keyboard.press('Escape');
-  await assertRouteSweep(1280, 'ar');
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await assertRouteSweep(768, 'en');
   await assertRouteSweep(1280, 'en');
+
+  // Restore Arabic for the remaining mobile interaction checks.
   await page.getByRole('button', { name: 'العربية', exact: true }).click();
   await page.setViewportSize({ width: 360, height: 800 });
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
