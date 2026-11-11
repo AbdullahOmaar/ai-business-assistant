@@ -6,10 +6,10 @@ The Owner explicitly supersedes the earlier CircleCI-only provider directive and
 - `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
 - Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
 - Pin third-party actions to verified full commit SHAs with release-version comments; inspect upstream release notes before changing pins.
-- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). Main-branch required-check enforcement and PR requirement remain UNKNOWN because the GitHub protection endpoint returned 403; do not treat merge control as enforced until Owner/Admin readback confirms it. CircleCI remains configured as a transition fallback; do not retire it until required-check enforcement and release gates are verified.
+- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App (integration ID 15368). No separate PR-approval count is currently enforced. The CircleCI GitHub webhook is disabled and no CircleCI project schedules exist.
 - GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main is marked protected, but the classic branch-protection endpoint returns 403 to this integration. Ruleset readback shows the Copilot code-review rule active and the former `main-protection-and-gitlab-sync` ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN until Owner/Admin readback; do not treat merge control as enforced.
-- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
+- Main is marked protected. Its active default-branch ruleset requires the GitHub Actions `all-checks-passed` check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; no separate PR-approval count is configured.
+- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations, and gate bypasses remain separately restricted.
 
 This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
@@ -95,7 +95,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If GitHub-hosted runner allocation or logs are unavailable, record the exact check as NOT RUN / BLOCKED; CircleCI remains the transition fallback until cutover acceptance. Do not treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
+- If GitHub-hosted runner allocation or logs are unavailable, record the exact check as NOT RUN / BLOCKED. Do not silently substitute another CI provider or treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
 
 ## 6. Required handoff report
 
@@ -120,7 +120,7 @@ Every substantive handoff must state:
 ## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
 
 - GitHub Actions is the primary exact-SHA CI provider. Require the six substantive jobs and `all-checks-passed` aggregate on the exact workflow SHA.
-- CircleCI remains configured as the transition fallback until GitHub Actions exact-SHA validation and enforceable main-branch required-check controls are verified.
+- GitHub Actions is the sole active CI provider. The active default-branch ruleset requires its `all-checks-passed` aggregate on the exact SHA.
 - GitLab CI and Semaphore are not approved CI providers. Semaphore is retired/non-authoritative.
 - Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
 - Record retry root cause and changed condition; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.

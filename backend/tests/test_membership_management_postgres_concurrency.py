@@ -1,7 +1,7 @@
 """PostgreSQL-only race regression for last-owner membership protection.
 
 SQLite ignores SELECT ... FOR UPDATE, so this test deliberately requires the
-disposable PostgreSQL service configured by CircleCI. It never creates schema
+disposable PostgreSQL service configured by GitHub Actions. It never creates schema
 or connects to a production database.
 """
 from concurrent.futures import ThreadPoolExecutor

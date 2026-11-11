@@ -8,4 +8,4 @@ Applying a range resets pagination to the first page. Clearing the range removes
 
 ## Validation
 
-Frontend unit tests, production build, dependency audit, and browser smoke run through the canonical CircleCI workflow. Authenticated business-session testing remains separate from the static component-source regression tests.
+Frontend unit tests, production build, dependency audit, and browser smoke run through the canonical GitHub Actions workflow. Authenticated business-session testing remains separate from the static component-source regression tests.
