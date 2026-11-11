@@ -1,3 +1,16 @@
+## November Phase 1 — Arabic mobile heading typography — 2026-11-12
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation` (same Phase 1 branch name restored from merged main; no parallel Phase 1 branch).
+- **Base:** `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`.
+- **Change:** the shared mobile page title previously applied negative Latin-style letter spacing in both locales. Arabic RTL now explicitly uses natural letter spacing to preserve connected-script typography. English title sizing and existing narrow-phone layout are unchanged.
+- **Regression:** added one focused source assertion for the RTL-specific typography rule; the mobile header source regression count is now 11 declarations.
+- **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/app/mobile-app-header.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Validation:** targeted source/test readback pending; the focused Node test was NOT RUN (no local repository checkout/runner in this session). No full suite or unrelated tests were run.
+- **Scope:** presentation CSS, regression assertion and UX evidence only. No API/backend/auth/tenant, database/schema/migration, financial, inventory/payroll semantics, production data, merge or deployment changes.
+- **Phase 1 remains PARTIALLY COMPLETE:** full rendered 19-destination RTL/LTR acceptance, physical Android/PWA, keyboard/screen-reader, high-contrast/200% zoom and authenticated second-tenant acceptance remain separate NOT RUN/BLOCKED items.
+
+---
+
 ## November Phase 1 — mobile page-title responsive polish — 2026-11-12
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation`
