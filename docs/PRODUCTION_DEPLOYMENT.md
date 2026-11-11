@@ -8,8 +8,8 @@ The Owner explicitly supersedes the earlier CircleCI-only provider directive and
 - Pin third-party actions to verified full commit SHAs with release-version comments; inspect upstream release notes before changing pins.
 - GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App (integration ID 15368). No separate PR-approval count is currently enforced. CircleCI's GitHub webhook is disabled and no project schedules exist.
 - GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main is marked protected, but the classic branch-protection endpoint returns 403 to this integration. Ruleset readback shows the Copilot code-review rule active and the former `main-protection-and-gitlab-sync` ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN until Owner/Admin readback; do not treat merge control as enforced.
-- No paid upgrade, production deployment, production DB write/migration, merge, CI retirement, or gate bypass is authorized by this provider decision. Those actions retain their separate approval and release gates.
+- Main is marked protected. Its active default-branch ruleset requires the GitHub Actions `all-checks-passed` check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; no separate PR-approval count is configured.
+- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations, and gate bypasses remain separately restricted.
 
 This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
 
