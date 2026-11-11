@@ -112,10 +112,11 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
 });
 
 test('real workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
-  for (const selector of ['list-tools', 'operations-search', 'invoice-controls', 'statement-filters', 'audit-filters']) {
-    assert.ok(appTemplate.includes('class="' + selector) || (selector === 'audit-filters' && platformAdmin.includes('class="filters audit-filters"')),
-      'Home / invoice / statement markup must use the covered filter: ' + selector);
+  const hasClass = (source: string, className: string) => new RegExp('class="[^"]*\\\\b' + className + '\\\\b').test(source);
+  for (const selector of ['list-tools', 'operations-search', 'invoice-controls', 'statement-filters']) {
+    assert.ok(hasClass(appTemplate, selector), 'Home / invoice / statement markup must use the covered filter: ' + selector);
   }
+  assert.ok(hasClass(platformAdmin, 'audit-filters'), 'Platform Admin audit form must use its covered filter');
   assert.ok(employeePayroll.includes('class="employee-tools"'), 'employee search markup must use the covered employee filter');
   assert.ok(platformAdmin.includes('class="filters"'), 'Platform Admin filter forms must retain their dedicated responsive styling');
   for (const selector of [
