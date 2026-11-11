@@ -1,11 +1,11 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.7
-status: APPROVED
+version: 1.0.8
+status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T23:10:43Z
-review_due: 2026-11-29
+last_verified_at: 2026-11-11T05:55:00Z
+review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
 canonical_sources:
@@ -14,14 +14,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
+related_github_sha: 827f220da14139605294923cc5550e088c2589e3
 supersedes: none
 superseded_by: none
 ---
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** APPROVED by the Owner for the consistent five-document package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This file is the package manifest and maintenance contract. Project Sources publication requires owner-authorized changes, documented maintainer/Project Master full self-review on the exact candidate SHA, and verified UI readback. No separate independent reviewer is required by project policy for controlled/security/architecture changes or canonical knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory.
+> **Approval state:** DRAFT candidate version 1.0.8. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
 
 ## 1. Package manifest
 
@@ -191,6 +191,13 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Historical note (superseded by policy 1.0.4): at this checkpoint, the same Project Master maintainer authored and reviewed the candidate, and the then-current policy still required independent review. Owner approval was recorded on 2026-11-04.
 
 ## 11. Changelog
+
+### 1.0.8 — 2026-11-11 — DRAFT
+- Recorded the Owner's development-stage lifecycle classification: AIBA remains development / pre-release and is not yet a real customer-production business environment, even where provider deployment targets or aliases are technically labelled Production.
+- Recorded standing permission for all AIBA agents/workers to create application/workspace accounts, use project data needed for assigned development/QA, and create/edit accounts and draft/editable invoices through normal authenticated application/API workflows in the currently running environment, without repeated per-operation approval.
+- Preserved server-side authorization, tenant isolation, validation, idempotency, audit logging, secret/privacy controls, financial invariants, and separate gates for destructive actions, migrations, external side effects, paid provisioning, merge and release. T37 remains DRAFT / NOT APPROVED.
+- Refreshed the consistent five-document metadata/source baseline to main `827f220da14139605294923cc5550e088c2589e3`. This controlled package remains DRAFT pending exact-head validation, maintainer review and normal PR integration; Project Sources upload/readback remains NOT VERIFIED.
+
 
 ### 1.0.7 — 2026-11-11 — APPROVED
 - Owner authorized the consistent five-document ABA-KNOW package to move from DRAFT to APPROVED for Project Sources publication.
