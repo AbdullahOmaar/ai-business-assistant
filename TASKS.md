@@ -3570,6 +3570,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Scope:** frontend presentation + source regression test + UX documentation only.
 - **Change:** at widths ≤760px, reserve 132px plus device safe-area inset at the workspace main-region end; add matching sidebar safe-area padding and 12px scroll margins for common interactive controls.
 - **Regression:** `frontend/src/app/design-system.spec.ts` asserts the main-region scroll runway and safe-area rules.
-- **Current head after documentation commit:** pending readback.
+- **Candidate head before PR creation:** `52ddf1b9970733c416e7fce2f1bba1326fa35ed9` (CSS, regression test and documentation read back from this exact branch state).
 - **Quality:** exact-head GitHub Actions, frontend unit tests/build and rendered viewport QA are pending; the legacy Semaphore status is not the Owner-selected CI provider. Physical Android installed-PWA, screen-reader, high-contrast and 200% zoom remain NOT RUN.
 - **Disposition:** IN_PROGRESS. No API/backend, auth/tenant, database, financial semantics, merge or deployment changes.
