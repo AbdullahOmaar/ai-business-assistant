@@ -31,7 +31,6 @@ export const FEATURE_CATALOG = [
         detailAr: 'داخل مساحة العمل، اضغط Tab لإظهار رابط ينقلك مباشرة إلى المحتوى الرئيسي.',
         detailEn: 'In a signed-in workspace, press Tab to reveal a link that moves keyboard focus directly to the main content.',
       },
-      },
     ],
   },
   {
