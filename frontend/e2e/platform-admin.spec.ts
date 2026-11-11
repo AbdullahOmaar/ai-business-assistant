@@ -451,6 +451,9 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
   await expect(page.getByRole('heading', { name: /Admin center|مركز الإدارة/ })).toBeVisible();
 
+  // The compact invoice summary belongs to Overview, not the Users directory.
+  await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
+  await expect(page.getByRole('heading', { name: /نظرة عامة|Overview/ })).toBeVisible();
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(page.locator('.compact-table')).toBeVisible();
