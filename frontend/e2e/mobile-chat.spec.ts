@@ -371,6 +371,13 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         fullPage: true,
         animations: 'disabled',
       });
+      if (width <= 390) {
+        await page.screenshot({
+          path: `test-results/aiba-home-${width}px-ar-viewport.png`,
+          fullPage: false,
+          animations: 'disabled',
+        });
+      }
     }
   }
 
@@ -446,6 +453,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.screenshot({
     path: 'test-results/aiba-home-390px-ltr.png',
     fullPage: true,
+    animations: 'disabled',
+  });
+  await page.screenshot({
+    path: 'test-results/aiba-home-390px-ltr-viewport.png',
+    fullPage: false,
     animations: 'disabled',
   });
   for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
