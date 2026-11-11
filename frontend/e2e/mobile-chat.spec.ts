@@ -396,11 +396,12 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     const directory = page.locator('.module-directory-disclosure');
     await directory.evaluate(element => { (element as HTMLDetailsElement).open = true; });
     const footer = page.locator('.main footer');
-    const lastModuleAction = page.locator('.module-directory-grid > aba-quick-access-card:last-child button');
+    const lastModuleAction = page.locator('.module-directory-grid > aba-quick-access-card button:not(:disabled)').last();
     await page.evaluate(() => {
       document.documentElement.style.scrollBehavior = 'auto';
       window.scrollTo(0, 0);
     });
+    await expect(lastModuleAction, 'the focus-scroll target must be enabled').toBeEnabled();
     await lastModuleAction.focus();
     const focusClearance = await page.evaluate(() => {
       const focused = document.activeElement as HTMLElement | null;
