@@ -3561,3 +3561,82 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 - Final route review found two remaining cross-tenant/audit re-read calls still referenced the old query-param paths after the primary candidate invoice paths were corrected. Updated those calls to reuse the verified business-scoped router paths; no application API code changed.
 - This is a test-harness-only correction; exact-head CI rerun is required.
+
+
+## T18 mobile dock scroll-clearance follow-up — 2026-11-11
+
+- **Branch:** `master/t18-mobile-ux-accessibility-20261111`
+- **Base synced:** `main@72a067149562af495d54e35f1a490b218117f333` (merge-sync retained the prior branch history; no force-push).
+- **Scope:** frontend presentation + source regression test + UX documentation only.
+- **Change:** at widths ≤760px, reserve 132px plus device safe-area inset at the workspace main-region end; add matching sidebar safe-area padding and 12px scroll margins for common interactive controls.
+- **Regression:** `frontend/src/app/design-system.spec.ts` asserts the main-region scroll runway and safe-area rules.
+- **Candidate head before PR creation:** `52ddf1b9970733c416e7fce2f1bba1326fa35ed9` (CSS, regression test and documentation read back from this exact branch state).
+- **Quality:** exact-head GitHub Actions, frontend unit tests/build and rendered viewport QA are pending; the legacy Semaphore status is not the Owner-selected CI provider. Physical Android installed-PWA, screen-reader, high-contrast and 200% zoom remain NOT RUN.
+- **Disposition:** IN_PROGRESS. No API/backend, auth/tenant, database, financial semantics, merge or deployment changes.
+
+
+## T18 shared-component mobile polish — 2026-11-11
+
+- **PR:** [#378](https://github.com/AbdullahOmaar/ai-business-assistant/pull/378) — keep Draft / unmerged.
+- **Branch:** `master/t18-mobile-ux-accessibility-20261111`; base `main@72a067149562af495d54e35f1a490b218117f333`; parent candidate `1329478231dbf1f453950881db6bd2ff9dcfcf75`.
+- **Scope:** mobile header context, module-directory card readability/pressed feedback, shared section-count badge, Platform Admin metadata, Release Guide badge/footnote, source regression and UX docs.
+- **Changes:** improve mobile workspace label/name readability without duplicating the app version; stabilize two-line module descriptions and disable press transforms under reduced motion; make section counts neutral/readable; raise mobile Platform Admin metadata to 12px; improve Release Guide badge wrapping and footnote readability.
+- **Regression:** extend `frontend/src/app/shared-ui-responsive.spec.ts` for the above presentation contracts.
+- **Validation:** NOT RUN on the resulting candidate until exact-head GitHub Actions completes. Parent SHA evidence is stale after this commit.
+- **Acceptance still open:** rendered all-19-destination RTL/LTR, authenticated OWNER/STAFF/two-tenant, keyboard-only/screen-reader, high-contrast/200% zoom, and physical Android Chrome/installed-PWA. No API/backend/auth/tenant/DB/schema/financial/inventory/payroll behavior changed. No merge or deployment.
+
+
+## T18 tablet workspace header follow-up — 2026-11-11
+
+- Exact-head browser artifact 43004805040 exposed the 768px RTL workspace name wrapping into a very narrow column. This is now addressed on the same PR #378 branch with a tablet-only 2-column workspace bar and release metadata on its own row; the <=760px mobile override remains unchanged.
+- Added source regression coverage in `frontend/src/app/shared-ui-responsive.spec.ts`. New exact-head CI and 768px screenshot review are required after this follow-up commit.
+- No navigation, business-switching, auth, tenant, API, DB, financial or production behavior changes.
+
+
+## T18 shared mobile/tablet UX — exact-head verification — 2026-11-11
+
+- **PR:** [#378](https://github.com/AbdullahOmaar/ai-business-assistant/pull/378), OPEN / DRAFT / UNMERGED.
+- **Branch:** `master/t18-mobile-ux-accessibility-20261111`; base `main@72a067149562af495d54e35f1a490b218117f333`; verified candidate `44b6c2a8bf7ec245ffaba6257ef26db91a0929ec` (10 commits ahead, 0 behind).
+- **Batch:** mobile workspace label/name typography; module-directory card two-line descriptions and reduced-motion-safe touch feedback; neutral section-count badges; Platform Admin metadata readability; Release Guide badge/footnote wrapping; 768px tablet workspace selector/name layout; source regression tests and UX ledger.
+- **Exact-head CI:** run [43005416300](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43005416300) — six substantive jobs + `all-checks-passed` SUCCESS. Frontend unit tests 413/413; browser smoke 21/21 (0 failures, 0 skipped, 0 errors); production build, dependency audit, backend accounting and backend container PASS. Authenticated API smoke SKIPPED (frontend-only).
+- **Visual evidence:** exact-run screenshots inspected at 320px RTL and 768px RTL/LTR; 320px dock-clearance end state also inspected. The 768px business-name wrapping defect is corrected in the artifact.
+- **Acceptance remaining:** all-19-destination rendered review, authenticated role/tenant journeys, full screen-reader/keyboard, high-contrast/200% zoom, physical Android Chrome/installed-PWA remain NOT RUN.
+- **Safety:** no API/backend/auth/tenant/DB/schema/financial/inventory/payroll behavior changes. No merge, deployment, migration or production data mutation.
+- **Note:** this ledger update changes the candidate SHA; rerun the exact-head workflow after the documentation commit before using the earlier run as final branch-head evidence.
+
+
+## T18 maintainer diff-review correction — 2026-11-11
+
+- Maintainer review of PR #378 found that the shared section header supports both its own `.aba-section-header__count` input and projected `.count` labels supplied by workspace pages.
+- The neutral global badge rule now covers both forms through one explicit selector. Regression coverage asserts the component-owned class, the projected workspace count markup and the combined selector.
+- No component markup, count value, business behavior, role/tenant, API or data changes.
+- Exact-head GitHub Actions validation is pending on the resulting correction SHA; prior CI evidence applies only to parent commits.
+
+
+## T18 documentation consistency correction — 2026-11-11
+
+- Corrected the UX inventory's scope note to reflect the tablet-only CSS change in `app.component.ts`. The PR remains presentation/test/docs only; no app state, navigation, workspace switching, API/backend, auth/tenant, DB, financial, inventory or payroll behavior changes.
+- This docs-only correction changes the candidate SHA; exact-head GitHub Actions validation is required again.
+
+
+## T18 PR #378 exact-head artifact and CI closeout — 2026-11-11
+
+- **Candidate reviewed:** `3c679129c7fd278a424f1ada3dfa67eb757eea7d`; PR #378 remains OPEN / DRAFT / UNMERGED, 14 commits ahead of `main@72a067149562af495d54e35f1a490b218117f333`, 0 behind.
+- **Exact-head GitHub Actions:** run [43007471759](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43007471759) completed SUCCESS. All six substantive jobs passed (`backend-accounting`, `frontend-browser-smoke`, `frontend-dependency-audit`, `frontend-production-build`, `frontend-unit-tests`, `backend-container`) and the fail-closed `all-checks-passed` aggregate passed. Frontend unit tests: 413/413; browser smoke: 21/21, 0 failed/skipped/errors. `authenticated-api-smoke` is SKIPPED because this is a frontend-only batch. The lone Semaphore failure status is retired/non-authoritative and is not a required gate.
+- **Artifact review:** inspected exact-run artifact `frontend-browser-smoke-results` (artifact 13848782539; same head SHA). Reviewed Home captures at 320px and 390px RTL/LTR, 768px RTL/LTR, and the 320px RTL end-of-content dock-clearance state. The workspace name and selector remain side by side at 768px; the fixed mobile dock leaves a scrollable end-of-content runway. These selected Home screenshots are not the full 19-destination audit.
+- **Scope / maintainer review:** all 11 changed paths are frontend presentation, source regression tests and UX documentation/TASKS only. No routes, navigation state, workspace switching behavior, API/backend, auth/authorization, tenant, DB/schema/migration, financial/accounting, invoice/payment, inventory, payroll or external-message behavior changed. No secrets or unrelated generated artifacts found in the PR diff.
+- **Still NOT RUN / BLOCKED:** rendered RTL/LTR audit of all 19 destinations; full authenticated OWNER/STAFF/second-tenant journey; route-wide keyboard-only and screen-reader acceptance; high-contrast and 200% zoom; physical Android Chrome and installed-PWA install/update/offline acceptance. Active Copilot review gate has no recorded review yet; keep PR Draft.
+- **Disposition:** CI and selected screenshot review PASS on this exact head; overall T18 acceptance remains PARTIALLY COMPLETE. No merge, deployment, migration or production data mutation.
+
+
+
+## T18 route-sweep and exact-head verification — 2026-11-11
+
+- **PR:** [#378](https://github.com/AbdullahOmaar/ai-business-assistant/pull/378), OPEN / DRAFT / UNMERGED.
+- **Candidate verified:** `b6ee1b327214e1f1f50288c36cff3174f612e812`; branch `master/t18-mobile-ux-accessibility-20261111`, 22 commits ahead / 0 behind `main@72a067149562af495d54e35f1a490b218117f333`; 12 changed paths.
+- **Exact-head GitHub Actions:** run [43030603920](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43030603920) — all six substantive jobs and required `all-checks-passed` aggregate SUCCESS. Frontend unit tests 413/413; browser smoke 21/21 (0 failures, 0 skipped, 0 errors); production build, dependency audit, backend accounting and backend container PASS. Authenticated API smoke SKIPPED because this is a frontend-only batch.
+- **Rendered route evidence:** browser artifact 13859029550 contains 72 route screenshots for all 18 OWNER workspace destinations at 390px and 1280px in Arabic RTL and English LTR. Visually reviewed the four contact sheets; no horizontal overflow or runtime errors in the route sweep. The separate authenticated Platform Admin E2E test also passed; it is not part of the 18 workspace destinations and has no screenshot in this artifact.
+- **Fixture correction:** route audit now matches exact module-card titles (so “Invoices” is distinct from “Recurring invoices”) and returns empty synthetic employee/payroll lists; the prior red “Unexpected mocked API request” was a test-fixture gap, not a production API error. Final artifact confirms the Employees screen renders without that mock error.
+- **Active ruleset readback:** repository ruleset 26009350 is active, strict and requires only `all-checks-passed` from GitHub Actions App 15368; deletion and non-fast-forward protections remain. Copilot review is no longer in the active ruleset following the Owner-authorized fallback recorded in the T18 Notion task.
+- **Still NOT RUN / BLOCKED:** physical Android Chrome and installed-PWA install/update/offline acceptance; full keyboard-only and screen-reader review; high-contrast and 200% zoom; authenticated second-tenant journey. The Vercel Preview is READY on app-source SHA `6abf7268c8f6337efdc69c7257b6520e5cead98b`, but SSO blocks the available unauthenticated browser session; subsequent commits changed only E2E fixture/test code.
+- **Disposition:** exact-head CI and the 18-destination rendered route sweep PASS. T18 remains PARTIALLY COMPLETE pending the device/accessibility/second-tenant acceptance. No merge, Production deployment, API deployment, migration or database mutation performed. This ledger update itself changes the candidate SHA; rerun exact-head Actions and refresh the Maintainer Diff Review before any merge decision.

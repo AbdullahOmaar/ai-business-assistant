@@ -447,3 +447,48 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **Polish in this batch:** mobile header context labels/workspace selector/shortcut type; quick-access descriptions; section-count badges; Platform Admin explanatory copy/status metadata; Release Guide footnote/version badge.
 - **Regression budget:** extend the existing shared source spec and the existing mocked mobile Home viewport journey. Run the authoritative six-job exact-SHA workflow once at batch close; do not repeat unchanged checks.
 - **Acceptance boundary:** source and mocked Playwright are not a substitute for authenticated OWNER/STAFF/two-tenant rendered review, full route-by-route RTL/LTR screenshots, screen-reader/keyboard/200% zoom, or physical Android installed-PWA acceptance. Those remain open until an authenticated isolated test path/device is available.
+
+
+## T18 shared-component polish continuation — 2026-11-11
+
+- **Candidate:** PR #378, branch `master/t18-mobile-ux-accessibility-20261111`; this batch extends the same mobile-first UX workstream and does not create a duplicate task or branch.
+- **Mobile app header:** the current-workspace label and name use a clearer mobile type hierarchy without repeating the app-version chrome already present elsewhere. The workspace selector, workspace name source, navigation actions and membership switching behavior are unchanged.
+- **Module directory cards:** mobile descriptions reserve a consistent two-line rhythm; pressed-state feedback is added for touch, with transforms disabled under reduced-motion preferences.
+- **Section count badges:** projected `.count` labels receive a neutral, tabular-numeric treatment and wrap safely without hiding counts.
+- **Platform Admin:** mobile metadata/data-note copy is raised to 12px with readable line-height; compact table cells remain 11px to preserve the existing four-column summary layout.
+- **Release Guide:** UI-version/current-version badges wrap safely at narrow widths; footnote copy is raised to 13px with a 1.65 line-height. Native `details/summary` behavior and guide content remain unchanged.
+- **Regression coverage:** `frontend/src/app/shared-ui-responsive.spec.ts` covers mobile workspace-context typography, module-card interaction/reduced motion, section-count styling, Platform Admin metadata and Release Guide text sizing.
+- **Boundary:** presentation and regression coverage only. The only `app.component.ts` change is the tablet workspace-bar CSS rule described below; no `styles.css`, API/backend, auth/authorization, tenant isolation, DB/schema/migration, invoice/payment, financial, inventory, payroll or external-message behavior changes.
+- **Validation:** pending on the resulting exact head. Prior exact-head CI on the parent SHA is not evidence for this new candidate. Authenticated all-role/two-tenant rendered review, full 19-destination RTL/LTR screenshot acceptance, screen reader, 200% zoom and physical Android installed-PWA remain NOT RUN.
+
+
+## Tablet workspace header correction — 2026-11-11
+
+- The exact-run 768px RTL screenshot exposed a real layout issue: the desktop three-column workspace bar left too little width for the current business name, wrapping it into a narrow vertical stack.
+- Added a tablet-only `max-width:900px` two-column layout: current business and selector remain side by side, while release/build metadata moves to a full-width secondary row. The existing `max-width:760px` mobile single-column override remains later in the cascade and is unchanged.
+- Added a source regression assertion for the tablet two-column rule and its ordering before the mobile override. The next exact-head browser artifact must be visually checked at 768px RTL/LTR.
+- Presentation only; no workspace selection, business identity, version source, route or permission behavior changed.
+
+
+## T18 shared mobile/tablet batch verification — 2026-11-11
+
+- **Verified candidate:** `44b6c2a8bf7ec245ffaba6257ef26db91a0929ec`, PR #378, base `main@72a067149562af495d54e35f1a490b218117f333`; branch is 10 commits ahead / 0 behind at this checkpoint.
+- **Exact-head CI:** GitHub Actions run [43005416300](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43005416300) completed with all six substantive jobs and required `all-checks-passed` SUCCESS. Frontend unit suite: 413 passed / 0 failed / 0 skipped. Browser smoke: 21 passed / 0 failed / 0 skipped / 0 errors. Production build, dependency audit, backend accounting and backend container all passed; authenticated API smoke was SKIPPED because this is a frontend-only candidate.
+- **Artifact review:** inspected exact-run 320px RTL and 768px RTL/LTR screenshots plus the 320px dock-clearance end state. The tablet fix keeps the current business name and selector readable side by side and places release metadata on a separate row. The 320px page retains an end-of-content runway above the fixed dock.
+- **Scope review:** presentation, source regression and documentation only. No API/backend, auth/authorization, tenant, DB/schema/migration, financial/accounting, invoice/payment, inventory, payroll or external-message semantics changed.
+- **Still NOT RUN:** full rendered audit of all 19 destinations; authenticated OWNER/STAFF/two-tenant route walkthrough; screen-reader and full keyboard-only acceptance across routes; high-contrast/200% zoom; physical Android Chrome and installed-PWA acceptance.
+- **Disposition:** PR remains OPEN / DRAFT / UNMERGED. Active Copilot code-review ruleset remains a merge gate. No merge, production deployment or database mutation.
+- **Next:** record the documentation-closeout exact-head run, then leave the PR draft until the outstanding route/device/accessibility acceptance and review gate are satisfied.
+
+
+## Maintainer review correction — shared count badge coverage — 2026-11-11
+
+- The shared section header has two count forms: its own `.aba-section-header__count` input and projected `.count` labels supplied by workspace pages. The neutral global badge treatment now targets both forms, rather than only one of them.
+- Strengthened `shared-ui-responsive.spec.ts` to assert the component-owned count class, the projected `.count` usage in the workspace template, and the combined CSS selector.
+- This is a CSS targeting/test-quality correction only; count values, component markup, business behavior and accessibility semantics are unchanged.
+- Exact-head CI is pending for the resulting correction commit; previous PASS evidence is not reused as final-head evidence.
+
+
+## Documentation consistency correction — 2026-11-11
+
+- Clarified the shared-component batch boundary: `app.component.ts` is changed only for the tablet workspace-bar responsive CSS rule documented in the preceding section. No application state, route, navigation, workspace-switching or business logic is changed.

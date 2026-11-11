@@ -154,3 +154,11 @@ These changes are frontend presentation and test evidence only. No business logi
 - The destination is the main content landmark, focusable programmatically with `tabindex="-1"`; the skip link is not rendered during startup, setup or startup-failure states where that landmark does not exist.
 - The transition respects `prefers-reduced-motion`. This is a keyboard-navigation aid and does not alter routes, authorization, or feature behavior.
 - Source-level regression coverage lives in `frontend/src/app/design-system.spec.ts`; rendered keyboard and screen-reader verification remains a separate acceptance gate.
+
+
+## 11. Mobile dock scroll clearance — 2026-11-11
+
+- At viewports up to 760px, the workspace main region reserves a 132px bottom scroll runway plus the device safe-area inset, so the final content and keyboard-focused controls can be scrolled clear of the fixed mobile dock.
+- The mobile navigation container also reserves the bottom safe-area inset; common interactive elements keep a 12px scroll margin.
+- This is a presentation/scrolling adjustment only. It does not change tab visibility, navigation order, role checks, data, API behavior or financial meaning.
+- Source regression coverage asserts the mobile breakpoint, main-region clearance and safe-area-aware navigation padding. Rendered viewport and physical Android verification remain separate acceptance items.

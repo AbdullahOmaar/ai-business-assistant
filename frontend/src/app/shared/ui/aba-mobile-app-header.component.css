@@ -107,8 +107,9 @@
 .workspace-copy { display: grid; align-items: start; gap: 1px; }
 .context-label {
   color: var(--aba-color-text-secondary, #5d6878);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1.35;
 }
 .workspace-copy strong {
   display: -webkit-box;
@@ -118,8 +119,8 @@
   -webkit-line-clamp: 2;
   overflow-wrap: anywhere;
   color: var(--aba-color-text-primary, #172033);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 13px;
+  line-height: 1.4;
 }
 .workspace-switch { display: block; min-width: 0; }
 .workspace-switch select {

@@ -6,6 +6,7 @@ const ownerUid = 'workspace-owner-uid';
 const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoid29ya3NwYWNlLW93bmVyLXVpZCIsInVpZCI6IndvcmtzcGFjZS1vd25lci11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
 
 test('mobile Home layout and chat remain usable across viewport and keyboard changes', async ({ page }) => {
+  test.setTimeout(180_000);
   const uncaughtErrors: string[] = [];
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
   const paymentRequests: string[] = [];
@@ -228,6 +229,48 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       || path === '/api/v1/businesses/business-1/invoices'
       || path === '/api/v1/businesses/business-1/payments'
       || path === '/api/v1/businesses/business-1/expenses') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
+      return;
+    }
+
+    if (path === '/api/v1/businesses/business-1/profit-loss' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({
+        period: { start_date: '2026-10-13', end_date: '2026-11-11', timezone: 'Africa/Cairo' },
+        revenue_basis: 'issued_invoices', currencies: [],
+      }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/reports/tax-summary' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ currencies: [], limitations: [] }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/audit-events' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], total: 0, offset: 0 }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/reports/data-integrity' && request.method() === 'GET') {
+      const emptyFinding = { total: 0, items: [] };
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({
+        warning: 'Synthetic browser fixture; no production data.',
+        unlinked_issued_invoices: emptyFinding,
+        currency_mismatched_allocations: emptyFinding,
+        customer_mismatched_allocations: emptyFinding,
+        offset: 0, limit: 50,
+      }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/operations/health' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({
+        status: 'healthy', database_connected: true, migration_table_available: true,
+        migration_revision: 'e2e-fixture', ai_configured: false,
+        notification_delivery_configured: false, recurring_invoice_worker_configured: false,
+        checked_at: '2026-11-11T10:00:00Z',
+      }) });
+      return;
+    }
+    if (['/suppliers', '/purchase-orders', '/recurring-invoices', '/notifications', '/employees', '/payroll'].some(suffix =>
+      path === '/api/v1/businesses/business-1' + suffix
+    ) && request.method() === 'GET') {
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
       return;
     }
@@ -563,6 +606,93 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await page.setViewportSize({ width: 360, height: 800 });
+  // Sweep every OWNER workspace destination at phone and desktop widths in RTL and LTR.
+  // Platform Admin has a separate platform identity and a dedicated authenticated E2E spec.
+  const routeDestinations = [
+    { tab: 'overview', titleAr: 'الرئيسية', titleEn: 'Overview' },
+    { tab: 'customers', titleAr: 'العملاء', titleEn: 'Customers' },
+    { tab: 'products', titleAr: 'المنتجات والمخزون', titleEn: 'Products & inventory' },
+    { tab: 'invoices', titleAr: 'المبيعات والفواتير', titleEn: 'Sales & invoices', cardAr: 'الفواتير', cardEn: 'Invoices' },
+    { tab: 'payments', titleAr: 'المدفوعات', titleEn: 'Payments', cardAr: 'المدفوعات والتحصيل', cardEn: 'Payments & collections' },
+    { tab: 'expenses', titleAr: 'المصروفات', titleEn: 'Expenses' },
+    { tab: 'employees', titleAr: 'الموظفون والمرتبات', titleEn: 'Employees & payroll' },
+    { tab: 'assistant', titleAr: 'مساعد الأعمال الذكي', titleEn: 'AI business assistant', cardAr: 'المساعد الذكي', cardEn: 'AI assistant' },
+    { tab: 'reports', titleAr: 'نتيجة التشغيل الأولية', titleEn: 'Preliminary operating result' },
+    { tab: 'taxes', titleAr: 'التقارير الضريبية', titleEn: 'Tax summary', cardAr: 'ملخص الضرائب' },
+    { tab: 'audit', titleAr: 'سجل العمليات', titleEn: 'Activity log' },
+    { tab: 'integrity', titleAr: 'مراجعة سلامة البيانات', titleEn: 'Data integrity review', cardAr: 'سلامة البيانات', cardEn: 'Data integrity' },
+    { tab: 'release-guide', titleAr: 'دليل التطبيق والإصدارات', titleEn: 'App guide & versions' },
+    { tab: 'suppliers', titleAr: 'الموردون', titleEn: 'Suppliers' },
+    { tab: 'purchases', titleAr: 'المشتريات', titleEn: 'Purchasing' },
+    { tab: 'recurring', titleAr: 'الفواتير الدورية', titleEn: 'Recurring invoices' },
+    { tab: 'notifications', titleAr: 'الإشعارات', titleEn: 'Notifications' },
+    { tab: 'health', titleAr: 'الحالة التشغيلية', titleEn: 'Operational health' },
+  ] as const;
+
+  const assertRouteSweep = async (width: number, language: 'ar' | 'en') => {
+    await page.setViewportSize({ width, height: 844 });
+    const direction = language === 'ar' ? 'rtl' : 'ltr';
+    await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+    await expect(page.locator('html')).toHaveAttribute('dir', direction);
+
+    for (const destination of routeDestinations) {
+      const expectedTitle = language === 'ar' ? destination.titleAr : destination.titleEn;
+      const homeNavLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+      const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
+      const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
+        : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
+      await page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true }).click();
+      await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
+      if (destination.tab !== 'overview') {
+        await page.locator('.module-directory-disclosure').evaluate(element => {
+          (element as HTMLDetailsElement).open = true;
+        });
+        const card = page.locator('.module-directory-grid > aba-quick-access-card')
+          .filter({ has: page.locator('.aba-quick-access__copy > strong').getByText(cardLabel, { exact: true }) });
+        await expect(card, destination.tab + ' must be listed for the OWNER').toHaveCount(1);
+        await card.locator('button').click();
+      }
+      await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
+        .toHaveText(expectedTitle);
+      if (width <= 760) {
+        // The Hybrid mobile header replaces the desktop workspace bar on phones.
+        await expect(page.locator('aba-mobile-app-header')).toBeVisible();
+      } else {
+        await expect(page.locator('.workspace-bar')).toBeVisible();
+      }
+      const layout = await page.evaluate(() => ({
+        width: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('.main')?.getBoundingClientRect().width ?? 0,
+      }));
+      expect(layout.documentWidth, destination.tab + ' horizontal overflow at ' + width + 'px/' + language)
+        .toBeLessThanOrEqual(layout.width);
+      expect(layout.mainWidth).toBeGreaterThan(0);
+      expect(uncaughtErrors, destination.tab + ' uncaught browser errors').toEqual([]);
+      await page.screenshot({
+        path: `test-results/t18-route-${destination.tab}-${width}px-${language}.png`,
+        fullPage: false,
+        animations: 'disabled',
+      });
+    }
+  };
+
+  await assertRouteSweep(390, 'ar');
+  await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
+  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
+  await assertRouteSweep(390, 'en');
+  await page.locator('.sidebar').getByRole('button', { name: /More sections/ }).click();
+  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
+  await assertRouteSweep(1280, 'ar');
+  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await assertRouteSweep(1280, 'en');
+  await page.getByRole('button', { name: 'العربية', exact: true }).click();
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  await page.locator('.sidebar').getByRole('button', { name: 'الرئيسية', exact: true }).click();
+
   // Exercise the real Home app-header shortcut; the More menu remains covered
   // by its dedicated navigation assertions above.
   await page.getByRole('button', { name: /افتح المساعد الذكي|Open AI assistant/ }).click();

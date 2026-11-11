@@ -1222,6 +1222,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     /* Keep release metadata centered on the same row as the current workspace on desktop. */
     .workspace-bar{grid-template-columns:minmax(0,1fr) auto minmax(180px,260px)}
     .workspace-release-meta-inline{grid-column:auto;border-top:0;padding:0;justify-content:center;min-width:0}
+    /* At tablet widths, keep the workspace name and selector side by side; move release metadata to its own row. */
+    @media(max-width:900px){
+      .workspace-bar{grid-template-columns:minmax(0,1fr) minmax(180px,260px);align-items:center}
+      .workspace-current{min-width:0}
+      .workspace-release-meta-inline{grid-column:1/-1;justify-content:flex-start;border-top:1px solid var(--aba-color-border,#e5eaf1);padding-top:8px}
+      .workspace-release-meta-inline small{text-align:start}
+    }
     @media(max-width:600px){
       .workspace-release-meta-inline{grid-column:1;border-top:1px solid #e5eaf1;padding-top:10px}
     }
