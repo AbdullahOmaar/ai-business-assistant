@@ -631,8 +631,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
   const routeApiFailures: string[] = [];
   const routeNetworkFailures: string[] = [];
+  const pendingWorkspaceRequests = new Set<object>();
   const isWorkspaceApiRequest = (url: string) =>
     url.startsWith(apiBaseUrl + '/api/v1/businesses/business-1');
+  const routeLoadingMessages = page.locator(
+    '.global-loading:visible, aba-state-message.aba-state-message--loading:visible, [role="status"]:visible'
+  ).filter({ hasText: /Loading|جارٍ تحميل|جارٍ التحميل/ });
+  const routeSkeletons = page.locator('.metric-skeleton:visible');
+  page.on('request', request => {
+    if (isWorkspaceApiRequest(request.url())) pendingWorkspaceRequests.add(request);
+  });
+  page.on('requestfinished', request => {
+    pendingWorkspaceRequests.delete(request);
+  });
   page.on('response', response => {
     if (!isWorkspaceApiRequest(response.url())) return;
     if (!response.ok()) {
@@ -641,6 +652,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   });
   page.on('requestfailed', request => {
     if (!isWorkspaceApiRequest(request.url())) return;
+    pendingWorkspaceRequests.delete(request);
     routeNetworkFailures.push(`${request.method()} ${new URL(request.url()).pathname}: ${request.failure()?.errorText ?? 'request failed'}`);
   });
 
@@ -669,11 +681,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       }
       await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
         .toHaveText(expectedTitle);
-      // A changed heading is not proof that the destination finished loading.
-      // Wait for the mocked business API to settle, then fail on HTTP/network errors
-      // or a rendered state-message alert before capturing the route screenshot.
-      await page.waitForLoadState('networkidle', { timeout: 10_000 });
-      await expect(page.locator('.aba-state-message[role="alert"]:visible'), destination.tab + ' rendered error state')
+      // Tab changes do not navigate the document, so networkidle is not a
+      // reliable signal. Wait for the app's actual loading indicators and
+      // every workspace API request to settle before accepting the screenshot.
+      await expect(routeLoadingMessages, destination.tab + ' loading message').toHaveCount(0, { timeout: 15_000 });
+      await expect(routeSkeletons, destination.tab + ' loading skeleton').toHaveCount(0, { timeout: 15_000 });
+      await expect.poll(() => pendingWorkspaceRequests.size, { timeout: 15_000 })
+        .toBe(0);
+      await expect(page.locator('.main .panel:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
+        destination.tab + ' rendered content or empty state').toBeVisible();
+      await expect(page.locator('[role="alert"]:visible'), destination.tab + ' rendered error state')
         .toHaveCount(0);
       expect(routeApiFailures, destination.tab + ' API failures').toEqual([]);
       expect(routeNetworkFailures, destination.tab + ' network failures').toEqual([]);
