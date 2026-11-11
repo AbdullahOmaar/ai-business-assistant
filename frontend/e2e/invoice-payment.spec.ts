@@ -644,15 +644,26 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await serviceLine.getByLabel('Quantity').fill('1');
   await editor.getByLabel('Invoice notes (optional)').fill('Call before delivery');
 
+  const assertMobileEditorActionsAboveNav = async () => {
+    await editor.locator('.editor-actions').scrollIntoViewIfNeeded();
+    const actionsBox = await editor.locator('.editor-actions').boundingBox();
+    const navBox = await page.locator('.sidebar').boundingBox();
+    if (!actionsBox || !navBox) throw new Error('Mobile editor actions or navigation bar is not visible.');
+    expect(actionsBox.y + actionsBox.height).toBeLessThanOrEqual(navBox.y - 4);
+  };
+
   // Capture the actual editor surface in both directions at narrow phone widths.
   await page.setViewportSize({ width: 390, height: 844 });
+  await assertMobileEditorActionsAboveNav();
   await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-ltr.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.locator('.user-area').getByRole('button', { name: 'العربية', exact: true }).click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await page.setViewportSize({ width: 320, height: 844 });
+  await assertMobileEditorActionsAboveNav();
   await page.screenshot({ path: testInfo.outputPath('invoice-editor-320-rtl.png'), fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });
+  await assertMobileEditorActionsAboveNav();
   await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-rtl.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.locator('.user-area').getByRole('button', { name: 'English', exact: true }).click();
@@ -698,6 +709,8 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
       quantity: '1',
     }),
   ]));
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.locator('.sidebar')).toBeVisible();
   expect(harness.uncaughtErrors).toEqual([]);
 });
 
