@@ -2,7 +2,7 @@
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation` (same Phase 1 branch name restored from merged main; no parallel Phase 1 branch).
 - **Base:** `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`.
-- **Change:** the shared mobile page title previously applied negative Latin-style letter spacing in both locales. Arabic RTL now explicitly uses natural letter spacing to preserve connected-script typography for all semantic h1/h2/h3 headings across the workspace, including the mobile app header and nested Platform Admin. English title sizing and existing narrow-phone layout are unchanged.
+- **Change:** the shared mobile page title previously applied negative Latin-style letter spacing in both locales. Arabic RTL now explicitly uses natural letter spacing for semantic h1/h2/h3 headings and eyebrow/navigation captions across the workspace, including nested Platform Admin. English/LTR tracking, title sizing and existing narrow-phone layout are unchanged.
 - **Regression:** added focused source assertions for the RTL mobile-header rule and shared design-system heading overrides.
 - **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/design-system.css`, `frontend/src/app/mobile-app-header.spec.ts`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
 - **Validation:** targeted source/test readback pending; the focused Node test was NOT RUN (no local repository checkout/runner in this session). No full suite or unrelated tests were run.
