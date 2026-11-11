@@ -391,6 +391,55 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
   await expect(page.getByText('Member identities')).toBeVisible();
   await expect(page.getByText('Healthy').first()).toBeVisible();
+
+  // Complete the 19th-destination visual evidence: Platform Admin is a separate
+  // platform identity, so it is captured in its own fully mocked journey.
+  const captureAdminViewport = async (
+    view: 'overview' | 'users',
+    language: 'en' | 'ar',
+    width: number,
+  ) => {
+    await page.setViewportSize({ width, height: 844 });
+    const direction = language === 'ar' ? 'rtl' : 'ltr';
+    await expect(page.locator('html')).toHaveAttribute('dir', direction);
+    await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+
+    if (view === 'overview') {
+      await page.getByRole('button', { name: language === 'en' ? /Overview/ : /نظرة عامة/ }).click();
+      await expect(page.getByRole('heading', { name: language === 'en' ? /Admin center/ : /مركز الإدارة/ })).toBeVisible();
+      await expect(page.locator('.main .panel:visible').first()).toBeVisible();
+    } else {
+      await page.getByRole('button', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ }).click();
+      await expect(page.getByRole('heading', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ })).toBeVisible();
+      const search = page.getByLabel(/Email address or UID|البريد الإلكتروني أو UID/);
+      await search.fill('');
+      await page.getByRole('button', { name: /Search|بحث/ }).click();
+      await expect(page.getByText('First Directory User')).toBeVisible();
+    }
+
+    const layout = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+    }));
+    expect(layout.documentWidth, `Platform Admin ${view} must not overflow at ${width}px ${direction}`)
+      .toBeLessThanOrEqual(layout.viewportWidth);
+    await page.screenshot({
+      path: `test-results/t18-platform-admin-${view}-${width}px-${language}.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
+  };
+
+  for (const width of [390, 768, 1280]) {
+    await captureAdminViewport('overview', 'en', width);
+    await captureAdminViewport('users', 'en', width);
+  }
+  await page.getByRole('button', { name: 'العربية', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  for (const width of [390, 768, 1280]) {
+    await captureAdminViewport('overview', 'ar', width);
+    await captureAdminViewport('users', 'ar', width);
+  }
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(page.locator('.compact-table')).toBeVisible();
