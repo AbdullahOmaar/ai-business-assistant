@@ -15,7 +15,9 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   let systemStatusFailure = false;
 
   page.on('pageerror', error => uncaughtErrors.push(error.message));
-  await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
+  await page.addInitScript(() => {
+    if (!window.localStorage.getItem('aba-language')) window.localStorage.setItem('aba-language', 'en');
+  });
 
   // Every external service used by this test is mocked. Any unrecognized external
   // host is blocked, so this test cannot call production Firebase or the live API.
@@ -434,8 +436,13 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     await captureAdminViewport('overview', 'en', width);
     await captureAdminViewport('users', 'en', width);
   }
-  await page.getByRole('button', { name: 'العربية', exact: true }).click();
+  // Platform Admin has no in-page locale switch. Exercise the persisted locale
+  // preference through a reload while keeping the mocked Firebase session.
+  await page.evaluate(() => window.localStorage.setItem('aba-language', 'ar'));
+  await page.reload();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('.admin-shell')).toHaveAttribute('dir', 'rtl');
+  await expect(page.getByRole('heading', { name: /مركز الإدارة/ })).toBeVisible({ timeout: 20_000 });
   for (const width of [390, 768, 1280]) {
     await captureAdminViewport('overview', 'ar', width);
     await captureAdminViewport('users', 'ar', width);
