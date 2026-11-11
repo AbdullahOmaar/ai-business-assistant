@@ -128,3 +128,9 @@ test('every authenticated workspace route exposes a localized skip link to the m
   assert.match(css, /\.skip-link:focus\s*\{[\s\S]*?transform:\s*translateY\(0\)/);
   assert.match(css, /prefers-reduced-motion:\s*reduce[\s\S]*?\.skip-link\s*\{[\s\S]*?transition:\s*none/);
 });
+
+
+test('skip navigation does not suppress the main landmark keyboard focus indicator', () => {
+  assert.doesNotMatch(css, /#main-content:focus\s*\{[^}]*outline:\s*none/);
+  assert.match(css, /\[tabindex\]:focus-visible[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
+});
