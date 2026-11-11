@@ -16,6 +16,7 @@ const componentSources = componentPaths.map(path =>
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const designSystemStyles = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const appStylesStart = appSource.lastIndexOf('styles: [`');
 const appStyles = appSource.slice(appStylesStart, appSource.indexOf('`]', appStylesStart));
 
@@ -434,4 +435,9 @@ test('mobile navigation dock reuses the shared navigation palette', () => {
     'color:var(--aba-color-nav-text,#cbd5e1)',
     'color:var(--aba-color-primary-border,#99f6e4)',
   ]) assert.ok(appStyles.includes(declaration));
+});
+
+
+test('Arabic RTL shared headings use natural connected-script letter spacing', () => {
+  assert.match(designSystemStyles, /\.shell\[dir="rtl"\] \.topbar h1,[\s\S]*?\.shell\[dir="rtl"\] \.dashboard-period__title \{\s*letter-spacing: normal;/);
 });
