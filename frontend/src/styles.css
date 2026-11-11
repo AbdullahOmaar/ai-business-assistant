@@ -474,24 +474,14 @@ aba-metric-card small {
   color: var(--aba-color-text-secondary);
 }
 
-:root body .shell .invoice-create-disclosure {
-  border-color: var(--aba-color-border);
-  border-radius: var(--aba-radius-card);
-  background: var(--aba-color-surface-subtle);
+:root body .shell .invoice-create-panel {
+  margin-block: 14px 18px;
 }
 
-:root body .shell .invoice-create-disclosure > summary {
-  background: var(--aba-color-surface);
-  color: var(--aba-color-text-primary);
-}
-
-:root body .shell .invoice-create-disclosure > summary:after {
-  background: var(--aba-color-primary-soft);
-  color: var(--aba-color-primary-strong);
-}
-
-:root body .shell .invoice-create-disclosure > .invoice-form {
-  border-top-color: var(--aba-color-border-subtle);
+:root body .shell .invoice-create-button {
+  border-radius: var(--aba-radius-control);
+  background: var(--aba-color-primary);
+  color: #fff;
 }
 
 :root body .shell .invoice-line-row,

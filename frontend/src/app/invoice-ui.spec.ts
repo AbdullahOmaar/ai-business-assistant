@@ -4,6 +4,10 @@ import test from 'node:test';
 
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const editorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
+
+test('editor back navigation mirrors correctly for RTL and LTR', () => {
+  assert.match(editorSource, /language === 'ar' \? '→' : '←'/);
+});
 const cardStart = appSource.indexOf('<div class="invoice-cards">');
 const cardEnd = appSource.indexOf('\n                  </div>', cardStart);
 const cardMarkup = cardStart >= 0 && cardEnd > cardStart ? appSource.slice(cardStart, cardEnd) : '';
@@ -44,12 +48,13 @@ test('invoice cards are the primary responsive layout rather than a desktop-only
   assert.match(appSource, /\.invoice-cards\{grid-template-columns:minmax\(0,1fr\)\}/);
 });
 
-test('Product / Service remains a subtle hint and the existing line-kind selector remains available', () => {
-  assert.match(editorSource, /class="field-hint">Product \/ Service<\/span>/);
-  assert.match(editorSource, /class="line-kind-select"/);
-  assert.match(editorSource, /changeKind\(line, \$event\)/);
-  assert.match(editorSource, /\.field-hint \{[^}]*font-size: 11px/);
-  assert.match(editorSource, /\.line-kind-select \{[^}]*min-height: 34px/);
+test('Product and Service use a segmented toggle with no reorder controls or large add buttons', () => {
+  assert.match(editorSource, /class="line-kind-switch"/);
+  assert.match(editorSource, /class="kind-option"/);
+  assert.match(editorSource, /changeKind\(line, 'product'\)/);
+  assert.match(editorSource, /changeKind\(line, 'manual'\)/);
+  assert.match(editorSource, /Add another line/);
+  assert.doesNotMatch(editorSource, /Move up|Move down|\bmoveLine\b|line-kind-select|class="add-actions"/);
 });
 
 
@@ -66,26 +71,40 @@ test('invoice search icon stays clear of search text in RTL and LTR', () => {
   assert.match(appSource, /\.invoice-search input::-webkit-search-decoration/);
 });
 
-test('invoice filters and draft selectors use regular readable control text', () => {
+test('invoice editor selectors, catalog prices and read-only rate fields are clearly distinguished', () => {
   assert.match(appSource, /\.invoice-filter select\{width:100%;min-width:0;font-weight:400\}/);
   assert.match(editorSource, /class="invoice-customer-select"/);
-  assert.match(editorSource, /\.invoice-fields select, \.invoice-fields input, \.line-fields select, \.line-fields input \{ font-weight: 400; \}/);
-  assert.match(editorSource, /\.line-kind-select \{[^}]*font-weight: 400 !important/);
+  assert.match(editorSource, /class="readonly-field"/);
+  assert.match(editorSource, /productPrice\(line\.product_id\)/);
+  assert.match(editorSource, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(editorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
 });
 
-test('invoice editor groups details, line items and server-owned totals into responsive sections', () => {
+test('invoice editor groups details, line items, server totals and notes in the approved layout', () => {
   assert.match(editorSource, /aria-labelledby="invoice-details-heading"/);
   assert.match(editorSource, /aria-labelledby="invoice-lines-heading"/);
-  assert.match(editorSource, /class="line-fields" \[class\.product-line\]/);
-  assert.match(editorSource, /class="invoice-summary-pending"/);
+  assert.match(editorSource, /aria-labelledby="invoice-summary-heading"/);
+  assert.match(editorSource, /aria-labelledby="invoice-notes-heading"/);
+  assert.match(editorSource, /class="line-fields product-line"/);
+  assert.match(editorSource, /class="line-fields service-line"/);
+  assert.match(editorSource, /class="summary-total"/);
   assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
-  assert.match(editorSource, /Totals are not estimated locally/);
+  assert.match(editorSource, /No amounts are estimated in the browser/);
+  assert.match(editorSource, /maxlength="2000"/);
 });
 
-test('invoice summary shows currency once and keeps its pending state localized', () => {
-  assert.match(editorSource, /@if \(!serverSummary\) \{\s*<span class="currency">\{\{ currencyCode \}\}<\/span>/);
-  assert.match(editorSource, /class="invoice-summary-pending" \[attr\.aria-label\]="t\('إجماليات الفاتورة بعد الحفظ', 'Invoice totals after save'\)"/);
-  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code \}\}/);
-  assert.doesNotMatch(editorSource, /serverSummary\.(?:subtotal|discount_total|tax_total) \| number:'1\.2-2' \}\} \{\{ serverSummary\.currency_code/);
-  assert.doesNotMatch(editorSource, /class="server-summary[^"]*invoice-summary-pending"/);
+test('discount and tax rates stay side by side and read-only while amounts come from the server', () => {
+  assert.match(editorSource, /class="readonly-rates"/);
+  assert.match(editorSource, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(editorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(editorSource, /serverSummary\?\.discount_total/);
+  assert.match(editorSource, /serverSummary\?\.tax_total/);
+  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.doesNotMatch(editorSource, /\[\(ngModel\)\]="(?:discountRate|taxRate)"/);
+});
+
+test('invoice notes are hydrated for editing and submitted with the existing draft payload', () => {
+  assert.match(editorSource, /name="invoiceNotes"/);
+  assert.match(editorSource, /maxlength="2000"/);
+  assert.match(editorSource, /notes: this\.notes/);
 });

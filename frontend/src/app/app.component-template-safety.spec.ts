@@ -50,11 +50,16 @@ test('workspace version and build time live inside the current-business card', (
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\) auto minmax\(180px,260px\)\}/);
 });
 
-test('invoice creation is presented before the responsive invoice search and filters', () => {
+test('the new invoice editor replaces the old disclosure before invoice search and filters', () => {
   const toolbar = source.indexOf('class="invoice-toolbar"');
-  const create = source.indexOf('class="invoice-create-disclosure"', toolbar);
+  const panel = source.indexOf('class="invoice-create-panel"', toolbar);
+  const createButton = source.indexOf('class="primary invoice-create-button"', toolbar);
   const controls = source.indexOf('class="invoice-controls"', toolbar);
-  assert.ok(toolbar >= 0 && create > toolbar && controls > create);
+  assert.ok(toolbar >= 0 && panel > toolbar && createButton > panel && controls > createButton);
+  assert.doesNotMatch(source, /invoice-create-disclosure|onInvoiceCreateToggle/);
+  assert.match(source, /\[discountRate\]="invoiceDiscountRate"/);
+  assert.match(source, /\[taxRate\]="invoiceTaxRate"/);
+  assert.match(source, /\(cancel\)="cancelInvoiceEdit\(\)"/);
   assert.match(source, /Search by customer name or invoice number/);
   assert.match(source, /name="invoiceFilterCustomer"/);
   assert.match(source, /class="invoice-search-icon"/);
@@ -120,13 +125,13 @@ test('invoice amounts use consistent grouped decimal formatting in the list and 
   assert.match(source, /invoice\.total \| number:'1\.2-2'/);
   assert.match(source, /invoice\.outstanding_amount \| number:'1\.2-2'/);
   assert.match(invoiceEditorSource, /serverSummary\.subtotal \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\.discount_total \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\.tax_total \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\??\.discount_total \| number:'1\.2-2'/);
+  assert.match(invoiceEditorSource, /serverSummary\??\.tax_total \| number:'1\.2-2'/);
   assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
 });
 
 test('responsive invoice list uses the accessible table fallback and compact responsive cards', () => {
-  assert.match(source, /\.invoice-form label:has\(input\[type="number"\]\)\{max-width:150px/);
+  assert.match(invoiceEditorSource, /\.field\{display:grid;gap:7px/);
   assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
   assert.match(source, /class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption"/);
   assert.match(source, /<caption id="invoice-table-caption">/);
@@ -357,7 +362,7 @@ test('shared state feedback owns info, warning, success, error and accessible ac
 test('shared card hosts own card surface styling and projected KPI styles live in the shared stylesheet', () => {
   assert.ok(sharedCardSource.includes("selector: 'section[abaCard]'"));
   assert.ok(sharedCardSource.includes('ChangeDetectionStrategy.OnPush'));
-  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g), ...releaseGuideSource.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="[^"]*panel[^"]*"[^>]*>/g)];
+  const panelHosts = [...source.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="([^"]*)"[^>]*>/g), ...releaseGuideSource.matchAll(/<([a-z][a-z0-9-]*)[^>]*class="([^"]*)"[^>]*>/g)].filter(match => match[2].split(/\s+/).includes('panel'));
   assert.ok(panelHosts.length >= 20);
   for (const match of panelHosts) {
     assert.equal(match[1], 'section', 'panel surfaces must remain native section elements');
@@ -1254,7 +1259,7 @@ test('operations errors stay scoped to the module that produced them', () => {
 });
 
 test('invoice customer and dynamic line fields expose accessible localized validation', () => {
-  assert.match(invoiceEditorSource, /<label>/);
+  assert.match(invoiceEditorSource, /<label\b/);
   assert.match(invoiceEditorSource, /name="invoiceNumber"/);
   assert.match(invoiceEditorSource, /name="customerId"/);
   assert.match(invoiceEditorSource, /@for \(line of lines; track line\.id(?:; let index = \$index)?\)/);
@@ -1305,7 +1310,8 @@ test('AI chat composer placeholder follows selected language', () => {
 test('CSV import regions and invoice preview have localized accessible names', () => {
   assert.ok(source.includes(`[attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')"`));
   assert.ok(source.includes(`[attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')"`));
-  assert.ok(invoiceEditorSource.includes(`[attr.aria-label]="t('معاينة إجمالي الفاتورة', 'Invoice totals preview')"`));
+  assert.ok(invoiceEditorSource.includes('aria-labelledby="invoice-summary-heading"'));
+  assert.ok(invoiceEditorSource.includes("t('ملخص الفاتورة', 'Invoice summary')"));
   assert.doesNotMatch(source + invoiceEditorSource, /aria-label="(?:CSV customer import|CSV product import|Invoice totals preview)"/);
 });
 
@@ -1467,12 +1473,13 @@ test('AI assistant conversation history is a named keyboard-scrollable log regio
   assert.match(log, /\[attr\.aria-label\]=/);
 });
 
-test('unapproved discount and tax rates remain read-only and existing values are preserved', () => {
-  assert.match(source, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
-  assert.match(source, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
-  assert.doesNotMatch(source, /name="invoiceDiscountRate"[^>]*\[\(ngModel\)\]/);
-  assert.doesNotMatch(source, /name="invoiceTaxRate"[^>]*\[\(ngModel\)\]/);
-  assert.match(source, /editing a draft preserves its saved values without changing them/);
+test('unapproved discount and tax rates remain read-only and saved values are preserved', () => {
+  assert.match(invoiceEditorSource, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
+  assert.match(invoiceEditorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
+  assert.doesNotMatch(invoiceEditorSource, /name="invoiceDiscountRate"[^>]*\[\(ngModel\)\]/);
+  assert.doesNotMatch(invoiceEditorSource, /name="invoiceTaxRate"[^>]*\[\(ngModel\)\]/);
+  assert.match(source, /\[discountRate\]="invoiceDiscountRate"/);
+  assert.match(source, /\[taxRate\]="invoiceTaxRate"/);
 
   const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
   const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
@@ -1484,4 +1491,5 @@ test('unapproved discount and tax rates remain read-only and existing values are
   const edit = source.slice(editStart, editEnd);
   assert.match(edit, /this\.invoiceDiscountRate = this\.deriveRate\(detail\.discount_total, detail\.subtotal\)/);
   assert.match(edit, /this\.invoiceTaxRate = this\.deriveRate\(detail\.tax_total, taxableBase\.toFixed\(2\)\)/);
+  assert.match(edit, /this\.invoiceDraftNotes = detail\.notes \?\? ''/);
 });

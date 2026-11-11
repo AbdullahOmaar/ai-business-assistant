@@ -12,6 +12,7 @@ export interface InvoiceDraftLine {
 export interface InvoiceDraftProduct {
   id: string;
   name: string;
+  unit_price?: string;
 }
 
 export interface InvoiceDraftCustomer {
@@ -24,6 +25,7 @@ export interface InvoiceDraftInput {
   currency_code: string;
   customer_id: string;
   lines: readonly InvoiceDraftLine[];
+  notes?: string;
 }
 
 export type InvoiceDraftLinePayload =
@@ -35,6 +37,7 @@ export interface InvoiceDraftPayload {
   currency_code: string;
   customer_id: string;
   lines: InvoiceDraftLinePayload[];
+  notes?: string | null;
 }
 
 export interface InvoiceDraftServerSummary {
@@ -67,6 +70,7 @@ export function validateInvoiceDraft(
   if (!/^[A-Za-z]{3}$/.test(input.currency_code.trim())) {
     return 'Enter a valid three-letter currency code.';
   }
+  if ((input.notes?.length ?? 0) > 2000) return 'Invoice notes cannot exceed 2,000 characters.';
   if (!input.lines.length) return 'Add at least one invoice line.';
   if (input.lines.length > 500) return 'An invoice cannot contain more than 500 lines.';
 
@@ -107,6 +111,7 @@ export function toInvoiceDraftPayload(
     invoice_number: input.invoice_number.trim(),
     currency_code: input.currency_code.trim().toUpperCase(),
     customer_id: input.customer_id,
+    notes: input.notes?.trim() || null,
     lines: input.lines.map(line => line.kind === 'manual'
       ? {
           description: line.description.trim(),
@@ -128,6 +133,7 @@ export function localizeInvoiceDraftValidationMessage(message: string, language:
     'Choose a valid customer.': 'اختَر عميلًا صحيحًا.',
     'Enter a valid three-letter currency code.': 'أدخل رمز عملة صحيحًا من ثلاثة أحرف.',
     'Add at least one invoice line.': 'أضف بندًا واحدًا على الأقل للفاتورة.',
+    'Invoice notes cannot exceed 2,000 characters.': 'لا يمكن أن تتجاوز ملاحظات الفاتورة 2000 حرف.',
     'An invoice cannot contain more than 500 lines.': 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.',
     'Every line needs a positive quantity with at most three decimal places.': 'يجب أن تكون كمية كل بند أكبر من صفر وبحد أقصى 3 خانات عشرية.',
     'Choose a valid catalog product for every product line.': 'اختَر منتجًا صحيحًا من قائمة المنتجات لكل بند.',
@@ -136,14 +142,6 @@ export function localizeInvoiceDraftValidationMessage(message: string, language:
     'Every manual line needs a non-negative unit price with at most two decimal places.': 'يجب أن يكون سعر الوحدة للبند اليدوي صفرًا أو أكثر وبحد أقصى خانتين عشريتين.',
   };
   return arabic[message] ?? message;
-}
-
-export function moveInvoiceDraftLine<T>(lines: readonly T[], index: number, direction: -1 | 1): T[] {
-  const target = index + direction;
-  if (index < 0 || index >= lines.length || target < 0 || target >= lines.length) return [...lines];
-  const next = [...lines];
-  [next[index], next[target]] = [next[target], next[index]];
-  return next;
 }
 
 export function removeInvoiceDraftLine<T>(lines: readonly T[], index: number): T[] {

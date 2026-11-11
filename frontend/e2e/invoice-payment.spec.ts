@@ -480,7 +480,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
         total: '777.77',
         issue_date: null,
         due_date: null,
-        notes: null,
+        notes: typeof payload.notes === 'string' ? payload.notes : null,
         created_at: '2026-11-09T00:00:00+00:00',
         outstanding_amount: null,
       };
@@ -504,6 +504,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
         discount_total: '0.00',
         tax_total: '0.00',
         total: '888.88',
+        notes: typeof payload.notes === 'string' ? payload.notes : null,
       };
       invoiceRows[businessId] = (invoiceRows[businessId] ?? []).map(item =>
         item.id === 'invoice-created-a' ? createdInvoice as Record<string, unknown> : item
@@ -618,39 +619,63 @@ async function openInvoices(page: Page): Promise<void> {
   await expect(page.locator('#invoices-section-heading')).toBeVisible();
 }
 
-test('OWNER creates and edits a mixed product/service draft using server-returned totals', async ({ page }) => {
+test('OWNER creates and edits a mixed product/service draft using server-returned totals', async ({ page }, testInfo) => {
   const harness = await setupOwner(page);
   await openInvoices(page);
 
-  await page.locator('.invoice-create-disclosure summary').click();
+  await page.getByRole('button', { name: 'Create a new invoice', exact: true }).click();
   const editor = page.locator('aba-invoice-draft-editor');
   await editor.locator('input[name="invoiceNumber"]').fill('T38-E2E-001');
   await editor.locator('select[name="customerId"]').selectOption('customer-a');
   const lineCards = editor.locator('.line-card');
-  if (await lineCards.count() === 0) {
-    await editor.getByRole('button', { name: '+ Product', exact: true }).click();
-  }
   await expect(lineCards).toHaveCount(1);
   const firstLine = lineCards.first();
-  await firstLine.getByLabel('Line type').selectOption('product');
-  const productSelect = firstLine.locator('select').nth(1);
+  const productSelect = firstLine.locator('select').first();
   await expect(productSelect).toBeVisible();
   await productSelect.selectOption('product-a');
   await firstLine.getByLabel('Quantity').fill('2');
-  await expect(editor.locator('.server-summary')).toHaveCount(0);
+  await expect(editor.locator('.summary-total')).toHaveCount(0);
 
-  await editor.getByRole('button', { name: '+ Service' }).click();
+  await editor.getByRole('button', { name: 'Add another line', exact: true }).click();
   const serviceLine = editor.locator('.line-card').nth(1);
+  await serviceLine.getByRole('button', { name: 'Service', exact: true }).click();
   await serviceLine.getByLabel('Service description').fill('Installation service');
   await serviceLine.getByLabel('Unit price (EGP)').fill('50.00');
   await serviceLine.getByLabel('Quantity').fill('1');
-  await editor.getByRole('button', { name: 'Save invoice draft' }).click();
+  await editor.getByLabel('Invoice notes (optional)').fill('Call before delivery');
 
-  await expect(editor.locator('.server-summary .total strong')).toHaveText('777.77 EGP');
+  const assertMobileEditorActionsAboveNav = async () => {
+    await editor.locator('.editor-actions').scrollIntoViewIfNeeded();
+    const actionsBox = await editor.locator('.editor-actions').boundingBox();
+    const navBox = await page.locator('.sidebar').boundingBox();
+    if (!actionsBox || !navBox) throw new Error('Mobile editor actions or navigation bar is not visible.');
+    expect(actionsBox.y + actionsBox.height).toBeLessThanOrEqual(navBox.y - 4);
+  };
+
+  // Capture the actual editor surface in both directions at narrow phone widths.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertMobileEditorActionsAboveNav();
+  await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-ltr.png'), fullPage: false });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('.user-area').getByRole('button', { name: 'العربية', exact: true }).click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  await page.setViewportSize({ width: 320, height: 844 });
+  await assertMobileEditorActionsAboveNav();
+  await page.screenshot({ path: testInfo.outputPath('invoice-editor-320-rtl.png'), fullPage: false });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertMobileEditorActionsAboveNav();
+  await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-rtl.png'), fullPage: false });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator('.user-area').getByRole('button', { name: 'English', exact: true }).click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+
+  await expect(editor.locator('.summary-total strong')).toHaveText('777.77 EGP');
   expect(harness.invoiceCreateRequests).toHaveLength(1);
   const createPayload = harness.invoiceCreateRequests[0];
   expect(createPayload.invoice_number).toBe('T38-E2E-001');
   expect(createPayload.customer_id).toBe('customer-a');
+  expect(createPayload.notes).toBe('Call before delivery');
   expect(createPayload.lines).toEqual(expect.arrayContaining([
     expect.objectContaining({ product_id: 'product-a', quantity: '2' }),
     expect.objectContaining({
@@ -667,13 +692,16 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await createdInvoiceCard.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(editor.getByRole('heading', { name: 'Edit invoice draft' })).toBeVisible();
   await editor.locator('.line-card').nth(1).getByLabel('Service description').fill('Updated installation service');
-  await editor.getByRole('button', { name: 'Save invoice draft' }).click();
+  await expect(editor.getByLabel('Invoice notes (optional)')).toHaveValue('Call before delivery');
+  await editor.getByLabel('Invoice notes (optional)').fill('Updated delivery note');
+  await editor.getByRole('button', { name: 'Save draft', exact: true }).click();
 
-  await expect(editor.locator('.server-summary .total strong')).toHaveText('888.88 EGP');
+  await expect(editor.locator('.summary-total strong')).toHaveText('888.88 EGP');
   expect(harness.invoiceUpdateRequests).toHaveLength(1);
   expect(harness.apiRequests.some(item =>
     item.method === 'PATCH' && item.path === '/api/v1/businesses/business-a/invoices/invoice-created-a'
   )).toBe(true);
+  expect(harness.invoiceUpdateRequests[0].notes).toBe('Updated delivery note');
   expect(harness.invoiceUpdateRequests[0].lines).toEqual(expect.arrayContaining([
     expect.objectContaining({
       description: 'Updated installation service',
@@ -681,6 +709,8 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
       quantity: '1',
     }),
   ]));
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.locator('.sidebar')).toBeVisible();
   expect(harness.uncaughtErrors).toEqual([]);
 });
 

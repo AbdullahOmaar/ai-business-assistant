@@ -21,13 +21,16 @@ test('invoice drafts use the dedicated mixed-line editor and never calculate bro
   assert.match(source, /serverSummary\]="invoiceDraftSummary"/);
 });
 
-test('invoice create and edit requests send mixed line payloads and display server-returned totals', () => {
+test('invoice create and edit requests preserve mixed lines and notes while showing server totals', () => {
   const save = methodBetween('async saveInvoiceDraft(payload: InvoiceDraftPayload)', 'private escapePrintHtml');
   assert.match(save, /this\.api\.createInvoice\(businessId, request\)/);
   assert.match(save, /this\.api\.updateDraftInvoice\(businessId, editingInvoiceId, request\)/);
   assert.match(save, /total: saved\.total/);
+  assert.match(save, /const request = \{ \.\.\.payload, discount_rate: String\(discountRate\), tax_rate: String\(taxRate\) \}/);
+  assert.match(save, /this\.invoiceDraftNotes = payload\.notes \?\? ''/);
   const edit = methodBetween('async editInvoice(invoice: Invoice)', 'cancelInvoiceEdit(): void');
   assert.match(edit, /invoiceDraftLinesFromExisting\(detail\.lines\)/);
+  assert.match(edit, /this\.invoiceDraftNotes = detail\.notes \?\? ''/);
   assert.match(edit, /this\.invoiceEditRequestGuard\.begin\(\)/);
 });
 
@@ -84,6 +87,7 @@ test('issue and void mutations are Owner-only and auth/workspace fenced', () => 
 test('uncertain invoice edits recover by immutable invoice ID instead of the edited invoice number', () => {
   const verify = methodBetween('async refreshInvoiceDraftStatus()', 'private escapePrintHtml');
   assert.match(verify, /findInvoiceDraftRecoveryMatch\(invoices, pending\)/);
+  assert.match(verify, /this\.invoiceDraftNotes = detail\.notes \?\? ''/);
 });
 
 const componentSourceFile = ts.createSourceFile('app.component.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
