@@ -1,3 +1,13 @@
+## Master continuation — minimum sufficient testing policy — 2026-11-12
+
+- Owner requested reducing excessive/duplicated test execution and updating the repository operating rules.
+- Updated `AGENTS.md` with a risk-based **minimum sufficient validation** policy: docs-only work does not run application suites; UI-only work gets focused UI validation; isolated logic/API gets the narrowest relevant tests; sensitive boundaries retain targeted negative/integration checks; unchanged evidence is reused; affected checks only are rerun after fixes; broad suites require a concrete risk or an enforced gate.
+- This policy does not waive the exact-head aggregate/security/release checks actually enforced by branch protection or explicit acceptance criteria. Unavailable mandatory gates remain NOT RUN / BLOCKED, never treated as PASS.
+- No application code, workflow configuration, API, DB/schema/migration, financial semantics or production behavior changed. No tests were run for this documentation-only policy edit.
+- Branch: `docs/contributing-ci-single-source`; PR #388 remains the existing delivery vehicle. No merge or deployment.
+
+---
+
 ## Master continuation — CI cutover authority reconciliation + Project Knowledge v1.0.10 — 2026-11-12
 
 - Continued on the existing PR #388 branch only. Parent head: `15e817907556578c076b61c119aaff2ed0d138a0`; base: `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`. No new branch or PR.
