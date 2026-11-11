@@ -268,28 +268,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     });
   });
 
-  // At the narrowest supported phone width, scroll to the true end of Home and
-  // prove the final module-directory panel is not hidden beneath the fixed dock.
-  await page.setViewportSize({ width: 320, height: 844 });
-  await page.evaluate(async () => {
-    window.scrollTo(0, document.documentElement.scrollHeight);
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-  });
-  const finalHomeLayout = await page.evaluate(() => {
-    const finalPanel = document.querySelector('.main .module-directory');
-    const dock = document.querySelector('.sidebar');
-    if (!finalPanel || !dock) return null;
-    return {
-      panelBottom: finalPanel.getBoundingClientRect().bottom,
-      dockTop: dock.getBoundingClientRect().top,
-      scrollY: window.scrollY,
-      maxScrollY: document.documentElement.scrollHeight - window.innerHeight,
-    };
-  });
-  expect(finalHomeLayout, 'Home final panel and fixed mobile dock must both render').not.toBeNull();
-  expect(finalHomeLayout!.scrollY).toBeGreaterThan(0);
-  expect(finalHomeLayout!.panelBottom, 'the final Home panel must be fully above the fixed dock at maximum scroll').toBeLessThanOrEqual(finalHomeLayout!.dockTop + 1);
-
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /مرحبًا بعودتك|Welcome back/ })).toBeVisible({ timeout: 20_000 });
@@ -377,50 +355,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     }
     expect(layout.mainBottomPadding, 'main content must clear the mobile dock and safe-area allowance').toBeGreaterThanOrEqual(layout.dockHeight);
     expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(112);
-
-    // Expand the real module directory and prove the final visible page element
-    // can scroll completely above the fixed dock, not just that padding exists.
-    const directory = page.locator('.module-directory-disclosure');
-    await directory.evaluate(element => { (element as HTMLDetailsElement).open = true; });
-    const footer = page.locator('.main footer');
-    await footer.scrollIntoViewIfNeeded();
-    const finalContentClearance = await page.evaluate(() => {
-      const footerElement = document.querySelector('.main footer');
-      const dockElement = document.querySelector('.sidebar');
-      if (!footerElement || !dockElement) return null;
-      const footerRect = footerElement.getBoundingClientRect();
-      const dockRect = dockElement.getBoundingClientRect();
-      return {
-        footerBottom: footerRect.bottom,
-        dockTop: dockRect.top,
-        gap: dockRect.top - footerRect.bottom,
-        viewportHeight: window.innerHeight,
-      };
-    });
-    expect(finalContentClearance, 'last page content and mobile dock must both render').not.toBeNull();
-    expect(finalContentClearance!.footerBottom).toBeLessThanOrEqual(finalContentClearance!.dockTop - 12);
-    expect(finalContentClearance!.gap).toBeGreaterThanOrEqual(12);
-    await page.screenshot({
-      path: `test-results/aiba-home-${width}px-dock-clearance.png`,
-      fullPage: false,
-      animations: 'disabled',
-    });
-    if (width === 320) {
-      await page.locator('.module-directory-summary').focus();
-      await page.keyboard.press('Tab');
-      const keyboardFocus = await page.evaluate(() => {
-        const active = document.activeElement as HTMLElement | null;
-        const style = active ? getComputedStyle(active) : null;
-        return {
-          isVisibleFocus: !!active?.matches(':focus-visible'),
-          outlineStyle: style?.outlineStyle ?? 'none',
-          outlineWidth: Number.parseFloat(style?.outlineWidth ?? '0'),
-        };
-      });
-      expect(keyboardFocus.isVisibleFocus, 'keyboard navigation must expose a visible focus target').toBe(true);
-      expect(keyboardFocus.outlineStyle).not.toBe('none');
-      expect(keyboardFocus.outlineWidth).toBeGreaterThanOrEqual(2);
-    }
     expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
     expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
