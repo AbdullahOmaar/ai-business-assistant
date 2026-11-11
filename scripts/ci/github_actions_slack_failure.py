@@ -36,7 +36,7 @@ TOKEN_SHAPES = re.compile(
 )
 QUOTED_CREDENTIAL = re.compile(
     r'''(?im)(["']?(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
-    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)["']?\s*[:=]\s*)(["'])((?:\\.|(?!\2)[^\r\n])*)\2'''
+    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)["']?\s*[:=]\s*)(["'])((?:\\.|(?!\2)[^\\\r\n])*)(?:\2|$)'''
 )
 
 UNQUOTED_CREDENTIAL = re.compile(
