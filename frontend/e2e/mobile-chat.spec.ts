@@ -724,6 +724,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await assertRouteSweep(768, 'ar');
   await assertRouteSweep(1280, 'ar');
 
+  // The More menu is mobile-only; restore a phone viewport after the tablet/desktop sweeps.
+  await page.setViewportSize({ width: 390, height: 844 });
   // The first More-menu action is the language toggle (Arabic -> English).
   await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
