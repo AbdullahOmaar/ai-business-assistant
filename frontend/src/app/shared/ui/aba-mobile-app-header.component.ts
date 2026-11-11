@@ -36,7 +36,6 @@ import type { Business } from '../../api.service';
             <span aria-hidden="true">♢</span>
           </button>
           <button #profileTrigger class="profile-trigger" type="button"
-            aria-haspopup="true"
             [attr.aria-label]="t('خيارات الحساب', 'Account options')"
             [attr.aria-expanded]="profileMenuOpen"
             [attr.aria-controls]="profileMenuOpen ? 'mobile-account-menu' : null"
@@ -45,6 +44,20 @@ import type { Business } from '../../api.service';
           </button>
         </div>
       </div>
+      @if (profileMenuOpen) {
+        <div #accountMenu id="mobile-account-menu" class="account-menu" role="group"
+          [attr.aria-label]="t('خيارات الحساب', 'Account options')">
+          <p class="account-email">{{ userEmail }}</p>
+          <button type="button" class="account-action" (click)="requestLanguageToggle()">
+            <span aria-hidden="true">文</span>
+            <span>{{ language === 'ar' ? 'English' : 'العربية' }}</span>
+          </button>
+          <button type="button" class="account-action sign-out-action" (click)="requestSignOut()">
+            <span aria-hidden="true">↪</span>
+            <span>{{ t('تسجيل الخروج', 'Sign out') }}</span>
+          </button>
+        </div>
+      }
       <div class="workspace-context">
         <div class="workspace-copy">
           <span class="context-label">{{ t('مساحة العمل الحالية', 'Current workspace') }}</span>
@@ -62,20 +75,6 @@ import type { Business } from '../../api.service';
           </label>
         }
       </div>
-      @if (profileMenuOpen) {
-        <div #accountMenu id="mobile-account-menu" class="account-menu" role="group"
-          [attr.aria-label]="t('خيارات الحساب', 'Account options')">
-          <p class="account-email">{{ userEmail }}</p>
-          <button type="button" class="account-action" (click)="requestLanguageToggle()">
-            <span aria-hidden="true">文</span>
-            <span>{{ language === 'ar' ? 'English' : 'العربية' }}</span>
-          </button>
-          <button type="button" class="account-action sign-out-action" (click)="requestSignOut()">
-            <span aria-hidden="true">↪</span>
-            <span>{{ t('تسجيل الخروج', 'Sign out') }}</span>
-          </button>
-        </div>
-      }
     </section>
   `,
   styleUrl: './aba-mobile-app-header.component.css'
@@ -98,7 +97,6 @@ export class AbaMobileAppHeaderComponent {
   @Output() signOutRequested = new EventEmitter<void>();
 
   @ViewChild('profileTrigger') private profileTrigger?: ElementRef<HTMLButtonElement>;
-  @ViewChild('accountMenu') private accountMenu?: ElementRef<HTMLElement>;
   profileMenuOpen = false;
 
   constructor(private readonly host: ElementRef<HTMLElement>) {}
@@ -113,9 +111,6 @@ export class AbaMobileAppHeaderComponent {
 
   toggleProfileMenu(): void {
     this.profileMenuOpen = !this.profileMenuOpen;
-    if (this.profileMenuOpen) {
-      queueMicrotask(() => this.accountMenu?.nativeElement.querySelector<HTMLButtonElement>('button')?.focus());
-    }
   }
 
   requestLanguageToggle(): void {
@@ -141,7 +136,7 @@ export class AbaMobileAppHeaderComponent {
     if (!this.profileMenuOpen) return;
     const target = event.target;
     if (!(target instanceof Node)) return;
-    const accountMenu = this.accountMenu?.nativeElement;
+    const accountMenu = this.host.nativeElement.querySelector('.account-menu');
     if (this.profileTrigger?.nativeElement.contains(target) || accountMenu?.contains(target)) return;
     this.profileMenuOpen = false;
   }

@@ -5,10 +5,11 @@ import test from 'node:test';
 const component = readFileSync(new URL('./aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 
-test('mobile account popup exposes its trigger relationship and moves focus into the actions', () => {
-  assert.match(component, /aria-haspopup="true"/);
-  assert.match(component, /#accountMenu/);
-  assert.match(component, /querySelector<HTMLButtonElement>\('button'\)\?\.focus\(\)/);
+test('mobile account popup is a disclosure whose actions follow its trigger in keyboard order', () => {
+  assert.match(component, /\\[attr\\.aria-expanded\\]=\"profileMenuOpen\"/);
+  assert.match(component, /aria-controls/);
+  assert.ok(component.indexOf('id=\"mobile-account-menu\"') < component.indexOf('class=\"workspace-context\"'));
+  assert.doesNotMatch(component, /aria-haspopup/);
 });
 
 test('Escape closes the account popup and restores focus to its trigger', () => {
