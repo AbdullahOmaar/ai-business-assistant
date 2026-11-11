@@ -3506,3 +3506,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - The first exact-candidate runner attempt correctly applied migrations to its disposable PostgreSQL service but failed before API startup because Python did not include the backend package path when executing the script from the backend working directory. The script now inserts the repository backend directory explicitly before importing the FastAPI app.
 - GitGuardian flagged the literal disposable PostgreSQL password in the workflow as a generic password. Replaced password auth with PostgreSQL's trust mode only for the isolated, ephemeral CI service; the service is not exposed beyond the GitHub-hosted job network and no database password is stored in source.
 - Run 42977373366 on candidate 4d427c7f531df0370245c1986e9e3db75db0360d: standard frontend build, dependency audit, frontend unit tests, and backend container passed; authenticated-api-smoke failed with ModuleNotFoundError: app. No application/Production data was accessed. New exact-head run required after this correction.
+
+
+## T07 disposable PostgreSQL auth correction — 2026-11-11
+
+- Exact-head run 42977553790 on 3d498f55388d1697b211699cd5f86d200eeb9109 failed at migration startup because the service still required a password while DATABASE_URL had already been changed to passwordless. This was a workflow configuration mismatch; the candidate API smoke script itself did not execute.
+- Updated the isolated PostgreSQL service to trust authentication within the ephemeral GitHub Actions service container only. No database password or real credential is stored. The service is destroyed at job completion.
+- Rerun required on the new exact head.
