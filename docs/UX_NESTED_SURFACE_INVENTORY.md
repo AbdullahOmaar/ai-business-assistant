@@ -452,11 +452,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 ## T18 shared-component polish continuation — 2026-11-11
 
 - **Candidate:** PR #378, branch `master/t18-mobile-ux-accessibility-20261111`; this batch extends the same mobile-first UX workstream and does not create a duplicate task or branch.
-- **Mobile app header:** the existing build-sourced `appVersion` input is now visible as a compact, direction-isolated UI version chip beside the current workspace label. The workspace selector, workspace name source, navigation actions and membership switching behavior are unchanged.
+- **Mobile app header:** the current-workspace label and name use a clearer mobile type hierarchy without repeating the app-version chrome already present elsewhere. The workspace selector, workspace name source, navigation actions and membership switching behavior are unchanged.
 - **Module directory cards:** mobile descriptions reserve a consistent two-line rhythm; pressed-state feedback is added for touch, with transforms disabled under reduced-motion preferences.
 - **Section count badges:** projected `.count` labels receive a neutral, tabular-numeric treatment and wrap safely without hiding counts.
 - **Platform Admin:** mobile metadata/data-note copy is raised to 12px with readable line-height; compact table cells remain 11px to preserve the existing four-column summary layout.
 - **Release Guide:** UI-version/current-version badges wrap safely at narrow widths; footnote copy is raised to 13px with a 1.65 line-height. Native `details/summary` behavior and guide content remain unchanged.
-- **Regression coverage:** `frontend/src/app/shared-ui-responsive.spec.ts` covers version provenance, mobile module-card interaction/reduced motion, section-count styling, Platform Admin metadata and Release Guide text sizing.
+- **Regression coverage:** `frontend/src/app/shared-ui-responsive.spec.ts` covers mobile workspace-context typography, module-card interaction/reduced motion, section-count styling, Platform Admin metadata and Release Guide text sizing.
 - **Boundary:** presentation and regression coverage only. No `app.component.ts`, `styles.css`, API/backend, auth/authorization, tenant isolation, DB/schema/migration, invoice/payment, financial, inventory, payroll or external-message behavior changes.
 - **Validation:** pending on the resulting exact head. Prior exact-head CI on the parent SHA is not evidence for this new candidate. Authenticated all-role/two-tenant rendered review, full 19-destination RTL/LTR screenshot acceptance, screen reader, 200% zoom and physical Android installed-PWA remain NOT RUN.

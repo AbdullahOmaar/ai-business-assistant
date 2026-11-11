@@ -60,12 +60,7 @@ import type { Business } from '../../api.service';
       }
       <div class="workspace-context">
         <div class="workspace-copy">
-          <div class="workspace-context-meta">
-            <span class="context-label">{{ t('مساحة العمل الحالية', 'Current workspace') }}</span>
-            @if (appVersion) {
-              <span class="workspace-version" [attr.aria-label]="t('إصدار الواجهة', 'UI version') + ' ' + appVersion"><bdi dir="ltr">UI v{{ appVersion }}</bdi></span>
-            }
-          </div>
+          <span class="context-label">{{ t('مساحة العمل الحالية', 'Current workspace') }}</span>
           <strong aria-live="polite" aria-atomic="true">{{ workspaceName }}</strong>
         </div>
         @if (businesses.length > 1) {

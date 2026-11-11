@@ -11,7 +11,6 @@ const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.compone
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
 const quickAccess = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
-const mobileHeader = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
 const mobileHeaderCss = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const confirmDialog = readFileSync(new URL('./shared/ui/aba-confirm-dialog.component.ts', import.meta.url), 'utf8');
 const releaseGuide = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
@@ -49,19 +48,11 @@ test('mobile module cards preserve touch-friendly height and readable two-line d
 });
 
 test('mobile app header keeps secondary context readable without shrinking touch targets', () => {
-  assert.match(mobileHeaderCss, /\.context-label\s*\{[\s\S]*font-size:\s*11px/);
-  assert.match(mobileHeaderCss, /\.workspace-copy strong\s*\{[\s\S]*font-size:\s*12px/);
+  assert.match(mobileHeaderCss, /\.context-label\s*\{[\s\S]*font-size:\s*12px/);
+  assert.match(mobileHeaderCss, /\.workspace-copy strong\s*\{[\s\S]*font-size:\s*13px/);
   assert.match(mobileHeaderCss, /\.assistant-shortcut\s*\{[\s\S]*min-height:\s*44px/);
   assert.match(mobileHeaderCss, /\.icon-button,[\s\S]*width:\s*44px/);
   assert.match(mobileHeaderCss, /@media\s*\(max-width:\s*380px\)[\s\S]*font-size:\s*12px/);
-});
-
-test('mobile header shows the existing build-sourced UI version beside workspace context', () => {
-  assert.match(mobileHeader, /@Input\(\) appVersion = ''/);
-  assert.match(mobileHeader, /class="workspace-version"[\s\S]*UI v\{\{ appVersion \}\}/);
-  assert.match(mobileHeader, /aria-label[^>]*appVersion/);
-  assert.match(appTemplate, /<aba-mobile-app-header[\s\S]*?\[appVersion\]="appVersion"/);
-  assert.match(mobileHeaderCss, /\.workspace-version\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
 });
 
 test('shared UI styles remain syntactically balanced and contain no escaped media-query separators', () => {
@@ -121,7 +112,7 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
   assert.match(styleBlock, /\.compact-table th,\.compact-table td\{font-size:11px;line-height:1\.4\}/);
   assert.match(styleBlock, /@media\(max-width:760px\)\{[\s\S]*?\.compact-table th,\.compact-table td\{padding:7px 5px;font-size:11px;line-height:1\.4\}/);
   assert.match(styleBlock, /\.read-only,.status-pill,.role-pill,.nav-count,[\s\S]*?font-size:12px/);
-  assert.match(styleBlock, /\.runtime-grid small,.runtime-note,.currency-row small,[\s\S]*?font-size:11px/);
+  assert.match(styleBlock, /\.runtime-grid small,.runtime-note,.currency-row small,[\s\S]*?font-size:12px;line-height:1\.45/);
   assert.match(styleBlock, /\.user-facts-grid small,.user-root-label,.data-note small\{font-size:12px;line-height:1\.45\}/);
   assert.match(styleBlock, /\.metric-card small\{font-size:12px\}/);
   assert.match(styleBlock, /\.data-note p\{font-size:12px\}/);
