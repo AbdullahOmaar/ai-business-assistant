@@ -1585,7 +1585,7 @@
 
 
 /* Neutral, readable counts for shared section headers across workspace destinations. */
-:root body .shell .aba-section-header__actions .count {
+:root body .shell .aba-section-header__actions .aba-section-header__count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
