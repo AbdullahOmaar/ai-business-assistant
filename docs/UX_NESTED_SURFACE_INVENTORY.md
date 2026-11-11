@@ -468,3 +468,14 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Added a tablet-only `max-width:900px` two-column layout: current business and selector remain side by side, while release/build metadata moves to a full-width secondary row. The existing `max-width:760px` mobile single-column override remains later in the cascade and is unchanged.
 - Added a source regression assertion for the tablet two-column rule and its ordering before the mobile override. The next exact-head browser artifact must be visually checked at 768px RTL/LTR.
 - Presentation only; no workspace selection, business identity, version source, route or permission behavior changed.
+
+
+## T18 shared mobile/tablet batch verification — 2026-11-11
+
+- **Verified candidate:** `44b6c2a8bf7ec245ffaba6257ef26db91a0929ec`, PR #378, base `main@72a067149562af495d54e35f1a490b218117f333`; branch is 10 commits ahead / 0 behind at this checkpoint.
+- **Exact-head CI:** GitHub Actions run [43005416300](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43005416300) completed with all six substantive jobs and required `all-checks-passed` SUCCESS. Frontend unit suite: 413 passed / 0 failed / 0 skipped. Browser smoke: 21 passed / 0 failed / 0 skipped / 0 errors. Production build, dependency audit, backend accounting and backend container all passed; authenticated API smoke was SKIPPED because this is a frontend-only candidate.
+- **Artifact review:** inspected exact-run 320px RTL and 768px RTL/LTR screenshots plus the 320px dock-clearance end state. The tablet fix keeps the current business name and selector readable side by side and places release metadata on a separate row. The 320px page retains an end-of-content runway above the fixed dock.
+- **Scope review:** presentation, source regression and documentation only. No API/backend, auth/authorization, tenant, DB/schema/migration, financial/accounting, invoice/payment, inventory, payroll or external-message semantics changed.
+- **Still NOT RUN:** full rendered audit of all 19 destinations; authenticated OWNER/STAFF/two-tenant route walkthrough; screen-reader and full keyboard-only acceptance across routes; high-contrast/200% zoom; physical Android Chrome and installed-PWA acceptance.
+- **Disposition:** PR remains OPEN / DRAFT / UNMERGED. Active Copilot code-review ruleset remains a merge gate. No merge, production deployment or database mutation.
+- **Next:** record the documentation-closeout exact-head run, then leave the PR draft until the outstanding route/device/accessibility acceptance and review gate are satisfied.

@@ -3591,3 +3591,15 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Exact-head browser artifact 43004805040 exposed the 768px RTL workspace name wrapping into a very narrow column. This is now addressed on the same PR #378 branch with a tablet-only 2-column workspace bar and release metadata on its own row; the <=760px mobile override remains unchanged.
 - Added source regression coverage in `frontend/src/app/shared-ui-responsive.spec.ts`. New exact-head CI and 768px screenshot review are required after this follow-up commit.
 - No navigation, business-switching, auth, tenant, API, DB, financial or production behavior changes.
+
+
+## T18 shared mobile/tablet UX — exact-head verification — 2026-11-11
+
+- **PR:** [#378](https://github.com/AbdullahOmaar/ai-business-assistant/pull/378), OPEN / DRAFT / UNMERGED.
+- **Branch:** `master/t18-mobile-ux-accessibility-20261111`; base `main@72a067149562af495d54e35f1a490b218117f333`; verified candidate `44b6c2a8bf7ec245ffaba6257ef26db91a0929ec` (10 commits ahead, 0 behind).
+- **Batch:** mobile workspace label/name typography; module-directory card two-line descriptions and reduced-motion-safe touch feedback; neutral section-count badges; Platform Admin metadata readability; Release Guide badge/footnote wrapping; 768px tablet workspace selector/name layout; source regression tests and UX ledger.
+- **Exact-head CI:** run [43005416300](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43005416300) — six substantive jobs + `all-checks-passed` SUCCESS. Frontend unit tests 413/413; browser smoke 21/21 (0 failures, 0 skipped, 0 errors); production build, dependency audit, backend accounting and backend container PASS. Authenticated API smoke SKIPPED (frontend-only).
+- **Visual evidence:** exact-run screenshots inspected at 320px RTL and 768px RTL/LTR; 320px dock-clearance end state also inspected. The 768px business-name wrapping defect is corrected in the artifact.
+- **Acceptance remaining:** all-19-destination rendered review, authenticated role/tenant journeys, full screen-reader/keyboard, high-contrast/200% zoom, physical Android Chrome/installed-PWA remain NOT RUN.
+- **Safety:** no API/backend/auth/tenant/DB/schema/financial/inventory/payroll behavior changes. No merge, deployment, migration or production data mutation.
+- **Note:** this ledger update changes the candidate SHA; rerun the exact-head workflow after the documentation commit before using the earlier run as final branch-head evidence.
