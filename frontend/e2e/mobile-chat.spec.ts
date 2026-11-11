@@ -718,19 +718,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   };
 
   await assertRouteSweep(390, 'ar');
+  await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
+  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
   // Expand the full 18-route OWNER workspace sweep beyond the default phone width.
   // RTL is the primary mobile direction; tablet LTR is also covered explicitly.
   await assertRouteSweep(360, 'ar');
   await assertRouteSweep(430, 'ar');
   await assertRouteSweep(768, 'ar');
-  await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
-  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
-  await page.keyboard.press('Escape');
   await assertRouteSweep(390, 'en');
-  await assertRouteSweep(768, 'en');
   await page.locator('.sidebar').getByRole('button', { name: /More sections/ }).click();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
+  await assertRouteSweep(768, 'en');
   await assertRouteSweep(1280, 'ar');
   await page.getByRole('button', { name: 'English', exact: true }).click();
   await assertRouteSweep(1280, 'en');
