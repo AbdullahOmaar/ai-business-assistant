@@ -299,9 +299,7 @@
 }
 
 :root body .shell .list-tools,
-:root body .shell .customer-invoice-filter,
 :root body .shell .invoice-controls,
-:root body .shell .filter-bar,
 :root body .shell .operations-search {
   min-width: 0;
   gap: var(--aiba-space-2);
@@ -317,8 +315,6 @@
 
 :root body .shell .list-tools input,
 :root body .shell .list-tools select,
-:root body .shell .customer-invoice-filter input,
-:root body .shell .customer-invoice-filter select,
 :root body .shell .invoice-controls input,
 :root body .shell .invoice-controls select,
 :root body .shell .filter-bar input,
@@ -1354,8 +1350,6 @@
 
 :root body .shell .list-tools > input,
 :root body .shell .list-tools > select,
-:root body .shell .filter-bar > input,
-:root body .shell .filter-bar > select,
 :root body .shell .customer-invoice-filter input,
 :root body .shell .customer-invoice-filter select,
 :root body .shell .invoice-controls input,
@@ -1373,8 +1367,6 @@
 }
 
 :root body .shell .list-tools > button,
-:root body .shell .filter-bar > button,
-:root body .shell .customer-invoice-filter button,
 :root body .shell .invoice-controls button,
 :root body .shell .statement-filters button,
 :root body .shell .audit-filters button,
