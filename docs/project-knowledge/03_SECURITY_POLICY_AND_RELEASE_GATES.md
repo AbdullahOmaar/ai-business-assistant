@@ -4,7 +4,7 @@ title: Security Policy & Release Gates
 version: 1.0.9
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T22:58:28Z
+last_verified_at: 2026-11-11T23:03:28Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
@@ -98,7 +98,7 @@ This document does not authorize destructive migrations, direct database changes
 - Every substantive job verifies that its checkout equals the workflow event SHA. CI permissions are read-only; backend database/schema checks use only a disposable PostgreSQL service and never production.
 - CircleCI is not an active or approved fallback: the accepted repository policy names GitHub Actions as the sole active provider, the CircleCI webhook is disabled, no project schedules exist, and `.circleci/config.yml` is absent from current main. If a required GitHub Actions job is unavailable, record NOT RUN / BLOCKED; do not substitute CircleCI or another provider.
 - GitLab CI is inactive and not an approved provider. Semaphore is retired/non-authoritative.
-- Main-branch required-check and PR/approval enforcement remain UNKNOWN until Owner/Admin readback confirms the effective GitHub protection configuration. Main being marked protected or a written policy is not proof that specific checks/approvals are enforced.
+- Active default-branch ruleset `26009350` is verified: strict up-to-date enforcement requires `all-checks-passed` from GitHub Actions App `15368`; deletion and non-fast-forward protections are active. This ruleset does not configure a separate required PR-approval count. The classic branch-protection endpoint returned HTTP 403 to this integration, so any additional classic protection beyond the ruleset is UNKNOWN; never infer or bypass an unobserved gate.
 - Batch related changes and validate the final candidate SHA once. Use targeted checks during implementation only when behavior/configuration changed, diagnosing a concrete defect, or risk requires immediate evidence. Reuse a PASS only when SHA, workflow/configuration, dependencies, environment and context are unchanged.
 - Rerun only after a real candidate/fix change, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need. Do not rerun an unchanged failure to seek a green result; record provider/quota/permission failures as NOT RUN / BLOCKED when appropriate. See the canonical [MWOS economical validation decision](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea).
 - Documentation-only changes do not justify application tests/build solely because text changed unless a required workflow or documentation validator requires them. The current PR workflow is configured to run for every pull request, so its enforced exact-head checks must still be satisfied. Do not weaken triggers or suppress required checks to avoid a run.
