@@ -129,5 +129,57 @@ class GitHubSummaryTests(unittest.TestCase):
         self.assertIn("SLACK_BOT_TOKEN is not configured", log.call_args.args[0])
 
 
+    def test_notification_posts_a_plain_text_payload_to_the_configured_channel(self) -> None:
+        failed_jobs = json.dumps(
+            {"jobs": [{"name": "frontend-unit-tests", "conclusion": "failure", "steps": [
+                {"name": "Run tests", "conclusion": "failure"}
+            ]}]}
+        )
+        env = {
+            "SLACK_BOT_TOKEN": "test-slack-token-value",
+            "SLACK_CHANNEL_ID": "C0CFWGM87HC",
+            "GH_RUN_ID": "42",
+            "GH_REPOSITORY": "AbdullahOmaar/ai-business-assistant",
+            "GH_WORKFLOW_NAME": "Verify backend and frontend",
+            "GH_EVENT_NAME": "pull_request",
+            "GH_HEAD_BRANCH": "feature/example",
+            "GH_HEAD_SHA": "a" * 40,
+            "GH_RUN_URL": "https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/42",
+        }
+        response = unittest.mock.Mock()
+        response.__enter__().read.return_value = b'{"ok": true}'
+        with patch.dict(os.environ, env, clear=True):
+            with patch(
+                "scripts.ci.github_actions_slack_failure.gh_output",
+                side_effect=[(0, failed_jobs), (0, "AssertionError: password=not-to-leak")],
+            ):
+                with patch("scripts.ci.github_actions_slack_failure.urllib.request.urlopen", return_value=response) as post:
+                    with patch("builtins.print"):
+                        self.assertEqual(notify(), 0)
+        request = post.call_args.args[0]
+        posted = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(posted["channel"], "C0CFWGM87HC")
+        self.assertFalse(posted["mrkdwn"])
+        self.assertIn("frontend-unit-tests: Run tests", posted["text"])
+        self.assertIn("[REDACTED]", posted["text"])
+        self.assertNotIn("not-to-leak", posted["text"])
+
+    def test_slack_network_failure_is_non_blocking(self) -> None:
+        failed_jobs = json.dumps({"jobs": [{"name": "backend-accounting", "conclusion": "failure", "steps": []}]})
+        env = {"SLACK_BOT_TOKEN": "test-slack-token-value", "GH_RUN_ID": "43"}
+        with patch.dict(os.environ, env, clear=True):
+            with patch(
+                "scripts.ci.github_actions_slack_failure.gh_output",
+                side_effect=[(0, failed_jobs), (1, "")],
+            ):
+                with patch(
+                    "scripts.ci.github_actions_slack_failure.urllib.request.urlopen",
+                    side_effect=__import__("urllib.error", fromlist=["URLError"]).URLError("offline"),
+                ):
+                    with patch("builtins.print") as log:
+                        self.assertEqual(notify(), 0)
+        self.assertIn("original CI result is unchanged", log.call_args.args[0])
+
+
 if __name__ == "__main__":
     unittest.main()
