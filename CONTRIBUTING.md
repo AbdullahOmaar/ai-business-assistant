@@ -1,17 +1,4 @@
-## Owner-approved CI provider change — effective 2026-11-10
-
-The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
-
-- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
-- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
-- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
-- Pin third-party actions to verified full commit SHAs with release-version comments; inspect upstream release notes before changing pins.
-- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App (integration ID 15368). No separate PR-approval count is currently enforced. The CircleCI GitHub webhook is disabled and no CircleCI project schedules exist.
-- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main is marked protected. Its active default-branch ruleset requires the GitHub Actions `all-checks-passed` check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; no separate PR-approval count is configured.
-- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations, and gate bypasses remain separately restricted.
-
-This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
+> Repository-wide CI provider selection, workflow details, required checks, and release-gate policy have one source of truth in [AGENTS.md](AGENTS.md). This guide focuses on contributor roles and contribution workflow.
 
 # Contributing and Project Roles
 
