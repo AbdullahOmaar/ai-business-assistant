@@ -39,6 +39,12 @@ QUOTED_CREDENTIAL = re.compile(
     r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)["']?\s*[:=]\s*)(["'])((?:\\.|(?!\2)[^\r\n])*)\2'''
 )
 
+UNQUOTED_CREDENTIAL = re.compile(
+    r"(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|"
+    r"refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*)(?![\"'])([^\r\n,;}]+)"
+)
+
+
 SENSITIVE_ENV_NAME = re.compile(
     r"(?i)(TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|ACCESS[_-]?KEY|PRIVATE[_-]?KEY|"
     r"DATABASE_URL|CREDENTIAL)"
