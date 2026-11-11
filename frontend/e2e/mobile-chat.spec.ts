@@ -354,7 +354,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       expect(height, `Mobile dock controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
     expect(layout.mainBottomPadding, 'main content must clear the mobile dock and safe-area allowance').toBeGreaterThanOrEqual(layout.dockHeight);
-    expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(112);
+    expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(128);
     expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
     expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
@@ -383,7 +383,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
   // Verify the final Home content can be reached above the fixed mobile dock.
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+  await page.locator('.dashboard-trust-note').scrollIntoViewIfNeeded();
   const dockClearance = await page.evaluate(() => {
     const dock = document.querySelector('.sidebar');
     const lastHomeContent = document.querySelector('.dashboard-trust-note');
@@ -395,6 +395,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(dockClearance, 'the final Home note and mobile dock must both be rendered').not.toBeNull();
   expect(dockClearance!.dockHeight).toBeGreaterThan(0);
   expect(dockClearance!.gap, 'the last Home content element must remain fully visible above the fixed dock').toBeGreaterThanOrEqual(8);
+  await page.screenshot({
+    path: 'test-results/aiba-home-320px-ar-dock-clearance-viewport.png',
+    fullPage: false,
+    animations: 'disabled',
+  });
 
   await page.setViewportSize({ width: 360, height: 800 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
