@@ -10,10 +10,15 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
+from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, Request
 from fastapi.testclient import TestClient
+
+BACKEND_DIR = Path(__file__).resolve().parents[1] / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
 from app.dependencies import get_principal
 from app.main import app

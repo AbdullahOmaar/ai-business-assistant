@@ -3499,3 +3499,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - The test-only principal resolver is installed only through FastAPI dependency_overrides in the isolated test process; the production Firebase verifier is unchanged and remains separately covered by backend/tests/test_firebase_auth.py. This smoke does not claim a live Firebase/Production test.
 - All smoke data is confined to the disposable CI database; no live Firebase identities, production database records, external messages, invoice issue/post/void, payment or deletion occur.
 - Exact-head CI and Greptile review must rerun on the new commit. Merge/API release remains pending until the corrected job and all required exact-head checks pass and the current diff is reviewed.
+
+
+## T07 candidate smoke runner correction — 2026-11-11
+
+- The first exact-candidate runner attempt correctly applied migrations to its disposable PostgreSQL service but failed before API startup because Python did not include the backend package path when executing the script from the backend working directory. The script now inserts the repository backend directory explicitly before importing the FastAPI app.
+- GitGuardian flagged the literal disposable PostgreSQL password in the workflow as a generic password. Replaced password auth with PostgreSQL's trust mode only for the isolated, ephemeral CI service; the service is not exposed beyond the GitHub-hosted job network and no database password is stored in source.
+- Run 42977373366 on candidate 4d427c7f531df0370245c1986e9e3db75db0360d: standard frontend build, dependency audit, frontend unit tests, and backend container passed; authenticated-api-smoke failed with ModuleNotFoundError: app. No application/Production data was accessed. New exact-head run required after this correction.
