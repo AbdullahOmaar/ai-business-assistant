@@ -322,6 +322,10 @@ def replace_draft_invoice(
     invoice.tax_total = totals.tax_total
     invoice.total = totals.total
     invoice.notes = notes
+    # Flush the header before deleting existing lines. In particular, a
+    # business-scoped invoice-number conflict must fail before destructive
+    # line replacement begins, even on SQLite's legacy transaction mode.
+    session.flush()
     session.execute(delete(InvoiceLine).where(
         InvoiceLine.invoice_id == invoice.id,
         InvoiceLine.business_id == business_id,
