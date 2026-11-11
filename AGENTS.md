@@ -123,7 +123,7 @@ Stop and ask for human input only when necessary for a material product decision
 - GitHub Actions is the sole active CI provider. The default-branch ruleset requires `all-checks-passed` from GitHub Actions with strict up-to-date enforcement. CircleCI's GitHub webhook is disabled and no project schedules exist.
 - GitLab CI is inactive and is not an approved CI or release provider. Do not trigger GitLab pipelines or provision GitLab runners/webhooks/variables.
 - Verify every required pipeline on the exact candidate SHA; record the provider, pipeline URL and substantive job outcomes. A successful workflow on a different branch/SHA is not evidence for the current candidate.
-- GitHub main is protected by an active ruleset requiring the GitHub Actions `all-checks-passed` check on an up-to-date head. Copilot review and deletion/non-fast-forward protections remain active; no separate PR-approval count is configured. Never bypass the gate.
+- The active default-branch ruleset readback confirms strict/up-to-date `all-checks-passed` from GitHub Actions App `15368`, plus deletion and non-fast-forward protections. It does not configure a separate required PR-approval count. The classic branch-protection endpoint returned HTTP 403 to this integration, so any additional review requirement (including Copilot review) is UNKNOWN; never infer or bypass an unobserved gate.
 - Merge only when authorized and repository policies/checks allow it; comments and mergeability are not approvals.
 - Deploy only when requested/authorized and release gates are satisfied.
 - After deployment, verify the deployed commit/version and health/smoke checks. A green build or HTTP response alone does not prove the whole user journey works.

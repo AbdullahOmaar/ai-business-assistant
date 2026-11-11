@@ -1,3 +1,12 @@
+## Master continuation — ruleset review-protection evidence correction — 2026-11-12
+
+- Exact-head GitHub Actions run [43121752146](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43121752146) completed SUCCESS on predecessor SHA `3b6018e1243c89adfc3625e108e95f222b1928c0`: all six substantive jobs and fail-closed `all-checks-passed` PASS; `authenticated-api-smoke` SKIPPED for this documentation-only PR; GitGuardian PASS.
+- Full maintainer diff review found one remaining evidence overstatement in `AGENTS.md`: ruleset `26009350` readback shows only required status checks, deletion and non-fast-forward rules; it does not show a Copilot-review rule. The classic branch-protection endpoint returns HTTP 403, so any additional review requirement (including Copilot) is UNKNOWN, not verified active. Corrected the canonical statement to match `docs/project-knowledge/03_SECURITY_POLICY_AND_RELEASE_GATES.md`.
+- No application code, CI workflow, API, DB/schema/migration, financial semantics, production data or deployment behavior changed. The predecessor run is not reusable for this new exact head; GitHub Actions will validate the new candidate.
+- PR #388 remains OPEN / DRAFT. No merge, Project Sources publication or deployment.
+
+---
+
 ## Master continuation — exact-head validator failure and documentation alignment — 2026-11-12
 
 - Exact PR-head GitHub Actions run [43120797275](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43120797275) on `92dfc75117cd1909b700a4a1daa02197f1464169` completed FAILURE. Five substantive jobs PASS (backend-container, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke); `backend-accounting` failed only in the Project Knowledge validator because all five `last_verified_at` values included fractional seconds. Backend regression suite and migration/schema checks completed PASS. `authenticated-api-smoke` was SKIPPED as expected for this documentation-only PR. The fail-closed `all-checks-passed` aggregate therefore FAILED.
