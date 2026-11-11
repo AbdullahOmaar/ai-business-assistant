@@ -39,6 +39,23 @@ A task is not complete merely because code was written. Never claim a command, t
 9. Continue to the next in-scope step without waiting for a prompt.
 10. Report only verified outcomes and explicitly list unverified items/blockers.
 
+## Test economy — minimum sufficient validation (Owner direction, 2026-11-12)
+
+The goal is confidence, not test volume. Choose the smallest validation set that can prove the changed behavior and its material risks. Do not run tests merely because they exist.
+
+- **Classify the change first:** documentation-only, styling/UI-only, isolated logic, API/contract, persistence/schema, authorization/tenant, financial/data-integrity, or release/security-sensitive.
+- **Documentation-only:** do not run application unit, browser/E2E, backend, database, or full build suites. Check the edited Markdown/links/package metadata with a focused static validator only when relevant; otherwise record application tests as NOT RUN — not applicable.
+- **UI/CSS-only:** run one focused component/source or rendered browser check for the affected surface when behavior/layout can regress. Do not run backend/API/database suites unless a shared contract or behavior was changed.
+- **Isolated logic/API changes:** run the narrowest relevant unit or API test set. Add integration/E2E only when the changed contract crosses that layer or the risk cannot be covered below it.
+- **Schema, authorization, tenant isolation, financial/data integrity, security, or release-critical changes:** expand validation to the directly affected boundaries, including negative/denial and no-unintended-side-effect cases. Do not downgrade these safeguards just to reduce test count.
+- **No duplicate runs:** reuse a PASS only when the exact tested SHA and relevant code, workflow, configuration, dependencies, and environment are unchanged. After a fix, rerun only the failed or affected checks. Never rerun unrelated suites.
+- **No speculative test expansion:** do not add broad regression suites, repeated viewport matrices, repeated smoke journeys, or extra manual checks without a named acceptance criterion or concrete risk.
+- **Batch once:** collect the relevant checks and run them once at a meaningful milestone/closeout, not after every small edit or commit. During implementation, use a focused check only when it materially shortens feedback.
+- **Separate project tests from repository gates:** the above reduces unnecessary application tests; it does not waive any required exact-head check enforced by branch protection/rulesets, mandatory security gate, explicit acceptance criterion, or release gate. If such a gate is unavailable, report NOT RUN/BLOCKED; never simulate a PASS or trigger unrelated suites as a substitute.
+- **Report the reason:** list only checks that matter, with exact command/result/SHA. Mark skipped checks as NOT RUN — not applicable, intentionally not run (with reason), or BLOCKED. Do not present a long checklist of irrelevant tests as work remaining.
+
+When deciding between two validation options, prefer the narrower option if it proves the same acceptance criterion with equivalent confidence. A larger suite requires a concrete risk-based reason.
+
 ## Definition of done
 Mark a task Completed only when all applicable criteria are satisfied:
 - Requested behavior is implemented end to end across UI, API, persistence, and integrations as applicable.
