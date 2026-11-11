@@ -402,7 +402,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       window.scrollTo(0, 0);
     });
     await expect(lastModuleAction, 'the focus-scroll target must be enabled').toBeEnabled();
+    // Playwright's focus action does not itself scroll; use the browser's native
+    // focus-target scroll algorithm so the document scroll-padding is exercised.
+    await lastModuleAction.evaluate(element => element.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
     await lastModuleAction.focus();
+    await expect(lastModuleAction, 'the viewport-scroll target must receive keyboard focus').toBeFocused();
     const focusClearance = await page.evaluate(() => {
       const focused = document.activeElement as HTMLElement | null;
       const dock = document.querySelector('.sidebar');
