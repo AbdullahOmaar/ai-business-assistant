@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.8
+version: 1.0.9
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T05:55:00Z
+last_verified_at: 2026-11-11T22:58:28.108Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -14,14 +14,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 827f220da14139605294923cc5550e088c2589e3
+related_github_sha: 0d28a6680a76800cdec90247cfa735ea87d3c2a9
 supersedes: none
 superseded_by: none
 ---
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** DRAFT candidate version 1.0.8. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
+> **Approval state:** DRAFT candidate version 1.0.9. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
 
 ## 1. Package manifest
 
@@ -192,11 +192,17 @@ For every scenario, record the fixture/input, canonical source references, packa
 
 ## 11. Changelog
 
+### 1.0.9 — 2026-11-12 — DRAFT
+- Reconciled the current DRAFT knowledge package's CI-provider summary with accepted GitHub `ADR-002` and the live `AGENTS.md`: GitHub Actions is the sole active and approved provider; CircleCI's webhook is disabled, no project schedules exist, and no CircleCI fallback is active. Required GitHub Actions checks remain exact-SHA and fail-closed; an unavailable required job is NOT RUN / BLOCKED, never replaced by another provider.
+- Refreshed the consistent five-document metadata and GitHub source links against main `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. Kept the package DRAFT; this is not approval or Project Sources publication.
+- Notion Master Task Plan / Operating Model contain dated historical transition-fallback wording. It is retained as source history and marked operationally CONFLICTED where it conflicts with accepted ADR-002/current repository policy; no canonical Notion decision was silently rewritten.
+- No application behavior, CI workflow configuration, API, database/schema/migration, financial semantics or deployment behavior changed.
+
 ### 1.0.8 — 2026-11-11 — DRAFT
 - Recorded the Owner's development-stage lifecycle classification: AIBA remains development / pre-release and is not yet a real customer-production business environment, even where provider deployment targets or aliases are technically labelled Production.
 - Recorded standing permission for all AIBA agents/workers to create application/workspace accounts, use project data needed for assigned development/QA, and create/edit accounts and draft/editable invoices through normal authenticated application/API workflows in the currently running environment, without repeated per-operation approval.
 - Preserved server-side authorization, tenant isolation, validation, idempotency, audit logging, secret/privacy controls, financial invariants, and separate gates for destructive actions, migrations, external side effects, paid provisioning, merge and release. T37 remains DRAFT / NOT APPROVED.
-- Refreshed the consistent five-document metadata/source baseline to main `827f220da14139605294923cc5550e088c2589e3`. This controlled package remains DRAFT pending exact-head validation, maintainer review and normal PR integration; Project Sources upload/readback remains NOT VERIFIED.
+- Refreshed the consistent five-document metadata/source baseline to main `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. This controlled package remains DRAFT pending exact-head validation, maintainer review and normal PR integration; Project Sources upload/readback remains NOT VERIFIED.
 
 
 ### 1.0.7 — 2026-11-11 — APPROVED
@@ -206,7 +212,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Maintainer full diff self-review and exact-candidate CI are recorded on the follow-up PR before merge; no provider-enforced gate is waived.
 
 ### 1.0.6 — 2026-11-11 — DRAFT
-- Reconciled the package with the live repository policy: GitHub Actions is the primary test/build/security CI provider; CircleCI is a transition fallback pending required-check enforcement/release-gate verification; GitLab is inactive and Semaphore retired/non-authoritative.
+- Historical policy snapshot: GitHub Actions was recorded as primary while CircleCI was still described as a transition fallback pending required-check enforcement/release-gate verification. This statement is superseded for current execution by accepted ADR-002 and DRAFT package version 1.0.9.
 - Added the Owner's economical test/CI execution policy: batch work, use targeted checks only when justified, validate the final candidate SHA once, reuse still-valid PASS evidence, rerun only after a changed condition or concrete diagnostic need, and preserve all enforced exact-SHA gates.
 - Updated all five documents to the same package version and refreshed source evidence to main `405cceb5b36ae972c2979cb2aa7a540c4aecd0eb`.
 - Preserved dated 1.0.2/1.0.3 CI-provider decisions and earlier review-policy checkpoints as historical changelog evidence; current policy is defined by this version and live `AGENTS.md`.
