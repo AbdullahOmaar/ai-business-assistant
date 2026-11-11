@@ -85,6 +85,7 @@ jobs:
         run: |
           python scripts/validate_project_knowledge.py
           python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
+          python -m unittest discover -s tests -p 'test_github_actions_slack_failure.py' -v
       - name: Verify offline migration SQL generation
         working-directory: backend
         run: |
