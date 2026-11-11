@@ -11,7 +11,6 @@ AI-powered business assistant for retail shops and service providers.
 - **Backend Vercel project:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api
 - **Backend environment settings:** https://vercel.com/thepresidentabdo-9110s-projects/ai-business-assistant-api/settings/environment-variables
 - **Firebase Authentication:** https://console.firebase.google.com/project/ai-business-assistant-97f37/authentication
-- **Primary CI:** GitHub Actions — [workflow runs](https://github.com/AbdullahOmaar/ai-business-assistant/actions) (`.github/workflows/ci.yml`, standard hosted runners; public-repository standard usage is free).
 - **CI:** GitHub Actions only — [workflow runs](https://github.com/AbdullahOmaar/ai-business-assistant/actions). The active default-branch ruleset requires the exact-SHA `all-checks-passed` aggregate. CircleCI's GitHub webhook was disabled on 2026-11-11; no CircleCI schedules remain.
 - **First 15-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_15_FEATURES.md)
 - **Additional 10-feature roadmap:** [docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md](docs/IMPLEMENTATION_PLAN_NEXT_10_FEATURES.md)
