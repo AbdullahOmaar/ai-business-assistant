@@ -1,3 +1,13 @@
+## Master continuation — exact-head CI and review-policy conflict — 2026-11-12
+
+- Exact-head GitHub Actions run [43120128593](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43120128593) completed SUCCESS on `bb5ddd2cbe85a98d070556d5fb01e2e59dd8376f`: all six substantive jobs and `all-checks-passed` PASS; `authenticated-api-smoke` SKIPPED (not required for this documentation branch). GitGuardian PASS. The legacy Semaphore context remains FAILURE but is retired/non-authoritative and is not used as CI evidence.
+- Review found an unresolved governance conflict: the canonical MWOS Owner decision effective 2026-11-10 waives independent reviewers even for controlled knowledge publication, while active AIBA project instructions require independent non-author review and authorized approval for controlled/security/architecture changes and knowledge publication. Updated the canonical repository guidance to record the conflict and follow the stricter gate pending Owner/Master reconciliation; self-review is not independent.
+- The five uploaded Project Sources snapshots ABA-KNOW-00..04 are version 1.0.0 / DRAFT at old SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`; they are stale relative to the repository package and are not proof of live Project Sources content. ABA-KNOW-03 in that snapshot contains a superseded CI instruction. Project Sources upload/readback remains NOT VERIFIED.
+- Advanced all five repository Project Knowledge documents together to version 1.0.11 / DRAFT with shared UTC verification metadata. No Notion source page or Project Sources UI was modified.
+- This follow-up changes documentation only; no application tests/build are independently needed. The new commit requires fresh exact-head GitHub Actions evidence; prior-SHA results are not reused. No merge or deployment.
+
+---
+
 ## Master continuation — Project Knowledge banner version alignment — 2026-11-12
 
 - Full-diff review found a genuine metadata presentation mismatch: all five Project Knowledge frontmatter records and the ABA-KNOW-04 changelog were at version `1.0.10`, but each approval-state banner still said `1.0.9`.

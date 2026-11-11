@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.10
+version: 1.0.11
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:05:00Z
+last_verified_at: 2026-11-11T23:33:04.426Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -21,7 +21,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** DRAFT candidate version 1.0.10. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
+> **Approval state:** DRAFT candidate version 1.0.10. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review-policy conflict:** the canonical MWOS Owner decision effective 2026-11-10 waives separate project-level review for controlled knowledge updates, while active project instructions require independent non-author review and authorized approval for controlled/security/architecture changes and knowledge publication. Keep this package DRAFT / CONFLICTED until the Owner/Master reconciles the policy; maintainer self-review is not independent. Formal GitHub branch-protection requirements remain mandatory.
 
 ## 1. Package manifest
 
@@ -99,7 +99,7 @@ At every Workstream Closeout:
    - **NEW CANONICAL DECISION:** create or update the owning ADR/Notion decision first; then summarize/link it here.
 6. Do not copy dynamic status, test output, temporary blockers, customer data, secrets or payroll-sensitive data into Project Sources.
 7. Update the canonical GitHub file with version, owner, UTC verification time, review date, source links and supersession metadata.
-8. Document maintainer/Project Master full self-review on the exact candidate SHA before publishing/updating controlled knowledge. No separate independent reviewer is required by project policy. Do not mark APPROVED without the authorized Owner decision and required checks; satisfy any formal GitHub branch-protection approval if configured.
+8. Document maintainer/Project Master full self-review on the exact candidate SHA. Independent non-author review and authorized approval are required for controlled/security/architecture changes and knowledge publication under active project instructions. The canonical MWOS Owner decision effective 2026-11-10 waives this reviewer requirement, creating an unresolved policy conflict; keep affected knowledge DRAFT / CONFLICTED and do not publish or mark APPROVED until the Owner/Master reconciles it. Formal GitHub branch-protection approvals remain mandatory.
 9. Publish only the approved version to ChatGPT Project Sources.
 10. Read back every published file and compare filename, version and content with the GitHub canonical copy.
 11. Update this changelog and the existing Notion task/handoff with exact PR/SHA, versions, publication/readback state and remaining gaps.
@@ -154,7 +154,7 @@ Follow the Owner's economical validation decision in the canonical [MWOS — Mod
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
-- Review owner: the accountable maintainer/Project Master records self-review. No separate independent reviewer is required by project policy for any change, including Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if configured, remain mandatory and must never be bypassed.
+- Review owner: the accountable maintainer/Project Master records full self-review on the exact candidate SHA. Independent non-author review and authorized approval are required for controlled/security/architecture changes and knowledge publication under active project instructions. The canonical MWOS Owner decision effective 2026-11-10 waives this reviewer requirement; the conflict remains unresolved, so the affected knowledge package stays DRAFT / CONFLICTED and is not publishable. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
 - Stable documents: review every 90 days or on relevant scope/identity/source-authority event.
 - Controlled documents: review every 30 days or immediately on relevant policy/ADR/security/release change.
 - The review schedule is a proposed maintenance default until explicitly approved by the owner.
@@ -191,6 +191,13 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Historical note (superseded by policy 1.0.4): at this checkpoint, the same Project Master maintainer authored and reviewed the candidate, and the then-current policy still required independent review. Owner approval was recorded on 2026-11-04.
 
 ## 11. Changelog
+
+### 1.0.11 — 2026-11-12 — DRAFT / CONFLICTED
+- Recorded an unresolved review-governance conflict: the canonical MWOS Owner decision effective 2026-11-10 waives separate project-level review for all changes, including controlled/security/architecture and controlled Project Knowledge publication; active AIBA project instructions require independent non-author review and authorized approval for those controlled categories and knowledge publication.
+- Until the Owner/Master reconciles this conflict in an approved canonical decision, controlled knowledge remains DRAFT / CONFLICTED; maintainer self-review does not satisfy independent review and Project Sources publication is blocked.
+- The five uploaded Project Sources reference files in the current conversation are v1.0.0 / DRAFT and point to old GitHub SHA `d99b71b57ced822cd8f7bc5dfa2a4835b0a2f14f`. They are stale snapshots, not live Project Sources readback. ABA-KNOW-03 in that snapshot also contains the superseded instruction not to introduce GitHub Actions. Current canonical repository policy and the later Owner cutover record are the execution sources.
+- All five repository knowledge files advance together to version 1.0.11 / DRAFT with a shared UTC verification timestamp. No Notion page was edited and no Project Sources upload/readback is claimed.
+- No application behavior, CI workflow, API, database/schema/migration, financial semantics, production data or deployment behavior changed.
 
 ### 1.0.10 — 2026-11-12 — DRAFT
 - Reconciled the earlier transition-fallback ambiguity using the canonical MWOS Owner record, **“CI provider cutover — verified 2026-11-11”**: the Owner directed CircleCI retirement and GitHub Actions-only validation. The older CircleCI transition-fallback wording in the Master Task Plan / Operating Model is superseded historical text, not a current fallback requirement.

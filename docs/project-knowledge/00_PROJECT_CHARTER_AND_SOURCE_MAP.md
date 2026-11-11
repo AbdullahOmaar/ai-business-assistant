@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.10
+version: 1.0.11
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:05:00Z
+last_verified_at: 2026-11-11T23:33:04.426Z
 review_due: 2027-02-09
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
