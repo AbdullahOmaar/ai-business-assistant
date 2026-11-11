@@ -4,7 +4,7 @@ title: Knowledge Governance & Changelog
 version: 1.0.9
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T22:58:28Z
+last_verified_at: 2026-11-11T23:03:28Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -194,7 +194,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 
 ### 1.0.9 — 2026-11-12 — DRAFT
 - Reconciled the current DRAFT knowledge package's CI-provider summary with accepted GitHub `ADR-002` and the live `AGENTS.md`: GitHub Actions is the sole active and approved provider; CircleCI's webhook is disabled, no project schedules exist, and no CircleCI fallback is active. Required GitHub Actions checks remain exact-SHA and fail-closed; an unavailable required job is NOT RUN / BLOCKED, never replaced by another provider.
-- Refreshed the consistent five-document metadata and GitHub source links against main `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. Kept the package DRAFT; this is not approval or Project Sources publication.
+- Refreshed the consistent five-document metadata and GitHub source links against main `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. Read back active default-branch ruleset `26009350`: strict `all-checks-passed` from GitHub Actions App `15368`, deletion/non-fast-forward protection, and no separate PR-approval count configured in that ruleset; classic branch-protection API remains inaccessible (403). Kept the package DRAFT; this is not approval or Project Sources publication.
 - Notion Master Task Plan / Operating Model contain dated historical transition-fallback wording. It is retained as source history and marked operationally CONFLICTED where it conflicts with accepted ADR-002/current repository policy; no canonical Notion decision was silently rewritten.
 - No application behavior, CI workflow configuration, API, database/schema/migration, financial semantics or deployment behavior changed.
 
