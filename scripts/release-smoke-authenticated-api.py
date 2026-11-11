@@ -12,7 +12,6 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from urllib.parse import urlencode
 
 from fastapi import HTTPException, Request
 from fastapi.testclient import TestClient
@@ -162,18 +161,14 @@ def main() -> None:
             if edited.status_code != 200:
                 fail(f"Draft invoice edit failed with HTTP {edited.status_code}: {edited.text[:300]}")
 
-            invoice_query = urlencode({"business_id": owner_business_id})
-            listed = client.get(
-                f"/api/v1/invoices?{invoice_query}",
-                headers=headers_owner,
-            )
+            listed = client.get(invoice_url, headers=headers_owner)
             if listed.status_code != 200:
                 fail(f"Draft invoice list reload failed with HTTP {listed.status_code}: {listed.text[:500]}")
             if not any(row.get("id") == invoice_id for row in listed.json()):
                 fail("The edited draft is absent from the authenticated workspace invoice list.")
 
             reloaded = client.get(
-                f"/api/v1/invoices/{invoice_id}?{invoice_query}",
+                f"{invoice_url}/{invoice_id}",
                 headers=headers_owner,
             )
             if reloaded.status_code != 200:
@@ -194,12 +189,9 @@ def main() -> None:
             ):
                 fail("Reloaded candidate draft did not match the persisted edit.")
 
-            audit_query = urlencode({
-                "business_id": owner_business_id,
-                "target_type": "invoice",
-            })
+            audit_url = f"/api/v1/businesses/{owner_business_id}/audit-events?target_type=invoice"
             audit_before = client.get(
-                f"/api/v1/audit-events?{audit_query}", headers=headers_owner
+                audit_url, headers=headers_owner
             )
             if audit_before.status_code != 200:
                 fail(f"Invoice audit read failed with HTTP {audit_before.status_code}.")
@@ -225,7 +217,7 @@ def main() -> None:
                 fail(f"Cross-tenant workspace read returned HTTP {foreign_workspace.status_code}, expected 403.")
 
             denied_audit = client.get(
-                f"/api/v1/audit-events?{audit_query}", headers=headers_other
+                audit_url, headers=headers_other
             )
             if denied_audit.status_code != 403:
                 fail(f"Cross-tenant audit read returned HTTP {denied_audit.status_code}, expected 403.")
