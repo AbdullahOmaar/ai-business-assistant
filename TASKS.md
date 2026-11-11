@@ -1,3 +1,15 @@
+## Master continuation — CI policy consolidation inside AGENTS — 2026-11-12
+
+- Existing PR #388 / `docs/contributing-ci-single-source` only; no new branch or PR. Main base remains `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. Pre-checkpoint branch head: `b9bc4d83d18c717336c91280ea04440387488b31` (8 commits ahead / 0 behind).
+- Extended the same coherent documentation batch to the canonical `AGENTS.md`: removed its top-level duplicate CI-provider decision block, reduced `Repository-specific validation` to a pointer, removed the repeated provider/job-list text from the later clarification, and kept review/merge authorization rules in their own section. `CI, merge, and deployment` is now the single detailed repository policy section; static readback confirms exactly one `GitHub Actions is the sole active CI provider` statement in AGENTS.
+- Existing changes remain: `CONTRIBUTING.md`, `.github/pull_request_template.md`, `README.md`, `docs/PRODUCTION_DEPLOYMENT.md`; `TASKS.md` retains prior #387 post-merge evidence. Production-specific migration, backup/restore, preview isolation, readiness, alias and smoke procedures remain.
+- Repository evidence: `.github/workflows/ci.yml` exists; `.circleci/config.yml` returns 404 on main; AGENTS/ADR-002 state GitHub Actions is sole active and CircleCI webhook disabled. ADR-002 is Accepted, Owner decision effective 2026-11-10.
+- **Authority conflict to preserve, not silently resolve:** Notion Master Task Plan and Product & Agent Operating Model still contain dated 2026-11-10 text describing CircleCI as a transition fallback until cutover; DRAFT Project Knowledge v1.0.6 repeats that wording. This conflicts with accepted GitHub ADR-002 and current AGENTS/repository state. Until canonical Notion decision text is reconciled by the Owner, do not trigger CircleCI or claim fallback availability; GitHub Actions is the only observed active provider. Mark the Notion fallback wording CONFLICTED/STALE for operational use, not as an approved new policy decision.
+- Current-head tests/CI NOT RUN: docs-only candidate. No full suite triggered. Prior PR #388 CI on predecessor SHA `43d9d9bf4368d2f03f83551cd5cc9dad67db9ce0` is stale for this head. Final exact-head required check remains a single closeout step before merge consideration.
+- PR #388 remains OPEN / DRAFT; no merge or deployment. Batch is 6 documentation paths and still not a substantial product feature release. Continue same branch only for directly related canonical-policy cleanup; do not auto-merge.
+
+---
+
 ## Master current evidence — Phase 1 merge + CI policy documentation consolidation — 2026-11-12
 
 ### PR #387 post-merge closeout
