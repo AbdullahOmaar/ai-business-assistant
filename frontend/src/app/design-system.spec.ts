@@ -104,3 +104,15 @@ test('Home KPIs and module shortcuts keep two readable columns at narrow phone w
   assert.match(kpiMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
   assert.match(shortcutMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
 });
+
+
+test('mobile fixed navigation leaves a safe scroll runway after the final content item', () => {
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.shell \.main[\s\S]*?padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /scroll-padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /\.shell \.sidebar[\s\S]*?padding-block-end:\s*calc\(8px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+});
+
+test('interactive navigation and disclosure controls retain touch size and visible keyboard focus', () => {
+  assert.match(css, /\.nav-item,[\s\S]*?\.module-directory-summary[\s\S]*?min-height:\s*44px/);
+  assert.match(css, /\[tabindex\]:focus-visible[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
+});
