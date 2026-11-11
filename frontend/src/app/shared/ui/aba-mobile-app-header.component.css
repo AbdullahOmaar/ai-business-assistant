@@ -1,17 +1,7 @@
 :host {
   display: none;
   min-width: 0;
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 15;
-}
-
-:host-context(.shell.install-cta-visible) {
-  top: calc(76px + env(safe-area-inset-top, 0px));
-}
-
-:host-context(.shell.install-help-open) {
-  top: calc(164px + env(safe-area-inset-top, 0px));
+  position: relative;
 }
 
 .mobile-app-header {

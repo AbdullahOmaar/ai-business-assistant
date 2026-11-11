@@ -104,3 +104,16 @@ test('Home KPIs and module shortcuts keep two readable columns at narrow phone w
   assert.match(kpiMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
   assert.match(shortcutMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
 });
+
+
+test('interactive navigation and disclosure controls retain touch size and visible keyboard focus', () => {
+  assert.match(css, /\.home-shortcut-link,[\s\S]*?\.module-directory-summary[\s\S]*?min-height:\s*44px/);
+  assert.match(css, /\[tabindex\]:focus-visible[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
+});
+
+
+test('mobile state messages wrap retry actions and reserve document viewport clearance above the dock', () => {
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*?html\s*\{\s*scroll-padding-block-end:\s*calc\(128px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /@media\s*\(max-width:\s*600px\)[\s\S]*?:root body \.shell \.aba-state-message\s*\{\s*flex-wrap:\s*wrap/);
+  assert.doesNotMatch(app, /\.main,[^{]*\{[^}]*scroll-padding-block-end/);
+});

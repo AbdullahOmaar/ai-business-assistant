@@ -209,11 +209,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         status: 200,
         headers: corsHeaders,
         body: JSON.stringify({
-          period: { start_date: null, end_date: null, timezone: 'Africa/Cairo' },
-          invoiced_sales: [],
-          collected_payments: [],
-          expenses: [],
-          outstanding_balances: [],
+          period: { start_date: '2026-10-13', end_date: '2026-11-11', timezone: 'Africa/Cairo' },
+          // Synthetic, non-persistent KPI fixture for visual review only.
+          // Values mirror the shape of existing read-only aggregates without
+          // writing or reading any real workspace records in this browser test.
+          invoiced_sales: [{ currency_code: 'EGP', count: 9, total: '548525.00' }],
+          collected_payments: [{ currency_code: 'EGP', count: 8, total: '548255.00' }],
+          expenses: [{ currency_code: 'EGP', count: 1, total: '5000.00' }],
+          outstanding_balances: [{ currency_code: 'EGP', total: '230500.00' }],
         }),
       });
       return;
@@ -278,6 +281,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
   await expect(page.locator('.home-shortcut-list > .home-shortcut-link')).toHaveCount(5);
   await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
+  const kpiCards = page.locator('.metric-grid aba-metric-card');
+  await expect(kpiCards.nth(0)).toContainText('548525.00 EGP');
+  await expect(kpiCards.nth(1)).toContainText('548255.00 EGP');
+  await expect(kpiCards.nth(2)).toContainText('5000.00 EGP');
+  await expect(kpiCards.nth(3)).toContainText('230500.00 EGP');
+
+  await page.locator('.mobile-install-button').click();
+  await expect(page.locator('.install-help-inline')).toBeVisible();
+  await expect(page.locator('.install-help-inline')).toContainText(/تثبيت التطبيق|Install app/);
+  const installHelpPosition = await page.locator('.install-help-inline').evaluate(element => getComputedStyle(element).position);
+  expect(installHelpPosition, 'install guidance must not become a fixed overlay').toBe('static');
+  await page.locator('.install-help-inline').getByRole('button', { name: /حسنًا|Got it/ }).click();
+  await expect(page.locator('.install-help-inline')).toHaveCount(0);
 
   const ownerModuleDirectory = page.locator('.module-directory-grid');
   const ownerModuleCount = await ownerModuleDirectory.locator('aba-quick-access-card').count();
@@ -312,6 +328,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       };
       return {
         metricColumns: columns('.metric-grid'),
+        installCardPosition: document.querySelector('.mobile-install-card')
+          ? getComputedStyle(document.querySelector('.mobile-install-card')!).position : 'missing',
+        installCardWidth: document.querySelector('.mobile-install-card')?.getBoundingClientRect().width ?? 0,
+        mobileHeaderPosition: document.querySelector('aba-mobile-app-header')
+          ? getComputedStyle(document.querySelector('aba-mobile-app-header')!).position : 'missing',
+        installCardHeaderGap: (() => {
+          const card = document.querySelector('.mobile-install-card');
+          const header = document.querySelector('aba-mobile-app-header');
+          return card && header ? header.getBoundingClientRect().top - card.getBoundingClientRect().bottom : -1;
+        })(),
         metricSupportingFontSizes: Array.from(document.querySelectorAll('.metric-grid aba-metric-card small'))
           .map(element => getComputedStyle(element).fontSize),
         headerLabelFontSizes: Array.from(document.querySelectorAll('.mobile-app-header .context-label'))
@@ -336,6 +362,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         headerWorkspaceRowHeight: document.querySelector('.mobile-app-header .workspace-context')?.getBoundingClientRect().height ?? 0,
       };
     });
+    expect(layout.installCardPosition, 'mobile install guidance must remain in normal document flow').toBe('static');
+    expect(layout.installCardWidth, 'mobile install guidance must fit the content column').toBeGreaterThan(0);
+    expect(layout.mobileHeaderPosition, 'mobile workspace header must not stick over scrolled content').toBe('relative');
+    expect(layout.installCardHeaderGap, 'install guidance must finish before the mobile workspace header').toBeGreaterThanOrEqual(0);
     expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
     expect(layout.metricSupportingFontSizes.length, `KPI supporting copy must render at ${width}px`).toBeGreaterThan(0);
     for (const fontSize of layout.metricSupportingFontSizes) {
@@ -354,30 +384,84 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       expect(height, `Mobile dock controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
     expect(layout.mainBottomPadding, 'main content must clear the mobile dock and safe-area allowance').toBeGreaterThanOrEqual(layout.dockHeight);
-    expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(112);
+    expect(layout.mainBottomPadding).toBeGreaterThanOrEqual(128);
     expect(layout.headerPageRowHeight, 'page title and actions row must be rendered').toBeGreaterThan(0);
     expect(layout.headerWorkspaceRowHeight, 'workspace context row must be rendered').toBeGreaterThan(0);
     for (const height of layout.headerControlHeights) {
       expect(height, `Mobile header controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
+
   };
-  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
+  const assertHomeContentClearsDock = async (width: number, direction: 'ar' | 'en') => {
+    const directory = page.locator('.module-directory-disclosure');
+    await directory.evaluate(element => { (element as HTMLDetailsElement).open = true; });
+    const footer = page.locator('.main footer');
+    const lastModuleAction = page.locator('.module-directory-grid > aba-quick-access-card button:not(:disabled)').last();
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+    });
+    await expect(lastModuleAction, 'the focus-scroll target must be enabled').toBeEnabled();
+    // Reset focus for every viewport so the browser performs a fresh focus transition.
+    await lastModuleAction.evaluate(element => (element as HTMLButtonElement).blur());
+    // Playwright's focus action does not itself scroll; exercise native scroll-padding.
+    await lastModuleAction.evaluate(element => element.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+    await lastModuleAction.focus();
+    await expect(lastModuleAction, 'the viewport-scroll target must receive keyboard focus').toBeFocused();
+    const focusClearance = await page.evaluate(() => {
+      const focused = document.activeElement as HTMLElement | null;
+      const dock = document.querySelector('.sidebar');
+      if (!focused || !dock) return null;
+      return {
+        targetBottom: focused.getBoundingClientRect().bottom,
+        dockTop: dock.getBoundingClientRect().top,
+        viewportScrollPadding: Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBlockEnd),
+      };
+    });
+    expect(focusClearance, 'focused Home controls and the fixed dock must render').not.toBeNull();
+    expect(focusClearance!.viewportScrollPadding, 'document viewport must reserve dock clearance for focus scrolling').toBeGreaterThanOrEqual(128);
+    expect(focusClearance!.targetBottom, 'keyboard-focused Home controls must scroll above the fixed dock').toBeLessThanOrEqual(focusClearance!.dockTop - 8);
+    await footer.scrollIntoViewIfNeeded();
+    const clearance = await page.evaluate(() => {
+      const dock = document.querySelector('.sidebar');
+      const footerElement = document.querySelector('.main footer');
+      const lastCard = document.querySelector('.module-directory-grid > aba-quick-access-card:last-child');
+      if (!dock || !footerElement || !lastCard) return null;
+      const dockTop = dock.getBoundingClientRect().top;
+      return {
+        gapAfterFooter: dockTop - footerElement.getBoundingClientRect().bottom,
+        gapAfterLastModule: dockTop - lastCard.getBoundingClientRect().bottom,
+        dockHeight: dock.getBoundingClientRect().height,
+      };
+    });
+    expect(clearance, 'the final Home content, last module and dock must render').not.toBeNull();
+    expect(clearance!.dockHeight).toBeGreaterThan(0);
+    expect(clearance!.gapAfterLastModule, `last module must clear the dock at ${width}px ${direction}`).toBeGreaterThanOrEqual(8);
+    expect(clearance!.gapAfterFooter, `final page footer must clear the dock at ${width}px ${direction}`).toBeGreaterThanOrEqual(8);
+    await page.screenshot({
+      path: `test-results/aiba-home-${width}px-${direction}-dock-clearance-viewport.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
+    // Restore the Home viewport so the following general screenshots include the header and KPIs.
+    await page.evaluate(() => window.scrollTo(0, 0));
+  };
+  for (const width of [320, 360, 390, 412, 430, 700, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
     if (width <= 430) await assertHomeMobileGrid(width);
+    if (width <= 760) await assertHomeContentClearsDock(width, 'ar');
+    await page.screenshot({
+      path: `test-results/aiba-home-${width}px-ar-viewport.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
     if ([320, 390, 1280].includes(width)) {
       await page.screenshot({
         path: `test-results/aiba-home-${width}px-ar.png`,
         fullPage: true,
         animations: 'disabled',
       });
-      if (width <= 390) {
-        await page.screenshot({
-          path: `test-results/aiba-home-${width}px-ar-viewport.png`,
-          fullPage: false,
-          animations: 'disabled',
-        });
-      }
     }
   }
 
@@ -460,10 +544,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     fullPage: false,
     animations: 'disabled',
   });
-  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 430, 700, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
     if (width <= 430) await assertHomeMobileGrid(width);
+    if (width <= 760) await assertHomeContentClearsDock(width, 'en');
+    await page.screenshot({
+      path: `test-results/aiba-home-${width}px-ltr-viewport.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
   }
 
   await page.setViewportSize({ width: 360, height: 800 });

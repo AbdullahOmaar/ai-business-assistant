@@ -3,6 +3,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const cardSurface = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
+const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
+const appTemplate = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const employeePayroll = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
+const platformAdmin = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
@@ -106,3 +110,37 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
   assert.match(styleBlock, /\.metric-card small\{font-size:12px\}/);
   assert.match(styleBlock, /\.data-note p\{font-size:12px\}/);
 });
+
+test('real workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
+  assert.ok(appTemplate.includes('class="list-tools"'), 'Customer/product search must use the shared list filter');
+  assert.ok(appTemplate.includes('class="list-tools operations-search"'), 'Operational searches must use the shared search filter');
+  assert.ok(appTemplate.includes('class="invoice-controls"'), 'Invoice search/status filters must use the shared invoice filter');
+  assert.ok(appTemplate.includes('class="inline-form statement-filters"'), 'Customer statements must use the shared statement filter');
+  assert.ok(platformAdmin.includes('class="filters audit-filters"'), 'Platform Admin audit form must use its responsive audit filter');
+  assert.ok(employeePayroll.includes('class="employee-tools"'), 'employee search markup must use the covered employee filter');
+  assert.ok(platformAdmin.includes('class="filters"'), 'Platform Admin filter forms must retain their dedicated responsive styling');
+  for (const selector of [
+    '.list-tools', '.operations-search', '.invoice-controls', '.statement-filters',
+    '.audit-filters', '.employee-tools',
+  ]) {
+    assert.ok(designSystem.includes(selector), 'shared filter selector must be covered: ' + selector);
+  }
+  assert.match(designSystem, /\.list-tools > input,[\s\S]*?min-height:\s*var\(--aiba-control-md\)/);
+  assert.match(designSystem, /\.list-tools > button,[\s\S]*?min-height:\s*var\(--aiba-control-md\)/);
+  assert.match(designSystem, /@media\s*\(max-width:\s*600px\)[\s\S]*?\.list-tools,[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+});
+
+test('mobile tables retain every field with a touch-scroll and sticky first-column fallback', () => {
+  assert.match(designSystem, /\.table-wrap,[\s\S]*?overflow-x:\s*auto/);
+  assert.match(designSystem, /\.table-wrap,[\s\S]*?overscroll-behavior-inline:\s*contain/);
+  assert.match(designSystem, /\.table-wrap tbody td:first-child,[\s\S]*?position:\s*sticky/);
+  assert.match(designSystem, /\.table-wrap thead th:first-child,[\s\S]*?z-index:\s*4/);
+  assert.match(designSystem, /\.invoice-table-wrap/);
+});
+
+test('global focus treatment remains visible and keyboard targets scroll clear of the dock', () => {
+  assert.match(designSystem, /button:focus-visible,[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
+  assert.match(designSystem, /:is\(button, a, input, select, textarea, \[tabindex\]\):focus-visible\s*\{\s*scroll-margin-block:\s*12px/);
+  assert.match(sectionHeader, /:is\(button,a,\[role="button"\]\)\{min-height:44px/);
+});
+

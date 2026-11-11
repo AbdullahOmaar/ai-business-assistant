@@ -114,7 +114,7 @@ No data, navigation, permissions, API requests or business meaning is altered by
 
 ## 8. Implementation boundaries
 
-This design layer is loaded after the current base stylesheet through Angular's global style list. It is deliberately isolated while another open invoice PR owns `frontend/src/styles.css` and `frontend/src/app/app.component.ts`.
+This design layer is loaded after the current base stylesheet through Angular's global style list. The T18 mobile shell/dock and shared responsive design changes are consolidated in PR #374; `frontend/src/styles.css` remains unchanged.
 
 The design layer must not:
 - Introduce new API fields or change request/response payloads.
@@ -135,3 +135,13 @@ The post-merge review identified two valid presentation defects and the follow-u
 The browser-smoke artifact now retains full-page references and adds true 844px viewport captures at 320px / 390px RTL and 390px LTR. Full-page screenshots are not used to judge fixed-position navigation overlap because fixed elements are anchored to the viewport during full-page capture.
 
 These changes are frontend presentation and test evidence only. No business logic, APIs, authorization, database, financial meaning or production data is changed.
+
+## 10. T18 mobile usability closeout — 2026-11-11
+
+- The Home hierarchy remains reporting period → currency-separated activity KPIs → compact metric-meaning note → Quick Access → permission-aware module directory. The note is intentionally subordinate; the invoice, collection, expense and outstanding-balance definitions remain visible and are not combined into a new total.
+- Fixed mobile dock clearance and safe-area scroll runway are handled by the separate active T18 work package in PR #374; that work owns the application shell and dock-specific browser assertion. This shared-surface batch does not alter shell padding or dock geometry.
+- Shared section-heading actions and state-message actions keep a minimum 44px target. Filter/search groups collapse to one column at narrow widths; fields and action controls remain full width and keyboard reachable.
+- Invoice records already have a responsive card presentation. Wider statement/audit tables retain all columns in a touch-scrollable region, with visible focus, contained horizontal overscroll, sticky headings and a sticky first column. Do not hide business or financial fields to make a table appear to fit.
+- Screenshot acceptance uses viewport captures, not only full-page snapshots, because fixed navigation is anchored to the viewport. Capture 320 / 360 / 390 / 412 / 430 / 700 / 768 / 1280px where the route supports them, in RTL and LTR; annotate any unavailable direction/width explicitly.
+- Automated layout assertions do not replace physical Android Chrome installed-PWA, screen-reader, high-contrast or 200% zoom acceptance. Those remain separate evidence items.
+
