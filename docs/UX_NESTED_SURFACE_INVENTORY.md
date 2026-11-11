@@ -417,7 +417,7 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 ## T18 shared-component polish and 19-destination source review — 2026-11-11
 
-**Review basis:** current `main@405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` and the same T18 branch after its merge-sync. This is a source-level review of every destination in `WORKSPACE_MODULE_CATALOG`; it is not a rendered visual sign-off for all routes. The Production login page was separately inspected at 360×800, 390×844 and 1280×800 in Arabic, plus English at 360×800: no horizontal overflow, all form controls visible and 44px high, but an unnecessary vertical scrollbar/blank area below the card remains. The owner of `app.component.ts` and `styles.css` is PR #363, so that login-shell finding is recorded for handoff and not edited here.
+**Review basis:** current `main@405cceb5b36ae972c2979cb2aa7a540c4aecd0eb` and the same T18 branch after its merge-sync. This is a source-level review of every destination in `WORKSPACE_MODULE_CATALOG`; it is not a rendered visual sign-off for all routes. The Production login page was separately inspected at 360×800, 390×844 and 1280×800 in Arabic, plus English at 360×800: no horizontal overflow and all form controls are visible with 44px minimum targets. A follow-up live inspection on 2026-11-12 measured the document at exactly the viewport size (390×844 RTL/LTR and 1280×800 RTL); the card is vertically centered with balanced whitespace and no scrollable overflow. The earlier note describing an unnecessary vertical scrollbar is not reproduced and is withdrawn. The owner of `app.component.ts` and `styles.css` was PR #363; its presentation ownership is now part of merged main.
 
 | Destination | Screen-by-screen source review | T18 action / ownership boundary |
 |---|---|---|
@@ -501,3 +501,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Added a focused CSS source regression and a single rendered Playwright assertion for the 390px English Customers header. The existing route sweep and screenshot matrix remain reused; no extra viewport sweep or new route was added.
 - Presentation and regression coverage only. No API, authentication, tenant, database/schema/migration, business or financial behavior changed.
 - This fix does not close physical Android/PWA, authenticated second-tenant, keyboard-only, screen-reader, high-contrast or 200% zoom acceptance.
+
+
+## November Phase 1 — auth-shell rendered verification — 2026-11-12
+
+- Live public login inspection at `https://ai-business-assistant-web.vercel.app/` found the auth card vertically centered at 390×844 RTL (x=15, y=134.7, w=360, h=574.6) and 1280×800 RTL (x=370, y=102.9, w=540, h=594.2). English 390×844 keeps the same geometry and switches alignment to LTR.
+- At all inspected sizes, document/body dimensions matched the viewport, scrollWidth equaled clientWidth, scrollHeight equaled clientHeight, and forced scrolling left scrollY at 0. No vertical scrollbar exists; the space below the card is balanced centering, not an overflow defect.
+- Added a focused Playwright guard to the existing mocked mobile OWNER journey for 360×800, 390×844, 1280×800 RTL and 390×844 LTR. It checks no horizontal/vertical document overflow and vertical centering. It does not submit real credentials or contact production identity/API services.
+- No CSS/auth behavior change was justified by this evidence. The source-only route sweep already covers the 18 OWNER workspace destinations; Platform Admin remains a separate identity/surface. Physical Android/PWA, full keyboard/screen-reader, high-contrast/200% zoom and authenticated second-tenant acceptance remain separate open gates.
