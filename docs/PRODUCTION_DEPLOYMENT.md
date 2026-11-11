@@ -1,17 +1,4 @@
-## Owner-approved CI provider change — effective 2026-11-10
-
-The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
-
-- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
-- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
-- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
-- Pin third-party actions to verified full commit SHAs with release-version comments; inspect upstream release notes before changing pins.
-- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App (integration ID 15368). No separate PR-approval count is currently enforced. CircleCI's GitHub webhook is disabled and no project schedules exist.
-- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main is marked protected. Its active default-branch ruleset requires the GitHub Actions `all-checks-passed` check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; no separate PR-approval count is configured.
-- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations, and gate bypasses remain separately restricted.
-
-This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
+> Repository-wide CI provider selection, required checks, exact-SHA evidence, branch/review rules and merge eligibility are defined in [AGENTS.md](../AGENTS.md). This runbook is limited to production-specific deployment, migration, recovery and runtime verification.
 
 # Production deployment runbook
 
@@ -49,7 +36,7 @@ Health checks:
 
 The Web Vercel project root is `frontend`. The repository-owned `frontend/vercel.json` explicitly runs `node scripts/write-build-info.mjs && ng build` and publishes `dist/ai-business-assistant/browser` (the Angular application builder's browser output directory). This is required because the Angular framework auto-detected build can invoke `ng build` directly and bypass npm's `prebuild` lifecycle, leaving the UI commit label and service-worker cache name as `unknown`.
 
-GitHub Actions is the primary exact-SHA test/build validation provider and runs the full frontend unit suite, production build, and Playwright checks. GitHub Actions is the sole active CI provider; its `all-checks-passed` aggregate is required on the exact SHA. The Vercel build command stamps per-commit UI/service-worker metadata and compiles the frontend; it is not a replacement test gate.
+Run the current repository-required validation defined in [AGENTS.md](../AGENTS.md) before promoting a candidate. A successful Vercel build confirms compilation and generated deployment metadata only; it does not replace CI or exact-SHA release evidence.
 
 Preview builds are fail-closed by `scripts/write-build-info.mjs`: when `VERCEL_ENV=preview`, it replaces the checked-in production runtime config with an empty setup-required config unless all isolated Preview values are supplied. Configure these Vercel Preview environment variables only after a synthetic API and Firebase project exist: `ABA_PREVIEW_API_BASE_URL`, `ABA_PREVIEW_FIREBASE_API_KEY`, `ABA_PREVIEW_FIREBASE_AUTH_DOMAIN`, `ABA_PREVIEW_FIREBASE_PROJECT_ID`, and `ABA_PREVIEW_FIREBASE_APP_ID`. A partial set or the known Production API/Firebase identifiers fails the build. Production and local builds retain the existing runtime config. Do not sign in or mutate data from a Preview until the synthetic runtime is configured and verified.
 
@@ -62,31 +49,21 @@ The public runtime config contains only public Firebase web-app identifiers and 
 Enable the Firebase Email/Password sign-in provider in the Firebase Console if that is the chosen sign-in method. Add the frontend's production domain to Firebase Authentication's authorized domains.
 
 
-## Branching and production deployment cadence
+## Production release cadence and approval
 
-- **One coherent branch per meaningful work item:** Do not create a branch for every small task or individual edit. Group related implementation, tests, and documentation into one focused branch and PR. Continue on that branch while the scope and review boundary remain coherent. Split only for independently releasable features, different authorization/review requirements, or genuine conflict/safety boundaries.
-- **Reuse before creating:** Check the current branch and open PRs first. Update an existing in-progress branch/PR when appropriate; avoid duplicate work and unnecessary branch churn.
-- **Review budget:** target no more than 15 changed paths OR 800 non-generated changed lines. These are planning thresholds, not hard caps. Above either target, split only at a genuinely independent boundary or attach a staged-review plan naming path/behavior batches, dependencies, and checks. Never create micro-PRs or hide generated/lockfile changes.
-- **Shared-file ownership:** name one primary writer and exact owned paths per work package. One writer at a time edits coordination-sensitive paths such as `app.component.ts`, `TASKS.md`, global tokens, shared contracts, authorization boundaries and DB/schema files. Manual claims coordinate but are not atomic locks.
-- **CI evidence:** GitHub Actions is the primary exact-SHA provider. Require all six substantive jobs and `all-checks-passed` on the exact workflow SHA. GitHub Actions is the sole active CI provider; the active default-branch ruleset strictly requires its `all-checks-passed` aggregate. Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED.
-- **Review and merge:** a full documented maintainer/Project Master self-review on the exact candidate SHA is mandatory for every change. No separate independent reviewer is required by project policy, including for routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory and must never be bypassed. Before merge require READY/non-Draft, exact-head checks, documented maintainer self-review, blocking threads resolved, base/divergence reconciled, any formal GitHub branch-protection approval actually enforced, and explicit Owner merge authorization.
-- **Production deploys are release events, not per-task events:** Do not deploy after each commit or minor fix. Build and test the full coherent change set, merge the approved candidate, and deploy only when a new important feature/feature bundle or critical fix is ready for release. Normally trigger one production deployment for each affected project per release; do not deploy an unchanged project. Merge and deployment authorization remain separate.
-- **Release gate before trigger:** Confirm exact merged main SHA, required CI/security/build checks, release markers ([release-web] and/or [release-api] for affected projects), and Ignore Build Step behavior. If a gate or quota blocks deployment, stop repeated retries, record the exact error, continue independent work, and retry only after the cause is resolved or the quota window resets.
-- **Post-deploy proof:** Confirm deployment is READY on the intended SHA and production alias, then check /health, /readyz, /version for API releases and run safe, relevant frontend/API smoke checks. Mark a release VERIFIED only with observed evidence. Critical security or production incidents can be expedited but must still be validated and documented.
+- Treat production deployment as a release event, not a per-commit or per-task action.
+- Batch related work and deploy only when an approved feature bundle or critical fix is ready. Trigger at most one deployment per affected Vercel project for the release; do not redeploy an unchanged project.
+- Merge authorization and production-deployment authorization are separate. Confirm the required release authorization before triggering Vercel.
+- Before deployment, verify the exact merged `main` SHA, release markers for affected projects, project Ignore Build Step behavior, and the production database recovery/rollback plan where applicable.
+- After deployment, verify the intended deployment SHA, production alias, API `/health`, `/readyz`, `/version` where applicable, and safe feature-specific smoke checks. A READY build or HTTP 200 alone is not complete release evidence.
 
-## CI provider and required status
+## Repository CI and merge requirements
 
-- **GitHub Actions is the primary CI provider** for tests, builds, browser checks and dependency/security audits. The canonical pipeline is `.github/workflows/ci.yml`; GitHub remains canonical for source code, branches, commits, PRs and release SHAs.
-- GitHub Actions checks out the exact workflow event SHA and each substantive job verifies `git rev-parse HEAD` equals the PR head SHA (`github.event.pull_request.head.sha`) or the pushed commit SHA (`github.sha`). Workflows use read-only `contents: read` permissions and do not require repository secrets for test/build/security jobs; fork PR code receives no secrets.
-- The GitHub Actions workflow runs backend pytest and Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser smoke, backend container build/import smoke, backup/restore safety tests, Python/npm dependency audits, and shared-knowledge package validation.
-- CircleCI's GitHub webhook is disabled and no project schedules exist. GitHub Actions is the sole active CI provider; its exact-SHA `all-checks-passed` aggregate is required.
-- GitLab CI is inactive and Semaphore is retired/non-authoritative; neither is a validation provider.
-- Verify every substantive job and the aggregate on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
-- The repository is Public, and the active default-branch ruleset enforces the GitHub Actions `all-checks-passed` check on an up-to-date head. No separate PR-approval count is configured; never bypass any active rule.
+Follow the current [AGENTS.md CI, merge and deployment requirements](../AGENTS.md#ci-merge-and-deployment). This runbook does not restate CI providers, workflow job lists, review rules or branch protections.
 
 ## Release gates
 
-1. Verify the approved exact-SHA CI provider passes on the exact release candidate SHA, including backend tests, validator tests, frontend build/audit, Playwright browser smoke, and backend container verification. GitHub Actions is the sole active CI provider and its `all-checks-passed` aggregate is enforced by the active default-branch ruleset.
+1. Verify the current repository-required exact-SHA validation and merge gates in [AGENTS.md](../AGENTS.md) are satisfied for the approved release commit. Do not reuse evidence from a different SHA.
 2. Confirm the production database's current Alembic revision and schema without modifying data.
 3. Take a production backup and prove it can be restored into an isolated non-production database; record recovery evidence.
 4. Review migration SQL and run the migration against a disposable PostgreSQL database or restored non-production clone. Only run production migrations after explicit owner approval and the approved backup/rollback plan.
