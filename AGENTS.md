@@ -14,19 +14,9 @@ This standing authorization does not imply permission to hard-delete accounts or
 
 The decision is recorded in the canonical [Notion Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44) and [Master Control Center](https://app.notion.com/p/4099320b90fb81499af2d7ffada690c7). Merge/release, migrations and external side effects retain their separate authorization gates.
 
-## Owner-approved CI provider change — effective 2026-11-10
+## CI policy location
 
-The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
-
-- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
-- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
-- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
-- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset now strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App (integration ID 15368). The repository does not currently enforce a separate PR-approval count. The CircleCI GitHub webhook is disabled, no CircleCI project schedules exist, and the legacy `.circleci/config.yml` is removed by the current cleanup PR.
-- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main is marked protected. The active default-branch ruleset requires the `all-checks-passed` GitHub Actions check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; a separate PR-approval count is not configured. The classic branch-protection endpoint is unavailable to this integration; ruleset readback is the evidence source.
-- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. This does not authorize production deployment, production DB writes/migrations, or bypassing any enforced gate.
-
-This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
+The current repository CI provider, authoritative workflow, required exact-SHA checks, provider status, security constraints and merge/deployment gates are defined once in [CI, merge, and deployment](#ci-merge-and-deployment) below. Do not duplicate or independently reinterpret that policy in other sections or contributor documents. Historical provider decisions remain in their dated ADR/Notion records.
 
 # Autonomous Engineering Rules
 
@@ -136,7 +126,7 @@ Never rely only on chat history. If the execution environment ends, leave a chec
 Do not narrate every trivial edit or ask permission between ordinary implementation steps. Send concise progress updates at meaningful milestones. Final reports must separate verified complete, partially complete, not run, and blocked. Prefer evidence (commit SHA, workflow run, test output, deployment version) over claims.
 
 ## Repository-specific validation
-Inspect `.github/workflows/ci.yml` before choosing commands. GitHub Actions is the primary CI provider and its single workflow covers backend pytest/Alembic checks against disposable PostgreSQL, frontend unit tests and production build, Playwright browser E2E, backend container build/import smoke, backup/restore safety guards, and Python/npm dependency audits. GitHub Actions is the sole active CI provider; require its full exact-SHA workflow and `all-checks-passed` aggregate. Do not treat a local partial check or a successful run on a different SHA as equivalent to the full candidate.
+Inspect the canonical [CI, merge, and deployment policy](#ci-merge-and-deployment) and the current `.github/workflows/ci.yml` before choosing commands. This section does not duplicate provider, job-list or exact-SHA gate definitions.
 
 ## Vibe-coding workflow and AI-agent orchestration
 
@@ -205,7 +195,7 @@ If the task is too large, split it into independently reviewable subtasks with e
 ## Master audit plan and cross-session continuity
 - The canonical audit/planning reference is `docs/AUDIT_MASTER_PLAN.md`. Read it before any new audit, planning, design, or implementation session, together with this file and the latest relevant `TASKS.md` checkpoint.
 - At session start, re-check current `main` SHA, working-tree status when local access exists, relevant Issues/PRs, exact-head CI, and deployment evidence. Treat audit-plan counts/SHA/status as a dated snapshot, not live truth.
-- Keep GitHub as the source of truth for code, PRs, Issues and GitHub Actions CI evidence; GitHub Actions is the sole active CI provider; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
+- Keep GitHub as the source of truth for code, PRs, Issues and CI evidence; keep `TASKS.md` as the execution/handoff ledger. Do not create a parallel tracker unless explicitly chosen.
 - The audit plan is read-only planning until the user explicitly authorizes implementation. Do not infer approval to fix application code, merge PRs, or deploy from the existence of the plan.
 - After each substantial session, update `TASKS.md` with actual evidence, checks run/not run, blockers, branch/commit/PR, and one next action. Update `docs/AUDIT_MASTER_PLAN.md` when findings, priorities, decisions, or acceptance criteria change. Never mark a task VERIFIED without evidence.
 
@@ -241,12 +231,8 @@ This section clarifies the operational detail for every human, specialist chat a
 - Manual single-writer claims are coordination records, not mutexes or atomic leases. On overlap, stop only conflicting writes and reconcile the claim; do not freeze independent work.
 - One active writing branch per contributor. A separate branch is justified only by a genuinely independent authorization/release boundary or independently reviewable outcome; record the reason and freeze writes on that contributor's previous branch during the independent work.
 
-### CI and merge gate clarification
-- GitHub Actions and `.github/workflows/ci.yml` are the primary repository CI provider. Require all six substantive jobs and the fail-closed `all-checks-passed` aggregate on the exact workflow SHA.
-- GitHub Actions is the sole active CI provider; its exact-SHA `all-checks-passed` check is required by the active default-branch ruleset. CircleCI's GitHub webhook is disabled.
-- GitLab CI and Semaphore are not approved CI providers. Semaphore is retired/non-authoritative; empty contexts, GitGuardian-only checks, authored-but-unexecuted tests, or successful checks on another SHA are NOT PASS.
-- Record root cause and changed condition for retries; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
-- A documented full maintainer diff self-review is mandatory for every PR and controlled Project Knowledge update. No separate project-level reviewer is required for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
+### Review and merge gate clarification
+- A documented full maintainer diff self-review is mandatory for every PR and controlled Project Knowledge update. No separate project-level reviewer is required by project policy, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
 - Merge only from a non-Draft READY PR after exact-head checks, maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus explicit Owner merge authorization. `mergeable=true` is not approval.
 - Merge authorization and production deployment authorization remain separate. Disclose auto-deployment coupling before merge; get the required deployment authorization before any merge that automatically deploys.
 
