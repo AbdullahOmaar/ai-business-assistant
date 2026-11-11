@@ -28,7 +28,7 @@ test('muted copy and placeholders use the contrast-safe neutral token', () => {
 });
 
 test('primary button white labels meet WCAG AA contrast at every gradient stop', () => {
-  const token = (name: string) => css.match(new RegExp(name + ':\\s*(#[0-9a-f]{6})', 'i'))?.[1];
+  const token = (name: string) => css.match(new RegExp(name + ':\s*(#[0-9a-f]{6})', 'i'))?.[1];
   const luminance = (hex: string) => {
     const channels = hex.slice(1).match(/.{2}/g)!.map(value => parseInt(value, 16) / 255);
     const linear = channels.map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
@@ -125,7 +125,7 @@ test('every authenticated workspace route exposes a localized skip link to the m
   assert.ok(app.includes("@if (initialized && signedIn && !startupFailed && !setupNeeded) {"));
   assert.match(app, /تخطي إلى المحتوى الرئيسي/);
   assert.match(app, /Skip to main content/);
-  assert.match(guide, /titleAr: 'تخطي إلى المحتوى الرئيسي'[\\s\\S]*?titleEn: 'Skip to main content'[\\s\\S]*?detailAr:[\\s\\S]*?detailEn:/);
+  assert.match(guide, /titleAr: 'تخطي إلى المحتوى الرئيسي'[\s\S]*?titleEn: 'Skip to main content'[\s\S]*?detailAr:[\s\S]*?detailEn:/);
   assert.match(app, /<main class="main" id="main-content" tabindex="-1">/);
   assert.match(css, /\.skip-link\s*\{[\s\S]*?min-height:\s*44px/);
   assert.match(css, /\.skip-link:focus\s*\{[\s\S]*?transform:\s*translateY\(0\)/);
