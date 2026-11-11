@@ -1421,7 +1421,7 @@
 :root body .shell .audit-table-wrap thead th:first-child {
   position: sticky;
   inset-inline-start: 0;
-  box-shadow: 1px 0 0 var(--aiba-line);
+  border-inline-end: 1px solid var(--aiba-line);
 }
 
 :root body .shell .table-wrap thead th:first-child,
