@@ -181,5 +181,16 @@ class GitHubSummaryTests(unittest.TestCase):
         self.assertIn("original CI result is unchanged", log.call_args.args[0])
 
 
+    def test_redacts_full_quoted_values_with_escaped_or_mixed_quotes(self) -> None:
+        value = r'''"password": "prefix\"remaining-fragment"
+password: "can't-guess-this-value"
+token: 'first-part\'second-fragment'
+'''
+        redacted = redact_text(value)
+        for fragment in ("remaining-fragment", "can't-guess-this-value", "second-fragment"):
+            self.assertNotIn(fragment, redacted)
+        self.assertEqual(redacted.count("[REDACTED]"), 3)
+
+
 if __name__ == "__main__":
     unittest.main()
