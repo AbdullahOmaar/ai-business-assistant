@@ -39,12 +39,12 @@ JSON_CREDENTIAL = re.compile(
     r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)"\s*:\s*")[^"]*(")'''
 )
 QUOTED_CREDENTIAL = re.compile(
-    r'''(?i)(\b(?:password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
-    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*["'])[\s\S]*?(["'])'''
+    r'''(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
+    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*["'])[^ \r\n]*?[^ \r\n]*?(["'])'''
 )
 UNQUOTED_CREDENTIAL = re.compile(
-    r"(?im)(\b(?:password|passwd|token|secret|api[_-]?key|access[_-]?token|"
-    r"refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*)[^\s,;}]+"
+    r"(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|"
+    r"refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*)(?![\"'])([^\r\n,;}]+)"
 )
 
 SENSITIVE_ENV_NAME = re.compile(
