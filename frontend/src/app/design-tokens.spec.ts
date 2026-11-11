@@ -438,6 +438,6 @@ test('mobile navigation dock reuses the shared navigation palette', () => {
 });
 
 
-test('Arabic RTL shared headings use natural connected-script letter spacing', () => {
-  assert.match(designSystemStyles, /\.shell\[dir="rtl"\] \.topbar h1,[\s\S]*?\.shell\[dir="rtl"\] \.dashboard-period__title \{\s*letter-spacing: normal;/);
+test('Arabic RTL heading levels use natural connected-script letter spacing', () => {
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
 });
