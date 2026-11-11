@@ -447,6 +447,10 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     await captureAdminViewport('overview', 'ar', width);
     await captureAdminViewport('users', 'ar', width);
   }
+  // Restore the overview before its compact-table typography and overflow checks.
+  await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
+  await expect(page.getByRole('heading', { name: /Admin center|مركز الإدارة/ })).toBeVisible();
+
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(page.locator('.compact-table')).toBeVisible();
