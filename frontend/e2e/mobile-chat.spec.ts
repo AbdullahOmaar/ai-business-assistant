@@ -641,9 +641,9 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
       const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
         : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
+      await page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true }).click();
+      await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
       if (destination.tab !== 'overview') {
-        await page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true }).click();
-        await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
         await page.locator('.module-directory-disclosure').evaluate(element => {
           (element as HTMLDetailsElement).open = true;
         });
