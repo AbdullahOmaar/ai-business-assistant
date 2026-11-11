@@ -612,15 +612,15 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     { tab: 'overview', titleAr: 'الرئيسية', titleEn: 'Overview' },
     { tab: 'customers', titleAr: 'العملاء', titleEn: 'Customers' },
     { tab: 'products', titleAr: 'المنتجات والمخزون', titleEn: 'Products & inventory' },
-    { tab: 'invoices', titleAr: 'المبيعات والفواتير', titleEn: 'Sales & invoices' },
+    { tab: 'invoices', titleAr: 'المبيعات والفواتير', titleEn: 'Sales & invoices', cardAr: 'الفواتير', cardEn: 'Invoices' },
     { tab: 'payments', titleAr: 'المدفوعات', titleEn: 'Payments' },
     { tab: 'expenses', titleAr: 'المصروفات', titleEn: 'Expenses' },
     { tab: 'employees', titleAr: 'الموظفون والمرتبات', titleEn: 'Employees & payroll' },
-    { tab: 'assistant', titleAr: 'مساعد الأعمال الذكي', titleEn: 'AI business assistant' },
+    { tab: 'assistant', titleAr: 'مساعد الأعمال الذكي', titleEn: 'AI business assistant', cardAr: 'المساعد الذكي', cardEn: 'AI assistant' },
     { tab: 'reports', titleAr: 'نتيجة التشغيل الأولية', titleEn: 'Preliminary operating result' },
-    { tab: 'taxes', titleAr: 'التقارير الضريبية', titleEn: 'Tax summary' },
+    { tab: 'taxes', titleAr: 'التقارير الضريبية', titleEn: 'Tax summary', cardAr: 'ملخص الضرائب' },
     { tab: 'audit', titleAr: 'سجل العمليات', titleEn: 'Activity log' },
-    { tab: 'integrity', titleAr: 'مراجعة سلامة البيانات', titleEn: 'Data integrity review' },
+    { tab: 'integrity', titleAr: 'مراجعة سلامة البيانات', titleEn: 'Data integrity review', cardAr: 'سلامة البيانات', cardEn: 'Data integrity' },
     { tab: 'release-guide', titleAr: 'دليل التطبيق والإصدارات', titleEn: 'App guide & versions' },
     { tab: 'suppliers', titleAr: 'الموردون', titleEn: 'Suppliers' },
     { tab: 'purchases', titleAr: 'المشتريات', titleEn: 'Purchasing' },
@@ -637,15 +637,18 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
     for (const destination of routeDestinations) {
       const expectedTitle = language === 'ar' ? destination.titleAr : destination.titleEn;
-      const homeTitle = language === 'ar' ? 'الرئيسية' : 'Overview';
+      const homeNavLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+      const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
+      const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
+        : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
       if (destination.tab !== 'overview') {
-        await page.locator('.sidebar').getByRole('button', { name: homeTitle, exact: true }).click();
-        await expect(page.locator('.topbar-heading h1')).toHaveText(homeTitle);
+        await page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true }).click();
+        await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
         await page.locator('.module-directory-disclosure').evaluate(element => {
           (element as HTMLDetailsElement).open = true;
         });
         const card = page.locator('.module-directory-grid > aba-quick-access-card')
-          .filter({ hasText: expectedTitle });
+          .filter({ hasText: cardLabel });
         await expect(card, destination.tab + ' must be listed for the OWNER').toHaveCount(1);
         await card.locator('button').click();
       }
@@ -674,15 +677,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await assertRouteSweep(390, 'en');
-  await page.getByRole('button', { name: 'العربية', exact: true }).click();
+  await page.locator('.sidebar').getByRole('button', { name: /More sections/ }).click();
+  await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
   await assertRouteSweep(1280, 'ar');
   await page.getByRole('button', { name: 'English', exact: true }).click();
   await assertRouteSweep(1280, 'en');
-  await page.setViewportSize({ width: 360, height: 800 });
-  await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
-  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await page.getByRole('button', { name: 'العربية', exact: true }).click();
+  await page.setViewportSize({ width: 360, height: 800 });
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  await page.locator('.sidebar').getByRole('button', { name: 'الرئيسية', exact: true }).click();
 
   // Exercise the real Home app-header shortcut; the More menu remains covered
   // by its dedicated navigation assertions above.
