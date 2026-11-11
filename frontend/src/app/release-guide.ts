@@ -24,6 +24,7 @@ export const FEATURE_CATALOG = [
         titleEn: 'Separate currencies',
         detailAr: 'تُعرض الإجماليات لكل عملة على حدة ولا تُجمع العملات المختلفة.',
         detailEn: 'Totals stay separate by currency; unlike currencies are never added together.',
+      },
       {
         titleAr: 'تخطي إلى المحتوى الرئيسي',
         titleEn: 'Skip to main content',
