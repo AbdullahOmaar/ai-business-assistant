@@ -412,7 +412,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
       // Wait for the mocked overview and runtime health data, not just the
       // always-present system-status panel, before capturing the viewport.
       await expect(page.locator('.metric-card')).toHaveCount(4, { timeout: 20_000 });
-      await expect(page.locator('.runtime-summary .status-pill')).toHaveText('Healthy', { timeout: 20_000 });
+      await expect(page.locator('.runtime-summary .status-pill')).toHaveText(language === 'en' ? 'Healthy' : 'سليم', { timeout: 20_000 });
     } else {
       await page.getByRole('button', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ }).click();
       await expect(page.getByRole('heading', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ })).toBeVisible();
