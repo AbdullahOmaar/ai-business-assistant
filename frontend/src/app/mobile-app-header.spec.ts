@@ -69,8 +69,10 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.match(styles, /min-width: 0/);
   assert.match(styles, /overflow-wrap: anywhere/);
   assert.ok(appSource.includes('env(safe-area-inset-top'));
-  assert.match(appSource, /install-cta-visible/);
-  assert.ok(appSource.includes('.shell.install-help-open .main'));
+  assert.match(appSource, /class="mobile-install-card"/);
+  assert.match(appSource, /class="install-help-inline"/);
+  assert.match(appSource, /install-help-inline\\s*\\{[^}]*position:\s*static/);
+  assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
   assert.match(source, /aria-live="polite" aria-atomic="true"/);
   assert.match(styles, /:host-context\(\.shell\.install-cta-visible\)\s*\{[^}]*top:\s*calc\(76px \+ env\(safe-area-inset-top/);
   assert.match(styles, /inset-inline-end/);
@@ -110,11 +112,14 @@ test('mobile header interactive controls meet the 44px touch-target baseline', (
 });
 
 
-test('mobile app header stays sticky without covering install controls', () => {
-  assert.match(styles, /:host\s*\{[^}]*position:\s*sticky/s);
-  assert.match(styles, /:host-context\(\.shell\.install-cta-visible\)\s*\{[^}]*top:\s*calc\(76px/);
-  assert.match(styles, /:host-context\(\.shell\.install-help-open\)\s*\{[^}]*top:\s*calc\(164px/);
-});
+test('mobile app header and install guidance stay in normal document flow', () => {
+  assert.match(styles, /:host\\s*\\{[^}]*position:\\s*relative/s);
+  assert.doesNotMatch(styles, /:host\\s*\\{[^}]*position:\\s*sticky/s);
+  assert.match(appSource, /class="mobile-install-card"/);
+  assert.match(appSource, /class="install-help-inline"/);
+  assert.match(appSource, /mobile-install-button/);
+  assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
+});;
 
 test('mobile page title changes are announced politely without moving focus', () => {
   assert.match(source, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
