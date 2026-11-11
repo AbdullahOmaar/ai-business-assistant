@@ -1,3 +1,13 @@
+## Master continuation — ruleset evidence reconciliation — 2026-11-12
+
+- Existing PR #388 / `docs/contributing-ci-single-source` only. Pre-ledger head `ef993b0b3d956899e628162b98c9ef35e798fb6c`; base `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`; 25 commits ahead / 0 behind.
+- Read back active repository ruleset `26009350`: strict up-to-date enforcement requires `all-checks-passed` from GitHub Actions App `15368`; deletion and non-fast-forward protections are active; no separate PR-approval count is configured in that ruleset. Classic branch-protection endpoint returned 403 to this integration, so any additional classic enforcement remains UNKNOWN.
+- Updated `docs/project-knowledge/03_SECURITY_POLICY_AND_RELEASE_GATES.md` and the v1.0.9 changelog to distinguish verified ruleset requirements from inaccessible classic protection. All five DRAFT package files refreshed to one second-precision UTC timestamp `2026-11-11T23:03:28Z`; package remains DRAFT.
+- No application behavior or CI workflow changed. Validator/17 regression tests and exact-head Actions remain NOT RUN; no unnecessary test was triggered. Exact-head required aggregate remains a pre-merge gate.
+- No merge, production deployment, API/DB/schema/migration or financial semantics change.
+
+---
+
 ## Master continuation — CI policy consolidation + Project Knowledge v1.0.9 — 2026-11-12
 
 - Continued only on existing PR #388 / `docs/contributing-ci-single-source`; no new branch or PR. Pre-ledger checkpoint head: `0007f180c9c5673080cb0cd095823ed49efcfcab`; base `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`; 19 commits ahead / 0 behind.
