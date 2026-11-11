@@ -82,7 +82,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If GitHub-hosted runner allocation or logs are unavailable, record the exact check as NOT RUN / BLOCKED. Do not silently substitute another CI provider or treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
+- If a CI run is unavailable, record the affected check as NOT RUN / BLOCKED. For provider selection, required jobs, retries, and exact-SHA evidence, follow [the canonical CI policy in AGENTS.md](AGENTS.md#ci-merge-and-deployment).
 
 ## 6. Required handoff report
 
@@ -104,16 +104,9 @@ Every substantive handoff must state:
 - Manual single-writer claims are coordination records, not locks or atomic leases. On overlap, stop only conflicting writes; independent feature-local work may continue.
 - One active writing branch per contributor. A separate branch is allowed only for a genuinely independent outcome or authorization/security/release boundary; document the reason and freeze writes on the contributor's previous branch during that independent work.
 
-## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
+## 8. CI, review and merge policy source of truth
 
-- GitHub Actions is the primary exact-SHA CI provider. Require the six substantive jobs and `all-checks-passed` aggregate on the exact workflow SHA.
-- GitHub Actions is the sole active CI provider. The active default-branch ruleset requires its `all-checks-passed` aggregate on the exact SHA.
-- GitLab CI and Semaphore are not approved CI providers. Semaphore is retired/non-authoritative.
-- Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
-- Record retry root cause and changed condition; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
-- A full documented maintainer/Project Master self-review of the current cumulative diff on the exact candidate SHA is mandatory for every change. No separate independent reviewer is required by project policy, including for routine PRs, Security/Architecture and controlled-knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory and must never be bypassed.
-- Before merge, require a non-Draft READY PR, exact-head checks, current maintainer review, resolved blocking review threads, reconciled base/divergence, provider protections satisfied and explicit Owner merge authorization. `mergeable=true` is not approval.
-- Merge authorization and production deployment authorization are separate. Disclose auto-deployment coupling and obtain the required production authorization before a merge that automatically deploys.
+Follow the current [repository-wide CI, review, merge, and deployment rules in AGENTS.md](AGENTS.md#ci-merge-and-deployment). This guide intentionally does not duplicate CI provider selection, workflow jobs, required checks, exact-SHA evidence, reviewer gates, or merge authorization rules.
 
 ## 9. Canonical evidence and handoff — Owner-authorized 2026-11-08
 
