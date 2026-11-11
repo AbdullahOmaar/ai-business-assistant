@@ -1,20 +1,20 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.7
-status: APPROVED
+version: 1.0.8
+status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T23:10:43Z
-review_due: 2026-11-29
+last_verified_at: 2026-11-11T05:55:00Z
+review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/ARCHITECTURE_BASELINE.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/adr/ADR-001-v0-architecture.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/ARCHITECTURE_BASELINE.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/adr/ADR-001-v0-architecture.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/CONTRIBUTING.md
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
+related_github_sha: 827f220da14139605294923cc5550e088c2589e3
 supersedes: none
 superseded_by: none
 ---
@@ -69,7 +69,7 @@ Avoid:
 - Never combine currencies without an approved conversion policy.
 - Use decimal-safe monetary calculations and explicit rounding/currency rules from an approved contract.
 - Stock quantity changes must be represented by auditable stock movements; do not silently overwrite balances.
-- Do not mutate issued invoices, allocations, recorded payments or derived balances without an approved correction workflow.
+- The Owner-authorized development-stage permission covers creating and editing accounts and draft/editable invoices through normal authenticated application workflows. Issued invoices, recorded payments, allocations and derived balances remain governed by their established correction/reissue workflows; do not silently mutate them or bypass approved financial invariants.
 - Use transaction boundaries and idempotency to prevent duplicate or partial side effects.
 - Profit must remain qualified as an estimate when cost inputs are incomplete.
 

@@ -1,21 +1,21 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.7
-status: APPROVED
+version: 1.0.8
+status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-10T23:10:43Z
-review_due: 2026-11-29
+last_verified_at: 2026-11-11T05:55:00Z
+review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/CONTRIBUTING.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/104163c6f756aae827bed83a0839154ea6b7dfcb/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 104163c6f756aae827bed83a0839154ea6b7dfcb
+related_github_sha: 827f220da14139605294923cc5550e088c2589e3
 supersedes: none
 superseded_by: none
 ---
@@ -32,6 +32,14 @@ superseded_by: none
 - Apply tenant filters before returning records, aggregating reports, constructing AI context, exporting data or paginating sensitive results.
 - Test denial paths for both the expected response and no unintended database/audit side effects.
 - Platform administration is separate from ordinary workspace Owner/Staff permissions.
+
+## 1.1 Owner-authorized development-stage write scope
+
+The Owner confirms AIBA is still in development / pre-release and not yet a real customer-production business environment, even where provider target metadata is Production. The lifecycle label does not change Vercel/Neon configuration.
+
+Standing permission for every AIBA worker/agent: create application/user and workspace/business accounts; read/use existing project data needed for assigned development/QA; and create/edit account and draft/editable invoice records through normal authenticated application/API flows in the currently running environment, including an environment technically labelled Production. No additional per-operation Owner approval is required for these named operations.
+
+All existing safeguards remain: verified identity, server-side authorization, tenant isolation, request validation, idempotency and audit logging. No direct SQL/service bypass. This is not authorization for hard deletion, void/cancel/post, payment/allocation/settlement-history mutation, real-money movement, external communications, tax filing, destructive migration, paid resources, provider-security changes, merge or release. Those remain separately gated. It does not approve new financial semantics; T37 remains DRAFT / NOT APPROVED. Use only necessary project data and keep secrets/personal data out of prompts, docs, logs and screenshots. See the [canonical Notion Owner decision](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44).
 
 ## 2. Tenant isolation and privacy
 
@@ -59,7 +67,7 @@ Use authorized secret stores and rotate exposed credentials through the approved
 - Do not change financial schema/posting semantics without formal approval.
 - Preserve transactions, idempotency, audit trails and append-only/correction workflows.
 - Never treat an approved payroll record as paid; the recorded payout transition and external payment confirmation are distinct concepts under the approved policy.
-- Do not use production data to validate migrations or tests.
+- The Owner authorizes use of existing AIBA project data for assigned development/QA and account/invoice workflows. Continue to use disposable or isolated restored databases for schema/migration validation; do not use the deployed application database as a migration-test target.
 
 ## 5. Database and migration safety
 
@@ -71,7 +79,7 @@ Before any consequential migration:
 5. Document rollback/recovery steps and expected impact.
 6. Obtain explicit owner authorization before production execution.
 
-No destructive migration, production write, snapshot/restore or production data correction is authorized by this document.
+This document does not authorize destructive migrations, direct database changes, snapshot/restore operations or arbitrary production data corrections. The Owner's separately recorded development-stage authorization is limited to account/workspace creation, use of project data for assigned development/QA, and account/draft-invoice create/edit through normal authenticated app/API workflows; it does not waive the safeguards and separate gates stated above.
 
 ## 6. Branch, review and merge gates
 
