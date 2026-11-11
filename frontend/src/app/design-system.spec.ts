@@ -57,6 +57,28 @@ test('KPI card surface is drawn once by the inner component, not the Angular hos
   assert.match(inner, /box-shadow:/);
 });
 
+test('public authentication screens fit the visible viewport without redundant vertical overflow', () => {
+  assert.ok(app.includes('class="shell" [class.auth-shell]="!signedIn"'));
+  assert.ok(app.includes('.shell.auth-shell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px}'));
+  assert.ok(app.includes('.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}'));
+});
+
+test('browser title and root language metadata follow the persisted locale and language toggle', () => {
+  assert.ok(app.includes(`private syncDocumentLanguage(): void {
+    document.documentElement.lang = this.language;
+    document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
+    document.title = this.t('مساعد الأعمال الذكي', 'AI Business Assistant');
+  }`));
+  const languagePreference = app.indexOf("const savedLanguage = localStorage.getItem('aba-language');");
+  assert.ok(languagePreference >= 0);
+  assert.ok(app.indexOf('this.syncDocumentLanguage();', languagePreference) > languagePreference);
+  const toggleStart = app.indexOf('toggleLanguage(): void');
+  const syncStart = app.indexOf('private syncDocumentLanguage(): void', toggleStart);
+  assert.ok(app.slice(toggleStart, syncStart).includes('this.syncDocumentLanguage();'));
+  const startupStart = app.indexOf('async initializeApp(): Promise<void>');
+  assert.ok(app.slice(startupStart).includes('this.syncDocumentLanguage();'));
+});
+
 test('Angular loads the design system after the existing application stylesheet', () => {
   const styles = angular.projects['ai-business-assistant'].architect.build.options.styles;
   assert.deepEqual(styles, ['src/styles.css', 'src/design-system.css']);
