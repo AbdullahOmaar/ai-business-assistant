@@ -5,10 +5,10 @@ The Owner explicitly supersedes the 2026-11-08 CircleCI-only provider directive 
 - The repository is Public. Standard GitHub-hosted runner usage is free for public repositories; no self-hosted runner, paid larger runner or separate server is required.
 - The single authoritative workflow is `.github/workflows/ci.yml`: backend pytest + disposable PostgreSQL migration/schema checks + project-knowledge validator, frontend unit tests, production build, npm dependency audit, Playwright browser smoke, backend container + backup/restore safety checks, and fail-closed `all-checks-passed` aggregate.
 - Every substantive job verifies the checkout matches the exact workflow event SHA. Workflow permissions are read-only; test/build/security jobs require no repository secrets. No production DB or production deployment is accessed.
-- CircleCI remains configured as a transition fallback until all six GitHub Actions jobs and the aggregate pass on exact candidate SHAs and main-branch required-check enforcement is verified. Do not retire CircleCI early.
+- CircleCI's GitHub webhook is disabled (hook 703878632); no CircleCI project schedules exist. `.circleci/config.yml` is removed in the current cleanup branch.
 - GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main reports `protected=true`; classic branch-protection read returns 403. Ruleset readback shows active Copilot review and the former PR-approval ruleset disabled. Required status checks and PR/approval enforcement remain UNKNOWN pending Owner/Admin readback.
-- No paid upgrade, merge, CI retirement, production deployment, production DB write/migration or gate bypass is authorized by this provider decision. Existing maintainer review, security, merge and separate deployment gates remain mandatory.
+- Main is protected by active ruleset 26009350. It now strictly requires GitHub Actions App 15368 check `all-checks-passed`; Copilot review and deletion/non-fast-forward rules remain active. No separate PR-approval count is configured.
+- Owner explicitly authorized CircleCI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations and gate bypasses remain separately restricted.
 
 Implementation remains IN_PROGRESS. Existing PR #367 is repurposed from the GitLab candidate to this GitHub Actions transition. The full suite has passed on checkpoint SHA `a9f386cd40cb4c955035e97d05aee9dbd32d08d1`; this next documentation cleanup creates a new head and requires fresh exact-SHA validation. PR #367 remains Draft and unmerged pending required-check readback, maintainer self-review and remaining release gates.
 
