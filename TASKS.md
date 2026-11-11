@@ -3561,3 +3561,15 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 - Final route review found two remaining cross-tenant/audit re-read calls still referenced the old query-param paths after the primary candidate invoice paths were corrected. Updated those calls to reuse the verified business-scoped router paths; no application API code changed.
 - This is a test-harness-only correction; exact-head CI rerun is required.
+
+
+## T18 mobile dock scroll-clearance follow-up — 2026-11-11
+
+- **Branch:** `master/t18-mobile-ux-accessibility-20261111`
+- **Base synced:** `main@72a067149562af495d54e35f1a490b218117f333` (merge-sync retained the prior branch history; no force-push).
+- **Scope:** frontend presentation + source regression test + UX documentation only.
+- **Change:** at widths ≤760px, reserve 132px plus device safe-area inset at the workspace main-region end; add matching sidebar safe-area padding and 12px scroll margins for common interactive controls.
+- **Regression:** `frontend/src/app/design-system.spec.ts` asserts the main-region scroll runway and safe-area rules.
+- **Current head after documentation commit:** pending readback.
+- **Quality:** exact-head GitHub Actions, frontend unit tests/build and rendered viewport QA are pending; the legacy Semaphore status is not the Owner-selected CI provider. Physical Android installed-PWA, screen-reader, high-contrast and 200% zoom remain NOT RUN.
+- **Disposition:** IN_PROGRESS. No API/backend, auth/tenant, database, financial semantics, merge or deployment changes.
