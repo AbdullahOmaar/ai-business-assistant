@@ -654,7 +654,12 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       }
       await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
         .toHaveText(expectedTitle);
-      await expect(page.locator('.workspace-bar')).toBeVisible();
+      if (width <= 760) {
+        // The Hybrid mobile header replaces the desktop workspace bar on phones.
+        await expect(page.locator('aba-mobile-app-header')).toBeVisible();
+      } else {
+        await expect(page.locator('.workspace-bar')).toBeVisible();
+      }
       const layout = await page.evaluate(() => ({
         width: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
