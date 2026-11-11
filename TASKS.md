@@ -3611,3 +3611,9 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - The neutral global badge rule now covers both forms through one explicit selector. Regression coverage asserts the component-owned class, the projected workspace count markup and the combined selector.
 - No component markup, count value, business behavior, role/tenant, API or data changes.
 - Exact-head GitHub Actions validation is pending on the resulting correction SHA; prior CI evidence applies only to parent commits.
+
+
+## T18 documentation consistency correction — 2026-11-11
+
+- Corrected the UX inventory's scope note to reflect the tablet-only CSS change in `app.component.ts`. The PR remains presentation/test/docs only; no app state, navigation, workspace switching, API/backend, auth/tenant, DB, financial, inventory or payroll behavior changes.
+- This docs-only correction changes the candidate SHA; exact-head GitHub Actions validation is required again.

@@ -458,7 +458,7 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **Platform Admin:** mobile metadata/data-note copy is raised to 12px with readable line-height; compact table cells remain 11px to preserve the existing four-column summary layout.
 - **Release Guide:** UI-version/current-version badges wrap safely at narrow widths; footnote copy is raised to 13px with a 1.65 line-height. Native `details/summary` behavior and guide content remain unchanged.
 - **Regression coverage:** `frontend/src/app/shared-ui-responsive.spec.ts` covers mobile workspace-context typography, module-card interaction/reduced motion, section-count styling, Platform Admin metadata and Release Guide text sizing.
-- **Boundary:** presentation and regression coverage only. No `app.component.ts`, `styles.css`, API/backend, auth/authorization, tenant isolation, DB/schema/migration, invoice/payment, financial, inventory, payroll or external-message behavior changes.
+- **Boundary:** presentation and regression coverage only. The only `app.component.ts` change is the tablet workspace-bar CSS rule described below; no `styles.css`, API/backend, auth/authorization, tenant isolation, DB/schema/migration, invoice/payment, financial, inventory, payroll or external-message behavior changes.
 - **Validation:** pending on the resulting exact head. Prior exact-head CI on the parent SHA is not evidence for this new candidate. Authenticated all-role/two-tenant rendered review, full 19-destination RTL/LTR screenshot acceptance, screen reader, 200% zoom and physical Android installed-PWA remain NOT RUN.
 
 
@@ -487,3 +487,8 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Strengthened `shared-ui-responsive.spec.ts` to assert the component-owned count class, the projected `.count` usage in the workspace template, and the combined CSS selector.
 - This is a CSS targeting/test-quality correction only; count values, component markup, business behavior and accessibility semantics are unchanged.
 - Exact-head CI is pending for the resulting correction commit; previous PASS evidence is not reused as final-head evidence.
+
+
+## Documentation consistency correction — 2026-11-11
+
+- Clarified the shared-component batch boundary: `app.component.ts` is changed only for the tablet workspace-bar responsive CSS rule documented in the preceding section. No application state, route, navigation, workspace-switching or business logic is changed.
