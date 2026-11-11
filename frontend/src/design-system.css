@@ -1467,6 +1467,15 @@
 }
 
 @media (max-width: 600px) {
+  /* The document viewport, not .main, is the scrolling container. */
+  html {
+    scroll-padding-block-end: calc(128px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root body .shell .aba-state-message {
+    flex-wrap: wrap;
+  }
+
   :root body .shell .list-tools,
       :root body .shell .invoice-controls,
   :root body .shell .statement-filters,

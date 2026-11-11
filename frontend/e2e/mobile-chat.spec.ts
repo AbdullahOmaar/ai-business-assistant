@@ -396,6 +396,25 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     const directory = page.locator('.module-directory-disclosure');
     await directory.evaluate(element => { (element as HTMLDetailsElement).open = true; });
     const footer = page.locator('.main footer');
+    const lastModuleAction = page.locator('.module-directory-grid > aba-quick-access-card:last-child button');
+    await page.evaluate(() => {
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+    });
+    await lastModuleAction.focus();
+    const focusClearance = await page.evaluate(() => {
+      const focused = document.activeElement as HTMLElement | null;
+      const dock = document.querySelector('.sidebar');
+      if (!focused || !dock) return null;
+      return {
+        targetBottom: focused.getBoundingClientRect().bottom,
+        dockTop: dock.getBoundingClientRect().top,
+        viewportScrollPadding: Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBlockEnd),
+      };
+    });
+    expect(focusClearance, 'focused Home controls and the fixed dock must render').not.toBeNull();
+    expect(focusClearance!.viewportScrollPadding, 'document viewport must reserve dock clearance for focus scrolling').toBeGreaterThanOrEqual(128);
+    expect(focusClearance!.targetBottom, 'keyboard-focused Home controls must scroll above the fixed dock').toBeLessThanOrEqual(focusClearance!.dockTop - 8);
     await footer.scrollIntoViewIfNeeded();
     const clearance = await page.evaluate(() => {
       const dock = document.querySelector('.sidebar');
@@ -418,6 +437,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       fullPage: false,
       animations: 'disabled',
     });
+    // Restore the Home viewport so the following general screenshots include the header and KPIs.
+    await page.evaluate(() => window.scrollTo(0, 0));
   };
   for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });

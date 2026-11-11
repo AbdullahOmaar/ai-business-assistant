@@ -1146,7 +1146,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       .mobile-more-menu{inset-inline-start:auto}
       .mobile-more-menu .nav-item{min-height:48px;border-radius:12px}
-      .main,.shell.english .main{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px));scroll-padding-block-end:calc(128px + env(safe-area-inset-bottom,0px))}
+      .main,.shell.english .main{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
     }
     @media(max-width:380px){
       .mobile-install-card{gap:8px;padding:9px}.mobile-install-copy{gap:7px}.mobile-install-copy small{font-size:10px}.mobile-install-button{min-width:68px;padding-inline:10px}
