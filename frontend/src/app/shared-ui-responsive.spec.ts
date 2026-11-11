@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const cardSurface = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
+const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
@@ -106,3 +107,37 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
   assert.match(styleBlock, /\.metric-card small\{font-size:12px\}/);
   assert.match(styleBlock, /\.data-note p\{font-size:12px\}/);
 });
+
+test('workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
+  for (const selector of [
+    '.list-tools', '.filter-bar', '.customer-invoice-filter', '.invoice-controls',
+    '.statement-filters', '.audit-filters', '.employee-tools', '.operations-search',
+  ]) {
+    assert.ok(designSystem.includes(selector), 'shared filter selector must be covered: ' + selector);
+  }
+  assert.match(designSystem, /\.list-tools > input,[\s\S]*?min-height:\s*var\(--aiba-control-md\)/);
+  assert.match(designSystem, /\.list-tools > button,[\s\S]*?min-height:\s*var\(--aiba-control-md\)/);
+  assert.match(designSystem, /@media\s*\(max-width:\s*600px\)[\s\S]*?\.list-tools,[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+});
+
+test('fixed mobile navigation leaves a scroll clearance reserve for the final content', () => {
+  assert.match(designSystem, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.main,[\s\S]*?padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(designSystem, /\.main,[\s\S]*?scroll-padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(designSystem, /:root body \.shell \.sidebar > \.nav-item\s*\{\s*min-height:\s*48px/);
+  assert.match(designSystem, /:root body \.shell \.sidebar \{[\s\S]*?padding-block-end:\s*calc\(8px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+});
+
+test('mobile tables retain every field with a touch-scroll and sticky first-column fallback', () => {
+  assert.match(designSystem, /\.table-wrap,[\s\S]*?overflow-x:\s*auto/);
+  assert.match(designSystem, /\.table-wrap,[\s\S]*?overscroll-behavior-inline:\s*contain/);
+  assert.match(designSystem, /\.table-wrap tbody td:first-child,[\s\S]*?position:\s*sticky/);
+  assert.match(designSystem, /\.table-wrap thead th:first-child,[\s\S]*?z-index:\s*4/);
+  assert.match(designSystem, /\.invoice-table-wrap/);
+});
+
+test('global focus treatment remains visible and keyboard targets scroll clear of the dock', () => {
+  assert.match(designSystem, /button:focus-visible,[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
+  assert.match(designSystem, /:is\(button, a, input, select, textarea, \[tabindex\]\):focus-visible\s*\{\s*scroll-margin-block:\s*12px/);
+  assert.match(sectionHeader, /:is\(button,a,\[role="button"\]\)\{min-height:44px/);
+});
+
