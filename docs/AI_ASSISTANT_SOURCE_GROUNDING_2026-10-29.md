@@ -12,5 +12,5 @@ Keep the assistant read-only and tenant-scoped. This change corrects citations r
 
 ## Verification gate
 - Regression tests live in `backend/tests/test_assistant_security.py`.
-- Run backend tests and the full required CircleCI checks on the exact PR head before merge.
+- Run the full GitHub Actions workflow and require `all-checks-passed` on the exact PR head before merge.
 - Provider-backed live behavior, authenticated production smoke, and production deployment remain separate gates; none is implied by these tests.
