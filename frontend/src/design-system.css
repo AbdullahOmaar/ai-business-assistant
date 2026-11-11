@@ -1294,3 +1294,40 @@
     padding: var(--aiba-space-3);
   }
 }
+
+
+/* Mobile dock clearance: keep the final scroll target fully above the fixed navigation. */
+@media (max-width: 760px) {
+  :root body .shell .main,
+  :root body .shell.english .main {
+    padding-block-end: calc(132px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-block-end: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root body .shell .sidebar {
+    padding-block-end: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root body .shell button,
+  :root body .shell a,
+  :root body .shell summary {
+    scroll-margin-block: 12px;
+  }
+}
+
+/* Preserve visible keyboard focus and comfortable touch targets across modules. */
+:root body .shell button:focus-visible,
+:root body .shell a:focus-visible,
+:root body .shell summary:focus-visible,
+:root body .shell [tabindex]:focus-visible {
+  outline: 3px solid var(--aiba-focus);
+  outline-offset: 3px;
+}
+
+:root body .shell .nav-item,
+:root body .shell .home-shortcut-link,
+:root body .shell .module-directory-summary,
+:root body .shell .list-tools button,
+:root body .shell .filter-bar button {
+  min-height: 44px;
+}
