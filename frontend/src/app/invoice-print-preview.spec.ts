@@ -57,3 +57,24 @@ test('print popup failures and invoice-detail errors are surfaced safely', () =>
   assert.match(method, /printWindow\.close\(\)/);
   assert.match(method, /this\.error = this\.message\(error\)/);
 });
+
+
+test('print refuses stale invoice details and closes the popup before writing HTML', () => {
+  const start = source.indexOf('async printInvoice(invoice: Invoice): Promise<void>');
+  const end = source.indexOf('async editInvoice(invoice: Invoice): Promise<void>', start);
+  const method = source.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(method, /const requestContext = this\.captureTenantRequest\(businessId\)/);
+  assert.match(method, /this\.isCurrentTenantOperation\(this\.printRequestGuard, requestVersion, requestContext\)/);
+
+  const staleCheck = method.indexOf('if (!isCurrent())');
+  const statusCheck = method.indexOf("if (detail.status !== 'issued')");
+  const htmlWrite = method.indexOf('printWindow.document.write(');
+  assert.ok(staleCheck >= 0 && statusCheck > staleCheck && htmlWrite > statusCheck);
+  const staleBranch = method.slice(staleCheck, statusCheck);
+  const nonIssuedBranch = method.slice(statusCheck, htmlWrite);
+  assert.match(staleBranch, /printWindow\.close\(\);\s*return;/);
+  assert.match(nonIssuedBranch, /if \(detail\.status !== 'issued'\) \{\s*throw new Error\(/);
+  assert.match(method.slice(method.indexOf('} catch (error) {')), /printWindow\.close\(\)/);
+  assert.match(method, /printWindow\.onload = \(\) => printWindow\.print\(\)/);
+});

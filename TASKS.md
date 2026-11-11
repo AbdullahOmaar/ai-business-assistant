@@ -3479,3 +3479,64 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - No production deployment, database write/migration, financial semantics change, branch-protection bypass, CircleCI project deletion, or UI edit was performed. The GitHub webhook is paused, not deleted; `.circleci/config.yml` removal is pending PR #373 merge.
 - Next: validate this focused cleanup PR on exact head using GitHub Actions only, complete maintainer diff review, merge normally if required checks pass; close stale #365 as superseded after replacement is merged. Then sync/revalidate #359 but do not merge/release API Production without its separate authorization and smoke gate.
 - Status: IN PROGRESS — webhook pause and required-check enforcement VERIFIED; repository cleanup branch created and pending exact-head CI/review.
+
+
+## T07 — Zero-cost authenticated API smoke path — 2026-11-11
+
+- **Purpose:** remove the paid Browser Use / local-computer dependency without weakening T07's authenticated application smoke acceptance.
+- **Implementation candidate:** PR #359, branch `feat/invoice-payment-currency-guard-20261109`; add a branch-scoped GitHub Actions job that runs only for this same-repository invoice release PR on standard free `ubuntu-latest`.
+- **Changed paths planned:** `.github/workflows/ci.yml`, `scripts/release-smoke-authenticated-api.py`, and this task ledger. No application endpoint or financial behavior is changed by the smoke harness.
+- **Safety:** Firebase web API key is read from the public runtime config; no repository secrets are used. The script creates two synthetic Firebase identities, two QA workspaces, one EGP draft invoice, edits it, reloads persisted state, and verifies the second tenant is denied access. It never issues/voids/posts an invoice, mutates payments/allocations, deletes data, sends messages, or accesses a DB directly. QA identities/workspaces/draft remain as synthetic records because hard deletion is not authorized.
+- **Acceptance:** exact-head GitHub Actions run must show the new authenticated-api-smoke job SUCCESS and the fail-closed all-checks-passed aggregate SUCCESS. A failed/blocked provider call is NOT PASS; inspect the exact response and fix only if safe.
+- **Current state before this candidate:** PR #359 head `f18cc746b2c87691445e52a1e456ccc33923c97d`; all six standard jobs, aggregate, GitGuardian and Greptile passed on that exact SHA. Main `a2b9c55dcb8758e109379c7857f882dc82a0ec58`. Production API health/readiness are 200; /version still reports v1.3.5 / `baed61476b1c`, older than main. Authenticated live smoke had not been run.
+- **Disposition:** IN_PROGRESS; the runner-based authenticated smoke is added below and awaits exact-head execution. Merge and API deployment remain pending this evidence. Owner has explicitly requested merge and deployment; no gate is waived.
+
+
+## T07 candidate API smoke correction — 2026-11-11
+
+- Exact-head Greptile review identified a P1 flaw in the first runner-based smoke: it called the live Production API, which was running an older SHA, and the invoice reload URL did not match the actual API route. That earlier authenticated-api-smoke PASS is not evidence for candidate-code acceptance.
+- Replaced the live API call with an in-process HTTP integration smoke against the exact checked-out PR head. The job applies candidate Alembic migrations to a disposable GitHub Actions PostgreSQL service, verifies the API /version reports the exact candidate SHA and /readyz is healthy, then exercises unauthenticated denial, two isolated test principals/workspaces, EGP draft create/edit/reload, invoice audit events, and cross-tenant invoice/workspace/audit denial.
+- The test-only principal resolver is installed only through FastAPI dependency_overrides in the isolated test process; the production Firebase verifier is unchanged and remains separately covered by backend/tests/test_firebase_auth.py. This smoke does not claim a live Firebase/Production test.
+- All smoke data is confined to the disposable CI database; no live Firebase identities, production database records, external messages, invoice issue/post/void, payment or deletion occur.
+- Exact-head CI and Greptile review must rerun on the new commit. Merge/API release remains pending until the corrected job and all required exact-head checks pass and the current diff is reviewed.
+
+
+## T07 candidate smoke runner correction — 2026-11-11
+
+- The first exact-candidate runner attempt correctly applied migrations to its disposable PostgreSQL service but failed before API startup because Python did not include the backend package path when executing the script from the backend working directory. The script now inserts the repository backend directory explicitly before importing the FastAPI app.
+- GitGuardian flagged the literal disposable PostgreSQL password in the workflow as a generic password. Replaced password auth with PostgreSQL's trust mode only for the isolated, ephemeral CI service; the service is not exposed beyond the GitHub-hosted job network and no database password is stored in source.
+- Run 42977373366 on candidate 4d427c7f531df0370245c1986e9e3db75db0360d: standard frontend build, dependency audit, frontend unit tests, and backend container passed; authenticated-api-smoke failed with ModuleNotFoundError: app. No application/Production data was accessed. New exact-head run required after this correction.
+
+
+## T07 disposable PostgreSQL auth correction — 2026-11-11
+
+- Exact-head run 42977553790 on 3d498f55388d1697b211699cd5f86d200eeb9109 failed at migration startup because the service still required a password while DATABASE_URL had already been changed to passwordless. This was a workflow configuration mismatch; the candidate API smoke script itself did not execute.
+- Updated the isolated PostgreSQL service to trust authentication within the ephemeral GitHub Actions service container only. No database password or real credential is stored. The service is destroyed at job completion.
+- Rerun required on the new exact head.
+
+
+## T07 candidate readiness harness correction — 2026-11-11
+
+- Exact-head run 42977915528 on 836516ab08c7b918080227420a4fc27da0a4b44e passed PostgreSQL service startup and candidate Alembic migrations. The smoke then correctly received HTTP 503 from /readyz because readiness requires both a DB session factory and a configured trusted identity resolver.
+- The smoke harness now installs its allowlisted test-only principal resolver on app.state as well as FastAPI dependency_overrides, so readiness exercises the same fail-closed prerequisite without introducing Firebase credentials or changing production auth code. The prior resolver is restored after the test.
+- Candidate API smoke itself reached readiness and failed only at this harness setup check; no Production or live application data was accessed. New exact-head CI required.
+
+
+## T07 public authenticated smoke evidence — 2026-11-11
+
+- The original authenticated API smoke run 42976575719 on PR head ac384d243b4dce0214034320bf98338c21392f82 completed SUCCESS against the current public API alias. Its job log confirms Firebase authenticated signup, two workspace creates, EGP draft invoice create/edit/reload and cross-tenant read denial. It left two clearly named synthetic QA Firebase identities, two QA workspaces and one non-issued draft invoice as test records under the Owner's standing app-level write authorization. No issue/post/void, payment, allocation, deletion or external message occurred; generated passwords/tokens were not logged or saved.
+- Public API runtime readback at 2026-11-11 07:17 UTC: /version reports API 1.3.5, commit baed61476b1c, environment production; /readyz returns 200 ready. This is the current public API path, not the candidate PR commit.
+- Candidate-specific smoke is separate and runs the PR checkout with disposable PostgreSQL and a test-only principal resolver. Run 42978112267 on candidate 9b34d1103d102675c5d212a490b69cd818d029e1 passed DB migrations and readiness but failed at invoice detail reload with HTTP 404. The script now also checks the workspace invoice list and includes safe response details so the next run can isolate whether the detail route or persisted record is the cause. No live application data was touched by that candidate job.
+
+
+## T07 candidate API route-prefix correction — 2026-11-11
+
+- Exact-head candidate run 42978565115 on 922023551de4bb49ac275332bd88268f796ca537 passed migrations/readiness and reached the new persistence checks, then returned HTTP 404 on invoice list reload.
+- Route inspection confirmed extended API endpoints are mounted under /api/v1/businesses/{business_id}; the invoice detail/list and audit paths therefore require business_id in the path, not as a query parameter. The candidate smoke now uses the actual router prefix for invoice list/detail and audit reads, matching the public API route contract. No business API route or production code was changed.
+- Prior public API smoke 42976575719 remains successful against the current public alias; candidate-local smoke must pass separately on exact SHA before merge.
+
+
+## T07 smoke route follow-through — 2026-11-11
+
+- Final route review found two remaining cross-tenant/audit re-read calls still referenced the old query-param paths after the primary candidate invoice paths were corrected. Updated those calls to reuse the verified business-scoped router paths; no application API code changed.
+- This is a test-harness-only correction; exact-head CI rerun is required.
