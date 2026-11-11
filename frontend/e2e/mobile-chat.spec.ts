@@ -365,19 +365,17 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
     if (width <= 430) await assertHomeMobileGrid(width);
+    await page.screenshot({
+      path: `test-results/aiba-home-${width}px-ar-viewport.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
     if ([320, 390, 1280].includes(width)) {
       await page.screenshot({
         path: `test-results/aiba-home-${width}px-ar.png`,
         fullPage: true,
         animations: 'disabled',
       });
-      if (width <= 390) {
-        await page.screenshot({
-          path: `test-results/aiba-home-${width}px-ar-viewport.png`,
-          fullPage: false,
-          animations: 'disabled',
-        });
-      }
     }
   }
 
@@ -484,6 +482,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
     if (width <= 430) await assertHomeMobileGrid(width);
+    await page.screenshot({
+      path: `test-results/aiba-home-${width}px-ltr-viewport.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
   }
 
   await page.setViewportSize({ width: 360, height: 800 });
