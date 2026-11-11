@@ -191,6 +191,13 @@ token: 'first-part\'second-fragment'
             self.assertNotIn(fragment, redacted)
         self.assertEqual(redacted.count("[REDACTED]"), 3)
 
+    def test_unterminated_quoted_values_with_many_backslashes_are_redacted_without_backtracking(self) -> None:
+        value = 'password: "unfinished-secret-fragment' + ("\\\\" * 4000)
+        redacted = redact_text(value)
+        self.assertNotIn("unfinished-secret-fragment", redacted)
+        self.assertIn("[REDACTED]", redacted)
+
+
 
 if __name__ == "__main__":
     unittest.main()
