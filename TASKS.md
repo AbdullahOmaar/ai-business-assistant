@@ -1,3 +1,11 @@
+## Metadata readback correction — 2026-11-12
+
+- Exact repository readback caught stale approval-state banner text: all five ABA-KNOW frontmatter records were version 1.0.11 while their banners still displayed 1.0.10.
+- Aligned all five banners to 1.0.11; 04 retains the explicit DRAFT / CONFLICTED review-policy notice. Frontmatter version/status/timestamp remain shared.
+- Documentation-only; no application tests/build. New commit still requires exact-head GitHub Actions workflow and aggregate.
+
+---
+
 ## Master continuation — exact-head CI and review-policy conflict — 2026-11-12
 
 - Exact-head GitHub Actions run [43120128593](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43120128593) completed SUCCESS on `bb5ddd2cbe85a98d070556d5fb01e2e59dd8376f`: all six substantive jobs and `all-checks-passed` PASS; `authenticated-api-smoke` SKIPPED (not required for this documentation branch). GitGuardian PASS. The legacy Semaphore context remains FAILURE but is retired/non-authoritative and is not used as CI evidence.

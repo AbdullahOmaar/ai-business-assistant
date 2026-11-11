@@ -23,7 +23,7 @@ superseded_by: none
 
 # Agent Operating Model
 
-> **Approval state:** DRAFT candidate version 1.0.10; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** DRAFT candidate version 1.0.11; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
