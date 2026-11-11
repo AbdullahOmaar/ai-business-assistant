@@ -105,6 +105,11 @@
   letter-spacing: normal;
 }
 
+/* Arabic labels and navigation captions should not inherit Latin tracking either. */
+:root body .shell[dir="rtl"] :is(.eyebrow, .nav-label, .mobile-more-group h3) {
+  letter-spacing: normal;
+}
+
 :root body .shell .section-head p,
 :root body .shell .muted,
 :root body .shell .footnote {
