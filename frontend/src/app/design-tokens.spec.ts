@@ -441,3 +441,7 @@ test('mobile navigation dock reuses the shared navigation palette', () => {
 test('Arabic RTL heading levels use natural connected-script letter spacing', () => {
   assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
 });
+
+test('Arabic RTL navigation and eyebrow labels use natural tracking', () => {
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(\.eyebrow, \.nav-label, \.mobile-more-group h3\) \{\s*letter-spacing: normal;/);
+});
