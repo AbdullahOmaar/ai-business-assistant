@@ -287,6 +287,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(kpiCards.nth(2)).toContainText('5000.00 EGP');
   await expect(kpiCards.nth(3)).toContainText('230500.00 EGP');
 
+  await page.locator('.mobile-install-button').click();
+  await expect(page.locator('.install-help-inline')).toBeVisible();
+  await expect(page.locator('.install-help-inline')).toContainText(/تثبيت التطبيق|Install app/);
+  const installHelpPosition = await page.locator('.install-help-inline').evaluate(element => getComputedStyle(element).position);
+  expect(installHelpPosition, 'install guidance must not become a fixed overlay').toBe('static');
+  await page.locator('.install-help-inline').getByRole('button', { name: /حسنًا|Got it/ }).click();
+  await expect(page.locator('.install-help-inline')).toHaveCount(0);
+
   const ownerModuleDirectory = page.locator('.module-directory-grid');
   const ownerModuleCount = await ownerModuleDirectory.locator('aba-quick-access-card').count();
   const ownerModuleCountLabel = await page.locator('.module-directory .count').textContent();
@@ -320,6 +328,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       };
       return {
         metricColumns: columns('.metric-grid'),
+        installCardPosition: document.querySelector('.mobile-install-card')
+          ? getComputedStyle(document.querySelector('.mobile-install-card')!).position : 'missing',
+        installCardWidth: document.querySelector('.mobile-install-card')?.getBoundingClientRect().width ?? 0,
+        mobileHeaderPosition: document.querySelector('aba-mobile-app-header')
+          ? getComputedStyle(document.querySelector('aba-mobile-app-header')!).position : 'missing',
+        installCardHeaderGap: (() => {
+          const card = document.querySelector('.mobile-install-card');
+          const header = document.querySelector('aba-mobile-app-header');
+          return card && header ? header.getBoundingClientRect().top - card.getBoundingClientRect().bottom : -1;
+        })(),
         metricSupportingFontSizes: Array.from(document.querySelectorAll('.metric-grid aba-metric-card small'))
           .map(element => getComputedStyle(element).fontSize),
         headerLabelFontSizes: Array.from(document.querySelectorAll('.mobile-app-header .context-label'))
@@ -344,6 +362,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         headerWorkspaceRowHeight: document.querySelector('.mobile-app-header .workspace-context')?.getBoundingClientRect().height ?? 0,
       };
     });
+    expect(layout.installCardPosition, 'mobile install guidance must remain in normal document flow').toBe('static');
+    expect(layout.installCardWidth, 'mobile install guidance must fit the content column').toBeGreaterThan(0);
+    expect(layout.mobileHeaderPosition, 'mobile workspace header must not stick over scrolled content').toBe('relative');
+    expect(layout.installCardHeaderGap, 'install guidance must finish before the mobile workspace header').toBeGreaterThanOrEqual(0);
     expect(layout.metricColumns, `KPI grid must use two columns at ${width}px`).toBe(2);
     expect(layout.metricSupportingFontSizes.length, `KPI supporting copy must render at ${width}px`).toBeGreaterThan(0);
     for (const fontSize of layout.metricSupportingFontSizes) {
