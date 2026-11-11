@@ -1582,3 +1582,23 @@
     transition: none;
   }
 }
+
+
+/* Mobile dock clearance: keep the final scroll target fully above the fixed navigation. */
+@media (max-width: 760px) {
+  :root body .shell .main,
+  :root body .shell.english .main {
+    padding-block-end: calc(132px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-block-end: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root body .shell .sidebar {
+    padding-block-end: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root body .shell button,
+  :root body .shell a,
+  :root body .shell summary {
+    scroll-margin-block: 12px;
+  }
+}
