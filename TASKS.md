@@ -13,7 +13,7 @@
   5. Run focused checks during implementation and the relevant full frontend tests/build plus exact-SHA required CI at batch close; record NOT RUN honestly.
   6. Complete full maintainer diff/security/scope review and update UX documentation with evidence.
 - **Baseline evidence:** Phase 1 UX Blueprint is accepted as documentation-only; Phase 2 Design System baseline is merged, but Figma Variables/component library, full 19-route rendered audit, authenticated role/tenant walkthrough, assistive technology/200% zoom, and physical Android installed-PWA acceptance remain separate incomplete criteria. Do not infer those gates from source-level tests.
-- **Current checkpoint:** branch created from the exact main SHA above. No implementation files changed yet; tests NOT RUN. This ledger entry records the work package and does not claim acceptance.
+- **Current checkpoint:** implementation commit `32932668954780771f64d42fa72f53bbec853055` adds a localized keyboard skip link, focusable main landmark, visible-on-focus styling, and reduced-motion handling. Follow-up `b8011c942b937b58ec446ce342eda5326d596485` limits the link to workspace states where its target exists. Source-level regression test added. Runtime/unit/build checks NOT RUN in this session; exact-SHA CI is pending PR creation. No API/DB/business behavior changed.
 - **Release:** PR/merge/deployment are separate gates. Main merges may trigger both Web and API Vercel projects; do not merge until API deployment isolation is verified or the Owner explicitly authorizes that side effect.
 
 ---
