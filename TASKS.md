@@ -3451,3 +3451,16 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - GitLab connector does not expose webhook, trigger-token, project-variable, runner-token rotation or branch-permission mutation actions. Runner-registration token rotation remains outstanding; do not reuse the exposed credential.
 - Provider-policy candidate remains DRAFT pending independent non-author review and formal Owner publication/versioned readback. The currently published Operating Model still names CircleCI as the sole approved provider; CircleCI remains the required gate. Exact PR head status: six CircleCI FAILURE contexts and one retired Semaphore FAILURE. CircleCI is no longer frozen under the current Owner directive, but no unchanged retry was issued; root causes remain UNKNOWN because CircleCI logs are unavailable through the current connector.
 - Full maintainer diff review refreshed; no literal credentials found in the seven-path PR diff. No submitted GitHub review or review threads. No merge, CI retirement, production deployment, DB operation, paid upgrade, repo visibility change or gate bypass.
+
+
+## Owner-authorized CI provider cutover — 2026-11-11
+
+- Owner instruction: stop CircleCI, use GitHub Actions only, and continue integration of eligible branches. No UI changes are in scope.
+- Main baseline: `a211102f21fcafcad171f8f424936d70bb2ed8a4`. GitHub Actions run `42958084348` passed all six substantive jobs and the fail-closed `all-checks-passed` aggregate on that exact SHA.
+- Effective default-branch ruleset `26009350` was updated and read back. It preserves deletion protection, non-fast-forward protection and Copilot review, and now requires GitHub Actions App (integration ID `15368`) check context `all-checks-passed` with strict up-to-date enforcement. No separate PR-approval count is currently enforced.
+- GitHub repository webhook `703878632` (CircleCI endpoint `https://circleci.com/hooks/github`) was set inactive on 2026-11-11. CircleCI project schedules query returned an empty list. The webhook was disabled, not deleted, so it is reversible.
+- This branch removes `.circleci/config.yml` and updates active operational CI guidance to GitHub Actions only. Dated historical logs and DRAFT ABA-KNOW files are retained as historical records and are not rewritten as approved policy.
+- Remaining PRs at baseline: #359 (Backend code; API Production release coupled; protected-preview application smoke and separate API release authorization remain blockers), #365 (stale Draft CI migration, 27 commits / 12 paths, failed exact-head checks and diverged 124 commits behind; superseded by this focused cutover candidate and not safe to merge).
+- No production deployment, database write/migration, financial semantics change, branch-protection bypass, CircleCI deletion, or UI edit was performed.
+- Next: validate this focused cleanup PR on exact head using GitHub Actions only, complete maintainer diff review, merge normally if required checks pass; close stale #365 as superseded after replacement is merged. Then sync/revalidate #359 but do not merge/release API Production without its separate authorization and smoke gate.
+- Status: IN PROGRESS — webhook pause and required-check enforcement VERIFIED; repository cleanup branch created and pending exact-head CI/review.
