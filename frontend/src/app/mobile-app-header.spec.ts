@@ -119,7 +119,7 @@ test('mobile app header and install guidance stay in normal document flow', () =
   assert.match(appSource, /class="install-help install-help-inline"/);
   assert.match(appSource, /mobile-install-button/);
   assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
-});;
+});
 
 test('mobile page title changes are announced politely without moving focus', () => {
   assert.match(source, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
