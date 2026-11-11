@@ -1,3 +1,13 @@
+## Master continuation — Project Knowledge banner version alignment — 2026-11-12
+
+- Full-diff review found a genuine metadata presentation mismatch: all five Project Knowledge frontmatter records and the ABA-KNOW-04 changelog were at version `1.0.10`, but each approval-state banner still said `1.0.9`.
+- Aligned the five banners to `1.0.10`. No status/approval change: all five remain `DRAFT`; Project Sources upload/readback remains NOT VERIFIED.
+- No canonical Notion page, application source, CI workflow, API, database/schema/migration, financial semantics, production data or deployment behavior changed.
+- Documentation-only validation: no application tests/build run. Exact-head GitHub Actions aggregate is still required by ruleset `26009350`; it was not present on the parent candidate and no stale-SHA result is reused.
+- Existing branch and PR #388 retained. No merge or deployment.
+
+---
+
 ## Master continuation — minimum sufficient testing policy — 2026-11-12
 
 - Owner requested reducing excessive/duplicated test execution and updating the repository operating rules.

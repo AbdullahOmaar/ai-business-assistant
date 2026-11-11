@@ -21,7 +21,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** DRAFT candidate version 1.0.9. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
+> **Approval state:** DRAFT candidate version 1.0.10. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
 
 ## 1. Package manifest
 
