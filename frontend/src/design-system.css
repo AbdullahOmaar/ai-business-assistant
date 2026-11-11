@@ -100,6 +100,16 @@
   line-height: var(--aiba-leading-tight);
 }
 
+/* Connected Arabic script uses natural tracking across shared page and section headings. */
+:root body .shell[dir="rtl"] .topbar h1,
+:root body .shell[dir="rtl"] .mobile-page-heading h1,
+:root body .shell[dir="rtl"] .section-head h2,
+:root body .shell[dir="rtl"] .panel h2,
+:root body .shell[dir="rtl"] .panel h3,
+:root body .shell[dir="rtl"] .dashboard-period__title {
+  letter-spacing: normal;
+}
+
 :root body .shell .section-head p,
 :root body .shell .muted,
 :root body .shell .footnote {
