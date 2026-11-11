@@ -1294,3 +1294,240 @@
     padding: var(--aiba-space-3);
   }
 }
+
+/* T18 mobile UX closeout — safe scrolling, consistent filters/states and data-preserving tables. */
+:root body .shell aba-section-header,
+:root body .shell aba-state-message {
+  display: block;
+  min-width: 0;
+}
+
+:root body .shell .aba-section-header__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:root body .shell .aba-section-header__actions {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+:root body .shell .aba-section-header__actions > button,
+:root body .shell .aba-section-header__actions > a,
+:root body .shell .aba-section-header__actions > [role="button"] {
+  min-height: var(--aiba-control-md);
+  max-width: 100%;
+}
+
+:root body .shell .aba-section-header__count {
+  min-height: 28px;
+  padding-inline: 10px;
+}
+
+:root body .shell .aba-state-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+:root body .shell .aba-state-message__copy {
+  min-width: 0;
+}
+
+:root body .shell .aba-state-message__copy p {
+  max-width: 72ch;
+}
+
+:root body .shell .list-tools,
+:root body .shell .invoice-controls,
+:root body .shell .statement-filters,
+:root body .shell .audit-filters,
+:root body .shell .employee-tools,
+:root body .shell .operations-search {
+  min-width: 0;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--aiba-space-3);
+}
+
+:root body .shell .list-tools > input,
+:root body .shell .list-tools > select,
+:root body .shell .invoice-controls input,
+:root body .shell .invoice-controls select,
+:root body .shell .statement-filters input,
+:root body .shell .statement-filters select,
+:root body .shell .audit-filters input,
+:root body .shell .audit-filters select,
+:root body .shell .employee-tools input,
+:root body .shell .employee-tools select,
+:root body .shell .operations-search input,
+:root body .shell .operations-search select {
+  min-width: 0;
+  min-height: var(--aiba-control-md);
+}
+
+:root body .shell .list-tools > button,
+:root body .shell .invoice-controls button,
+:root body .shell .statement-filters button,
+:root body .shell .audit-filters button,
+:root body .shell .employee-tools button,
+:root body .shell .operations-search button {
+  min-height: var(--aiba-control-md);
+  touch-action: manipulation;
+}
+
+:root body .shell .table-wrap,
+:root body .shell .invoice-table-wrap,
+:root body .shell .audit-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+:root body .shell .table-wrap:focus-visible,
+:root body .shell .invoice-table-wrap:focus-visible,
+:root body .shell .audit-table-wrap:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 75%);
+  outline-offset: 3px;
+}
+
+:root body .shell .table-wrap table,
+:root body .shell .audit-table-wrap table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+:root body .shell .table-wrap thead th,
+:root body .shell .audit-table-wrap thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+}
+
+:root body .shell .table-wrap tbody td:first-child,
+:root body .shell .table-wrap thead th:first-child,
+:root body .shell .audit-table-wrap tbody td:first-child,
+:root body .shell .audit-table-wrap thead th:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  border-inline-end: 1px solid var(--aiba-line);
+}
+
+:root body .shell .table-wrap thead th:first-child,
+:root body .shell .audit-table-wrap thead th:first-child {
+  z-index: 4;
+  background: #f1f5f9;
+}
+
+:root body .shell .table-wrap tbody td:first-child,
+:root body .shell .audit-table-wrap tbody td:first-child {
+  z-index: 1;
+  background: var(--aiba-surface);
+}
+
+:root body .shell .table-wrap tbody tr:nth-child(even) td:first-child,
+:root body .shell .audit-table-wrap tbody tr:nth-child(even) td:first-child {
+  background: #f8fafc;
+}
+
+/* The dashboard's metric meaning stays visible but subordinate to the next action. */
+:root body .shell .dashboard-trust-note {
+  gap: var(--aiba-space-2);
+  margin-block: 10px 14px;
+  padding: 9px 12px;
+  border-inline-start: 3px solid var(--aiba-brand-line);
+  border-radius: 10px;
+  background: var(--aiba-surface-tint);
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  line-height: var(--aiba-leading-relaxed);
+}
+
+:root body .shell .dashboard-trust-note strong {
+  font-size: var(--aiba-text-sm);
+}
+
+:root body .shell .home-shortcut-link {
+  min-height: 60px;
+  touch-action: manipulation;
+}
+
+:root body .shell .home-shortcut-link:focus-visible,
+:root body .shell .module-directory-summary:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 80%);
+  outline-offset: 3px;
+}
+
+/* Give keyboard-scrolled controls room above sticky/fixed navigation. */
+:root body .shell :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  scroll-margin-block: 12px;
+}
+
+@media (max-width: 600px) {
+  :root body .shell .list-tools,
+      :root body .shell .invoice-controls,
+  :root body .shell .statement-filters,
+  :root body .shell .audit-filters,
+  :root body .shell .employee-tools,
+  :root body .shell .operations-search {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  :root body .shell .list-tools > *,
+      :root body .shell .invoice-controls > *,
+  :root body .shell .statement-filters > *,
+  :root body .shell .audit-filters > *,
+  :root body .shell .employee-tools > *,
+  :root body .shell .operations-search > * {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  :root body .shell .aba-section-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  :root body .shell .aba-state-message__action {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root body .shell .table-wrap,
+  :root body .shell .audit-table-wrap {
+    scroll-behavior: auto;
+  }
+}
+
+
+
+/* Keyboard-scrolled actions retain a small viewport margin. */
+:root body .shell button,
+:root body .shell a,
+:root body .shell summary {
+  scroll-margin-block: 12px;
+}
+
+/* Preserve visible keyboard focus and comfortable touch targets across modules. */
+:root body .shell button:focus-visible,
+:root body .shell a:focus-visible,
+:root body .shell summary:focus-visible,
+:root body .shell [tabindex]:focus-visible {
+  outline: 3px solid var(--aiba-focus);
+  outline-offset: 3px;
+}
+
+:root body .shell .home-shortcut-link,
+:root body .shell .module-directory-summary,
+:root body .shell .list-tools button,
+:root body .shell .filter-bar button {
+  min-height: 44px;
+}

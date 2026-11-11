@@ -104,3 +104,9 @@ test('Home KPIs and module shortcuts keep two readable columns at narrow phone w
   assert.match(kpiMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
   assert.match(shortcutMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
 });
+
+
+test('interactive navigation and disclosure controls retain touch size and visible keyboard focus', () => {
+  assert.match(css, /\.home-shortcut-link,[\s\S]*?\.module-directory-summary[\s\S]*?min-height:\s*44px/);
+  assert.match(css, /\[tabindex\]:focus-visible[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
+});
