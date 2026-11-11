@@ -212,7 +212,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
     button:disabled,input:disabled,select:disabled,textarea:disabled{opacity:.58;cursor:not-allowed}
     @media(max-width:760px){.invoice-details-grid{grid-template-columns:minmax(0,1fr) minmax(110px,.6fr)}.customer-field,.customer-more{grid-column:1/-1}.product-line,.service-line{grid-template-columns:minmax(0,1fr)}.line-kind-switch{width:100%}.editor-actions{align-items:stretch;flex-direction:column}.action-buttons{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.primary-action,.secondary-action{width:100%}}
     @media(max-width:380px){.editor-card{padding:13px}.editor-title h3{font-size:16px}.draft-status{padding-inline:7px}.readonly-rates{gap:7px}.rate-field{padding:8px}.rate-field input{padding-inline:8px}}
-  `],
+  @media(max-width:760px){.editor-actions{bottom:calc(76px + env(safe-area-inset-bottom));}}\n    `],
 })
 export class InvoiceDraftEditorComponent implements OnChanges {
   @Input() language: 'ar' | 'en' = 'ar';
