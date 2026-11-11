@@ -1,3 +1,16 @@
+## Master continuation — CI policy consolidation + Project Knowledge v1.0.9 — 2026-11-12
+
+- Continued only on existing PR #388 / `docs/contributing-ci-single-source`; no new branch or PR. Pre-ledger checkpoint head: `0007f180c9c5673080cb0cd095823ed49efcfcab`; base `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`; 19 commits ahead / 0 behind.
+- Expanded the same CI-policy documentation batch to the five canonical `docs/project-knowledge/` files. All five now consistently carry version `1.0.9`, status `DRAFT`, UTC verification timestamp `2026-11-11T22:58:28Z`, and source baseline `0d28a6680a76800cdec90247cfa735ea87d3c2a9`.
+- Corrected current CI authority summaries to match accepted GitHub `ADR-002` and current `AGENTS.md`: GitHub Actions is the sole active/approved provider; CircleCI webhook is disabled, no project schedules exist, and CircleCI is not an active fallback. If a required GitHub Actions job is unavailable, record NOT RUN / BLOCKED; do not substitute another provider. Historical 1.0.6/1.0.8 entries are retained as dated history, not current policy.
+- Existing source-policy consolidation remains across `AGENTS.md`, `CONTRIBUTING.md`, PR template, `README.md`, and `docs/PRODUCTION_DEPLOYMENT.md`. Total cumulative PR scope is now 11 documentation paths.
+- Readback confirms all five package versions/statuses/timestamps/source SHAs are consistent and no current fallback wording remains in those five docs; `AGENTS.md` contains one canonical sole-active-provider statement. This is static readback only; `scripts/validate_project_knowledge.py` and its 17 unit tests are NOT RUN.
+- The Notion Master Task Plan / Product & Agent Operating Model retain dated historical transition-fallback wording. Existing reconciliation comments mark the contradiction for operational handling; no canonical Notion decision text or DRAFT/APPROVED status was silently rewritten.
+- Current-head CI NOT RUN; all documentation commits use `[skip ci]`. No app tests/build run because no application/workflow behavior changed. The repository-required exact-head aggregate remains a single pre-merge gate, not waived.
+- No API/backend, DB/schema/migration, financial semantics, application behavior, merge or production deployment changes. PR #388 remains OPEN / DRAFT; Project Sources upload/readback remains NOT VERIFIED.
+
+---
+
 ## Master continuation — CI policy consolidation inside AGENTS — 2026-11-12
 
 - Existing PR #388 / `docs/contributing-ci-single-source` only; no new branch or PR. Main base remains `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. Pre-checkpoint branch head: `b9bc4d83d18c717336c91280ea04440387488b31` (8 commits ahead / 0 behind).
