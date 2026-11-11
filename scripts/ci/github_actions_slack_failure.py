@@ -34,17 +34,9 @@ TOKEN_SHAPES = re.compile(
     r"(?i)\b(?:xox[baprs]-[A-Za-z0-9-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|"
     r"github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16})\b"
 )
-JSON_CREDENTIAL = re.compile(
-    r'''(?i)("(?:password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
-    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)"\s*:\s*")[^"]*(")'''
-)
 QUOTED_CREDENTIAL = re.compile(
-    r'''(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
-    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*["'])[^\r\n]*?(["'])'''
-)
-UNQUOTED_CREDENTIAL = re.compile(
-    r"(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|"
-    r"refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*)(?![\"'])([^\r\n,;}]+)"
+    r'''(?im)(["']?(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
+    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)["']?\s*[:=]\s*)(["'])((?:\\.|(?!\2)[^\r\n])*)\2'''
 )
 
 SENSITIVE_ENV_NAME = re.compile(
@@ -73,8 +65,7 @@ def redact_text(value: str, secret_values: Iterable[str] | None = None) -> str:
     text = BEARER.sub(r"\1 [REDACTED]", text)
     text = JWT.sub("[REDACTED JWT]", text)
     text = TOKEN_SHAPES.sub("[REDACTED TOKEN]", text)
-    text = JSON_CREDENTIAL.sub(r"\1[REDACTED]\2", text)
-    text = QUOTED_CREDENTIAL.sub(r"\1[REDACTED]\2", text)
+    text = QUOTED_CREDENTIAL.sub(lambda match: match.group(1) + match.group(2) + "[REDACTED]" + match.group(2), text)
     text = UNQUOTED_CREDENTIAL.sub(r"\1[REDACTED]", text)
     return text
 
