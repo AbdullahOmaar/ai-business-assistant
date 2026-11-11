@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.9
+version: 1.0.10
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:03:28Z
+last_verified_at: 2026-11-11T23:05:00Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams

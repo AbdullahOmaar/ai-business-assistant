@@ -1,3 +1,14 @@
+## Master continuation — CI cutover authority reconciliation + Project Knowledge v1.0.10 — 2026-11-12
+
+- Continued on the existing PR #388 branch only. Parent head: `15e817907556578c076b61c119aaff2ed0d138a0`; base: `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`. No new branch or PR.
+- Reconciled the earlier transition-fallback ambiguity against the canonical MWOS section **“CI provider cutover — verified 2026-11-11”**: Owner directed CircleCI retirement and GitHub Actions-only validation. Older Master Task Plan / Operating Model transition-fallback wording is superseded history.
+- Supporting evidence: ruleset `26009350` strictly requires GitHub Actions App `15368` / `all-checks-passed`; current main post-merge run `43113244297` passed on `0d28a6680a76800cdec90247cfa735ea87d3c2a9`; CircleCI webhook inactive, no schedules, and `.circleci/config.yml` absent from current main.
+- Refreshed all five DRAFT Project Knowledge files to consistent version `1.0.10`; ABA-KNOW-00 now links the canonical MWOS decision. No Notion canonical decision page was edited; package remains DRAFT and unpublished.
+- Current PR #388 head before this batch had no combined status contexts. Project Knowledge validator and 17 regression tests remain NOT RUN; current-head required GitHub Actions remains NOT RUN. No stale-SHA results reused; exact-head CI remains a pre-merge gate.
+- Documentation-only. No application, API, DB/schema/migration, financial semantics, production data or deployment behavior changed. No merge or Production deployment.
+
+---
+
 ## Master continuation — ruleset evidence reconciliation — 2026-11-12
 
 - Existing PR #388 / `docs/contributing-ci-single-source` only. Pre-ledger head `ef993b0b3d956899e628162b98c9ef35e798fb6c`; base `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`; 25 commits ahead / 0 behind.

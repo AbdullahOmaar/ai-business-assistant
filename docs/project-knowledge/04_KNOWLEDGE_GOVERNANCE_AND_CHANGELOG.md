@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.9
+version: 1.0.10
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:03:28Z
+last_verified_at: 2026-11-11T23:05:00Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -192,10 +192,16 @@ For every scenario, record the fixture/input, canonical source references, packa
 
 ## 11. Changelog
 
+### 1.0.10 — 2026-11-12 — DRAFT
+- Reconciled the earlier transition-fallback ambiguity using the canonical MWOS Owner record, **“CI provider cutover — verified 2026-11-11”**: the Owner directed CircleCI retirement and GitHub Actions-only validation. The older CircleCI transition-fallback wording in the Master Task Plan / Operating Model is superseded historical text, not a current fallback requirement.
+- Cutover evidence: active GitHub ruleset `26009350` strictly requires `all-checks-passed` from GitHub Actions App `15368`; current main `0d28a6680a76800cdec90247cfa735ea87d3c2a9` passed post-merge Actions run `43113244297`; CircleCI webhook is inactive, schedules are empty, and `.circleci/config.yml` is absent from current main. Do not require or invoke CircleCI for new candidates.
+- Added the canonical MWOS decision to ABA-KNOW-00's source map. All five documents use consistent version 1.0.10 metadata and retain DRAFT / NOT APPROVED status. No canonical Notion decision page was edited; Project Sources publication/readback remains NOT VERIFIED.
+- No application behavior, CI workflow configuration, API, database/schema/migration, financial semantics or deployment behavior changed.
+
 ### 1.0.9 — 2026-11-12 — DRAFT
 - Reconciled the current DRAFT knowledge package's CI-provider summary with accepted GitHub `ADR-002` and the live `AGENTS.md`: GitHub Actions is the sole active and approved provider; CircleCI's webhook is disabled, no project schedules exist, and no CircleCI fallback is active. Required GitHub Actions checks remain exact-SHA and fail-closed; an unavailable required job is NOT RUN / BLOCKED, never replaced by another provider.
 - Refreshed the consistent five-document metadata and GitHub source links against main `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. Read back active default-branch ruleset `26009350`: strict `all-checks-passed` from GitHub Actions App `15368`, deletion/non-fast-forward protection, and no separate PR-approval count configured in that ruleset; classic branch-protection API remains inaccessible (403). Kept the package DRAFT; this is not approval or Project Sources publication.
-- Notion Master Task Plan / Operating Model contain dated historical transition-fallback wording. It is retained as source history and marked operationally CONFLICTED where it conflicts with accepted ADR-002/current repository policy; no canonical Notion decision was silently rewritten.
+- The Master Task Plan / Operating Model retain dated transition-fallback wording. The later canonical MWOS Owner cutover record dated 2026-11-11 explicitly directs CircleCI retirement and GitHub Actions-only validation; the older wording is retained as superseded history. No canonical Notion page text was rewritten.
 - No application behavior, CI workflow configuration, API, database/schema/migration, financial semantics or deployment behavior changed.
 
 ### 1.0.8 — 2026-11-11 — DRAFT

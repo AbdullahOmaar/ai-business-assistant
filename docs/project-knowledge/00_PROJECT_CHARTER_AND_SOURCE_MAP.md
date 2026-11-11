@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.9
+version: 1.0.10
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T23:03:28Z
+last_verified_at: 2026-11-11T23:05:00Z
 review_due: 2027-02-09
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
@@ -14,6 +14,7 @@ canonical_sources:
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
+  - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
 related_github_sha: 0d28a6680a76800cdec90247cfa735ea87d3c2a9
 supersedes: none
 superseded_by: none
