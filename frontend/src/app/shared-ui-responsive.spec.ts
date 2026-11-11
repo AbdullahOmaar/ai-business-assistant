@@ -4,6 +4,9 @@ import test from 'node:test';
 
 const cardSurface = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
+const appTemplate = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const employeePayroll = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
+const platformAdmin = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
@@ -108,10 +111,16 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
   assert.match(styleBlock, /\.data-note p\{font-size:12px\}/);
 });
 
-test('workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
+test('real workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
+  for (const selector of ['list-tools', 'operations-search', 'invoice-controls', 'statement-filters', 'audit-filters']) {
+    assert.ok(appTemplate.includes('class="' + selector) || (selector === 'audit-filters' && platformAdmin.includes('class="filters audit-filters"')),
+      'Home / invoice / statement markup must use the covered filter: ' + selector);
+  }
+  assert.ok(employeePayroll.includes('class="employee-tools"'), 'employee search markup must use the covered employee filter');
+  assert.ok(platformAdmin.includes('class="filters"'), 'Platform Admin filter forms must retain their dedicated responsive styling');
   for (const selector of [
-    '.list-tools', '.filter-bar', '.customer-invoice-filter', '.invoice-controls',
-    '.statement-filters', '.audit-filters', '.employee-tools', '.operations-search',
+    '.list-tools', '.operations-search', '.invoice-controls', '.statement-filters',
+    '.audit-filters', '.employee-tools',
   ]) {
     assert.ok(designSystem.includes(selector), 'shared filter selector must be covered: ' + selector);
   }
