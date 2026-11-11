@@ -4,7 +4,7 @@ title: Knowledge Governance & Changelog
 version: 1.0.9
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T22:58:28.108Z
+last_verified_at: 2026-11-11T22:58:28Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -202,7 +202,7 @@ For every scenario, record the fixture/input, canonical source references, packa
 - Recorded the Owner's development-stage lifecycle classification: AIBA remains development / pre-release and is not yet a real customer-production business environment, even where provider deployment targets or aliases are technically labelled Production.
 - Recorded standing permission for all AIBA agents/workers to create application/workspace accounts, use project data needed for assigned development/QA, and create/edit accounts and draft/editable invoices through normal authenticated application/API workflows in the currently running environment, without repeated per-operation approval.
 - Preserved server-side authorization, tenant isolation, validation, idempotency, audit logging, secret/privacy controls, financial invariants, and separate gates for destructive actions, migrations, external side effects, paid provisioning, merge and release. T37 remains DRAFT / NOT APPROVED.
-- Refreshed the consistent five-document metadata/source baseline to main `0d28a6680a76800cdec90247cfa735ea87d3c2a9`. This controlled package remains DRAFT pending exact-head validation, maintainer review and normal PR integration; Project Sources upload/readback remains NOT VERIFIED.
+- Refreshed the consistent five-document metadata/source baseline to main `827f220da14139605294923cc5550e088c2589e3`. This controlled package remains DRAFT pending exact-head validation, maintainer review and normal PR integration; Project Sources upload/readback remains NOT VERIFIED.
 
 
 ### 1.0.7 — 2026-11-11 — APPROVED
