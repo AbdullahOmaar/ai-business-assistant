@@ -140,7 +140,7 @@ test('skip navigation does not suppress the main landmark keyboard focus indicat
 
 
 test('mobile fixed navigation leaves a safe scroll runway after the final content item', () => {
-  assert.match(css, /@media\\s*\\(max-width:\\s*760px\\)[\\s\\S]*?\\.shell \\.main[\\s\\S]*?padding-block-end:\\s*calc\\(132px \\+ env\\(safe-area-inset-bottom, 0px\\)\\)/);
-  assert.match(css, /scroll-padding-block-end:\\s*calc\\(132px \\+ env\\(safe-area-inset-bottom, 0px\\)\\)/);
-  assert.match(css, /\\.shell \\.sidebar[\\s\\S]*?padding-block-end:\\s*calc\\(8px \\+ env\\(safe-area-inset-bottom, 0px\\)\\)/);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.shell \.main[\s\S]*?padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /scroll-padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /\.shell \.sidebar[\s\S]*?padding-block-end:\s*calc\(8px \+ env\(safe-area-inset-bottom, 0px\)\)/);
 });
