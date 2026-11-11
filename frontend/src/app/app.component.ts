@@ -1130,7 +1130,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       .mobile-more-menu{inset-inline-start:auto}
       .mobile-more-menu .nav-item{min-height:48px;border-radius:12px}
-      .main,.shell.english .main{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+      .main,.shell.english .main{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px));scroll-padding-block-end:calc(128px + env(safe-area-inset-bottom,0px))}
       .install-floating{top:10px;right:10px;border-radius:999px;padding:9px 12px}
       .shell[dir="ltr"] .install-floating{right:10px;left:auto}
       .shell[dir="rtl"] .install-floating{right:10px;left:auto}
