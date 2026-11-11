@@ -613,7 +613,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     { tab: 'customers', titleAr: 'العملاء', titleEn: 'Customers' },
     { tab: 'products', titleAr: 'المنتجات والمخزون', titleEn: 'Products & inventory' },
     { tab: 'invoices', titleAr: 'المبيعات والفواتير', titleEn: 'Sales & invoices', cardAr: 'الفواتير', cardEn: 'Invoices' },
-    { tab: 'payments', titleAr: 'المدفوعات', titleEn: 'Payments' },
+    { tab: 'payments', titleAr: 'المدفوعات', titleEn: 'Payments', cardAr: 'المدفوعات والتحصيل', cardEn: 'Payments & collections' },
     { tab: 'expenses', titleAr: 'المصروفات', titleEn: 'Expenses' },
     { tab: 'employees', titleAr: 'الموظفون والمرتبات', titleEn: 'Employees & payroll' },
     { tab: 'assistant', titleAr: 'مساعد الأعمال الذكي', titleEn: 'AI business assistant', cardAr: 'المساعد الذكي', cardEn: 'AI assistant' },
