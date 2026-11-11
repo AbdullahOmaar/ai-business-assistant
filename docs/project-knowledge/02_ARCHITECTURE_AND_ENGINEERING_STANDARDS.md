@@ -1,27 +1,27 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.8
+version: 1.0.9
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T05:55:00Z
+last_verified_at: 2026-11-11T22:58:28.108Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/ARCHITECTURE_BASELINE.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/adr/ADR-001-v0-architecture.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/docs/ARCHITECTURE_BASELINE.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/docs/adr/ADR-001-v0-architecture.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/CONTRIBUTING.md
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 827f220da14139605294923cc5550e088c2589e3
+related_github_sha: 0d28a6680a76800cdec90247cfa735ea87d3c2a9
 supersedes: none
 superseded_by: none
 ---
 
 # Architecture & Engineering Standards
 
-> **Approval state:** DRAFT candidate version 1.0.8; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
+> **Approval state:** DRAFT candidate version 1.0.9; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. ADR-001 and accepted repository architecture documents are authoritative. This document summarizes them; it does not create a competing architecture decision.
 
 ## 1. Accepted V0 architecture
 
