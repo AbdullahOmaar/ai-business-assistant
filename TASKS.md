@@ -3584,3 +3584,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Regression:** extend `frontend/src/app/shared-ui-responsive.spec.ts` for the above presentation contracts.
 - **Validation:** NOT RUN on the resulting candidate until exact-head GitHub Actions completes. Parent SHA evidence is stale after this commit.
 - **Acceptance still open:** rendered all-19-destination RTL/LTR, authenticated OWNER/STAFF/two-tenant, keyboard-only/screen-reader, high-contrast/200% zoom, and physical Android Chrome/installed-PWA. No API/backend/auth/tenant/DB/schema/financial/inventory/payroll behavior changed. No merge or deployment.
+
+
+## T18 tablet workspace header follow-up — 2026-11-11
+
+- Exact-head browser artifact 43004805040 exposed the 768px RTL workspace name wrapping into a very narrow column. This is now addressed on the same PR #378 branch with a tablet-only 2-column workspace bar and release metadata on its own row; the <=760px mobile override remains unchanged.
+- Added source regression coverage in `frontend/src/app/shared-ui-responsive.spec.ts`. New exact-head CI and 768px screenshot review are required after this follow-up commit.
+- No navigation, business-switching, auth, tenant, API, DB, financial or production behavior changes.

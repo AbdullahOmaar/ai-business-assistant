@@ -460,3 +460,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **Regression coverage:** `frontend/src/app/shared-ui-responsive.spec.ts` covers mobile workspace-context typography, module-card interaction/reduced motion, section-count styling, Platform Admin metadata and Release Guide text sizing.
 - **Boundary:** presentation and regression coverage only. No `app.component.ts`, `styles.css`, API/backend, auth/authorization, tenant isolation, DB/schema/migration, invoice/payment, financial, inventory, payroll or external-message behavior changes.
 - **Validation:** pending on the resulting exact head. Prior exact-head CI on the parent SHA is not evidence for this new candidate. Authenticated all-role/two-tenant rendered review, full 19-destination RTL/LTR screenshot acceptance, screen reader, 200% zoom and physical Android installed-PWA remain NOT RUN.
+
+
+## Tablet workspace header correction — 2026-11-11
+
+- The exact-run 768px RTL screenshot exposed a real layout issue: the desktop three-column workspace bar left too little width for the current business name, wrapping it into a narrow vertical stack.
+- Added a tablet-only `max-width:900px` two-column layout: current business and selector remain side by side, while release/build metadata moves to a full-width secondary row. The existing `max-width:760px` mobile single-column override remains later in the cascade and is unchanged.
+- Added a source regression assertion for the tablet two-column rule and its ordering before the mobile override. The next exact-head browser artifact must be visually checked at 768px RTL/LTR.
+- Presentation only; no workspace selection, business identity, version source, route or permission behavior changed.

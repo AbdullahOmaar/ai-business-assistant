@@ -47,6 +47,12 @@ test('mobile module cards preserve touch-friendly height and readable two-line d
   assert.match(quickAccess, /prefers-reduced-motion:reduce\)[\s\S]*?\.aba-quick-access:active:not\(:disabled\)\{transform:none\}/);
 });
 
+test('tablet workspace header preserves readable business name and selector columns', () => {
+  assert.match(appTemplate, /@media\(max-width:900px\)\{[\s\S]*?\.workspace-bar\{grid-template-columns:minmax\(0,1fr\) minmax\(180px,260px\);align-items:center\}/);
+  assert.match(appTemplate, /\.workspace-release-meta-inline\{grid-column:1\/-1;justify-content:flex-start/);
+  assert.match(appTemplate, /@media\(max-width:760px\)\{[\s\S]*?\.workspace-bar\{grid-template-columns:minmax\(0,1fr\)/);
+});
+
 test('mobile app header keeps secondary context readable without shrinking touch targets', () => {
   assert.match(mobileHeaderCss, /\.context-label\s*\{[\s\S]*font-size:\s*12px/);
   assert.match(mobileHeaderCss, /\.workspace-copy strong\s*\{[\s\S]*font-size:\s*13px/);
