@@ -648,7 +648,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
           (element as HTMLDetailsElement).open = true;
         });
         const card = page.locator('.module-directory-grid > aba-quick-access-card')
-          .filter({ hasText: cardLabel });
+          .filter({ has: page.locator('.aba-quick-access__copy > strong').getByText(cardLabel, { exact: true }) });
         await expect(card, destination.tab + ' must be listed for the OWNER').toHaveCount(1);
         await card.locator('button').click();
       }
