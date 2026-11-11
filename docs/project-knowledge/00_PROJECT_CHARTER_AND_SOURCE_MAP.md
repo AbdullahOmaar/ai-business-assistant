@@ -1,27 +1,27 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.8
+version: 1.0.9
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T05:55:00Z
+last_verified_at: 2026-11-11T22:58:28.108Z
 review_due: 2027-02-09
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/README.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/README.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/0d28a6680a76800cdec90247cfa735ea87d3c2a9/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb81259288c92962839b90
   - https://app.notion.com/p/4089320b90fb81b7a65ae9dec567d73b
-related_github_sha: 827f220da14139605294923cc5550e088c2589e3
+related_github_sha: 0d28a6680a76800cdec90247cfa735ea87d3c2a9
 supersedes: none
 superseded_by: none
 ---
 
 # Project Charter & Source Map
 
-> **Approval state:** DRAFT candidate version 1.0.8; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
+> **Approval state:** DRAFT candidate version 1.0.9; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. This is a curated orientation document, not a live project-status feed or an approval of unresolved product/financial policies.
 
 ## 1. Project identity
 
@@ -84,7 +84,7 @@ The Notion Production V1 Charter owns exact release scope, module acceptance and
 | Information class | Authoritative source | How Project Sources should be used |
 | --- | --- | --- |
 | Source code, branches, commits, issues, PRs, reviews | GitHub live repository | Orientation and links only |
-| Tests and CI | GitHub Actions (`.github/workflows/ci.yml`) is the Owner-selected primary test/build/security CI provider; CircleCI remains a transition fallback until required-check enforcement and release gates are verified. GitLab is inactive; Semaphore is retired/non-authoritative | Validate required checks on the exact candidate SHA. Batch related work, use targeted checks only when needed, reuse still-valid PASS evidence, and avoid redundant full-suite reruns; never bypass a required gate |
+| Tests and CI | GitHub Actions (`.github/workflows/ci.yml`) is the sole active and approved repository CI provider; its exact-SHA `all-checks-passed` aggregate is required. CircleCI's webhook is disabled, no project schedules exist, and no CircleCI fallback is active. GitLab is inactive; Semaphore is retired/non-authoritative | Validate required checks on the exact candidate SHA. Batch related work, use targeted checks only when needed, reuse still-valid PASS evidence, and avoid redundant full-suite reruns; never bypass a required gate |
 | Deployment and runtime | Vercel deployment/runtime evidence; Neon for schema/revision evidence | Link to runbooks; never claim live state |
 | Product scope and release outcomes | Approved Notion Production V1 Charter and versioned product decisions | Stable summary only; defer to canonical page |
 | Assignments, ownership, dependencies, workstream status | Notion Master Task Plan and canonical task pages | Explain where to look; do not mirror current rows |
