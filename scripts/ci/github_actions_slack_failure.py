@@ -40,7 +40,7 @@ JSON_CREDENTIAL = re.compile(
 )
 QUOTED_CREDENTIAL = re.compile(
     r'''(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|'''
-    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*["'])[^ \r\n]*?[^ \r\n]*?(["'])'''
+    r'''refresh[_-]?token|client[_-]?secret|private[_-]?key)\b\s*[:=]\s*["'])[^\r\n]*?(["'])'''
 )
 UNQUOTED_CREDENTIAL = re.compile(
     r"(?im)(\b(?:aws[_-]?secret[_-]?access[_-]?key|aws[_-]?access[_-]?key|password|passwd|token|secret|api[_-]?key|access[_-]?token|"
