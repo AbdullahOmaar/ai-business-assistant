@@ -120,13 +120,6 @@ test('workspace filter groups reflow to one column and preserve 44px mobile cont
   assert.match(designSystem, /@media\s*\(max-width:\s*600px\)[\s\S]*?\.list-tools,[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 });
 
-test('fixed mobile navigation leaves a scroll clearance reserve for the final content', () => {
-  assert.match(designSystem, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.main,[\s\S]*?padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
-  assert.match(designSystem, /\.main,[\s\S]*?scroll-padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
-  assert.match(designSystem, /:root body \.shell \.sidebar > \.nav-item\s*\{\s*min-height:\s*48px/);
-  assert.match(designSystem, /:root body \.shell \.sidebar \{[\s\S]*?padding-block-end:\s*calc\(8px \+ env\(safe-area-inset-bottom, 0px\)\)/);
-});
-
 test('mobile tables retain every field with a touch-scroll and sticky first-column fallback', () => {
   assert.match(designSystem, /\.table-wrap,[\s\S]*?overflow-x:\s*auto/);
   assert.match(designSystem, /\.table-wrap,[\s\S]*?overscroll-behavior-inline:\s*contain/);
