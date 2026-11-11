@@ -268,7 +268,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       }) });
       return;
     }
-    if (['/suppliers', '/purchase-orders', '/recurring-invoices', '/notifications'].some(suffix =>
+    if (['/suppliers', '/purchase-orders', '/recurring-invoices', '/notifications', '/employees', '/payroll'].some(suffix =>
       path === '/api/v1/businesses/business-1' + suffix
     ) && request.method() === 'GET') {
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
