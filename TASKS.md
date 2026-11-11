@@ -3513,3 +3513,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Exact-head run 42977553790 on 3d498f55388d1697b211699cd5f86d200eeb9109 failed at migration startup because the service still required a password while DATABASE_URL had already been changed to passwordless. This was a workflow configuration mismatch; the candidate API smoke script itself did not execute.
 - Updated the isolated PostgreSQL service to trust authentication within the ephemeral GitHub Actions service container only. No database password or real credential is stored. The service is destroyed at job completion.
 - Rerun required on the new exact head.
+
+
+## T07 candidate readiness harness correction — 2026-11-11
+
+- Exact-head run 42977915528 on 836516ab08c7b918080227420a4fc27da0a4b44e passed PostgreSQL service startup and candidate Alembic migrations. The smoke then correctly received HTTP 503 from /readyz because readiness requires both a DB session factory and a configured trusted identity resolver.
+- The smoke harness now installs its allowlisted test-only principal resolver on app.state as well as FastAPI dependency_overrides, so readiness exercises the same fail-closed prerequisite without introducing Firebase credentials or changing production auth code. The prior resolver is restored after the test.
+- Candidate API smoke itself reached readiness and failed only at this harness setup check; no Production or live application data was accessed. New exact-head CI required.

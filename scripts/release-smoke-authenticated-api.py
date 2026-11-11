@@ -65,6 +65,8 @@ def main() -> None:
             raise HTTPException(status_code=401, detail="A test bearer identity is required.")
         return principals[token]
 
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.principal_resolver = trusted_test_resolver
     app.dependency_overrides[get_principal] = trusted_test_resolver
     headers_owner = {"Authorization": f"Bearer {owner_token}"}
     headers_other = {"Authorization": f"Bearer {other_token}"}
@@ -234,6 +236,7 @@ def main() -> None:
             )
     finally:
         app.dependency_overrides.pop(get_principal, None)
+        app.state.principal_resolver = previous_resolver
 
 
 if __name__ == "__main__":
