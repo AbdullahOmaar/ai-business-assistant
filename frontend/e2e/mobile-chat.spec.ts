@@ -360,11 +360,42 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     for (const height of layout.headerControlHeights) {
       expect(height, `Mobile header controls must remain at least 44px at ${width}px`).toBeGreaterThanOrEqual(44);
     }
+
+  };
+  const assertHomeContentClearsDock = async (width: number, direction: 'ar' | 'en') => {
+    const directory = page.locator('.module-directory-disclosure');
+    await directory.evaluate(element => { (element as HTMLDetailsElement).open = true; });
+    const footer = page.locator('.main footer');
+    await footer.scrollIntoViewIfNeeded();
+    const clearance = await page.evaluate(() => {
+      const dock = document.querySelector('.sidebar');
+      const footerElement = document.querySelector('.main footer');
+      const lastCard = document.querySelector('.module-directory-grid > aba-quick-access-card:last-child');
+      if (!dock || !footerElement || !lastCard) return null;
+      const dockTop = dock.getBoundingClientRect().top;
+      return {
+        gapAfterFooter: dockTop - footerElement.getBoundingClientRect().bottom,
+        gapAfterLastModule: dockTop - lastCard.getBoundingClientRect().bottom,
+        dockHeight: dock.getBoundingClientRect().height,
+      };
+    });
+    expect(clearance, 'the final Home content, last module and dock must render').not.toBeNull();
+    expect(clearance!.dockHeight).toBeGreaterThan(0);
+    expect(clearance!.gapAfterLastModule, `last module must clear the dock at ${width}px ${direction}`).toBeGreaterThanOrEqual(8);
+    expect(clearance!.gapAfterFooter, `final page footer must clear the dock at ${width}px ${direction}`).toBeGreaterThanOrEqual(8);
+    await page.screenshot({
+      path: `test-results/aiba-home-${width}px-${direction}-dock-clearance-viewport.png`,
+      fullPage: false,
+      animations: 'disabled',
+    });
   };
   for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
-    if (width <= 430) await assertHomeMobileGrid(width);
+    if (width <= 430) {
+      await assertHomeMobileGrid(width);
+      await assertHomeContentClearsDock(width, 'ar');
+    }
     await page.screenshot({
       path: `test-results/aiba-home-${width}px-ar-viewport.png`,
       fullPage: false,
@@ -378,26 +409,6 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       });
     }
   }
-
-  // Verify the final Home content can be reached above the fixed mobile dock.
-  await page.setViewportSize({ width: 320, height: 844 });
-  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
-  const dockClearance = await page.evaluate(() => {
-    const dock = document.querySelector('.sidebar');
-    const lastHomeContent = document.querySelector('.dashboard-trust-note');
-    if (!dock || !lastHomeContent) return null;
-    const dockTop = dock.getBoundingClientRect().top;
-    const contentBottom = lastHomeContent.getBoundingClientRect().bottom;
-    return { gap: dockTop - contentBottom, dockHeight: dock.getBoundingClientRect().height };
-  });
-  expect(dockClearance, 'the final Home note and mobile dock must both be rendered').not.toBeNull();
-  expect(dockClearance!.dockHeight).toBeGreaterThan(0);
-  expect(dockClearance!.gap, 'the last Home content element must remain fully visible above the fixed dock').toBeGreaterThanOrEqual(8);
-  await page.screenshot({
-    path: 'test-results/aiba-home-320px-ar-dock-clearance-viewport.png',
-    fullPage: false,
-    animations: 'disabled',
-  });
 
   await page.setViewportSize({ width: 360, height: 800 });
   const moreTrigger = page.getByRole('button', { name: /المزيد من الأقسام|More sections/ });
@@ -481,7 +492,10 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
-    if (width <= 430) await assertHomeMobileGrid(width);
+    if (width <= 430) {
+      await assertHomeMobileGrid(width);
+      await assertHomeContentClearsDock(width, 'en');
+    }
     await page.screenshot({
       path: `test-results/aiba-home-${width}px-ltr-viewport.png`,
       fullPage: false,
