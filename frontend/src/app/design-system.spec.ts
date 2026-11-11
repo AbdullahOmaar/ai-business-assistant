@@ -5,6 +5,7 @@ import test from 'node:test';
 const css = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const angular = JSON.parse(readFileSync(new URL('../../angular.json', import.meta.url), 'utf8'));
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
 
 test('the final AIBA visual direction defines a complete semantic token foundation', () => {
   const tokens = [...css.matchAll(/^\s*(--aiba-[\w-]+)\s*:/gm)].map(match => match[1]);
@@ -124,6 +125,7 @@ test('every authenticated workspace route exposes a localized skip link to the m
   assert.ok(app.includes("@if (initialized && signedIn && !startupFailed && !setupNeeded) {"));
   assert.match(app, /تخطي إلى المحتوى الرئيسي/);
   assert.match(app, /Skip to main content/);
+  assert.match(guide, /titleAr: 'تخطي إلى المحتوى الرئيسي'[\\s\\S]*?titleEn: 'Skip to main content'[\\s\\S]*?detailAr:[\\s\\S]*?detailEn:/);
   assert.match(app, /<main class="main" id="main-content" tabindex="-1">/);
   assert.match(css, /\.skip-link\s*\{[\s\S]*?min-height:\s*44px/);
   assert.match(css, /\.skip-link:focus\s*\{[\s\S]*?transform:\s*translateY\(0\)/);
