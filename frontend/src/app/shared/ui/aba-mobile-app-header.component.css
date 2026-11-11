@@ -222,6 +222,11 @@
   .page-copy h1 { font-size: 16px; }
 }
 
+/* Keep short English page titles intact beside the three fixed mobile actions. */
+@media (max-width: 420px) {
+  .page-copy h1 { font-size: 16px; }
+}
+
 /* Consistent keyboard and touch feedback for every mobile header action. */
 .mobile-app-header :is(button, select):focus-visible {
   outline: 3px solid var(--aba-color-focus-ring, #2563eb);

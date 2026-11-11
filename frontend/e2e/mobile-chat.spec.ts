@@ -317,6 +317,39 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /مرحبًا بعودتك|Welcome back/ })).toBeVisible({ timeout: 20_000 });
+
+  // Guard the public auth shell at phone, desktop and both writing directions.
+  const assertAuthShellLayout = async (width: number, height: number) => {
+    await page.setViewportSize({ width, height });
+    const layout = await page.evaluate(() => {
+      const card = document.querySelector<HTMLElement>('.auth-card');
+      if (!card) return null;
+      const rect = card.getBoundingClientRect();
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+        scrollHeight: document.documentElement.scrollHeight,
+        clientHeight: document.documentElement.clientHeight,
+        cardCenterY: (rect.top + rect.bottom) / 2,
+        viewportCenterY: window.innerHeight / 2,
+      };
+    });
+    expect(layout).not.toBeNull();
+    expect(layout!.scrollWidth).toBeLessThanOrEqual(layout!.clientWidth);
+    expect(layout!.scrollHeight).toBeLessThanOrEqual(layout!.clientHeight);
+    expect(Math.abs(layout!.cardCenterY - layout!.viewportCenterY)).toBeLessThan(2);
+  };
+
+  await assertAuthShellLayout(360, 800);
+  await assertAuthShellLayout(390, 844);
+  await assertAuthShellLayout(1280, 800);
+  await page.locator('.language-toggle').click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await assertAuthShellLayout(390, 844);
+  await page.locator('.language-toggle').click();
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  await page.setViewportSize({ width: 360, height: 800 });
+
   await page.getByLabel(/البريد الإلكتروني|Email address/).fill('owner@example.test');
   await page.getByLabel(/كلمة المرور|Password/).fill('mock-password-123');
   await page.getByRole('button', { name: /تسجيل الدخول|Sign in/ }).click();
@@ -699,6 +732,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         await expect(page.locator('aba-mobile-app-header')).toBeVisible();
       } else {
         await expect(page.locator('.workspace-bar')).toBeVisible();
+      }
+      if (destination.tab === 'customers' && width === 390 && language === 'en') {
+        const mobileTitle = await page.locator('aba-mobile-app-header .page-copy h1').evaluate(element => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return {
+            text: element.textContent?.trim() ?? '',
+            renderedLines: range.getClientRects().length,
+            fontSize: getComputedStyle(element).fontSize,
+          };
+        });
+        expect(mobileTitle.text, 'Customers mobile page title').toBe('Customers');
+        expect(mobileTitle.renderedLines, 'the 390px English Customers title must not orphan its final character').toBe(1);
       }
       const layout = await page.evaluate(() => ({
         width: window.innerWidth,

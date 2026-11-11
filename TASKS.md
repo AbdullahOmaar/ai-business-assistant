@@ -1,3 +1,17 @@
+## November Phase 1 — mobile page-title responsive polish — 2026-11-12
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`
+- **Base:** `main@c508e918749f7eef7358023afcd92285ddae7601`
+- **Work order:** Owner-approved November Phase 1 implementation. One Phase branch; changes limited to evidenced responsive UX corrections, matching regression coverage and UX evidence.
+- **Confirmed finding:** PR #384 exact-head review of 144 screenshots identified the 390px English Customers page title wrapping its final character beside the fixed mobile header controls.
+- **Batch:** reduce the shared mobile page-title size to 16px through 420px; retain all existing 44px touch targets; add one source-level CSS regression and one rendered Playwright assertion for the affected 390px English Customers case; record evidence in `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- **Reuse / test economy:** reuse the existing 18-destination OWNER route sweep and current screenshot matrix; do not repeat unrelated tests during implementation. Final candidate must still pass the required exact-SHA GitHub Actions `all-checks-passed` aggregate and applicable security/repository gates.
+- **Safety:** no API/backend/auth/tenant/DB/schema/migration, business, financial, inventory, payroll or production behavior changes. API/DB changes remain conditional on a directly evidenced necessity and separate risk-specific approvals where applicable.
+- **Acceptance:** the 390px English Customers mobile heading renders on one line; 44px interactive targets remain intact; RTL/LTR and existing destination behavior are preserved. Physical Android/PWA, authenticated second-tenant, full keyboard/screen-reader, high-contrast and 200% zoom remain separate NOT RUN/BLOCKED evidence items.
+- **Delivery:** implementation commit and milestone PR are tracked on this branch; merge and Production deployment are not authorized by this work order and remain separate gates.
+
+---
+
 ## UX/UI mobile-first redesign — active Master work package — 2026-11-11 (continuation)
 
 - **Branch:** `master/t18-mobile-ux-acceptance-20261111`
@@ -3641,3 +3655,24 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Active ruleset readback:** repository ruleset 26009350 is active, strict and requires only `all-checks-passed` from GitHub Actions App 15368; deletion and non-fast-forward protections remain. Copilot review is no longer in the active ruleset following the Owner-authorized fallback recorded in the T18 Notion task.
 - **Still NOT RUN / BLOCKED:** physical Android Chrome and installed-PWA install/update/offline acceptance; full keyboard-only and screen-reader review; high-contrast and 200% zoom; authenticated second-tenant journey. The Vercel Preview is READY on app-source SHA `6abf7268c8f6337efdc69c7257b6520e5cead98b`, but SSO blocks the available unauthenticated browser session; subsequent commits changed only E2E fixture/test code.
 - **Disposition:** exact-head CI and the 18-destination rendered route sweep PASS. T18 remains PARTIALLY COMPLETE pending the device/accessibility/second-tenant acceptance. No merge, Production deployment, API deployment, migration or database mutation performed. This ledger update itself changes the candidate SHA; rerun exact-head Actions and refresh the Maintainer Diff Review before any merge decision.
+
+
+## November 2026 Phase 1 — auth-shell responsive evidence — 2026-11-12
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`; reused the pre-existing branch because it was identical to `main@c508e918749f7eef7358023afcd92285ddae7601`; no duplicate branch created.
+- **Scope:** one focused Playwright regression addition, UX inventory correction and this evidence ledger only. No UI styling, authentication semantics, API, tenant, database/schema/migration, financial or business behavior changed.
+- **Live rendered evidence:** public login card is centered without scroll overflow at 390×844 RTL/LTR and 1280×800 RTL. The old inventory note about a vertical scrollbar was not reproducible and has been corrected. The mocked OWNER mobile journey now guards auth-shell no-overflow and centering at 360×800, 390×844 and 1280×800 RTL plus 390×844 LTR.
+- **Validation:** the new Playwright assertions are authored but NOT RUN on this branch yet. Existing exact-head evidence from prior SHAs is not reused for the new candidate. No full test reruns were triggered during editing.
+- **Delivery:** PR [#387](https://github.com/AbdullahOmaar/ai-business-assistant/pull/387) is OPEN / DRAFT / UNMERGED on the current Phase branch. Exact-head GitHub Actions is pending; refresh the full maintainer review and inspect the exact-run browser artifact before any merge consideration. No merge, deployment or production data mutation.
+
+
+## November Phase 1 — PR #387 exact-head verification closeout — 2026-11-12
+
+- **PR:** [#387](https://github.com/AbdullahOmaar/ai-business-assistant/pull/387) — READY FOR REVIEW / OPEN / UNMERGED.
+- **Branch/head at validation:** `master/nov-2026-phase-1-ux-foundation@d44674970164451abc19de083e9af17671f1f2d6`; base `main@c508e918749f7eef7358023afcd92285ddae7601`.
+- **Exact-head CI:** GitHub Actions run [43110073269](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43110073269) — all six substantive jobs and required `all-checks-passed` aggregate SUCCESS. Browser smoke, frontend unit tests, dependency audit, production build, backend container and backend accounting passed. Authenticated API smoke SKIPPED as expected for this presentation/test/docs-only change.
+- **Browser artifact:** exact-run artifact 13895947278 inspected. JUnit reports 21 tests, 0 failures, 0 skipped, 0 errors. The 390px English Customers capture confirms the heading renders on one line beside fixed mobile actions.
+- **Maintainer review:** full five-file diff self-review refreshed on exact head `d44674970164451abc19de083e9af17671f1f2d6`; no source-level blocker, secrets, unrelated generated artifacts or out-of-scope behavior changes found. No unresolved inline review threads.
+- **Ruleset:** active default-branch ruleset 26009350 is strict and requires only `all-checks-passed` from GitHub Actions App 15368; no separate PR-approval count is configured. Classic branch-protection API is unavailable to this integration; ruleset readback is authoritative. Legacy Semaphore context is retired/non-authoritative.
+- **Disposition:** focused milestone validated and PR marked Ready for Review. Physical Android/PWA, authenticated second-tenant, keyboard/screen-reader, high-contrast and 200% zoom remain NOT RUN. No merge, deployment, API/DB/schema/migration or production data mutation. Explicit Owner merge approval remains required; Production deployment approval is separate.
+- **Evidence freshness:** this ledger commit advances the PR head; rerun exact-head GitHub Actions and refresh the maintainer review before merge consideration. Do not reuse run 43110073269 for the new SHA.
