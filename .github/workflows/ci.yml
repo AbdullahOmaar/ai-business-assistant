@@ -215,11 +215,29 @@ jobs:
       - name: Verify FastAPI application import in container
         run: docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
 
+
+  authenticated-api-smoke:
+    name: authenticated-api-smoke
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+      - name: Run authenticated API smoke using synthetic QA identities
+        run: python3 scripts/release-smoke-authenticated-api.py
+
   all-checks-passed:
     name: all-checks-passed
     runs-on: ubuntu-latest
     if: always()
-    needs: [backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container]
+    needs: [backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container, authenticated-api-smoke]
     steps:
       - name: Require every substantive job to succeed
         env:
@@ -229,6 +247,8 @@ jobs:
           FRONTEND_AUDIT: ${{ needs.frontend-dependency-audit.result }}
           BROWSER_SMOKE: ${{ needs.frontend-browser-smoke.result }}
           BACKEND_CONTAINER: ${{ needs.backend-container.result }}
+          API_SMOKE: ${{ needs.authenticated-api-smoke.result }}
+          REQUIRE_API_SMOKE: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' && github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           set -euo pipefail
           for result in "$BACKEND" "$FRONTEND_TESTS" "$FRONTEND_BUILD" "$FRONTEND_AUDIT" "$BROWSER_SMOKE" "$BACKEND_CONTAINER"; do
@@ -237,4 +257,8 @@ jobs:
               exit 1
             fi
           done
-          echo "All six required GitHub Actions jobs passed."
+          if [ "$REQUIRE_API_SMOKE" = "true" ] && [ "$API_SMOKE" != "success" ]; then
+            echo "::error::Authenticated API smoke is required for the invoice release candidate but did not succeed: $API_SMOKE"
+            exit 1
+          fi
+          echo "All six required GitHub Actions jobs passed; any branch-scoped release smoke also passed."

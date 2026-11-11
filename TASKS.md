@@ -3479,3 +3479,14 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - No production deployment, database write/migration, financial semantics change, branch-protection bypass, CircleCI project deletion, or UI edit was performed. The GitHub webhook is paused, not deleted; `.circleci/config.yml` removal is pending PR #373 merge.
 - Next: validate this focused cleanup PR on exact head using GitHub Actions only, complete maintainer diff review, merge normally if required checks pass; close stale #365 as superseded after replacement is merged. Then sync/revalidate #359 but do not merge/release API Production without its separate authorization and smoke gate.
 - Status: IN PROGRESS — webhook pause and required-check enforcement VERIFIED; repository cleanup branch created and pending exact-head CI/review.
+
+
+## T07 — Zero-cost authenticated API smoke path — 2026-11-11
+
+- **Purpose:** remove the paid Browser Use / local-computer dependency without weakening T07's authenticated application smoke acceptance.
+- **Implementation candidate:** PR #359, branch `feat/invoice-payment-currency-guard-20261109`; add a branch-scoped GitHub Actions job that runs only for this same-repository invoice release PR on standard free `ubuntu-latest`.
+- **Changed paths planned:** `.github/workflows/ci.yml`, `scripts/release-smoke-authenticated-api.py`, and this task ledger. No application endpoint or financial behavior is changed by the smoke harness.
+- **Safety:** Firebase web API key is read from the public runtime config; no repository secrets are used. The script creates two synthetic Firebase identities, two QA workspaces, one EGP draft invoice, edits it, reloads persisted state, and verifies the second tenant is denied access. It never issues/voids/posts an invoice, mutates payments/allocations, deletes data, sends messages, or accesses a DB directly. QA identities/workspaces/draft remain as synthetic records because hard deletion is not authorized.
+- **Acceptance:** exact-head GitHub Actions run must show the new authenticated-api-smoke job SUCCESS and the fail-closed all-checks-passed aggregate SUCCESS. A failed/blocked provider call is NOT PASS; inspect the exact response and fix only if safe.
+- **Current state before this candidate:** PR #359 head `f18cc746b2c87691445e52a1e456ccc33923c97d`; all six standard jobs, aggregate, GitGuardian and Greptile passed on that exact SHA. Main `a2b9c55dcb8758e109379c7857f882dc82a0ec58`. Production API health/readiness are 200; /version still reports v1.3.5 / `baed61476b1c`, older than main. Authenticated live smoke had not been run.
+- **Disposition:** IN_PROGRESS; the runner-based authenticated smoke is added below and awaits exact-head execution. Merge and API deployment remain pending this evidence. Owner has explicitly requested merge and deployment; no gate is waived.
