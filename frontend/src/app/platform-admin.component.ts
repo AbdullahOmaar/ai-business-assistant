@@ -365,7 +365,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
     @media(max-width:760px){
       .runtime-grid small,.runtime-note,.currency-row small,.business-link small,.detail-grid small,
       .user-cell small,.grant-row small,.membership-chip small,.membership-detail-row small,
-      .user-facts-grid small,.user-root-label,.data-note small{font-size:11px}
+      .user-facts-grid small,.user-root-label,.data-note small{font-size:12px;line-height:1.45}
       .read-only,.status-pill,.role-pill,.nav-count,.filters label,.status-form label,
       .user-role-form label>span,.panel-heading p,.caution p,.field-error,.data-note p,
       .permission-token,.identity-access-heading>strong,.identity-permissions>strong{font-size:12px}

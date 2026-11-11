@@ -3573,3 +3573,14 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Candidate head before PR creation:** `52ddf1b9970733c416e7fce2f1bba1326fa35ed9` (CSS, regression test and documentation read back from this exact branch state).
 - **Quality:** exact-head GitHub Actions, frontend unit tests/build and rendered viewport QA are pending; the legacy Semaphore status is not the Owner-selected CI provider. Physical Android installed-PWA, screen-reader, high-contrast and 200% zoom remain NOT RUN.
 - **Disposition:** IN_PROGRESS. No API/backend, auth/tenant, database, financial semantics, merge or deployment changes.
+
+
+## T18 shared-component mobile polish — 2026-11-11
+
+- **PR:** [#378](https://github.com/AbdullahOmaar/ai-business-assistant/pull/378) — keep Draft / unmerged.
+- **Branch:** `master/t18-mobile-ux-accessibility-20261111`; base `main@72a067149562af495d54e35f1a490b218117f333`; parent candidate `1329478231dbf1f453950881db6bd2ff9dcfcf75`.
+- **Scope:** mobile header context, module-directory card readability/pressed feedback, shared section-count badge, Platform Admin metadata, Release Guide badge/footnote, source regression and UX docs.
+- **Changes:** show the existing build-sourced UI version beside the workspace label; stabilize two-line module descriptions and disable press transforms under reduced motion; make section counts neutral/readable; raise mobile Platform Admin metadata to 12px; improve Release Guide badge wrapping and footnote readability.
+- **Regression:** extend `frontend/src/app/shared-ui-responsive.spec.ts` for the above presentation contracts.
+- **Validation:** NOT RUN on the resulting candidate until exact-head GitHub Actions completes. Parent SHA evidence is stale after this commit.
+- **Acceptance still open:** rendered all-19-destination RTL/LTR, authenticated OWNER/STAFF/two-tenant, keyboard-only/screen-reader, high-contrast/200% zoom, and physical Android Chrome/installed-PWA. No API/backend/auth/tenant/DB/schema/financial/inventory/payroll behavior changed. No merge or deployment.

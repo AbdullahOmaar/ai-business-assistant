@@ -11,6 +11,7 @@ const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.compone
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
 const metricCard = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
 const quickAccess = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
+const mobileHeader = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
 const mobileHeaderCss = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const confirmDialog = readFileSync(new URL('./shared/ui/aba-confirm-dialog.component.ts', import.meta.url), 'utf8');
 const releaseGuide = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
@@ -25,6 +26,7 @@ test('mobile state feedback keeps readable copy and a full-width action at 360px
 test('section headings and descriptions remain readable on narrow screens', () => {
   assert.match(sectionHeader, /font-size:var\(--aba-font-size-sm, 12px\);line-height:1\.55/);
   assert.match(sectionHeader, /aba-section-header__count\{[^}]*font-size:var\(--aba-font-size-xs, 11px\)/);
+  assert.match(designSystem, /\.aba-section-header__actions \.count\s*\{[^}]*font-size:\s*var\(--aiba-text-xs\)/);
   assert.match(sectionHeader, /@media\(max-width:600px\)\{[\s\S]*\.aba-section-header h2,\.aba-section-header h3\{font-size:15px\}/);
   assert.match(sectionHeader, /grid-template-columns:minmax\(0,1fr\)/);
 });
@@ -41,6 +43,9 @@ test('mobile module cards preserve touch-friendly height and readable two-line d
   assert.match(quickAccess, /@media\(max-width:380px\)\{[\s\S]*min-height:96px/);
   assert.match(quickAccess, /\.aba-quick-access__copy>span\{color:[^}]*font-size:var\(--aba-font-size-sm, 12px\)/);
   assert.match(quickAccess, /\.aba-quick-access__copy>span\{font-size:12px\}/);
+  assert.match(quickAccess, /\.aba-quick-access__copy>span\{display:-webkit-box;min-height:2\.9em;[\s\S]*?line-height:1\.45\}/);
+  assert.match(quickAccess, /\.aba-quick-access:active:not\(:disabled\)\{[^}]*transform:scale\(\.99\)\}/);
+  assert.match(quickAccess, /prefers-reduced-motion:reduce\)[\s\S]*?\.aba-quick-access:active:not\(:disabled\)\{transform:none\}/);
 });
 
 test('mobile app header keeps secondary context readable without shrinking touch targets', () => {
@@ -49,6 +54,14 @@ test('mobile app header keeps secondary context readable without shrinking touch
   assert.match(mobileHeaderCss, /\.assistant-shortcut\s*\{[\s\S]*min-height:\s*44px/);
   assert.match(mobileHeaderCss, /\.icon-button,[\s\S]*width:\s*44px/);
   assert.match(mobileHeaderCss, /@media\s*\(max-width:\s*380px\)[\s\S]*font-size:\s*12px/);
+});
+
+test('mobile header shows the existing build-sourced UI version beside workspace context', () => {
+  assert.match(mobileHeader, /@Input\(\) appVersion = ''/);
+  assert.match(mobileHeader, /class="workspace-version"[\s\S]*UI v\{\{ appVersion \}\}/);
+  assert.match(mobileHeader, /aria-label[^>]*appVersion/);
+  assert.match(appTemplate, /<aba-mobile-app-header[\s\S]*?\[appVersion\]="appVersion"/);
+  assert.match(mobileHeaderCss, /\.workspace-version\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
 });
 
 test('shared UI styles remain syntactically balanced and contain no escaped media-query separators', () => {
@@ -91,8 +104,10 @@ test('release guide keeps card padding and disclosure targets comfortable on mob
   assert.match(releaseGuide, /content:'⌄'[\s\S]*?transition:transform 160ms ease/);
   assert.match(releaseGuide, /\[open\]>summary\{background:var\(--aba-color-surface-subtle/);
   assert.match(releaseGuide, /prefers-reduced-motion:reduce\)\{\.release-feature-group>summary:after,\.release-version>summary:after\{transition:none\}\}/);
-  assert.match(releaseGuide, /\.release-guide-footnote\{[^}]*font-size:12px/);
-  assert.match(releaseGuide, /@media\(max-width:600px\)\{[\s\S]*\.release-guide-version-pill\{font-size:11px\}/);
+  assert.match(releaseGuide, /\.release-guide-footnote\{[^}]*font-size:13px;line-height:1\.65/);
+  assert.match(releaseGuide, /\.release-guide-version-pill\{[^}]*font-size:12px/);
+  assert.match(releaseGuide, /\.release-guide-current-badge\{[^}]*white-space:normal;overflow-wrap:anywhere/);
+  assert.match(releaseGuide, /@media\(max-width:600px\)\{[\s\S]*\.release-guide-version-pill\{font-size:12px\}/);
 });
 
 test('Platform Admin mobile controls remain touch-friendly and readable', () => {
@@ -107,6 +122,7 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
   assert.match(styleBlock, /@media\(max-width:760px\)\{[\s\S]*?\.compact-table th,\.compact-table td\{padding:7px 5px;font-size:11px;line-height:1\.4\}/);
   assert.match(styleBlock, /\.read-only,.status-pill,.role-pill,.nav-count,[\s\S]*?font-size:12px/);
   assert.match(styleBlock, /\.runtime-grid small,.runtime-note,.currency-row small,[\s\S]*?font-size:11px/);
+  assert.match(styleBlock, /\.user-facts-grid small,.user-root-label,.data-note small\{font-size:12px;line-height:1\.45\}/);
   assert.match(styleBlock, /\.metric-card small\{font-size:12px\}/);
   assert.match(styleBlock, /\.data-note p\{font-size:12px\}/);
 });

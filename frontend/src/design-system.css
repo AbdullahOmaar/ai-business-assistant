@@ -1584,6 +1584,26 @@
 }
 
 
+/* Neutral, readable counts for shared section headers across workspace destinations. */
+:root body .shell .aba-section-header__actions .count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--aiba-line);
+  border-radius: 999px;
+  background: var(--aiba-surface-tint);
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  font-weight: 720;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Mobile dock clearance: keep the final scroll target fully above the fixed navigation. */
 @media (max-width: 760px) {
   :root body .shell .main,
