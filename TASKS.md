@@ -1,3 +1,23 @@
+## Master current evidence — Phase 1 merge + CI policy documentation consolidation — 2026-11-12
+
+### PR #387 post-merge closeout
+- PR [#387](https://github.com/AbdullahOmaar/ai-business-assistant/pull/387) is MERGED. Current main baseline: `0d28a6680a76800cdec90247cfa735ea87d3c2a9`.
+- Post-merge GitHub Actions [run 43113244297](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43113244297) completed SUCCESS on the merge SHA: six substantive jobs and fail-closed `all-checks-passed` PASS. Authenticated API smoke SKIPPED as expected for frontend-only changes.
+- Exact-run browser artifact 13897811219 inspected. JUnit: 21 passed, 0 failed, 0 skipped, 0 errors. 144 screenshots cover the 18 OWNER workspace destinations at 360/390/430/768/1280px RTL and 390/768/1280px LTR. The LTR 360px and 430px combinations are not included; this is a remaining route-matrix coverage gap, not a confirmed UI defect.
+- Physical Android Chrome / installed-PWA install-update-offline; authenticated OWNER/STAFF/second-tenant; full keyboard-only; screen reader; high contrast; and 200% zoom remain NOT RUN.
+- Automatic Vercel Web/API production-target attempts triggered by merge were canceled because there was no separate Production deployment authorization. No Production release is claimed; no API/DB/schema/migration or production-data change occurred.
+- Overall November Phase 1 / T18 remains PARTIALLY COMPLETE. Do not infer full UX acceptance from this focused milestone or its mocked browser suite.
+
+### Active documentation batch — PR #388
+- Existing PR [#388](https://github.com/AbdullahOmaar/ai-business-assistant/pull/388) and branch `docs/contributing-ci-single-source` reused; no branch or PR created.
+- Branch was synchronized with `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9` using a normal non-force merge commit. Current code/documentation head before this TASKS checkpoint: `0dd502d1ab8081275db4f92675b31e0bf8530471`; compare was 6 commits ahead / 0 behind.
+- Four documentation paths changed: `CONTRIBUTING.md`, `.github/pull_request_template.md`, `docs/PRODUCTION_DEPLOYMENT.md`, and `README.md`. Repeated CI provider, fixed job-list, exact-SHA policy and merge-gate prose now points to `AGENTS.md`. Contributor roles, task/handoff requirements, production migration/recovery/runtime procedures, and release-specific checks remain.
+- Readback confirmed the fixed duplicated CI job/provider paragraphs were removed from all four paths and the AGENTS reference is present. This is documentation readback, not a full Markdown lint/build/test claim.
+- Earlier exact-head GitHub Actions [run 43110161591](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43110161591) passed on predecessor SHA `43d9d9bf4368d2f03f83551cd5cc9dad67db9ce0`; this evidence does not transfer to the current candidate. Current-head tests/CI are NOT RUN for this docs-only batch. Final exact-head required validation remains a pre-merge condition; no gate is bypassed.
+- PR #388 remains OPEN / DRAFT. Do not merge this small documentation batch alone. Continue only coherent policy-source cleanup on this same branch; no production deployment, API/DB/schema/migration or financial behavior changes.
+
+---
+
 ## November Phase 1 — mobile page-title responsive polish — 2026-11-12
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation`
