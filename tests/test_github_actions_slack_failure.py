@@ -26,10 +26,12 @@ class RedactionTests(unittest.TestCase):
         value = (
             "postgres://dbuser:dbpass@localhost/db\n"
             "password=hunter2\n"
+            "password: unquoted value with spaces\n"
+            "AWS_SECRET_ACCESS_KEY=SyntheticAWSSecretForTestsValue\n"
             "GET https://storage.example/log?X-Amz-Signature=abc123&X-Amz-Security-Token=def456"
         )
         redacted = redact_text(value)
-        for secret in ("dbpass", "hunter2", "abc123", "def456"):
+        for secret in ("dbpass", "hunter2", "unquoted value with spaces", "SyntheticAWSSecretForTestsValue", "abc123", "def456"):
             self.assertNotIn(secret, redacted)
         self.assertIn("[REDACTED URL CREDENTIALS]", redacted)
         self.assertIn("[REDACTED SIGNED URL]", redacted)
