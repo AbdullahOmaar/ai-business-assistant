@@ -163,12 +163,24 @@ def main() -> None:
                 fail(f"Draft invoice edit failed with HTTP {edited.status_code}: {edited.text[:300]}")
 
             invoice_query = urlencode({"business_id": owner_business_id})
+            listed = client.get(
+                f"/api/v1/invoices?{invoice_query}",
+                headers=headers_owner,
+            )
+            if listed.status_code != 200:
+                fail(f"Draft invoice list reload failed with HTTP {listed.status_code}: {listed.text[:500]}")
+            if not any(row.get("id") == invoice_id for row in listed.json()):
+                fail("The edited draft is absent from the authenticated workspace invoice list.")
+
             reloaded = client.get(
                 f"/api/v1/invoices/{invoice_id}?{invoice_query}",
                 headers=headers_owner,
             )
             if reloaded.status_code != 200:
-                fail(f"Draft invoice reload failed with HTTP {reloaded.status_code}.")
+                fail(
+                    f"Draft invoice detail reload failed with HTTP {reloaded.status_code}: "
+                    f"{reloaded.text[:500]} (invoice_id={invoice_id}, business_id={owner_business_id})"
+                )
             saved = reloaded.json()
             lines = saved.get("lines", [])
             if not (
