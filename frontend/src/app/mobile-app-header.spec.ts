@@ -145,3 +145,8 @@ test('mobile account menu closes when keyboard focus leaves without stealing foc
   assert.match(handler, /this\.profileMenuOpen = false/);
   assert.doesNotMatch(handler, /\.focus\(\)/, 'Tab navigation must remain on the newly focused control');
 });
+
+
+test('mobile page title stays compact beside fixed actions on narrow phone widths', () => {
+  assert.match(styles, /@media \(max-width: 420px\) \{\s*\.page-copy h1 \{ font-size: 16px; \}/);
+});
