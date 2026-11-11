@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from scripts.ci.github_actions_slack_failure import (
     bounded_excerpt,
@@ -146,8 +146,8 @@ class GitHubSummaryTests(unittest.TestCase):
             "GH_HEAD_SHA": "a" * 40,
             "GH_RUN_URL": "https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/42",
         }
-        response = unittest.mock.Mock()
-        response.__enter__().read.return_value = b'{"ok": true}'
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"ok": true}'
         with patch.dict(os.environ, env, clear=True):
             with patch(
                 "scripts.ci.github_actions_slack_failure.gh_output",
