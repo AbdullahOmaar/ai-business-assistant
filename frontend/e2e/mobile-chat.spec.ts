@@ -629,6 +629,33 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     { tab: 'health', titleAr: 'الحالة التشغيلية', titleEn: 'Operational health' },
   ] as const;
 
+  const routeApiFailures: string[] = [];
+  const routeNetworkFailures: string[] = [];
+  const pendingWorkspaceRequests = new Set<object>();
+  const isWorkspaceApiRequest = (url: string) =>
+    url.startsWith(apiBaseUrl + '/api/v1/businesses/business-1');
+  const routeLoadingMessages = page.locator(
+    '.global-loading:visible, aba-state-message.aba-state-message--loading:visible, [role="status"]:visible'
+  ).filter({ hasText: /Loading|جارٍ تحميل|جارٍ التحميل/ });
+  const routeSkeletons = page.locator('.metric-skeleton:visible');
+  page.on('request', request => {
+    if (isWorkspaceApiRequest(request.url())) pendingWorkspaceRequests.add(request);
+  });
+  page.on('requestfinished', request => {
+    pendingWorkspaceRequests.delete(request);
+  });
+  page.on('response', response => {
+    if (!isWorkspaceApiRequest(response.url())) return;
+    if (!response.ok()) {
+      routeApiFailures.push(`${response.status()} ${response.request().method()} ${new URL(response.url()).pathname}`);
+    }
+  });
+  page.on('requestfailed', request => {
+    if (!isWorkspaceApiRequest(request.url())) return;
+    pendingWorkspaceRequests.delete(request);
+    routeNetworkFailures.push(`${request.method()} ${new URL(request.url()).pathname}: ${request.failure()?.errorText ?? 'request failed'}`);
+  });
+
   const assertRouteSweep = async (width: number, language: 'ar' | 'en') => {
     await page.setViewportSize({ width, height: 844 });
     const direction = language === 'ar' ? 'rtl' : 'ltr';
@@ -654,6 +681,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       }
       await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
         .toHaveText(expectedTitle);
+      // Tab changes do not navigate the document, so networkidle is not a
+      // reliable signal. Wait for the app's actual loading indicators and
+      // every workspace API request to settle before accepting the screenshot.
+      await expect(routeLoadingMessages, destination.tab + ' loading message').toHaveCount(0, { timeout: 15_000 });
+      await expect(routeSkeletons, destination.tab + ' loading skeleton').toHaveCount(0, { timeout: 15_000 });
+      await expect.poll(() => pendingWorkspaceRequests.size, { timeout: 15_000 })
+        .toBe(0);
+      await expect(page.locator('.main .panel:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
+        destination.tab + ' rendered content or empty state').toBeVisible();
+      await expect(page.locator('[role="alert"]:visible'), destination.tab + ' rendered error state')
+        .toHaveCount(0);
+      expect(routeApiFailures, destination.tab + ' API failures').toEqual([]);
+      expect(routeNetworkFailures, destination.tab + ' network failures').toEqual([]);
       if (width <= 760) {
         // The Hybrid mobile header replaces the desktop workspace bar on phones.
         await expect(page.locator('aba-mobile-app-header')).toBeVisible();
