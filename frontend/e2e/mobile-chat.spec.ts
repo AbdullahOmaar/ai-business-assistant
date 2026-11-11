@@ -209,11 +209,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         status: 200,
         headers: corsHeaders,
         body: JSON.stringify({
-          period: { start_date: null, end_date: null, timezone: 'Africa/Cairo' },
-          invoiced_sales: [],
-          collected_payments: [],
-          expenses: [],
-          outstanding_balances: [],
+          period: { start_date: '2026-10-13', end_date: '2026-11-11', timezone: 'Africa/Cairo' },
+          // Synthetic, non-persistent KPI fixture for visual review only.
+          // Values mirror the shape of existing read-only aggregates without
+          // writing or reading any real workspace records in this browser test.
+          invoiced_sales: [{ currency_code: 'EGP', count: 9, total: '548525.00' }],
+          collected_payments: [{ currency_code: 'EGP', count: 8, total: '548255.00' }],
+          expenses: [{ currency_code: 'EGP', count: 1, total: '5000.00' }],
+          outstanding_balances: [{ currency_code: 'EGP', total: '230500.00' }],
         }),
       });
       return;
@@ -278,6 +281,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('#workspace-current-name')).toHaveText('Demo Retail', { timeout: 20_000 });
   await expect(page.locator('.home-shortcut-list > .home-shortcut-link')).toHaveCount(5);
   await expect(page.locator('.metric-grid aba-metric-card')).toHaveCount(4, { timeout: 20_000 });
+  const kpiCards = page.locator('.metric-grid aba-metric-card');
+  await expect(kpiCards.nth(0)).toContainText('548525.00 EGP');
+  await expect(kpiCards.nth(1)).toContainText('548255.00 EGP');
+  await expect(kpiCards.nth(2)).toContainText('5000.00 EGP');
+  await expect(kpiCards.nth(3)).toContainText('230500.00 EGP');
 
   const ownerModuleDirectory = page.locator('.module-directory-grid');
   const ownerModuleCount = await ownerModuleDirectory.locator('aba-quick-access-card').count();
