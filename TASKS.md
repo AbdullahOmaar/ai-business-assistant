@@ -14,6 +14,7 @@
   5. Run focused checks, full frontend tests/build, security checks and exact-SHA GitHub Actions aggregate; record every NOT RUN gate honestly.
   6. Keep physical Android Chrome / installed-PWA install-update-offline, authenticated OWNER/STAFF/second-tenant, full keyboard-only, screen reader, high-contrast and 200% zoom acceptance open until directly evidenced.
 - **Current checkpoint:** branch created from the verified main SHA above. First milestone extends `frontend/e2e/mobile-chat.spec.ts` route-sweep coverage with 360px, 430px and 768px RTL runs plus a 768px LTR run; 390px and 1280px remain in both directions. The route-sweep timeout is raised to 300 seconds to account for the additional rendered checks. Exact-head CI and screenshot review are pending.
+- **Test-order correction:** keep the mobile-only More menu interaction at 390px before tablet sweeps; the follow-up commit moves 768px checks after that interaction so the test does not require a phone-only control at tablet width. The earlier in-flight run is for the previous SHA and cannot validate this correction; rerun the full workflow on the new exact head.
 - **Figma:** canonical Design Foundations file remains View-only / read-limit blocked; no Figma edits or replacement file are authorized or claimed.
 - **Release:** no PR, merge, deployment, API/DB/schema/migration, production-data or external side effect has been performed by this continuation. Merge and deployment remain separate gates.
 
