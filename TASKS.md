@@ -2,9 +2,9 @@
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation` (same Phase 1 branch name restored from merged main; no parallel Phase 1 branch).
 - **Base:** `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`.
-- **Change:** the shared mobile page title previously applied negative Latin-style letter spacing in both locales. Arabic RTL now explicitly uses natural letter spacing to preserve connected-script typography. English title sizing and existing narrow-phone layout are unchanged.
-- **Regression:** added one focused source assertion for the RTL-specific typography rule; the mobile header source regression count is now 11 declarations.
-- **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/app/mobile-app-header.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
+- **Change:** the shared mobile page title previously applied negative Latin-style letter spacing in both locales. Arabic RTL now explicitly uses natural letter spacing to preserve connected-script typography across the mobile app header, shared desktop/page/section headings and the dashboard-period title. English title sizing and existing narrow-phone layout are unchanged.
+- **Regression:** added focused source assertions for the RTL mobile-header rule and shared design-system heading overrides.
+- **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/design-system.css`, `frontend/src/app/mobile-app-header.spec.ts`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
 - **Validation:** targeted source/test readback pending; the focused Node test was NOT RUN (no local repository checkout/runner in this session). No full suite or unrelated tests were run.
 - **Scope:** presentation CSS, regression assertion and UX evidence only. No API/backend/auth/tenant, database/schema/migration, financial, inventory/payroll semantics, production data, merge or deployment changes.
 - **Phase 1 remains PARTIALLY COMPLETE:** full rendered 19-destination RTL/LTR acceptance, physical Android/PWA, keyboard/screen-reader, high-contrast/200% zoom and authenticated second-tenant acceptance remain separate NOT RUN/BLOCKED items.
