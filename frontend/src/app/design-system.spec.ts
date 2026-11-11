@@ -57,6 +57,19 @@ test('KPI card surface is drawn once by the inner component, not the Angular hos
   assert.match(inner, /box-shadow:/);
 });
 
+test('public authentication screens fit the visible viewport without redundant vertical overflow', () => {
+  assert.match(app, /class="shell" \\[class\\.auth-shell\\]="!signedIn"/);
+  assert.match(app, /\\.shell\\.auth-shell\\{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px\\}/);
+  assert.match(app, /\\.shell\\.auth-shell>\\.auth-card,\\.shell\\.auth-shell>\\.setup-card\\{margin:0 auto\\}/);
+});
+
+test('browser title and root language metadata follow the persisted locale and language toggle', () => {
+  assert.match(app, /private syncDocumentLanguage\\(\\): void \\{[\\s\\S]*?document\\.documentElement\\.lang = this\\.language;[\\s\\S]*?document\\.documentElement\\.dir = this\\.language === 'ar' \\? 'rtl' : 'ltr';[\\s\\S]*?document\\.title = this\\.t\\('مساعد الأعمال الذكي', 'AI Business Assistant'\\);[\\s\\S]*?\\}/);
+  assert.match(app, /const savedLanguage = localStorage\\.getItem\\('aba-language'\\);[\\s\\S]*?this\\.syncDocumentLanguage\\(\\);/);
+  assert.match(app, /toggleLanguage\\(\\): void \\{[\\s\\S]*?this\\.syncDocumentLanguage\\(\\);/);
+  assert.match(app, /async initializeApp\\(\\): Promise<void> \\{[\\s\\S]*?this\\.syncDocumentLanguage\\(\\);/);
+});
+
 test('Angular loads the design system after the existing application stylesheet', () => {
   const styles = angular.projects['ai-business-assistant'].architect.build.options.styles;
   assert.deepEqual(styles, ['src/styles.css', 'src/design-system.css']);
