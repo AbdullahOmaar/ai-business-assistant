@@ -121,6 +121,7 @@ test('mobile state messages wrap retry actions and reserve document viewport cle
 
 test('every authenticated workspace route exposes a localized skip link to the main landmark', () => {
   assert.match(app, /class="skip-link" href="#main-content"/);
+  assert.ok(app.includes("@if (initialized && signedIn && !startupFailed && !setupNeeded) {"));
   assert.match(app, /تخطي إلى المحتوى الرئيسي/);
   assert.match(app, /Skip to main content/);
   assert.match(app, /<main class="main" id="main-content" tabindex="-1">/);

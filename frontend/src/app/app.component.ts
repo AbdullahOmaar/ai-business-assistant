@@ -38,7 +38,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
-      @if (initialized && !startupFailed && !setupNeeded) {
+      @if (initialized && signedIn && !startupFailed && !setupNeeded) {
         <a class="skip-link" href="#main-content">{{ t('تخطي إلى المحتوى الرئيسي', 'Skip to main content') }}</a>
       }
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
