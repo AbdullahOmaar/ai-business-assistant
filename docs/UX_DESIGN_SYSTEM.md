@@ -145,3 +145,12 @@ These changes are frontend presentation and test evidence only. No business logi
 - Screenshot acceptance uses viewport captures, not only full-page snapshots, because fixed navigation is anchored to the viewport. Capture 320 / 360 / 390 / 412 / 430 / 700 / 768 / 1280px where the route supports them, in RTL and LTR; annotate any unavailable direction/width explicitly.
 - Automated layout assertions do not replace physical Android Chrome installed-PWA, screen-reader, high-contrast or 200% zoom acceptance. Those remain separate evidence items.
 
+
+
+## Keyboard navigation — workspace entry
+
+- Every authenticated workspace state exposes a localized skip link: “تخطي إلى المحتوى الرئيسي” / “Skip to main content”.
+- The link is hidden from the visual flow until keyboard focus, then appears above the workspace shell with a 44px minimum target.
+- The destination is the main content landmark, focusable programmatically with `tabindex="-1"`; the skip link is not rendered during startup, setup or startup-failure states where that landmark does not exist.
+- The transition respects `prefers-reduced-motion`. This is a keyboard-navigation aid and does not alter routes, authorization, or feature behavior.
+- Source-level regression coverage lives in `frontend/src/app/design-system.spec.ts`; rendered keyboard and screen-reader verification remains a separate acceptance gate.

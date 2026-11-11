@@ -5,6 +5,7 @@ import test from 'node:test';
 const css = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const angular = JSON.parse(readFileSync(new URL('../../angular.json', import.meta.url), 'utf8'));
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
 
 test('the final AIBA visual direction defines a complete semantic token foundation', () => {
   const tokens = [...css.matchAll(/^\s*(--aiba-[\w-]+)\s*:/gm)].map(match => match[1]);
@@ -116,4 +117,23 @@ test('mobile state messages wrap retry actions and reserve document viewport cle
   assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*?html\s*\{\s*scroll-padding-block-end:\s*calc\(128px \+ env\(safe-area-inset-bottom, 0px\)\)/);
   assert.match(css, /@media\s*\(max-width:\s*600px\)[\s\S]*?:root body \.shell \.aba-state-message\s*\{\s*flex-wrap:\s*wrap/);
   assert.doesNotMatch(app, /\.main,[^{]*\{[^}]*scroll-padding-block-end/);
+});
+
+
+test('every authenticated workspace route exposes a localized skip link to the main landmark', () => {
+  assert.match(app, /class="skip-link" href="#main-content"/);
+  assert.ok(app.includes("@if (initialized && signedIn && !startupFailed && !setupNeeded) {"));
+  assert.match(app, /تخطي إلى المحتوى الرئيسي/);
+  assert.match(app, /Skip to main content/);
+  assert.match(guide, /titleAr: 'تخطي إلى المحتوى الرئيسي'[\s\S]*?titleEn: 'Skip to main content'[\s\S]*?detailAr:[\s\S]*?detailEn:/);
+  assert.match(app, /<main class="main" id="main-content" tabindex="-1">/);
+  assert.match(css, /\.skip-link\s*\{[\s\S]*?min-height:\s*44px/);
+  assert.match(css, /\.skip-link:focus\s*\{[\s\S]*?transform:\s*translateY\(0\)/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce[\s\S]*?\.skip-link\s*\{[\s\S]*?transition:\s*none/);
+});
+
+
+test('skip navigation does not suppress the main landmark keyboard focus indicator', () => {
+  assert.doesNotMatch(css, /#main-content:focus\s*\{[^}]*outline:\s*none/);
+  assert.match(css, /\[tabindex\]:focus-visible[\s\S]*?outline:\s*3px solid var\(--aiba-focus\)/);
 });
