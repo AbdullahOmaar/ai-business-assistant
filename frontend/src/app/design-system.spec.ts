@@ -113,7 +113,7 @@ test('interactive navigation and disclosure controls retain touch size and visib
 
 
 test('mobile state messages wrap retry actions and reserve document viewport clearance above the dock', () => {
-  assert.match(css, /@media\s*\(max-width:\s*600px\)[\s\S]*?html\s*\{\s*scroll-padding-block-end:\s*calc\(128px \+ env\(safe-area-inset-bottom, 0px\)\)/);
-  assert.match(css, /:root body \.shell \.aba-state-message\s*\{\s*flex-wrap:\s*wrap/);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*?html\s*\{\s*scroll-padding-block-end:\s*calc\(128px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(css, /@media\s*\(max-width:\s*600px\)[\s\S]*?:root body \.shell \.aba-state-message\s*\{\s*flex-wrap:\s*wrap/);
   assert.doesNotMatch(app, /\.main,[^{]*\{[^}]*scroll-padding-block-end/);
 });

@@ -446,13 +446,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     // Restore the Home viewport so the following general screenshots include the header and KPIs.
     await page.evaluate(() => window.scrollTo(0, 0));
   };
-  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 430, 700, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`Arabic RTL layout must fit at ${width}px`);
-    if (width <= 430) {
-      await assertHomeMobileGrid(width);
-      await assertHomeContentClearsDock(width, 'ar');
-    }
+    if (width <= 430) await assertHomeMobileGrid(width);
+    if (width <= 760) await assertHomeContentClearsDock(width, 'ar');
     await page.screenshot({
       path: `test-results/aiba-home-${width}px-ar-viewport.png`,
       fullPage: false,
@@ -546,13 +544,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     fullPage: false,
     animations: 'disabled',
   });
-  for (const width of [320, 360, 390, 412, 430, 768, 1280]) {
+  for (const width of [320, 360, 390, 412, 430, 700, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await assertNoHorizontalOverflow(`English LTR layout must fit at ${width}px`);
-    if (width <= 430) {
-      await assertHomeMobileGrid(width);
-      await assertHomeContentClearsDock(width, 'en');
-    }
+    if (width <= 430) await assertHomeMobileGrid(width);
+    if (width <= 760) await assertHomeContentClearsDock(width, 'en');
     await page.screenshot({
       path: `test-results/aiba-home-${width}px-ltr-viewport.png`,
       fullPage: false,
