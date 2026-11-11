@@ -383,7 +383,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
   // Verify the final Home content can be reached above the fixed mobile dock.
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.locator('.dashboard-trust-note').scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
   const dockClearance = await page.evaluate(() => {
     const dock = document.querySelector('.sidebar');
     const lastHomeContent = document.querySelector('.dashboard-trust-note');
