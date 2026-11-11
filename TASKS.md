@@ -1,3 +1,17 @@
+## November Phase 1 — mobile page-title responsive polish — 2026-11-12
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`
+- **Base:** `main@c508e918749f7eef7358023afcd92285ddae7601`
+- **Work order:** Owner-approved November Phase 1 implementation. One Phase branch; changes limited to evidenced responsive UX corrections, matching regression coverage and UX evidence.
+- **Confirmed finding:** PR #384 exact-head review of 144 screenshots identified the 390px English Customers page title wrapping its final character beside the fixed mobile header controls.
+- **Batch:** reduce the shared mobile page-title size to 16px through 420px; retain all existing 44px touch targets; add one source-level CSS regression and one rendered Playwright assertion for the affected 390px English Customers case; record evidence in `docs/UX_NESTED_SURFACE_INVENTORY.md`.
+- **Reuse / test economy:** reuse the existing 18-destination OWNER route sweep and current screenshot matrix; do not repeat unrelated tests during implementation. Final candidate must still pass the required exact-SHA GitHub Actions `all-checks-passed` aggregate and applicable security/repository gates.
+- **Safety:** no API/backend/auth/tenant/DB/schema/migration, business, financial, inventory, payroll or production behavior changes. API/DB changes remain conditional on a directly evidenced necessity and separate risk-specific approvals where applicable.
+- **Acceptance:** the 390px English Customers mobile heading renders on one line; 44px interactive targets remain intact; RTL/LTR and existing destination behavior are preserved. Physical Android/PWA, authenticated second-tenant, full keyboard/screen-reader, high-contrast and 200% zoom remain separate NOT RUN/BLOCKED evidence items.
+- **Delivery:** implementation commit and milestone PR are tracked on this branch; merge and Production deployment are not authorized by this work order and remain separate gates.
+
+---
+
 ## UX/UI mobile-first redesign — active Master work package — 2026-11-11 (continuation)
 
 - **Branch:** `master/t18-mobile-ux-acceptance-20261111`

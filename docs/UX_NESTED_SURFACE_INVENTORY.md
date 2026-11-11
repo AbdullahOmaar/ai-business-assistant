@@ -492,3 +492,12 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 ## Documentation consistency correction — 2026-11-11
 
 - Clarified the shared-component batch boundary: `app.component.ts` is changed only for the tablet workspace-bar responsive CSS rule documented in the preceding section. No application state, route, navigation, workspace-switching or business logic is changed.
+
+
+## 390px English mobile page-title wrapping correction — 2026-11-12
+
+- The exact-head artifact review for PR #384 identified a minor layout defect on the Customers route at 390px in English: the final character of the page title wrapped to a second line beside the fixed mobile header actions.
+- The shared mobile page-title size is now 16px through 420px viewport width. The brand, notification, profile and assistant control targets remain unchanged at 44px; larger viewports retain the existing fluid type scale.
+- Added a focused CSS source regression and a single rendered Playwright assertion for the 390px English Customers header. The existing route sweep and screenshot matrix remain reused; no extra viewport sweep or new route was added.
+- Presentation and regression coverage only. No API, authentication, tenant, database/schema/migration, business or financial behavior changed.
+- This fix does not close physical Android/PWA, authenticated second-tenant, keyboard-only, screen-reader, high-contrast or 200% zoom acceptance.

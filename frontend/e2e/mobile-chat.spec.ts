@@ -700,6 +700,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       } else {
         await expect(page.locator('.workspace-bar')).toBeVisible();
       }
+      if (destination.tab === 'customers' && width === 390 && language === 'en') {
+        const mobileTitle = await page.locator('aba-mobile-app-header .page-copy h1').evaluate(element => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return {
+            text: element.textContent?.trim() ?? '',
+            renderedLines: range.getClientRects().length,
+            fontSize: getComputedStyle(element).fontSize,
+          };
+        });
+        expect(mobileTitle.text, 'Customers mobile page title').toBe('Customers');
+        expect(mobileTitle.renderedLines, 'the 390px English Customers title must not orphan its final character').toBe(1);
+      }
       const layout = await page.evaluate(() => ({
         width: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
