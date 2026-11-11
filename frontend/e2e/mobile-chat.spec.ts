@@ -629,6 +629,21 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     { tab: 'health', titleAr: 'الحالة التشغيلية', titleEn: 'Operational health' },
   ] as const;
 
+  const routeApiFailures: string[] = [];
+  const routeNetworkFailures: string[] = [];
+  const isWorkspaceApiRequest = (url: string) =>
+    url.startsWith(apiBaseUrl + '/api/v1/businesses/business-1');
+  page.on('response', response => {
+    if (!isWorkspaceApiRequest(response.url())) return;
+    if (!response.ok()) {
+      routeApiFailures.push(`${response.status()} ${response.request().method()} ${new URL(response.url()).pathname}`);
+    }
+  });
+  page.on('requestfailed', request => {
+    if (!isWorkspaceApiRequest(request.url())) return;
+    routeNetworkFailures.push(`${request.method()} ${new URL(request.url()).pathname}: ${request.failure()?.errorText ?? 'request failed'}`);
+  });
+
   const assertRouteSweep = async (width: number, language: 'ar' | 'en') => {
     await page.setViewportSize({ width, height: 844 });
     const direction = language === 'ar' ? 'rtl' : 'ltr';
@@ -654,6 +669,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       }
       await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
         .toHaveText(expectedTitle);
+      // A changed heading is not proof that the destination finished loading.
+      // Wait for the mocked business API to settle, then fail on HTTP/network errors
+      // or a rendered state-message alert before capturing the route screenshot.
+      await page.waitForLoadState('networkidle', { timeout: 10_000 });
+      await expect(page.locator('.aba-state-message[role="alert"]:visible'), destination.tab + ' rendered error state')
+        .toHaveCount(0);
+      expect(routeApiFailures, destination.tab + ' API failures').toEqual([]);
+      expect(routeNetworkFailures, destination.tab + ' network failures').toEqual([]);
       if (width <= 760) {
         // The Hybrid mobile header replaces the desktop workspace bar on phones.
         await expect(page.locator('aba-mobile-app-header')).toBeVisible();
