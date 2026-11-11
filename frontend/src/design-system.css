@@ -1474,33 +1474,6 @@
   scroll-margin-block: 12px;
 }
 
-@media (max-width: 760px) {
-  :root body .shell .main {
-    padding-block-end: calc(128px + env(safe-area-inset-bottom, 0px));
-    scroll-padding-block-end: calc(128px + env(safe-area-inset-bottom, 0px));
-  }
-
-  :root body .shell.keyboard-open .main {
-    padding-block-end: 12px;
-    scroll-padding-block-end: 12px;
-  }
-
-  :root body .shell .sidebar > .nav-item {
-    min-height: 48px;
-    touch-action: manipulation;
-  }
-
-  :root body .shell .aba-section-header__actions {
-    gap: 8px;
-  }
-
-  :root body .shell .aba-section-header__actions > button,
-  :root body .shell .aba-section-header__actions > a,
-  :root body .shell .aba-section-header__actions > [role="button"] {
-    min-height: 44px;
-  }
-}
-
 @media (max-width: 600px) {
   :root body .shell .list-tools,
   :root body .shell .filter-bar,
@@ -1539,13 +1512,6 @@
   }
 }
 
-@media (max-width: 380px) {
-  :root body .shell .main {
-    padding-block-end: calc(136px + env(safe-area-inset-bottom, 0px));
-    scroll-padding-block-end: calc(136px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   :root body .shell .table-wrap,
   :root body .shell .audit-table-wrap {
@@ -1555,23 +1521,11 @@
 
 
 
-/* Mobile dock clearance: keep the final scroll target fully above the fixed navigation. */
-@media (max-width: 760px) {
-  :root body .shell .main,
-  :root body .shell.english .main {
-    padding-block-end: calc(132px + env(safe-area-inset-bottom, 0px));
-    scroll-padding-block-end: calc(132px + env(safe-area-inset-bottom, 0px));
-  }
-
-  :root body .shell .sidebar {
-    padding-block-end: calc(8px + env(safe-area-inset-bottom, 0px));
-  }
-
-  :root body .shell button,
-  :root body .shell a,
-  :root body .shell summary {
-    scroll-margin-block: 12px;
-  }
+/* Keyboard-scrolled actions retain a small viewport margin. */
+:root body .shell button,
+:root body .shell a,
+:root body .shell summary {
+  scroll-margin-block: 12px;
 }
 
 /* Preserve visible keyboard focus and comfortable touch targets across modules. */
@@ -1583,7 +1537,6 @@
   outline-offset: 3px;
 }
 
-:root body .shell .nav-item,
 :root body .shell .home-shortcut-link,
 :root body .shell .module-directory-summary,
 :root body .shell .list-tools button,
