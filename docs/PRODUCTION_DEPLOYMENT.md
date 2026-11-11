@@ -82,7 +82,7 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 - CircleCI's GitHub webhook is disabled and no project schedules exist. GitHub Actions is the sole active CI provider; its exact-SHA `all-checks-passed` aggregate is required.
 - GitLab CI is inactive and Semaphore is retired/non-authoritative; neither is a validation provider.
 - Verify every substantive job and the aggregate on the exact candidate SHA. A successful workflow on another branch/SHA is not release evidence.
-- GitHub private Free cannot enforce required status checks for private repositories under the current plan. Merge control remains BLOCKED / NOT VERIFIED until an enforceable solution is proven; never bypass the gate.
+- The repository is Public, and the active default-branch ruleset enforces the GitHub Actions `all-checks-passed` check on an up-to-date head. No separate PR-approval count is configured; never bypass any active rule.
 
 ## Release gates
 
@@ -179,7 +179,7 @@ At task start, record a compact release profile on the existing Notion task / Gi
 - Likely affected applications/projects (Web/API/etc.) and explicitly unaffected projects.
 - Whether GitHub merge to main automatically triggers production deployment for each affected Vercel project; confirm Git integration, production branch, release markers, Ignore Build Step and project root/dependency boundaries.
 - Whether schema/migration, secrets/configuration, paid resources, production data, or external side effects are involved.
-- Applicable GitHub Actions workflow GitHub Actions workflow and required exact-head jobs, and current provider/quota availability.
+- Applicable GitHub Actions workflow, required exact-head jobs, and current runner/quota availability.
 - Required owner decisions: merge authorization, production deployment authorization, and any separate production data/migration approval.
 
 Do this once before coding. Recheck only when a relevant configuration, scope, branch/base or release target changes. Never defer deployment-coupling discovery until after the owner says “merge”.
@@ -189,7 +189,7 @@ Do this once before coding. Recheck only when a relevant configuration, scope, b
 Maintain one current packet in the existing task/PR rather than scattering evidence across repeated status messages:
 - PR URL, base SHA, exact head SHA, changed-file inventory and merge-base/divergence.
 - Acceptance criteria mapped to tests and results.
-- GitHub Actions workflow URL and substantive job outcomes on the exact head .
+- GitHub Actions workflow URL and substantive job outcomes on the exact head.
 - Current review submissions and provider/repository-enforced requirements (a comment is not an approval).
 - Diff/security/data-integrity review, migrations and production side-effect assessment.
 - Release profile: affected projects, automatic deployment behavior, release markers/ignore rules, and explicit non-targets.
