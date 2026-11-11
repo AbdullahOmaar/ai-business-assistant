@@ -6,7 +6,7 @@ const ownerUid = 'workspace-owner-uid';
 const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoid29ya3NwYWNlLW93bmVyLXVpZCIsInVpZCI6IndvcmtzcGFjZS1vd25lci11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
 
 test('mobile Home layout and chat remain usable across viewport and keyboard changes', async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const uncaughtErrors: string[] = [];
   const chatRequests: Array<{ businessId: string; message: string; authorization?: string }> = [];
   const paymentRequests: string[] = [];
@@ -718,10 +718,16 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   };
 
   await assertRouteSweep(390, 'ar');
+  // Expand the full 18-route OWNER workspace sweep beyond the default phone width.
+  // RTL is the primary mobile direction; tablet LTR is also covered explicitly.
+  await assertRouteSweep(360, 'ar');
+  await assertRouteSweep(430, 'ar');
+  await assertRouteSweep(768, 'ar');
   await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await assertRouteSweep(390, 'en');
+  await assertRouteSweep(768, 'en');
   await page.locator('.sidebar').getByRole('button', { name: /More sections/ }).click();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
