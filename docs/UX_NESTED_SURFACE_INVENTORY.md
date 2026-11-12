@@ -533,3 +533,9 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Extended the Playwright keyboard path to Tab through and activate all five sections, checking the visible heading and matching announcement. This remains mocked browser evidence; it does not replace NVDA/VoiceOver or live platform-role verification.
 - No Platform Admin permission rules, identity, membership, API, data mutation, financial behavior, or backend changes.
 - Exact-head GitHub Actions validation is pending for the resulting branch candidate. Phase 1 remains PARTIALLY COMPLETE until manual screen-reader/high-contrast/actual-200%-zoom, physical Android/PWA and live role/tenant evidence is addressed.
+
+
+## E2E locator follow-up — 2026-11-12
+
+- Corrected the Arabic Permissions route selector to an exact accessible-name match after the expanded Platform Admin matrix showed the partial word also matches “Users & access”. The observed failure was strictly an E2E locator ambiguity; the UI and authorization behavior were not changed.
+- New exact-head CI evidence is required before the candidate can proceed to merge.

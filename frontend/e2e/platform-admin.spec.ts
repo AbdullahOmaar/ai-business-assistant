@@ -415,7 +415,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
       businesses: language === 'en' ? /Workspaces/ : /مساحات العمل/,
       activity: language === 'en' ? /Audit activity/ : /سجل التدقيق/,
       users: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/,
-      permissions: language === 'en' ? /Permissions/ : /الصلاحيات/,
+      permissions: language === 'en' ? /^Permissions$/ : /^الصلاحيات$/,
     };
     const announcementLabels = {
       overview: language === 'en' ? 'Opened Overview section' : 'تم فتح قسم نظرة عامة',
