@@ -74,6 +74,12 @@ export const FEATURE_CATALOG = [
         detailEn: 'Add customers and review their details and related activity.',
       },
       {
+        titleAr: 'البحث والترتيب وتحميل المزيد',
+        titleEn: 'Search, sorting, and load more',
+        detailAr: 'ابحث بالاسم أو البريد أو الهاتف ورتّب السجلات؛ استخدم «تحميل المزيد» لإضافة الصفحة التالية عند تجاوز أول 100 سجل.',
+        detailEn: 'Search by name, email, or phone and sort the directory; use Load more to append the next page when the list exceeds the first 100 records.',
+      },
+      {
         titleAr: 'كشف حساب العميل',
         titleEn: 'Customer statement',
         detailAr: 'راجع الحركات والأرصدة حسب العملة والفترة، مع عرض أنواع الحركات باللغة المختارة.',
@@ -93,6 +99,12 @@ export const FEATURE_CATALOG = [
         titleEn: 'Products and services',
         detailAr: 'سجّل الاسم وسعر الوحدة وحدد هل الصنف مخزني أم غير مخزني.',
         detailEn: 'Save item names and unit prices, and choose stock-tracked or non-stock.',
+      },
+      {
+        titleAr: 'البحث والتصفية والترتيب',
+        titleEn: 'Search, filters, and sorting',
+        detailAr: 'ابحث بالاسم أو رمز SKU، وفلتر بين الأصناف المخزنية وغير المخزنية، ورتّب بالاسم أو الرمز أو السعر أو المخزون. استخدم «تحميل المزيد» للوصول إلى الصفحات التالية؛ ويمكنك مسح الفلتر حتى لو لم تظهر نتائج.',
+        detailEn: 'Search by item name or SKU, filter stock-tracked vs non-stock items, and sort by name, SKU, price, or stock. Use Load more to reach later pages; you can clear a filter even when it has no matches.',
       },
       {
         titleAr: 'رصيد المخزون',

@@ -212,3 +212,22 @@ test('feature guide documents searchable bilingual mobile navigation without ove
   assert.match(featureText, /search the Home module directory or open More on mobile/i);
   assert.match(featureText, /destinations available to your current role/i);
 });
+
+test('customer guide documents bilingual directory search, sorting, and incremental loading', () => {
+  const customers = FEATURE_CATALOG.find(section => section.id === 'customers');
+  assert.ok(customers);
+  const detail = customers.features.map(feature => feature.detailEn).join(' ');
+  assert.match(detail, /search by name, email, or phone/i);
+  assert.match(detail, /sort the directory/i);
+  assert.match(detail, /next page/i);
+});
+
+test('product guide accurately describes the non-stock filter and catalogue controls', () => {
+  const products = FEATURE_CATALOG.find(section => section.id === 'products');
+  assert.ok(products);
+  const detail = products.features.map(feature => feature.detailEn).join(' ');
+  assert.match(detail, /stock-tracked vs non-stock items/i);
+  assert.match(detail, /sort by name, SKU, price, or stock/i);
+  assert.match(detail, /clear a filter even when it has no matches/i);
+  assert.doesNotMatch(detail, /Services filter/i);
+});
