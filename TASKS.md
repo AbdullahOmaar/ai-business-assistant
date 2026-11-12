@@ -3846,3 +3846,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Maintainer review correction:** preserved the prior localized medium-date presentation for paid payroll records in the new shared table; malformed/missing timestamps render as an em dash rather than a raw ISO string.
+
+
+## 2026-11-12 — Customer statement mobile record layout
+
+- Reviewed the nested Customer Statement surface inside Customers: retained date-range filters, per-currency balance cards, event labels, source references, debit/credit/balance values, pagination and report limitations.
+- Replaced its remaining horizontally scrolling six-column ledger with the shared semantic record table; phone widths render labeled transaction cards while desktop retains a structured table.
+- Each debit, credit and balance value continues to carry its own currency code; no opening-balance, allocation, financial formula or ledger semantics changed.
+- Added regression coverage for the shared table, localized event date, per-currency values, pagination and range limitations.
+- No API, schema, database, authorization or data changes. Exact-head consolidated validation remains pending; no PR, merge or deployment.
