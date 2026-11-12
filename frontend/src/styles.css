@@ -120,7 +120,6 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
   color: var(--aba-color-text-primary);
   background: var(--aba-color-page);
