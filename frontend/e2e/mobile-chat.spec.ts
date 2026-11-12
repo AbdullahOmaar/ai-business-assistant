@@ -702,16 +702,28 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
       const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
         : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
-      await page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true }).click();
+      const homeButton = page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true });
+      await homeButton.focus();
+      await expect(homeButton).toBeFocused();
+      await page.keyboard.press('Enter');
       await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
       if (destination.tab !== 'overview') {
-        await page.locator('.module-directory-disclosure').evaluate(element => {
-          (element as HTMLDetailsElement).open = true;
-        });
+        const disclosure = page.locator('.module-directory-disclosure');
+        const disclosureSummary = disclosure.locator('summary');
+        await disclosureSummary.focus();
+        if (await disclosure.evaluate(element => (element as HTMLDetailsElement).open)) {
+          await page.keyboard.press('Enter');
+          await expect.poll(() => disclosure.evaluate(element => (element as HTMLDetailsElement).open)).toBe(false);
+        }
+        await page.keyboard.press('Enter');
+        await expect.poll(() => disclosure.evaluate(element => (element as HTMLDetailsElement).open)).toBe(true);
         const card = page.locator('.module-directory-grid > aba-quick-access-card')
           .filter({ has: page.locator('.aba-quick-access__copy > strong').getByText(cardLabel, { exact: true }) });
         await expect(card, destination.tab + ' must be listed for the OWNER').toHaveCount(1);
-        await card.locator('button').click();
+        const destinationButton = card.locator('button');
+        await destinationButton.focus();
+        await expect(destinationButton).toBeFocused();
+        await page.keyboard.press('Enter');
       }
       await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
         .toHaveText(expectedTitle);
@@ -896,7 +908,15 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   // The More menu is mobile-only; restore a phone viewport after the tablet/desktop sweeps.
   await page.setViewportSize({ width: 390, height: 844 });
   // The first More-menu action is the language toggle (Arabic -> English).
-  await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
+  await moreTrigger.focus();
+  await expect(moreTrigger).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('navigation', { name: /أقسام إضافية|Additional sections/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#mobile-more-menu')).toBeVisible();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
