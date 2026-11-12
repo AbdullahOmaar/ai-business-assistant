@@ -6,7 +6,10 @@ const css=readFileSync(new URL('../design-system.css',import.meta.url),'utf8');
 const app=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
-  assert.match(component,/<th scope="col">/);assert.match(component,/\[attr\.data-label\]="column\.label"/);
+  assert.match(component,/<th scope="col">/);assert.match(component,/<th scope="row"/);
+  assert.match(component,/\[attr\.data-label\]="column\.label"/);
+  assert.match(component,/\[attr\.aria-label\]="actionAriaLabel\(row,action\)"/);
+  assert.match(component,/actionAriaLabel\(row:AbaRecordTableRow,action:AbaRecordTableAction\)/);
   assert.match(component,/rowAction\.emit\(\{rowId,actionId,anchor\}\)/);
 });
 test('record table includes loading and empty recovery states',()=>{
@@ -14,7 +17,8 @@ test('record table includes loading and empty recovery states',()=>{
 });
 test('phone layout renders labeled record cards with touch-sized row actions',()=>{
   assert.match(css,/\.aba-record-table tbody tr\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css,/\.aba-record-table tbody td::before\{content:attr\(data-label\)/);
+  assert.match(css,/\.aba-record-table tbody :is\(td,th\)::before\{content:attr\(data-label\)/);
+  assert.match(css,/\.aba-record-table tbody :is\(td,th\)\.aba-record-table__primary-cell/);
   assert.match(css,/\.aba-record-table table\{display:block;min-width:0/);
   assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
 });
