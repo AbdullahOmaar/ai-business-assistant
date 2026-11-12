@@ -61,7 +61,7 @@ test('mobile HR is a task-based workspace while desktop retains the full workflo
     '@media(max-width:760px)',
     '.employee-panel[data-mobile-section="employees"]',
     'grid-template-columns:repeat(2,minmax(0,1fr))',
-    '.employee-form{display:none}',
+    '.employee-form{display:none;',
     '.mobile-hr-nav{display:grid',
   ]) assert.ok(component.includes(fragment), `missing mobile HR contract: ${fragment}`);
 });
@@ -175,7 +175,7 @@ test('owner-only payroll view stays behind its deferred loading boundary', () =>
 
 test('employee directory and payroll selector never expose base salary values', () => {
   const directoryStart = component.indexOf('<div class="list">');
-  const directoryEnd = component.indexOf('<section class="payroll-section">', directoryStart);
+  const directoryEnd = component.indexOf('data-mobile-pane="prepare"', directoryStart);
   assert.ok(directoryStart >= 0 && directoryEnd > directoryStart);
   const directory = component.slice(directoryStart, directoryEnd);
   assert.doesNotMatch(directory, /monthly_salary|currencyCode/);
