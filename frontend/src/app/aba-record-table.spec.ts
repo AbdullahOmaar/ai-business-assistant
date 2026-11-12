@@ -7,7 +7,7 @@ const app=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
 const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
-  assert.match(component,/<th scope="col">/);assert.match(component,/<th scope="row"/);
+  assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
   assert.match(component,/\[attr\.data-label\]="column\.label"/);
   assert.match(component,/\[attr\.aria-label\]="actionAriaLabel\(row,action\)"/);
   assert.match(component,/actionAriaLabel\(row:AbaRecordTableRow,action:AbaRecordTableAction\)/);
@@ -110,4 +110,14 @@ test('mobile record cards surface primary fields before secondary date metadata'
     assert.ok(datePosition >= 0 && primaryPosition > datePosition, 'expected date-first source order: ' + getter);
     assert.match(block.slice(primaryPosition, primaryPosition + 100), /primary:true/);
   }
+});
+
+
+test('shared record tables sort locally with keyboard-accessible, semantic direction feedback',()=>{
+  assert.match(component, /\[attr\.aria-sort\]="sortAria\(column\.key\)"/);
+  assert.match(component, /\(click\)="toggleSort\(column\)"/);
+  assert.match(component, /\[attr\.aria-pressed\]="activeSortKey===column\.key"/);
+  assert.match(component, /get sortedRows\(\)/);
+  assert.match(component, /new Intl\.Collator\(undefined,\{numeric:true,sensitivity:'base'\}\)/);
+  assert.match(component, /this\.sortDirection==='asc'\?result:-result/);
 });
