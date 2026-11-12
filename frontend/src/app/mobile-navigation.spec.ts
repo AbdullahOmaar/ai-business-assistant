@@ -41,3 +41,20 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.match(moduleAccessSource, /export function isMobileMoreTab\(tab: WorkspaceModuleTab\): boolean/);
   assert.match(moduleAccessSource, /return MOBILE_MORE_TABS\.has\(tab\)/);
 });
+
+
+test('mobile More navigation provides localized search over authorized destinations', () => {
+  const moreStart = source.indexOf('id="mobile-more-menu"');
+  const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
+  assert.ok(moreStart >= 0 && moreEnd > moreStart);
+  const menu = source.slice(moreStart, moreEnd);
+
+  assert.match(menu, /<input type="search" name="mobileMoreSearch"/);
+  assert.match(menu, /\[\(ngModel\)\]="mobileMoreSearch"/);
+  assert.match(menu, /\[attr\.aria-label\]="t\('البحث في الأقسام', 'Search sections'\)"/);
+  assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
+  assert.match(menu, /mobile-more-empty" role="status"/);
+  assert.match(source, /get filteredMobileMoreGroups\(\)/);
+  assert.match(source, /module\.descriptionAr/);
+  assert.match(source, /mobileMoreSearch = ''/);
+});
