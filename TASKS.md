@@ -4023,3 +4023,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Copy feedback is announced politely. No API, auth, tenant, DB, financial or external-side-effect behavior changed.
 - **Validation:** automated tests/build/browser/CI remain intentionally deferred per Owner direction. NOT YET TESTED.
 - **Delivery:** same November feature branch; no PR, merge or deploy.
+
+
+## 2026-11-12 — AI assistant interaction-state polish
+
+- Suggested prompt buttons are disabled during active requests and gain a clear disabled state; mobile horizontal prompt cards now support scroll snapping and stable tap height.
+- Conversation log announces additions only and exposes its busy state to assistive technology.
+- Scope remains the Master-owned AI assistant presentation only; no API/data/authorization behavior changed.
+- Tests/build/browser/CI remain deferred per Owner direction; NOT YET TESTED.

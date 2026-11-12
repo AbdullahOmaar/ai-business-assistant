@@ -559,3 +559,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Mobile composer controls use a 48px minimum interaction height and a compact fixed send-column width to keep the input usable at narrow widths.
 - Copy success/failure feedback is announced politely to assistive technology.
 - Automated validation remains intentionally deferred; these changes are NOT YET TESTED.
+
+
+### Assistant suggestion and announcement states — 2026-11-12
+
+- Suggested question cards are natively disabled while a response is in flight, preventing a misleading no-op when users tap them during loading.
+- Mobile suggestion strips use horizontal scroll containment and proximity snap points, with a consistent minimum card height.
+- Conversation log announces additions rather than repeatedly re-reading its entire content and exposes the active request state through `aria-busy`.
+- Automated checks remain intentionally deferred; these changes are NOT YET TESTED.
