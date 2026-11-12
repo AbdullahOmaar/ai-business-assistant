@@ -1705,8 +1705,8 @@
 :root body .shell .aba-record-table__viewport{width:100%;max-width:100%;min-width:0;overflow:auto;overscroll-behavior-inline:contain;border:1px solid var(--aiba-line);border-radius:16px;background:var(--aiba-surface)}
 :root body .shell .aba-record-table table{width:100%;min-width:780px;border-collapse:separate;border-spacing:0;color:var(--aiba-ink);font-size:var(--aiba-text-sm)}
 :root body .shell .aba-record-table thead th{padding:13px 15px;border-block-end:1px solid var(--aiba-line);background:var(--aiba-surface-tint);color:var(--aiba-muted);font-size:var(--aiba-text-xs);font-weight:750;line-height:1.4;text-align:start;white-space:nowrap}
-:root body .shell .aba-record-table tbody td{min-width:0;padding:14px 15px;border-block-end:1px solid var(--aiba-line);color:var(--aiba-ink-soft);line-height:1.5;text-align:start;vertical-align:middle;overflow-wrap:anywhere}
-:root body .shell .aba-record-table tbody tr:last-child td{border-block-end:0}
+:root body .shell .aba-record-table tbody :is(td,th){min-width:0;padding:14px 15px;border-block-end:1px solid var(--aiba-line);color:var(--aiba-ink-soft);font-size:inherit;font-weight:inherit;line-height:1.5;text-align:start;vertical-align:middle;overflow-wrap:anywhere}
+:root body .shell .aba-record-table tbody tr:last-child :is(td,th){border-block-end:0}
 :root body .shell .aba-record-table tbody tr:hover{background:var(--aiba-surface-tint)}
 :root body .shell .aba-record-table__primary-cell{min-width:150px;color:var(--aiba-ink);font-weight:750}
 :root body .shell .aba-record-table td[data-kind="numeric"]{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:end}
@@ -1736,9 +1736,9 @@
 :root body .shell .aba-record-table thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 :root body .shell .aba-record-table tbody{display:grid;gap:11px}
 :root body .shell .aba-record-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;overflow:hidden;border:1px solid var(--aiba-line);border-radius:14px;background:var(--aiba-surface);box-shadow:0 3px 12px rgb(15 23 42 / 4%)}
-:root body .shell .aba-record-table tbody td{display:grid;align-content:start;gap:5px;min-width:0;padding:11px 12px;border:0;background:transparent;white-space:normal;text-align:start}
-:root body .shell .aba-record-table tbody td::before{content:attr(data-label);color:var(--aiba-muted);font-size:11px;font-weight:650;line-height:1.35}
-:root body .shell .aba-record-table tbody td.aba-record-table__primary-cell{grid-column:1/-1;padding:14px 14px 11px;border-block-end:1px solid var(--aiba-line);background:var(--aiba-surface-tint);font-size:14px}
+:root body .shell .aba-record-table tbody :is(td,th){display:grid;align-content:start;gap:5px;min-width:0;padding:11px 12px;border:0;background:transparent;white-space:normal;text-align:start}
+:root body .shell .aba-record-table tbody :is(td,th)::before{content:attr(data-label);color:var(--aiba-muted);font-size:11px;font-weight:650;line-height:1.35}
+:root body .shell .aba-record-table tbody :is(td,th).aba-record-table__primary-cell{grid-column:1/-1;padding:14px 14px 11px;border-block-end:1px solid var(--aiba-line);background:var(--aiba-surface-tint);font-size:14px}
 :root body .shell .aba-record-table tbody td[data-kind="numeric"]{white-space:normal;text-align:start}
 :root body .shell .aba-record-table tbody td.aba-record-table__actions-cell{grid-column:1/-1;min-width:0;padding-block:10px;border-block-start:1px solid var(--aiba-line);background:var(--aiba-surface-tint)}
 :root body .shell .aba-record-table__actions{width:100%}
