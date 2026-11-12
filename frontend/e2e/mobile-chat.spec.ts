@@ -1271,7 +1271,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   // controls and requests remain outside the allowed role boundary.
   await page.setViewportSize({ width: 1280, height: 844 });
   await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
-  await expect(page.getByRole('heading', { name: /Sales & invoices/ })).toBeVisible();
+  await expect(page.locator('header').getByRole('heading', { name: /Sales & invoices/ })).toBeVisible();
   await page.getByRole('button', { name: 'Create a new invoice', exact: true }).click();
   const staffEditor = page.locator('aba-invoice-draft-editor');
   await staffEditor.locator('input[name="invoiceNumber"]').fill('STAFF-DRAFT-001');
