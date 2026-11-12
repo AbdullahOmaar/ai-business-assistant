@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
@@ -29,7 +29,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
 
       <section class="employee-workspace" data-mobile-pane="employees">
         <div class="employee-form-shell" [class.is-open]="employeeFormOpen">
-          <button class="employee-form-toggle" type="button" [attr.aria-expanded]="employeeFormOpen" aria-controls="employee-profile-form" (click)="toggleEmployeeForm()">
+          <button #employeeFormToggle class="employee-form-toggle" type="button" [attr.aria-expanded]="employeeFormOpen" aria-controls="employee-profile-form" (click)="toggleEmployeeForm()">
             <span>{{ employeeFormOpen ? t('إخفاء نموذج الموظف', 'Hide employee form') : editingEmployeeId ? t('متابعة تعديل الموظف', 'Continue editing employee') : t('نموذج موظف جديد', 'New employee form') }}</span>
             <span aria-hidden="true">{{ employeeFormOpen ? '−' : '+' }}</span>
           </button>
@@ -70,19 +70,16 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <label>{{ t('البحث عن موظف', 'Search employees') }}
           <input name="employeeSearch" [placeholder]="t('الاسم أو الكود أو القسم أو البريد', 'Name, code, department or email')" [(ngModel)]="employeeSearch">
         </label>
-        <label>{{ t('فترة المرتبات', 'Payroll period') }}
-          <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
-        </label>
         <span class="count">{{ filteredEmployees.length }} {{ t('نتيجة', 'results') }}</span>
       </div>
 
-      <aba-record-table [ariaLabel]="t('جدول الموظفين','Employees table')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('جارٍ تحميل الموظفين…','Loading employees…')" [emptyTitle]="t('لا يوجد موظفون','No employees yet')" [emptyDescription]="employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.','No matching employees found.') : t('لم تتم إضافة موظفين بعد.','No employees have been added yet.')" (rowAction)="onEmployeeRecordAction($event)" />
+      <aba-record-table [ariaLabel]="t('جدول الموظفين','Employees table')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('جارٍ تحميل الموظفين…','Loading employees…')" [actionsHeading]="t('الإجراءات','Actions')" [emptyTitle]="t('لا يوجد موظفون','No employees yet')" [emptyDescription]="employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.','No matching employees found.') : t('لم تتم إضافة موظفين بعد.','No employees have been added yet.')" (rowAction)="onEmployeeRecordAction($event)" />
       </section>
 
       <section class="payroll-section payroll-preparation" data-mobile-pane="prepare">
         <div class="section-head">
           <div>
-            <h3>{{ editingPayrollId ? t('تعديل مسودة المرتب', 'Edit payroll draft') : t('تجهيز مرتب شهري', 'Prepare monthly payroll') }}</h3>
+            <h3 #prepareHeading tabindex="-1">{{ editingPayrollId ? t('تعديل مسودة المرتب', 'Edit payroll draft') : t('تجهيز مرتب شهري', 'Prepare monthly payroll') }}</h3>
             <p>{{ t('الصافي يُحسب على الخادم: الأساسي + البدلات + المكافآت − الخصومات. لا نفترض قواعد ضرائب أو تأمينات.', 'Net pay is calculated on the server: base + allowances + bonuses − deductions. No tax or insurance rules are assumed.') }}</p>
           </div>
         </div>
@@ -124,10 +121,15 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       <section class="payroll-section payroll-history" data-mobile-pane="history">
         <div class="section-head">
           <div>
-            <h3>{{ t('سجل المرتبات', 'Payroll records') }}</h3>
+            <h3 #historyHeading tabindex="-1">{{ t('سجل المرتبات', 'Payroll records') }}</h3>
             <p>{{ t('تُسجّل عمليات الاعتماد والصرف في سجل النشاط، ولا يمكن صرف السجل مرتين.', 'Approvals and payments are audited; a record cannot be paid twice.') }}</p>
           </div>
           <span class="count">{{ payrollRecords.length }} {{ t('سجل', 'records') }}</span>
+        </div>
+        <div class="payroll-history-filter">
+          <label>{{ t('فترة المرتبات', 'Payroll period') }}
+            <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
+          </label>
         </div>
         <aba-record-table [ariaLabel]="t('سجل المرتبات','Payroll history table')" [columns]="payrollTableColumns" [rows]="payrollTableRows" [loading]="busy && !payrollRecords.length" [loadingDescription]="t('جارٍ تحميل سجل المرتبات…','Loading payroll history…')" [emptyTitle]="t('لا توجد مرتبات','No payroll records')" [emptyDescription]="t('لا توجد مرتبات في الفترة المحددة.','No payroll records for this period.')" [actionsHeading]="t('الإجراءات','Actions')" (rowAction)="onPayrollRecordAction($event)" />
       </section>
@@ -164,8 +166,10 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
-    .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
+    .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
     .employee-tools .count{justify-self:end}
+    .payroll-history-filter{display:grid;grid-template-columns:minmax(0,220px);gap:12px;align-items:end;margin:12px 0}
+    .employee-tools label,.payroll-history-filter label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--aba-color-border-subtle,#e5e7eb);min-width:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
     .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--aba-color-info-soft,#e0f2fe);color:var(--aba-color-info-text,#075985);border-radius:11px;font-weight:800}
@@ -199,7 +203,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       .section-head{align-items:flex-start}
       .notice{align-items:flex-start;flex-direction:column}
       .list-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
-      .employee-tools{grid-template-columns:minmax(0,1fr)}
+      .employee-tools,.payroll-history-filter{grid-template-columns:minmax(0,1fr)}
       .employee-tools .count{justify-self:start}
       .employee-form,.payroll-form{grid-template-columns:minmax(0,1fr)}
       .employee-row,.payroll-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
@@ -213,6 +217,10 @@ export class EmployeePayrollComponent implements OnChanges {
   @Input({ required: true }) currencyCode = 'EGP';
   @Input() language: 'ar' | 'en' = 'ar';
   @Output() payrollPaid = new EventEmitter<void>();
+
+  @ViewChild('employeeFormToggle') private employeeFormToggle?: ElementRef<HTMLButtonElement>;
+  @ViewChild('prepareHeading') private prepareHeading?: ElementRef<HTMLHeadingElement>;
+  @ViewChild('historyHeading') private historyHeading?: ElementRef<HTMLHeadingElement>;
 
   employees: EmployeeRecord[] = [];
   payrollRecords: EmployeePayrollRecord[] = [];
@@ -266,6 +274,17 @@ export class EmployeePayrollComponent implements OnChanges {
 
   t(arabic: string, english: string): string {
     return this.language === 'ar' ? arabic : english;
+  }
+
+  private focusAfterViewChange(target: 'employee-toggle' | 'prepare' | 'history'): void {
+    setTimeout(() => {
+      const element = target === 'employee-toggle'
+        ? this.employeeFormToggle?.nativeElement
+        : target === 'prepare'
+          ? this.prepareHeading?.nativeElement
+          : this.historyHeading?.nativeElement;
+      if (element?.isConnected && element.getClientRects().length > 0) element.focus();
+    }, 0);
   }
 
   private currentPeriod(): string {
@@ -421,6 +440,7 @@ export class EmployeePayrollComponent implements OnChanges {
   cancelEmployeeEdit(): void {
     this.clearEmployeeForm();
     this.employeeFormOpen = false;
+    this.focusAfterViewChange('employee-toggle');
   }
 
   async saveEmployee(): Promise<void> {
@@ -460,6 +480,7 @@ export class EmployeePayrollComponent implements OnChanges {
       if (this.businessId !== businessId) return;
       this.clearEmployeeForm();
       this.employeeFormOpen = false;
+      this.focusAfterViewChange('employee-toggle');
       this.message = this.t('تم حفظ بيانات الموظف بنجاح.', 'Employee details saved successfully.');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
@@ -491,6 +512,7 @@ export class EmployeePayrollComponent implements OnChanges {
   preparePayroll(employee: EmployeeRecord): void {
     if (!employee.is_active) return;
     this.mobileSection = 'prepare';
+    this.focusAfterViewChange('prepare');
     this.payrollEmployeeId = employee.id;
     this.editingPayrollId = null;
     this.payrollPeriod = this.currentPeriod();
@@ -504,6 +526,7 @@ export class EmployeePayrollComponent implements OnChanges {
   editPayroll(record: EmployeePayrollRecord): void {
     if (record.status !== 'draft') return;
     this.mobileSection = 'prepare';
+    this.focusAfterViewChange('prepare');
     this.editingPayrollId = record.id;
     this.payrollEmployeeId = record.employee_id;
     this.payrollPeriod = record.period;
@@ -557,6 +580,7 @@ export class EmployeePayrollComponent implements OnChanges {
       if (this.businessId !== businessId) return;
       this.cancelPayrollEdit();
       this.mobileSection = 'history';
+      this.focusAfterViewChange('history');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) this.error = this.errorMessage(error);
