@@ -1978,3 +1978,174 @@ def test_invoice_api_create_and_edit_multi_line_draft_uses_catalog_price_and_per
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
 
+
+
+def test_staff_can_create_and_edit_draft_invoice_but_cannot_issue_it_without_side_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    with Session(engine) as session:
+        source_invoice = session.scalar(
+            select(Invoice).where(Invoice.business_id == business_id)
+        )
+        assert source_invoice is not None and source_invoice.customer_id is not None
+        customer_id = source_invoice.customer_id
+        product = Product(
+            business_id=business_id,
+            name="Staff draft catalog item",
+            unit_price=Decimal("12.50"),
+            is_stock_tracked=False,
+        )
+        session.add(product)
+        session.commit()
+        product_id = product.id
+
+    previous_factory, previous_resolver = _configure_test_identity(engine)
+    client = TestClient(app)
+    base = f"/api/v1/businesses/{business_id}/invoices"
+    try:
+        # STAFF may prepare a draft and edit it, but must not issue/post it.
+        _set_test_membership_role(engine, MembershipRole.STAFF)
+        created = client.post(
+            base,
+            json={
+                "invoice_number": "STAFF-DRAFT-1",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [
+                    {
+                        "product_id": str(product_id),
+                        "description": "Staff catalog line",
+                        "quantity": "2.000",
+                        "unit_price": "0.01",
+                    },
+                    {
+                        "description": "Staff manual line",
+                        "quantity": "1.000",
+                        "unit_price": "7.25",
+                    },
+                ],
+            },
+        )
+        assert created.status_code == 201, created.text
+        draft_id = UUID(created.json()["id"])
+
+        with Session(engine) as session:
+            draft = session.get(Invoice, draft_id)
+            lines = session.scalars(
+                select(InvoiceLine).where(
+                    InvoiceLine.invoice_id == draft_id,
+                    InvoiceLine.business_id == business_id,
+                ).order_by(InvoiceLine.description)
+            ).all()
+            assert draft is not None and draft.status == "draft"
+            assert draft.subtotal == Decimal("32.25")
+            assert draft.total == Decimal("32.25")
+            assert [(line.description, line.quantity, line.unit_price) for line in lines] == [
+                ("Staff catalog line", Decimal("2.000"), Decimal("12.50")),
+                ("Staff manual line", Decimal("1.000"), Decimal("7.25")),
+            ]
+
+        edited = client.patch(
+            f"{base}/{draft_id}",
+            json={
+                "invoice_number": "STAFF-DRAFT-1-EDITED",
+                "currency_code": "EGP",
+                "customer_id": str(customer_id),
+                "lines": [
+                    {
+                        "product_id": str(product_id),
+                        "description": "Staff catalog line revised",
+                        "quantity": "3.000",
+                        "unit_price": "0.01",
+                    },
+                    {
+                        "description": "Staff manual line revised",
+                        "quantity": "1.000",
+                        "unit_price": "10.00",
+                    },
+                ],
+            },
+        )
+        assert edited.status_code == 200, edited.text
+
+        with Session(engine) as session:
+            draft = session.get(Invoice, draft_id)
+            assert draft is not None
+            before_issue = (
+                draft.invoice_number,
+                draft.status,
+                draft.subtotal,
+                draft.total,
+                draft.currency_code,
+                draft.customer_id,
+            )
+            lines_before_issue = sorted(
+                (
+                    line.description, line.quantity, line.unit_price, line.line_total
+                )
+                for line in session.scalars(
+                    select(InvoiceLine).where(
+                        InvoiceLine.invoice_id == draft_id,
+                        InvoiceLine.business_id == business_id,
+                    )
+                ).all()
+            )
+            audit_before = session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            )
+            stock_before = session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id
+                )
+            )
+            payments_before = session.scalar(
+                select(func.count()).select_from(Payment).where(
+                    Payment.business_id == business_id
+                )
+            )
+
+        issued = client.post(f"{base}/{draft_id}/issue", json={})
+        assert issued.status_code == 403, issued.text
+
+        with Session(engine) as session:
+            draft = session.get(Invoice, draft_id)
+            assert draft is not None
+            assert (
+                draft.invoice_number,
+                draft.status,
+                draft.subtotal,
+                draft.total,
+                draft.currency_code,
+                draft.customer_id,
+            ) == before_issue
+            lines_after_issue = sorted(
+                (
+                    line.description, line.quantity, line.unit_price, line.line_total
+                )
+                for line in session.scalars(
+                    select(InvoiceLine).where(
+                        InvoiceLine.invoice_id == draft_id,
+                        InvoiceLine.business_id == business_id,
+                    )
+                ).all()
+            )
+            assert lines_after_issue == lines_before_issue
+            assert session.scalar(
+                select(func.count()).select_from(AuditEvent).where(
+                    AuditEvent.business_id == business_id
+                )
+            ) == audit_before
+            assert session.scalar(
+                select(func.count()).select_from(StockMovement).where(
+                    StockMovement.business_id == business_id
+                )
+            ) == stock_before
+            assert session.scalar(
+                select(func.count()).select_from(Payment).where(
+                    Payment.business_id == business_id
+                )
+            ) == payments_before
+    finally:
+        _restore_test_identity(previous_factory, previous_resolver)
+        engine.dispose()
