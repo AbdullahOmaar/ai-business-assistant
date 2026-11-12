@@ -28,7 +28,7 @@ test('Customers uses its own directory while Products, Suppliers and Purchasing 
   assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
   for(const key of ['productTableRows','supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
   assert.match(app,/business\?\.role==='owner'&&this\\.canReceivePurchaseOrder\(order\)/);
-  assert.match(app,/this\.requestPurchaseOrderReceipt\\(order,action\\.anchor\\)/);
+  assert.match(app,/this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
 });
 
 test('record table labels and loading states follow the selected app locale',()=>{
