@@ -895,6 +895,11 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   const paymentRequests: string[] = [];
   const unexpectedRequests: string[] = [];
   const productCreatePayloads: Array<Record<string, unknown>> = [];
+  const invoiceCreatePayloads: Array<Record<string, unknown>> = [];
+  const invoiceUpdatePayloads: Array<Record<string, unknown>> = [];
+  const forbiddenInvoiceActions: string[] = [];
+  let staffDraftInvoice: Record<string, unknown> | null = null;
+  let staffDraftLines: Array<Record<string, unknown>> = [];
 
   await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
   await page.route('**/*', async route => {
@@ -1032,6 +1037,79 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Owner-only data.' }) });
       return;
     }
+    if (path === '/api/v1/businesses/staff-business-1/invoices' && request.method() === 'POST') {
+      const payload = request.postDataJSON() as Record<string, unknown>;
+      invoiceCreatePayloads.push(payload);
+      staffDraftLines = (payload.lines as Array<Record<string, unknown>>).map((line, index) => ({
+        id: 'staff-draft-line-' + (index + 1),
+        product_id: line.product_id ?? null,
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        line_total: '100.00',
+      }));
+      staffDraftInvoice = {
+        id: 'staff-draft-invoice-1',
+        business_id: 'staff-business-1',
+        invoice_number: payload.invoice_number,
+        customer_id: payload.customer_id,
+        status: 'draft',
+        currency_code: 'EGP',
+        subtotal: '100.00',
+        discount_total: '0.00',
+        tax_total: '0.00',
+        total: '100.00',
+        issue_date: null,
+        due_date: null,
+        notes: payload.notes ?? null,
+        created_at: '2026-11-12T00:00:00+00:00',
+      };
+      await route.fulfill({ status: 201, headers: corsHeaders, body: JSON.stringify(staffDraftInvoice) });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/invoices/staff-draft-invoice-1' && request.method() === 'GET') {
+      if (!staffDraftInvoice) {
+        await route.fulfill({ status: 404, headers: corsHeaders, body: JSON.stringify({ detail: 'Invoice not found.' }) });
+        return;
+      }
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ ...staffDraftInvoice, lines: staffDraftLines }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/invoices/staff-draft-invoice-1' && request.method() === 'PATCH') {
+      const payload = request.postDataJSON() as Record<string, unknown>;
+      invoiceUpdatePayloads.push(payload);
+      if (!staffDraftInvoice || staffDraftInvoice.status !== 'draft') {
+        await route.fulfill({ status: 409, headers: corsHeaders, body: JSON.stringify({ detail: 'Only a draft invoice can be edited.' }) });
+        return;
+      }
+      staffDraftLines = (payload.lines as Array<Record<string, unknown>>).map((line, index) => ({
+        id: 'staff-draft-line-' + (index + 1),
+        product_id: line.product_id ?? null,
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        line_total: '100.00',
+      }));
+      staffDraftInvoice = {
+        ...staffDraftInvoice,
+        invoice_number: payload.invoice_number,
+        customer_id: payload.customer_id,
+        notes: payload.notes ?? null,
+        subtotal: '100.00',
+        total: '100.00',
+      };
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify(staffDraftInvoice) });
+      return;
+    }
+    if (/^\/api\/v1\/businesses\/staff-business-1\/invoices\/staff-draft-invoice-1\/(issue|void)$/.test(path)
+      || path === '/api/v1/businesses/staff-business-1/payments') {
+      forbiddenInvoiceActions.push(request.method() + ' ' + path);
+      await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'OWNER-only action.' }) });
+      return;
+    }
     if (path === '/api/v1/businesses/staff-business-1/products' && request.method() === 'POST') {
       productCreatePayloads.push(request.postDataJSON() as Record<string, unknown>);
       await route.fulfill({
@@ -1048,13 +1126,29 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       });
       return;
     }
+    if (path === '/api/v1/businesses/staff-business-1/invoices' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify(staffDraftInvoice ? [staffDraftInvoice] : []),
+      });
+      return;
+    }
     if ([
-      '/api/v1/businesses/staff-business-1/customers',
       '/api/v1/businesses/staff-business-1/products',
-      '/api/v1/businesses/staff-business-1/invoices',
       '/api/v1/businesses/staff-business-1/expenses',
     ].includes(path) && request.method() === 'GET') {
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/customers' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify([{
+          id: 'staff-customer-1', business_id: 'staff-business-1',
+          name: 'STAFF QA Customer', email: null, phone: null,
+          created_at: '2026-11-12T00:00:00+00:00',
+        }]),
+      });
       return;
     }
     unexpectedRequests.push(request.method() + ' ' + path);
@@ -1173,6 +1267,76 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   });
   await expect(page.getByText(/Product saved successfully/)).toBeVisible();
 
+  // STAFF can create and edit one draft invoice, but issue/void/payment
+  // controls and requests remain outside the allowed role boundary.
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /Sales & invoices/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Create a new invoice', exact: true }).click();
+  const staffEditor = page.locator('aba-invoice-draft-editor');
+  await staffEditor.locator('input[name="invoiceNumber"]').fill('STAFF-DRAFT-001');
+  await staffEditor.locator('select[name="customerId"]').selectOption('staff-customer-1');
+  const staffLine = staffEditor.locator('.line-card').first();
+  await staffLine.getByRole('button', { name: 'Service', exact: true }).click();
+  await staffLine.getByLabel('Service description').fill('STAFF consulting service');
+  await staffLine.getByLabel('Unit price (EGP)').fill('100.00');
+  await staffLine.getByLabel('Quantity').fill('1');
+  await staffEditor.getByLabel('Invoice notes (optional)').fill('Staff draft - initial');
+  await staffEditor.getByRole('button', { name: 'Save draft', exact: true }).click();
+
+  await expect(page.getByText('Invoice draft saved. Displayed totals came from the server.')).toBeVisible();
+  await expect(staffEditor.locator('.summary-total strong')).toHaveText('100.00 EGP');
+  expect(invoiceCreatePayloads).toHaveLength(1);
+  expect(invoiceCreatePayloads[0]).toMatchObject({
+    invoice_number: 'STAFF-DRAFT-001',
+    customer_id: 'staff-customer-1',
+    notes: 'Staff draft - initial',
+    lines: [expect.objectContaining({
+      description: 'STAFF consulting service',
+      quantity: '1',
+      unit_price: '100.00',
+    })],
+  });
+  for (const derivedTotal of ['subtotal', 'discount_total', 'tax_total', 'total']) {
+    expect(invoiceCreatePayloads[0]).not.toHaveProperty(derivedTotal);
+  }
+
+  const staffInvoiceCard = page.locator('.invoice-card').filter({ hasText: 'STAFF-DRAFT-001' });
+  await expect(staffInvoiceCard).toBeVisible();
+  await expect(staffInvoiceCard.getByText('Draft')).toBeVisible();
+  await expect(staffInvoiceCard.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+  await expect(staffInvoiceCard.getByRole('button', { name: 'Issue', exact: true })).toHaveCount(0);
+  await expect(staffInvoiceCard.getByRole('button', { name: 'Void', exact: true })).toHaveCount(0);
+  await staffInvoiceCard.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(staffEditor.getByRole('heading', { name: 'Edit invoice draft' })).toBeVisible();
+  await staffEditor.locator('.line-card').first().getByLabel('Service description').fill('STAFF updated consulting service');
+  await staffEditor.getByLabel('Invoice notes (optional)').fill('Staff draft - edited');
+  await staffEditor.getByRole('button', { name: 'Save draft', exact: true }).click();
+
+  await expect(staffEditor.locator('.summary-total strong')).toHaveText('100.00 EGP');
+  expect(invoiceUpdatePayloads).toHaveLength(1);
+  expect(invoiceUpdatePayloads[0]).toMatchObject({
+    invoice_number: 'STAFF-DRAFT-001',
+    customer_id: 'staff-customer-1',
+    notes: 'Staff draft - edited',
+    lines: [expect.objectContaining({
+      description: 'STAFF updated consulting service',
+      quantity: '1',
+      unit_price: '100.00',
+    })],
+  });
+  expect(staffDraftInvoice).toMatchObject({
+    id: 'staff-draft-invoice-1',
+    invoice_number: 'STAFF-DRAFT-001',
+    status: 'draft',
+    notes: 'Staff draft - edited',
+  });
+  expect(staffDraftLines).toHaveLength(1);
+  expect(apiRequests.some(item =>
+    item.method === 'PATCH' && item.path === '/api/v1/businesses/staff-business-1/invoices/staff-draft-invoice-1'
+  )).toBe(true);
+  expect(apiRequests.some(item => /\/(issue|void)$/.test(item.path))).toBe(false);
   expect(paymentRequests).toEqual([]);
+  expect(forbiddenInvoiceActions).toEqual([]);
   expect(unexpectedRequests).toEqual([]);
 });

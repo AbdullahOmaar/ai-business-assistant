@@ -405,6 +405,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     const direction = language === 'ar' ? 'rtl' : 'ltr';
     await expect(page.locator('html')).toHaveAttribute('dir', direction);
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+    await expect(page.locator('body')).toHaveCSS('direction', direction);
 
     if (view === 'overview') {
       await page.getByRole('button', { name: language === 'en' ? /Overview/ : /نظرة عامة/ }).click();

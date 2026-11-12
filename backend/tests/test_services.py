@@ -704,18 +704,45 @@ def test_staff_can_prepare_drafts_but_cannot_post_financials(workspace):
         )
         assert customer.name == "Staff customer"
 
-        # STAFF may create ordinary catalog records; this regression targets
-        # the OWNER-only financial posting boundary, not product creation.
+        # STAFF may create and edit an ordinary draft invoice. The stable invoice
+        # identity and draft status must survive replacement; posting is still OWNER-only.
         draft = create_invoice(
             session, principal=staff, business_id=business_id,
             customer_id=customer.id, invoice_number="STAFF-DRAFT", currency_code="EGP",
             lines=[{"description": "Consulting", "quantity": "1", "unit_price": "10.00"}],
+            notes="Initial staff draft",
         )
         assert draft.status == "draft"
-        with pytest.raises(AuthorizationError):
-            issue_invoice(session, principal=staff, business_id=business_id, invoice_id=draft.id)
+        draft_id = draft.id
 
-        issued = issue_invoice(session, principal=owner, business_id=business_id, invoice_id=draft.id)
+        updated = replace_draft_invoice(
+            session, principal=staff, business_id=business_id, invoice_id=draft_id,
+            customer_id=customer.id, invoice_number="STAFF-DRAFT", currency_code="EGP",
+            lines=[{"description": "Updated consulting", "quantity": "2", "unit_price": "10.00"}],
+            notes="Edited by staff",
+        )
+        assert updated.id == draft_id
+        assert updated.status == "draft"
+        assert updated.total == Decimal("20.00")
+        assert updated.notes == "Edited by staff"
+        persisted_lines = session.scalars(
+            select(InvoiceLine).where(InvoiceLine.invoice_id == draft_id)
+        ).all()
+        assert len(persisted_lines) == 1
+        assert persisted_lines[0].description == "Updated consulting"
+        assert persisted_lines[0].quantity == Decimal("2")
+        assert session.scalar(select(Invoice).where(Invoice.business_id == business_id)).id == draft_id
+        assert session.query(AuditEvent).filter(
+            AuditEvent.target_id == str(draft_id),
+            AuditEvent.action.in_(["invoice.created", "invoice.draft_updated"]),
+        ).count() == 2
+
+        with pytest.raises(AuthorizationError):
+            issue_invoice(session, principal=staff, business_id=business_id, invoice_id=draft_id)
+        # Denied STAFF posting has no effect; the same still-draft record remains
+        # editable and can be issued by an OWNER after the boundary is checked.
+        assert updated.status == "draft"
+        issued = issue_invoice(session, principal=owner, business_id=business_id, invoice_id=draft_id)
         assert issued.status == "issued"
         with pytest.raises(AuthorizationError):
             record_payment(
