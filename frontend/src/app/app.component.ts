@@ -11,6 +11,7 @@ import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, f
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
+import { CustomerDirectoryComponent } from './customer-directory.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
@@ -36,7 +37,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -534,7 +535,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <aba-record-table [ariaLabel]="t('جدول العملاء', 'Customers table')" [columns]="customerTableColumns" [rows]="customerTableRows" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [actionsHeading]="t('الإجراءات', 'Actions')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+                <aba-customer-directory [ariaLabel]="t('دليل العملاء', 'Customer directory')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
 
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
@@ -1606,15 +1607,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return filterCustomers(this.customers, this.customerSearch);
   }
 
-  get customerTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t('العميل','Customer'),primary:true},
-    {key:'email',label:this.t('البريد الإلكتروني','Email')},
-    {key:'phone',label:this.t('الهاتف','Phone')},
-  ]; }
-  get customerTableRows(): readonly AbaRecordTableRow[] { return this.filteredCustomers.map(customer=>({
-    id:customer.id,cells:{name:customer.name,email:customer.email||this.t('غير مسجل','Not provided'),phone:customer.phone||this.t('غير مسجل','Not provided')},
-    actions:[{id:'invoices',label:this.t('عرض الفواتير','View invoices')},{id:'statement',label:this.t('كشف الحساب','Statement')}],
-  })); }
   get productTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'name',label:this.t('المنتج / الخدمة','Product / service'),primary:true},
     {key:'sku',label:'SKU'},
